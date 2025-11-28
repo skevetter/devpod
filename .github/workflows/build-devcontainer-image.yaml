@@ -1,12 +1,10 @@
 name: Build Dev Container
 
 on:
-  workflow_dispatch:
   push:
-    branches:
-      - "main"
-    paths:
-      - ".github/devcontainer/**"
+    branches: ["main"]
+  pull_request:
+  workflow_dispatch:
 
 jobs:
   build-and-push:

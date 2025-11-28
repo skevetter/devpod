@@ -2,17 +2,12 @@ name: go-licenses
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
     paths:
-      - .github/licenses.tmpl
-      - .github/workflows/go-licenses.yaml
-      - go.mod
-  workflow_dispatch:
-
-concurrency:
-  group: ${{ github.workflow }}-$${{ github.head_ref || github.run_id }}
-  cancel-in-progress: true
+    - .github/licenses.tmpl
+    - .github/workflows/go-licenses.yaml
+    - go.mod
+  workflow_dispatch:  
 
 jobs:
   update-licenses:

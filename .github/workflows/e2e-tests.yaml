@@ -3,21 +3,8 @@ name: E2E tests
 on:
   release:
     types: [prereleased]
-  workflow_dispatch: {}
+  workflow_dispatch:
   pull_request:
-    branches:
-      - main
-    paths:
-      - "**.go"
-      - "pkg/**.sh"
-      - "providers/**"
-      - "!**_test.go" # exclude test files to ignore unit test changes
-      - "e2e/**_test.go" # include test files in e2e again
-      - ".github/workflows/e2e-tests.yaml"
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
 
 env:
   GO111MODULE: on

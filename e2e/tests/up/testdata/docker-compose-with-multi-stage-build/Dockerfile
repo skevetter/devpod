@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/vscode/devcontainers/ruby:3.2-bullseye AS base
+FROM mcr.microsoft.com/devcontainers/go:1-1.23-bullseye AS base
 
 RUN apt update
 RUN apt install vim -y
