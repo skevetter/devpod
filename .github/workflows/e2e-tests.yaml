@@ -13,8 +13,6 @@ jobs:
   test-e2e:
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: true
-      max-parallel: 16
       matrix:
         label:
           - "build"
