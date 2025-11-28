@@ -50,8 +50,8 @@ export const QueryKeys = {
   proProviderUpdates(proInstances: TProInstances | undefined) {
     return ["check-pro-provider-updates", proInstances]
   },
-  userProfile(name: string | undefined) {
-    return ["user-profile", name]
+  userProfile(name: string | undefined, client?: unknown) {
+    return ["user-profile", name, client]
   },
 }
 

@@ -331,7 +331,7 @@ export class StorageV1RunnerPersistentVolumeClaimTemplateSpec {
   /**
    * accessModes contains the desired access modes the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1
    */
-  "accessModes"?: Array<StorageV1RunnerPersistentVolumeClaimTemplateSpecAccessModesEnum>
+  "accessModes"?: Array<EStorageV1RunnerPersistentVolumeClaimTemplateSpecAccessModes>
   /**
    * storageClassName is the name of the StorageClass required by the claim. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-1
    */
@@ -576,7 +576,7 @@ export class StorageV1RunnerServiceTemplateSpec {
   /**
    * type determines how the Service is exposed. Defaults to ClusterIP  Possible enum values:  - `\"ClusterIP\"` means a service will only be accessible inside the cluster, via the cluster IP.  - `\"ExternalName\"` means a service consists of only a reference to an external name that kubedns or equivalent will return as a CNAME record, with no exposing or proxying of any pods involved.  - `\"LoadBalancer\"` means a service will be exposed via an external load balancer (if the cloud provider supports it), in addition to \'NodePort\' type.  - `\"NodePort\"` means a service will be exposed on one port of every node, in addition to \'ClusterIP\' type.
    */
-  "type"?: StorageV1RunnerServiceTemplateSpecTypeEnum
+  "type"?: EStorageV1RunnerServiceTemplateSpecType
 
   static readonly discriminator: string | undefined = undefined
 
