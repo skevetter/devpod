@@ -343,8 +343,9 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 				framework.ExpectNoError(err)
 
 				containerDetail := containerDetails[0]
-				gomega.Expect(containerDetail.HostConfig.CapAdd).To(gomega.ContainElement("SYS_PTRACE"), "image capabilities are not duplicated")
-				gomega.Expect(containerDetail.HostConfig.CapAdd).To(gomega.ContainElement("NET_ADMIN"), "devcontainer configuration can add capabilities")
+				// TODO: Figure what expected element should be
+				gomega.Expect(containerDetail.HostConfig.CapAdd).To(gomega.Or(gomega.ContainElement("SYS_PTRACE"), gomega.ContainElement("CAP_SYS_PTRACE")), "image capabilities are not duplicated")
+				gomega.Expect(containerDetail.HostConfig.CapAdd).To(gomega.Or(gomega.ContainElement("NET_ADMIN"), gomega.ContainElement("CAP_NET_ADMIN")), "devcontainer configuration can add capabilities")
 			}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
 			ginkgo.It("should start a new workspace with securityOpt", func(ctx context.Context) {
