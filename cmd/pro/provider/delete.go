@@ -6,10 +6,10 @@ import (
 	"io"
 	"os"
 
-	"github.com/loft-sh/devpod/cmd/pro/flags"
-	"github.com/loft-sh/devpod/pkg/platform"
-	"github.com/loft-sh/devpod/pkg/platform/client"
 	"github.com/loft-sh/log"
+	"github.com/skevetter/devpod/cmd/pro/flags"
+	"github.com/skevetter/devpod/pkg/platform"
+	"github.com/skevetter/devpod/pkg/platform/client"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

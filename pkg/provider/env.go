@@ -7,8 +7,8 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/loft-sh/devpod/pkg/config"
 	log2 "github.com/loft-sh/log"
+	"github.com/skevetter/devpod/pkg/config"
 )
 
 const (

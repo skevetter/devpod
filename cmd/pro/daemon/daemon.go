@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/loft-sh/devpod/cmd/pro/flags"
-	"github.com/loft-sh/devpod/pkg/config"
-	providerpkg "github.com/loft-sh/devpod/pkg/provider"
-	"github.com/loft-sh/devpod/pkg/workspace"
 	"github.com/loft-sh/log"
+	"github.com/skevetter/devpod/cmd/pro/flags"
+	"github.com/skevetter/devpod/pkg/config"
+	providerpkg "github.com/skevetter/devpod/pkg/provider"
+	"github.com/skevetter/devpod/pkg/workspace"
 	"github.com/spf13/cobra"
 )
 

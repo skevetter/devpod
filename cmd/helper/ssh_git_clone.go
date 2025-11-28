@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	command2 "github.com/loft-sh/devpod/pkg/command"
+	command2 "github.com/skevetter/devpod/pkg/command"
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh"
 )

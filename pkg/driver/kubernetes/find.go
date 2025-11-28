@@ -3,7 +3,7 @@ package kubernetes
 import (
 	"context"
 
-	"github.com/loft-sh/devpod/pkg/devcontainer/config"
+	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	corev1 "k8s.io/api/core/v1"
 )
 

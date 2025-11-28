@@ -7,12 +7,12 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/loft-sh/devpod/e2e/framework"
-	"github.com/loft-sh/devpod/pkg/compose"
-	docker "github.com/loft-sh/devpod/pkg/docker"
 	"github.com/loft-sh/log"
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
+	"github.com/skevetter/devpod/e2e/framework"
+	"github.com/skevetter/devpod/pkg/compose"
+	docker "github.com/skevetter/devpod/pkg/docker"
 )
 
 var _ = DevPodDescribe("devpod up test suite", func() {

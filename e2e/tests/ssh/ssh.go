@@ -12,8 +12,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/loft-sh/devpod/e2e/framework"
 	"github.com/onsi/ginkgo/v2"
+	"github.com/skevetter/devpod/e2e/framework"
 )
 
 var _ = DevPodDescribe("devpod ssh test suite", func() {

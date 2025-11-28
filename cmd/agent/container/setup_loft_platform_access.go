@@ -3,10 +3,10 @@ package container
 import (
 	"fmt"
 
-	"github.com/loft-sh/devpod/cmd/flags"
-	"github.com/loft-sh/devpod/pkg/credentials"
-	"github.com/loft-sh/devpod/pkg/loftconfig"
 	"github.com/loft-sh/log"
+	"github.com/skevetter/devpod/cmd/flags"
+	"github.com/skevetter/devpod/pkg/credentials"
+	"github.com/skevetter/devpod/pkg/loftconfig"
 
 	"github.com/spf13/cobra"
 )

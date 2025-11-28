@@ -47,7 +47,7 @@ module.exports = {
           position: "right",
         },
         {
-          href: "https://github.com/loft-sh/devpod",
+          href: "https://github.com/skevetter/devpod",
           className: "github-link",
           "aria-label": "GitHub",
           position: "right",
@@ -76,7 +76,7 @@ module.exports = {
           path: "pages",
           routeBasePath: "/",
           sidebarPath: require.resolve("./sidebars.js"),
-          editUrl: "https://github.com/loft-sh/devpod/edit/main/docs/",
+          editUrl: "https://github.com/skevetter/devpod/edit/main/docs/",
         },
         theme: {
           customCss: require.resolve("./src/css/custom.css"),

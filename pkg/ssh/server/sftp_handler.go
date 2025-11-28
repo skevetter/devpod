@@ -4,11 +4,11 @@ import (
 	"errors"
 	"io"
 
-	"github.com/loft-sh/devpod/pkg/command"
 	"github.com/loft-sh/log"
 	"github.com/loft-sh/ssh"
 	"github.com/pkg/sftp"
 	"github.com/sirupsen/logrus"
+	"github.com/skevetter/devpod/pkg/command"
 )
 
 func sftpHandler(sess ssh.Session, currentUser string, log log.Logger) {

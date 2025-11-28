@@ -10,9 +10,9 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/loft-sh/devpod/pkg/agent/tunnel"
 	"github.com/loft-sh/log"
 	"github.com/pkg/errors"
+	"github.com/skevetter/devpod/pkg/agent/tunnel"
 )
 
 const DefaultPort = "12049"

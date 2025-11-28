@@ -15,14 +15,14 @@ import (
 	"github.com/blang/semver/v4"
 	"github.com/gofrs/flock"
 	"github.com/loft-sh/api/v4/pkg/devpod"
-	"github.com/loft-sh/devpod/pkg/client"
-	"github.com/loft-sh/devpod/pkg/config"
-	devpodlog "github.com/loft-sh/devpod/pkg/log"
-	"github.com/loft-sh/devpod/pkg/options"
-	platformclient "github.com/loft-sh/devpod/pkg/platform/client"
-	"github.com/loft-sh/devpod/pkg/provider"
 	"github.com/loft-sh/log"
 	perrors "github.com/pkg/errors"
+	"github.com/skevetter/devpod/pkg/client"
+	"github.com/skevetter/devpod/pkg/config"
+	devpodlog "github.com/skevetter/devpod/pkg/log"
+	"github.com/skevetter/devpod/pkg/options"
+	platformclient "github.com/skevetter/devpod/pkg/platform/client"
+	"github.com/skevetter/devpod/pkg/provider"
 )
 
 var (

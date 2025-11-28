@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/loft-sh/devpod/pkg/stdio"
 	"github.com/pkg/errors"
+	"github.com/skevetter/devpod/pkg/stdio"
 	"golang.org/x/crypto/ssh"
 )
 

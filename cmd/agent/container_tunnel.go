@@ -8,15 +8,15 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/loft-sh/devpod/cmd/agent/workspace"
-	"github.com/loft-sh/devpod/cmd/flags"
-	"github.com/loft-sh/devpod/pkg/agent"
-	"github.com/loft-sh/devpod/pkg/devcontainer"
-	"github.com/loft-sh/devpod/pkg/devcontainer/config"
-	"github.com/loft-sh/devpod/pkg/devcontainer/setup"
-	"github.com/loft-sh/devpod/pkg/encoding"
-	provider2 "github.com/loft-sh/devpod/pkg/provider"
 	"github.com/loft-sh/log"
+	"github.com/skevetter/devpod/cmd/agent/workspace"
+	"github.com/skevetter/devpod/cmd/flags"
+	"github.com/skevetter/devpod/pkg/agent"
+	"github.com/skevetter/devpod/pkg/devcontainer"
+	"github.com/skevetter/devpod/pkg/devcontainer/config"
+	"github.com/skevetter/devpod/pkg/devcontainer/setup"
+	"github.com/skevetter/devpod/pkg/encoding"
+	provider2 "github.com/skevetter/devpod/pkg/provider"
 	"github.com/spf13/cobra"
 )
 

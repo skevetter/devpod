@@ -4,8 +4,8 @@ import (
 	"context"
 	"strings"
 
-	"github.com/loft-sh/devpod/pkg/devcontainer/config"
 	"github.com/pkg/errors"
+	"github.com/skevetter/devpod/pkg/devcontainer/config"
 )
 
 func (r *runner) Delete(ctx context.Context) error {

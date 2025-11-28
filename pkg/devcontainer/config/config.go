@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/loft-sh/devpod/pkg/types"
+	"github.com/skevetter/devpod/pkg/types"
 )
 
 type MergedDevContainerConfig struct {

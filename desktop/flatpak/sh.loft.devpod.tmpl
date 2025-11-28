@@ -25,14 +25,14 @@ modules:
     buildsystem: simple
     sources:
       - type: file
-        url: https://github.com/loft-sh/devpod/releases/download/v${VERSION}/DevPod_${VERSION}_amd64.deb
+        url: https://github.com/skevetter/devpod/releases/download/v${VERSION}/DevPod_${VERSION}_amd64.deb
         sha256: ${SHA256}
         only-arches: [x86_64]
       - type: file
-        url: https://github.com/loft-sh/devpod/releases/download/v${VERSION}/DevPod.desktop
+        url: https://github.com/skevetter/devpod/releases/download/v${VERSION}/DevPod.desktop
         sha256: ${DESKTOP_SHA256}
       - type: file
-        url: https://github.com/loft-sh/devpod/releases/download/v${VERSION}/DevPod.metainfo.xml
+        url: https://github.com/skevetter/devpod/releases/download/v${VERSION}/DevPod.metainfo.xml
         sha256: ${META_SHA256}
       - type: file
         path: devpod-wrapper

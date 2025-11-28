@@ -7,9 +7,9 @@ import (
 	"os/exec"
 	"os/user"
 
-	"github.com/loft-sh/devpod/pkg/shell"
 	"github.com/loft-sh/log"
 	"github.com/loft-sh/ssh"
+	"github.com/skevetter/devpod/pkg/shell"
 )
 
 const (

@@ -12,8 +12,8 @@ import (
 
 	"github.com/loft-sh/log"
 
-	devssh "github.com/loft-sh/devpod/pkg/ssh"
 	"github.com/sirupsen/logrus"
+	devssh "github.com/skevetter/devpod/pkg/ssh"
 	"golang.org/x/crypto/ssh"
 )
 

@@ -1,8 +1,8 @@
 package provider
 
 import (
-	"github.com/loft-sh/devpod/pkg/config"
-	"github.com/loft-sh/devpod/pkg/types"
+	"github.com/skevetter/devpod/pkg/config"
+	"github.com/skevetter/devpod/pkg/types"
 )
 
 type Machine struct {

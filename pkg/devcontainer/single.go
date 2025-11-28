@@ -7,12 +7,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/loft-sh/devpod/pkg/daemon/agent"
-	"github.com/loft-sh/devpod/pkg/devcontainer/config"
-	"github.com/loft-sh/devpod/pkg/devcontainer/metadata"
-	"github.com/loft-sh/devpod/pkg/driver"
-	provider2 "github.com/loft-sh/devpod/pkg/provider"
 	"github.com/pkg/errors"
+	"github.com/skevetter/devpod/pkg/daemon/agent"
+	"github.com/skevetter/devpod/pkg/devcontainer/config"
+	"github.com/skevetter/devpod/pkg/devcontainer/metadata"
+	"github.com/skevetter/devpod/pkg/driver"
+	provider2 "github.com/skevetter/devpod/pkg/provider"
 )
 
 var dockerlessImage = "ghcr.io/loft-sh/dockerless:0.2.0"

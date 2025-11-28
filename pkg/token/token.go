@@ -4,8 +4,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 
-	"github.com/loft-sh/devpod/pkg/ssh"
 	"github.com/pkg/errors"
+	"github.com/skevetter/devpod/pkg/ssh"
 )
 
 type Token struct {

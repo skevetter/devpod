@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/loft-sh/devpod/pkg/platform/project"
-	"github.com/loft-sh/devpod/pkg/provider"
 	"github.com/loft-sh/log/terminal"
+	"github.com/skevetter/devpod/pkg/platform/project"
+	"github.com/skevetter/devpod/pkg/provider"
 )
 
 func (c *client) Create(ctx context.Context, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {

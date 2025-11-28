@@ -8,11 +8,11 @@ import (
 	"time"
 
 	"github.com/loft-sh/analytics-client/client"
-	devpodclient "github.com/loft-sh/devpod/pkg/client"
-	"github.com/loft-sh/devpod/pkg/config"
-	"github.com/loft-sh/devpod/pkg/version"
 	"github.com/loft-sh/log"
 	"github.com/moby/term"
+	devpodclient "github.com/skevetter/devpod/pkg/client"
+	"github.com/skevetter/devpod/pkg/config"
+	"github.com/skevetter/devpod/pkg/version"
 	"github.com/spf13/cobra"
 )
 

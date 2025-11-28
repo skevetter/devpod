@@ -1,7 +1,7 @@
 # Ztunnel example
 
 ```bash
-curl -L -o devpod "https://github.com/loft-sh/devpod/releases/latest/download/devpod-darwin-arm64" && sudo install -c -m 0755 devpod /usr/local/bin && rm -f devpod
+curl -L -o devpod "https://github.com/skevetter/devpod/releases/latest/download/devpod-darwin-arm64" && sudo install -c -m 0755 devpod /usr/local/bin && rm -f devpod
 ```
 
 Update the provider

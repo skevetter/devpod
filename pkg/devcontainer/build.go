@@ -8,17 +8,17 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/loft-sh/devpod/pkg/compose"
-	"github.com/loft-sh/devpod/pkg/devcontainer/build"
-	"github.com/loft-sh/devpod/pkg/devcontainer/buildkit"
-	"github.com/loft-sh/devpod/pkg/devcontainer/config"
-	"github.com/loft-sh/devpod/pkg/devcontainer/feature"
-	"github.com/loft-sh/devpod/pkg/devcontainer/metadata"
-	"github.com/loft-sh/devpod/pkg/dockerfile"
-	"github.com/loft-sh/devpod/pkg/driver"
-	"github.com/loft-sh/devpod/pkg/image"
-	"github.com/loft-sh/devpod/pkg/provider"
 	"github.com/pkg/errors"
+	"github.com/skevetter/devpod/pkg/compose"
+	"github.com/skevetter/devpod/pkg/devcontainer/build"
+	"github.com/skevetter/devpod/pkg/devcontainer/buildkit"
+	"github.com/skevetter/devpod/pkg/devcontainer/config"
+	"github.com/skevetter/devpod/pkg/devcontainer/feature"
+	"github.com/skevetter/devpod/pkg/devcontainer/metadata"
+	"github.com/skevetter/devpod/pkg/dockerfile"
+	"github.com/skevetter/devpod/pkg/driver"
+	"github.com/skevetter/devpod/pkg/image"
+	"github.com/skevetter/devpod/pkg/provider"
 )
 
 func (r *runner) build(

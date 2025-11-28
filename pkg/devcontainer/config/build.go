@@ -1,7 +1,7 @@
 package config
 
 import (
-	"github.com/loft-sh/devpod/pkg/dockerfile"
+	"github.com/skevetter/devpod/pkg/dockerfile"
 )
 
 const (

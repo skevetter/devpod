@@ -13,16 +13,16 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/loft-sh/devpod/pkg/compose"
-	config2 "github.com/loft-sh/devpod/pkg/config"
-	"github.com/loft-sh/devpod/pkg/devcontainer/config"
-	"github.com/loft-sh/devpod/pkg/docker"
-	"github.com/loft-sh/devpod/pkg/driver"
-	"github.com/loft-sh/devpod/pkg/ide/jetbrains"
-	provider2 "github.com/loft-sh/devpod/pkg/provider"
 	"github.com/loft-sh/log"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"github.com/skevetter/devpod/pkg/compose"
+	config2 "github.com/skevetter/devpod/pkg/config"
+	"github.com/skevetter/devpod/pkg/devcontainer/config"
+	"github.com/skevetter/devpod/pkg/docker"
+	"github.com/skevetter/devpod/pkg/driver"
+	"github.com/skevetter/devpod/pkg/ide/jetbrains"
+	provider2 "github.com/skevetter/devpod/pkg/provider"
 )
 
 func makeEnvironment(env map[string]string, log log.Logger) []string {

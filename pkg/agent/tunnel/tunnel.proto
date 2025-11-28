@@ -1,7 +1,7 @@
 // protoc -I . tunnel.proto  --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative
 syntax = "proto3";
 
-option go_package = "github.com/loft-sh/devpod/pkg/agent/tunnel";
+option go_package = "github.com/skevetter/devpod/pkg/agent/tunnel";
 
 package tunnel;
 

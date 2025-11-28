@@ -1,4 +1,4 @@
-module github.com/loft-sh/devpod
+module github.com/skevetter/devpod
 
 go 1.23.1
 

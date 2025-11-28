@@ -4,8 +4,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/loft-sh/devpod/pkg/devcontainer/config"
 	"github.com/loft-sh/log"
+	"github.com/skevetter/devpod/pkg/devcontainer/config"
 
 	detector "github.com/loft-sh/programming-language-detection/pkg/detector"
 )

@@ -4,7 +4,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/loft-sh/devpod/pkg/util"
+	"github.com/skevetter/devpod/pkg/util"
 )
 
 // Override devpod home

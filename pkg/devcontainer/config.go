@@ -5,11 +5,11 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/loft-sh/devpod/pkg/devcontainer/config"
-	"github.com/loft-sh/devpod/pkg/devcontainer/crane"
-	"github.com/loft-sh/devpod/pkg/language"
-	provider2 "github.com/loft-sh/devpod/pkg/provider"
 	"github.com/pkg/errors"
+	"github.com/skevetter/devpod/pkg/devcontainer/config"
+	"github.com/skevetter/devpod/pkg/devcontainer/crane"
+	"github.com/skevetter/devpod/pkg/language"
+	provider2 "github.com/skevetter/devpod/pkg/provider"
 )
 
 func (r *runner) getRawConfig(options provider2.CLIOptions) (*config.DevContainerConfig, error) {

@@ -8,8 +8,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	managementv1 "github.com/loft-sh/api/v4/pkg/apis/management/v1"
-	clientpkg "github.com/loft-sh/devpod/pkg/client"
-	"github.com/loft-sh/devpod/pkg/platform"
+	clientpkg "github.com/skevetter/devpod/pkg/client"
+	"github.com/skevetter/devpod/pkg/platform"
 )
 
 func (c *client) Stop(ctx context.Context, opt clientpkg.StopOptions) error {

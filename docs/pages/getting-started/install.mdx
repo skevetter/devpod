@@ -12,14 +12,14 @@ To get started with DevPod, choose either the [DevPod Desktop](#install-devpod) 
 ## Install DevPod
 
 Download DevPod Desktop:
-- [MacOS Silicon/ARM](https://github.com/loft-sh/devpod/releases/latest/download/DevPod_macos_aarch64.dmg)
-- [MacOS Intel/AMD](https://github.com/loft-sh/devpod/releases/latest/download/DevPod_macos_x64.dmg)
-- [Windows](https://github.com/loft-sh/devpod/releases/latest/download/DevPod_windows_x64_en-US.msi)
-- [Linux AppImage](https://github.com/loft-sh/devpod/releases/latest/download/DevPod_linux_amd64.AppImage)
-- [Linux Targz](https://github.com/loft-sh/devpod/releases/latest/download/DevPod_linux_x86_64.tar.gz)
+- [MacOS Silicon/ARM](https://github.com/skevetter/devpod/releases/latest/download/DevPod_macos_aarch64.dmg)
+- [MacOS Intel/AMD](https://github.com/skevetter/devpod/releases/latest/download/DevPod_macos_x64.dmg)
+- [Windows](https://github.com/skevetter/devpod/releases/latest/download/DevPod_windows_x64_en-US.msi)
+- [Linux AppImage](https://github.com/skevetter/devpod/releases/latest/download/DevPod_linux_amd64.AppImage)
+- [Linux Targz](https://github.com/skevetter/devpod/releases/latest/download/DevPod_linux_x86_64.tar.gz)
 
 :::info Previous Releases
-For earlier versions, visit the [GitHub releases page](https://github.com/loft-sh/devpod/releases)
+For earlier versions, visit the [GitHub releases page](https://github.com/skevetter/devpod/releases)
 :::
 
 :::info Linux Packages
@@ -87,14 +87,14 @@ Alternatively, you can also use the CLI instead of the desktop application. The 
 <TabItem value="macarm64">
 
 ```bash
-curl -L -o devpod "https://github.com/loft-sh/devpod/releases/latest/download/devpod-darwin-arm64" && sudo install -c -m 0755 devpod /usr/local/bin && rm -f devpod
+curl -L -o devpod "https://github.com/skevetter/devpod/releases/latest/download/devpod-darwin-arm64" && sudo install -c -m 0755 devpod /usr/local/bin && rm -f devpod
 ```
 
 </TabItem>
 <TabItem value="macamd64">
 
 ```bash
-curl -L -o devpod "https://github.com/loft-sh/devpod/releases/latest/download/devpod-darwin-amd64" && sudo install -c -m 0755 devpod /usr/local/bin && rm -f devpod
+curl -L -o devpod "https://github.com/skevetter/devpod/releases/latest/download/devpod-darwin-amd64" && sudo install -c -m 0755 devpod /usr/local/bin && rm -f devpod
 ```
 
 </TabItem>
@@ -102,7 +102,7 @@ curl -L -o devpod "https://github.com/loft-sh/devpod/releases/latest/download/de
 
 ```text
 md -Force "$Env:APPDATA\devpod"; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]'Tls,Tls11,Tls12';
-Invoke-WebRequest -URI "https://github.com/loft-sh/devpod/releases/latest/download/devpod-windows-amd64.exe" -OutFile $Env:APPDATA\devpod\devpod.exe;
+Invoke-WebRequest -URI "https://github.com/skevetter/devpod/releases/latest/download/devpod-windows-amd64.exe" -OutFile $Env:APPDATA\devpod\devpod.exe;
 $env:Path += ";" + $Env:APPDATA + "\devpod";
 [Environment]::SetEnvironmentVariable("Path", $env:Path, [System.EnvironmentVariableTarget]::User);
 ```
@@ -111,14 +111,14 @@ $env:Path += ";" + $Env:APPDATA + "\devpod";
 <TabItem value="linuxamd">
 
 ```bash
-curl -L -o devpod "https://github.com/loft-sh/devpod/releases/latest/download/devpod-linux-amd64" && sudo install -c -m 0755 devpod /usr/local/bin && rm -f devpod
+curl -L -o devpod "https://github.com/skevetter/devpod/releases/latest/download/devpod-linux-amd64" && sudo install -c -m 0755 devpod /usr/local/bin && rm -f devpod
 ```
 
 </TabItem>
 <TabItem value="linuxarm">
 
 ```bash
-curl -L -o devpod "https://github.com/loft-sh/devpod/releases/latest/download/devpod-linux-arm64" && sudo install -c -m 0755 devpod /usr/local/bin && rm -f devpod
+curl -L -o devpod "https://github.com/skevetter/devpod/releases/latest/download/devpod-linux-arm64" && sudo install -c -m 0755 devpod /usr/local/bin && rm -f devpod
 ```
 
 </TabItem>

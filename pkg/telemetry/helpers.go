@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/denisbrodbeck/machineid"
-	"github.com/loft-sh/devpod/pkg/util"
+	"github.com/skevetter/devpod/pkg/util"
 )
 
 // GetMachineID retrieves machine ID and encodes it together with users $HOME path and

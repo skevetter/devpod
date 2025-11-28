@@ -11,11 +11,11 @@ import (
 	"runtime"
 
 	"github.com/loft-sh/api/v4/pkg/devpod"
-	"github.com/loft-sh/devpod/pkg/devcontainer/config"
-	provider2 "github.com/loft-sh/devpod/pkg/provider"
-	"github.com/loft-sh/devpod/pkg/single"
 	"github.com/loft-sh/log"
 	perrors "github.com/pkg/errors"
+	"github.com/skevetter/devpod/pkg/devcontainer/config"
+	provider2 "github.com/skevetter/devpod/pkg/provider"
+	"github.com/skevetter/devpod/pkg/single"
 	"github.com/takama/daemon"
 )
 

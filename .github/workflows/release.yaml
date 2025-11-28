@@ -165,7 +165,7 @@ jobs:
         if: matrix.settings.host != 'windows-latest'
         run: |
           BIN_NAME=devpod-cli-${{ matrix.settings.target }}
-          GOOS=${{ matrix.settings.os }} GOARCH=${{ matrix.settings.arch }} CGO_ENABLED=0 go build -ldflags "-s -w -X github.com/loft-sh/devpod/pkg/version.version="v${{ needs.create-release.outputs.original_package_version }}" -X github.com/loft-sh/devpod/pkg/telemetry.telemetryPrivateKey=${{ secrets.DEVPOD_TELEMETRY_PRIVATE_KEY }} -X github.com/loft-sh/devpod/pkg/devcontainer/crane.craneSigningKey="${{ secrets.CRANE_PRIVATE_KEY }}"" -o "test/$BIN_NAME"
+          GOOS=${{ matrix.settings.os }} GOARCH=${{ matrix.settings.arch }} CGO_ENABLED=0 go build -ldflags "-s -w -X github.com/skevetter/devpod/pkg/version.version="v${{ needs.create-release.outputs.original_package_version }}" -X github.com/skevetter/devpod/pkg/telemetry.telemetryPrivateKey=${{ secrets.DEVPOD_TELEMETRY_PRIVATE_KEY }} -X github.com/skevetter/devpod/pkg/devcontainer/crane.craneSigningKey="${{ secrets.CRANE_PRIVATE_KEY }}"" -o "test/$BIN_NAME"
           cp "test/$BIN_NAME" "desktop/src-tauri/bin/$BIN_NAME"
           ls desktop/src-tauri/bin
 
@@ -177,7 +177,7 @@ jobs:
           set GOARCH=${{ matrix.settings.arch }}
           set BIN_NAME=devpod-cli-${{ matrix.settings.target }}.exe
 
-          go build -ldflags "-s -w -X github.com/loft-sh/devpod/pkg/version.version="v${{ needs.create-release.outputs.original_package_version }}" -X github.com/loft-sh/devpod/pkg/telemetry.telemetryPrivateKey=${{ secrets.DEVPOD_TELEMETRY_PRIVATE_KEY }}" -o "test\%BIN_NAME%"
+          go build -ldflags "-s -w -X github.com/skevetter/devpod/pkg/version.version="v${{ needs.create-release.outputs.original_package_version }}" -X github.com/skevetter/devpod/pkg/telemetry.telemetryPrivateKey=${{ secrets.DEVPOD_TELEMETRY_PRIVATE_KEY }}" -o "test\%BIN_NAME%"
 
           xcopy /F /Y "test\%BIN_NAME%" desktop\src-tauri\bin\*
 
@@ -607,7 +607,7 @@ jobs:
 
                 latest.platforms[info.target] = {
                   signature: await sig.text(),
-                  url: `https://github.com/loft-sh/devpod/releases/download/${process.env.GITHUB_REF_NAME}/${assetName}`,
+                  url: `https://github.com/skevetter/devpod/releases/download/${process.env.GITHUB_REF_NAME}/${assetName}`,
                 }
 
                 // once we're done with the sig file, delete it

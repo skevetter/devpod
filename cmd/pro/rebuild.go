@@ -7,11 +7,11 @@ import (
 	"net/url"
 	"os"
 
-	"github.com/loft-sh/devpod/cmd/pro/flags"
-	"github.com/loft-sh/devpod/pkg/config"
-	"github.com/loft-sh/devpod/pkg/platform"
-	"github.com/loft-sh/devpod/pkg/platform/remotecommand"
 	"github.com/loft-sh/log"
+	"github.com/skevetter/devpod/cmd/pro/flags"
+	"github.com/skevetter/devpod/pkg/config"
+	"github.com/skevetter/devpod/pkg/platform"
+	"github.com/skevetter/devpod/pkg/platform/remotecommand"
 	"github.com/spf13/cobra"
 )
 

@@ -6,10 +6,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	util "github.com/loft-sh/devpod/pkg/util/hash"
 	"github.com/moby/patternmatcher"
 	"github.com/moby/patternmatcher/ignorefile"
 	"github.com/pkg/errors"
+	util "github.com/skevetter/devpod/pkg/util/hash"
 
 	"github.com/loft-sh/log"
 	"github.com/loft-sh/log/hash"

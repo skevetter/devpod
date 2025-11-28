@@ -3,7 +3,7 @@ package server
 import (
 	"os"
 
-	"github.com/loft-sh/devpod/pkg/command"
+	"github.com/skevetter/devpod/pkg/command"
 )
 
 func findWorkdir(workdir string, userName string) string {

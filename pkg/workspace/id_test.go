@@ -17,22 +17,22 @@ func TestToID(t *testing.T) {
 	}{
 		{
 			name:  "Simple URL, no @, parse repo name",
-			input: "github.com/loft-sh/devpod",
+			input: "github.com/skevetter/devpod",
 			want:  "devpod",
 		},
 		{
 			name:  "URL with .git suffix",
-			input: "github.com/loft-sh/devpod.git",
+			input: "github.com/skevetter/devpod.git",
 			want:  "devpod",
 		},
 		{
 			name:  "URL with .git suffix and https prefix",
-			input: "https://github.com/loft-sh/devpod.git",
+			input: "https://github.com/skevetter/devpod.git",
 			want:  "devpod",
 		},
 		{
 			name:  "URL with trailing slash",
-			input: "github.com/loft-sh/devpod/",
+			input: "github.com/skevetter/devpod/",
 			want:  "devpod",
 		},
 		{
@@ -47,22 +47,22 @@ func TestToID(t *testing.T) {
 		},
 		{
 			name:  "Branch with valid characters",
-			input: "github.com/loft-sh/devpod@feature1",
+			input: "github.com/skevetter/devpod@feature1",
 			want:  "github-com-loft-sh-devpod",
 		},
 		{
 			name:  "Branch with valid characters and /",
-			input: "github.com/loft-sh/devpod@feat/feature1",
+			input: "github.com/skevetter/devpod@feat/feature1",
 			want:  "feat-feature1",
 		},
 		{
 			name:  "PR reference",
-			input: "github.com/loft-sh/devpod@pr/123",
+			input: "github.com/skevetter/devpod@pr/123",
 			want:  "pr-123",
 		},
 		{
 			name:  "Truncation beyond 48 characters",
-			input: "github.com/loft-sh/devpodreallylongreponame_that_exceeds_48_characters_total_length",
+			input: "github.com/skevetter/devpodreallylongreponame_that_exceeds_48_characters_total_length",
 			want:  "devpodreallylongreponamethatexceeds48characterst",
 		},
 	}

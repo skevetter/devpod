@@ -14,12 +14,12 @@ import (
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
-	"github.com/loft-sh/devpod/pkg/devcontainer/config"
-	"github.com/loft-sh/devpod/pkg/extract"
-	devpodhttp "github.com/loft-sh/devpod/pkg/http"
 	"github.com/loft-sh/log"
 	"github.com/loft-sh/log/hash"
 	"github.com/pkg/errors"
+	"github.com/skevetter/devpod/pkg/devcontainer/config"
+	"github.com/skevetter/devpod/pkg/extract"
+	devpodhttp "github.com/skevetter/devpod/pkg/http"
 )
 
 const DEVCONTAINER_MANIFEST_MEDIATYPE = "application/vnd.devcontainers"

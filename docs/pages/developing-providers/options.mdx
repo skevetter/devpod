@@ -35,7 +35,7 @@ and passed to the provider as **environment variables**.
 It's the provider's job to retrieve them from the environment and validate them.
 It's recommended to make use of the `init` command that will be called by DevPod when options change to validate environment variables on the provider side.
 
-You can check our example in the [Devpod's AWS Provider](https://github.com/loft-sh/devpod-provider-aws/blob/main/pkg/options/options.go#L44)
+You can check our example in the [Devpod's AWS Provider](https://github.com/skevetter/devpod-provider-aws/blob/main/pkg/options/options.go#L44)
 where we parse and validate the variables:
 
 ```go

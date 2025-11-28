@@ -3,8 +3,8 @@ package metadata
 import (
 	"encoding/json"
 
-	"github.com/loft-sh/devpod/pkg/devcontainer/config"
 	"github.com/loft-sh/log"
+	"github.com/skevetter/devpod/pkg/devcontainer/config"
 )
 
 const ImageMetadataLabel = "devcontainer.metadata"

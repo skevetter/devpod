@@ -13,14 +13,14 @@ import (
 
 	managementv1 "github.com/loft-sh/api/v4/pkg/apis/management/v1"
 	storagev1 "github.com/loft-sh/api/v4/pkg/apis/storage/v1"
-	"github.com/loft-sh/devpod/pkg/client/clientimplementation"
-	"github.com/loft-sh/devpod/pkg/config"
-	daemon "github.com/loft-sh/devpod/pkg/daemon/platform"
-	"github.com/loft-sh/devpod/pkg/platform"
-	providerpkg "github.com/loft-sh/devpod/pkg/provider"
-	"github.com/loft-sh/devpod/pkg/types"
 	"github.com/loft-sh/log"
 	"github.com/sirupsen/logrus"
+	"github.com/skevetter/devpod/pkg/client/clientimplementation"
+	"github.com/skevetter/devpod/pkg/config"
+	daemon "github.com/skevetter/devpod/pkg/daemon/platform"
+	"github.com/skevetter/devpod/pkg/platform"
+	providerpkg "github.com/skevetter/devpod/pkg/provider"
+	"github.com/skevetter/devpod/pkg/types"
 )
 
 const ProjectLabel = "loft.sh/project"

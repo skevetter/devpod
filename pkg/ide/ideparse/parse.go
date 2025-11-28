@@ -6,17 +6,17 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/loft-sh/devpod/pkg/command"
-	"github.com/loft-sh/devpod/pkg/config"
-	"github.com/loft-sh/devpod/pkg/ide"
-	"github.com/loft-sh/devpod/pkg/ide/fleet"
-	"github.com/loft-sh/devpod/pkg/ide/jetbrains"
-	"github.com/loft-sh/devpod/pkg/ide/jupyter"
-	"github.com/loft-sh/devpod/pkg/ide/openvscode"
-	"github.com/loft-sh/devpod/pkg/ide/rstudio"
-	"github.com/loft-sh/devpod/pkg/ide/vscode"
-	"github.com/loft-sh/devpod/pkg/provider"
 	"github.com/pkg/errors"
+	"github.com/skevetter/devpod/pkg/command"
+	"github.com/skevetter/devpod/pkg/config"
+	"github.com/skevetter/devpod/pkg/ide"
+	"github.com/skevetter/devpod/pkg/ide/fleet"
+	"github.com/skevetter/devpod/pkg/ide/jetbrains"
+	"github.com/skevetter/devpod/pkg/ide/jupyter"
+	"github.com/skevetter/devpod/pkg/ide/openvscode"
+	"github.com/skevetter/devpod/pkg/ide/rstudio"
+	"github.com/skevetter/devpod/pkg/ide/vscode"
+	"github.com/skevetter/devpod/pkg/provider"
 )
 
 type AllowedIDE struct {

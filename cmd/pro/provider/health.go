@@ -9,10 +9,10 @@ import (
 	"net/url"
 	"os"
 
-	"github.com/loft-sh/devpod/cmd/pro/flags"
-	devpodhttp "github.com/loft-sh/devpod/pkg/http"
-	"github.com/loft-sh/devpod/pkg/platform/client"
 	"github.com/loft-sh/log"
+	"github.com/skevetter/devpod/cmd/pro/flags"
+	devpodhttp "github.com/skevetter/devpod/pkg/http"
+	"github.com/skevetter/devpod/pkg/platform/client"
 	"github.com/spf13/cobra"
 )
 

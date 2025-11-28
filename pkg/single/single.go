@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/gofrs/flock"
-	"github.com/loft-sh/devpod/pkg/command"
 	"github.com/pkg/errors"
+	"github.com/skevetter/devpod/pkg/command"
 )
 
 type CreateCommand func() (*exec.Cmd, error)

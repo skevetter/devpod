@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/loft-sh/devpod/pkg/driver/kubernetes/throttledlogger"
 	perrors "github.com/pkg/errors"
+	"github.com/skevetter/devpod/pkg/driver/kubernetes/throttledlogger"
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

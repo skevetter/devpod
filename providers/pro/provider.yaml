@@ -1,7 +1,7 @@
 name: devpod-pro
 version: v0.0.1
 icon: https://devpod.sh/assets/devpod.svg
-home: https://github.com/loft-sh/devpod
+home: https://github.com/skevetter/devpod
 description: DevPod Pro
 options:
   LOFT_CONFIG:

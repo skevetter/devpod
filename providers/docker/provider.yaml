@@ -1,7 +1,7 @@
 name: docker
 version: v0.0.1
 icon: https://devpod.sh/assets/docker.svg
-home: https://github.com/loft-sh/devpod
+home: https://github.com/skevetter/devpod
 description: |-
   DevPod on Docker
 optionGroups:

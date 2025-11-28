@@ -6,15 +6,15 @@ import (
 	"os"
 	"time"
 
-	"github.com/loft-sh/devpod/cmd/flags"
-	"github.com/loft-sh/devpod/pkg/agent"
-	helperssh "github.com/loft-sh/devpod/pkg/ssh/server"
-	"github.com/loft-sh/devpod/pkg/ssh/server/port"
-	"github.com/loft-sh/devpod/pkg/stdio"
-	"github.com/loft-sh/devpod/pkg/token"
 	"github.com/loft-sh/log"
 	"github.com/loft-sh/ssh"
 	"github.com/pkg/errors"
+	"github.com/skevetter/devpod/cmd/flags"
+	"github.com/skevetter/devpod/pkg/agent"
+	helperssh "github.com/skevetter/devpod/pkg/ssh/server"
+	"github.com/skevetter/devpod/pkg/ssh/server/port"
+	"github.com/skevetter/devpod/pkg/stdio"
+	"github.com/skevetter/devpod/pkg/token"
 	"github.com/spf13/cobra"
 )
 

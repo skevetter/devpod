@@ -8,11 +8,11 @@ import (
 	"time"
 
 	"github.com/ghodss/yaml"
-	"github.com/loft-sh/devpod/pkg/config"
-	"github.com/loft-sh/devpod/pkg/provider"
-	"github.com/loft-sh/devpod/pkg/shell"
-	"github.com/loft-sh/devpod/pkg/types"
 	"github.com/pkg/errors"
+	"github.com/skevetter/devpod/pkg/config"
+	"github.com/skevetter/devpod/pkg/provider"
+	"github.com/skevetter/devpod/pkg/shell"
+	"github.com/skevetter/devpod/pkg/types"
 )
 
 func execOptionCommand(ctx context.Context, command string, resolvedOptions map[string]config.OptionValue, extraValues map[string]string) (*bytes.Buffer, error) {

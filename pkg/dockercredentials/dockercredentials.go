@@ -8,12 +8,12 @@ import (
 
 	"github.com/docker/cli/cli/config"
 	"github.com/docker/cli/cli/config/types"
-	"github.com/loft-sh/devpod/pkg/command"
-	"github.com/loft-sh/devpod/pkg/docker"
-	"github.com/loft-sh/devpod/pkg/file"
-	"github.com/loft-sh/devpod/pkg/random"
 	"github.com/loft-sh/log"
 	"github.com/pkg/errors"
+	"github.com/skevetter/devpod/pkg/command"
+	"github.com/skevetter/devpod/pkg/docker"
+	"github.com/skevetter/devpod/pkg/file"
+	"github.com/skevetter/devpod/pkg/random"
 
 	dockerconfig "github.com/containers/image/v5/pkg/docker/config"
 )

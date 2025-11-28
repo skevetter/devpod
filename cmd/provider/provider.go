@@ -1,7 +1,7 @@
 package provider
 
 import (
-	"github.com/loft-sh/devpod/cmd/flags"
+	"github.com/skevetter/devpod/cmd/flags"
 	"github.com/spf13/cobra"
 )
 

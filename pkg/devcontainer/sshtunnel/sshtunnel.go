@@ -9,12 +9,12 @@ import (
 
 	"github.com/loft-sh/log"
 
-	client2 "github.com/loft-sh/devpod/pkg/client"
-	config2 "github.com/loft-sh/devpod/pkg/devcontainer/config"
-	devssh "github.com/loft-sh/devpod/pkg/ssh"
-	devsshagent "github.com/loft-sh/devpod/pkg/ssh/agent"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	client2 "github.com/skevetter/devpod/pkg/client"
+	config2 "github.com/skevetter/devpod/pkg/devcontainer/config"
+	devssh "github.com/skevetter/devpod/pkg/ssh"
+	devsshagent "github.com/skevetter/devpod/pkg/ssh/agent"
 )
 
 type AgentInjectFunc func(context.Context, string, *os.File, *os.File, io.WriteCloser) error

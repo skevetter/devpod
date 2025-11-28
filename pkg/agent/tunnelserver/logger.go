@@ -8,11 +8,11 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	"github.com/loft-sh/devpod/pkg/agent/tunnel"
 	"github.com/loft-sh/log"
 	"github.com/loft-sh/log/scanner"
 	"github.com/loft-sh/log/survey"
 	"github.com/sirupsen/logrus"
+	"github.com/skevetter/devpod/pkg/agent/tunnel"
 )
 
 func NewTunnelLogger(ctx context.Context, client tunnel.TunnelClient, debug bool) log.Logger {

@@ -10,15 +10,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/loft-sh/devpod/pkg/devcontainer/config"
-	"github.com/loft-sh/devpod/pkg/driver"
-	"github.com/loft-sh/devpod/pkg/driver/drivercreate"
-	"github.com/loft-sh/devpod/pkg/encoding"
-	"github.com/loft-sh/devpod/pkg/language"
-	provider2 "github.com/loft-sh/devpod/pkg/provider"
 	"github.com/loft-sh/log"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"github.com/skevetter/devpod/pkg/devcontainer/config"
+	"github.com/skevetter/devpod/pkg/driver"
+	"github.com/skevetter/devpod/pkg/driver/drivercreate"
+	"github.com/skevetter/devpod/pkg/encoding"
+	"github.com/skevetter/devpod/pkg/language"
+	provider2 "github.com/skevetter/devpod/pkg/provider"
 )
 
 type Runner interface {

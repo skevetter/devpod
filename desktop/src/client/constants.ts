@@ -1,4 +1,4 @@
-export const DEVPOD_GIT_REPOSITORY = "https://github.com/loft-sh/devpod"
+export const DEVPOD_GIT_REPOSITORY = "https://github.com/skevetter/devpod"
 
 export const DEFAULT_STATIC_COMMAND_CONFIG = {
   streamResponse: false,

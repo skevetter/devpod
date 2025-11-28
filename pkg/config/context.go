@@ -3,7 +3,7 @@ package config
 import (
 	"strings"
 
-	"github.com/loft-sh/devpod/pkg/types"
+	"github.com/skevetter/devpod/pkg/types"
 )
 
 const (

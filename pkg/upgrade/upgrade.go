@@ -6,9 +6,9 @@ import (
 	"strings"
 	"sync"
 
-	versionpkg "github.com/loft-sh/devpod/pkg/version"
 	"github.com/loft-sh/log"
 	"github.com/pkg/errors"
+	versionpkg "github.com/skevetter/devpod/pkg/version"
 
 	"github.com/blang/semver"
 	"github.com/rhysd/go-github-selfupdate/selfupdate"

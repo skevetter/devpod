@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/loft-sh/devpod/pkg/platform/client"
+	"github.com/skevetter/devpod/pkg/platform/client"
 )
 
 type DaemonNotAvailableError struct {

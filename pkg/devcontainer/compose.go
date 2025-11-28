@@ -13,14 +13,14 @@ import (
 
 	composetypes "github.com/compose-spec/compose-go/v2/types"
 	"github.com/joho/godotenv"
-	"github.com/loft-sh/devpod/pkg/compose"
-	"github.com/loft-sh/devpod/pkg/devcontainer/config"
-	"github.com/loft-sh/devpod/pkg/devcontainer/feature"
-	"github.com/loft-sh/devpod/pkg/devcontainer/metadata"
-	"github.com/loft-sh/devpod/pkg/dockerfile"
-	"github.com/loft-sh/devpod/pkg/driver"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"github.com/skevetter/devpod/pkg/compose"
+	"github.com/skevetter/devpod/pkg/devcontainer/config"
+	"github.com/skevetter/devpod/pkg/devcontainer/feature"
+	"github.com/skevetter/devpod/pkg/devcontainer/metadata"
+	"github.com/skevetter/devpod/pkg/dockerfile"
+	"github.com/skevetter/devpod/pkg/driver"
 	"gopkg.in/yaml.v2"
 )
 

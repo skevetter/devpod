@@ -3,9 +3,9 @@ package agent
 import (
 	"errors"
 
-	"github.com/loft-sh/devpod/cmd/flags"
-	"github.com/loft-sh/devpod/pkg/gitsshsigning"
 	"github.com/loft-sh/log"
+	"github.com/skevetter/devpod/cmd/flags"
+	"github.com/skevetter/devpod/pkg/gitsshsigning"
 	"github.com/spf13/cobra"
 )
 

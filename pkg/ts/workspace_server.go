@@ -17,8 +17,8 @@ import (
 
 	"github.com/loft-sh/log"
 
-	"github.com/loft-sh/devpod/pkg/platform/client"
-	sshServer "github.com/loft-sh/devpod/pkg/ssh/server"
+	"github.com/skevetter/devpod/pkg/platform/client"
+	sshServer "github.com/skevetter/devpod/pkg/ssh/server"
 	"tailscale.com/client/tailscale"
 	"tailscale.com/envknob"
 	"tailscale.com/ipn/store/mem"

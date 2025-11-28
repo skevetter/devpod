@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/ghodss/yaml"
-	"github.com/loft-sh/devpod/pkg/types"
 	"github.com/pkg/errors"
+	"github.com/skevetter/devpod/pkg/types"
 )
 
 type Config struct {

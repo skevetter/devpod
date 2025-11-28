@@ -5,8 +5,8 @@ import (
 	"io"
 	"os"
 
-	devssh "github.com/loft-sh/devpod/pkg/ssh"
 	"github.com/pkg/errors"
+	devssh "github.com/skevetter/devpod/pkg/ssh"
 )
 
 // Tunnel defines the function to create an "outer" tunnel

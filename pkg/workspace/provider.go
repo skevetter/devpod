@@ -9,16 +9,16 @@ import (
 	"path/filepath"
 	"strings"
 
-	devpodhttp "github.com/loft-sh/devpod/pkg/http"
-	providerpkg "github.com/loft-sh/devpod/pkg/provider"
-	"github.com/loft-sh/devpod/pkg/types"
-	"github.com/loft-sh/devpod/providers"
+	devpodhttp "github.com/skevetter/devpod/pkg/http"
+	providerpkg "github.com/skevetter/devpod/pkg/provider"
+	"github.com/skevetter/devpod/pkg/types"
+	"github.com/skevetter/devpod/providers"
 
-	"github.com/loft-sh/devpod/pkg/binaries"
-	"github.com/loft-sh/devpod/pkg/config"
-	"github.com/loft-sh/devpod/pkg/download"
 	"github.com/loft-sh/log"
 	"github.com/pkg/errors"
+	"github.com/skevetter/devpod/pkg/binaries"
+	"github.com/skevetter/devpod/pkg/config"
+	"github.com/skevetter/devpod/pkg/download"
 )
 
 var (

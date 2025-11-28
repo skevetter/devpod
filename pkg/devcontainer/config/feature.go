@@ -1,6 +1,6 @@
 package config
 
-import "github.com/loft-sh/devpod/pkg/types"
+import "github.com/skevetter/devpod/pkg/types"
 
 type FeatureSet struct {
 	ConfigID string

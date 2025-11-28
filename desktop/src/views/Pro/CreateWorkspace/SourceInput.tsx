@@ -177,7 +177,7 @@ export function SourceInput({ isDisabled, resetPreset }: TSourceInputProps) {
     }
 
     return {
-      placeholder: "github.com/loft-sh/devpod-example-go",
+      placeholder: "github.com/skevetter/devpod-example-go",
       secondaryAction: (
         <Popover isLazy onOpen={handlePopoverOpened}>
           <PopoverTrigger>
@@ -231,7 +231,7 @@ export function SourceInput({ isDisabled, resetPreset }: TSourceInputProps) {
                     label={
                       hasErrors
                         ? // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-                          `Git repository "${currentValue ?? ""}" is empty or invalid`
+                        `Git repository "${currentValue ?? ""}" is empty or invalid`
                         : ""
                     }>
                     <Input

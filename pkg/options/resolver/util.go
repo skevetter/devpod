@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/loft-sh/devpod/pkg/config"
-	"github.com/loft-sh/devpod/pkg/devcontainer/graph"
-	"github.com/loft-sh/devpod/pkg/types"
+	"github.com/skevetter/devpod/pkg/config"
+	"github.com/skevetter/devpod/pkg/devcontainer/graph"
+	"github.com/skevetter/devpod/pkg/types"
 )
 
 func combine(resolvedOptions map[string]config.OptionValue, extraValues map[string]string) map[string]string {

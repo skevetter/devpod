@@ -6,8 +6,8 @@ import (
 	"io"
 	"strings"
 
-	"github.com/loft-sh/devpod/pkg/http"
-	"github.com/loft-sh/devpod/pkg/provider"
+	"github.com/skevetter/devpod/pkg/http"
+	"github.com/skevetter/devpod/pkg/provider"
 )
 
 type VersionObject struct {

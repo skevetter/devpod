@@ -6,7 +6,7 @@ import { QueryKeys } from "../../queryKeys"
 import { TContextOptionName } from "../../types"
 import { ClearableInput } from "./ClearableInput"
 
-const DEFAULT_DEVPOD_AGENT_URL = "https://github.com/loft-sh/devpod/releases/latest/download/"
+const DEFAULT_DEVPOD_AGENT_URL = "https://github.com/skevetter/devpod/releases/latest/download/"
 
 export function useContextOptions() {
   const queryClient = useQueryClient()
@@ -16,7 +16,7 @@ export function useContextOptions() {
   })
   const { mutate: updateOption } = useMutation({
     mutationFn: async ({ option, value }: { option: TContextOptionName; value: string }) => {
-      ;(await client.context.setOption(option, value)).unwrap()
+      ; (await client.context.setOption(option, value)).unwrap()
     },
     onSettled: () => {
       queryClient.invalidateQueries(QueryKeys.CONTEXT_OPTIONS)

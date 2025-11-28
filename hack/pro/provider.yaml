@@ -12,23 +12,23 @@ binaries:
   PRO_PROVIDER:
     - os: linux
       arch: amd64
-      path: https://github.com/loft-sh/devpod/releases/download/##VERSION##/devpod-linux-amd64
+      path: https://github.com/skevetter/devpod/releases/download/##VERSION##/devpod-linux-amd64
       checksum: ##CHECKSUM_LINUX_AMD64##
     - os: linux
       arch: arm64
-      path: https://github.com/loft-sh/devpod/releases/download/##VERSION##/devpod-linux-arm64
+      path: https://github.com/skevetter/devpod/releases/download/##VERSION##/devpod-linux-arm64
       checksum: ##CHECKSUM_LINUX_ARM64##
     - os: darwin
       arch: amd64
-      path: https://github.com/loft-sh/devpod/releases/download/##VERSION##/devpod-darwin-amd64
+      path: https://github.com/skevetter/devpod/releases/download/##VERSION##/devpod-darwin-amd64
       checksum: ##CHECKSUM_DARWIN_AMD64##
     - os: darwin
       arch: arm64
-      path: https://github.com/loft-sh/devpod/releases/download/##VERSION##/devpod-darwin-arm64
+      path: https://github.com/skevetter/devpod/releases/download/##VERSION##/devpod-darwin-arm64
       checksum: ##CHECKSUM_DARWIN_ARM64##
     - os: windows
       arch: amd64
-      path: https://github.com/loft-sh/devpod/releases/download/##VERSION##/devpod-windows-amd64.exe
+      path: https://github.com/skevetter/devpod/releases/download/##VERSION##/devpod-windows-amd64.exe
       checksum: ##CHECKSUM_WINDOWS_AMD64##
 exec:
   proxy:

@@ -8,8 +8,8 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/loft-sh/devpod/pkg/command"
 	"github.com/loft-sh/log"
+	"github.com/skevetter/devpod/pkg/command"
 	"github.com/skratchdot/open-golang/open"
 )
 

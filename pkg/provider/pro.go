@@ -1,6 +1,6 @@
 package provider
 
-import "github.com/loft-sh/devpod/pkg/types"
+import "github.com/skevetter/devpod/pkg/types"
 
 type ProInstance struct {
 	// Provider is the provider name this pro instance belongs to

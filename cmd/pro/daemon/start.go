@@ -10,14 +10,14 @@ import (
 	"syscall"
 
 	managementv1 "github.com/loft-sh/api/v4/pkg/apis/management/v1"
-	daemon "github.com/loft-sh/devpod/pkg/daemon/platform"
-	"github.com/loft-sh/devpod/pkg/platform/client"
+	daemon "github.com/skevetter/devpod/pkg/daemon/platform"
+	"github.com/skevetter/devpod/pkg/platform/client"
 
-	"github.com/loft-sh/devpod/cmd/pro/completion"
-	proflags "github.com/loft-sh/devpod/cmd/pro/flags"
-	"github.com/loft-sh/devpod/pkg/config"
-	providerpkg "github.com/loft-sh/devpod/pkg/provider"
 	"github.com/loft-sh/log"
+	"github.com/skevetter/devpod/cmd/pro/completion"
+	proflags "github.com/skevetter/devpod/cmd/pro/flags"
+	"github.com/skevetter/devpod/pkg/config"
+	providerpkg "github.com/skevetter/devpod/pkg/provider"
 	"github.com/spf13/cobra"
 )
 

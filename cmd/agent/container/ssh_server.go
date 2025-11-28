@@ -5,11 +5,11 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/loft-sh/devpod/cmd/flags"
-	helperssh "github.com/loft-sh/devpod/pkg/ssh/server"
-	"github.com/loft-sh/devpod/pkg/ssh/server/port"
 	"github.com/loft-sh/log"
 	"github.com/sirupsen/logrus"
+	"github.com/skevetter/devpod/cmd/flags"
+	helperssh "github.com/skevetter/devpod/pkg/ssh/server"
+	"github.com/skevetter/devpod/pkg/ssh/server/port"
 	"github.com/spf13/cobra"
 )
 

@@ -9,7 +9,7 @@ import (
 
 	"github.com/loft-sh/log"
 
-	"github.com/loft-sh/devpod/pkg/config"
+	"github.com/skevetter/devpod/pkg/config"
 )
 
 // Open first finds the zed binary for the local platform and then opens the zed editor with the given workspace folder

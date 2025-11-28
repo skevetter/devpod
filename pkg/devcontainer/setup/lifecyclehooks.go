@@ -13,11 +13,11 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/loft-sh/devpod/pkg/command"
-	"github.com/loft-sh/devpod/pkg/devcontainer/config"
-	"github.com/loft-sh/devpod/pkg/types"
 	"github.com/loft-sh/log"
 	"github.com/sirupsen/logrus"
+	"github.com/skevetter/devpod/pkg/command"
+	"github.com/skevetter/devpod/pkg/devcontainer/config"
+	"github.com/skevetter/devpod/pkg/types"
 )
 
 func RunLifecycleHooks(ctx context.Context, setupInfo *config.Result, log log.Logger) error {

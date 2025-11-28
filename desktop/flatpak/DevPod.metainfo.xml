@@ -10,8 +10,8 @@
   <project_license>MPL-2.0</project_license>
 
   <url type="homepage">https://devpod.sh</url>
-  <url type="vcs-browser">https://github.com/loft-sh/devpod</url>
-  <url type="bugtracker">https://github.com/loft-sh/devpod/issues</url>
+  <url type="vcs-browser">https://github.com/skevetter/devpod</url>
+  <url type="bugtracker">https://github.com/skevetter/devpod/issues</url>
 
   <supports>
     <control>pointing</control>
@@ -44,7 +44,7 @@
   <releases>
     <release type="stable" version="v0.6.10" date="2024-01-21">
       <description>
-		    <p>Release notes can be found at https://github.com/loft-sh/devpod/releases/tag/v0.6.10</p>
+		    <p>Release notes can be found at https://github.com/skevetter/devpod/releases/tag/v0.6.10</p>
       </description>
     </release>
   </releases>

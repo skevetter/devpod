@@ -14,12 +14,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/loft-sh/devpod/cmd/agent/container"
-	"github.com/loft-sh/devpod/cmd/flags"
-	"github.com/loft-sh/devpod/pkg/dockercredentials"
-	devpodhttp "github.com/loft-sh/devpod/pkg/http"
-	"github.com/loft-sh/devpod/pkg/ts"
 	"github.com/loft-sh/log"
+	"github.com/skevetter/devpod/cmd/agent/container"
+	"github.com/skevetter/devpod/cmd/flags"
+	"github.com/skevetter/devpod/pkg/dockercredentials"
+	devpodhttp "github.com/skevetter/devpod/pkg/http"
+	"github.com/skevetter/devpod/pkg/ts"
 	"github.com/spf13/cobra"
 )
 

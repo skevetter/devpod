@@ -105,7 +105,7 @@ function GitHubStar() {
         rounded="full"
         icon={<StarIcon color={iconColor} />}
         aria-label="Loving DevPod? Give us a star on Github"
-        onClick={() => client.open("https://github.com/loft-sh/devpod")}
+        onClick={() => client.open("https://github.com/skevetter/devpod")}
       />
     </Tooltip>
   )
@@ -137,7 +137,7 @@ function OSSReportIssue() {
         rounded="full"
         icon={<Icon as={FaBug} color={iconColor} />}
         aria-label="Report an Issue"
-        onClick={() => client.open("https://github.com/loft-sh/devpod/issues/new/choose")}
+        onClick={() => client.open("https://github.com/skevetter/devpod/issues/new/choose")}
       />
     </Tooltip>
   )

@@ -6,13 +6,13 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/loft-sh/devpod/e2e/framework"
-	"github.com/loft-sh/devpod/pkg/devcontainer/build"
-	"github.com/loft-sh/devpod/pkg/devcontainer/config"
-	"github.com/loft-sh/devpod/pkg/docker"
-	"github.com/loft-sh/devpod/pkg/dockerfile"
 	"github.com/loft-sh/log"
 	"github.com/onsi/ginkgo/v2"
+	"github.com/skevetter/devpod/e2e/framework"
+	"github.com/skevetter/devpod/pkg/devcontainer/build"
+	"github.com/skevetter/devpod/pkg/devcontainer/config"
+	"github.com/skevetter/devpod/pkg/docker"
+	"github.com/skevetter/devpod/pkg/dockerfile"
 )
 
 var _ = DevPodDescribe("devpod build test suite", func() {

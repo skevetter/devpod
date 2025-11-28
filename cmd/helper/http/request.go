@@ -8,8 +8,8 @@ import (
 	"os"
 	"strings"
 
-	devpodhttp "github.com/loft-sh/devpod/pkg/http"
 	"github.com/pkg/errors"
+	devpodhttp "github.com/skevetter/devpod/pkg/http"
 	"github.com/spf13/cobra"
 )
 

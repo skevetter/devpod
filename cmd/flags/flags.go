@@ -1,7 +1,7 @@
 package flags
 
 import (
-	"github.com/loft-sh/devpod/pkg/platform"
+	"github.com/skevetter/devpod/pkg/platform"
 	flag "github.com/spf13/pflag"
 )
 

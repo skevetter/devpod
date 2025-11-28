@@ -198,7 +198,7 @@ export function WorkspaceSourceInput({
             {...inputCommonProps}
             borderTopRightRadius={0}
             borderBottomRightRadius={0}
-            placeholder="github.com/loft-sh/devpod-example-go"
+            placeholder="github.com/skevetter/devpod-example-go"
           />
           <Popover isLazy onOpen={handlePopoverOpened}>
             <PopoverTrigger>
@@ -241,7 +241,7 @@ export function WorkspaceSourceInput({
                       label={
                         !allowAdvancedInput
                           ? // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-                            `Git repository "${field.value ?? ""}" is empty or invalid`
+                          `Git repository "${field.value ?? ""}" is empty or invalid`
                           : ""
                       }>
                       <Input

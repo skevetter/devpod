@@ -6,14 +6,14 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/loft-sh/devpod/pkg/devcontainer/config"
-	"github.com/loft-sh/devpod/pkg/devcontainer/feature"
-	"github.com/loft-sh/devpod/pkg/devcontainer/metadata"
-	"github.com/loft-sh/devpod/pkg/dockerfile"
-	"github.com/loft-sh/devpod/pkg/id"
-	"github.com/loft-sh/devpod/pkg/provider"
 	"github.com/loft-sh/log/hash"
 	"github.com/pkg/errors"
+	"github.com/skevetter/devpod/pkg/devcontainer/config"
+	"github.com/skevetter/devpod/pkg/devcontainer/feature"
+	"github.com/skevetter/devpod/pkg/devcontainer/metadata"
+	"github.com/skevetter/devpod/pkg/dockerfile"
+	"github.com/skevetter/devpod/pkg/id"
+	"github.com/skevetter/devpod/pkg/provider"
 )
 
 type BuildOptions struct {

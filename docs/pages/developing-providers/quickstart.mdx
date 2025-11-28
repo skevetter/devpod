@@ -108,7 +108,7 @@ In the `exec` section of the `provider.yaml`, the following commands are allowed
 DevPod will execute these commands on Unix systems directly in a POSIX shell, while on Windows in an [emulated shell](https://github.com/mvdan/sh) to provide compatibility. However, not all commands, such as `grep`, `sed` etc. are available there and if needed, such functionality should be transferred to a small helper binary DevPod can download and install through the binaries section.
 :::
 
-For example, taking the [SSH Provider](https://github.com/loft-sh/devpod-provider-ssh):
+For example, taking the [SSH Provider](https://github.com/skevetter/devpod-provider-ssh):
 
 ```yaml
 exec:
@@ -179,23 +179,23 @@ binaries:
   GCLOUD_PROVIDER:
     - os: linux
       arch: amd64
-      path: https://github.com/loft-sh/devpod-provider-gcloud/releases/download/v0.0.1-alpha.10/devpod-provider-gcloud-linux-amd64
+      path: https://github.com/skevetter/devpod-provider-gcloud/releases/download/v0.0.1-alpha.10/devpod-provider-gcloud-linux-amd64
       checksum: 38f92457507563ee56ea40a2ec40196d12ac2bbd50a924d76f55827e96e5f831
     - os: linux
       arch: arm64
-      path: https://github.com/loft-sh/devpod-provider-gcloud/releases/download/v0.0.1-alpha.10/devpod-provider-gcloud-linux-arm64
+      path: https://github.com/skevetter/devpod-provider-gcloud/releases/download/v0.0.1-alpha.10/devpod-provider-gcloud-linux-arm64
       checksum: 48e8dfa20962f1c3eb1e3da17d57842a0e26155df2b94377bcdf5b8070d7b17e
     - os: darwin
       arch: amd64
-      path: https://github.com/loft-sh/devpod-provider-gcloud/releases/download/v0.0.1-alpha.10/devpod-provider-gcloud-darwin-amd64
+      path: https://github.com/skevetter/devpod-provider-gcloud/releases/download/v0.0.1-alpha.10/devpod-provider-gcloud-darwin-amd64
       checksum: 43ee6ecb7855d282a0512ccf6055cce029895f173beb95a8c442f77560d26678
     - os: darwin
       arch: arm64
-      path: https://github.com/loft-sh/devpod-provider-gcloud/releases/download/v0.0.1-alpha.10/devpod-provider-gcloud-darwin-arm64
+      path: https://github.com/skevetter/devpod-provider-gcloud/releases/download/v0.0.1-alpha.10/devpod-provider-gcloud-darwin-arm64
       checksum: c2c2d57c5d48f22814f2393f61fd6a78bdc2cde7eabc3faffd8f35eaceec4422
     - os: windows
       arch: amd64
-      path: https://github.com/loft-sh/devpod-provider-gcloud/releases/download/v0.0.1-alpha.10/devpod-provider-gcloud-windows-amd64.exe
+      path: https://github.com/skevetter/devpod-provider-gcloud/releases/download/v0.0.1-alpha.10/devpod-provider-gcloud-windows-amd64.exe
       checksum: 9b81ec48c849f222aaf30f0cb85057d4e6619d1c0f787b27925c8b8adb431a58
 exec:
   init: ${GCLOUD_PROVIDER} init

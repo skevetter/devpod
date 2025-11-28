@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/loft-sh/devpod/pkg/version"
+	"github.com/skevetter/devpod/pkg/version"
 	"github.com/spf13/cobra"
 )
 

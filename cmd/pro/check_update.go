@@ -5,13 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/loft-sh/devpod/cmd/agent"
-	"github.com/loft-sh/devpod/cmd/pro/flags"
-	"github.com/loft-sh/devpod/pkg/config"
-	"github.com/loft-sh/devpod/pkg/platform"
-	"github.com/loft-sh/devpod/pkg/provider"
-	versionpkg "github.com/loft-sh/devpod/pkg/version"
 	"github.com/loft-sh/log"
+	"github.com/skevetter/devpod/cmd/agent"
+	"github.com/skevetter/devpod/cmd/pro/flags"
+	"github.com/skevetter/devpod/pkg/config"
+	"github.com/skevetter/devpod/pkg/platform"
+	"github.com/skevetter/devpod/pkg/provider"
+	versionpkg "github.com/skevetter/devpod/pkg/version"
 	"github.com/spf13/cobra"
 )
 
