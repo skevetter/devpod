@@ -66,12 +66,12 @@ jobs:
           docker manifest push ghcr.io/skevetter/$IMAGE_NAME
 
       - name: Update devcontainer.json
-        if: ${{ success() }}
+        if: ${{ github.event_name == 'workflow_dispatch' }}
         run: |
           sed -i "s|\(\"image\": \"\).*|\1ghcr.io/skevetter/${IMAGE_NAME}\",|" .devcontainer/devcontainer.json
 
       - name: Create Pull Request
-        if: ${{ success() }}
+        if: ${{ github.event_name == 'workflow_dispatch' }}
         uses: peter-evans/create-pull-request@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
