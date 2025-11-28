@@ -73,8 +73,7 @@ jobs:
           GH_ACCESS_TOKEN: ${{ secrets.GH_PRIVATE_REPO_TOKEN_TEST }}
 
   test-e2e-windows:
-    runs-on: self-hosted-windows
-    # We run this only on PRs, for pre-releases we run the full separate workflow
+    runs-on: windows-latest
     if: ${{ github.event_name == 'pull_request' }}
     strategy:
       fail-fast: true
