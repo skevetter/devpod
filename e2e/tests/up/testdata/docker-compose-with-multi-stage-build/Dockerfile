@@ -1,7 +1,6 @@
-FROM mcr.microsoft.com/devcontainers/go:1-1.23-bullseye AS base
+FROM golang:1.21-alpine AS base
 
-RUN apt update
-RUN apt install vim -y
+RUN apk add --no-cache vim
 
 FROM base
 
