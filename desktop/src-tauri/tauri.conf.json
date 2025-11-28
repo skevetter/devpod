@@ -14,8 +14,7 @@
       "nsis": {
         "displayLanguageSelector": false,
         "installMode": "currentUser"
-      },
-      "signCommand": ".\\sign.bat %1"
+      }
     },
     "category": "DeveloperTool",
     "copyright": "",
