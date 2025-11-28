@@ -68,13 +68,12 @@
   "identifier": "sh.loft.devpod",
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEY1NDg1NDE4MzA1NDI3QjcKUldTM0oxUXdHRlJJOVhyNUtFc2xkNFZyTmE2R2w0dTRXTFF6OUVMSW03ekphejlPM3U1M2FHUCsK",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDE2Q0NGMDhDRDU0NEFGQjkKUldTNXIwVFZqUERNRnFvNmJxdTdnZndWRThqcGtJMzFMNE5reFpNM3J0cy92VExTL21IWkpnZDAK",
       "windows": {
         "installMode": "passive"
       },
       "endpoints": [
-        "https://update-server.devpod.sh/latest",
-        "https://github.com/loft-sh/devpod/releases/latest/download/latest.json"
+        "https://github.com/skevetter/devpod/releases/latest/download/latest.json"
       ]
     }
   },
