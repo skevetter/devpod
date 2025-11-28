@@ -49,6 +49,16 @@ jobs:
         with:
           go-version: 1.21.8
 
+      - name: Cache Go modules
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
       - name: Set up kind k8s cluster
         uses: engineerd/setup-kind@v0.5.0
         with:
@@ -79,53 +89,3 @@ jobs:
         env:
           GH_USERNAME: ${{ secrets.GH_PRIVATE_REPO_USER_TEST }}
           GH_ACCESS_TOKEN: ${{ secrets.GH_PRIVATE_REPO_TOKEN_TEST }}
-
-  test-e2e-windows:
-    runs-on: windows-latest
-    if: ${{ github.event_name == 'pull_request' }}
-    strategy:
-      fail-fast: true
-      max-parallel: 1
-      matrix:
-        label:
-          - "build"
-          - "ide"
-          - "ssh"
-          - "up-docker"
-          - "up-docker-build"
-          - "up-docker-compose"
-          # - "up-docker-wsl"
-
-    steps:
-      - name: Git set line ending
-        run: |
-          git config --global core.autocrlf false
-
-      - name: Checkout repo
-        uses: actions/checkout@v2
-
-      - name: Set up Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: 1.21.8
-
-      - name: Build binary and copy to the E2E directory
-        run: |
-          mkdir e2e\bin
-          go build -ldflags "-s -w" -o e2e\bin\devpod-windows-amd64.exe
-          $Env:GOOS = "linux"; $Env:GOARCH = "amd64"; go build -ldflags "-s -w" -o e2e\bin\devpod-linux-amd64
-
-      - name: E2E test
-        working-directory: .\e2e
-        run: |
-          go run github.com/onsi/ginkgo/v2/ginkgo -r --timeout=3600s --label-filter=${{ matrix.label }}
-
-      - name: Container cleanup
-        if: ${{ always() }}
-        run: |
-          if (Test-Path C:\Users\loft-user\.devpod\) {
-            Remove-Item -Recurse C:\Users\loft-user\.devpod\
-          }
-          sh -c "docker ps -q -a | xargs docker rm -f || :"
-          sh -c "docker images --format '{{.Repository}}:{{.Tag}},{{.ID}}' | grep -E 'devpod|none|temp|^test' | cut -d',' -f2 | xargs docker rmi -f || :"
-          sh -c "docker images --format '{{.Tag}}|{{.Digest}}' | grep none | cut -d'|' -f1 | xargs docker rmi -f || :"

@@ -53,10 +53,6 @@ var _ = DevPodDescribe("devpod build test suite", func() {
 
 			// do the build
 			platforms := "linux/amd64,linux/arm64"
-			if runtime.GOOS == "windows" {
-				// Windows Docker Desktop has issues with multi-platform builds in CI
-				platforms = "linux/amd64"
-			}
 			err = f.DevPodBuild(ctx, tempDir, "--force-build", "--platform", platforms, "--repository", prebuildRepo, "--skip-push")
 			framework.ExpectNoError(err)
 
@@ -71,16 +67,13 @@ var _ = DevPodDescribe("devpod build test suite", func() {
 			_, err = dockerHelper.InspectImage(ctx, prebuildRepo+":"+prebuildHash, false)
 			framework.ExpectNoError(err)
 
-			if runtime.GOOS != "windows" {
-				// Skip arm64 check on Windows since we only build amd64 there
-				prebuildHash, err = config.CalculatePrebuildHash(cfg, "linux/arm64", "arm64", filepath.Dir(cfg.Origin), dockerfilePath, modifiedDockerfileContents, info, log.Default)
-				framework.ExpectNoError(err)
-				_, err = dockerHelper.InspectImage(ctx, prebuildRepo+":"+prebuildHash, false)
-				framework.ExpectNoError(err)
-				details, err := dockerHelper.InspectImage(ctx, prebuildRepo+":"+prebuildHash, false)
-				framework.ExpectNoError(err)
-				framework.ExpectEqual(details.Config.Labels["test"], "VALUE", "should contain test label")
-			}
+			prebuildHash, err = config.CalculatePrebuildHash(cfg, "linux/arm64", "arm64", filepath.Dir(cfg.Origin), dockerfilePath, modifiedDockerfileContents, info, log.Default)
+			framework.ExpectNoError(err)
+			_, err = dockerHelper.InspectImage(ctx, prebuildRepo+":"+prebuildHash, false)
+			framework.ExpectNoError(err)
+			details, err := dockerHelper.InspectImage(ctx, prebuildRepo+":"+prebuildHash, false)
+			framework.ExpectNoError(err)
+			framework.ExpectEqual(details.Config.Labels["test"], "VALUE", "should contain test label")
 		})
 
 		ginkgo.It("should build image without repository specified if skip-push flag is set", func() {
