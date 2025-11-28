@@ -31,6 +31,9 @@ jobs:
           - "context"
 
     steps:
+      - name: Checkout repo
+        uses: actions/checkout@v6
+
       - name: Free disk space
         run: |
           sudo rm -rf /usr/share/dotnet
@@ -39,23 +42,10 @@ jobs:
           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
           docker system prune -af
 
-      - name: Checkout repo
-        uses: actions/checkout@v2
-
-      - name: Set up Go
-        uses: actions/setup-go@v2
+      - name: Setup Golang with cache
+        uses: magnetikonline/action-golang-cache@v5
         with:
-          go-version: 1.21.8
-
-      - name: Cache Go modules
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
+          go-version-file: go.mod
 
       - name: Set up kind k8s cluster
         uses: engineerd/setup-kind@v0.5.0
@@ -65,7 +55,6 @@ jobs:
 
       - name: Testing kind cluster set-up
         run: |
-          set -x
           kubectl cluster-info
           kubectl get pods -n kube-system -v 10
           echo "kubectl config current-context:" $(kubectl config current-context)

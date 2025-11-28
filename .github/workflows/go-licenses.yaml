@@ -4,10 +4,10 @@ on:
   push:
     branches: [main]
     paths:
-    - .github/licenses.tmpl
-    - .github/workflows/go-licenses.yaml
-    - go.mod
-  workflow_dispatch:  
+      - .github/licenses.tmpl
+      - .github/workflows/go-licenses.yaml
+      - go.mod
+  workflow_dispatch:
 
 jobs:
   update-licenses:
@@ -15,10 +15,10 @@ jobs:
 
     steps:
       - name: Check out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
-      - name: Set up Go
-        uses: actions/setup-go@v4
+      - name: Setup Golang with cache
+        uses: magnetikonline/action-golang-cache@v5
         with:
           go-version-file: go.mod
 

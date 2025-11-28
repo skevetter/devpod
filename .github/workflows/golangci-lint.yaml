@@ -17,10 +17,13 @@ jobs:
     name: lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-go@v4
+      - uses: actions/checkout@v6
+
+      - name: Setup Golang with cache
+        uses: magnetikonline/action-golang-cache@v5
         with:
-          go-version: "1.21.8"
-      - uses: actions/checkout@v3
+          go-version-file: go.mod
+
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v6
         with:

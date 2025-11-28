@@ -15,10 +15,10 @@ jobs:
       release_id: ${{ steps.get-release.outputs.id }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
 
       - name: Setup Node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v6
         with:
           node-version: 16
 
@@ -130,7 +130,7 @@ jobs:
           git config --global core.eol lf
 
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
 
       - name: Apply Version
         if: matrix.settings.cli_only == false
@@ -181,7 +181,7 @@ jobs:
           xcopy /F /Y "test\%BIN_NAME%" desktop\src-tauri\bin\*
 
       - name: Sync node version and setup cache
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v6
         if: matrix.settings.cli_only == false
         with:
           node-version: "lts/*"
@@ -510,7 +510,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
 
       - name: Release pro provider
         run: |
