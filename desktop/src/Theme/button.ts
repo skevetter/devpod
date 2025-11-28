@@ -120,7 +120,7 @@ export const Button = defineStyleConfig({
         },
       }
     },
-    proWorkspaceIDE(_props) {
+    proWorkspaceIDE() {
       return {
         color: "primary.900",
         fontWeight: "semibold",

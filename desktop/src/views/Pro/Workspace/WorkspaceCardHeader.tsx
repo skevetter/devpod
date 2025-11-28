@@ -3,7 +3,6 @@ import { ProWorkspaceInstance, useSettings } from "@/contexts"
 import {
   ArrowCycle,
   ArrowPath,
-  Close,
   Cog,
   Ellipsis,
   GitBranch,
@@ -26,9 +25,6 @@ import {
   Heading,
   IconButton,
   Input,
-  InputGroup,
-  InputRightAddon,
-  InputRightElement,
   Menu,
   MenuButton,
   MenuItem,
@@ -96,10 +92,12 @@ export function WorkspaceCardHeader({
   const handleKeyUp: KeyboardEventHandler<HTMLInputElement> = (e) => {
     if (e.key === "Escape") {
       reset()
+
       return
     }
     if (e.keyCode === 13) {
       handleSave()
+
       return
     }
   }

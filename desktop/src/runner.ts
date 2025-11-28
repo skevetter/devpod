@@ -376,7 +376,7 @@ export class StorageV1RunnerPersistentVolumeClaimTemplateSpec {
   public constructor() {}
 }
 
-export enum StorageV1RunnerPersistentVolumeClaimTemplateSpecAccessModesEnum {
+export enum EStorageV1RunnerPersistentVolumeClaimTemplateSpecAccessModes {
   ReadOnlyMany = "ReadOnlyMany",
   ReadWriteMany = "ReadWriteMany",
   ReadWriteOnce = "ReadWriteOnce",
@@ -601,7 +601,7 @@ export class StorageV1RunnerServiceTemplateSpec {
   public constructor() {}
 }
 
-export enum StorageV1RunnerServiceTemplateSpecTypeEnum {
+export enum EStorageV1RunnerServiceTemplateSpecType {
   ClusterIp = "ClusterIP",
   ExternalName = "ExternalName",
   LoadBalancer = "LoadBalancer",

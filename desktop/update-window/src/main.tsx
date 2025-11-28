@@ -15,6 +15,7 @@ function handleRestartClicked() {
   client.restart()
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 function Root() {
   return (
     <StrictMode>

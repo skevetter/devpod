@@ -8,7 +8,6 @@ import { debug, ErrorTypeCancelled, isError, Result, ResultError, Return, sleep 
 import { DEVPOD_BINARY, DEVPOD_FLAG_OPTION, DEVPOD_UI_ENV_VAR, DEVPOD_ADDITIONAL_ENV_VARS } from "./constants"
 import { TStreamEvent } from "./types"
 import { TAURI_SERVER_URL } from "./tauriClient"
-import * as log from "@tauri-apps/plugin-log"
 import { invoke } from "@tauri-apps/api/core"
 
 export type TStreamEventListenerFn = (event: TStreamEvent) => void

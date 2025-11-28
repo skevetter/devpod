@@ -20,7 +20,7 @@ const compat = new FlatCompat({
 
 export default [
   {
-    ignores: ["dist/**/*", "src-tauri/**/*", "public/**/*", "src/gen/**/*"],
+    ignores: ["dist/**/*", "src-tauri/**/*", "public/**/*", "src/gen/**/*", "eslint.config.js"],
   },
   ...fixupConfigRules(
     compat.extends(

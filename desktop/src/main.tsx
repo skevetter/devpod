@@ -45,6 +45,7 @@ if (render) {
 // force chakra to determine color mode on startup
 localStorage.removeItem("chakra-ui-color-mode")
 
+// eslint-disable-next-line react-refresh/only-export-components
 function Root() {
   return (
     <StrictMode>

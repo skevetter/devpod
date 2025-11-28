@@ -53,12 +53,12 @@ export function WorkspaceDetails({
     Source.fromRaw(instance.metadata?.annotations?.[Annotations.WorkspaceSource])
   )
   const owner = useMemo(() => {
-    return instance?.spec?.owner?.user ?? instance?.spec?.owner?.team ?? "unknown"
+    return instance.spec?.owner?.user ?? instance.spec?.owner?.team ?? "unknown"
   }, [instance])
 
   const mainContainerImage = useMemo(
     () =>
-      instance?.status?.kubernetes?.podStatus?.containerStatuses?.find(
+      instance.status?.kubernetes?.podStatus?.containerStatuses?.find(
         ({ name }) => name === "devpod"
       )?.image,
     [instance.status?.kubernetes]
@@ -169,7 +169,7 @@ export function WorkspaceDetails({
           <StackedWorkspaceInfoDetail icon={Dashboard} label={<Text>Avg. Latency</Text>}>
             <Text>
               {instance.status?.metrics?.latencyMs
-                ? instance.status.metrics.latencyMs?.toFixed(2) + "ms"
+                ? instance.status.metrics.latencyMs.toFixed(2) + "ms"
                 : "-"}
             </Text>
           </StackedWorkspaceInfoDetail>
@@ -367,10 +367,10 @@ function KubernetesDetails({ status }: TKubernetesDetailsProps) {
       })
     }
 
-    return Object.entries(mainContainerResources.resources?.limits ?? {}).map(
+    return Object.entries(mainContainerResources.resources.limits ?? {}).map(
       ([type, quantity]) => {
         const used = indexedMetrics[type]
-        let usagePercentage = calculateUsagePercentage(
+        const usagePercentage = calculateUsagePercentage(
           quantityToScalarBigInt(used),
           quantityToScalarBigInt(quantity)
         )
@@ -638,6 +638,7 @@ function formatContainerImage(fullImageName: string): string {
     if (path.startsWith("/")) {
       return path.substring(1, path.length)
     }
+
     return path
   } catch {
     return fullImageName

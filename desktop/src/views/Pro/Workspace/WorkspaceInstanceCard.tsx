@@ -1,7 +1,6 @@
 import {
   ProWorkspaceInstance,
   useProjectClusters,
-  useTemplates,
   useWorkspace,
   useWorkspaceActions,
 } from "@/contexts"
@@ -92,6 +91,20 @@ export function WorkspaceInstanceCard({
 
   const { store: storeTroubleshoot } = useStoreTroubleshoot()
 
+  const cluster = useMemo(() => {
+    if (instance?.spec?.runnerRef?.runner) {
+      return projectClusters?.runners?.find(
+        (runner) => runner.metadata?.name === instance.spec?.runnerRef?.runner
+      )
+    }
+
+    return projectClusters?.clusters?.find(
+      (cluster) => cluster.metadata?.name === instance?.spec?.target?.cluster?.name
+    )
+  }, [projectClusters, instance])
+
+  const { template, parameters } = useTemplate(instance)
+
   const handleTroubleshootClicked = useCallback(() => {
     if (instance && workspaceActions) {
       storeTroubleshoot({
@@ -109,20 +122,6 @@ export function WorkspaceInstanceCard({
     workspace.start({ id: instance.id, ideConfig: { name: ideName } })
     navigate(Routes.toProWorkspace(host, instance.id))
   }
-
-  const cluster = useMemo(() => {
-    if (instance?.spec?.runnerRef?.runner) {
-      return projectClusters?.runners?.find(
-        (runner) => runner.metadata?.name === instance?.spec?.runnerRef?.runner
-      )
-    }
-
-    return projectClusters?.clusters?.find(
-      (cluster) => cluster.metadata?.name === instance?.spec?.target?.cluster?.name
-    )
-  }, [projectClusters, instance])
-
-  const { template, parameters } = useTemplate(instance)
 
   const isRunning = instance.status?.lastWorkspaceStatus === "Running"
 

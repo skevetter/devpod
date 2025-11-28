@@ -51,7 +51,7 @@ export function Credentials() {
   const queryClient = useQueryClient()
   const { client, managementSelfQuery: s } = useProContext()
   const { data: userProfile, isLoading } = useQuery({
-    queryKey: QueryKeys.userProfile(s.data?.status?.user?.name),
+    queryKey: QueryKeys.userProfile(s.data?.status?.user?.name, client),
     queryFn: async () => {
       return (await (client as DaemonClient).getUserProfile()).unwrap()
     },
@@ -194,7 +194,7 @@ function SecretTypeTag({ type }: TSecretTypeTagProps) {
     if (type === UserSecret.GIT_HTTP) {
       return "https"
     }
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+     
     if (type === UserSecret.GIT_SSH) {
       return "ssh"
     }

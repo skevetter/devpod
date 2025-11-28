@@ -98,7 +98,7 @@ export function Workspace() {
   const cluster = useMemo(() => {
     if (instance?.spec?.runnerRef?.runner) {
       return projectClusters?.runners?.find(
-        (runner) => runner.metadata?.name === instance?.spec?.runnerRef?.runner
+        (runner) => runner.metadata?.name === instance.spec?.runnerRef?.runner
       )
     }
 
