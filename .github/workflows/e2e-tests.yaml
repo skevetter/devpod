@@ -57,7 +57,7 @@ jobs:
         uses: magnetikonline/action-golang-cache@v5
         with:
           go-version-file: go.mod
-          cache-key-suffix: "-${{ matrix.label }}"
+          cache-key-suffix: "e2e-tests"
 
       - name: Set up kind k8s cluster
         uses: engineerd/setup-kind@v0.5.0
