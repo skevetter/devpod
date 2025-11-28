@@ -12,7 +12,7 @@ env:
 
 jobs:
   test-e2e-windows:
-    runs-on: self-hosted-windows
+    runs-on: windows-latest
     strategy:
       fail-fast: true
       max-parallel: 1
