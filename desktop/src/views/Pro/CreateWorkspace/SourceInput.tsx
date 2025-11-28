@@ -231,7 +231,7 @@ export function SourceInput({ isDisabled, resetPreset }: TSourceInputProps) {
                     label={
                       hasErrors
                         ? // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-                        `Git repository "${currentValue ?? ""}" is empty or invalid`
+                          `Git repository "${currentValue ?? ""}" is empty or invalid`
                         : ""
                     }>
                     <Input

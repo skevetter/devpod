@@ -194,7 +194,7 @@ function SecretTypeTag({ type }: TSecretTypeTagProps) {
     if (type === UserSecret.GIT_HTTP) {
       return "https"
     }
-     
+
     if (type === UserSecret.GIT_SSH) {
       return "ssh"
     }

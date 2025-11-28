@@ -73,9 +73,9 @@ export const Terminal = forwardRef<TTerminalRef, TTerminalProps>(function T(
       })
       terminalRef.current = terminal
 
-      terminal.attachCustomKeyEventHandler(event => {
-        return !(event.type === "keydown" && event.key === "c" && event.ctrlKey);
-      });
+      terminal.attachCustomKeyEventHandler((event) => {
+        return !(event.type === "keydown" && event.key === "c" && event.ctrlKey)
+      })
 
       const loadAddon = <T extends ITerminalAddon>(
         AddonClass: new () => T,

@@ -74,7 +74,6 @@ function IDEItem({
 }) {
   const menuHoverColor = useColorModeValue("gray.100", "gray.700")
 
-
   const onClick = useCallback(() => {
     onItemClick(ide.name)
   }, [onItemClick, ide])

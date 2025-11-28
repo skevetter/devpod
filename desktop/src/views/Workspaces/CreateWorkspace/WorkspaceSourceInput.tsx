@@ -241,7 +241,7 @@ export function WorkspaceSourceInput({
                       label={
                         !allowAdvancedInput
                           ? // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-                          `Git repository "${field.value ?? ""}" is empty or invalid`
+                            `Git repository "${field.value ?? ""}" is empty or invalid`
                           : ""
                       }>
                       <Input

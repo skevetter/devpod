@@ -16,7 +16,7 @@ export function useContextOptions() {
   })
   const { mutate: updateOption } = useMutation({
     mutationFn: async ({ option, value }: { option: TContextOptionName; value: string }) => {
-      ; (await client.context.setOption(option, value)).unwrap()
+      ;(await client.context.setOption(option, value)).unwrap()
     },
     onSettled: () => {
       queryClient.invalidateQueries(QueryKeys.CONTEXT_OPTIONS)

@@ -311,7 +311,7 @@ class Client {
       // we're in a flatpak, we need to check in other paths.
       const isFlatpak = await this.getEnv("FLATPAK_ID")
       if (isFlatpak) {
-        this.log("debug", "Running in flatpak, checking ~/.local/bin on the host");
+        this.log("debug", "Running in flatpak, checking ~/.local/bin on the host")
         const home_dir = await this.getEnv("HOME")
         // this will throw if doesn't exist
         const exists = await invoke<boolean>("file_exists", {
