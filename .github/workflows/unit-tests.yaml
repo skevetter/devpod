@@ -15,6 +15,7 @@ jobs:
         uses: magnetikonline/action-golang-cache@v5
         with:
           go-version-file: go.mod
+          cache-key-suffix: "-unit-tests"
 
       - name: Test
         run: ./hack/unit-tests.sh
