@@ -1,6 +1,6 @@
 {
   "name": "DevPod Development",
-  "image": "ghcr.io/loft-sh/devpod:dev-6b64450abdb0ebc2ce7f663f9ff935c56679f8b6",
+  "image": "ghcr.io/skevetter/devpod:dev-d0b218a67c6b20387250a7415171385930edc35c",
   "remoteUser": "devpod",
   "postCreateCommand": "bash ./.devcontainer/post_create.sh",
   // Required for DinD
