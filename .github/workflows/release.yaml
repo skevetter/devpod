@@ -122,7 +122,6 @@ jobs:
     runs-on: ${{ matrix.settings.host }}
     env:
       GO111MODULE: on
-      GOFLAGS: -mod=vendor
 
     steps:
       - name: Set git to use LF
