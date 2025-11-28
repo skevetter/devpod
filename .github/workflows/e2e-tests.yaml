@@ -22,7 +22,19 @@ jobs:
           - "machineprovider"
           - "provider"
           - "ssh"
-          - "up"
+          - "up-env-vars"
+          - "up-git-commit"
+          - "up-git-pr"
+          - "up-git-private"
+          - "up-kubernetes"
+          - "up-no-devcontainer"
+          - "up-recreate-local"
+          - "up-subpath"
+          - "up-recreate-remote"
+          - "up-reset-remote"
+          - "up-error-output"
+          - "up-cleanup-fail"
+          - "up-cleanup-invalid"
           - "up-docker"
           - "up-podman"
           - "up-docker-compose"
@@ -40,7 +52,6 @@ jobs:
           sudo rm -rf /opt/ghc
           sudo rm -rf /usr/local/share/boost
           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-          docker system prune -af
 
       - name: Setup Golang with cache
         uses: magnetikonline/action-golang-cache@v5
