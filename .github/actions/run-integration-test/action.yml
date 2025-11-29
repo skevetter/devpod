@@ -40,6 +40,10 @@ runs:
         image: kindest/node:v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a
         name: kind-${{ inputs.label }}
 
+    - name: Setup SSH directory
+      shell: bash
+      run: mkdir -p ~/.ssh && chmod 700 ~/.ssh
+
     - name: Run test
       shell: bash
       working-directory: ./e2e
