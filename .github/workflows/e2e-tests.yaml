@@ -68,8 +68,15 @@ jobs:
           - "context"
 
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v6
+      - uses: jlumbroso/free-disk-space@v1.3.1
+      
+      - uses: actions/checkout@v6
+
+      - name: Restore Go cache
+        uses: magnetikonline/action-golang-cache@v5
+        with:
+          go-version-file: go.mod
+          cache-key-suffix: "e2e-tests"
 
       - name: Restore binary
         uses: actions/cache/restore@v4
@@ -94,12 +101,6 @@ jobs:
           kubectl get pods -n kube-system -v 10
           echo "kubectl config current-context:" $(kubectl config current-context)
           echo "KUBECONFIG env var:" ${KUBECONFIG}
-
-      - name: Restore Go cache
-        uses: magnetikonline/action-golang-cache@v5
-        with:
-          go-version-file: go.mod
-          cache-key-suffix: "e2e-tests"
 
       - name: E2E test
         working-directory: ./e2e
