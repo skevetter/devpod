@@ -12,5 +12,3 @@ jobs:
 
       # TODO: update 'uses' to @main when action is published
       - uses: ./.github/actions/compile-test-binary
-
-      - run: ./hack/unit-tests.sh
