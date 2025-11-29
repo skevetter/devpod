@@ -1,0 +1,39 @@
+name: Test Integration Local
+
+on:
+  workflow_dispatch:
+  pull_request:
+
+jobs:
+  test-integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Build binary
+        run: |
+          mkdir -p ./e2e/bin
+          go build -o ./e2e/bin/devpod-linux-amd64
+          chmod +x ./e2e/bin/devpod-linux-amd64
+
+      - name: Setup SSH
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y openssh-server
+          sudo systemctl start ssh
+          sudo systemctl status ssh
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          ssh-keygen -t rsa -N "" -f ~/.ssh/id_rsa -q
+          cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
+          chmod 600 ~/.ssh/authorized_keys
+          ssh -o StrictHostKeyChecking=no localhost echo "SSH works"
+
+      - name: Run integration test
+        working-directory: ./e2e
+        run: go test -v -ginkgo.v -timeout 600s --ginkgo.label-filter=integration
