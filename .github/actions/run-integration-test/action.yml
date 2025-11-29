@@ -91,4 +91,5 @@ runs:
       env:
         GH_USERNAME: ${{ inputs.gh-username }}
         GH_ACCESS_TOKEN: ${{ inputs.gh-access-token }}
+        KUBECONFIG: ${{ env.KUBECONFIG }}
       run: go test -v -ginkgo.v -timeout 3600s --ginkgo.label-filter=${{ inputs.label }}
