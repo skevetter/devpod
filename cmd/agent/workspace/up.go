@@ -213,11 +213,24 @@ func initWorkspace(ctx context.Context, cancel context.CancelFunc, workspaceInfo
 	errChan := make(chan error, 2)
 	dockerPathChan := make(chan string, 1)
 	go func() {
-		if !workspaceInfo.Agent.IsDockerDriver() || workspaceInfo.Agent.Docker.Install == "false" {
+		shouldInstall := true
+		if !workspaceInfo.Agent.IsDockerDriver() {
+			logger.Debug("Not a docker driver, skipping docker installation")
+			shouldInstall = false
+		} else if install, err := workspaceInfo.Agent.Docker.Install.Bool(); err == nil && !install {
+			logger.Debugf("Docker installation disabled (Install=%v)", install)
+			shouldInstall = false
+		} else {
+			logger.Debugf("Docker installation check: Install field=%q, err=%v", workspaceInfo.Agent.Docker.Install, err)
+		}
+
+		if !shouldInstall {
 			dockerPathChan <- ""
 			errChan <- nil
 		} else {
+			logger.Debug("Install Docker")
 			dockerPath, err := installDocker(logger)
+			logger.Debugf("Docker installation result: path=%q, err=%v", dockerPath, err)
 			dockerPathChan <- dockerPath
 			errChan <- err
 		}
