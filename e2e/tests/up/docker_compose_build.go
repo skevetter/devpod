@@ -79,6 +79,8 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 
 					ginkgo.By("Modifying .devcontainer.json with failing changes")
 					origPath := filepath.Join(tempDir, ".devcontainer.json")
+					err = os.Chown(origPath, os.Getuid(), os.Getgid())
+					framework.ExpectNoError(err)
 					err = os.Chmod(origPath, 0666)
 					framework.ExpectNoError(err)
 					err = os.Remove(origPath)
