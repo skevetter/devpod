@@ -25,12 +25,11 @@ jobs:
       - name: lint
         run: yarn lint:ci
 
-      - name: check format
+      - name: format
         run: yarn format:check
 
-      - name: check types
+      - name: types
         run: yarn types:check
 
-        # This only builds the frontend assets, not the full DevPod Desktop app to make it quicker
       - name: build
         run: yarn build
