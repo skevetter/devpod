@@ -213,26 +213,36 @@ func initWorkspace(ctx context.Context, cancel context.CancelFunc, workspaceInfo
 	errChan := make(chan error, 2)
 	dockerPathChan := make(chan string, 1)
 	go func() {
-		shouldInstall := true
 		if !workspaceInfo.Agent.IsDockerDriver() {
 			logger.Debug("Not a docker driver, skipping docker installation")
-			shouldInstall = false
-		} else if install, err := workspaceInfo.Agent.Docker.Install.Bool(); err == nil && !install {
-			logger.Debugf("Docker installation disabled (Install=%v)", install)
-			shouldInstall = false
-		} else {
-			logger.Debugf("Docker installation check: Install field=%q, err=%v", workspaceInfo.Agent.Docker.Install, err)
-		}
-
-		if !shouldInstall {
 			dockerPathChan <- ""
 			errChan <- nil
 		} else {
-			logger.Debug("Install Docker")
-			dockerPath, err := installDocker(logger)
-			logger.Debugf("Docker installation result: path=%q, err=%v", dockerPath, err)
-			dockerPathChan <- dockerPath
-			errChan <- err
+			// Check if docker installation is explicitly disabled
+			installDisabled := false
+			if install, err := workspaceInfo.Agent.Docker.Install.Bool(); err == nil && !install {
+				installDisabled = true
+			}
+			
+			// If docker does not exist, install it even if disabled
+			if !command.Exists("docker") {
+				if installDisabled {
+					logger.Debug("Docker not found but installation was disabled, installing anyway as it's required")
+				}
+				logger.Debug("Attempting to install docker")
+				dockerPath, err := installDocker(logger)
+				logger.Debugf("Docker installation result: path=%q, err=%v", dockerPath, err)
+				dockerPathChan <- dockerPath
+				errChan <- err
+			} else if installDisabled {
+				logger.Debug("Docker installation disabled and docker already exists")
+				dockerPathChan <- ""
+				errChan <- nil
+			} else {
+				logger.Debug("Docker already exists, skipping installation")
+				dockerPathChan <- ""
+				errChan <- nil
+			}
 		}
 	}()
 
