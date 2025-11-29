@@ -27,6 +27,8 @@ var _ = ginkgo.Describe("Docker installation test suite", ginkgo.Label("docker-i
 
 		err = f.DevPodProviderAdd(ctx, "docker")
 		framework.ExpectNoError(err)
+		err = f.DevPodProviderUse(ctx, "docker")
+		framework.ExpectNoError(err)
 
 		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), tempDir)
 
