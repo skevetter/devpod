@@ -23,6 +23,12 @@ var _ = ginkgo.Describe("[integration]: devpod provider ssh test suite", ginkgo.
 		})
 
 		ginkgo.It("should generate ssh keypairs", func() {
+			sshDir := os.Getenv("HOME") + "/.ssh"
+			if _, err := os.Stat(sshDir); os.IsNotExist(err) {
+				err = os.MkdirAll(sshDir, 0700)
+				framework.ExpectNoError(err)
+			}
+
 			_, err := os.Stat(os.Getenv("HOME") + "/.ssh/id_rsa")
 			if err != nil {
 				fmt.Println("generating ssh keys")
