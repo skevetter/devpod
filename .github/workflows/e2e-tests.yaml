@@ -13,6 +13,13 @@ jobs:
   setup-cache:
     runs-on: ubuntu-latest
     steps:
+      - name: Maximize build space
+        uses: easimon/maximize-build-space@master
+        with:
+          root-reserve-mb: 512
+          swap-size-mb: 1024
+          remove-dotnet: "true"
+
       - name: Checkout repo
         uses: actions/checkout@v6
 
@@ -23,10 +30,9 @@ jobs:
           cache-key-suffix: "e2e-tests"
 
       - name: Build binary
-        working-directory: ./e2e
         run: |
-          chmod +x ../hack/build-e2e.sh
-          BUILDDIR=bin SRCDIR=".." ../hack/build-e2e.sh
+          mkdir -p ./e2e/bin
+          CGO_ENABLED=0 go build -ldflags "-s -w" -o ./e2e/bin/devpod-linux-amd64
 
       - name: Cache built binary
         uses: actions/cache@v4
@@ -68,13 +74,6 @@ jobs:
           - "context"
 
     steps:
-      - name: Maximize build space
-        uses: easimon/maximize-build-space@master
-        with:
-          root-reserve-mb: 512
-          swap-size-mb: 1024
-          remove-dotnet: "true"
-
       - name: Checkout repo
         uses: actions/checkout@v6
 
@@ -83,6 +82,11 @@ jobs:
         with:
           path: ./e2e/bin
           key: ${{ runner.os }}-e2e-binary-${{ github.sha }}
+
+      - name: Copy binary to temp cache
+        run: |
+          mkdir -p /tmp/devpod-cache
+          cp ./e2e/bin/devpod-linux-amd64 /tmp/devpod-cache/devpod-linux-amd64
 
       - name: cluster setup
         uses: engineerd/setup-kind@v0.5.0

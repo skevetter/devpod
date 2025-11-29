@@ -7,7 +7,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/awslabs/amazon-ecr-credential-helper/ecr-login"
+	ecr "github.com/awslabs/amazon-ecr-credential-helper/ecr-login"
 	"github.com/chrismellard/docker-credential-acr-env/pkg/credhelper"
 	"github.com/google/go-containerregistry/pkg/authn"
 	kubernetesauth "github.com/google/go-containerregistry/pkg/authn/kubernetes"
