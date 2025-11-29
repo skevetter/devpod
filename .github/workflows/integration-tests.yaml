@@ -1,4 +1,4 @@
-name: E2E tests
+name: Integration Tests
 
 on:
   release:
@@ -7,7 +7,7 @@ on:
   pull_request:
 
 jobs:
-  setup-cache:
+  setup:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -18,8 +18,8 @@ jobs:
         with:
           cache-key: ${{ runner.os }}-e2e-binary-${{ github.sha }}
 
-  test-e2e:
-    needs: setup-cache
+  test:
+    needs: setup
     runs-on: ubuntu-latest
     permissions:
       contents: read

@@ -1,11 +1,11 @@
-name: Unit tests
+name: Tests
 
 on:
   workflow_dispatch:
   pull_request:
 
 jobs:
-  unit-tests:
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
