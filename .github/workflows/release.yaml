@@ -17,7 +17,7 @@ jobs:
       - uses: ./.github/actions/create-release
         id: create-release
 
-  build:
+  build-linux:
     needs: [create-release]
     if: startsWith(github.ref, 'refs/tags/v') == true
     permissions:
@@ -26,38 +26,20 @@ jobs:
       fail-fast: false
       matrix:
         settings:
-          - host: macos-latest
-            target: x86_64-apple-darwin
-            os: darwin
+          - target: x86_64-unknown-linux-gnu
             arch: amd64
             cli_only: false
-          - host: macos-latest
-            target: aarch64-apple-darwin
-            os: darwin
-            arch: arm64
-            cli_only: false
-          - host: windows-latest
-            target: x86_64-pc-windows-msvc
-            arch: amd64
-            cli_only: false
-          - host: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-            os: linux
-            arch: amd64
-            cli_only: false
-          - host: ubuntu-latest
-            target: aarch64-unknown-linux-gnu
-            os: linux
+          - target: aarch64-unknown-linux-gnu
             arch: arm64
             cli_only: true
-    name: ${{ matrix.settings.target }}
-    runs-on: ${{ matrix.settings.host }}
+    name: linux-${{ matrix.settings.target }}
+    runs-on: ubuntu-latest
 
     steps:
       - name: Setup Build Environment
         uses: ./.github/actions/setup-build-environment
         with:
-          host: ${{ matrix.settings.host }}
+          host: ubuntu-latest
           target: ${{ matrix.settings.target }}
           package_version: ${{ needs.create-release.outputs.package_version }}
           cli_only: ${{ matrix.settings.cli_only }}
@@ -65,16 +47,16 @@ jobs:
       - name: Build CLI
         uses: ./.github/actions/build-cli
         with:
-          host: ${{ matrix.settings.host }}
+          host: ubuntu-latest
           target: ${{ matrix.settings.target }}
-          os: ${{ matrix.settings.os }}
+          os: linux
           arch: ${{ matrix.settings.arch }}
           version: ${{ needs.create-release.outputs.original_package_version }}
           telemetry_private_key: ${{ secrets.DEVPOD_TELEMETRY_PRIVATE_KEY }}
           crane_private_key: ${{ secrets.CRANE_PRIVATE_KEY }}
 
       - name: Create Linux Release Artifacts
-        if: matrix.settings.host == 'ubuntu-latest' && matrix.settings.cli_only == false
+        if: matrix.settings.cli_only == false
         uses: ./.github/actions/create-linux-release-artifacts
         with:
           target: ${{ matrix.settings.target }}
@@ -87,8 +69,52 @@ jobs:
           app_image_sign_key: ${{ secrets.APP_IMAGE_SIGN_KEY }}
           app_image_sign_passphrase: ${{ secrets.APP_IMAGE_SIGN_PASSPHRASE }}
 
+      - name: Upload CLI Asset
+        uses: ./.github/actions/upload-cli-asset
+        with:
+          target: ${{ matrix.settings.target }}
+          os: linux
+          arch: ${{ matrix.settings.arch }}
+          release_id: ${{ needs.create-release.outputs.release_id }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+  build-macos:
+    needs: [create-release, build-linux]
+    if: startsWith(github.ref, 'refs/tags/v') == true
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        settings:
+          - target: x86_64-apple-darwin
+            arch: amd64
+          - target: aarch64-apple-darwin
+            arch: arm64
+    name: macos-${{ matrix.settings.target }}
+    runs-on: macos-latest
+
+    steps:
+      - name: Setup Build Environment
+        uses: ./.github/actions/setup-build-environment
+        with:
+          host: macos-latest
+          target: ${{ matrix.settings.target }}
+          package_version: ${{ needs.create-release.outputs.package_version }}
+          cli_only: false
+
+      - name: Build CLI
+        uses: ./.github/actions/build-cli
+        with:
+          host: macos-latest
+          target: ${{ matrix.settings.target }}
+          os: darwin
+          arch: ${{ matrix.settings.arch }}
+          version: ${{ needs.create-release.outputs.original_package_version }}
+          telemetry_private_key: ${{ secrets.DEVPOD_TELEMETRY_PRIVATE_KEY }}
+          crane_private_key: ${{ secrets.CRANE_PRIVATE_KEY }}
+
       - name: Create macOS Release Artifacts
-        if: matrix.settings.host == 'macos-latest' && matrix.settings.cli_only == false
         uses: ./.github/actions/create-macos-release-artifacts
         with:
           target: ${{ matrix.settings.target }}
@@ -97,30 +123,56 @@ jobs:
           tauri_private_key: ${{ secrets.TAURI_PRIVATE_KEY }}
           tauri_key_password: ${{ secrets.TAURI_KEY_PASSWORD }}
 
-      - name: Create Windows Release Artifacts
-        if: matrix.settings.host == 'windows-latest' && matrix.settings.cli_only == false
-        uses: ./.github/actions/create-windows-release-artifacts
+      - name: Upload CLI Asset
+        uses: ./.github/actions/upload-cli-asset
         with:
           target: ${{ matrix.settings.target }}
+          os: darwin
           arch: ${{ matrix.settings.arch }}
+          release_id: ${{ needs.create-release.outputs.release_id }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+  build-windows:
+    needs: [create-release, build-linux]
+    if: startsWith(github.ref, 'refs/tags/v') == true
+    permissions:
+      contents: write
+    name: windows-x86_64-pc-windows-msvc
+    runs-on: windows-latest
+
+    steps:
+      - name: Setup Build Environment
+        uses: ./.github/actions/setup-build-environment
+        with:
+          host: windows-latest
+          target: x86_64-pc-windows-msvc
+          package_version: ${{ needs.create-release.outputs.package_version }}
+          cli_only: false
+
+      - name: Build CLI
+        uses: ./.github/actions/build-cli
+        with:
+          host: windows-latest
+          target: x86_64-pc-windows-msvc
+          os: windows
+          arch: amd64
+          version: ${{ needs.create-release.outputs.original_package_version }}
+          telemetry_private_key: ${{ secrets.DEVPOD_TELEMETRY_PRIVATE_KEY }}
+          crane_private_key: ${{ secrets.CRANE_PRIVATE_KEY }}
+
+      - name: Create Windows Release Artifacts
+        uses: ./.github/actions/create-windows-release-artifacts
+        with:
+          target: x86_64-pc-windows-msvc
+          arch: amd64
           package_version: ${{ needs.create-release.outputs.package_version }}
           release_id: ${{ needs.create-release.outputs.release_id }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
           tauri_private_key: ${{ secrets.TAURI_PRIVATE_KEY }}
           tauri_key_password: ${{ secrets.TAURI_KEY_PASSWORD }}
 
-      - name: Upload CLI Asset
-        if: matrix.settings.host != 'windows-latest'
-        uses: ./.github/actions/upload-cli-asset
-        with:
-          target: ${{ matrix.settings.target }}
-          os: ${{ matrix.settings.os }}
-          arch: ${{ matrix.settings.arch }}
-          release_id: ${{ needs.create-release.outputs.release_id }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-
   publish:
-    needs: [build]
+    needs: [build-linux, build-macos, build-windows]
     if: startsWith(github.ref, 'refs/tags/v') == true
     permissions:
       contents: write
@@ -137,3 +189,4 @@ jobs:
         with:
           release_id: ${{ needs.create-release.outputs.release_id }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
+
