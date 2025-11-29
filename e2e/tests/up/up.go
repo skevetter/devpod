@@ -469,9 +469,9 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 			framework.ExpectNoError(err)
 
 			// create files in root and in workspace, after create we expect data to still be there
-			_, err = f.DevPodSSH(ctx, id, fmt.Sprintf("touch /workspaces/%s/DATA", id))
+			_, err = f.DevPodSSH(ctx, id, fmt.Sprintf("sudo touch /workspaces/%s/DATA", id))
 			framework.ExpectNoError(err)
-			_, err = f.DevPodSSH(ctx, id, "touch /ROOTFS")
+			_, err = f.DevPodSSH(ctx, id, "sudo touch /ROOTFS")
 			framework.ExpectNoError(err)
 
 			// reset
