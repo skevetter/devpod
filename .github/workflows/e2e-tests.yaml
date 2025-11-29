@@ -65,6 +65,12 @@ jobs:
           - label: up-kubernetes
             needs-kind: true
             needs-disk-space: true
+          - label: up-docker-compose
+            needs-disk-space: true
+          - label: up-docker-compose-build
+            needs-disk-space: true
+          - label: up-git-pr
+            needs-disk-space: true
 
     steps:
       - uses: jlumbroso/free-disk-space@v1.3.1
