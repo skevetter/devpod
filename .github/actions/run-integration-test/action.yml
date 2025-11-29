@@ -38,7 +38,7 @@ runs:
       run: chmod +x ./e2e/bin/devpod-linux-amd64
 
     - name: Setup kind
-      if: contains(inputs.label, 'kubernetes')
+      if: contains(inputs.label, 'kubernetes') || contains(inputs.label, 'build')
       uses: engineerd/setup-kind@v0.6.2
       with:
         version: "v0.24.0"
