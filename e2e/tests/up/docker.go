@@ -174,11 +174,11 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 
 				foo, _, err := f.ExecCommandCapture(ctx, []string{"ssh", "--command", "cat $HOME/mnt1/foo.txt", projectName})
 				framework.ExpectNoError(err)
-				gomega.Expect(foo).To(gomega.Equal("BAR"))
+				gomega.Expect(strings.TrimSpace(foo)).To(gomega.Equal("BAR"))
 
 				bar, _, err := f.ExecCommandCapture(ctx, []string{"ssh", "--command", "cat $HOME/mnt2/bar.txt", projectName})
 				framework.ExpectNoError(err)
-				gomega.Expect(bar).To(gomega.Equal("FOO"))
+				gomega.Expect(strings.TrimSpace(bar)).To(gomega.Equal("FOO"))
 			}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
 			ginkgo.Context("should start a new workspace with features", func() {

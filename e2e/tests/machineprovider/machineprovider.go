@@ -76,7 +76,7 @@ var _ = DevPodDescribe("devpod machine provider test suite", func() {
 			// check if ssh works as it should start the container
 			out, err := f.DevPodSSH(ctx, tempDir, fmt.Sprintf("cat /workspaces/%s/test.txt", workspace.ID))
 			framework.ExpectNoError(err)
-			framework.ExpectEqual(out, "Test123", "workspace content does not match")
+			framework.ExpectEqual(strings.TrimSpace(out), "Test123", "workspace content does not match")
 
 			// delete workspace
 			err = f.DevPodWorkspaceDelete(ctx, tempDir)
