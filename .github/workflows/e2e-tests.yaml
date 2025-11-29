@@ -32,35 +32,43 @@ jobs:
       max-parallel: 16
       matrix:
         label:
-          - "build"
-          - "context"
-          - "ide"
-          - "integration"
-          - "machine"
-          - "machineprovider"
-          - "provider"
-          - "ssh"
-          - "up-cleanup-fail"
-          - "up-cleanup-invalid"
-          - "up-docker-build"
-          - "up-docker-compose-build"
-          - "up-docker-compose"
-          - "up-docker"
-          - "up-env-vars"
-          - "up-error-output"
-          - "up-git-commit"
-          - "up-git-pr"
-          - "up-git-private"
-          - "up-kubernetes"
-          - "up-no-devcontainer"
-          - "up-podman"
-          - "up-recreate-local"
-          - "up-recreate-remote"
-          - "up-reset-remote"
-          - "up-subpath"
+          - build
+          - context
+          - ide
+          - integration
+          - machine
+          - machineprovider
+          - provider
+          - ssh
+          - up-cleanup-fail
+          - up-cleanup-invalid
+          - up-docker-build
+          - up-docker-compose-build
+          - up-docker-compose
+          - up-docker
+          - up-env-vars
+          - up-error-output
+          - up-git-commit
+          - up-git-pr
+          - up-git-private
+          - up-kubernetes
+          - up-no-devcontainer
+          - up-podman
+          - up-recreate-local
+          - up-recreate-remote
+          - up-reset-remote
+          - up-subpath
+        include:
+          - label: build
+            needs-kind: true
+            needs-disk-space: true
+          - label: up-kubernetes
+            needs-kind: true
+            needs-disk-space: true
 
     steps:
       - uses: jlumbroso/free-disk-space@v1.3.1
+        if: matrix.needs-disk-space == true
 
       - uses: actions/checkout@v6
 
@@ -76,6 +84,7 @@ jobs:
         uses: ./.github/actions/run-integration-test
         with:
           label: ${{ matrix.label }}
+          needs-kind: ${{ matrix.needs-kind || false }}
           gh-username: ${{ secrets.GH_PRIVATE_REPO_USER_TEST }}
           gh-access-token: ${{ secrets.GH_PRIVATE_REPO_TOKEN_TEST }}
           binary-cache-key: ${{ runner.os }}-e2e-binary-${{ github.sha }}
