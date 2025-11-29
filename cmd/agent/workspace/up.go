@@ -25,10 +25,10 @@ import (
 	config2 "github.com/skevetter/devpod/pkg/devcontainer/config"
 	"github.com/skevetter/devpod/pkg/devcontainer/crane"
 	"github.com/skevetter/devpod/pkg/dockercredentials"
+	"github.com/skevetter/devpod/pkg/dockerinstall"
 	"github.com/skevetter/devpod/pkg/extract"
 	provider2 "github.com/skevetter/devpod/pkg/provider"
 	"github.com/skevetter/devpod/pkg/util"
-	"github.com/skevetter/devpod/scripts"
 	"github.com/spf13/cobra"
 )
 
@@ -436,12 +436,9 @@ func installDocker(log log.Logger) (err error) {
 		writer := log.Writer(logrus.InfoLevel, false)
 		defer func() { _ = writer.Close() }()
 
-		log.Debug("Installing Docker...")
+		log.Debug("Installing Docker")
 
-		shellCommand := exec.Command("sh", "-c", scripts.InstallDocker)
-		shellCommand.Stdout = writer
-		shellCommand.Stderr = writer
-		err = shellCommand.Run()
+		err = dockerinstall.Install(writer, writer)
 	}
 	return err
 }

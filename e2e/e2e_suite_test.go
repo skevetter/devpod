@@ -15,6 +15,7 @@ import (
 	// Register tests
 	_ "github.com/skevetter/devpod/e2e/tests/build"
 	_ "github.com/skevetter/devpod/e2e/tests/context"
+	_ "github.com/skevetter/devpod/e2e/tests/dockerinstall"
 	_ "github.com/skevetter/devpod/e2e/tests/ide"
 	_ "github.com/skevetter/devpod/e2e/tests/integration"
 	_ "github.com/skevetter/devpod/e2e/tests/machine"
