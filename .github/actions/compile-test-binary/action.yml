@@ -1,6 +1,11 @@
 name: Compile Binary
 description: Compile binary
 
+inputs:
+  cache-key-suffix:
+    description: Suffix for cache key
+    required: true
+
 runs:
   using: composite
   steps:
@@ -8,14 +13,10 @@ runs:
       uses: magnetikonline/action-golang-cache@v5
       with:
         go-version-file: go.mod
+        cache-key-suffix: ${{ inputs.cache-key-suffix }}
 
     - name: Compile
       shell: bash
       run: |
         go generate ./...
         CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build main.go
-
-    - name: Test
-      shell: bash
-      run: |
-        go test $(go list ./... | grep -v -e /vendor/ -e /test -e /e2e) -race -coverprofile=profile.out -covermode=atomic ./...

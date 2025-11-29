@@ -2,7 +2,10 @@ name: Compile Integration Test Binary
 description: Build and cache the DevPod binary for E2E tests
 
 inputs:
-  cache-key:
+  cache-key-suffix:
+    description: Suffix for cache key
+    required: true
+  binary-cache-key:
     description: Cache key for binary
     required: true
 
@@ -15,7 +18,7 @@ runs:
       uses: magnetikonline/action-golang-cache@v5
       with:
         go-version-file: go.mod
-        cache-key-suffix: "e2e-tests"
+        cache-key-suffix: ${{ inputs.cache-key-suffix }}
 
     - name: Build binary
       shell: bash
@@ -27,4 +30,4 @@ runs:
       uses: actions/cache@v4
       with:
         path: ./e2e/bin
-        key: ${{ inputs.cache-key }}
+        key: ${{ inputs.binary-cache-key }}

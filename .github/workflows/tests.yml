@@ -12,3 +12,123 @@ jobs:
 
       # TODO: update 'uses' to @main when action is published
       - uses: ./.github/actions/compile-test-binary
+        with:
+          cache-key-suffix: "test"
+
+      - name: Test
+        run: |
+          go test $(go list ./... | grep -v -e /vendor/ -e /test -e /e2e) -race -coverprofile=profile.out -covermode=atomic ./...
+
+      - name: Build binary
+        run: |
+          mkdir -p ./e2e/bin
+          CGO_ENABLED=0 go build -ldflags "-s -w" -o ./e2e/bin/devpod-linux-amd64
+
+      - name: Cache binary
+        uses: actions/cache@v4
+        with:
+          path: ./e2e/bin
+          key: ${{ runner.os }}-e2e-binary-${{ github.sha }}
+
+  integration-test-wave-1:
+    needs: [test]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    strategy:
+      matrix:
+        label:
+          - context
+          - ide
+          - integration
+          - machine
+          - machineprovider
+          - provider
+          - ssh
+          - up-cleanup-fail
+          - up-cleanup-invalid
+          - up-docker-compose
+          - up-env-vars
+          - up-error-output
+          - up-git-commit
+          - up-git-private
+          - up-no-devcontainer
+          - up-podman
+          - up-recreate-local
+          - up-recreate-remote
+          - up-reset-remote
+          - up-subpath
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run integration test
+        uses: ./.github/actions/run-integration-test
+        with:
+          label: ${{ matrix.label }}
+          needs-kind: false
+          gh-username: ${{ secrets.GH_PRIVATE_REPO_USER_TEST }}
+          gh-access-token: ${{ secrets.GH_PRIVATE_REPO_TOKEN_TEST }}
+          binary-cache-key: ${{ runner.os }}-e2e-binary-${{ github.sha }}
+          cache-key-suffix: "test"
+
+  integration-test-wave-2:
+    needs: [test]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    strategy:
+      matrix:
+        label:
+          - build
+          - up-docker
+          - up-docker-build
+          - up-docker-compose-build
+          - up-git-pr
+          - up-kubernetes
+        include:
+          - label: build
+            needs-kind: true
+          - label: up-kubernetes
+            needs-kind: true
+
+    steps:
+      - uses: jlumbroso/free-disk-space@v1.3.1
+
+      - uses: actions/checkout@v6
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run integration test
+        uses: ./.github/actions/run-integration-test
+        with:
+          label: ${{ matrix.label }}
+          needs-kind: ${{ matrix.needs-kind || false }}
+          gh-username: ${{ secrets.GH_PRIVATE_REPO_USER_TEST }}
+          gh-access-token: ${{ secrets.GH_PRIVATE_REPO_TOKEN_TEST }}
+          binary-cache-key: "test-binary"
+          cache-key-suffix: "test"
+
+  docker-install-test:
+    needs: [test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: jlumbroso/free-disk-space@v1.3.1
+
+      - uses: actions/checkout@v6
+
+      - uses: ./.github/actions/docker-install-test
