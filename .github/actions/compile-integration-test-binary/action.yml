@@ -1,0 +1,32 @@
+name: Compile Integration Test Binary
+description: Build and cache the DevPod binary for E2E tests
+
+inputs:
+  cache-key:
+    description: Cache key for binary
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/checkout@v6
+
+    - name: Setup Go
+      uses: magnetikonline/action-golang-cache@v5
+      with:
+        go-version-file: go.mod
+        cache-key-suffix: "e2e-tests"
+
+    - name: Build binary
+      shell: bash
+      run: |
+        mkdir -p ./e2e/bin
+        go build -ldflags "-s -w" -o ./e2e/bin/devpod-linux-amd64
+      env:
+        CGO_ENABLED: 0
+
+    - name: Cache binary
+      uses: actions/cache@v4
+      with:
+        path: ./e2e/bin
+        key: ${{ inputs.cache-key }}

@@ -6,33 +6,20 @@ on:
   workflow_dispatch:
   pull_request:
 
-env:
-  GO111MODULE: on
-
 jobs:
   setup-cache:
     runs-on: ubuntu-latest
     steps:
-      - uses: jlumbroso/free-disk-space@v1.3.1
+      # Saves ~3 minutes if skipped
+      # - uses: jlumbroso/free-disk-space@v1.3.1
 
       - uses: actions/checkout@v6
 
-      - name: Setup Go
-        uses: magnetikonline/action-golang-cache@v5
+      # TODO: update 'uses' to @main when action is published
+      - name: Compile binary
+        uses: ./.github/actions/compile-integration-test-binary
         with:
-          go-version-file: go.mod
-          cache-key-suffix: "e2e-tests"
-
-      - name: Build binary
-        run: |
-          mkdir -p ./e2e/bin
-          CGO_ENABLED=0 go build -ldflags "-s -w" -o ./e2e/bin/devpod-linux-amd64
-
-      - name: Cache binary
-        uses: actions/cache@v4
-        with:
-          path: ./e2e/bin
-          key: ${{ runner.os }}-e2e-binary-${{ github.sha }}
+          cache-key: ${{ runner.os }}-e2e-binary-${{ github.sha }}
 
   test-e2e:
     needs: setup-cache
@@ -71,6 +58,8 @@ jobs:
 
     steps:
       - uses: jlumbroso/free-disk-space@v1.3.1
+
+      - uses: actions/checkout@v6
 
       # TODO: update 'uses' to @main when action is published
       - name: Run integration test
