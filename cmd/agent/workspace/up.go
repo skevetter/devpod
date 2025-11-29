@@ -439,6 +439,9 @@ func installDocker(log log.Logger) (err error) {
 		log.Debug("Installing Docker")
 
 		err = dockerinstall.Install(writer, writer)
+		if err == nil {
+			command.RefreshPath()
+		}
 	}
 	return err
 }

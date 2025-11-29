@@ -2,7 +2,9 @@ package command
 
 import (
 	"errors"
+	"os"
 	"os/exec"
+	"strings"
 )
 
 func WrapCommandError(stdout []byte, err error) error {
@@ -49,4 +51,19 @@ func ExistsForUser(cmd, user string) bool {
 
 	_, err = exec.Command("su", user, "-l", "-c", command).CombinedOutput()
 	return err == nil
+}
+
+func RefreshPath() {
+	path := os.Getenv("PATH")
+	commonPaths := []string{"/usr/local/bin", "/usr/bin", "/bin"}
+	for _, p := range commonPaths {
+		if !strings.Contains(path, p) {
+			if path == "" {
+				path = p
+			} else {
+				path = p + ":" + path
+			}
+		}
+	}
+	os.Setenv("PATH", path)
 }
