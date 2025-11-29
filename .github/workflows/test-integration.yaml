@@ -29,5 +29,5 @@ jobs:
           echo "=== Running integration tests ==="
           echo "Working directory: $(pwd)"
           echo "Binary location: $(ls -lh bin/)"
-          go test -v -ginkgo.v -timeout 600s --ginkgo.label-filter=up-docker-build
-          go test -v -ginkgo.v -timeout 600s --ginkgo.label-filter=up-docker-build-compose
+          sudo go test -v -ginkgo.v -timeout 600s --ginkgo.label-filter=up-docker-build
+          sudo go test -v -ginkgo.v -timeout 600s --ginkgo.label-filter=up-docker-build-compose

@@ -74,13 +74,13 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 
 					image1 := container.Config.LegacyImage
 
+					ginkgo.By("Changing a file within the context")
 					scriptPath := filepath.Join(tempDir, "scripts", "alias.sh")
 					scriptFile, err := os.OpenFile(scriptPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 					framework.ExpectNoError(err)
 
 					defer func() { _ = scriptFile.Close() }()
 
-					ginkgo.By("Changing a file within the context")
 					_, err = scriptFile.Write([]byte("alias yr='date +%Y'"))
 					framework.ExpectNoError(err)
 
