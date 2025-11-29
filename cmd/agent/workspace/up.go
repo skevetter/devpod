@@ -211,11 +211,15 @@ func initWorkspace(ctx context.Context, cancel context.CancelFunc, workspaceInfo
 
 	// install docker in background
 	errChan := make(chan error, 2)
+	dockerPathChan := make(chan string, 1)
 	go func() {
 		if !workspaceInfo.Agent.IsDockerDriver() || workspaceInfo.Agent.Docker.Install == "false" {
+			dockerPathChan <- ""
 			errChan <- nil
 		} else {
-			errChan <- installDocker(logger)
+			dockerPath, err := installDocker(logger)
+			dockerPathChan <- dockerPath
+			errChan <- err
 		}
 	}()
 
@@ -234,6 +238,11 @@ func initWorkspace(ctx context.Context, cancel context.CancelFunc, workspaceInfo
 	}
 
 	// wait until docker is installed before configuring docker daemon
+	dockerPath := <-dockerPathChan
+	if dockerPath != "" && workspaceInfo.Agent.Docker.Path == "" {
+		workspaceInfo.Agent.Docker.Path = dockerPath
+		logger.Debugf("Set docker path to %s", dockerPath)
+	}
 	err = <-errChan
 	if err != nil {
 		return nil, nil, "", errors.Wrap(err, "install docker")
@@ -431,19 +440,18 @@ func prepareImage(workspaceDir, image string) error {
 	return nil
 }
 
-func installDocker(log log.Logger) (err error) {
+func installDocker(log log.Logger) (dockerPath string, err error) {
 	if !command.Exists("docker") {
 		writer := log.Writer(logrus.InfoLevel, false)
 		defer func() { _ = writer.Close() }()
 
 		log.Debug("Installing Docker")
 
-		err = dockerinstall.Install(writer, writer)
-		if err == nil {
-			command.RefreshPath()
-		}
+		dockerPath, err = dockerinstall.Install(writer, writer)
+	} else {
+		dockerPath = "docker"
 	}
-	return err
+	return dockerPath, err
 }
 
 func configureDockerDaemon(ctx context.Context, log log.Logger) (err error) {

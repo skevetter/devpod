@@ -17,7 +17,7 @@ type distro struct {
 	version string
 }
 
-func Install(stdout, stderr io.Writer) error {
+func Install(stdout, stderr io.Writer) (string, error) {
 	opts := &installOptions{
 		channel:     getEnv("CHANNEL", "stable"),
 		version:     strings.TrimPrefix(getEnv("VERSION", ""), "v"),
@@ -28,9 +28,16 @@ func Install(stdout, stderr io.Writer) error {
 		stderr:      stderr,
 	}
 	if err := doInstall(opts); err != nil {
-		return fmt.Errorf("docker installation failed: %w", err)
+		return "", fmt.Errorf("docker installation failed: %w", err)
 	}
-	return nil
+	
+	commonPaths := []string{"/usr/bin/docker", "/usr/local/bin/docker", "/bin/docker"}
+	for _, path := range commonPaths {
+		if _, err := os.Stat(path); err == nil {
+			return path, nil
+		}
+	}
+	return "docker", nil
 }
 
 type installOptions struct {
