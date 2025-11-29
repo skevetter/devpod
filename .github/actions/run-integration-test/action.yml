@@ -1,0 +1,59 @@
+name: Run Integration Test
+description: Run E2E integration test
+
+inputs:
+  label:
+    description: Test label to filter
+    required: true
+  gh-username:
+    description: GitHub username for private repo tests
+    required: true
+  gh-access-token:
+    description: GitHub access token for private repo tests
+    required: true
+  binary-cache-key:
+    description: Cache key for binary
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/checkout@v6
+
+    # NOTE: Restores cache from the previous job
+    - name: Setup Go
+      uses: magnetikonline/action-golang-cache@v5
+      with:
+        go-version-file: go.mod
+        cache-key-suffix: "e2e-tests"
+
+    - name: Restore binary
+      uses: actions/cache/restore@v4
+      with:
+        path: ./e2e/bin
+        key: ${{ inputs.binary-cache-key }}
+
+    - name: Setup kind
+      uses: engineerd/setup-kind@v0.6.2
+      with:
+        version: "v0.20.0"
+        image: kindest/node:v1.27.3
+
+    - name: Cluster info
+      shell: bash
+      run: |
+        kubectl cluster-info
+        kubectl get pods -n kube-system -v 10
+        echo "kubectl config current-context:" $(kubectl config current-context)
+        echo "KUBECONFIG env var:" ${KUBECONFIG}
+
+    - name: Run E2E test
+      shell: bash
+      working-directory: ./e2e
+      run: |
+        sudo env "PATH=$PATH" "GOROOT=$GOROOT" \
+          go test -v -ginkgo.v -timeout 3600s --ginkgo.label-filter=${{ inputs.label }}
+      env:
+        KUBCONFIG: /home/runner/.kube/config
+        GH_USERNAME: ${{ inputs.gh-username }}
+        GH_ACCESS_TOKEN: ${{ inputs.gh-access-token }}

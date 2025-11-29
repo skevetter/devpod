@@ -38,6 +38,8 @@ jobs:
     needs: setup-cache
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
+      max-parallel: 16
       matrix:
         label:
           - "build"
@@ -70,45 +72,11 @@ jobs:
     steps:
       - uses: jlumbroso/free-disk-space@v1.3.1
 
-      - uses: actions/checkout@v6
-
-      - name: Restore Go cache
-        uses: magnetikonline/action-golang-cache@v5
+      # TODO: update 'uses' to @main when action is published
+      - name: Run integration test
+        uses: ./.github/actions/run-integration-test
         with:
-          go-version-file: go.mod
-          cache-key-suffix: "e2e-tests"
-
-      - name: Restore binary
-        uses: actions/cache/restore@v4
-        with:
-          path: ./e2e/bin
-          key: ${{ runner.os }}-e2e-binary-${{ github.sha }}
-
-      - name: Copy binary to temp cache
-        run: |
-          mkdir -p /tmp/devpod-cache
-          cp ./e2e/bin/devpod-linux-amd64 /tmp/devpod-cache/devpod-linux-amd64
-
-      - name: Cluster setup
-        uses: engineerd/setup-kind@v0.6.2
-        with:
-          version: "v0.20.0"
-          image: kindest/node:v1.27.3
-
-      - name: Cluster info
-        run: |
-          kubectl cluster-info
-          kubectl get pods -n kube-system -v 10
-          echo "kubectl config current-context:" $(kubectl config current-context)
-          echo "KUBECONFIG env var:" ${KUBECONFIG}
-
-      - name: E2E test
-        working-directory: ./e2e
-        run: |
-          sudo env "PATH=$PATH" "GOROOT=$GOROOT" KUBECONFIG=/home/runner/.kube/config \
-            GH_USERNAME=${GH_USERNAME} \
-            GH_ACCESS_TOKEN=${GH_ACCESS_TOKEN} \
-            go test -v -ginkgo.v -timeout 3600s --ginkgo.label-filter=${{ matrix.label }}
-        env:
-          GH_USERNAME: ${{ secrets.GH_PRIVATE_REPO_USER_TEST }}
-          GH_ACCESS_TOKEN: ${{ secrets.GH_PRIVATE_REPO_TOKEN_TEST }}
+          label: ${{ matrix.label }}
+          gh-username: ${{ secrets.GH_PRIVATE_REPO_USER_TEST }}
+          gh-access-token: ${{ secrets.GH_PRIVATE_REPO_TOKEN_TEST }}
+          binary-cache-key: ${{ runner.os }}-e2e-binary-${{ github.sha }}
