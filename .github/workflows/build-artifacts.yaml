@@ -1,0 +1,157 @@
+name: Build Release Candidate Artifacts
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: "Platform to build"
+        required: true
+        type: choice
+        options:
+          - all
+          - linux
+          - macos
+          - windows
+  pull_request:
+
+jobs:
+  build-linux:
+    if: github.event_name == 'pull_request' || inputs.platform == 'all' || inputs.platform == 'linux'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [x86_64-unknown-linux-gnu, aarch64-unknown-linux-gnu]
+    name: test-linux-${{ matrix.target }}
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Build Environment
+        uses: ./.github/actions/setup-build-environment
+        with:
+          host: ubuntu-latest
+          target: ${{ matrix.target }}
+          package_version: 0.0.0-test
+          cli_only: ${{ matrix.target == 'aarch64-unknown-linux-gnu' }}
+
+      - name: Build CLI
+        uses: ./.github/actions/build-cli
+        with:
+          host: ubuntu-latest
+          target: ${{ matrix.target }}
+          os: linux
+          arch: ${{ matrix.target == 'x86_64-unknown-linux-gnu' && 'amd64' || 'arm64' }}
+          version: 0.0.0-test
+          telemetry_private_key: ""
+          crane_private_key: ""
+
+      - name: Build Desktop App
+        if: matrix.target == 'x86_64-unknown-linux-gnu'
+        uses: ./.github/actions/build-tauri-app
+        with:
+          target: ${{ matrix.target }}
+          args: "--config src-tauri/tauri-flatpak.conf.json --bundles appimage,deb"
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          tauri_private_key: ${{ secrets.TAURI_PRIVATE_KEY || 'dummy' }}
+          tauri_key_password: ${{ secrets.TAURI_KEY_PASSWORD || 'dummy' }}
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-${{ matrix.target }}
+          path: |
+            devpod-linux-*
+            desktop/src-tauri/target/release/bundle/**/*
+
+  build-macos:
+    needs: [build-linux]
+    if: inputs.platform == 'all' || inputs.platform == 'macos'
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [x86_64-apple-darwin, aarch64-apple-darwin]
+    name: test-macos-${{ matrix.target }}
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Build Environment
+        uses: ./.github/actions/setup-build-environment
+        with:
+          host: macos-latest
+          target: ${{ matrix.target }}
+          package_version: 0.0.0-test
+          cli_only: false
+
+      - name: Build CLI
+        uses: ./.github/actions/build-cli
+        with:
+          host: macos-latest
+          target: ${{ matrix.target }}
+          os: darwin
+          arch: ${{ matrix.target == 'x86_64-apple-darwin' && 'amd64' || 'arm64' }}
+          version: 0.0.0-test
+          telemetry_private_key: ""
+          crane_private_key: ""
+
+      - name: Build Desktop App
+        uses: ./.github/actions/build-tauri-app
+        with:
+          target: ${{ matrix.target }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          tauri_private_key: ${{ secrets.TAURI_PRIVATE_KEY || 'dummy' }}
+          tauri_key_password: ${{ secrets.TAURI_KEY_PASSWORD || 'dummy' }}
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-${{ matrix.target }}
+          path: |
+            devpod-darwin-*
+            desktop/src-tauri/target/release/bundle/**/*
+
+  build-windows:
+    needs: [build-linux]
+    if: inputs.platform == 'all' || inputs.platform == 'windows'
+    runs-on: windows-latest
+    name: test-windows-x86_64
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Build Environment
+        uses: ./.github/actions/setup-build-environment
+        with:
+          host: windows-latest
+          target: x86_64-pc-windows-msvc
+          package_version: 0.0.0-test
+          cli_only: false
+
+      - name: Build CLI
+        uses: ./.github/actions/build-cli
+        with:
+          host: windows-latest
+          target: x86_64-pc-windows-msvc
+          os: windows
+          arch: amd64
+          version: 0.0.0-test
+          telemetry_private_key: ""
+          crane_private_key: ""
+
+      - name: Build Desktop App
+        uses: ./.github/actions/build-tauri-app
+        with:
+          target: x86_64-pc-windows-msvc
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          tauri_private_key: ${{ secrets.TAURI_PRIVATE_KEY || 'dummy' }}
+          tauri_key_password: ${{ secrets.TAURI_KEY_PASSWORD || 'dummy' }}
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-x86_64
+          path: |
+            devpod-windows-*
+            desktop/src-tauri/target/release/bundle/**/*
