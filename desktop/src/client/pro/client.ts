@@ -404,7 +404,7 @@ class WorkspaceWatcher {
           globalClient.log("info", `[${this.hostID}] watch workspaces error: ${err}`)
         })
         .finally(async () => {
-          if (!this.abortController.signal.aborted && !(await this.reader?.closed)) {
+          if (!this.abortController.signal.aborted && this.reader) {
             // Either the webview or the daemon terminated the watcher, try to reconnect
             console.info("reconnect")
             this.reader = undefined

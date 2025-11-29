@@ -31,7 +31,7 @@ export function DeleteWorkspacesModal({
   const onDeleteClick = useCallback(() => {
     onCloseRequested()
     onDeleteRequested(pro ? true : forceDelete)
-  }, [forceDelete, onDeleteRequested, onCloseRequested])
+  }, [forceDelete, onDeleteRequested, onCloseRequested, pro])
 
   const onForceDeleteChanged = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {

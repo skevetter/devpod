@@ -72,10 +72,6 @@ export function WorkspaceDetails({
 
   // Format timespan labels.
   const [lastActivity, created] = useMemo(() => {
-    if (!instance) {
-      return [undefined, undefined]
-    }
-
     const lastActivityDate = getLastActivity(instance)
     const lastActivityFormatted = lastActivityDate
       ? dayjs(lastActivityDate).from(Date.now())
