@@ -1,19 +1,11 @@
-name: golangci-lint
+name: lint
 
 on:
   push:
   pull_request:
 
-permissions:
-  contents: read
-  # Optional: allow read access to pull request. Use with `only-new-issues` option.
-  pull-requests: read
-
-env:
-  GO111MODULE: on
-
 jobs:
-  golangci:
+  lint:
     name: lint
     runs-on: ubuntu-latest
     steps:
