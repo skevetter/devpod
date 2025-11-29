@@ -11,7 +11,7 @@ jobs:
       - uses: actions/checkout@v6
 
       # TODO: update 'uses' to @main when action is published
-      - uses: ./.github/actions/compile-binary
+      - uses: ./.github/actions/compile-test-binary
 
       - uses: robherley/go-test-action@v0
         with:
