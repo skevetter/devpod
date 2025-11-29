@@ -72,7 +72,7 @@ runs:
       working-directory: "./desktop"
 
     - name: Install additional ubuntu dependencies
-      if: inputs.host == 'ubuntu-22.04'
+      if: inputs.host == 'ubuntu-latest'
       shell: bash
       run: |
         sudo apt-get update
