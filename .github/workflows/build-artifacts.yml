@@ -56,13 +56,18 @@ jobs:
           tauri_private_key: ${{ secrets.TAURI_PRIVATE_KEY || 'dummy' }}
           tauri_key_password: ${{ secrets.TAURI_KEY_PASSWORD || 'dummy' }}
 
-      - name: Upload Artifacts
+      - name: Upload CLI Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: linux-${{ matrix.target }}
-          path: |
-            devpod-linux-*
-            desktop/src-tauri/target/release/bundle/**/*
+          name: linux-${{ matrix.target }}-cli
+          path: devpod-linux-*
+
+      - name: Upload Desktop Artifacts
+        if: matrix.target == 'x86_64-unknown-linux-gnu'
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-${{ matrix.target }}-desktop
+          path: desktop/src-tauri/target/release/bundle/**/*
 
   build-macos:
     needs: [build-linux]
