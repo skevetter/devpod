@@ -10,9 +10,6 @@ jobs:
   setup-cache:
     runs-on: ubuntu-latest
     steps:
-      # Saves ~3 minutes if skipped
-      # - uses: jlumbroso/free-disk-space@v1.3.1
-
       - uses: actions/checkout@v6
 
       # TODO: update 'uses' to @main when action is published
@@ -64,6 +61,8 @@ jobs:
             needs-disk-space: true
           - label: up-kubernetes
             needs-kind: true
+            needs-disk-space: true
+          - label: up-docker
             needs-disk-space: true
           - label: up-docker-compose
             needs-disk-space: true
