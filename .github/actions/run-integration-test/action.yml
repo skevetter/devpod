@@ -18,28 +18,25 @@ inputs:
   binary-cache-key:
     description: Cache key for binary
     required: true
+  binary-path:
+    description: Path where the binary is located
+    required: true
 
 runs:
   using: composite
   steps:
     - uses: actions/checkout@v6
 
-    # NOTE: Restores cache from the previous job
-    - name: Setup Go
-      uses: magnetikonline/action-golang-cache@v5
-      with:
-        go-version-file: go.mod
-        cache-key-suffix: "e2e-tests"
-
-    - name: Restore binary
+    - name: Restore cached binary
       uses: actions/cache/restore@v4
       with:
-        path: ./e2e/bin
-        key: ${{ inputs.binary-cache-key }}
+        path: ${{ inputs.binary-path }}
+        key: ${{ inputs.binary-cache-key }}-${{ github.sha }}
+        fail-on-cache-miss: true
 
     - name: Make binary executable
       shell: bash
-      run: chmod +x ./e2e/bin/devpod-linux-amd64
+      run: chmod +x ${{ inputs.binary-path }}
 
     - name: Setup kind
       if: inputs.needs-kind == 'true'

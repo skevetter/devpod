@@ -1,0 +1,43 @@
+name: Docker Install Test
+description: Test Docker installation functionality
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/checkout@v6
+
+    - name: Setup Go
+      uses: magnetikonline/action-golang-cache@v5
+      with:
+        go-version-file: go.mod
+
+    - name: Build binary
+      shell: bash
+      run: |
+        mkdir -p ./e2e/bin
+        CGO_ENABLED=0 go build -o ./e2e/bin/devpod-linux-amd64
+        chmod +x ./e2e/bin/devpod-linux-amd64
+
+    - name: Remove Docker to test installation
+      shell: bash
+      run: |
+        sudo systemctl stop docker.socket docker.service
+        sudo apt-get remove -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+        sudo rm -rf /var/lib/docker /var/lib/containerd
+        sudo rm -f /usr/bin/docker /usr/bin/dockerd
+        docker --version && exit 1 || echo "Docker removed"
+
+    - name: Run Docker installation test
+      shell: bash
+      working-directory: ./e2e
+      run: |
+        sudo \
+          PATH="${PATH}" \
+          GOROOT="${GOROOT}" \
+          go test -v -ginkgo.v -timeout 600s --ginkgo.label-filter=docker-install
+
+    - name: Verify Docker is installed
+      shell: bash
+      run: |
+        docker --version
+        docker ps

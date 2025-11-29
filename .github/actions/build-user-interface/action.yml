@@ -1,0 +1,35 @@
+name: Build User Interface
+description: Build and test the desktop user interface
+
+runs:
+  using: composite
+  steps:
+    - name: Setup node
+      uses: actions/setup-node@v6
+      with:
+        node-version: "latest"
+
+    - name: Install dependencies
+      shell: bash
+      working-directory: ./desktop
+      run: yarn install --frozen-lockfile
+
+    - name: Lint
+      shell: bash
+      working-directory: ./desktop
+      run: yarn lint:ci
+
+    - name: Format check
+      shell: bash
+      working-directory: ./desktop
+      run: yarn format:check
+
+    - name: Type check
+      shell: bash
+      working-directory: ./desktop
+      run: yarn types:check
+
+    - name: Build
+      shell: bash
+      working-directory: ./desktop
+      run: yarn build
