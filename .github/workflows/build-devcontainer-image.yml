@@ -64,7 +64,7 @@ jobs:
                  --amend ghcr.io/skevetter/devpod:dev-amd64 \
                  --amend ghcr.io/skevetter/devpod:dev-arm64
 
-          docker manifest push ghcr.io/skevetter/$IMAGE_NAME
+          docker manifest push "ghcr.io/skevetter/$IMAGE_NAME"
 
       - name: Update devcontainer.json
         if: ${{ github.event_name == 'workflow_dispatch' }}
