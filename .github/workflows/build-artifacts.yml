@@ -71,6 +71,7 @@ jobs:
         with:
           name: linux-${{ matrix.target }}-desktop
           path: desktop/src-tauri/target/release/bundle/**/*
+          retention-days: 1
 
   build-macos:
     needs: [build-linux]
@@ -119,6 +120,7 @@ jobs:
           path: |
             devpod-darwin-*
             desktop/src-tauri/target/release/bundle/**/*
+          retention-days: 1
 
   build-windows:
     needs: [build-linux]
@@ -163,3 +165,4 @@ jobs:
           path: |
             devpod-windows-*
             desktop/src-tauri/target/release/bundle/**/*
+          retention-days: 1
