@@ -153,7 +153,7 @@ fn main() -> anyhow::Result<()> {
                         .icon(Image::from_bytes(SYSTEM_TRAY_ICON_BYTES).unwrap(),)
                         .icon_as_template(true)
                         .menu(&menu)
-                        .menu_on_left_click(true)
+                        .show_menu_on_left_click(true)
                         .on_menu_event(system_tray.get_menu_event_handler())
                         .on_tray_icon_event(system_tray.get_tray_icon_event_handler())
                         .build(app);

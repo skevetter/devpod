@@ -43,7 +43,9 @@ pub fn fix_env(var_name: &str) -> Result<(), Error> {
             let stdout = String::from_utf8_lossy(&out.stdout).into_owned();
             let cleaned = &strip_ansi_escapes::strip(stdout)?;
             let value = String::from_utf8_lossy(cleaned);
-            std::env::set_var(var_name, value.as_ref());
+            unsafe {
+                std::env::set_var(var_name, value.as_ref());
+            }
             Ok(())
         } else {
             Err(Error::EchoFailed(

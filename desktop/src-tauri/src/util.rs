@@ -1,4 +1,4 @@
-use log::{debug, error, info};
+use log::{debug, error};
 use std::time::{Duration, Instant};
 
 // Exit code for the window to signal that the application was quit by the user through the system tray

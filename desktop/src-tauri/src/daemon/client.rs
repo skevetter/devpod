@@ -111,7 +111,7 @@ type InnerStream = tokio::net::windows::named_pipe::NamedPipeClient;
 
 impl HandshakeStream {
     pub async fn connect(p: &Path) -> tokio::io::Result<Self> {
-        let mut inner: InnerStream;
+        let inner: InnerStream;
         #[cfg(not(windows))]
         {
             inner = tokio::net::UnixStream::connect(p).await?;
