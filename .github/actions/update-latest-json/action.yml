@@ -1,0 +1,14 @@
+name: Update Latest JSON
+description: Update latest.json with release information and rename assets
+
+inputs:
+  release_id:
+    description: GitHub release ID
+    required: true
+  github_token:
+    description: GitHub token for release operations
+    required: true
+
+runs:
+  using: node24
+  main: dist/index.js

@@ -1,0 +1,79 @@
+name: Setup Build Environment
+description: Setup all dependencies for building DevPod
+
+inputs:
+  host:
+    description: Host OS (ubuntu-22.04, macos-latest, windows-latest)
+    required: true
+  target:
+    description: Build target architecture
+    required: true
+  package_version:
+    description: Package version to apply
+    required: true
+  cli_only:
+    description: Whether this is a CLI-only build
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/checkout@v6
+    
+    - name: Set git to use LF
+      shell: bash
+      run: |
+        git config --global core.autocrlf false
+        git config --global core.eol lf
+
+    - name: Apply Version
+      if: inputs.cli_only == 'false'
+      shell: bash
+      run: yarn version --new-version ${{ inputs.package_version }} --no-git-tag-version
+      working-directory: "./desktop"
+
+    - name: Setup System Dependencies
+      if: inputs.host == 'ubuntu-latest' && inputs.cli_only == 'false'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev libayatana-appindicator3-dev librsvg2-dev
+
+    - name: Setup Rust
+      uses: dtolnay/rust-toolchain@stable
+      if: inputs.cli_only == 'false'
+      with:
+        targets: ${{ inputs.target }}
+
+    - name: Rust cache
+      uses: swatinem/rust-cache@v2
+      if: inputs.cli_only == 'false'
+      with:
+        workspaces: "./desktop/src-tauri -> target"
+
+    - name: Setup Go
+      uses: magnetikonline/action-golang-cache@v5
+      with:
+        go-version-file: go.mod
+        cache-key-suffix: "release"
+
+    - name: Sync node version and setup cache
+      uses: actions/setup-node@v6
+      if: inputs.cli_only == 'false'
+      with:
+        node-version: "lts/*"
+        cache: "yarn"
+        cache-dependency-path: "./desktop/yarn.lock"
+
+    - name: Install frontend dependencies
+      if: inputs.cli_only == 'false'
+      shell: bash
+      run: yarn install
+      working-directory: "./desktop"
+
+    - name: Install additional ubuntu dependencies
+      if: inputs.host == 'ubuntu-22.04'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libwebkit2gtk-4.1-dev librsvg2-dev patchelf

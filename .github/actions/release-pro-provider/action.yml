@@ -1,0 +1,49 @@
+name: Release Pro Provider
+description: Download CLI assets and generate provider.yaml
+
+inputs:
+  version:
+    description: Release version (with v prefix)
+    required: true
+  github_token:
+    description: GitHub token for release operations
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/checkout@v6
+
+    - shell: bash
+      run: |
+        set -e
+
+        VERSION="${{ inputs.version }}"
+        OUT_DIR="release"
+        ASSETS="devpod-darwin-amd64 devpod-darwin-arm64 devpod-linux-amd64 devpod-linux-arm64 devpod-windows-amd64.exe"
+
+        echo "Prepare output directory $OUT_DIR..."
+        if [ ! -d "$OUT_DIR" ]; then
+          mkdir "$OUT_DIR"
+        else
+          rm -rf $OUT_DIR
+        fi
+        printf "Done\n\n"
+
+        echo "Download release assets into $OUT_DIR..."
+        for asset in $ASSETS; do
+              printf "\t$asset\n"
+              gh release download $VERSION --pattern="$asset" --dir="$OUT_DIR"
+              printf "\tDone\n"
+        done
+        printf "Done\n\n"
+
+        echo "Generate provider.yaml..."
+        go run ./hack/pro/main.go $VERSION > ./release/provider.yaml
+        printf "Done\n\n"
+
+        echo "Upload provider.yaml..."
+        gh release upload $VERSION ./release/provider.yaml --clobber
+        printf "Done\n\n"
+      env:
+        GH_TOKEN: ${{ inputs.github_token }}
