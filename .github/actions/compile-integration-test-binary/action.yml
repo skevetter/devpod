@@ -21,9 +21,7 @@ runs:
       shell: bash
       run: |
         mkdir -p ./e2e/bin
-        go build -ldflags "-s -w" -o ./e2e/bin/devpod-linux-amd64
-      env:
-        CGO_ENABLED: 0
+        CGO_ENABLED=0 go build -ldflags "-s -w" -o ./e2e/bin/devpod-linux-amd64
 
     - name: Cache binary
       uses: actions/cache@v4
