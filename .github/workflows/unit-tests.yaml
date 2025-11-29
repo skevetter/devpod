@@ -10,7 +10,14 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      # TODO: update 'uses' to @main when action is published
-      - uses: ./.github/actions/compile-test-binary
+      - name: Setup Go
+        uses: magnetikonline/action-golang-cache@v5
+        with:
+          go-version-file: go.mod
 
-      - run: ./hack/unit-tests.sh
+      - name: Build
+        run: go generate ./... && CGO_ENABLED=0 go build main.go
+
+      - uses: robherley/go-test-action@v0
+        with:
+          testArguments: '-race -coverprofile=coverage.out -covermode=atomic ./... -skip="^Test.*E2E$"'
