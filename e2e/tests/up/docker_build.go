@@ -75,11 +75,6 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 					image1 := container.Config.LegacyImage
 
 					scriptPath := filepath.Join(tempDir, "scripts", "alias.sh")
-					err = os.Chown(scriptPath, os.Getuid(), os.Getgid())
-					framework.ExpectNoError(err)
-					err = os.Chmod(scriptPath, 0644)
-					framework.ExpectNoError(err)
-
 					scriptFile, err := os.OpenFile(scriptPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 					framework.ExpectNoError(err)
 

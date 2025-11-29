@@ -55,7 +55,29 @@ func CopyToTempDirWithoutChdir(relativePath string) (string, error) {
 		return "", err
 	}
 
+	// Fix permissions on copied files
+	err = fixPermissions(dir)
+	if err != nil {
+		_ = os.RemoveAll(dir)
+		return "", err
+	}
+
 	return dir, nil
+}
+
+// fixPermissions ensures all files in the directory are writable by the current user
+func fixPermissions(root string) error {
+	return filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		// Make directories accessible
+		if info.IsDir() {
+			return os.Chmod(path, 0755)
+		}
+		// Make files readable and writable
+		return os.Chmod(path, 0644)
+	})
 }
 
 func CopyToTempDirInDir(baseDir, relativePath string) (string, error) {
@@ -73,6 +95,13 @@ func CopyToTempDirInDir(baseDir, relativePath string) (string, error) {
 
 	// Copy the file files from relativePath to the temp dir
 	err = copy.Copy(relativePath, dir)
+	if err != nil {
+		_ = os.RemoveAll(dir)
+		return "", err
+	}
+
+	// Fix permissions on copied files
+	err = fixPermissions(dir)
 	if err != nil {
 		_ = os.RemoveAll(dir)
 		return "", err
