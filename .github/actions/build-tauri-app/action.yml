@@ -31,6 +31,11 @@ runs:
   steps:
     - uses: actions/checkout@v6
 
+    - name: Install Tauri CLI
+      shell: bash
+      run: cargo install tauri-cli --version ^2.9.4 --locked
+      working-directory: "./desktop"
+
     - name: Build Desktop App
       uses: tauri-apps/tauri-action@v0.6
       with:
