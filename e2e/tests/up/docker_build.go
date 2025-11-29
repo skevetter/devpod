@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/loft-sh/log"
 	"github.com/onsi/ginkgo/v2"
@@ -73,8 +74,13 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 
 					image1 := container.Config.LegacyImage
 
-					scriptFile, err := os.OpenFile(tempDir+"/scripts/alias.sh",
-						os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
+					scriptPath := filepath.Join(tempDir, "scripts", "alias.sh")
+					err = os.Chmod(scriptPath, 0644)
+					if err != nil && !os.IsNotExist(err) {
+						framework.ExpectNoError(err)
+					}
+
+					scriptFile, err := os.OpenFile(scriptPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 					framework.ExpectNoError(err)
 
 					defer func() { _ = scriptFile.Close() }()

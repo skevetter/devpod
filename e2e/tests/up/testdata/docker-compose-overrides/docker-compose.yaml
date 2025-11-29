@@ -2,6 +2,6 @@ version: '3'
 
 services:
   app:
-    image: mcr.microsoft.com/devcontainers/go:0-1.19-bullseye
+    image: mcr.microsoft.com/devcontainers/go:1-bookworm
     volumes:
       - .:/workspaces:cached
