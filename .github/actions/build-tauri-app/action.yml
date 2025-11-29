@@ -1,0 +1,46 @@
+name: Build Tauri App
+description: Build Tauri desktop application with common configuration
+
+inputs:
+  target:
+    description: Target platform to build for
+    required: true
+  release_id:
+    description: GitHub release ID (optional, for updater)
+    required: false
+  args:
+    description: Additional arguments to pass to tauri build
+    required: false
+    default: ""
+  include_updater_json:
+    description: Whether to include updater JSON
+    required: false
+    default: "false"
+  github_token:
+    description: GitHub token for release operations
+    required: true
+  tauri_private_key:
+    description: Tauri private key for signing
+    required: true
+  tauri_key_password:
+    description: Tauri key password
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/checkout@v6
+
+    - name: Build Desktop App
+      uses: tauri-apps/tauri-action@v0.6
+      with:
+        releaseId: ${{ inputs.release_id }}
+        projectPath: "./desktop"
+        args: "--target ${{ inputs.target }} ${{ inputs.args }}"
+        includeUpdaterJson: ${{ inputs.include_updater_json }}
+      env:
+        GITHUB_TOKEN: ${{ inputs.github_token }}
+        TAURI_PRIVATE_KEY: ${{ inputs.tauri_private_key }}
+        TAURI_SIGNING_PRIVATE_KEY: ${{ inputs.tauri_private_key }}
+        TAURI_KEY_PASSWORD: ${{ inputs.tauri_key_password }}
+        TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ inputs.tauri_key_password }}
