@@ -38,6 +38,7 @@ runs:
       run: chmod +x ./e2e/bin/devpod-linux-amd64
 
     - name: Setup kind
+      if: contains(inputs.label, 'kubernetes')
       uses: engineerd/setup-kind@v0.6.2
       with:
         version: "v0.24.0"
@@ -51,14 +52,34 @@ runs:
     - name: Setup SSH server
       shell: bash
       run: |
+        echo "=== Installing SSH server ==="
         sudo apt-get update -qq
         sudo apt-get install -y openssh-server
+        
+        echo "=== Starting SSH service ==="
         sudo systemctl restart ssh
         sudo systemctl status ssh
+        
+        echo "=== Generating SSH keys ==="
         ssh-keygen -t rsa -N "" -f ~/.ssh/id_rsa -q || true
         cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
         chmod 600 ~/.ssh/authorized_keys
-        ssh -o StrictHostKeyChecking=no -o BatchMode=yes localhost echo "SSH test successful"
+        
+        echo "=== Adding user to docker group ==="
+        sudo usermod -aG docker $USER
+        groups
+        
+        echo "=== Testing SSH connection ==="
+        ssh -o StrictHostKeyChecking=no -o BatchMode=yes localhost echo "SSH works"
+        
+        echo "=== Testing Docker over SSH ==="
+        ssh -o StrictHostKeyChecking=no -o BatchMode=yes localhost docker ps || echo "Docker not accessible over SSH"
+        
+        echo "=== Checking Docker socket permissions ==="
+        ls -la /var/run/docker.sock
+        
+        echo "=== Testing Docker locally ==="
+        docker ps
 
     - name: Run test
       shell: bash
