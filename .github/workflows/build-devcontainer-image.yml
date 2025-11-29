@@ -53,14 +53,14 @@ jobs:
               exit 0
             fi
             docker image ls
-            docker tag $ID ghcr.io/skevetter/devpod:dev-$ARCH
-            docker push ghcr.io/skevetter/devpod:dev-$ARCH
+            docker tag "$ID" "ghcr.io/skevetter/devpod:dev-$ARCH"
+            docker push "ghcr.io/skevetter/devpod:dev-$ARCH"
           done
           SUFFIX="${{github.sha}}"
           IMAGE_NAME="devpod:dev-$SUFFIX"
           echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_ENV
           # Combine into multi-arch image
-          docker manifest create ghcr.io/skevetter/$IMAGE_NAME \
+          docker manifest create "ghcr.io/skevetter/$IMAGE_NAME" \
                  --amend ghcr.io/skevetter/devpod:dev-amd64 \
                  --amend ghcr.io/skevetter/devpod:dev-arm64
 

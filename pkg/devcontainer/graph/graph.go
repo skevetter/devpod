@@ -208,7 +208,7 @@ func (c *CyclicError[T]) Error() string {
 		what = c.What
 	}
 
-	return fmt.Sprintf("cyclic %s found: \n%s", what, strings.Join(cycle, "\n"))
+	return fmt.Sprintf("cyclic %s found:\n%s", what, strings.Join(cycle, "\n"))
 }
 
 func (g *Graph[T]) AddChild(parentID string, childID string) error {
