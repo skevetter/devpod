@@ -54,17 +54,18 @@ func validateUserValue(optionName, userValue string, option *types.Option) error
 	}
 
 	if option.Type != "" {
-		if option.Type == "number" {
+		switch option.Type {
+		case "number":
 			_, err := strconv.ParseInt(userValue, 10, 64)
 			if err != nil {
 				return fmt.Errorf("invalid value '%s' for option '%s', must be a number", userValue, optionName)
 			}
-		} else if option.Type == "boolean" {
+		case "boolean":
 			_, err := strconv.ParseBool(userValue)
 			if err != nil {
 				return fmt.Errorf("invalid value '%s' for option '%s', must be a boolean", userValue, optionName)
 			}
-		} else if option.Type == "duration" {
+		case "duration":
 			_, err := time.ParseDuration(userValue)
 			if err != nil {
 				return fmt.Errorf("invalid value '%s' for option '%s', must be a duration like 10s, 5m or 24h", userValue, optionName)

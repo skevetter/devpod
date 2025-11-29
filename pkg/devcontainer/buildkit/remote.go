@@ -134,7 +134,7 @@ func BuildRemote(
 		return nil, fmt.Errorf("get auth config for %s: %w", ref.Context().String(), err)
 	}
 
-	registry := ref.Context().Registry.RegistryStr()
+	registry := ref.Context().RegistryStr()
 	session := []session.Attachable{
 		authprovider.NewDockerAuthProvider(authprovider.DockerAuthProviderConfig{
 			ConfigFile: &configfile.ConfigFile{

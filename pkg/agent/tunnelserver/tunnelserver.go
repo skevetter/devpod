@@ -349,15 +349,16 @@ func (t *tunnelServer) Ping(context.Context, *tunnel.Empty) (*tunnel.Empty, erro
 }
 
 func (t *tunnelServer) Log(ctx context.Context, message *tunnel.LogMessage) (*tunnel.Empty, error) {
-	if message.LogLevel == tunnel.LogLevel_DEBUG {
+	switch message.LogLevel {
+	case tunnel.LogLevel_DEBUG:
 		t.log.Debug(strings.TrimSpace(message.Message))
-	} else if message.LogLevel == tunnel.LogLevel_INFO {
+	case tunnel.LogLevel_INFO:
 		t.log.Info(strings.TrimSpace(message.Message))
-	} else if message.LogLevel == tunnel.LogLevel_WARNING {
+	case tunnel.LogLevel_WARNING:
 		t.log.Warn(strings.TrimSpace(message.Message))
-	} else if message.LogLevel == tunnel.LogLevel_ERROR {
+	case tunnel.LogLevel_ERROR:
 		t.log.Error(strings.TrimSpace(message.Message))
-	} else if message.LogLevel == tunnel.LogLevel_DONE {
+	case tunnel.LogLevel_DONE:
 		t.log.Done(strings.TrimSpace(message.Message))
 	}
 

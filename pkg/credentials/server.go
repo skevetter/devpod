@@ -26,30 +26,31 @@ func RunCredentialsServer(
 ) error {
 	var handler http.Handler = http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		log.Debugf("Incoming client connection at %s", request.URL.Path)
-		if request.URL.Path == "/git-credentials" {
+		switch request.URL.Path {
+		case "/git-credentials":
 			err := handleGitCredentialsRequest(ctx, writer, request, client, log)
 			if err != nil {
 				http.Error(writer, err.Error(), http.StatusInternalServerError)
 				return
 			}
-		} else if request.URL.Path == "/docker-credentials" {
+		case "/docker-credentials":
 			err := handleDockerCredentialsRequest(ctx, writer, request, client, log)
 			if err != nil {
 				http.Error(writer, err.Error(), http.StatusInternalServerError)
 				return
 			}
-		} else if request.URL.Path == "/git-ssh-signature" {
+		case "/git-ssh-signature":
 			err := handleGitSSHSignatureRequest(ctx, writer, request, client, log)
 			if err != nil {
 				http.Error(writer, err.Error(), http.StatusInternalServerError)
 				return
 			}
-		} else if request.URL.Path == "/loft-platform-credentials" {
+		case "/loft-platform-credentials":
 			err := handleLoftPlatformCredentialsRequest(ctx, writer, request, client, log)
 			if err != nil {
 				http.Error(writer, err.Error(), http.StatusInternalServerError)
 			}
-		} else if request.URL.Path == "/gpg-public-keys" {
+		case "/gpg-public-keys":
 			err := handleGPGPublicKeysRequest(ctx, writer, request, client, log)
 			if err != nil {
 				http.Error(writer, err.Error(), http.StatusInternalServerError)

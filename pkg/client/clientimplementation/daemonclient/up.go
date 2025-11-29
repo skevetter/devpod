@@ -276,17 +276,18 @@ func printLogs(ctx context.Context, managementClient kube.Interface, workspace *
 		}
 
 		// write message to stdout or stderr
-		if message.Type == StdoutData {
+		switch message.Type {
+		case StdoutData:
 			if _, err := stdoutStreamer.Write(message.Bytes); err != nil {
 				logger.Debugf("error read stdout: %v", err)
 				return 1, err
 			}
-		} else if message.Type == StderrData {
+		case StderrData:
 			if _, err := stderrStreamer.Write(message.Bytes); err != nil {
 				logger.Debugf("error read stderr: %v", err)
 				return 1, err
 			}
-		} else if message.Type == ExitCode {
+		case ExitCode:
 			logger.Debugf("exit code: %d", message.ExitCode)
 			return message.ExitCode, nil
 		}

@@ -346,7 +346,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 
 			containerEnvPath, _, err := f.ExecCommandCapture(ctx, []string{"ssh", "--command", "cat " + devcontainerPath, projectName})
 			framework.ExpectNoError(err)
-			expectedImageName := language.MapConfig[language.Go].ImageContainer.Image
+			expectedImageName := language.MapConfig[language.Go].Image
 
 			gomega.Expect(containerEnvPath).To(gomega.Equal(fmt.Sprintf("{\"image\":\"%s\"}", expectedImageName)))
 

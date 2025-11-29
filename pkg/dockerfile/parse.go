@@ -110,13 +110,18 @@ func (d *Dockerfile) replaceVariables(val string, buildArgs map[string]string, b
 
 func getExpressionValue(option string, isSet bool, defaultValue string, value string) string {
 	output := ""
-	if option == "-" {
+	switch option {
+	case "-":
 		if isSet {
 			output = value
 		} else {
 			output = defaultValue
 		}
-	} else if option == "+" {
+	case "--":
+		if isSet {
+			output = value
+		}
+	case "+":
 		if isSet {
 			output = defaultValue
 		} else {

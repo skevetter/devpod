@@ -52,17 +52,18 @@ func ExecuteConn(ctx context.Context, rawConn *websocket.Conn, stdin io.Reader, 
 			continue
 		}
 
-		if message.messageType == StdoutData {
+		switch message.messageType {
+		case StdoutData:
 			if _, err := io.Copy(stdout, message.data); err != nil {
 				log.Debugf("error read stdout: %v", err)
 				return 1, err
 			}
-		} else if message.messageType == StderrData {
+		case StderrData:
 			if _, err := io.Copy(stderr, message.data); err != nil {
 				log.Debugf("error read stderr: %v", err)
 				return 1, err
 			}
-		} else if message.messageType == ExitCode {
+		case ExitCode:
 			log.Debugf("exit code: %d", message.exitCode)
 			return int(message.exitCode), nil
 		}

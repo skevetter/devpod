@@ -262,7 +262,7 @@ func (c *client) Ping(ctx context.Context, writer io.Writer) error {
 		if result.DERPRegionID != 0 {
 			via = fmt.Sprintf("DERP(%s)", result.DERPRegionCode)
 		}
-		_, err = writer.Write([]byte(fmt.Sprintf("pong from %s (%s) via %v in %v\n", result.NodeName, result.NodeIP, via, latency)))
+		_, err = fmt.Fprintf(writer, "pong from %s (%s) via %v in %v\n", result.NodeName, result.NodeIP, via, latency)
 		if err != nil {
 			return fmt.Errorf("failed to write ping result: %w", err)
 		}

@@ -162,9 +162,10 @@ func logPipeOutput(log log.Logger, pipe io.ReadCloser, level logrus.Level) {
 	scanner := bufio.NewScanner(pipe)
 	for scanner.Scan() {
 		line := scanner.Text()
-		if level == logrus.InfoLevel {
+		switch level {
+		case logrus.InfoLevel:
 			log.Info(line)
-		} else if level == logrus.ErrorLevel {
+				case logrus.ErrorLevel:
 			if containsError(line) {
 				log.Error(line)
 			} else {

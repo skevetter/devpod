@@ -557,7 +557,7 @@ func selectWorkspace(ctx context.Context, devPodConfig *config.Config, changeLas
 
 	// sort by last used
 	sort.SliceStable(workspaces, func(i, j int) bool {
-		return workspaces[i].LastUsedTimestamp.Time.Unix() > workspaces[j].LastUsedTimestamp.Time.Unix()
+		return workspaces[i].LastUsedTimestamp.Unix() > workspaces[j].LastUsedTimestamp.Unix()
 	})
 
 	// prepare form options

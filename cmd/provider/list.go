@@ -65,7 +65,8 @@ func (cmd *ListCmd) Run(ctx context.Context) error {
 		configuredProviders = map[string]*config.ProviderConfig{}
 	}
 
-	if cmd.Output == "plain" {
+	switch cmd.Output {
+	case "plain":
 		tableEntries := [][]string{}
 		for _, entry := range providers {
 			tableEntries = append(tableEntries, []string{
@@ -87,7 +88,7 @@ func (cmd *ListCmd) Run(ctx context.Context) error {
 			"Initialized",
 			"Description",
 		}, tableEntries)
-	} else if cmd.Output == "json" {
+		case "json":
 		retMap := map[string]ProviderWithDefault{}
 		for k, entry := range providers {
 			var dynamicOptions map[string]*types.Option

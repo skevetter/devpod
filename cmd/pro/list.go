@@ -56,7 +56,8 @@ func (cmd *ListCmd) Run(ctx context.Context) error {
 		return err
 	}
 
-	if cmd.Output == "plain" {
+	switch cmd.Output {
+	case "plain":
 		tableEntries := [][]string{}
 		for _, proInstance := range proInstances {
 			entry := []string{
@@ -85,7 +86,7 @@ func (cmd *ListCmd) Run(ctx context.Context) error {
 		}
 
 		table.PrintTable(log.Default, tableHeaders, tableEntries)
-	} else if cmd.Output == "json" {
+		case "json":
 		tableEntries := []*proTableEntry{}
 		for _, proInstance := range proInstances {
 			entry := &proTableEntry{

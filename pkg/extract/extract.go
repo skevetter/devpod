@@ -112,20 +112,21 @@ func extractNext(tarReader *tar.Reader, destFolder string, options *Options) (bo
 	}
 
 	// Is dir?
-	if header.Typeflag == tar.TypeDir {
+	switch header.Typeflag {
+	case tar.TypeDir:
 		if err := os.MkdirAll(outFileName, dirPerm); err != nil {
 			return false, err
 		}
 
 		return true, nil
-	} else if header.Typeflag == tar.TypeSymlink {
+	case tar.TypeSymlink:
 		err := os.Symlink(header.Linkname, outFileName)
 		if err != nil {
 			return false, err
 		}
 
 		return true, nil
-	} else if header.Typeflag == tar.TypeLink {
+	case tar.TypeLink:
 		err := os.Link(header.Linkname, outFileName)
 		if err != nil {
 			return false, err

@@ -226,7 +226,7 @@ func (s *instanceStore) Add(instance *managementv1.DevPodWorkspaceInstance) {
 		},
 	}
 
-	key := s.key(instance.ObjectMeta.Namespace, instance.ObjectMeta.Name)
+	key := s.key(instance.Namespace, instance.Name)
 	s.m.Lock()
 	s.instances[key] = proInstance
 	s.m.Unlock()
@@ -245,7 +245,7 @@ func (s *instanceStore) Delete(instance *managementv1.DevPodWorkspaceInstance) {
 	}
 	s.m.Lock()
 	defer s.m.Unlock()
-	key := s.key(instance.ObjectMeta.Namespace, instance.ObjectMeta.Name)
+	key := s.key(instance.Namespace, instance.Name)
 	delete(s.instances, key)
 
 	// delete from metrics as well
@@ -274,7 +274,7 @@ func (s *instanceStore) convert(instance *ProWorkspaceInstance) *ProWorkspaceIns
 	s.metricsMu.RLock()
 	defer s.metricsMu.RUnlock()
 
-	metrics := s.metrics[s.key(instance.ObjectMeta.Namespace, instance.ObjectMeta.Name)]
+	metrics := s.metrics[s.key(instance.Namespace, instance.Name)]
 	if len(metrics) > 0 {
 		totalMetrics := len(metrics)
 		// calculate average latency

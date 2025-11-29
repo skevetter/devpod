@@ -381,15 +381,20 @@ func ParseMount(str string) Mount {
 	for _, split := range splitted {
 		splitted2 := strings.Split(split, "=")
 		key := splitted2[0]
-		if key == "src" || key == "source" {
+		switch key {
+		case "src", "source":
 			retMount.Source = splitted2[1]
-		} else if key == "dst" || key == "destination" || key == "target" {
+		case "workspaceMount":
+			retMount.Source = splitted2[1]
+		case "workspaceFolder":
 			retMount.Target = splitted2[1]
-		} else if key == "type" {
+		case "dst", "destination", "target":
+			retMount.Target = splitted2[1]
+		case "type":
 			retMount.Type = splitted2[1]
-		} else if key == "external" {
+		case "external":
 			retMount.External, _ = strconv.ParseBool(splitted2[1])
-		} else {
+		default:
 			retMount.Other = append(retMount.Other, split)
 		}
 	}

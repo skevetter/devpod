@@ -467,7 +467,7 @@ func (d *dockerDriver) RunDockerDevContainer(
 		for scanner.Scan() {
 			match := re.FindStringSubmatch(scanner.Text())
 			if match == nil {
-				_, err := containerPasswdFileOut.WriteString(fmt.Sprintf("%s\n", scanner.Text()))
+				_, err := fmt.Fprintf(containerPasswdFileOut, "%s\n", scanner.Text())
 				if err != nil {
 					return err
 				}
@@ -483,7 +483,7 @@ func (d *dockerDriver) RunDockerDevContainer(
 			containerGid = result["gid"]
 			containerHome = result["home"]
 
-			_, err := containerPasswdFileOut.WriteString(fmt.Sprintf("%s:%s:%s:%s:%s:%s:%s\n", containerUser, result["password"], localUid, localGid, result["gcos"], result["home"], result["shell"]))
+			_, err := fmt.Fprintf(containerPasswdFileOut, "%s:%s:%s:%s:%s:%s:%s\n", containerUser, result["password"], localUid, localGid, result["gcos"], result["home"], result["shell"])
 			if err != nil {
 				return err
 			}
@@ -509,7 +509,7 @@ func (d *dockerDriver) RunDockerDevContainer(
 		for scanner.Scan() {
 			match := re.FindStringSubmatch(scanner.Text())
 			if match == nil {
-				_, err := containerGroupFileOut.WriteString(fmt.Sprintf("%s\n", scanner.Text()))
+				_, err := fmt.Fprintf(containerGroupFileOut, "%s\n", scanner.Text())
 				if err != nil {
 					return err
 				}

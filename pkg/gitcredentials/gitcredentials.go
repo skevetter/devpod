@@ -102,17 +102,18 @@ func Parse(raw string) (*GitCredentials, error) {
 			continue
 		}
 
-		if splitted[0] == "protocol" {
+		switch splitted[0] {
+		case "protocol":
 			credentials.Protocol = strings.Join(splitted[1:], "=")
-		} else if splitted[0] == "host" {
+		case "host":
 			credentials.Host = strings.Join(splitted[1:], "=")
-		} else if splitted[0] == "username" {
+		case "username":
 			credentials.Username = strings.Join(splitted[1:], "=")
-		} else if splitted[0] == "password" {
+		case "password":
 			credentials.Password = strings.Join(splitted[1:], "=")
-		} else if splitted[0] == "url" {
+		case "url":
 			credentials.URL = strings.Join(splitted[1:], "=")
-		} else if splitted[0] == "path" {
+		case "path":
 			credentials.Path = strings.Join(splitted[1:], "=")
 		}
 	}

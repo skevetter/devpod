@@ -37,7 +37,7 @@ func NewStopCmd(flags *flags.GlobalFlags) *cobra.Command {
 				return err
 			}
 
-			err = clientimplementation.DecodePlatformOptionsFromEnv(&cmd.StopOptions.Platform)
+			err = clientimplementation.DecodePlatformOptionsFromEnv(&cmd.Platform)
 			if err != nil {
 				return fmt.Errorf("decode platform options: %w", err)
 			}
