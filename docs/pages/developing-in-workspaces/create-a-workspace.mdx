@@ -34,7 +34,7 @@ Under the hood, the Desktop Application will call the CLI command `devpod up REP
 :::
 
 :::info Note
-You can set the location of your devpod home by passing the `--devpod-home={home_path}` flag, 
+You can set the location of your devpod home by passing the `--devpod-home={home_path}` flag,
 or by setting the env var `DEVPOD_HOME` to your desired home directory.
 
 This can be useful if you are having trouble with a workspace trying to mount to a windows location when it should be mounting to a path inside the WSL VM.
@@ -107,7 +107,7 @@ DevPod will create the following `.devcontainer.json`:
 
 If you have a local container running, you can create a workspace from it by running:
 ```
-devpod up my-workspace --source container:$CONTAINER_ID 
+devpod up my-workspace --source container:$CONTAINER_ID
 ```
 
 This only works with the `docker` provider.

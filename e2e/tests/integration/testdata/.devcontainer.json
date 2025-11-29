@@ -1,4 +1,4 @@
 {
-	"name": "Go",
-	"image": "mcr.microsoft.com/devcontainers/go:1-bookworm"
+  "name": "Go",
+  "image": "mcr.microsoft.com/devcontainers/go:1-bookworm"
 }

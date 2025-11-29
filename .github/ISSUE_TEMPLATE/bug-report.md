@@ -7,13 +7,13 @@ labels:
 
 <!-- Please use this template for reporting bugs and provide as much info as possible. Not doing so may result in your bug not being addressed in a timely manner. Thanks!-->
 
-**What happened?**  
+**What happened?**
 
 
-**What did you expect to happen instead?**  
+**What did you expect to happen instead?**
 
 
-**How can we reproduce the bug?** (as minimally and precisely as possible)  
+**How can we reproduce the bug?** (as minimally and precisely as possible)
 
 My *`devcontainer.json`*:
 ```
@@ -23,16 +23,16 @@ My *`devcontainer.json`*:
 }
 ```
 
-**Local Environment:**  
+**Local Environment:**
 - DevPod Version: [use `devpod version`]
 - Operating System: windows | linux | mac
-- ARCH of the OS: AMD64 | ARM64 | i386 
+- ARCH of the OS: AMD64 | ARM64 | i386
 
-**DevPod Provider:**  
+**DevPod Provider:**
 - Cloud Provider: google | aws | azure | digitalOcean
 - Kubernetes Provider: [use `kubectl version`]
 - Local/remote provider: docker | ssh
 - Custom provider: provide imported `provider.yaml` config file
 
 
-**Anything else we need to know?**  
+**Anything else we need to know?**

@@ -30,7 +30,7 @@ func Install(stdout, stderr io.Writer) (string, error) {
 	if err := doInstall(opts); err != nil {
 		return "", fmt.Errorf("docker installation failed: %w", err)
 	}
-	
+
 	commonPaths := []string{"/usr/bin/docker", "/usr/local/bin/docker", "/bin/docker"}
 	for _, path := range commonPaths {
 		if _, err := os.Stat(path); err == nil {
@@ -292,10 +292,10 @@ func installDebian(distro *distro, shC string, opts *installOptions) error {
 			pkgPattern := strings.ReplaceAll(opts.version, "-ce-", "~ce~.*")
 			pkgPattern = strings.ReplaceAll(pkgPattern, "-", ".*")
 			searchCmd := fmt.Sprintf("apt-cache madison 'docker-ce' | grep '%s' | head -1 | awk '{$1=$1};1' | cut -d' ' -f 3", pkgPattern)
-			
+
 			fprintln(opts.stdout, "INFO: Searching repository for VERSION '"+opts.version+"'")
 			fprintln(opts.stdout, "INFO: "+searchCmd)
-			
+
 			cmd := exec.Command("sh", "-c", searchCmd)
 			out, err := cmd.Output()
 			if err != nil || len(out) == 0 {
@@ -375,10 +375,10 @@ func installRHEL(distro *distro, shC string, opts *installOptions) error {
 			pkgPattern := strings.ReplaceAll(opts.version, "-ce-", "\\\\.ce.*")
 			pkgPattern = strings.ReplaceAll(pkgPattern, "-", ".*") + ".*" + pkgSuffix
 			searchCmd := fmt.Sprintf("%s list --showduplicates 'docker-ce' | grep '%s' | tail -1 | awk '{print $2}'", pkgMgr, pkgPattern)
-			
+
 			fprintln(opts.stdout, "INFO: Searching repository for VERSION '"+opts.version+"'")
 			fprintln(opts.stdout, "INFO: "+searchCmd)
-			
+
 			cmd := exec.Command("sh", "-c", searchCmd)
 			out, err := cmd.Output()
 			if err != nil || len(out) == 0 {
@@ -415,7 +415,7 @@ func installRHEL(distro *distro, shC string, opts *installOptions) error {
 		extraPkgs = append(extraPkgs, "docker-scan-plugin")
 	}
 	extraPkgs = append(extraPkgs, "docker-ce-rootless-extras"+pkgVersion)
-	
+
 	pkgs := buildPackageList(opts.version, pkgVersion, cliPkgVersion, extraPkgs...)
 
 	installCmd := fmt.Sprintf("%s install -y -q %s", pkgMgr, pkgs)
@@ -483,10 +483,10 @@ func installSLES(distro *distro, shC string, opts *installOptions) error {
 			pkgPattern := strings.ReplaceAll(opts.version, "-ce-", "\\\\.ce.*")
 			pkgPattern = strings.ReplaceAll(pkgPattern, "-", ".*")
 			searchCmd := fmt.Sprintf("zypper search -s --match-exact 'docker-ce' | grep '%s' | tail -1 | awk '{print $6}'", pkgPattern)
-			
+
 			fprintln(opts.stdout, "INFO: Searching repository for VERSION '"+opts.version+"'")
 			fprintln(opts.stdout, "INFO: "+searchCmd)
-			
+
 			cmd := exec.Command("sh", "-c", searchCmd)
 			out, err := cmd.Output()
 			if err != nil || len(out) == 0 {
@@ -632,7 +632,7 @@ func fprintf(w io.Writer, format string, a ...interface{}) {
 
 func buildPackageList(version, pkgVersion, cliPkgVersion string, extraPkgs ...string) string {
 	pkgs := "docker-ce" + pkgVersion
-	
+
 	if versionGte(version, "18.09") {
 		if cliPkgVersion != "" {
 			pkgs += " docker-ce-cli" + cliPkgVersion + " containerd.io"
@@ -640,18 +640,18 @@ func buildPackageList(version, pkgVersion, cliPkgVersion string, extraPkgs ...st
 			pkgs += " docker-ce-cli containerd.io"
 		}
 	}
-	
+
 	if versionGte(version, "20.10") {
 		pkgs += " docker-compose-plugin"
 		for _, extra := range extraPkgs {
 			pkgs += " " + extra
 		}
 	}
-	
+
 	if versionGte(version, "23.0") {
 		pkgs += " docker-buildx-plugin"
 	}
-	
+
 	return pkgs
 }
 

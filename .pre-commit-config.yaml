@@ -1,0 +1,57 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+        args: ["--allow-multiple-documents"]
+      - id: check-added-large-files
+      - id: check-merge-conflict
+  - repo: https://github.com/alessandrojcm/commitlint-pre-commit-hook
+    rev: v9.23.0
+    hooks:
+      - id: commitlint
+        stages: [commit-msg]
+        language_version: lts
+        additional_dependencies:
+          - "@commitlint/config-conventional"
+        verbose: true
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.11.0.1
+    hooks:
+      - id: shellcheck
+        args: ["-e", "SC1091,SC1103,SC2148,SC2034,SC1090,SC1009,SC1054,SC1056,SC1072,SC1073,SC1083,SC2329"]
+  - repo: https://github.com/scop/pre-commit-shfmt
+    rev: v3.12.0-2
+    hooks:
+      - id: shfmt
+        args: ["-i", "4", "-ci", "-w"]
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.9
+    hooks:
+      - id: actionlint
+        files: '^\.github/workflows/'
+  - repo: https://github.com/biomejs/pre-commit
+    rev: v2.3.7
+    hooks:
+      - id: biome-format
+        exclude: '^(\.github/actions/|\.vscode/|desktop/|docs/|examples/)'
+      - id: biome-ci
+        exclude: '^(\.github/actions/|\.vscode/|desktop/|docs/|examples/)'
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.28.0
+    hooks:
+      - id: gitleaks
+  - repo: https://github.com/commitizen-tools/commitizen
+    rev: v4.9.1
+    hooks:
+      - id: commitizen
+        stages: [commit-msg]
+  - repo: https://github.com/TekWizely/pre-commit-golang
+    rev: v1.0.0-rc.4
+    hooks:
+      - id: go-fmt
+      - id: go-imports
+      - id: golangci-lint
+        pass_filenames: false

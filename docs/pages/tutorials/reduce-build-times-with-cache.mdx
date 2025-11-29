@@ -29,18 +29,18 @@ Then prebuild your image, this will populate the registry cache so that develope
 devpod build my-workspace
 ```
 
-Now the next time you or anyone in your team needs to build an image, it can pull from the cache. If you've made changes to your environment, then DevPod will detect these changes and are 
+Now the next time you or anyone in your team needs to build an image, it can pull from the cache. If you've made changes to your environment, then DevPod will detect these changes and are
 built on top of the existing image layers.
 
 
 #### How does DevPod detect changes?
 
-Devpod parses your Dockerfile and .devcontainer.json to detect file paths that can affect your build context. Devpod traverses these files and makes a hash of the file contents to use as the 
-container's image tag. When you make changes to these files, the hash will change causing a rebuild. Thanks to the remote cache the previous layers will be built so only changes are needed. To 
+Devpod parses your Dockerfile and .devcontainer.json to detect file paths that can affect your build context. Devpod traverses these files and makes a hash of the file contents to use as the
+container's image tag. When you make changes to these files, the hash will change causing a rebuild. Thanks to the remote cache the previous layers will be built so only changes are needed. To
 reduce build times it is recommened to follow docker's best practices when writing Dockerfiles.
 
 #### Why Kaniko?
 
 When DevPod uses the kubernetes driver and needs to build a devcontainer, but your local environment does not have a container runtime, it builds the container in the cluster. It does so using
-Kaniko, Kaniko builds the container in userspace and does not require super user priveleges. This is much more secure than docker in docker, where the docker daemon is either mounted locally on 
+Kaniko, Kaniko builds the container in userspace and does not require super user priveleges. This is much more secure than docker in docker, where the docker daemon is either mounted locally on
 the container or over a network within the cluster, neither being ideal.

@@ -214,7 +214,7 @@ Host existinghost
 		},
 		{
 			name: "Host addition after top level includes",
-			config: `Include ~/config1 
+			config: `Include ~/config1
 
 Include ~/config2
 
@@ -230,7 +230,7 @@ Include ~/config3`,
 			command:    "",
 			gpgagent:   false,
 			devPodHome: "",
-			expected: `Include ~/config1 
+			expected: `Include ~/config1
 
 Include ~/config2
 

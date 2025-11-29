@@ -304,7 +304,7 @@ binaries:
     - os: linux
       arch: arm64
       path: /usr/local/bin/devpod
-    - os: darwin 
+    - os: darwin
       arch: amd64
       path: /usr/local/bin/devpod
     - os: darwin

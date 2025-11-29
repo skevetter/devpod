@@ -12,7 +12,7 @@ agent:
 exec:
   create: |-
     mkdir -p ${LOCATION}/${MACHINE_ID}
-    echo "RUNNING" > ${LOCATION}/${MACHINE_ID}/status.txt 
+    echo "RUNNING" > ${LOCATION}/${MACHINE_ID}/status.txt
 
   delete: |-
     rm -R ${LOCATION}/${MACHINE_ID}
@@ -21,7 +21,7 @@ exec:
     echo "RUNNING" > ${LOCATION}/${MACHINE_ID}/status.txt
 
   stop: |-
-    echo "STOPPED" > ${LOCATION}/${MACHINE_ID}/status.txt 
+    echo "STOPPED" > ${LOCATION}/${MACHINE_ID}/status.txt
 
   status: |-
     cat ${LOCATION}/${MACHINE_ID}/status.txt 2>/dev/null || echo "NOTFOUND"

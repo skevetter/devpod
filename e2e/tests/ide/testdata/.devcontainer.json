@@ -1,13 +1,11 @@
 {
-	"name": "Python",
-	"image": "mcr.microsoft.com/devcontainers/python:0-3.11",
+  "name": "Python",
+  "image": "mcr.microsoft.com/devcontainers/python:0-3.11",
 
-	"customizations": {
-		"vscode": {
-			"settings": {},
-			"extensions": [
-				"streetsidesoftware.code-spell-checker"
-			]
-		}
-	}
+  "customizations": {
+    "vscode": {
+      "settings": {},
+      "extensions": ["streetsidesoftware.code-spell-checker"]
+    }
+  }
 }

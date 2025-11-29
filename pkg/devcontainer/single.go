@@ -41,7 +41,7 @@ func (r *runner) runSingleContainer(
 	timeout time.Duration,
 ) (*config.Result, error) {
 	r.Log.Debugf("Starting devcontainer in single container mode...")
-	
+
 	// Check if Docker exists before trying to find containers
 	var containerDetails *config.ContainerDetails
 	var err error

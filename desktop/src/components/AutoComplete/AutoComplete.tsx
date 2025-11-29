@@ -26,7 +26,7 @@ type TAutoCompleteProps = Readonly<{
   name?: string
 }>
 
-/* 
+/*
  * Can be integrated with `react-hook-form` like this:
  * ```tsx
     const {  handleSubmit, control } = useForm()

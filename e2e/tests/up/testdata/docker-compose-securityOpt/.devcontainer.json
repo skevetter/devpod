@@ -1,10 +1,7 @@
 {
-	"name": "Go",
-	"dockerComposeFile": "./docker-compose.yaml",
-	"service": "app",
-	"workspaceFolder": "/workspaces",
-	"securityOpt": [
-		"seccomp=unconfined",
-		"apparmor=unconfined"
- 	]
+  "name": "Go",
+  "dockerComposeFile": "./docker-compose.yaml",
+  "service": "app",
+  "workspaceFolder": "/workspaces",
+  "securityOpt": ["seccomp=unconfined", "apparmor=unconfined"]
 }

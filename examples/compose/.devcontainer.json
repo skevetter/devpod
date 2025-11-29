@@ -3,7 +3,7 @@
   "service": "app",
   "runServices": ["app2"],
   "workspaceFolder": "/workspaces",
-  "features":{
+  "features": {
     "ghcr.io/devcontainers/features/github-cli:1": {},
     "ghcr.io/devcontainers/features/node:1": {
       "installYarnUsingApt": true,

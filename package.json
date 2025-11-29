@@ -1,0 +1,7 @@
+{
+  "name": "devpod",
+  "private": true,
+  "devDependencies": {
+    "@biomejs/biome": "^2.3.8"
+  }
+}

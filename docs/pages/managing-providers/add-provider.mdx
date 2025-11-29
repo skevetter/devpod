@@ -131,27 +131,27 @@ devpod provider options <provider-name>
 An example output for the AWS Provider is:
 
 ```
-          NAME            | REQUIRED |          DESCRIPTION           |         DEFAULT         |          VALUE           
+          NAME            | REQUIRED |          DESCRIPTION           |         DEFAULT         |          VALUE
 ----------------------------+----------+--------------------------------+-------------------------+--------------------------
-AGENT_PATH                | false    | The path where to inject the   | /var/lib/toolbox/devpod | /var/lib/toolbox/devpod  
-                          |          | DevPod agent to.               |                         |                          
-AWS_ACCESS_KEY_ID         | false    | The AWS access key id          |                         |                          
-AWS_AMI                   | false    | The disk image to use.         |                         |                          
-AWS_DISK_SIZE             | false    | The disk size to use.          | 40                      | 40                       
-AWS_INSTANCE_TYPE         | false    | The machine type to use.       | c5.xlarge               | c5.xlarge                
-AWS_REGION                | true     | The AWS cloud region to create |                         | us-west-2                
-                          |          | the VM in. E.g. us-west-1      |                         |                          
-AWS_SECRET_ACCESS_KEY     | false    | The AWS secret access key      |                         |                          
-AWS_VPC_ID                | false    | The vpc id to use.             |                         |                          
-INACTIVITY_TIMEOUT        | false    | If defined, will automatically | 10m                     | 10m                      
-                          |          | stop the VM after the          |                         |                          
-                          |          | inactivity period.             |                         |                          
-INJECT_DOCKER_CREDENTIALS | false    | If DevPod should inject docker | true                    | true                     
-                          |          | credentials into the remote    |                         |                          
-                          |          | host.                          |                         |                          
-INJECT_GIT_CREDENTIALS    | false    | If DevPod should inject git    | true                    | true                     
-                          |          | credentials into the remote    |                         |                          
-                          |          | host.                          |                         |  
+AGENT_PATH                | false    | The path where to inject the   | /var/lib/toolbox/devpod | /var/lib/toolbox/devpod
+                          |          | DevPod agent to.               |                         |
+AWS_ACCESS_KEY_ID         | false    | The AWS access key id          |                         |
+AWS_AMI                   | false    | The disk image to use.         |                         |
+AWS_DISK_SIZE             | false    | The disk size to use.          | 40                      | 40
+AWS_INSTANCE_TYPE         | false    | The machine type to use.       | c5.xlarge               | c5.xlarge
+AWS_REGION                | true     | The AWS cloud region to create |                         | us-west-2
+                          |          | the VM in. E.g. us-west-1      |                         |
+AWS_SECRET_ACCESS_KEY     | false    | The AWS secret access key      |                         |
+AWS_VPC_ID                | false    | The vpc id to use.             |                         |
+INACTIVITY_TIMEOUT        | false    | If defined, will automatically | 10m                     | 10m
+                          |          | stop the VM after the          |                         |
+                          |          | inactivity period.             |                         |
+INJECT_DOCKER_CREDENTIALS | false    | If DevPod should inject docker | true                    | true
+                          |          | credentials into the remote    |                         |
+                          |          | host.                          |                         |
+INJECT_GIT_CREDENTIALS    | false    | If DevPod should inject git    | true                    | true
+                          |          | credentials into the remote    |                         |
+                          |          | host.                          |                         |
 ```
 
 You can see this table as an overview, you can change each option using:

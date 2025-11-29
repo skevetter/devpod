@@ -1,7 +1,7 @@
 {
-	"name": "Go",
-	"dockerComposeFile": "./docker-compose.yaml",
-	"service": "app",
-	"workspaceFolder": "/workspaces",
-	"containerUser": "root"
+  "name": "Go",
+  "dockerComposeFile": "./docker-compose.yaml",
+  "service": "app",
+  "workspaceFolder": "/workspaces",
+  "containerUser": "root"
 }

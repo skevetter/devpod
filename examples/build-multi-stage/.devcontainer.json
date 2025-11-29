@@ -4,12 +4,12 @@
     "context": ".",
     "dockerfile": "./Dockerfile"
   },
-  "features":{
+  "features": {
     "ghcr.io/devcontainers/features/github-cli:1": {},
     "ghcr.io/devcontainers/features/node:1": {
-			"installYarnUsingApt": true,
-		        "version": "lts",
-	 		"nvmVersion": "latest"
-	 	}
+      "installYarnUsingApt": true,
+      "version": "lts",
+      "nvmVersion": "latest"
+    }
   }
 }

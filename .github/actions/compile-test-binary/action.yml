@@ -45,4 +45,3 @@ runs:
       with:
         path: ${{ inputs.binary-path }}
         key: ${{ inputs.binary-cache-key }}-${{ github.sha }}
-

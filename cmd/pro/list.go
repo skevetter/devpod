@@ -86,7 +86,7 @@ func (cmd *ListCmd) Run(ctx context.Context) error {
 		}
 
 		table.PrintTable(log.Default, tableHeaders, tableEntries)
-		case "json":
+	case "json":
 		tableEntries := []*proTableEntry{}
 		for _, proInstance := range proInstances {
 			entry := &proTableEntry{

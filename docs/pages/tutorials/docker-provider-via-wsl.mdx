@@ -7,7 +7,7 @@ sidebar_label: Docker provider via WSL
 
 The purpose of this quickstart is to provide a Docker environment via WSL, and a guide on how to integrate DevPod to Docker running in WSL.
 
-There are 3 parts to this tutorial. 
+There are 3 parts to this tutorial.
 1. Step 1 to Step 5 relates to installing Docker in WSL
 2. Step 6 and Step 7 relate to integrating Docker client (for Windows) with Docker daemon in WSL
 3. Step 8 relates to Integrating DevPod with Docker in WSL
@@ -40,7 +40,7 @@ Use the command below to install the Docker engine on Ubuntu 24.04.
 
 ```
 #!/bin/bash
-# If your machine is behind corporate firewall, 
+# If your machine is behind corporate firewall,
 # make sure to define your HTTP_PROXY and HTTPS_PROXY before running the command below
 
 sudo apt-get update
@@ -70,7 +70,7 @@ sudo systemctl start containerd.service
 
 ```
 #!/bin/bash
-# If your machine is behind corporate firewall, 
+# If your machine is behind corporate firewall,
 # make sure to define your HTTP_PROXY and HTTPS_PROXY before running the command below
 
 sudo mkdir -p /etc/systemd/system/docker.service.d
@@ -105,7 +105,7 @@ sudo systemctl restart docker.service
 
 ### 6. Download the Docker client for Windows
 
-Download the docker client from [this url](https://download.docker.com/win/static/stable/x86_64/). At the time of writing, the latest version is `docker-27.5.1.zip`. 
+Download the docker client from [this url](https://download.docker.com/win/static/stable/x86_64/). At the time of writing, the latest version is `docker-27.5.1.zip`.
 Extract the downloaded zip, and add the folder to your PATH environment variable.
 
 Verify that everything works by typing `docker` in a new Powershell.
@@ -134,6 +134,5 @@ Set `Docker Host` as `tcp://127.0.0.1:2375` and `Docker Path` as `docker`.
 
 ## Summary
 
-Following this tutorial, you should be able to use DevPod with a Docker provider running in WSL. 
+Following this tutorial, you should be able to use DevPod with a Docker provider running in WSL.
 You can try any of the examples in `Create Workspace`.
-

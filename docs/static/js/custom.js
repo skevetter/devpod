@@ -192,13 +192,13 @@ window.addEventListener("click", function (e) {
                     range.selectNodeContents(e.target.parentElement.querySelector(':scope > .prism-code'));
                     selection.removeAllRanges();
                     selection.addRange(range);
-                    
+
                     document.execCommand('copy');
                     selection.removeAllRanges();
-            
+
                     const original = e.target.textContent;
                     e.target.textContent = 'Copied';
-            
+
                     setTimeout(() => {
                         e.target.textContent = original;
                     }, 1200);

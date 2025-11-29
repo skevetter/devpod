@@ -5,9 +5,9 @@ sidebar_label: Deploying machines
 
 
 In DevPod, machines are the infrastructure that run your devcontainer. Providers like GCP, AWS, and DigitalOcean are considered "machine" providers because they first set up a virtual machine (VM) to host your container.
- 
-When you start a workspace with DevPod, such as running `devpod up`, DevPod uses a selected provider and starts your devcontainer. 
-If the provider requires a virtual machine (VM), DevPod determines whether to create one. It uses your local environment's credentials and the corresponding CLI tool (e.g., `aws` for AWS or `az` for Azure) to set up the VM. 
+
+When you start a workspace with DevPod, such as running `devpod up`, DevPod uses a selected provider and starts your devcontainer.
+If the provider requires a virtual machine (VM), DevPod determines whether to create one. It uses your local environment's credentials and the corresponding CLI tool (e.g., `aws` for AWS or `az` for Azure) to set up the VM.
 Once the VM is running, DevPod connects to it through the provider's secure tunnel. Below are examples of providers and their secure tunnels.
 
 - AWS: [Instance Connect](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-connect-set-up.html)
@@ -16,13 +16,12 @@ Once the VM is running, DevPod connects to it through the provider's secure tunn
 
 :::note
 Alternatively, you can use [SSH tunneling](https://www.ssh.com/academy/ssh/tunneling-example) to connect to your machines, if supported by your setup.
-::: 
+:::
 
-The dedvpod agent starts a SSH server using the STDIO of the secure tunnel in order for you local DevPod CLI/UI to forward ports over the SSH connection. Once this is done DevPod starts your local 
+The dedvpod agent starts a SSH server using the STDIO of the secure tunnel in order for you local DevPod CLI/UI to forward ports over the SSH connection. Once this is done DevPod starts your local
 IDE and connects it to the devcontainer via SSH.
 
 <figure>
   <img src="/docs/media/c4_machines.png" alt="DevPod Architecture" />
   <figcaption>DevPod - Component Diagram</figcaption>
 </figure>
-

@@ -13,7 +13,7 @@ System_Boundary(host, "Kubernetes Cluster") {
     System(controlPlane, "kube API server", "Manages the cluster")
 
     System_Boundary(devpodns, "devpod namespace") {
-        
+
         Container_Boundary(kaniko1, "Workspace") {
             ContainerDb(cache, "Build Cache", "Volume", "Local registry mirror")
             ContainerDb(dir, "Workspace Directory", "Volume", "Build context")

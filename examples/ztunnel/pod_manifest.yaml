@@ -157,5 +157,3 @@ spec:
   - name: containerd-sock
     hostPath:
       path: "/var/run/containerd/containerd.sock"
-            
-

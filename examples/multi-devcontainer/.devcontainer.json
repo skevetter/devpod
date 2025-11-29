@@ -1,1 +1,1 @@
-{"image":"mcr.microsoft.com/devcontainers/base:ubuntu","build":{}}
+{ "image": "mcr.microsoft.com/devcontainers/base:ubuntu", "build": {} }

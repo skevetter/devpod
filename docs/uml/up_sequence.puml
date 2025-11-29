@@ -20,7 +20,7 @@ DevPod -> Agent: devpod workspace build
 activate Agent
 Agent --> ContainerRuntime: build
 ContainerRuntime --> Agent: image
-Agent --> DevPod: 
+Agent --> DevPod:
 deactivate Agent
 end
 
@@ -58,9 +58,9 @@ end
 
 Agent -> ContainerAgent: Run life cycle hooks
 
-ContainerAgent --> Agent: 
+ContainerAgent --> Agent:
 deactivate ContainerAgent
-Agent --> DevPod: 
+Agent --> DevPod:
 deactivate Agent
 
 alt if using browser based IDE (openvscode, jupyter)

@@ -84,7 +84,7 @@ func (cmd *OptionsCmd) Run(ctx context.Context, ide string) error {
 			"Default",
 			"Value",
 		}, tableEntries)
-		case "json":
+	case "json":
 		options := map[string]optionWithValue{}
 		for optionName, entry := range ideOptions {
 			options[optionName] = optionWithValue{

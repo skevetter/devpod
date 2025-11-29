@@ -165,7 +165,7 @@ func logPipeOutput(log log.Logger, pipe io.ReadCloser, level logrus.Level) {
 		switch level {
 		case logrus.InfoLevel:
 			log.Info(line)
-				case logrus.ErrorLevel:
+		case logrus.ErrorLevel:
 			if containsError(line) {
 				log.Error(line)
 			} else {

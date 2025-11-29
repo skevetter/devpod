@@ -88,7 +88,7 @@ func (cmd *ListCmd) Run(ctx context.Context) error {
 			"Initialized",
 			"Description",
 		}, tableEntries)
-		case "json":
+	case "json":
 		retMap := map[string]ProviderWithDefault{}
 		for k, entry := range providers {
 			var dynamicOptions map[string]*types.Option

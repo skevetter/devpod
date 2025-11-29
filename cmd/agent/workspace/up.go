@@ -223,7 +223,7 @@ func initWorkspace(ctx context.Context, cancel context.CancelFunc, workspaceInfo
 			if install, err := workspaceInfo.Agent.Docker.Install.Bool(); err == nil && !install {
 				installDisabled = true
 			}
-			
+
 			// If docker does not exist, install it even if disabled
 			if !command.Exists("docker") {
 				if installDisabled {

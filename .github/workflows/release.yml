@@ -172,7 +172,7 @@ jobs:
           tauri_key_password: ${{ secrets.TAURI_KEY_PASSWORD }}
 
   publish:
-    needs: [build-linux, build-macos, build-windows]
+    needs: [create-release, build-linux, build-macos, build-windows]
     if: startsWith(github.ref, 'refs/tags/v') == true
     permissions:
       contents: write
@@ -189,4 +189,3 @@ jobs:
         with:
           release_id: ${{ needs.create-release.outputs.release_id }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
-

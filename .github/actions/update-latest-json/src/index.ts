@@ -203,7 +203,7 @@ async function run(): Promise<void> {
         "content-length": fs.statSync(latestDestPath).size.toString(),
       },
       name: "latest.json",
-      data: fs.readFileSync(latestDestPath, 'utf8'),
+      data: fs.readFileSync(latestDestPath, "utf8"),
     });
 
     core.info("Successfully updated latest.json");
