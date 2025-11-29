@@ -59,7 +59,8 @@ func (cmd *ListCmd) Run(ctx context.Context) error {
 		return err
 	}
 
-	if cmd.Output == "plain" {
+	switch cmd.Output {
+	case "plain":
 		tableEntries := [][]string{}
 		for _, entry := range entries {
 			machineConfig, err := provider.LoadMachineConfig(devPodConfig.DefaultContext, entry.Name())
@@ -82,7 +83,7 @@ func (cmd *ListCmd) Run(ctx context.Context) error {
 			"Provider",
 			"Age",
 		}, tableEntries)
-	} else if cmd.Output == "json" {
+	case "json":
 		tableEntries := []*provider.Machine{}
 		for _, entry := range entries {
 			machineConfig, err := provider.LoadMachineConfig(devPodConfig.DefaultContext, entry.Name())
@@ -100,7 +101,7 @@ func (cmd *ListCmd) Run(ctx context.Context) error {
 			return err
 		}
 		fmt.Print(string(out))
-	} else {
+	default:
 		return fmt.Errorf("unexpected output format, choose either json or plain. Got %s", cmd.Output)
 	}
 

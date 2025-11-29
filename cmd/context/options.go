@@ -55,7 +55,8 @@ func (cmd *OptionsCmd) Run(ctx context.Context, args []string) error {
 		entryOptions = map[string]config.OptionValue{}
 	}
 
-	if cmd.Output == "plain" {
+	switch cmd.Output {
+	case "plain":
 		tableEntries := [][]string{}
 		for _, entry := range config.ContextOptions {
 			value := entryOptions[entry.Name].Value
@@ -77,7 +78,7 @@ func (cmd *OptionsCmd) Run(ctx context.Context, args []string) error {
 			"Default",
 			"Value",
 		}, tableEntries)
-	} else if cmd.Output == "json" {
+	case "json":
 		options := map[string]optionWithValue{}
 		for _, entry := range config.ContextOptions {
 			options[entry.Name] = optionWithValue{
@@ -91,7 +92,7 @@ func (cmd *OptionsCmd) Run(ctx context.Context, args []string) error {
 			return err
 		}
 		fmt.Print(string(out))
-	} else {
+	default:
 		return fmt.Errorf("unexpected output format, choose either json or plain. Got %s", cmd.Output)
 	}
 

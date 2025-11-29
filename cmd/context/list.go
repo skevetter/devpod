@@ -52,7 +52,8 @@ func (cmd *ListCmd) Run(ctx context.Context) error {
 		return err
 	}
 
-	if cmd.Output == "plain" {
+	switch cmd.Output {
+	case "plain":
 		tableEntries := [][]string{}
 		for contextName := range devPodConfig.Contexts {
 			tableEntries = append(tableEntries, []string{
@@ -68,7 +69,7 @@ func (cmd *ListCmd) Run(ctx context.Context) error {
 			"Name",
 			"Default",
 		}, tableEntries)
-	} else if cmd.Output == "json" {
+	case "json":
 		ides := []ContextWithDefault{}
 		for contextName := range devPodConfig.Contexts {
 			ides = append(ides, ContextWithDefault{
@@ -82,7 +83,7 @@ func (cmd *ListCmd) Run(ctx context.Context) error {
 			return err
 		}
 		fmt.Print(string(out))
-	} else {
+	default:
 		return fmt.Errorf("unexpected output format, choose either json or plain. Got %s", cmd.Output)
 	}
 

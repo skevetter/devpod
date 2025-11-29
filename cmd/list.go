@@ -59,19 +59,20 @@ func (cmd *ListCmd) Run(ctx context.Context) error {
 		return err
 	}
 
-	if cmd.Output == "json" {
+	switch cmd.Output {
+	case "json":
 		sort.SliceStable(workspaces, func(i, j int) bool {
-			return workspaces[i].LastUsedTimestamp.Time.Unix() > workspaces[j].LastUsedTimestamp.Time.Unix()
+			return workspaces[i].LastUsedTimestamp.Unix() > workspaces[j].LastUsedTimestamp.Unix()
 		})
 		out, err := json.Marshal(workspaces)
 		if err != nil {
 			return err
 		}
 		fmt.Print(string(out))
-	} else if cmd.Output == "plain" {
+	case "plain":
 		tableEntries := [][]string{}
 		sort.SliceStable(workspaces, func(i, j int) bool {
-			return workspaces[i].LastUsedTimestamp.Time.Unix() > workspaces[j].LastUsedTimestamp.Time.Unix()
+			return workspaces[i].LastUsedTimestamp.Unix() > workspaces[j].LastUsedTimestamp.Unix()
 		})
 		for _, entry := range workspaces {
 			name := entry.ID
@@ -100,7 +101,7 @@ func (cmd *ListCmd) Run(ctx context.Context) error {
 			"Age",
 			"Pro",
 		}, tableEntries)
-	} else {
+	default:
 		return fmt.Errorf("unexpected output format, choose either json or plain. Got %s", cmd.Output)
 	}
 

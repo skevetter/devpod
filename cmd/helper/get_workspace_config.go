@@ -64,7 +64,7 @@ func (cmd *GetWorkspaceConfigCommand) Run(ctx context.Context, devPodConfig *con
 	rawSource := args[0]
 
 	level := log.Default.GetLevel()
-	if cmd.GlobalFlags.Debug {
+	if cmd.Debug {
 		level = logrus.DebugLevel
 	}
 	var logger log.Logger = log.NewStdoutLogger(os.Stdin, os.Stdout, os.Stderr, level)

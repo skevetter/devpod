@@ -67,10 +67,10 @@ func (cmd *OptionsCmd) Run(ctx context.Context, args []string) error {
 		return fmt.Errorf("please specify a provider")
 	}
 
-	if providerName != "" && cmd.GlobalFlags.Provider != "" {
-		if providerName != cmd.GlobalFlags.Provider {
+	if providerName != "" && cmd.Provider != "" {
+		if providerName != cmd.Provider {
 			log.Default.Infof("providerName=%+v", providerName)
-			log.Default.Infof("GlobalFlags.Provider=%+v", cmd.GlobalFlags.Provider)
+			log.Default.Infof("GlobalFlags.Provider=%+v", cmd.Provider)
 			return fmt.Errorf("ambiguous provider configuration detected")
 		}
 	}

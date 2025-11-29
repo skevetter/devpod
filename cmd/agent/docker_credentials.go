@@ -53,9 +53,10 @@ func (cmd *DockerCredentialsCmd) Run(ctx context.Context, args []string, log log
 	}
 
 	// we only handle get and list
-	if args[0] == "get" {
+	switch args[0] {
+	case "get":
 		return cmd.handleGet(log)
-	} else if args[0] == "list" {
+	case "list":
 		return cmd.handleList(log)
 	}
 
@@ -187,7 +188,7 @@ func getDockerCredentialsFromWorkspaceServer(credentials *dockercredentials.Cred
 		}
 		defer func() { _ = file.Close() }()
 
-		_, _ = file.WriteString(fmt.Sprintf("get credentials from workspace server: %v\n", credentialsErr))
+		_, _ = fmt.Fprintf(file, "get credentials from workspace server: %v\n", credentialsErr)
 		return nil
 	}
 
