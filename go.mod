@@ -1,8 +1,6 @@
 module github.com/skevetter/devpod
 
-go 1.23.1
-
-toolchain go1.23.5
+go 1.25.4
 
 require (
 	github.com/PaesslerAG/jsonpath v0.1.1

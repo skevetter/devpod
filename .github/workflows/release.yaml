@@ -155,10 +155,11 @@ jobs:
         with:
           workspaces: "./desktop/src-tauri -> target"
 
-      - name: Go setup
-        uses: actions/setup-go@v2
+      - name: Setup Golang with cache
+        uses: magnetikonline/action-golang-cache@v5
         with:
-          go-version: 1.21.8
+          go-version-file: go.mod
+          cache-key-suffix: "release"
 
       - name: Build Sidecar CLI
         if: matrix.settings.host != 'windows-latest'
