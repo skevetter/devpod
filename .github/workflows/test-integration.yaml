@@ -46,6 +46,9 @@ jobs:
 
       - name: Run integration test
         working-directory: ./e2e
+        env:
+          GOMODCACHE: /home/runner/go/pkg/mod
+          GOCACHE: /home/runner/.cache/go-build
         run: |
           echo "=== Running integration tests ==="
           echo "Working directory: $(pwd)"
