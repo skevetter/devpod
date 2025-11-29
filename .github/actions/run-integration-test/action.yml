@@ -33,6 +33,10 @@ runs:
         path: ./e2e/bin
         key: ${{ inputs.binary-cache-key }}
 
+    - name: Make binary executable
+      shell: bash
+      run: chmod +x ./e2e/bin/devpod-linux-amd64
+
     - name: Setup kind
       uses: engineerd/setup-kind@v0.6.2
       with:
@@ -50,5 +54,7 @@ runs:
       env:
         GH_USERNAME: ${{ inputs.gh-username }}
         GH_ACCESS_TOKEN: ${{ inputs.gh-access-token }}
+        KUBECONFIG: /home/runner/.kube/config
       run: |
+        printenv 
         sudo -E go test -v -ginkgo.v -timeout 3600s --ginkgo.label-filter=${{ inputs.label }}
