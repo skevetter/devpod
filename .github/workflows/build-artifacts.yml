@@ -51,6 +51,10 @@ jobs:
         uses: swatinem/rust-cache@v2
         with:
           workspaces: "./desktop/src-tauri -> target"
+        
+      - name: Install frontend dependencies
+        run: yarn install
+        working-directory: "./desktop"
 
       - name: Build Desktop App
         if: matrix.target == 'x86_64-unknown-linux-gnu'
@@ -60,10 +64,10 @@ jobs:
           args: "--target ${{ matrix.target }} --config src-tauri/tauri-flatpak.conf.json --bundles appimage,deb"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY || 'dummy' }}
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY || 'dummy' }}
-          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD || 'dummy' }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD || 'dummy' }}
+          # TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY || 'dummy' }}
+          # TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY || 'dummy' }}
+          # TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD || 'dummy' }}
+          # TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD || 'dummy' }}
 
       - name: Upload CLI Artifacts
         uses: actions/upload-artifact@v4
