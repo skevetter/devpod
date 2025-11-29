@@ -17,7 +17,7 @@ on:
 jobs:
   build-linux:
     if: github.event_name == 'pull_request' || inputs.platform == 'all' || inputs.platform == 'linux'
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.target == 'x86_64-unknown-linux-gnu' && 'ubuntu-latest' || 'ubuntu-24.04-arm64' }}
     strategy:
       fail-fast: false
       matrix:
@@ -30,15 +30,15 @@ jobs:
       - name: Setup Build Environment
         uses: ./.github/actions/setup-build-environment
         with:
-          host: ubuntu-latest
+          host: ${{ matrix.target == 'x86_64-unknown-linux-gnu' && 'ubuntu-latest' || 'ubuntu-24.04-arm64' }}
           target: ${{ matrix.target }}
           package_version: 0.0.0-test
-          cli_only: ${{ matrix.target == 'aarch64-unknown-linux-gnu' }}
+          cli_only: false
 
       - name: Build CLI
         uses: ./.github/actions/build-cli
         with:
-          host: ubuntu-latest
+          host: ${{ matrix.target == 'x86_64-unknown-linux-gnu' && 'ubuntu-latest' || 'ubuntu-24.04-arm64' }}
           target: ${{ matrix.target }}
           os: linux
           arch: ${{ matrix.target == 'x86_64-unknown-linux-gnu' && 'amd64' || 'arm64' }}
@@ -47,7 +47,6 @@ jobs:
           crane_private_key: ""
 
       - name: Build Desktop App
-        if: matrix.target == 'x86_64-unknown-linux-gnu'
         uses: ./.github/actions/build-tauri-app
         with:
           target: ${{ matrix.target }}
