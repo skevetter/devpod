@@ -19,10 +19,11 @@ jobs:
         run: |
           echo "=== Building binary ==="
           mkdir -p ./e2e/bin
-          go build -o ./e2e/bin/devpod-linux-amd64
+          CGO_ENABLED=0 go build -o ./e2e/bin/devpod-linux-amd64
           chmod +x ./e2e/bin/devpod-linux-amd64
           echo "=== Binary built ==="
           ls -lh ./e2e/bin/
+          file ./e2e/bin/devpod-linux-amd64
 
       - name: Setup SSH
         run: |
