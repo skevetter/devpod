@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/skevetter/devpod/pkg/command"
 	"github.com/skevetter/devpod/pkg/daemon/agent"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	"github.com/skevetter/devpod/pkg/devcontainer/metadata"
@@ -40,9 +41,15 @@ func (r *runner) runSingleContainer(
 	timeout time.Duration,
 ) (*config.Result, error) {
 	r.Log.Debugf("Starting devcontainer in single container mode...")
-	containerDetails, err := r.Driver.FindDevContainer(ctx, r.ID)
-	if err != nil {
-		return nil, fmt.Errorf("find dev container: %w", err)
+	
+	// Check if Docker exists before trying to find containers
+	var containerDetails *config.ContainerDetails
+	var err error
+	if command.Exists("docker") {
+		containerDetails, err = r.Driver.FindDevContainer(ctx, r.ID)
+		if err != nil {
+			return nil, fmt.Errorf("find dev container: %w", err)
+		}
 	}
 
 	// does the container already exist?
