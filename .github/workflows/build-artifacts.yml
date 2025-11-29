@@ -46,15 +46,24 @@ jobs:
           telemetry_private_key: ""
           crane_private_key: ""
 
+      - name: Rust cache
+        if: matrix.target == 'x86_64-unknown-linux-gnu'
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./desktop/src-tauri -> target"
+
       - name: Build Desktop App
         if: matrix.target == 'x86_64-unknown-linux-gnu'
-        uses: ./.github/actions/build-tauri-app
+        uses: tauri-apps/tauri-action@v0.6
         with:
-          target: ${{ matrix.target }}
-          args: "--config src-tauri/tauri-flatpak.conf.json --bundles appimage,deb"
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          tauri_private_key: ${{ secrets.TAURI_PRIVATE_KEY || 'dummy' }}
-          tauri_key_password: ${{ secrets.TAURI_KEY_PASSWORD || 'dummy' }}
+          projectPath: "./desktop"
+          args: "--target ${{ matrix.target }} --config src-tauri/tauri-flatpak.conf.json --bundles appimage,deb"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY || 'dummy' }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY || 'dummy' }}
+          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD || 'dummy' }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD || 'dummy' }}
 
       - name: Upload CLI Artifacts
         uses: actions/upload-artifact@v4
