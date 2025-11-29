@@ -73,10 +73,11 @@ runs:
     - name: Run test
       shell: bash
       working-directory: ./e2e
-      env:
-        GH_USERNAME: ${{ inputs.gh-username }}
-        GH_ACCESS_TOKEN: ${{ inputs.gh-access-token }}
-        KUBECONFIG: ${{ env.KUBECONFIG }}
-        GOMODCACHE: /home/runner/go/pkg/mod
-        GOCACHE: /home/runner/.cache/go-build
-      run: sudo -E go test -v -ginkgo.v -timeout 3600s --ginkgo.label-filter=${{ inputs.label }}
+      run: |
+        sudo \
+          GH_USERNAME="${{ inputs.gh-username }}" \
+          GH_ACCESS_TOKEN="${{ inputs.gh-access-token }}" \
+          KUBECONFIG="${KUBECONFIG}" \
+          PATH="${PATH}" \
+          GOROOT="${GOROOT}" \
+          go test -v -ginkgo.v -timeout 3600s --ginkgo.label-filter=${{ inputs.label }}
