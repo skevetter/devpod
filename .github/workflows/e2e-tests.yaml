@@ -13,15 +13,9 @@ jobs:
   setup-cache:
     runs-on: ubuntu-latest
     steps:
-      - name: Maximize build space
-        uses: easimon/maximize-build-space@master
-        with:
-          root-reserve-mb: 512
-          swap-size-mb: 1024
-          remove-dotnet: "true"
+      - uses: jlumbroso/free-disk-space@v1.3.1
 
-      - name: Checkout repo
-        uses: actions/checkout@v6
+      - uses: actions/checkout@v6
 
       - name: Setup Golang with cache
         uses: magnetikonline/action-golang-cache@v5
