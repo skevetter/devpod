@@ -77,7 +77,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 						os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 					framework.ExpectNoError(err)
 
-					defer scriptFile.Close()
+					defer func() { _ = scriptFile.Close() }()
 
 					ginkgo.By("Changing a file within the context")
 					_, err = scriptFile.Write([]byte("alias yr='date +%Y'"))
@@ -129,7 +129,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 						os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 					framework.ExpectNoError(err)
 
-					defer scriptFile.Close()
+					defer func() { _ = scriptFile.Close() }()
 
 					ginkgo.By("Changing a file within context")
 					_, err = scriptFile.Write([]byte("apt install python"))

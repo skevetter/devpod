@@ -146,7 +146,7 @@ func setupDotfiles(logger log.Logger) error {
 
 			// remove existing symlink and relink
 			if _, err := os.Lstat(filepath.Join(os.Getenv("HOME"), file.Name())); err == nil {
-				os.Remove(filepath.Join(os.Getenv("HOME"), file.Name()))
+				_ = os.Remove(filepath.Join(os.Getenv("HOME"), file.Name()))
 			}
 			err = os.Symlink(filepath.Join(pwd, file.Name()), filepath.Join(os.Getenv("HOME"), file.Name()))
 			if err != nil {

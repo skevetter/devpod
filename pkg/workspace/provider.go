@@ -225,7 +225,7 @@ func DownloadProviderGithub(originalPath string, log log.Logger) ([]byte, *provi
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "download")
 	}
-	defer body.Close()
+	defer func() { _ = body.Close() }()
 
 	// read body
 	out, err := io.ReadAll(body)
@@ -245,7 +245,7 @@ func downloadProvider(url string) ([]byte, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "download binary")
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	return io.ReadAll(resp.Body)
 }

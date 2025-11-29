@@ -102,10 +102,7 @@ func (d *cliCollector) RecordCLI(err error) {
 		return
 	}
 	cmd := d.cmd.CommandPath()
-	isUI := false
-	if os.Getenv(UIEnvVar) == "true" {
-		isUI = true
-	}
+	isUI := os.Getenv(UIEnvVar) == "true"
 	// Ignore certain commands triggered by DevPod Desktop
 	if isUI {
 		for _, exception := range UIEventsExceptions {

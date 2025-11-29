@@ -94,7 +94,7 @@ func (d *dockerDriver) CommandDevContainer(ctx context.Context, workspaceId, use
 func (d *dockerDriver) PushDevContainer(ctx context.Context, image string) error {
 	// push image
 	writer := d.Log.Writer(logrus.InfoLevel, false)
-	defer writer.Close()
+	defer func() { _ = writer.Close() }()
 
 	// build args
 	args := []string{
@@ -115,7 +115,7 @@ func (d *dockerDriver) PushDevContainer(ctx context.Context, image string) error
 func (d *dockerDriver) TagDevContainer(ctx context.Context, image, tag string) error {
 	// Tag image
 	writer := d.Log.Writer(logrus.InfoLevel, false)
-	defer writer.Close()
+	defer func() { _ = writer.Close() }()
 
 	// build args
 	args := []string{
@@ -380,7 +380,7 @@ func (d *dockerDriver) RunDockerDevContainer(
 	// run the command
 	d.Log.Debugf("Running docker command: %s %s", d.Docker.DockerCommand, strings.Join(args, " "))
 	writer := d.Log.Writer(logrus.InfoLevel, false)
-	defer writer.Close()
+	defer func() { _ = writer.Close() }()
 
 	err = d.Docker.Run(ctx, args, nil, writer, writer)
 	if err != nil {
@@ -417,25 +417,25 @@ func (d *dockerDriver) RunDockerDevContainer(
 		if err != nil {
 			return err
 		}
-		defer os.Remove(containerPasswdFileIn.Name())
+		defer func() { _ = os.Remove(containerPasswdFileIn.Name()) }()
 
 		containerGroupFileIn, err := os.CreateTemp("", "devpod_container_group_in")
 		if err != nil {
 			return err
 		}
-		defer os.Remove(containerGroupFileIn.Name())
+		defer func() { _ = os.Remove(containerGroupFileIn.Name()) }()
 
 		containerPasswdFileOut, err := os.CreateTemp("", "devpod_container_passwd_out")
 		if err != nil {
 			return err
 		}
-		defer os.Remove(containerPasswdFileOut.Name())
+		defer func() { _ = os.Remove(containerPasswdFileOut.Name()) }()
 
 		containerGroupFileOut, err := os.CreateTemp("", "devpod_container_group_out")
 		if err != nil {
 			return err
 		}
-		defer os.Remove(containerGroupFileOut.Name())
+		defer func() { _ = os.Remove(containerGroupFileOut.Name()) }()
 
 		// Copy /etc/passwd and /etc/group from the container to the temporary files
 		args = []string{"cp", fmt.Sprintf("%s:/etc/passwd", container.ID), containerPasswdFileIn.Name()}
@@ -456,7 +456,7 @@ func (d *dockerDriver) RunDockerDevContainer(
 		if err != nil {
 			return err
 		}
-		defer containerPasswdFileIn.Close()
+		defer func() { _ = containerPasswdFileIn.Close() }()
 		// Update /etc/passwd and /etc/group with the new user UID and GID
 		scanner := bufio.NewScanner(containerPasswdFileIn)
 		containerUid := ""
@@ -501,7 +501,7 @@ func (d *dockerDriver) RunDockerDevContainer(
 		if err != nil {
 			return err
 		}
-		defer containerGroupFileIn.Close()
+		defer func() { _ = containerGroupFileIn.Close() }()
 
 		scanner = bufio.NewScanner(containerGroupFileIn)
 
@@ -577,7 +577,7 @@ func (d *dockerDriver) EnsureImage(
 		d.Log.Infof("Image %s not found", options.Image)
 		d.Log.Infof("Pulling image %s", options.Image)
 		writer := d.Log.Writer(logrus.DebugLevel, false)
-		defer writer.Close()
+		defer func() { _ = writer.Close() }()
 
 		return d.Docker.Pull(ctx, options.Image, nil, writer, writer)
 	}

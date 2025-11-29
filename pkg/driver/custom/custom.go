@@ -39,7 +39,7 @@ type customDriver struct {
 // FindDevContainer returns a running devcontainer details
 func (c *customDriver) FindDevContainer(ctx context.Context, workspaceId string) (*config.ContainerDetails, error) {
 	writer := c.log.Writer(logrus.InfoLevel, false)
-	defer writer.Close()
+	defer func() { _ = writer.Close() }()
 
 	// run command
 	stdout := &bytes.Buffer{}
@@ -97,7 +97,7 @@ func (c *customDriver) CommandDevContainer(ctx context.Context, workspaceId, use
 // TargetArchitecture returns the architecture of the container runtime. e.g. amd64 or arm64
 func (c *customDriver) TargetArchitecture(ctx context.Context, workspaceId string) (string, error) {
 	writer := c.log.Writer(logrus.InfoLevel, false)
-	defer writer.Close()
+	defer func() { _ = writer.Close() }()
 
 	// run command
 	stdout := &bytes.Buffer{}
@@ -128,7 +128,7 @@ func (c *customDriver) TargetArchitecture(ctx context.Context, workspaceId strin
 // DeleteDevContainer deletes the devcontainer
 func (c *customDriver) DeleteDevContainer(ctx context.Context, workspaceId string) error {
 	writer := c.log.Writer(logrus.InfoLevel, false)
-	defer writer.Close()
+	defer func() { _ = writer.Close() }()
 
 	// run command
 	err := c.runCommand(
@@ -152,7 +152,7 @@ func (c *customDriver) DeleteDevContainer(ctx context.Context, workspaceId strin
 // StartDevContainer starts the devcontainer
 func (c *customDriver) StartDevContainer(ctx context.Context, workspaceId string) error {
 	writer := c.log.Writer(logrus.InfoLevel, false)
-	defer writer.Close()
+	defer func() { _ = writer.Close() }()
 
 	// run command
 	err := c.runCommand(
@@ -176,7 +176,7 @@ func (c *customDriver) StartDevContainer(ctx context.Context, workspaceId string
 // StopDevContainer stops the devcontainer
 func (c *customDriver) StopDevContainer(ctx context.Context, workspaceId string) error {
 	writer := c.log.Writer(logrus.InfoLevel, false)
-	defer writer.Close()
+	defer func() { _ = writer.Close() }()
 
 	// run command
 	err := c.runCommand(
@@ -206,7 +206,7 @@ func (c *customDriver) RunDevContainer(ctx context.Context, workspaceId string, 
 
 	done := make(chan struct{})
 	reader, writer := io.Pipe()
-	defer writer.Close()
+	defer func() { _ = writer.Close() }()
 	go func() {
 		scan := scanner.NewScanner(reader)
 		for scan.Scan() {
@@ -231,7 +231,7 @@ func (c *customDriver) RunDevContainer(ctx context.Context, workspaceId string, 
 	)
 	if err != nil {
 		// close writer, wait for logging to flush and shut down
-		writer.Close()
+		_ = writer.Close()
 		select {
 		case <-done:
 		// forcibly shut down after 1 second

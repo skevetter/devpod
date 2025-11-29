@@ -54,20 +54,20 @@ func createTarGzArchive(outputFilePath string, filePaths []string) error {
 	if err != nil {
 		return err
 	}
-	defer outputFile.Close()
+	defer func() { _ = outputFile.Close() }()
 
 	gzipWriter := gzip.NewWriter(outputFile)
-	defer gzipWriter.Close()
+	defer func() { _ = gzipWriter.Close() }()
 
 	tarWriter := tar.NewWriter(gzipWriter)
-	defer gzipWriter.Close()
+	defer func() { _ = gzipWriter.Close() }()
 
 	for _, filePath := range filePaths {
 		file, err := os.Open(filePath)
 		if err != nil {
 			return err
 		}
-		defer file.Close()
+		defer func() { _ = file.Close() }()
 
 		fileInfo, err := file.Stat()
 		if err != nil {

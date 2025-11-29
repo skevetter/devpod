@@ -434,7 +434,7 @@ func prepareImage(workspaceDir, image string) error {
 func installDocker(log log.Logger) (err error) {
 	if !command.Exists("docker") {
 		writer := log.Writer(logrus.InfoLevel, false)
-		defer writer.Close()
+		defer func() { _ = writer.Close() }()
 
 		log.Debug("Installing Docker...")
 

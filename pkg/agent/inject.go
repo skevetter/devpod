@@ -203,7 +203,7 @@ func downloadAgentLocally(tryDownloadURL, targetArch string, log log.Logger) (st
 	if err != nil {
 		return "", fmt.Errorf("download devpod: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if statErr == nil && stat.Size() == resp.ContentLength {
 		return agentPath, nil
@@ -214,7 +214,7 @@ func downloadAgentLocally(tryDownloadURL, targetArch string, log log.Logger) (st
 	if err != nil {
 		return "", fmt.Errorf("create agent binary: %w", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	_, err = io.Copy(file, resp.Body)
 	if err != nil {

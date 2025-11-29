@@ -198,8 +198,8 @@ func checkoutPR(ctx context.Context, gitInfo *GitInfo, extraEnv []string, target
 func checkoutCommit(ctx context.Context, gitInfo *GitInfo, extraEnv []string, targetDir string, log log.Logger) error {
 	stdout := log.Writer(logrus.InfoLevel, false)
 	stderr := log.Writer(logrus.ErrorLevel, false)
-	defer stdout.Close()
-	defer stderr.Close()
+	defer func() { _ = stdout.Close() }()
+	defer func() { _ = stderr.Close() }()
 
 	args := []string{"reset", "--hard", gitInfo.Commit}
 	gitCommand := CommandContext(ctx, extraEnv, args...)

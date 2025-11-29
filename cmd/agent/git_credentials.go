@@ -99,7 +99,7 @@ func getCredentialsFromWorkspaceServer(credentials *gitcredentials.GitCredential
 		if err != nil {
 			return nil
 		}
-		defer file.Close()
+		defer func() { _ = file.Close() }()
 
 		_, _ = file.WriteString(fmt.Sprintf("get credentials from workspace server: %v\n", credentialsErr))
 		return nil
@@ -116,7 +116,7 @@ func getCredentialsFromLocalMachine(credentials *gitcredentials.GitCredentials, 
 		if err != nil {
 			return nil
 		}
-		defer file.Close()
+		defer func() { _ = file.Close() }()
 
 		_, _ = file.WriteString(fmt.Sprintf("get credentials from local machine: %v\n", credentialsErr))
 		return nil
@@ -135,7 +135,7 @@ func doRequest(httpClient *http.Client, credentials *gitcredentials.GitCredentia
 	if err != nil {
 		return nil, fmt.Errorf("error retrieving credentials from credentials server: %w", err)
 	}
-	defer response.Body.Close()
+	defer func() { _ = response.Body.Close() }()
 
 	raw, err := io.ReadAll(response.Body)
 	if err != nil {

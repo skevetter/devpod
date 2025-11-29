@@ -51,7 +51,7 @@ var _ = ginkgo.Describe("[integration]: devpod provider ssh test suite", ginkgo.
 					os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 				framework.ExpectNoError(err)
 
-				defer f.Close()
+				defer func() { _ = f.Close() }()
 				_, err = f.Write(publicKey)
 				framework.ExpectNoError(err)
 			}

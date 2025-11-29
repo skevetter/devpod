@@ -73,7 +73,7 @@ func (cmd *DockerCredentialsCmd) handleList(log log.Logger) error {
 		log.Errorf("Error retrieving list credentials: %v", err)
 		return nil
 	}
-	defer response.Body.Close()
+	defer func() { _ = response.Body.Close() }()
 
 	raw, err := io.ReadAll(response.Body)
 	if err != nil {
@@ -137,7 +137,7 @@ func (cmd *DockerCredentialsCmd) handleGet(log log.Logger) error {
 		log.Errorf("Error retrieving credentials: %v", err)
 		return nil
 	}
-	defer response.Body.Close()
+	defer func() { _ = response.Body.Close() }()
 
 	raw, err := io.ReadAll(response.Body)
 	if err != nil {
@@ -185,7 +185,7 @@ func getDockerCredentialsFromWorkspaceServer(credentials *dockercredentials.Cred
 		if err != nil {
 			return nil
 		}
-		defer file.Close()
+		defer func() { _ = file.Close() }()
 
 		_, _ = file.WriteString(fmt.Sprintf("get credentials from workspace server: %v\n", credentialsErr))
 		return nil
@@ -204,7 +204,7 @@ func requestDockerCredentials(httpClient *http.Client, credentials *dockercreden
 	if err != nil {
 		return nil, fmt.Errorf("error retrieving credentials from credentials server: %w", err)
 	}
-	defer response.Body.Close()
+	defer func() { _ = response.Body.Close() }()
 
 	raw, err := io.ReadAll(response.Body)
 	if err != nil {

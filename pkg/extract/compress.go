@@ -30,14 +30,14 @@ func WriteTarExclude(writer io.Writer, localPath string, compress bool, excluded
 	gw := writer
 	if compress {
 		gwWriter := gzip.NewWriter(writer)
-		defer gwWriter.Close()
+		defer func() { _ = gwWriter.Close() }()
 
 		gw = gwWriter
 	}
 
 	// Create tar writer
 	tarWriter := tar.NewWriter(gw)
-	defer tarWriter.Close()
+	defer func() { _ = tarWriter.Close() }()
 
 	// When its a file we copy the file to the toplevel of the tar
 	if !stat.IsDir() {
@@ -187,7 +187,7 @@ func (a *Archiver) tarFile(target string, targetStat os.FileInfo) error {
 		// We ignore open file and just treat it as okay
 		return nil
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	copied, err := io.CopyN(a.writer, f, targetStat.Size())
 	if err != nil {
 		return errors.Wrap(err, "tar copy file")

@@ -351,7 +351,7 @@ func (s *workspaceClient) Delete(ctx context.Context, opt client.DeleteOptions) 
 			}
 		} else if isRunning {
 			writer := s.log.Writer(logrus.InfoLevel, false)
-			defer writer.Close()
+			defer func() { _ = writer.Close() }()
 
 			s.log.Infof("Deleting container...")
 			compressed, info, err := s.compressedAgentInfo(provider.CLIOptions{})
@@ -448,7 +448,7 @@ func (s *workspaceClient) Stop(ctx context.Context, opt client.StopOptions) erro
 
 	if !s.isMachineProvider() || !s.workspace.Machine.AutoDelete {
 		writer := s.log.Writer(logrus.InfoLevel, false)
-		defer writer.Close()
+		defer func() { _ = writer.Close() }()
 
 		s.log.Infof("Stopping container...")
 		compressed, info, err := s.compressedAgentInfo(provider.CLIOptions{})

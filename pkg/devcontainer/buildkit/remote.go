@@ -86,7 +86,7 @@ func BuildRemote(
 	if err != nil {
 		return nil, fmt.Errorf("get client: %w", err)
 	}
-	defer c.Close()
+	defer func() { _ = c.Close() }()
 
 	info, err := c.Info(timeoutCtx)
 	if err != nil {
@@ -252,7 +252,7 @@ func BuildRemote(
 
 	// TODO: Writer should be async to prevent blocking while waiting for tunnel response
 	writer := log.Writer(logrus.InfoLevel, false)
-	defer writer.Close()
+	defer func() { _ = writer.Close() }()
 	pw, err := NewPrinter(ctx, writer)
 	if err != nil {
 		return nil, err

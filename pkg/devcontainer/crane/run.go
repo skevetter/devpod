@@ -143,7 +143,7 @@ func storeFilesInDirectory(content *Content, path string) (string, error) {
 
 		err := os.WriteFile(filePath, []byte(fileContent), os.ModePerm)
 		if err != nil {
-			os.RemoveAll(path)
+			_ = os.RemoveAll(path)
 			return "", fmt.Errorf("failed to write file %s: %w", filename, err)
 		}
 	}

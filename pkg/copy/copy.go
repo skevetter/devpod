@@ -130,13 +130,13 @@ func File(srcFile, dstFile string, perm os.FileMode) error {
 	if err != nil {
 		return err
 	}
-	defer out.Close()
+	defer func() { _ = out.Close() }()
 
 	in, err := os.Open(srcFile)
 	if err != nil {
 		return err
 	}
-	defer in.Close()
+	defer func() { _ = in.Close() }()
 
 	_, err = io.Copy(out, in)
 	if err != nil {

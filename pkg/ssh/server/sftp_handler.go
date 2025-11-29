@@ -13,7 +13,7 @@ import (
 
 func sftpHandler(sess ssh.Session, currentUser string, log log.Logger) {
 	writer := log.Writer(logrus.DebugLevel, false)
-	defer writer.Close()
+	defer func() { _ = writer.Close() }()
 
 	user := sess.User()
 	if user == currentUser {
@@ -33,7 +33,7 @@ func sftpHandler(sess ssh.Session, currentUser string, log log.Logger) {
 		log.Debugf("sftp server init error: %s\n", err)
 		return
 	}
-	defer server.Close()
+	defer func() { _ = server.Close() }()
 
 	// serve
 	err = server.Serve()

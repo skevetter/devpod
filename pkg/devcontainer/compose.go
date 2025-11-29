@@ -392,7 +392,7 @@ func (r *runner) startContainer(
 
 	// start compose
 	writer := r.Log.Writer(logrus.InfoLevel, false)
-	defer writer.Close()
+	defer func() { _ = writer.Close() }()
 	err = composeHelper.Run(ctx, upArgs, nil, writer, writer)
 	if err != nil {
 		return nil, errors.Wrapf(err, "docker-compose run")
@@ -508,7 +508,7 @@ func (r *runner) buildAndExtendDockerCompose(
 			extendedDockerfileContent,
 		)
 
-		defer os.RemoveAll(filepath.Dir(extendedDockerfilePath))
+		defer func() { _ = os.RemoveAll(filepath.Dir(extendedDockerfilePath)) }()
 		err := os.WriteFile(extendedDockerfilePath, []byte(extendedDockerfileContent), 0600)
 		if err != nil {
 			return "", "", nil, "", errors.Wrap(err, "write Dockerfile with features")
@@ -549,7 +549,7 @@ func (r *runner) buildAndExtendDockerCompose(
 
 	// build image
 	writer := r.Log.Writer(logrus.InfoLevel, false)
-	defer writer.Close()
+	defer func() { _ = writer.Close() }()
 	r.Log.Debugf("Run %s %s", composeHelper.Command, strings.Join(buildArgs, " "))
 	err = composeHelper.Run(ctx, buildArgs, nil, writer, writer)
 	if err != nil {

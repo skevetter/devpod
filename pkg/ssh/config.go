@@ -219,7 +219,7 @@ func transformHostSection(path, host string, transform func(line string) string)
 		reader = strings.NewReader("")
 	} else {
 		reader = f
-		defer f.Close()
+		defer func() { _ = f.Close() }()
 	}
 
 	configScanner := scanner.NewScanner(reader)

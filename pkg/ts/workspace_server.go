@@ -116,11 +116,11 @@ func (s *WorkspaceServer) Start(ctx context.Context) error {
 func (s *WorkspaceServer) Stop() {
 	for _, listener := range s.listeners {
 		if listener != nil {
-			listener.Close()
+			_ = listener.Close()
 		}
 	}
 	if s.tsServer != nil {
-		s.tsServer.Close()
+		_ = s.tsServer.Close()
 		s.tsServer = nil
 	}
 	s.log.Info("Tailscale server stopped")
@@ -425,7 +425,7 @@ func (s *WorkspaceServer) handleSSHConnections(ctx context.Context, listener net
 func (s *WorkspaceServer) handleSSHConnection(clientConn net.Conn) {
 	s.addConnection()
 	defer s.removeConnection()
-	defer clientConn.Close()
+	defer func() { _ = clientConn.Close() }()
 
 	localAddr := fmt.Sprintf("127.0.0.1:%d", sshServer.DefaultUserPort)
 	backendConn, err := net.Dial("tcp", localAddr)
@@ -433,12 +433,12 @@ func (s *WorkspaceServer) handleSSHConnection(clientConn net.Conn) {
 		s.log.Errorf("Failed to connect to local address %s: %v", localAddr, err)
 		return
 	}
-	defer backendConn.Close()
+	defer func() { _ = backendConn.Close() }()
 
 	// Start bidirectional copy between client and backend.
 	go func() {
-		defer clientConn.Close()
-		defer backendConn.Close()
+		defer func() { _ = clientConn.Close() }()
+		defer func() { _ = backendConn.Close() }()
 		_, err = io.Copy(backendConn, clientConn)
 	}()
 	_, err = io.Copy(clientConn, backendConn)
@@ -494,7 +494,7 @@ func (s *WorkspaceServer) sendHeartbeat(ctx context.Context, client *http.Client
 	if err != nil {
 		return fmt.Errorf("request to %s failed: %w", heartbeatURL, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("received response from %s - Status: %d", heartbeatURL, resp.StatusCode)

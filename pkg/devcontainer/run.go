@@ -212,8 +212,8 @@ func runInitializeCommand(
 		log.Infof("Running initializeCommand from devcontainer.json: '%s'", strings.Join(args, " "))
 		writer := log.Writer(logrus.InfoLevel, false)
 		errwriter := log.Writer(logrus.ErrorLevel, false)
-		defer writer.Close()
-		defer errwriter.Close()
+		defer func() { _ = writer.Close() }()
+		defer func() { _ = errwriter.Close() }()
 
 		cmd := exec.Command(args[0], args[1:]...)
 		env := cmd.Environ()

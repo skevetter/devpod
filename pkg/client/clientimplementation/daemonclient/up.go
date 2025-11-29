@@ -241,7 +241,7 @@ func printLogs(ctx context.Context, managementClient kube.Interface, workspace *
 	if err != nil {
 		return -1, fmt.Errorf("error getting task logs: %w", err)
 	}
-	defer logsReader.Close()
+	defer func() { _ = logsReader.Close() }()
 
 	// create scanner from logs reader
 	scanner := bufio.NewScanner(logsReader)
@@ -257,8 +257,8 @@ func printLogs(ctx context.Context, managementClient kube.Interface, workspace *
 	stderrStreamer, stderrDone := devpodlog.PipeJSONStream(logger.ErrorStreamOnly())
 	defer func() {
 		// close the streams
-		stdoutStreamer.Close()
-		stderrStreamer.Close()
+		_ = stdoutStreamer.Close()
+		_ = stderrStreamer.Close()
 
 		// wait for the streams to be closed
 		<-stdoutDone

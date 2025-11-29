@@ -131,7 +131,7 @@ func (o *OpenVSCodeServer) Install() error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	err = extract.Extract(resp.Body, location, extract.StripLevels(1))
 	if err != nil {
@@ -185,7 +185,7 @@ func (o *OpenVSCodeServer) installExtensions() error {
 	}
 
 	out := o.log.Writer(logrus.InfoLevel, false)
-	defer out.Close()
+	defer func() { _ = out.Close() }()
 
 	binaryPath := filepath.Join(location, "bin", "openvscode-server")
 	for _, extension := range o.extensions {

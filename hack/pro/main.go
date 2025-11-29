@@ -43,7 +43,7 @@ func main() {
 		provider = string(providerBytes)
 	}
 
-	replaced := strings.Replace(provider, "##VERSION##", os.Args[1], -1)
+	replaced := strings.ReplaceAll(provider, "##VERSION##", os.Args[1])
 	for k, v := range checksumMap {
 		checksum, err := File(k)
 		if err != nil {
@@ -54,7 +54,7 @@ func main() {
 			panic(fmt.Errorf("generate checksum for %s: %w", k, err))
 		}
 
-		replaced = strings.Replace(replaced, v, checksum, -1)
+		replaced = strings.ReplaceAll(replaced, v, checksum)
 	}
 
 	if ok {
@@ -73,7 +73,7 @@ func File(filePath string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	hash := sha256.New()
 

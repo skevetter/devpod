@@ -16,7 +16,7 @@ func ExecuteConn(ctx context.Context, rawConn *websocket.Conn, stdin io.Reader, 
 	defer cancel()
 
 	// close websocket connection
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 	defer func() {
 		err := conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 		if err != nil {

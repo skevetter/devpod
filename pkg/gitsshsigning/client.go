@@ -84,7 +84,7 @@ func sendSignatureRequest(requestBody []byte, log log.Logger) ([]byte, error) {
 		log.Errorf("Error retrieving git ssh signature: %w", err)
 		return nil, err
 	}
-	defer response.Body.Close()
+	defer func() { _ = response.Body.Close() }()
 
 	return io.ReadAll(response.Body)
 }

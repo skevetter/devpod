@@ -211,7 +211,7 @@ func (p *procFd) iterFdDir() {
 					return
 				}
 				n, err := stat.Read(buf[:])
-				stat.Close()
+				_ = stat.Close()
 				if err != nil {
 					return
 				}
@@ -252,7 +252,7 @@ func doNetstat(path string, fn AcceptFn) ([]SockTabEntry, error) {
 		return nil, err
 	}
 	tabs, err := parseSocktab(f, fn)
-	f.Close()
+	_ = f.Close()
 	if err != nil {
 		return nil, err
 	}

@@ -50,7 +50,7 @@ func Extract(origReader io.Reader, destFolder string, options ...Option) error {
 		if err != nil {
 			return perrors.Errorf("error decompressing: %v", err)
 		}
-		defer gzipReader.Close()
+		defer func() { _ = gzipReader.Close() }()
 
 		reader = gzipReader
 	} else {
@@ -144,7 +144,7 @@ func extractNext(tarReader *tar.Reader, destFolder string, options *Options) (bo
 			return false, perrors.Wrapf(err, "create %s", outFileName)
 		}
 	}
-	defer outFile.Close()
+	defer func() { _ = outFile.Close() }()
 
 	if _, err := io.Copy(outFile, tarReader); err != nil {
 		return false, perrors.Wrapf(err, "io copy tar reader %s", outFileName)

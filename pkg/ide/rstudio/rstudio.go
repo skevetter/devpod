@@ -221,7 +221,7 @@ func download(targetFolder, downloadURL string, log log.Logger) (string, error) 
 	if err != nil {
 		return "", fmt.Errorf("download deb: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 		if resp.StatusCode == http.StatusNotFound {
@@ -240,7 +240,7 @@ func download(targetFolder, downloadURL string, log log.Logger) (string, error) 
 	if err != nil {
 		return "", err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	_, err = io.Copy(file, &ide.ProgressReader{
 		Reader:    resp.Body,

@@ -30,7 +30,7 @@ func PortForward(
 	if err != nil {
 		return err
 	}
-	defer listener.Close()
+	defer func() { _ = listener.Close() }()
 
 	return portForwarding(
 		ctx, client, listener,
@@ -50,7 +50,7 @@ func ReversePortForward(
 	if err != nil {
 		return err
 	}
-	defer listener.Close()
+	defer func() { _ = listener.Close() }()
 
 	return portForwarding(
 		ctx, client, listener,
@@ -113,13 +113,13 @@ func forward(
 		log.Debugf("error dialing remote: %v", err)
 		return
 	}
-	defer sshConn.Close()
+	defer func() { _ = sshConn.Close() }()
 
 	// Copy localConn.Reader to sshConn.Writer
 	waitGroup := sync.WaitGroup{}
 	go func() {
 		defer waitGroup.Done()
-		defer sshConn.Close()
+		defer func() { _ = sshConn.Close() }()
 
 		_, err = io.Copy(sshConn, localConn)
 		if err != nil {
@@ -131,7 +131,7 @@ func forward(
 	// Copy sshConn.Reader to localConn.Writer
 	go func() {
 		defer waitGroup.Done()
-		defer localConn.Close()
+		defer func() { _ = localConn.Close() }()
 
 		_, err = io.Copy(localConn, sshConn)
 		if err != nil {
@@ -154,13 +154,13 @@ func reverseForward(
 		log.Debugf("error dialing remote: %v", err)
 		return
 	}
-	defer localConn.Close()
+	defer func() { _ = localConn.Close() }()
 
 	// Copy localConn.Reader to sshConn.Writer
 	waitGroup := sync.WaitGroup{}
 	go func() {
 		defer waitGroup.Done()
-		defer localConn.Close()
+		defer func() { _ = localConn.Close() }()
 
 		_, err = io.Copy(localConn, remoteConn)
 		if err != nil {
@@ -172,7 +172,7 @@ func reverseForward(
 	// Copy sshConn.Reader to localConn.Writer
 	go func() {
 		defer waitGroup.Done()
-		defer remoteConn.Close()
+		defer func() { _ = remoteConn.Close() }()
 
 		_, err = io.Copy(remoteConn, localConn)
 		if err != nil {

@@ -102,8 +102,8 @@ func (o *VsCodeServer) InstallExtensions() error {
 	// start log writer
 	writer := o.log.Writer(logrus.InfoLevel, false)
 	errwriter := o.log.Writer(logrus.ErrorLevel, false)
-	defer writer.Close()
-	defer errwriter.Close()
+	defer func() { _ = writer.Close() }()
+	defer func() { _ = errwriter.Close() }()
 
 	// download extensions
 	for _, extension := range o.extensions {

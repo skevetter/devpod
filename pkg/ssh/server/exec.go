@@ -36,7 +36,7 @@ func execNonPTY(sess ssh.Session, cmd *exec.Cmd, log log.Logger) (err error) {
 	}
 
 	go func() {
-		defer stdin.Close()
+		defer func() { _ = stdin.Close() }()
 
 		_, err := io.Copy(stdin, sess)
 		if err != nil {
@@ -88,7 +88,7 @@ func execPTY(
 	if err != nil {
 		return perrors.Wrap(err, "start pty")
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	go func() {
 		for win := range winCh {
@@ -97,7 +97,7 @@ func execPTY(
 	}()
 
 	go func() {
-		defer f.Close()
+		defer func() { _ = f.Close() }()
 
 		// copy stdin
 		_, _ = io.Copy(f, sess)
@@ -105,7 +105,7 @@ func execPTY(
 
 	stdoutDoneChan := make(chan struct{})
 	go func() {
-		defer f.Close()
+		defer func() { _ = f.Close() }()
 		defer close(stdoutDoneChan)
 
 		// copy stdout

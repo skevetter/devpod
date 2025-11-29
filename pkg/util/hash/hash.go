@@ -187,7 +187,7 @@ func hashFileCRC32(filePath string, polynomial uint32) (string, error) {
 	}
 
 	//Tell the program to close the file when the function returns
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	//Create the table with the given polynomial
 	tablePolynomial := crc32.MakeTable(polynomial)

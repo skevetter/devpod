@@ -61,7 +61,7 @@ func (cmd *SSHCmd) Run(ctx context.Context, args []string) error {
 	}
 
 	writer := log.Default.ErrorStreamOnly().Writer(logrus.InfoLevel, false)
-	defer writer.Close()
+	defer func() { _ = writer.Close() }()
 
 	// Get the timeout from the context options
 	timeout := config.ParseTimeOption(devPodConfig, config.ContextOptionAgentInjectTimeout)
@@ -106,14 +106,14 @@ func StartSSHSession(ctx context.Context, user, command string, agentForwarding 
 	if err != nil {
 		return err
 	}
-	defer stdoutReader.Close()
-	defer stdoutWriter.Close()
+	defer func() { _ = stdoutReader.Close() }()
+	defer func() { _ = stdoutWriter.Close() }()
 	stdinReader, stdinWriter, err := os.Pipe()
 	if err != nil {
 		return err
 	}
-	defer stdinWriter.Close()
-	defer stdinReader.Close()
+	defer func() { _ = stdinWriter.Close() }()
+	defer func() { _ = stdinReader.Close() }()
 
 	// start ssh machine
 	errChan := make(chan error, 1)
@@ -125,7 +125,7 @@ func StartSSHSession(ctx context.Context, user, command string, agentForwarding 
 	if err != nil {
 		return err
 	}
-	defer sshClient.Close()
+	defer func() { _ = sshClient.Close() }()
 
 	return RunSSHSession(ctx, sshClient, agentForwarding, command, stderr)
 }
@@ -136,7 +136,7 @@ func RunSSHSession(ctx context.Context, sshClient *ssh.Client, agentForwarding b
 	if err != nil {
 		return err
 	}
-	defer session.Close()
+	defer func() { _ = session.Close() }()
 
 	// request agent forwarding
 	authSock := devsshagent.GetSSHAuthSocket()

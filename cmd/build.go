@@ -74,7 +74,7 @@ func NewBuildCmd(flags *flags.GlobalFlags) *cobra.Command {
 			}
 			sshConfigPath := sshConfigFile.Name()
 			// defer removal of temporary ssh config file
-			defer os.Remove(sshConfigPath)
+			defer func() { _ = os.Remove(sshConfigPath) }()
 
 			baseWorkspaceClient, err := workspace2.Resolve(
 				ctx,
@@ -189,8 +189,8 @@ func buildAgentClient(ctx context.Context, workspaceClient client.WorkspaceClien
 	if err != nil {
 		return nil, err
 	}
-	defer stdoutWriter.Close()
-	defer stdinWriter.Close()
+	defer func() { _ = stdoutWriter.Close() }()
+	defer func() { _ = stdinWriter.Close() }()
 
 	// start machine on stdio
 	cancelCtx, cancel := context.WithCancel(ctx)
@@ -202,7 +202,7 @@ func buildAgentClient(ctx context.Context, workspaceClient client.WorkspaceClien
 		defer cancel()
 
 		writer := log.ErrorStreamOnly().Writer(logrus.InfoLevel, false)
-		defer writer.Close()
+		defer func() { _ = writer.Close() }()
 
 		errChan <- agent.InjectAgentAndExecute(
 			cancelCtx,

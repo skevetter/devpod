@@ -40,8 +40,8 @@ func ExecuteCommand(
 	if err != nil {
 		return nil, err
 	}
-	defer sshTunnelStdoutWriter.Close()
-	defer sshTunnelStdinWriter.Close()
+	defer func() { _ = sshTunnelStdoutWriter.Close() }()
+	defer func() { _ = sshTunnelStdinWriter.Close() }()
 
 	// start machine on stdio
 	cancelCtx, cancel := context.WithCancel(ctx)
@@ -53,7 +53,7 @@ func ExecuteCommand(
 		defer cancel()
 
 		writer := log.Writer(logrus.InfoLevel, false)
-		defer writer.Close()
+		defer func() { _ = writer.Close() }()
 
 		log.Debugf("Inject and run command: %s", sshCommand)
 		err := agentInject(ctx, sshCommand, sshTunnelStdinReader, sshTunnelStdoutWriter, writer)
@@ -81,8 +81,8 @@ func ExecuteCommand(
 	if err != nil {
 		return nil, err
 	}
-	defer gRPCConnStdoutWriter.Close()
-	defer gRPCConnStdinWriter.Close()
+	defer func() { _ = gRPCConnStdoutWriter.Close() }()
+	defer func() { _ = gRPCConnStdinWriter.Close() }()
 
 	// connect to container
 	go func() {
@@ -96,7 +96,7 @@ func ExecuteCommand(
 			return
 		}
 		defer log.Debugf("Connection to SSH Server closed")
-		defer sshClient.Close()
+		defer func() { _ = sshClient.Close() }()
 
 		log.Debugf("SSH client created")
 
@@ -104,7 +104,7 @@ func ExecuteCommand(
 		if err != nil {
 			errChan <- errors.Wrap(err, "create ssh session")
 		}
-		defer sess.Close()
+		defer func() { _ = sess.Close() }()
 
 		log.Debugf("SSH session created")
 
@@ -122,7 +122,7 @@ func ExecuteCommand(
 		}
 
 		writer := log.Writer(logrus.InfoLevel, false)
-		defer writer.Close()
+		defer func() { _ = writer.Close() }()
 
 		err = devssh.Run(ctx, sshClient, command, gRPCConnStdinReader, gRPCConnStdoutWriter, writer, nil)
 		if err != nil {

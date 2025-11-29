@@ -95,8 +95,8 @@ func (s *containerServer) handler(sess ssh.Session) {
 			exitWithError(sess, err, s.log)
 			return
 		}
-		defer l.Close()
-		defer os.RemoveAll(tmpDir)
+		defer func() { _ = l.Close() }()
+		defer func() { _ = os.RemoveAll(tmpDir) }()
 
 		err = chownListener(l.Addr().String(), sess.User())
 		if err != nil {

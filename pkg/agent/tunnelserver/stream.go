@@ -13,7 +13,7 @@ func NewStreamReader(stream tunnel.Tunnel_StreamWorkspaceClient, log log.Logger)
 	reader, writer := io.Pipe()
 
 	go func() {
-		defer writer.Close()
+		defer func() { _ = writer.Close() }()
 
 		for {
 			resp, err := stream.Recv()

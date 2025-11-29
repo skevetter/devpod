@@ -62,8 +62,8 @@ func (c *ContainerTunnel) Run(ctx context.Context, handler Handler, cfg *config.
 	if err != nil {
 		return err
 	}
-	defer stdoutWriter.Close()
-	defer stdinWriter.Close()
+	defer func() { _ = stdoutWriter.Close() }()
+	defer func() { _ = stdinWriter.Close() }()
 
 	// Get the timeout from the context options
 	timeout := config.ParseTimeOption(cfg, config.ContextOptionAgentInjectTimeout)
@@ -72,7 +72,7 @@ func (c *ContainerTunnel) Run(ctx context.Context, handler Handler, cfg *config.
 	tunnelChan := make(chan error, 1)
 	go func() {
 		writer := c.log.ErrorStreamOnly().Writer(logrus.InfoLevel, false)
-		defer writer.Close()
+		defer func() { _ = writer.Close() }()
 		defer c.log.Debugf("Tunnel to host closed")
 
 		command := fmt.Sprintf("'%s' helper ssh-server --stdio", c.client.AgentPath())
@@ -111,7 +111,7 @@ func (c *ContainerTunnel) Run(ctx context.Context, handler Handler, cfg *config.
 			return
 		}
 
-		defer sshClient.Close()
+		defer func() { _ = sshClient.Close() }()
 		defer cancel()
 		defer c.log.Debugf("Connection to container closed")
 		c.log.Debugf("Successfully connected to host")
@@ -198,8 +198,8 @@ func (c *ContainerTunnel) runInContainer(ctx context.Context, sshClient *ssh.Cli
 	if err != nil {
 		return err
 	}
-	defer stdoutWriter.Close()
-	defer stdinWriter.Close()
+	defer func() { _ = stdoutWriter.Close() }()
+	defer func() { _ = stdinWriter.Close() }()
 
 	// create cancel context
 	cancelCtx, cancel := context.WithCancel(ctx)
@@ -208,8 +208,8 @@ func (c *ContainerTunnel) runInContainer(ctx context.Context, sshClient *ssh.Cli
 	// tunnel to container
 	go func() {
 		writer := c.log.Writer(logrus.InfoLevel, false)
-		defer writer.Close()
-		defer stdoutWriter.Close()
+		defer func() { _ = writer.Close() }()
+		defer func() { _ = stdoutWriter.Close() }()
 		defer cancel()
 
 		c.log.Debugf("Run container tunnel")
@@ -231,7 +231,7 @@ func (c *ContainerTunnel) runInContainer(ctx context.Context, sshClient *ssh.Cli
 	if err != nil {
 		return err
 	}
-	defer containerClient.Close()
+	defer func() { _ = containerClient.Close() }()
 	c.log.Debugf("Successfully connected to container")
 
 	// start handler

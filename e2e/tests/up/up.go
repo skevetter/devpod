@@ -94,7 +94,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 				workspaceEnvFileInvalid,
 				invalidData, 0o644)
 			framework.ExpectNoError(err)
-			defer os.Remove(workspaceEnvFileInvalid)
+			defer func() { _ = os.Remove(workspaceEnvFileInvalid) }()
 
 			// set env var
 			err = f.DevPodUp(ctx, name, "--workspace-env-file", workspaceEnvFileInvalid)
@@ -107,7 +107,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 				workspaceEnvFileValid,
 				validData, 0o644)
 			framework.ExpectNoError(err)
-			defer os.Remove(workspaceEnvFileValid)
+			defer func() { _ = os.Remove(workspaceEnvFileValid) }()
 
 			// set env var
 			err = f.DevPodUp(ctx, name, "--workspace-env-file", workspaceEnvFileValid)
@@ -134,7 +134,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 				workspaceEnvFileValid2,
 				validData, 0o644)
 			framework.ExpectNoError(err)
-			defer os.Remove(workspaceEnvFileValid2)
+			defer func() { _ = os.Remove(workspaceEnvFileValid2) }()
 
 			// set env var from both files
 			err = f.DevPodUp(ctx, name, "--workspace-env-file", fmt.Sprintf("%s,%s", workspaceEnvFileValid, workspaceEnvFileValid2))
@@ -218,7 +218,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 				filepath.Join(os.Getenv("HOME"), ".git-credentials"),
 				gitCredentialString, 0o644)
 			framework.ExpectNoError(err)
-			defer os.Remove(filepath.Join(os.Getenv("HOME"), ".git-credentials"))
+			defer func() { _ = os.Remove(filepath.Join(os.Getenv("HOME"), ".git-credentials")) }()
 
 			name := "testprivaterepo"
 			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), name)

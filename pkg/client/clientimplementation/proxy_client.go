@@ -193,7 +193,7 @@ func (s *proxyClient) Create(ctx context.Context, stdin io.Reader, stdout io.Wri
 
 func (s *proxyClient) Up(ctx context.Context, opt client.UpOptions) error {
 	writer, _ := devpodlog.PipeJSONStream(s.log.ErrorStreamOnly())
-	defer writer.Close()
+	defer func() { _ = writer.Close() }()
 
 	opts := EncodeOptions(opt.CLIOptions, DevPodFlagsUp)
 	if opt.Debug {
@@ -249,7 +249,7 @@ func (s *proxyClient) Up(ctx context.Context, opt client.UpOptions) error {
 
 func (s *proxyClient) Ssh(ctx context.Context, opt client.SshOptions) error {
 	writer, _ := devpodlog.PipeJSONStream(s.log.ErrorStreamOnly())
-	defer writer.Close()
+	defer func() { _ = writer.Close() }()
 
 	err := RunCommandWithBinaries(
 		ctx,
@@ -278,7 +278,7 @@ func (s *proxyClient) Delete(ctx context.Context, opt client.DeleteOptions) erro
 	defer s.m.Unlock()
 
 	writer, _ := devpodlog.PipeJSONStream(s.log.ErrorStreamOnly())
-	defer writer.Close()
+	defer func() { _ = writer.Close() }()
 
 	var gracePeriod *time.Duration
 	if opt.GracePeriod != "" {
@@ -326,7 +326,7 @@ func (s *proxyClient) Stop(ctx context.Context, opt client.StopOptions) error {
 	defer s.m.Unlock()
 
 	writer, _ := devpodlog.PipeJSONStream(s.log.ErrorStreamOnly())
-	defer writer.Close()
+	defer func() { _ = writer.Close() }()
 
 	err := RunCommandWithBinaries(
 		ctx,

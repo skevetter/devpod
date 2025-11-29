@@ -392,7 +392,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 				devContainerFileBuf, err := os.ReadFile(path.Join(tempDir, ".devcontainer.json"))
 				framework.ExpectNoError(err)
 
-				output := strings.Replace(string(devContainerFileBuf), "#{server_url}", server.URL(), -1)
+				output := strings.ReplaceAll(string(devContainerFileBuf), "#{server_url}", server.URL())
 				err = os.WriteFile(path.Join(tempDir, ".devcontainer.json"), []byte(output), 0644)
 				framework.ExpectNoError(err)
 

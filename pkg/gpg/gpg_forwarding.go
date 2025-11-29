@@ -31,7 +31,7 @@ func IsGpgTunnelRunning(
 	log log.Logger,
 ) bool {
 	writer := log.ErrorStreamOnly().Writer(logrus.InfoLevel, false)
-	defer writer.Close()
+	defer func() { _ = writer.Close() }()
 
 	command := "gpg -K"
 	if user != "" && user != "root" {
@@ -66,7 +66,7 @@ func (g *GPGConf) ImportGpgKey() error {
 	}
 
 	go func() {
-		defer stdin.Close()
+		defer func() { _ = stdin.Close() }()
 		_, _ = stdin.Write(g.PublicKey)
 	}()
 
@@ -87,7 +87,7 @@ func (g *GPGConf) ImportOwnerTrust() error {
 	}
 
 	go func() {
-		defer stdin.Close()
+		defer func() { _ = stdin.Close() }()
 		_, _ = stdin.Write(g.OwnerTrust)
 	}()
 
@@ -114,7 +114,7 @@ func (g *GPGConf) SetupGpgConf() error {
 		if err != nil {
 			return err
 		}
-		defer f.Close()
+		defer func() { _ = f.Close() }()
 
 		if _, err := f.WriteString("use-agent\n"); err != nil {
 			return err

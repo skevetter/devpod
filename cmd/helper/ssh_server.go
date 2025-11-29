@@ -115,7 +115,7 @@ func (cmd *SSHServerCmd) Run(_ *cobra.Command, _ []string) error {
 				for {
 					time.Sleep(time.Second * 10)
 					file, _ := os.Create(agent.ContainerActivityFile)
-					file.Close()
+					_ = file.Close()
 				}
 			}()
 		}

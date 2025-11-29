@@ -76,10 +76,7 @@ func NewSSHCmd(f *flags.GlobalFlags) *cobra.Command {
 				return err
 			}
 
-			localOnly := false
-			if cmd.Stdio {
-				localOnly = true
-			}
+			localOnly := cmd.Stdio
 
 			ctx := cobraCmd.Context()
 			client, err := workspace2.Get(ctx, devPodConfig, args, true, cmd.Owner, localOnly, log.Default.ErrorStreamOnly())
@@ -175,8 +172,8 @@ func (cmd *SSHCmd) jumpContainerTailscale(
 	if err != nil {
 		return err
 	}
-	defer toolSSHClient.Close()
-	defer sshClient.Close()
+	defer func() { _ = toolSSHClient.Close() }()
+	defer func() { _ = sshClient.Close() }()
 
 	// Forward ports if specified
 	if len(cmd.ForwardPorts) > 0 {
@@ -479,7 +476,7 @@ func (cmd *SSHCmd) startTunnel(ctx context.Context, devPodConfig *config.Config,
 	}
 	// start ssh
 	writer := log.ErrorStreamOnly().Writer(logrus.InfoLevel, false)
-	defer writer.Close()
+	defer func() { _ = writer.Close() }()
 
 	// check if we should do gpg agent forwarding
 	if cmd.GPGAgentForwarding || devPodConfig.ContextOption(config.ContextOptionGPGAgentForwarding) == "true" {
@@ -639,7 +636,7 @@ func (cmd *SSHCmd) setupGPGAgent(
 	}()
 
 	writer := log.ErrorStreamOnly().Writer(logrus.InfoLevel, false)
-	defer writer.Close()
+	defer func() { _ = writer.Close() }()
 	err = devssh.Run(ctx, containerClient, command, nil, writer, writer, nil)
 	if err != nil {
 		return fmt.Errorf("run gpg agent setup command: %w", err)

@@ -14,7 +14,7 @@ const (
 )
 
 func Ping(ctx context.Context, ws *WebsocketConn) {
-	defer ws.Close()
+	defer func() { _ = ws.Close() }()
 
 	for {
 		select {

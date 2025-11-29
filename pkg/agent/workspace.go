@@ -155,7 +155,7 @@ echo DevPod
 	if err != nil {
 		return false, err
 	}
-	defer os.Remove(testFile)
+	defer func() { _ = os.Remove(testFile) }()
 	if runtime.GOOS != "linux" {
 		return true, nil
 	}
@@ -327,7 +327,7 @@ func CloneRepositoryForWorkspace(
 		if err != nil {
 			return fmt.Errorf("dial platform gitcache: %w", err)
 		}
-		defer conn.Close()
+		defer func() { _ = conn.Close() }()
 
 		// Set up a connection to the server.
 		grpcClient, err := grpc.NewClient(
@@ -403,7 +403,7 @@ func CloneRepositoryForWorkspace(
 	}
 	// Remove files from workspace content folder
 	for _, exclude := range excludes {
-		os.RemoveAll(filepath.Join(workspaceDir, exclude))
+		_ = os.RemoveAll(filepath.Join(workspaceDir, exclude))
 	}
 	log.Debug("Ignore files from .devpodignore ", excludes)
 
@@ -438,7 +438,7 @@ func setupSSHKey(keys []string, agentPath string) ([]string, func(), error) {
 		if err != nil {
 			return nil, nil, err
 		}
-		defer keyFile.Close()
+		defer func() { _ = keyFile.Close() }()
 
 		if err := writeSSHKey(keyFile, key); err != nil {
 			return nil, nil, err
@@ -460,7 +460,7 @@ func setupSSHKey(keys []string, agentPath string) ([]string, func(), error) {
 	env = append(env, "GIT_SSH_COMMAND="+command.Quote(gitSSHCmd))
 	cleanup := func() {
 		for _, keyFile := range keyFiles {
-			os.Remove(keyFile)
+			_ = os.Remove(keyFile)
 		}
 	}
 

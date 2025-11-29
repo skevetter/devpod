@@ -70,7 +70,7 @@ func RunServices(
 		if err != nil {
 			return err
 		}
-		defer stdoutWriter.Close()
+		defer func() { _ = stdoutWriter.Close() }()
 
 		stdinReader, stdinWriter, err := os.Pipe()
 		if err != nil {
@@ -90,7 +90,7 @@ func RunServices(
 		errChan := make(chan error, 1)
 		go func() {
 			defer cancel()
-			defer stdinWriter.Close()
+			defer func() { _ = stdinWriter.Close() }()
 			// forward credentials to container
 			err := tunnelserver.RunServicesServer(
 				cancelCtx,
@@ -111,7 +111,7 @@ func RunServices(
 
 		// run credentials server
 		writer := log.ErrorStreamOnly().Writer(logrus.DebugLevel, false)
-		defer writer.Close()
+		defer func() { _ = writer.Close() }()
 
 		command := fmt.Sprintf("'%s' agent container credentials-server --user '%s'", agent.ContainerDevPodHelperLocation, user)
 		if configureGitCredentials {

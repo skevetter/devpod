@@ -175,7 +175,7 @@ func ParseKeyValueFile(filename string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	keyValuePairs := []string{}
 	scanner := bufio.NewScanner(f)
 	lineNum := 1

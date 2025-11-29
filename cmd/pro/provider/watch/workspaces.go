@@ -314,5 +314,5 @@ func printInstances(w io.Writer, instances []*ProWorkspaceInstance) {
 		return
 	}
 
-	fmt.Fprintln(w, string(out))
+	_, _ = fmt.Fprintln(w, string(out))
 }

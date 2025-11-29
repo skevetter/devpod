@@ -91,7 +91,7 @@ func (o *FleetServer) Install(projectDir string) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != 200 {
 		return fmt.Errorf("unexpected status code while trying to download fleet from %s: %d", url, resp.StatusCode)
 	}
@@ -100,7 +100,7 @@ func (o *FleetServer) Install(projectDir string) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	_, err = io.Copy(f, resp.Body)
 	if err != nil {
@@ -164,7 +164,7 @@ func (o *FleetServer) Start(binaryPath, location, projectDir string) error {
 	} else if !wasStarted {
 		return nil
 	}
-	defer readCloser.Close()
+	defer func() { _ = readCloser.Close() }()
 
 	// wait for the jet brains url and then exit
 	o.log.Infof("Waiting for fleet to start...")

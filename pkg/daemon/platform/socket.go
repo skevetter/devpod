@@ -22,7 +22,7 @@ func Dial(addr string) (net.Conn, error) {
 func listen(addr string) (net.Listener, error) {
 	conn, err := net.Dial("unix", addr)
 	if err == nil {
-		conn.Close()
+		_ = conn.Close()
 		return nil, fmt.Errorf("%s: address already in use", addr)
 	}
 	_ = os.Remove(addr)

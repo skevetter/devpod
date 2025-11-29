@@ -61,7 +61,7 @@ func (d *dockerDriver) BuildDevContainer(
 
 	// build image
 	writer := d.Log.Writer(logrus.InfoLevel, false)
-	defer writer.Close()
+	defer func() { _ = writer.Close() }()
 
 	// check if docker buildx exists
 	if options.Platform != "" {
@@ -125,13 +125,13 @@ func (d *dockerDriver) internalBuild(ctx context.Context, writer io.Writer, plat
 	if err != nil {
 		return errors.Wrap(err, "create docker client")
 	}
-	defer dockerClient.Close()
+	defer func() { _ = dockerClient.Close() }()
 
 	buildKitClient, err := buildkit.NewDockerClient(ctx, dockerClient)
 	if err != nil {
 		return errors.Wrap(err, "create buildkit client")
 	}
-	defer buildKitClient.Close()
+	defer func() { _ = buildKitClient.Close() }()
 
 	err = buildkit.Build(ctx, buildKitClient, writer, platform, options, d.Log)
 	if err != nil {

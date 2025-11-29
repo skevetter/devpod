@@ -341,7 +341,7 @@ func dockerlessBuild(
 
 	// write output to log
 	errWriter := log.Writer(logrus.InfoLevel, false)
-	defer errWriter.Close()
+	defer func() { _ = errWriter.Close() }()
 
 	// start building
 	log.Infof("Start dockerless building %s %s", "/.dockerless/dockerless", strings.Join(args, " "))
@@ -349,7 +349,7 @@ func dockerlessBuild(
 
 	if debug {
 		debugWriter := log.Writer(logrus.DebugLevel, false)
-		defer debugWriter.Close()
+		defer func() { _ = debugWriter.Close() }()
 		cmd.Stdout = debugWriter
 	}
 	cmd.Stderr = errWriter
@@ -624,7 +624,7 @@ func streamMount(ctx context.Context, workspaceInfo *provider2.ContainerWorkspac
 		if err != nil {
 			return fmt.Errorf("download workspace: %w", err)
 		}
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 
 		// check if the response is ok
 		if resp.StatusCode != http.StatusOK {

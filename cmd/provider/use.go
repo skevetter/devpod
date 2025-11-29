@@ -161,10 +161,10 @@ func setOptions(
 	// run init command
 	if !skipInit {
 		stdout := log.Writer(logrus.InfoLevel, false)
-		defer stdout.Close()
+		defer func() { _ = stdout.Close() }()
 
 		stderr := log.Writer(logrus.ErrorLevel, false)
-		defer stderr.Close()
+		defer func() { _ = stderr.Close() }()
 
 		err = initProvider(ctx, devPodConfig, provider, stdout, stderr)
 		if err != nil {

@@ -111,7 +111,7 @@ func readDockerignore(contextDir string, dockerfile string) ([]string, error) {
 		return nil, err
 	}
 
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	excludes, err = ignorefile.ReadAll(f)
 	if err != nil {

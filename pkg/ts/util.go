@@ -76,7 +76,7 @@ func WatchNetmap(ctx context.Context, lc *tailscale.LocalClient, netmapChangedFn
 	if err != nil {
 		return err
 	}
-	defer watcher.Close()
+	defer func() { _ = watcher.Close() }()
 
 	var netMap *netmap.NetworkMap
 	for {

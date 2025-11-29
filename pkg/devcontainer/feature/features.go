@@ -141,7 +141,7 @@ func processOCIFeature(id string, log log.Logger) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	log.Debugf("Extract feature into %s", featureExtractedFolder)
 	err = extract.Extract(file, featureExtractedFolder)
@@ -174,7 +174,7 @@ func downloadLayer(img v1.Image, id, destFile string, log log.Logger) error {
 	if err != nil {
 		return errors.Wrap(err, "download")
 	}
-	defer data.Close()
+	defer func() { _ = data.Close() }()
 
 	err = os.MkdirAll(filepath.Dir(destFile), 0755)
 	if err != nil {
@@ -185,7 +185,7 @@ func downloadLayer(img v1.Image, id, destFile string, log log.Logger) error {
 	if err != nil {
 		return errors.Wrap(err, "create file")
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	_, err = io.Copy(file, data)
 	if err != nil {
@@ -221,7 +221,7 @@ func processDirectTarFeature(id string, httpHeaders map[string]string, log log.L
 	if err != nil {
 		return "", err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	// extract tar.gz
 	err = extract.Extract(file, featureExtractedFolder)
@@ -254,7 +254,7 @@ func downloadFeatureFromURL(url string, destFile string, httpHeaders map[string]
 	if err != nil {
 		return errors.Wrap(err, "make request")
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode >= 400 {
 		return fmt.Errorf("GET request failed, status code is '%d'", resp.StatusCode)
 	}
@@ -264,7 +264,7 @@ func downloadFeatureFromURL(url string, destFile string, httpHeaders map[string]
 	if err != nil {
 		return errors.Wrap(err, "create download file")
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	_, err = io.Copy(file, resp.Body)
 	if err != nil {

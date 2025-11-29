@@ -29,8 +29,8 @@ func NewTunnel(ctx context.Context, tunnel Tunnel, handler Handler) error {
 	if err != nil {
 		return err
 	}
-	defer stdoutWriter.Close()
-	defer stdinWriter.Close()
+	defer func() { _ = stdoutWriter.Close() }()
+	defer func() { _ = stdinWriter.Close() }()
 
 	// start ssh proxy
 	outerTunnelChan := make(chan error, 1)
@@ -46,7 +46,7 @@ func NewTunnel(ctx context.Context, tunnel Tunnel, handler Handler) error {
 			innerTunnelChan <- err
 			return
 		}
-		defer sshClient.Close()
+		defer func() { _ = sshClient.Close() }()
 		defer cancel()
 
 		// start ssh tunnel

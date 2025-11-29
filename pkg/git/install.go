@@ -13,8 +13,8 @@ import (
 func InstallBinary(log log.Logger) error {
 	writer := log.Writer(logrus.InfoLevel, false)
 	errwriter := log.Writer(logrus.ErrorLevel, false)
-	defer writer.Close()
-	defer errwriter.Close()
+	defer func() { _ = writer.Close() }()
+	defer func() { _ = errwriter.Close() }()
 
 	// try to install git via apt / apk
 	if !command.Exists("apt") && !command.Exists("apk") {

@@ -169,7 +169,7 @@ var _ = DevPodDescribe("devpod ssh test suite", func() {
 					retries = retries - 1
 				} else {
 					if conn != nil {
-						defer conn.Close()
+						defer func() { _ = conn.Close() }()
 						fmt.Println("connecting to", port)
 
 						fmt.Println("sending PING")

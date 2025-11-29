@@ -274,10 +274,7 @@ func rerunAsRoot(workspaceInfo *provider2.AgentWorkspaceInfo, log log.Logger) (b
 	}
 
 	// check if daemon needs to be installed
-	agentRootRequired := false
-	if workspaceInfo == nil || len(workspaceInfo.Agent.Exec.Shutdown) > 0 {
-		agentRootRequired = true
-	}
+	agentRootRequired := workspaceInfo == nil || len(workspaceInfo.Agent.Exec.Shutdown) > 0
 
 	// check if root required
 	if !dockerRootRequired && !agentRootRequired {

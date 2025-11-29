@@ -15,7 +15,7 @@ func UnzipFolder(source, destination string) error {
 	if err != nil {
 		return err
 	}
-	defer reader.Close()
+	defer func() { _ = reader.Close() }()
 
 	// 2. Get the absolute destination path
 	destination, err = filepath.Abs(destination)
@@ -58,14 +58,14 @@ func unzipFile(f *zip.File, destination string) error {
 	if err != nil {
 		return err
 	}
-	defer destinationFile.Close()
+	defer func() { _ = destinationFile.Close() }()
 
 	// 7. Unzip the content of a file and copy it to the destination file
 	zippedFile, err := f.Open()
 	if err != nil {
 		return err
 	}
-	defer zippedFile.Close()
+	defer func() { _ = zippedFile.Close() }()
 
 	if _, err := io.Copy(destinationFile, zippedFile); err != nil {
 		return err

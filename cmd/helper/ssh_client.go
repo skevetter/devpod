@@ -44,13 +44,13 @@ func (cmd *SSHClient) Run(ctx context.Context, args []string) error {
 	if err != nil {
 		return err
 	}
-	defer sshClient.Close()
+	defer func() { _ = sshClient.Close() }()
 
 	sess, err := sshClient.NewSession()
 	if err != nil {
 		return err
 	}
-	defer sess.Close()
+	defer func() { _ = sess.Close() }()
 
 	sess.Stdin = os.Stdin
 	sess.Stdout = os.Stdout

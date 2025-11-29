@@ -88,7 +88,7 @@ func (s *machineClient) Create(ctx context.Context, options client.CreateOptions
 	defer close(done)
 
 	writer := s.log.Writer(logrus.InfoLevel, false)
-	defer writer.Close()
+	defer func() { _ = writer.Close() }()
 
 	// create a machine
 	s.log.Infof("Create machine '%s' with provider '%s'...", s.machine.ID, s.config.Name)
@@ -120,7 +120,7 @@ func (s *machineClient) Start(ctx context.Context, options client.StartOptions) 
 	defer close(done)
 
 	writer := s.log.Writer(logrus.InfoLevel, false)
-	defer writer.Close()
+	defer func() { _ = writer.Close() }()
 
 	s.log.Infof("Starting machine '%s'...", s.machine.ID)
 	err := RunCommandWithBinaries(
@@ -151,7 +151,7 @@ func (s *machineClient) Stop(ctx context.Context, options client.StopOptions) er
 	defer close(done)
 
 	writer := s.log.Writer(logrus.InfoLevel, false)
-	defer writer.Close()
+	defer func() { _ = writer.Close() }()
 
 	s.log.Infof("Stopping machine '%s'...", s.machine.ID)
 	err := RunCommandWithBinaries(
@@ -248,7 +248,7 @@ func (s *machineClient) Delete(ctx context.Context, options client.DeleteOptions
 	defer close(done)
 
 	writer := s.log.Writer(logrus.InfoLevel, false)
-	defer writer.Close()
+	defer func() { _ = writer.Close() }()
 
 	s.log.Infof("Deleting '%s' machine '%s'...", s.config.Name, s.machine.ID)
 	err := RunCommandWithBinaries(

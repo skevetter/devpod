@@ -63,7 +63,7 @@ func (c *FleetServerCmd) Run(cmd *cobra.Command, _ []string) error {
 			// we have an active session, so let's keep alive
 			if strings.Contains(connString[len(connString)-1][0], "is connected") {
 				file, _ := os.Create(agent.ContainerActivityFile)
-				file.Close()
+				_ = file.Close()
 			}
 		case <-cmd.Context().Done():
 			//context is done - either canceled or time is up for timeout

@@ -13,8 +13,8 @@ func TestUserHomeDir(t *testing.T) {
 	origHome := os.Getenv("HOME")
 	origUserProfile := os.Getenv("USERPROFILE")
 	t.Cleanup(func() {
-		os.Setenv("HOME", origHome)
-		os.Setenv("USERPROFILE", origUserProfile)
+		_ = os.Setenv("HOME", origHome)
+		_ = os.Setenv("USERPROFILE", origUserProfile)
 	})
 
 	type input struct {
@@ -52,8 +52,8 @@ func TestUserHomeDir(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.Name, func(t *testing.T) {
-			os.Setenv("HOME", test.Input.home)
-			os.Setenv("USERPROFILE", test.Input.userProfile)
+			_ = os.Setenv("HOME", test.Input.home)
+			_ = os.Setenv("USERPROFILE", test.Input.userProfile)
 
 			got, err := UserHomeDir()
 			assert.NilError(t, err, test.Name)

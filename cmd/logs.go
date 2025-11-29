@@ -69,8 +69,8 @@ func (cmd *LogsCmd) Run(ctx context.Context, args []string) error {
 	if err != nil {
 		return err
 	}
-	defer stdoutWriter.Close()
-	defer stdinWriter.Close()
+	defer func() { _ = stdoutWriter.Close() }()
+	defer func() { _ = stdinWriter.Close() }()
 	// ssh tunnel command
 	sshServerCmd := fmt.Sprintf("'%s' helper ssh-server --stdio", client.AgentPath())
 	if log.GetLevel() == logrus.DebugLevel {
@@ -84,7 +84,7 @@ func (cmd *LogsCmd) Run(ctx context.Context, args []string) error {
 	errChan := make(chan error, 1)
 	go func() {
 		stderr := log.ErrorStreamOnly().Writer(logrus.DebugLevel, false)
-		defer stderr.Close()
+		defer func() { _ = stderr.Close() }()
 
 		errChan <- agent.InjectAgentAndExecute(
 			ctx,
@@ -119,13 +119,13 @@ func (cmd *LogsCmd) Run(ctx context.Context, args []string) error {
 	if err != nil {
 		return err
 	}
-	defer sshClient.Close()
+	defer func() { _ = sshClient.Close() }()
 
 	session, err := sshClient.NewSession()
 	if err != nil {
 		return err
 	}
-	defer session.Close()
+	defer func() { _ = session.Close() }()
 
 	session.Stdout = os.Stdout
 	session.Stderr = os.Stderr

@@ -404,8 +404,8 @@ func (cmd *UpCmd) devPodUpProxy(
 	if err != nil {
 		return nil, err
 	}
-	defer stdoutWriter.Close()
-	defer stdinWriter.Close()
+	defer func() { _ = stdoutWriter.Close() }()
+	defer func() { _ = stdinWriter.Close() }()
 
 	// start machine on stdio
 	cancelCtx, cancel := context.WithCancel(ctx)
@@ -897,7 +897,7 @@ func startBrowserTunnel(
 		if err != nil {
 			return err
 		}
-		defer toolClient.Close()
+		defer func() { _ = toolClient.Close() }()
 
 		err = startServicesDaemon(ctx,
 			devPodConfig,
@@ -920,7 +920,7 @@ func startBrowserTunnel(
 		ctx,
 		func(ctx context.Context, stdin io.Reader, stdout io.Writer) error {
 			writer := logger.Writer(logrus.DebugLevel, false)
-			defer writer.Close()
+			defer func() { _ = writer.Close() }()
 
 			cmd, err := createSSHCommand(ctx, client, logger, []string{
 				"--log-output=raw",
