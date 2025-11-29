@@ -57,7 +57,7 @@ runs:
         go-version-file: go.mod
         cache-key-suffix: "release"
 
-    - name: Sync node version and setup cache
+    - name: Setup Node
       uses: actions/setup-node@v6
       if: inputs.cli_only == 'false'
       with:
