@@ -1,0 +1,16 @@
+name: Compile Binary
+description: Compile binary
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Go
+      uses: magnetikonline/action-golang-cache@v5
+      with:
+        go-version-file: go.mod
+
+    - name: Compile
+      shell: bash
+      run: |
+        go generate ./...
+        CGO_ENABLED=0 go build main.go

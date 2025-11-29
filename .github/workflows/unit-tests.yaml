@@ -8,14 +8,11 @@ jobs:
   unit-tests:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
+      - uses: actions/checkout@v6
 
-      - name: Setup Golang with cache
-        uses: magnetikonline/action-golang-cache@v5
+      # TODO: update 'uses' to @main when action is published
+      - uses: ./.github/actions/compile-binary
+
+      - uses: robherley/go-test-action@v0
         with:
-          go-version-file: go.mod
-          cache-key-suffix: "unit-tests"
-
-      - name: Test
-        run: ./hack/unit-tests.sh
+          testArguments: '-race -coverprofile=coverage.out -covermode=atomic ./... -skip="^Test.*E2E$"'
