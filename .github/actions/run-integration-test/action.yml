@@ -48,6 +48,13 @@ runs:
       shell: bash
       run: mkdir -p ~/.ssh && chmod 700 ~/.ssh
 
+    - name: Setup SSH server
+      shell: bash
+      run: |
+        sudo apt-get update -qq
+        sudo apt-get install -y openssh-server
+        sudo systemctl restart ssh
+
     - name: Run test
       shell: bash
       working-directory: ./e2e
