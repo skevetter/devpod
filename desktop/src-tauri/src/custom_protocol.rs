@@ -6,7 +6,6 @@ use crate::AppState;
 use log::{error, info, warn};
 use serde::{Deserialize, Serialize};
 use std::env;
-use std::path::Path;
 use tauri::{AppHandle, Manager, State};
 use thiserror::Error;
 use url::Url;

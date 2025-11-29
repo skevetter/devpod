@@ -1,5 +1,4 @@
-use crate::{commands::DevpodCommandError, AppState, UiMessage};
-use log::{error, info, warn};
+use log::info;
 use std::path::Path;
 
 #[tauri::command]

@@ -56,10 +56,8 @@ jobs:
           args: "--target ${{ matrix.target }} --config src-tauri/tauri-flatpak.conf.json --bundles appimage,deb"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY || 'dummy' }}
-          # TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY || 'dummy' }}
-          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD || 'dummy' }}
-          # TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD || 'dummy' }}
+          TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
 
       - name: Upload CLI Artifacts
         uses: actions/upload-artifact@v4
@@ -111,8 +109,8 @@ jobs:
         with:
           target: ${{ matrix.target }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          tauri_private_key: ${{ secrets.TAURI_PRIVATE_KEY || 'dummy' }}
-          tauri_key_password: ${{ secrets.TAURI_KEY_PASSWORD || 'dummy' }}
+          tauri_private_key: ${{ secrets.TAURI_PRIVATE_KEY }}
+          tauri_key_password: ${{ secrets.TAURI_KEY_PASSWORD }}
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
@@ -155,8 +153,8 @@ jobs:
         with:
           target: x86_64-pc-windows-msvc
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          tauri_private_key: ${{ secrets.TAURI_PRIVATE_KEY || 'dummy' }}
-          tauri_key_password: ${{ secrets.TAURI_KEY_PASSWORD || 'dummy' }}
+          tauri_private_key: ${{ secrets.TAURI_PRIVATE_KEY }}
+          tauri_key_password: ${{ secrets.TAURI_KEY_PASSWORD }}
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4

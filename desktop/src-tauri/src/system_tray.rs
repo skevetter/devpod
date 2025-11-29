@@ -70,7 +70,7 @@ impl SystemTray {
         Ok(m)
     }
 
-    pub fn get_menu_event_handler(&self) -> impl Fn(&AppHandle, MenuEvent) + Send + Sync {
+    pub fn get_menu_event_handler(&self) -> impl Fn(&AppHandle, MenuEvent) + Send + Sync + use<> {
         |app, event| match event.id.as_ref() {
             Self::QUIT_ID => app.exit(QUIT_EXIT_CODE),
             Self::SHOW_DASHBOARD_ID => {
@@ -130,7 +130,7 @@ impl SystemTray {
         }
     }
 
-    pub fn get_tray_icon_event_handler(&self) -> impl Fn(&TrayIcon, TrayIconEvent) + Send + Sync {
+    pub fn get_tray_icon_event_handler(&self) -> impl Fn(&TrayIcon, TrayIconEvent) + Send + Sync + use<> {
         |icon, event| match event {
             TrayIconEvent::DoubleClick { button, .. } => {
                 if button == MouseButton::Left {
