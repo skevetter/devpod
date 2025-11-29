@@ -43,6 +43,8 @@ runs:
     - name: Cluster info
       shell: bash
       run: |
+        export KUBECONFIG="${HOME}/.kube/config"
+        kubectl config use-context kind-kind-${{ inputs.label }}
         kubectl cluster-info
         kubectl get pods -n kube-system -v 10
         echo "kubectl config current-context:" $(kubectl config current-context)
@@ -52,9 +54,9 @@ runs:
       shell: bash
       working-directory: ./e2e
       run: |
-        sudo env "PATH=$PATH" "GOROOT=$GOROOT" \
+        export KUBECONFIG="${HOME}/.kube/config"
+        kubectl config use-context kind-kind-${{ inputs.label }}
+        sudo env "PATH=$PATH" "GOROOT=$GOROOT" "KUBECONFIG=${KUBECONFIG}" \
+          GH_USERNAME="${{ inputs.gh-username }}" \
+          GH_ACCESS_TOKEN="${{ inputs.gh-access-token }}" \
           go test -v -ginkgo.v -timeout 3600s --ginkgo.label-filter=${{ inputs.label }}
-      env:
-        KUBCONFIG: /home/runner/.kube/config
-        GH_USERNAME: ${{ inputs.gh-username }}
-        GH_ACCESS_TOKEN: ${{ inputs.gh-access-token }}

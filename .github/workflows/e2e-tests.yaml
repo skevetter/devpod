@@ -24,6 +24,9 @@ jobs:
   test-e2e:
     needs: setup-cache
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
     strategy:
       fail-fast: false
       max-parallel: 16
@@ -58,8 +61,15 @@ jobs:
 
     steps:
       - uses: jlumbroso/free-disk-space@v1.3.1
-
+      
       - uses: actions/checkout@v6
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       # TODO: update 'uses' to @main when action is published
       - name: Run integration test
