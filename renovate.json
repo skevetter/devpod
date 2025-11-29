@@ -1,0 +1,11 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "automerge": false,
+  "automergeType": "pr",
+  "automergeStrategy": "squash",
+  "extends": ["config:recommended"],
+  "pre-commit": {
+    "enabled": true
+  },
+  "dependencyDashboard": false
+}
