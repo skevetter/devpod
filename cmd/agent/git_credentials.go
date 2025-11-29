@@ -101,7 +101,7 @@ func getCredentialsFromWorkspaceServer(credentials *gitcredentials.GitCredential
 		}
 		defer func() { _ = file.Close() }()
 
-		_, _ = file.WriteString(fmt.Sprintf("get credentials from workspace server: %v\n", credentialsErr))
+		_, _ = fmt.Fprintf(file, "get credentials from workspace server: %v\n", credentialsErr)
 		return nil
 	}
 
@@ -118,7 +118,7 @@ func getCredentialsFromLocalMachine(credentials *gitcredentials.GitCredentials, 
 		}
 		defer func() { _ = file.Close() }()
 
-		_, _ = file.WriteString(fmt.Sprintf("get credentials from local machine: %v\n", credentialsErr))
+		_, _ = fmt.Fprintf(file, "get credentials from local machine: %v\n", credentialsErr)
 		return nil
 	}
 

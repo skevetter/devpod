@@ -222,8 +222,8 @@ func (k *KubernetesDriver) runContainer(
 	}
 
 	// create the pod manifest
-	pod.ObjectMeta.Name = id
-	pod.ObjectMeta.Labels = labels
+	pod.Name = id
+	pod.Labels = labels
 
 	pod.Spec.ServiceAccountName = serviceAccount
 	pod.Spec.NodeSelector = nodeSelector
@@ -430,8 +430,8 @@ func getVolumeMount(idx int, mount *config.Mount) corev1.VolumeMount {
 
 func getLabels(pod *corev1.Pod, rawLabels string) (map[string]string, error) {
 	labels := map[string]string{}
-	if pod.ObjectMeta.Labels != nil {
-		for k, v := range pod.ObjectMeta.Labels {
+	if pod.Labels != nil {
+		for k, v := range pod.Labels {
 			labels[k] = v
 		}
 	}

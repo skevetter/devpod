@@ -86,7 +86,7 @@ func (c *client) Delete(ctx context.Context, opt clientpkg.DeleteOptions) error 
 			return true, nil
 		} else if err != nil {
 			return false, fmt.Errorf("error getting workspace: %w", err)
-		} else if workspaceInstance.ObjectMeta.DeletionTimestamp == nil {
+		} else if workspaceInstance.DeletionTimestamp == nil {
 			// this can occur if the workspace is already deleted and was recreated
 			return true, nil
 		}

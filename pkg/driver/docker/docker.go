@@ -522,7 +522,7 @@ func (d *dockerDriver) RunDockerDevContainer(
 				}
 			}
 
-			_, err := containerGroupFileOut.WriteString(fmt.Sprintf("%s:%s:%s:%s\n", result["group"], result["password"], localGid, result["group_list"]))
+			_, err := fmt.Fprintf(containerGroupFileOut, "%s:%s:%s:%s\n", result["group"], result["password"], localGid, result["group_list"])
 			if err != nil {
 				return err
 			}
