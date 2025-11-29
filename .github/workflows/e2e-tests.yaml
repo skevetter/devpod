@@ -10,7 +10,20 @@ env:
   GO111MODULE: on
 
 jobs:
+  setup-cache:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v6
+
+      - name: Setup Golang with cache
+        uses: magnetikonline/action-golang-cache@v5
+        with:
+          go-version-file: go.mod
+          cache-key-suffix: "e2e-tests"
+
   test-e2e:
+    needs: setup-cache
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -53,7 +66,7 @@ jobs:
           sudo rm -rf /usr/local/share/boost
           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
 
-      - name: Setup Golang with cache
+      - name: Restore Golang cache
         uses: magnetikonline/action-golang-cache@v5
         with:
           go-version-file: go.mod
