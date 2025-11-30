@@ -2,9 +2,13 @@ use crate::ui_messages::{
     send_ui_message, ImportWorkspaceMsg, OpenWorkspaceMsg, SetupProMsg,
     UiMessage,
 };
+#[cfg(target_os = "linux")]
+use crate::ui_messages::{ShowToastMsg, ToastStatus};
 use crate::AppState;
 use log::{error, info, warn};
 use serde::{Deserialize, Serialize};
+#[cfg(target_os = "linux")]
+use std::env;
 use tauri::{AppHandle, Manager, State};
 use thiserror::Error;
 use url::Url;

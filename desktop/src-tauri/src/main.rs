@@ -183,6 +183,7 @@ fn main() -> anyhow::Result<()> {
 
     app.run(move |app_handle, event| {
         let exit_requested_tx = tx.clone();
+        #[cfg(target_os = "macos")]
         let reopen_tx = tx.clone();
 
         #[cfg(target_os = "macos")]
@@ -221,18 +222,22 @@ fn main() -> anyhow::Result<()> {
                 // Otherwise, we stay alive in the system tray.
                 api.prevent_exit();
             }
+            #[cfg(target_os = "macos")]
             tauri::RunEvent::WindowEvent { event, label, .. } => {
                 if let tauri::WindowEvent::Destroyed = event {
                     providers::check_dangling_provider(app_handle);
-                    #[cfg(target_os = "macos")]
-                    {
-                        let window_helper = window::WindowHelper::new(app_handle.clone());
-                        let window_count = app_handle.webview_windows().len();
-                        info!("Window \"{}\" destroyed, {} remaining", label, window_count);
-                        if window_count == 0 {
-                            window_helper.set_dock_icon_visibility(false);
-                        }
+                    let window_helper = window::WindowHelper::new(app_handle.clone());
+                    let window_count = app_handle.webview_windows().len();
+                    info!("Window \"{}\" destroyed, {} remaining", label, window_count);
+                    if window_count == 0 {
+                        window_helper.set_dock_icon_visibility(false);
                     }
+                }
+            }
+            #[cfg(not(target_os = "macos"))]
+            tauri::RunEvent::WindowEvent { event, .. } => {
+                if let tauri::WindowEvent::Destroyed = event {
+                    providers::check_dangling_provider(app_handle);
                 }
             }
             tauri::RunEvent::Exit => {

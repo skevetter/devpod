@@ -78,7 +78,7 @@ jobs:
           if-no-files-found: warn
 
   build-macos:
-    needs: [build-linux]
+    # needs: [build-linux]
     if: github.event_name == 'pull_request'|| (github.event_name == 'push' && github.ref == 'refs/heads/main') || inputs.platform == 'all' || inputs.platform == 'macos'
     runs-on: macos-latest
     strategy:
@@ -132,7 +132,7 @@ jobs:
           if-no-files-found: warn
 
   build-windows:
-    needs: [build-linux]
+    # needs: [build-linux]
     if: github.event_name == 'pull_request'|| (github.event_name == 'push' && github.ref == 'refs/heads/main') || inputs.platform == 'all' || inputs.platform == 'windows'
     runs-on: windows-latest
     name: test-windows-x86_64
