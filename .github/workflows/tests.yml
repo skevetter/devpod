@@ -126,6 +126,18 @@ jobs:
           binary-cache-key: "test-binary-windows"
           binary-path: ./e2e/bin/devpod-windows-amd64.exe
 
+  # NOTE: Integration tests on Windows that pull images fail due to missing Windows images
+  # I tried setting up Vampire/setup-wsl@v6 but encountered issues with docker refusing
+  # to connect to the WSL2 backend from within the GitHub Actions Windows runner.
+  # example error:
+  # ```
+  # Inspecting image mcr.microsoft.com/devcontainers/go:1-bookworm
+  # mcr.microsoft.com/devcontainers/go:1-bookworm not found
+  # Pulling image mcr.microsoft.com/devcontainers/go:1-bookworm
+  # 1-bookworm: Pulling from devcontainers/go
+  # no matching manifest for windows/amd64 10.0.26100 in the manifest list entries
+  # exit status 1
+  # ```
   integration-test-windows:
     name: Integration Tests Windows
     needs: [compile-windows]
