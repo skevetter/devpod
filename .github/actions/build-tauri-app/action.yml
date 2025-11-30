@@ -24,7 +24,7 @@ inputs:
     required: true
   tauri_key_password:
     description: Tauri key password
-    required: true
+    required: false
 
 runs:
   using: composite
@@ -39,4 +39,4 @@ runs:
       env:
         GITHUB_TOKEN: ${{ inputs.github_token }}
         TAURI_SIGNING_PRIVATE_KEY: ${{ inputs.tauri_private_key }}
-        TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ inputs.tauri_key_password }}
+        # TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ inputs.tauri_key_password }}
