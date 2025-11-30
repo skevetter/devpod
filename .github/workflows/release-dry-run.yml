@@ -1,0 +1,107 @@
+name: Release Dry Run
+
+on:
+  workflow_dispatch:
+    inputs:
+      auto_cleanup:
+        description: 'Automatically delete release after build'
+        required: true
+        type: boolean
+        default: false
+
+jobs:
+  create-release:
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    outputs:
+      package_version: ${{ steps.create-release.outputs.package_version }}
+      original_package_version: ${{ steps.create-release.outputs.original_package_version }}
+      release_id: ${{ steps.create-release.outputs.release_id }}
+    steps:
+      - uses: actions/checkout@v8
+
+      - uses: ./.github/actions/create-release
+        id: create-release
+
+  build-linux:
+    needs: [create-release]
+    if: startsWith(github.ref, 'refs/tags/v') == false
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        settings:
+          - target: x86_64-unknown-linux-gnu
+            arch: amd64
+            cli_only: false
+          - target: aarch64-unknown-linux-gnu
+            arch: arm64
+            cli_only: true
+    name: linux-${{ matrix.settings.target }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: setup build environment
+        uses: ./.github/actions/setup-build-environment
+        with:
+          host: ubuntu-latest
+          target: ${{ matrix.settings.target }}
+          package_version: ${{ needs.create-release.outputs.package_version }}
+          cli_only: ${{ matrix.settings.cli_only }}
+
+      - name: build CLI
+        uses: ./.github/actions/build-cli
+        with:
+          host: ubuntu-latest
+          target: ${{ matrix.settings.target }}
+          os: linux
+          arch: ${{ matrix.settings.arch }}
+          version: ${{ needs.create-release.outputs.original_package_version }}
+          telemetry_private_key: ${{ secrets.DEVPOD_TELEMETRY_PRIVATE_KEY }}
+          crane_private_key: ${{ secrets.CRANE_PRIVATE_KEY }}
+          output_path: release
+          sidecar_path: desktop/src-tauri/bin
+
+      - name: create linux release artifacts
+        if: matrix.settings.cli_only == false
+        uses: ./.github/actions/create-linux-release-artifacts
+        with:
+          target: ${{ matrix.settings.target }}
+          package_version: ${{ needs.create-release.outputs.package_version }}
+          release_id: ${{ needs.create-release.outputs.release_id }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          tauri_private_key: ${{ secrets.TAURI_PRIVATE_KEY }}
+          tauri_key_password: ${{ secrets.TAURI_KEY_PASSWORD }}
+          app_image_sign: ${{ secrets.APP_IMAGE_SIGN }}
+          app_image_sign_key: ${{ secrets.APP_IMAGE_SIGN_KEY }}
+          app_image_sign_passphrase: ${{ secrets.APP_IMAGE_SIGN_PASSPHRASE }}
+
+      - name: upload CLI asset
+        uses: ./.github/actions/upload-cli-asset
+        with:
+          target: ${{ matrix.settings.target }}
+          os: linux
+          arch: ${{ matrix.settings.arch }}
+          release_id: ${{ needs.create-release.outputs.release_id }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+  cleanup:
+    needs: [create-release, build-linux]
+    if: always() && inputs.auto_cleanup
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v8
+        with:
+          script: |
+            await github.rest.repos.deleteRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: "${{ needs.create-release.outputs.release_id }}"
+            })
+            console.log("Deleted release: ${{ needs.create-release.outputs.release_id }}")
