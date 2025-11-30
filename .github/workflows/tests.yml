@@ -155,12 +155,11 @@ jobs:
         uses: Vampire/setup-wsl@v6
         with:
           distribution: Ubuntu-24.04
-          use-cache: true
 
       - name: install and start docker in WSL
         shell: pwsh
         run: |
-          wsl --distribution Ubuntu-24.04 --exec sudo apt update && sudo apt upgrade -y
+          wsl --distribution Ubuntu-24.04 --exec sudo apt update
           wsl --distribution Ubuntu-24.04 --exec sudo apt-get install docker.io -y
           wsl --distribution Ubuntu-24.04 --exec sudo service docker start
 
