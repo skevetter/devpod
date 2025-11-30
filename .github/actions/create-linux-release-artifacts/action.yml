@@ -33,8 +33,6 @@ inputs:
 runs:
   using: composite
   steps:
-    - uses: actions/checkout@v6
-
     - name: build tauri app
       uses: tauri-apps/tauri-action@v0.6
       with:
