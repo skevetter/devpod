@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       auto_cleanup:
-        description: 'Automatically delete release after build'
+        description: "Automatically delete release after build"
         required: true
         type: boolean
         default: false
@@ -19,7 +19,7 @@ jobs:
       original_package_version: ${{ steps.create-release.outputs.original_package_version }}
       release_id: ${{ steps.create-release.outputs.release_id }}
     steps:
-      - uses: actions/checkout@v8
+      - uses: actions/checkout@v6
 
       - name: set test values
         id: create-release
