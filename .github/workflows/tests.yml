@@ -156,11 +156,16 @@ jobs:
 
       - uses: actions/checkout@v6
 
-      - name: switch Docker to Linux containers
+      - name: switch Docker to Linux daemon
         shell: pwsh
         run: |
-          & "C:\Program Files\Docker\Docker\DockerCli.exe" -SwitchLinuxEngine
-          Start-Sleep -Seconds 10
+          $dockerCliPath = Get-Command docker | Select-Object -ExpandProperty Source
+          $dockerDir = Split-Path $dockerCliPath
+          $dockerCli = Join-Path $dockerDir "DockerCli.exe"
+          if (Test-Path $dockerCli) {
+            & $dockerCli -SwitchDaemon
+            Start-Sleep -Seconds 5
+          }
           docker version
           docker info
 
