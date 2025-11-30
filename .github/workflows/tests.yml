@@ -166,12 +166,20 @@ jobs:
           wsl.exe -l -v
           wsl.exe --set-default Ubuntu-24.04
 
-          # Configure Docker to use WSL and Linux platform
-          echo "DOCKER_HOST=unix:///var/run/docker.sock" >> $env:GITHUB_ENV
-          echo "DOCKER_DEFAULT_PLATFORM=linux/amd64" >> $env:GITHUB_ENV
-          echo "WSL_INTEROP=/run/WSL/interop" >> $env:GITHUB_ENV
+          # Configure Docker to listen on TCP for Windows access
+          wsl --distribution Ubuntu-24.04 --exec sudo mkdir -p /etc/docker
+          wsl --distribution Ubuntu-24.04 --exec sudo bash -c 'echo "{\"hosts\": [\"unix:///var/run/docker.sock\", \"tcp://0.0.0.0:2375\"]}" > /etc/docker/daemon.json'
+          wsl --distribution Ubuntu-24.04 --exec sudo service docker restart
+          Start-Sleep -Seconds 5
 
-          wsl --distribution Ubuntu-24.04 --exec docker pull mcr.microsoft.com/devcontainers/base:ubuntu
+          # Configure environment to use TCP connection from Windows
+          echo "DOCKER_HOST=tcp://localhost:2375" >> $env:GITHUB_ENV
+          echo "DOCKER_DEFAULT_PLATFORM=linux/amd64" >> $env:GITHUB_ENV
+
+          docker version
+          docker pull hello-world
+          docker run --rm hello-world
+          docker pull mcr.microsoft.com/devcontainers/base:ubuntu
 
       - name: Run integration test
         uses: ./.github/actions/run-integration-test
