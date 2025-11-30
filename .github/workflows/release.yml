@@ -38,6 +38,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - uses: actions/checkout@v6
+
       - name: setup build environment
         uses: ./.github/actions/setup-build-environment
         with:
@@ -99,6 +101,8 @@ jobs:
     runs-on: macos-latest
 
     steps:
+      - uses: actions/checkout@v6
+
       - name: setup build environment
         uses: ./.github/actions/setup-build-environment
         with:
@@ -147,6 +151,8 @@ jobs:
     runs-on: windows-latest
 
     steps:
+      - uses: actions/checkout@v6
+
       - name: setup build environment
         uses: ./.github/actions/setup-build-environment
         with:
@@ -186,6 +192,8 @@ jobs:
       contents: write
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v6
+
       - name: release pro provider
         uses: ./.github/actions/release-pro-provider
         with:

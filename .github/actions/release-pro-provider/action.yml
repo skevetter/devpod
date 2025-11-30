@@ -12,8 +12,6 @@ inputs:
 runs:
   using: composite
   steps:
-    - uses: actions/checkout@v6
-
     - shell: bash
       run: |
         set -e

@@ -2,6 +2,7 @@ name: Devcontainer
 
 on:
   push:
+    branches: [main]
     paths:
       - ".devcontainer/**"
       - ".github/workflows/devcontainer.yml"
