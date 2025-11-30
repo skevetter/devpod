@@ -21,12 +21,24 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: set test values
+      - name: create draft release
         id: create-release
-        run: |
-          echo "package_version=0.0.0-test" >> $GITHUB_OUTPUT
-          echo "original_package_version=0.0.0-test" >> $GITHUB_OUTPUT
-          echo "release_id=test-release-id" >> $GITHUB_OUTPUT
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const release = await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: 'v0.0.0-test',
+              name: 'Test Release (Dry Run)',
+              draft: true,
+              prerelease: true,
+              body: 'Automated dry run test release'
+            })
+
+            core.setOutput('package_version', '0.0.0-test')
+            core.setOutput('original_package_version', '0.0.0-test')
+            core.setOutput('release_id', release.data.id)
 
   build-linux:
     needs: [create-release]
