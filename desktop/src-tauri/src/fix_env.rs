@@ -4,6 +4,7 @@ use std::process::Output;
 pub enum Error {
     #[error(transparent)]
     Shell(#[from] std::io::Error),
+    #[allow(dead_code)]
     #[error("invalid output from shell echo: {0}")]
     InvalidOutput(String),
     #[error("failed to run shell echo: {0}")]

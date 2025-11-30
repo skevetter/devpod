@@ -47,7 +47,7 @@ impl serde::Serialize for DevpodCommandError {
     }
 }
 pub trait DevpodCommandConfig<T> {
-    fn config(&self) -> CommandConfig {
+    fn config(&self) -> CommandConfig<'_> {
         CommandConfig {
             binary_name: DEVPOD_BINARY_NAME,
             args: vec![],

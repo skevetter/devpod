@@ -155,6 +155,7 @@ impl ProState {
 pub struct ProInstance {
     host: String,
     provider: Option<String>,
+    #[allow(dead_code)]
     context: Option<String>,
     capabilities: Option<Vec<String>>,
     #[serde(skip)]
@@ -193,7 +194,7 @@ impl ProInstance {
         );
     }
 
-    fn get_icon(&self) -> Option<Image> {
+    fn get_icon(&self) -> Option<Image<'_>> {
         return self
             .daemon
             .as_ref()

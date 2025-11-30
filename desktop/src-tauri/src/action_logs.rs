@@ -21,6 +21,7 @@ pub enum ActionLogError {
     FileOpen(#[source] std::io::Error),
     #[error("unable to write to file")]
     Write(#[source] std::io::Error),
+    #[allow(dead_code)]
     #[error("unable to delete to file")]
     FileDelete(#[source] std::io::Error),
 }

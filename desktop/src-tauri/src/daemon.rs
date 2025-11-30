@@ -46,7 +46,7 @@ impl DaemonState {
         return PENDING_ICON.clone();
     }
 
-    pub fn get_icon(&self) -> tauri::image::Image {
+    pub fn get_icon(&self) -> tauri::image::Image<'_> {
         return match self {
             DaemonState::Running => Self::running_icon(),
             DaemonState::Stopped => Self::stopped_icon(),

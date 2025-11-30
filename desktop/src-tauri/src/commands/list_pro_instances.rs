@@ -17,7 +17,7 @@ impl ListProInstancesCommand {
     }
 }
 impl DevpodCommandConfig<Vec<ProInstance>> for ListProInstancesCommand {
-    fn config(&self) -> CommandConfig {
+    fn config(&self) -> CommandConfig<'_> {
         CommandConfig {
             binary_name: DEVPOD_BINARY_NAME,
             args: vec![DEVPOD_COMMAND_PRO, DEVPOD_COMMAND_LIST, FLAG_OUTPUT_JSON],

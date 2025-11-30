@@ -34,7 +34,7 @@ impl DevpodCommandConfig<()> for StartDaemonCommand {
         return Ok(());
     }
 
-    fn config(&self) -> CommandConfig {
+    fn config(&self) -> CommandConfig<'_> {
         return CommandConfig {
             binary_name: DEVPOD_BINARY_NAME,
             args: vec![

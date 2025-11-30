@@ -14,7 +14,7 @@ impl DeleteProviderCommand {
     }
 }
 impl DevpodCommandConfig<()> for DeleteProviderCommand {
-    fn config(&self) -> CommandConfig {
+    fn config(&self) -> CommandConfig<'_> {
         CommandConfig {
             binary_name: DEVPOD_BINARY_NAME,
             args: vec![

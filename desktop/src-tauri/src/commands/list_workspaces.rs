@@ -18,7 +18,7 @@ impl ListWorkspacesCommand {
     }
 }
 impl DevpodCommandConfig<Vec<Workspace>> for ListWorkspacesCommand {
-    fn config(&self) -> CommandConfig {
+    fn config(&self) -> CommandConfig<'_> {
         CommandConfig {
             binary_name: DEVPOD_BINARY_NAME,
             args: vec![DEVPOD_COMMAND_LIST, FLAG_OUTPUT_JSON],
