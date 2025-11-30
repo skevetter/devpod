@@ -150,20 +150,6 @@ jobs:
 
       - uses: actions/checkout@v6
 
-      - name: setup WSL
-        uses: Vampire/setup-wsl@v6
-        with:
-          distribution: Ubuntu-24.04
-
-      - name: Install docker
-        shell: wsl-bash {0}
-        run: |
-          sudo apt update
-          sudo apt-get install docker.io -y
-          sudo systemctl start docker
-          sudo usermod -aG docker $USER
-          docker run --rm hello-world
-
       - name: Run integration test
         uses: ./.github/actions/run-integration-test
         with:

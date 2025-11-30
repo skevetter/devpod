@@ -35,14 +35,9 @@ runs:
         fail-on-cache-miss: true
         enableCrossOsArchive: true
 
-    - name: make binary executable (Linux)
+    - name: make binary executable
       if: runner.os != 'Windows'
       shell: bash
-      run: chmod +x ${{ inputs.binary-path }}
-
-    - name: make binary executable (Windows)
-      if: runner.os == 'Windows'
-      shell: wsl-bash {0}
       run: chmod +x ${{ inputs.binary-path }}
 
     # NOTE: engineerd/setup-kind does not work on Windows runners
@@ -72,14 +67,13 @@ runs:
 
     - name: run test (Windows)
       if: runner.os == 'Windows'
-      shell: wsl-bash {0}
+      shell: bash
       working-directory: ./e2e
       env:
         GH_USERNAME: ${{ inputs.gh-username }}
         GH_ACCESS_TOKEN: ${{ inputs.gh-access-token }}
       run: |
-        sudo \
-          GH_USERNAME="${GH_USERNAME}" \
+        GH_USERNAME="${GH_USERNAME}" \
           GH_ACCESS_TOKEN="${GH_ACCESS_TOKEN}" \
           KUBECONFIG="${KUBECONFIG:-$HOME/.kube/config}" \
           PATH="${PATH}" \
