@@ -28,14 +28,19 @@ jobs:
           wsl --distribution Ubuntu-24.04 --exec sudo apt update
           wsl --distribution Ubuntu-24.04 --exec sudo apt-get install docker.io -y
 
-          # Configure dockerd to listen on TCP
-          wsl --distribution Ubuntu-24.04 --exec sudo mkdir -p /etc/systemd/system/docker.service.d
-          wsl --distribution Ubuntu-24.04 --exec sudo bash -c 'echo "[Service]" > /etc/systemd/system/docker.service.d/override.conf'
-          wsl --distribution Ubuntu-24.04 --exec sudo bash -c 'echo "ExecStart=" >> /etc/systemd/system/docker.service.d/override.conf'
-          wsl --distribution Ubuntu-24.04 --exec sudo bash -c 'echo "ExecStart=/usr/bin/dockerd -H unix:///var/run/docker.sock -H tcp://0.0.0.0:2375" >> /etc/systemd/system/docker.service.d/override.conf'
+          # Stop docker service
+          wsl --distribution Ubuntu-24.04 --exec sudo service docker stop
 
-          wsl --distribution Ubuntu-24.04 --exec sudo service docker start
-          Start-Sleep -Seconds 5
+          # Configure daemon.json to listen on TCP
+          wsl --distribution Ubuntu-24.04 --exec sudo mkdir -p /etc/docker
+          wsl --distribution Ubuntu-24.04 --exec sudo bash -c 'echo "{\"hosts\": [\"unix:///var/run/docker.sock\", \"tcp://0.0.0.0:2375\"]}" > /etc/docker/daemon.json'
+
+          # Start dockerd directly in background
+          wsl --distribution Ubuntu-24.04 --exec sudo bash -c 'nohup dockerd > /tmp/dockerd.log 2>&1 &'
+          Start-Sleep -Seconds 10
+
+          # Verify docker is listening on port 2375
+          wsl --distribution Ubuntu-24.04 --exec sudo netstat -tlnp | grep 2375
 
           wsl.exe -l -v
           wsl.exe --set-default Ubuntu-24.04
