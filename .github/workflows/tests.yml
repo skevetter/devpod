@@ -138,6 +138,7 @@ jobs:
         label:
           - context
           - provider
+          - up-docker
     steps:
       - name: Free disk space
         shell: pwsh
@@ -149,6 +150,19 @@ jobs:
           Get-PSDrive
 
       - uses: actions/checkout@v6
+
+      - name: setup WSL
+        uses: Vampire/setup-wsl@v6
+        with:
+          distribution: Ubuntu-24.04
+          use-cache: true
+
+      - name: start docker in WSL
+        shell: pwsh
+        run: |
+          wsl --set-default-version 2
+          wsl --list --verbose
+          wsl --distribution Ubuntu-24.04 --exec sudo service docker start
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
