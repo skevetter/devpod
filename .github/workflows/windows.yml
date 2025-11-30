@@ -43,7 +43,7 @@ jobs:
           # Set environment for subsequent steps
           echo "DOCKER_HOST=tcp://127.0.0.1:2375" >> $env:GITHUB_ENV
           echo "DOCKER_DEFAULT_PLATFORM=linux/amd64" >> $env:GITHUB_ENV
-          
+
           # Validate docker is working
           Write-Host "DOCKER_HOST=$env:DOCKER_HOST"
           docker version
