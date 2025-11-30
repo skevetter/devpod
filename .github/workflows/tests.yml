@@ -141,7 +141,6 @@ jobs:
           - integration
           - provider
           - up-env-vars
-          - up-no-devcontainer
     steps:
       - name: Free disk space
         shell: pwsh
