@@ -9,6 +9,8 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
+      - uses: jlumbroso/free-disk-space@v1.3.1
+
       - uses: actions/checkout@v6
 
       - name: setup Go
