@@ -38,7 +38,5 @@ runs:
         includeUpdaterJson: ${{ inputs.include_updater_json }}
       env:
         GITHUB_TOKEN: ${{ inputs.github_token }}
-        TAURI_PRIVATE_KEY: ${{ inputs.tauri_private_key }}
         TAURI_SIGNING_PRIVATE_KEY: ${{ inputs.tauri_private_key }}
-        TAURI_KEY_PASSWORD: ${{ inputs.tauri_key_password }}
         TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ inputs.tauri_key_password }}
