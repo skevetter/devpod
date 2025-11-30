@@ -50,13 +50,14 @@ jobs:
 
       - name: Build Desktop App
         if: matrix.target == 'x86_64-unknown-linux-gnu'
-        uses: ./.github/actions/build-tauri-app
+        uses: tauri-apps/tauri-action@v0.6
         with:
           projectPath: "./desktop"
           args: "--target ${{ matrix.target }} --config src-tauri/tauri-flatpak.conf.json --bundles appimage,deb"
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          tauri_private_key: ${{ secrets.TAURI_PRIVATE_KEY }}
-          tauri_key_password: ${{ secrets.TAURI_KEY_PASSWORD }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          # TAURI_SIGNING_PRIVATE_KEY_PASSWORD: 
 
       - name: Upload CLI Artifacts
         uses: actions/upload-artifact@v4
@@ -105,12 +106,16 @@ jobs:
           crane_private_key: ""
 
       - name: Build Desktop App
-        uses: ./.github/actions/build-tauri-app
+        uses: tauri-apps/tauri-action@v0.6
         with:
-          target: ${{ matrix.target }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          tauri_private_key: ${{ secrets.TAURI_PRIVATE_KEY }}
-          tauri_key_password: ${{ secrets.TAURI_KEY_PASSWORD }}
+          projectPath: "./desktop"
+          args: "--target ${{ matrix.target }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY || 'dummy' }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY || 'dummy' }}
+          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD || 'dummy' }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD || 'dummy' }}
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
@@ -150,12 +155,16 @@ jobs:
           crane_private_key: ""
 
       - name: Build Desktop App
-        uses: ./.github/actions/build-tauri-app
+        uses: tauri-apps/tauri-action@v0.6
         with:
-          target: x86_64-pc-windows-msvc
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          tauri_private_key: ${{ secrets.TAURI_PRIVATE_KEY }}
-          tauri_key_password: ${{ secrets.TAURI_KEY_PASSWORD }}
+          projectPath: "./desktop"
+          args: "--target x86_64-pc-windows-msvc"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY || 'dummy' }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY || 'dummy' }}
+          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD || 'dummy' }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD || 'dummy' }}
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
