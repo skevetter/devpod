@@ -31,7 +31,7 @@ runs:
       uses: actions/cache/restore@v4
       with:
         path: ${{ inputs.binary-path }}
-        key: ${{ inputs.binary-cache-key }}-${{ github.sha }}
+        key: ${{ inputs.binary-cache-key }}-${{ github.run_id }}
         fail-on-cache-miss: true
         enableCrossOsArchive: true
 
