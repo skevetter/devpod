@@ -17,14 +17,14 @@ impl WindowHelper {
         // open browser devtools automatically during development
         #[cfg(debug_assertions)]
         {
-            window.open_devtools();
+            _window.open_devtools();
         }
 
         // Window vibrancy
         #[cfg(target_os = "macos")]
         {
             window_vibrancy::apply_vibrancy(
-                window,
+                _window,
                 window_vibrancy::NSVisualEffectMaterial::Sidebar,
                 None,
                 None,
@@ -141,12 +141,12 @@ impl WindowHelper {
             };
 
             if !visible {
-                let result = TransformProcessType(
+                let _result = TransformProcessType(
                     &psn as *const ProcessSerialNumber,
                     TransformState::ProcessTransformToUIElementApplication,
                 );
-                if result != 0 {
-                    error!("Failed to set dock icon visibility: {}", result);
+                if _result != 0 {
+                    error!("Failed to set dock icon visibility: {}", _result);
                 }
                 return;
             }
@@ -204,7 +204,7 @@ impl WindowHelper {
             );
             let app_icon = NSImage::initWithData_(NSImage::alloc(nil), data);
 
-            let res: () = msg_send![app, setApplicationIconImage: app_icon];
+            let _res: () = msg_send![app, setApplicationIconImage: app_icon];
         });
     }
 
@@ -219,7 +219,7 @@ impl WindowHelper {
 
         unsafe {
             let ns_app = NSApp();
-            let res: BOOL = msg_send![ns_app, setActivationPolicy: act_pol];
+            let _res: BOOL = msg_send![ns_app, setActivationPolicy: act_pol];
         }
     }
 
@@ -260,7 +260,7 @@ pub struct ProcessSerialNumber {
 
 #[cfg(target_os = "macos")]
 #[link(name = "ApplicationServices", kind = "framework")]
-extern "C" {
+unsafe extern "C" {
     fn TransformProcessType(psn: *const ProcessSerialNumber, transformState: TransformState)
         -> i32;
 }
