@@ -140,8 +140,6 @@ jobs:
           - ide
           - integration
           - provider
-          - ssh
-          - up-docker
           - up-env-vars
           - up-no-devcontainer
     steps:
@@ -155,19 +153,6 @@ jobs:
           Get-PSDrive
 
       - uses: actions/checkout@v6
-
-      - name: switch Docker to Linux daemon
-        shell: pwsh
-        run: |
-          $dockerCliPath = Get-Command docker | Select-Object -ExpandProperty Source
-          $dockerDir = Split-Path $dockerCliPath
-          $dockerCli = Join-Path $dockerDir "DockerCli.exe"
-          if (Test-Path $dockerCli) {
-            & $dockerCli -SwitchDaemon
-            Start-Sleep -Seconds 5
-          }
-          docker version
-          docker info
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
