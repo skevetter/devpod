@@ -23,6 +23,12 @@ inputs:
   crane_private_key:
     description: Crane signing key
     required: false
+  output_path:
+    description: Output path for the CLI binary
+    required: true
+  sidecar_path:
+    description: Output path for the sidecar binary (for desktop)
+    required: true
 
 runs:
   using: composite
@@ -32,9 +38,11 @@ runs:
       shell: bash
       run: |
         BIN_NAME=devpod-cli-${{ inputs.target }}
-        GOOS=${{ inputs.os }} GOARCH=${{ inputs.arch }} CGO_ENABLED=0 go build -ldflags "-s -w -X github.com/skevetter/devpod/pkg/version.version="v${{ inputs.version }}" -X github.com/skevetter/devpod/pkg/telemetry.telemetryPrivateKey=${{ inputs.telemetry_private_key }} -X github.com/skevetter/devpod/pkg/devcontainer/crane.craneSigningKey="${{ inputs.crane_private_key }}"" -o "test/$BIN_NAME"
-        cp "test/$BIN_NAME" "desktop/src-tauri/bin/$BIN_NAME"
-        ls desktop/src-tauri/bin
+        mkdir -p ${{ inputs.output_path }}
+        mkdir -p ${{ inputs.sidecar_path }}
+        GOOS=${{ inputs.os }} GOARCH=${{ inputs.arch }} CGO_ENABLED=0 go build -ldflags "-s -w -X github.com/skevetter/devpod/pkg/version.version="v${{ inputs.version }}" -X github.com/skevetter/devpod/pkg/telemetry.telemetryPrivateKey=${{ inputs.telemetry_private_key }} -X github.com/skevetter/devpod/pkg/devcontainer/crane.craneSigningKey="${{ inputs.crane_private_key }}"" -o "${{ inputs.output_path }}/$BIN_NAME"
+        cp "${{ inputs.output_path }}/$BIN_NAME" "${{ inputs.sidecar_path }}/$BIN_NAME"
+        ls ${{ inputs.sidecar_path }}
 
     - name: build sidecar CLI (Windows)
       if: inputs.host == 'windows-latest'
@@ -44,6 +52,9 @@ runs:
         set GOARCH=${{ inputs.arch }}
         set BIN_NAME=devpod-cli-${{ inputs.target }}.exe
 
-        go build -ldflags "-s -w -X github.com/skevetter/devpod/pkg/version.version="v${{ inputs.version }}" -X github.com/skevetter/devpod/pkg/telemetry.telemetryPrivateKey=${{ inputs.telemetry_private_key }}" -o "test\%BIN_NAME%"
+        if not exist "${{ inputs.output_path }}" mkdir "${{ inputs.output_path }}"
+        if not exist "${{ inputs.sidecar_path }}" mkdir "${{ inputs.sidecar_path }}"
 
-        xcopy /F /Y "test\%BIN_NAME%" desktop\src-tauri\bin\*
+        go build -ldflags "-s -w -X github.com/skevetter/devpod/pkg/version.version="v${{ inputs.version }}" -X github.com/skevetter/devpod/pkg/telemetry.telemetryPrivateKey=${{ inputs.telemetry_private_key }}" -o "${{ inputs.output_path }}\%BIN_NAME%"
+
+        xcopy /F /Y "${{ inputs.output_path }}\%BIN_NAME%" "${{ inputs.sidecar_path }}\*"

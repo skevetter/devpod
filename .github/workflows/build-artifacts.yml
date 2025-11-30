@@ -47,6 +47,8 @@ jobs:
           version: 0.0.0-test
           telemetry_private_key: ""
           crane_private_key: ""
+          output_path: artifacts
+          sidecar_path: desktop/src-tauri/bin
 
       - name: build desktop app
         if: matrix.target == 'x86_64-unknown-linux-gnu'
@@ -63,15 +65,17 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: linux-${{ matrix.target }}-cli
-          path: devpod-linux-*
+          path: artifacts/devpod-cli-*
+          if-no-files-found: error
 
       - name: upload desktop app artifacts
         if: matrix.target == 'x86_64-unknown-linux-gnu'
         uses: actions/upload-artifact@v4
         with:
           name: linux-${{ matrix.target }}-desktop
-          path: desktop/src-tauri/target/release/bundle/**/*
+          path: desktop/src-tauri/target/${{ matrix.target }}/release/bundle/**/*
           retention-days: 1
+          if-no-files-found: warn
 
   build-macos:
     needs: [build-linux]
@@ -104,6 +108,8 @@ jobs:
           version: 0.0.0-test
           telemetry_private_key: ""
           crane_private_key: ""
+          output_path: artifacts
+          sidecar_path: desktop/src-tauri/bin
 
       - name: build desktop app
         uses: tauri-apps/tauri-action@v0.6
@@ -120,9 +126,10 @@ jobs:
         with:
           name: macos-${{ matrix.target }}
           path: |
-            devpod-darwin-*
-            desktop/src-tauri/target/release/bundle/**/*
+            artifacts/devpod-cli-*
+            desktop/src-tauri/target/${{ matrix.target }}/release/bundle/**/*
           retention-days: 1
+          if-no-files-found: warn
 
   build-windows:
     needs: [build-linux]
@@ -151,6 +158,8 @@ jobs:
           version: 0.0.0-test
           telemetry_private_key: ""
           crane_private_key: ""
+          output_path: artifacts
+          sidecar_path: desktop/src-tauri/bin
 
       - name: build desktop app
         uses: tauri-apps/tauri-action@v0.6
@@ -167,6 +176,7 @@ jobs:
         with:
           name: windows-x86_64
           path: |
-            devpod-windows-*
-            desktop/src-tauri/target/release/bundle/**/*
+            artifacts/devpod-cli-*
+            desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/**/*
           retention-days: 1
+          if-no-files-found: warn

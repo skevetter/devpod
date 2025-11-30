@@ -54,6 +54,8 @@ jobs:
           version: ${{ needs.create-release.outputs.original_package_version }}
           telemetry_private_key: ${{ secrets.DEVPOD_TELEMETRY_PRIVATE_KEY }}
           crane_private_key: ${{ secrets.CRANE_PRIVATE_KEY }}
+          output_path: release
+          sidecar_path: desktop/src-tauri/bin
 
       - name: create linux release artifacts
         if: matrix.settings.cli_only == false
@@ -113,6 +115,8 @@ jobs:
           version: ${{ needs.create-release.outputs.original_package_version }}
           telemetry_private_key: ${{ secrets.DEVPOD_TELEMETRY_PRIVATE_KEY }}
           crane_private_key: ${{ secrets.CRANE_PRIVATE_KEY }}
+          output_path: release
+          sidecar_path: desktop/src-tauri/bin
 
       - name: create macOS release artifacts
         uses: ./.github/actions/create-macos-release-artifacts
@@ -159,6 +163,8 @@ jobs:
           version: ${{ needs.create-release.outputs.original_package_version }}
           telemetry_private_key: ${{ secrets.DEVPOD_TELEMETRY_PRIVATE_KEY }}
           crane_private_key: ${{ secrets.CRANE_PRIVATE_KEY }}
+          output_path: release
+          sidecar_path: desktop/src-tauri/bin
 
       - name: create windows release artifacts
         uses: ./.github/actions/create-windows-release-artifacts
