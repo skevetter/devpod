@@ -116,7 +116,6 @@ jobs:
 
   compile-windows:
     name: Compile Windows Binary
-    needs: [integration-test-wave-2]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -127,7 +126,7 @@ jobs:
           binary-cache-key: "test-binary-windows"
           binary-path: ./e2e/bin/devpod-windows-amd64.exe
 
-  integration-test-wave-3:
+  integration-test-windows:
     name: Integration Tests Windows
     needs: [compile-windows]
     runs-on: windows-latest
