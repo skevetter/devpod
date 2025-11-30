@@ -79,7 +79,7 @@ jobs:
 
   build-macos:
     needs: [build-linux]
-    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || inputs.platform == 'all' || inputs.platform == 'macos'
+    if: github.event_name == 'pull_request'|| (github.event_name == 'push' && github.ref == 'refs/heads/main') || inputs.platform == 'all' || inputs.platform == 'macos'
     runs-on: macos-latest
     strategy:
       fail-fast: false
@@ -133,7 +133,7 @@ jobs:
 
   build-windows:
     needs: [build-linux]
-    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || inputs.platform == 'all' || inputs.platform == 'windows'
+    if: github.event_name == 'pull_request'|| (github.event_name == 'push' && github.ref == 'refs/heads/main') || inputs.platform == 'all' || inputs.platform == 'windows'
     runs-on: windows-latest
     name: test-windows-x86_64
 
