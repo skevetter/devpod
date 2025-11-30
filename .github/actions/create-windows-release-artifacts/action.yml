@@ -29,12 +29,15 @@ runs:
   steps:
     - uses: actions/checkout@v6
 
-    - uses: ./.github/actions/build-tauri-app
+    - name: build tauri app
+      uses: tauri-apps/tauri-action@v0.6
       with:
-        target: ${{ inputs.target }}
-        github_token: ${{ inputs.github_token }}
-        tauri_private_key: ${{ inputs.tauri_private_key }}
-        tauri_key_password: ${{ inputs.tauri_key_password }}
+        projectPath: "./desktop"
+        args: "--target ${{ inputs.target }}"
+      env:
+        GITHUB_TOKEN: ${{ inputs.github_token }}
+        TAURI_SIGNING_PRIVATE_KEY: ${{ inputs.tauri_private_key }}
+        TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ inputs.tauri_key_password }}
 
     - uses: actions/github-script@v6
       env:
