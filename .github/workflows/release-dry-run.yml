@@ -104,8 +104,107 @@ jobs:
           release_id: ${{ needs.create-release.outputs.release_id }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
-  cleanup:
+  build-macos:
     needs: [create-release, build-linux]
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        settings:
+          - target: x86_64-apple-darwin
+            arch: amd64
+          - target: aarch64-apple-darwin
+            arch: arm64
+    name: macos-${{ matrix.settings.target }}
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: setup build environment
+        uses: ./.github/actions/setup-build-environment
+        with:
+          host: macos-latest
+          target: ${{ matrix.settings.target }}
+          package_version: ${{ needs.create-release.outputs.package_version }}
+          cli_only: false
+
+      - name: build CLI
+        uses: ./.github/actions/build-cli
+        with:
+          host: macos-latest
+          target: ${{ matrix.settings.target }}
+          os: darwin
+          arch: ${{ matrix.settings.arch }}
+          version: ${{ needs.create-release.outputs.original_package_version }}
+          telemetry_private_key: ${{ secrets.DEVPOD_TELEMETRY_PRIVATE_KEY }}
+          crane_private_key: ${{ secrets.CRANE_PRIVATE_KEY }}
+          output_path: release
+          sidecar_path: desktop/src-tauri/bin
+
+      - name: create macOS release artifacts
+        uses: ./.github/actions/create-macos-release-artifacts
+        with:
+          target: ${{ matrix.settings.target }}
+          release_id: ${{ needs.create-release.outputs.release_id }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          tauri_private_key: ${{ secrets.TAURI_PRIVATE_KEY }}
+          tauri_key_password: ${{ secrets.TAURI_KEY_PASSWORD }}
+
+      - name: upload CLI asset
+        uses: ./.github/actions/upload-cli-asset
+        with:
+          target: ${{ matrix.settings.target }}
+          os: darwin
+          arch: ${{ matrix.settings.arch }}
+          release_id: ${{ needs.create-release.outputs.release_id }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+  build-windows:
+    needs: [create-release, build-linux]
+    permissions:
+      contents: write
+    name: windows-x86_64-pc-windows-msvc
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: setup build environment
+        uses: ./.github/actions/setup-build-environment
+        with:
+          host: windows-latest
+          target: x86_64-pc-windows-msvc
+          package_version: ${{ needs.create-release.outputs.package_version }}
+          cli_only: false
+
+      - name: build CLI
+        uses: ./.github/actions/build-cli
+        with:
+          host: windows-latest
+          target: x86_64-pc-windows-msvc
+          os: windows
+          arch: amd64
+          version: ${{ needs.create-release.outputs.original_package_version }}
+          telemetry_private_key: ${{ secrets.DEVPOD_TELEMETRY_PRIVATE_KEY }}
+          crane_private_key: ${{ secrets.CRANE_PRIVATE_KEY }}
+          output_path: release
+          sidecar_path: desktop/src-tauri/bin
+
+      - name: create windows release artifacts
+        uses: ./.github/actions/create-windows-release-artifacts
+        with:
+          target: x86_64-pc-windows-msvc
+          arch: amd64
+          package_version: ${{ needs.create-release.outputs.package_version }}
+          release_id: ${{ needs.create-release.outputs.release_id }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          tauri_private_key: ${{ secrets.TAURI_PRIVATE_KEY }}
+          tauri_key_password: ${{ secrets.TAURI_KEY_PASSWORD }}
+
+  cleanup:
+    needs: [create-release, build-linux, build-macos, build-windows]
     if: always() && inputs.auto_cleanup
     permissions:
       contents: write
