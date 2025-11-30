@@ -1,0 +1,33 @@
+name: Devcontainer
+
+on:
+  push:
+    paths:
+      - ".devcontainer/**"
+      - ".github/workflows/devcontainer.yml"
+  workflow_dispatch:
+    inputs:
+      runCmd:
+        description: "Command to run inside the devcontainer"
+        required: false
+        default: test -x "$(command -v pre-commit)"
+
+permissions:
+  contents: read
+
+env:
+  DEFAULT_RUN_CMD: test -x "$(command -v pre-commit)"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "latest"
+
+      - uses: devcontainers/ci@v0.3
+        with:
+          runCmd: ${{ inputs.runCmd || env.DEFAULT_RUN_CMD }}
