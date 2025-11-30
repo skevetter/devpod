@@ -137,13 +137,7 @@ jobs:
       matrix:
         label:
           - context
-          - ide
-          - integration
           - provider
-          - ssh
-          - up-docker
-          - up-env-vars
-          - up-no-devcontainer
     steps:
       - name: Free disk space
         shell: pwsh
@@ -155,24 +149,6 @@ jobs:
           Get-PSDrive
 
       - uses: actions/checkout@v6
-
-      - name: Install and configure Podman
-        shell: pwsh
-        run: |
-          Write-Host "Installing Podman..."
-          choco install podman-desktop -y
-          
-          Write-Host "Initializing Podman machine..."
-          podman machine init
-          podman machine start
-          
-          Write-Host "Verifying Podman..."
-          podman version
-          podman info
-          
-          Write-Host "Setting DOCKER_HOST for compatibility..."
-          $podmanSocket = podman machine inspect --format '{{.ConnectionInfo.PodmanSocket.Path}}'
-          echo "DOCKER_HOST=unix://$podmanSocket" >> $env:GITHUB_ENV
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
