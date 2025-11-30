@@ -48,14 +48,14 @@ runs:
         SIGN_KEY: ${{ inputs.app_image_sign_key }}
         APPIMAGETOOL_SIGN_PASSPHRASE: ${{ inputs.app_image_sign_passphrase }}
 
-    - name: Build linux tar.gz
+    - name: build linux tar.gz
       shell: bash
       run: |
         cd ./desktop/src-tauri/target/${{ inputs.target }}/release/bundle/appimage/DevPod.AppDir || exit 1
         tar --exclude=usr/bin/xdg-open --exclude=usr/lib --exclude=usr/share/doc --exclude=usr/share/glib-2.0 -zcvf DevPod-desktop.tar.gz usr
         mv DevPod-desktop.tar.gz ../../DevPod-${{ inputs.package_version }}.tar.gz
 
-    - name: Upload Tar.gz Asset
+    - name: upload linux tar.gz asset
       uses: actions/github-script@v6
       env:
         GITHUB_TOKEN: ${{ inputs.github_token }}
@@ -81,7 +81,7 @@ runs:
             release_id: releaseId
           })
 
-    - name: Upload flatpak assets
+    - name: upload appimage asset
       uses: actions/github-script@v6
       env:
         GITHUB_TOKEN: ${{ inputs.github_token }}
@@ -124,7 +124,7 @@ runs:
             release_id: releaseId
           })
 
-    - name: Generate updated flatpak manifest
+    - name: generate flatpak manifest
       shell: bash
       run: |
         export VERSION="${{ inputs.package_version }}"

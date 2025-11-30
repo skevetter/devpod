@@ -27,18 +27,18 @@ runs:
   steps:
     - uses: actions/checkout@v6
 
-    - name: Restore cached binary
+    - name: restore cached binary
       uses: actions/cache/restore@v4
       with:
         path: ${{ inputs.binary-path }}
         key: ${{ inputs.binary-cache-key }}-${{ github.sha }}
         fail-on-cache-miss: true
 
-    - name: Make binary executable
+    - name: make binary executable
       shell: bash
       run: chmod +x ${{ inputs.binary-path }}
 
-    - name: Setup kind
+    - name: setup kind
       if: inputs.needs-kind == 'true'
       uses: engineerd/setup-kind@v0.6.2
       with:
@@ -46,7 +46,7 @@ runs:
         image: kindest/node:v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a
         name: ${{ inputs.label }}
 
-    - name: Run test
+    - name: run test
       shell: bash
       working-directory: ./e2e
       env:

@@ -4,32 +4,32 @@ description: Build and test the desktop user interface
 runs:
   using: composite
   steps:
-    - name: Setup node
+    - name: setup node
       uses: actions/setup-node@v6
       with:
         node-version: "latest"
 
-    - name: Install dependencies
+    - name: install dependencies
       shell: bash
       working-directory: ./desktop
       run: yarn install --frozen-lockfile
 
-    - name: Lint
+    - name: lint
       shell: bash
       working-directory: ./desktop
       run: yarn lint:ci
 
-    - name: Format check
+    - name: format check
       shell: bash
       working-directory: ./desktop
       run: yarn format:check
 
-    - name: Type check
+    - name: type check
       shell: bash
       working-directory: ./desktop
       run: yarn types:check
 
-    - name: Build
+    - name: build
       shell: bash
       working-directory: ./desktop
       run: yarn build

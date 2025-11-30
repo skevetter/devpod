@@ -17,30 +17,30 @@ runs:
   steps:
     - uses: actions/checkout@v6
 
-    - name: Setup Go
+    - name: setup Go
       uses: magnetikonline/action-golang-cache@v5
       with:
         go-version-file: go.mod
         cache-key-suffix: ${{ inputs.cache-key-suffix }}
 
-    - name: Compile
+    - name: compile
       shell: bash
       run: |
         go generate ./...
         CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build main.go
 
-    - name: Test
+    - name: test
       shell: bash
       run: |
         go test $(go list ./... | grep -v -e /vendor/ -e /test -e /e2e) -race -coverprofile=profile.out -covermode=atomic ./...
 
-    - name: Build integration test binary
+    - name: build binary
       shell: bash
       run: |
         mkdir -p $(dirname ${{ inputs.binary-path }})
         CGO_ENABLED=0 go build -ldflags "-s -w" -o ${{ inputs.binary-path }}
 
-    - name: Cache binary
+    - name: cache binary
       uses: actions/cache/save@v4
       with:
         path: ${{ inputs.binary-path }}

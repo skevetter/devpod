@@ -36,7 +36,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Setup Build Environment
+      - name: setup build environment
         uses: ./.github/actions/setup-build-environment
         with:
           host: ubuntu-latest
@@ -44,7 +44,7 @@ jobs:
           package_version: ${{ needs.create-release.outputs.package_version }}
           cli_only: ${{ matrix.settings.cli_only }}
 
-      - name: Build CLI
+      - name: build CLI
         uses: ./.github/actions/build-cli
         with:
           host: ubuntu-latest
@@ -55,7 +55,7 @@ jobs:
           telemetry_private_key: ${{ secrets.DEVPOD_TELEMETRY_PRIVATE_KEY }}
           crane_private_key: ${{ secrets.CRANE_PRIVATE_KEY }}
 
-      - name: Create Linux Release Artifacts
+      - name: create linux release artifacts
         if: matrix.settings.cli_only == false
         uses: ./.github/actions/create-linux-release-artifacts
         with:
@@ -69,7 +69,7 @@ jobs:
           app_image_sign_key: ${{ secrets.APP_IMAGE_SIGN_KEY }}
           app_image_sign_passphrase: ${{ secrets.APP_IMAGE_SIGN_PASSPHRASE }}
 
-      - name: Upload CLI Asset
+      - name: upload CLI asset
         uses: ./.github/actions/upload-cli-asset
         with:
           target: ${{ matrix.settings.target }}
@@ -95,7 +95,7 @@ jobs:
     runs-on: macos-latest
 
     steps:
-      - name: Setup Build Environment
+      - name: setup build environment
         uses: ./.github/actions/setup-build-environment
         with:
           host: macos-latest
@@ -103,7 +103,7 @@ jobs:
           package_version: ${{ needs.create-release.outputs.package_version }}
           cli_only: false
 
-      - name: Build CLI
+      - name: build CLI
         uses: ./.github/actions/build-cli
         with:
           host: macos-latest
@@ -114,7 +114,7 @@ jobs:
           telemetry_private_key: ${{ secrets.DEVPOD_TELEMETRY_PRIVATE_KEY }}
           crane_private_key: ${{ secrets.CRANE_PRIVATE_KEY }}
 
-      - name: Create macOS Release Artifacts
+      - name: create macOS release artifacts
         uses: ./.github/actions/create-macos-release-artifacts
         with:
           target: ${{ matrix.settings.target }}
@@ -123,7 +123,7 @@ jobs:
           tauri_private_key: ${{ secrets.TAURI_PRIVATE_KEY }}
           tauri_key_password: ${{ secrets.TAURI_KEY_PASSWORD }}
 
-      - name: Upload CLI Asset
+      - name: upload CLI asset
         uses: ./.github/actions/upload-cli-asset
         with:
           target: ${{ matrix.settings.target }}
@@ -141,7 +141,7 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - name: Setup Build Environment
+      - name: setup build environment
         uses: ./.github/actions/setup-build-environment
         with:
           host: windows-latest
@@ -149,7 +149,7 @@ jobs:
           package_version: ${{ needs.create-release.outputs.package_version }}
           cli_only: false
 
-      - name: Build CLI
+      - name: build CLI
         uses: ./.github/actions/build-cli
         with:
           host: windows-latest
@@ -160,7 +160,7 @@ jobs:
           telemetry_private_key: ${{ secrets.DEVPOD_TELEMETRY_PRIVATE_KEY }}
           crane_private_key: ${{ secrets.CRANE_PRIVATE_KEY }}
 
-      - name: Create Windows Release Artifacts
+      - name: create windows release artifacts
         uses: ./.github/actions/create-windows-release-artifacts
         with:
           target: x86_64-pc-windows-msvc
@@ -178,13 +178,13 @@ jobs:
       contents: write
     runs-on: ubuntu-latest
     steps:
-      - name: Release Pro Provider
+      - name: release pro provider
         uses: ./.github/actions/release-pro-provider
         with:
           version: v${{ needs.create-release.outputs.original_package_version }}
           github_token: ${{ github.token }}
 
-      - name: Update Latest JSON
+      - name: update latest.json
         uses: ./.github/actions/update-latest-json
         with:
           release_id: ${{ needs.create-release.outputs.release_id }}

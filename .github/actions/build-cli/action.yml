@@ -27,7 +27,7 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Build Sidecar CLI (Unix)
+    - name: build sidecar CLI (Linux/macOS)
       if: inputs.host != 'windows-latest'
       shell: bash
       run: |
@@ -36,7 +36,7 @@ runs:
         cp "test/$BIN_NAME" "desktop/src-tauri/bin/$BIN_NAME"
         ls desktop/src-tauri/bin
 
-    - name: Build Sidecar CLI (Windows)
+    - name: build sidecar CLI (Windows)
       if: inputs.host == 'windows-latest'
       shell: cmd
       run: |

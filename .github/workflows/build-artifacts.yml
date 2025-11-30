@@ -29,7 +29,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Setup Build Environment
+      - name: setup build environment
         uses: ./.github/actions/setup-build-environment
         with:
           host: ubuntu-latest
@@ -37,7 +37,7 @@ jobs:
           package_version: 0.0.0-test
           cli_only: ${{ matrix.target == 'aarch64-unknown-linux-gnu' }}
 
-      - name: Build CLI
+      - name: build CLI
         uses: ./.github/actions/build-cli
         with:
           host: ubuntu-latest
@@ -48,7 +48,7 @@ jobs:
           telemetry_private_key: ""
           crane_private_key: ""
 
-      - name: Build Desktop App
+      - name: build desktop app
         if: matrix.target == 'x86_64-unknown-linux-gnu'
         uses: tauri-apps/tauri-action@v0.6
         with:
@@ -59,13 +59,13 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
           # TAURI_SIGNING_PRIVATE_KEY_PASSWORD:
 
-      - name: Upload CLI Artifacts
+      - name: upload CLI artifacts
         uses: actions/upload-artifact@v4
         with:
           name: linux-${{ matrix.target }}-cli
           path: devpod-linux-*
 
-      - name: Upload Desktop Artifacts
+      - name: upload desktop app artifacts
         if: matrix.target == 'x86_64-unknown-linux-gnu'
         uses: actions/upload-artifact@v4
         with:
@@ -86,7 +86,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Setup Build Environment
+      - name: setup build environment
         uses: ./.github/actions/setup-build-environment
         with:
           host: macos-latest
@@ -94,7 +94,7 @@ jobs:
           package_version: 0.0.0-test
           cli_only: false
 
-      - name: Build CLI
+      - name: build CLI
         uses: ./.github/actions/build-cli
         with:
           host: macos-latest
@@ -105,7 +105,7 @@ jobs:
           telemetry_private_key: ""
           crane_private_key: ""
 
-      - name: Build Desktop App
+      - name: build desktop app
         uses: tauri-apps/tauri-action@v0.6
         with:
           projectPath: "./desktop"
@@ -115,7 +115,7 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
           # TAURI_SIGNING_PRIVATE_KEY_PASSWORD:
 
-      - name: Upload Artifacts
+      - name: upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: macos-${{ matrix.target }}
@@ -133,7 +133,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Setup Build Environment
+      - name: setup build environment
         uses: ./.github/actions/setup-build-environment
         with:
           host: windows-latest
@@ -141,7 +141,7 @@ jobs:
           package_version: 0.0.0-test
           cli_only: false
 
-      - name: Build CLI
+      - name: build CLI
         uses: ./.github/actions/build-cli
         with:
           host: windows-latest
@@ -152,7 +152,7 @@ jobs:
           telemetry_private_key: ""
           crane_private_key: ""
 
-      - name: Build Desktop App
+      - name: build desktop app
         uses: tauri-apps/tauri-action@v0.6
         with:
           projectPath: "./desktop"

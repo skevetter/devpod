@@ -30,7 +30,7 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Build Desktop App
+    - name: build tauri app
       uses: tauri-apps/tauri-action@v0.6
       with:
         releaseId: ${{ inputs.release_id }}
