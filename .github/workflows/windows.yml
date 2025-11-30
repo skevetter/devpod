@@ -17,6 +17,9 @@ jobs:
         uses: Vampire/setup-wsl@v6
         with:
           distribution: Ubuntu-24.04
+          wsl-conf: |
+            [wsl2]
+            networkingMode=mirrored
 
       - name: install and start docker in WSL
         shell: pwsh
@@ -28,19 +31,20 @@ jobs:
           wsl --distribution Ubuntu-24.04 --exec sudo apt update
           wsl --distribution Ubuntu-24.04 --exec sudo apt-get install docker.io -y
 
-          # Stop docker service
+          docker run --rm hello-world || echo "Ignoring docker run failure"
+          docker pull mcr.microsoft.com/devcontainers/base:ubuntu || echo "Ignoring docker pull failure"
+
+          # Stop docker service and socket
           wsl --distribution Ubuntu-24.04 --exec sudo service docker stop
+          wsl --distribution Ubuntu-24.04 --exec sudo systemctl stop docker.socket
 
-          # Configure daemon.json to listen on TCP
-          wsl --distribution Ubuntu-24.04 --exec sudo mkdir -p /etc/docker
-          wsl --distribution Ubuntu-24.04 --exec sudo bash -c 'echo "{\"hosts\": [\"unix:///var/run/docker.sock\", \"tcp://0.0.0.0:2375\"]}" > /etc/docker/daemon.json'
-
-          # Start dockerd directly in background
-          wsl --distribution Ubuntu-24.04 --exec sudo bash -c 'nohup dockerd > /tmp/dockerd.log 2>&1 &'
+          # Start dockerd directly with TCP enabled
+          wsl --distribution Ubuntu-24.04 --exec sudo bash -c 'nohup dockerd -H unix:///var/run/docker.sock -H tcp://0.0.0.0:2375 > /tmp/dockerd.log 2>&1 &'
           Start-Sleep -Seconds 10
 
-          # Verify docker is listening on port 2375
-          wsl --distribution Ubuntu-24.04 --exec sudo netstat -tlnp | grep 2375
+          # Check if dockerd is running
+          wsl --distribution Ubuntu-24.04 --exec ps aux | grep dockerd
+          wsl --distribution Ubuntu-24.04 --exec sudo ss -tlnp | grep 2375
 
           wsl.exe -l -v
           wsl.exe --set-default Ubuntu-24.04
@@ -58,4 +62,3 @@ jobs:
           docker pull hello-world
           docker run --rm hello-world
           docker pull mcr.microsoft.com/devcontainers/base:ubuntu
-          Write-Host "Docker validation successful!"
