@@ -8,7 +8,7 @@ inputs:
   needs-kind:
     description: Whether this test needs kind
     required: false
-    default: 'false'
+    default: "false"
   gh-username:
     description: GitHub username for private repo tests
     required: true
@@ -35,14 +35,15 @@ runs:
         fail-on-cache-miss: true
         enableCrossOsArchive: true
 
-    - name: make binary executable
+    - name: make binary executable (Linux)
       if: runner.os != 'Windows'
       shell: bash
       run: chmod +x ${{ inputs.binary-path }}
 
-    - name: verify binary
-      shell: bash
-      run: ls -la ${{ inputs.binary-path }}
+    - name: make binary executable (Windows)
+      if: runner.os == 'Windows'
+      shell: wsl-bash {0}
+      run: chmod +x ${{ inputs.binary-path }}
 
     # NOTE: engineerd/setup-kind does not work on Windows runners
     - name: setup kind
@@ -71,13 +72,14 @@ runs:
 
     - name: run test (Windows)
       if: runner.os == 'Windows'
-      shell: bash
+      shell: wsl-bash {0}
       working-directory: ./e2e
       env:
         GH_USERNAME: ${{ inputs.gh-username }}
         GH_ACCESS_TOKEN: ${{ inputs.gh-access-token }}
       run: |
-        GH_USERNAME="${GH_USERNAME}" \
+        sudo \
+          GH_USERNAME="${GH_USERNAME}" \
           GH_ACCESS_TOKEN="${GH_ACCESS_TOKEN}" \
           KUBECONFIG="${KUBECONFIG:-$HOME/.kube/config}" \
           PATH="${PATH}" \
