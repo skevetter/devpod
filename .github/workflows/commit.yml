@@ -1,0 +1,17 @@
+name: Commit
+
+on:
+  push:
+    branches: ["main"]
+  pull_request_target:
+
+jobs:
+  commits:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: 1Password/check-signed-commits-action@v1
+
+      - uses: opensource-nepal/commitlint@v1
