@@ -40,7 +40,9 @@ jobs:
           wsl.exe -l -v
           wsl.exe --set-default Ubuntu-24.04
 
-          # Set environment for subsequent steps
+          # Set environment for current session AND subsequent steps
+          $env:DOCKER_HOST = "tcp://127.0.0.1:2375"
+          $env:DOCKER_DEFAULT_PLATFORM = "linux/amd64"
           echo "DOCKER_HOST=tcp://127.0.0.1:2375" >> $env:GITHUB_ENV
           echo "DOCKER_DEFAULT_PLATFORM=linux/amd64" >> $env:GITHUB_ENV
 
