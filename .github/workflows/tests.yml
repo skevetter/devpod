@@ -159,24 +159,33 @@ jobs:
       - name: install and start docker in WSL
         shell: pwsh
         run: |
+          # Stop Windows Docker service
+          Write-Host "Stopping Windows Docker service..."
+          Stop-Service docker -ErrorAction SilentlyContinue
+          
+          Write-Host "Installing Docker in WSL"
           wsl --distribution Ubuntu-24.04 --exec sudo apt update
           wsl --distribution Ubuntu-24.04 --exec sudo apt-get install docker.io -y
+          
+          # Configure dockerd to listen on TCP
+          wsl --distribution Ubuntu-24.04 --exec sudo mkdir -p /etc/systemd/system/docker.service.d
+          wsl --distribution Ubuntu-24.04 --exec sudo bash -c 'echo "[Service]" > /etc/systemd/system/docker.service.d/override.conf'
+          wsl --distribution Ubuntu-24.04 --exec sudo bash -c 'echo "ExecStart=" >> /etc/systemd/system/docker.service.d/override.conf'
+          wsl --distribution Ubuntu-24.04 --exec sudo bash -c 'echo "ExecStart=/usr/bin/dockerd -H unix:///var/run/docker.sock -H tcp://0.0.0.0:2375" >> /etc/systemd/system/docker.service.d/override.conf'
+          
           wsl --distribution Ubuntu-24.04 --exec sudo service docker start
+          Start-Sleep -Seconds 5
 
           wsl.exe -l -v
           wsl.exe --set-default Ubuntu-24.04
 
-          # Configure Docker to listen on TCP for Windows access
-          wsl --distribution Ubuntu-24.04 --exec sudo mkdir -p /etc/docker
-          wsl --distribution Ubuntu-24.04 --exec sudo bash -c 'echo "{\"hosts\": [\"unix:///var/run/docker.sock\", \"tcp://0.0.0.0:2375\"]}" > /etc/docker/daemon.json'
-          wsl --distribution Ubuntu-24.04 --exec sudo service docker restart
-          Start-Sleep -Seconds 5
-
-          # Configure environment to use TCP connection from Windows
-          echo "DOCKER_HOST=tcp://localhost:2375" >> $env:GITHUB_ENV
+          # Configure environment
+          echo "DOCKER_HOST=tcp://127.0.0.1:2375" >> $env:GITHUB_ENV
           echo "DOCKER_DEFAULT_PLATFORM=linux/amd64" >> $env:GITHUB_ENV
 
+          Write-Host "Validating Docker"
           docker version
+          docker info | Select-String -Pattern "OSType"
           docker pull hello-world
           docker run --rm hello-world
           docker pull mcr.microsoft.com/devcontainers/base:ubuntu
