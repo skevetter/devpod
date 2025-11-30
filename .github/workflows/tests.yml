@@ -126,24 +126,9 @@ jobs:
           binary-cache-key: "test-binary-windows"
           binary-path: ./e2e/bin/devpod-windows-amd64.exe
 
-  verify-windows-cache:
-    name: Verify Windows Binary Cache
-    needs: [compile-windows]
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Verify cache exists
-        uses: actions/cache/restore@v4
-        with:
-          path: ./e2e/bin/devpod-windows-amd64.exe
-          key: test-binary-windows-${{ github.sha }}
-          fail-on-cache-miss: true
-          enableCrossOsArchive: true
-
   integration-test-windows:
     name: Integration Tests Windows
-    needs: [verify-windows-cache]
+    needs: [compile-windows]
     runs-on: windows-latest
     permissions:
       contents: read
@@ -170,6 +155,14 @@ jobs:
           Get-PSDrive
 
       - uses: actions/checkout@v6
+
+      - name: switch Docker to Linux containers
+        shell: pwsh
+        run: |
+          & "C:\Program Files\Docker\Docker\DockerCli.exe" -SwitchLinuxEngine
+          Start-Sleep -Seconds 10
+          docker version
+          docker info
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
