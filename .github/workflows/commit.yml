@@ -3,7 +3,7 @@ name: Commit
 on:
   push:
     branches: ["main"]
-  pull_request_target:
+  pull_request:
 
 jobs:
   commits:
