@@ -37,7 +37,7 @@ runs:
         TAURI_SIGNING_PRIVATE_KEY: ${{ inputs.tauri_private_key }}
         TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ inputs.tauri_key_password }}
 
-    - uses: actions/github-script@v6
+    - uses: actions/github-script@v8
       env:
         GITHUB_TOKEN: ${{ inputs.github_token }}
       with:

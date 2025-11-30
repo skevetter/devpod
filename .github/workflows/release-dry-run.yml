@@ -21,12 +21,15 @@ jobs:
     steps:
       - uses: actions/checkout@v8
 
-      - uses: ./.github/actions/create-release
+      - name: set test values
         id: create-release
+        run: |
+          echo "package_version=0.0.0-test" >> $GITHUB_OUTPUT
+          echo "original_package_version=0.0.0-test" >> $GITHUB_OUTPUT
+          echo "release_id=test-release-id" >> $GITHUB_OUTPUT
 
   build-linux:
     needs: [create-release]
-    if: startsWith(github.ref, 'refs/tags/v') == false
     permissions:
       contents: write
     strategy:

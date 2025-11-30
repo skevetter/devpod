@@ -56,7 +56,7 @@ runs:
         mv DevPod-desktop.tar.gz ../../DevPod-${{ inputs.package_version }}.tar.gz
 
     - name: upload linux tar.gz asset
-      uses: actions/github-script@v6
+      uses: actions/github-script@v8
       env:
         GITHUB_TOKEN: ${{ inputs.github_token }}
       with:
@@ -82,7 +82,7 @@ runs:
           })
 
     - name: upload appimage asset
-      uses: actions/github-script@v6
+      uses: actions/github-script@v8
       env:
         GITHUB_TOKEN: ${{ inputs.github_token }}
       with:

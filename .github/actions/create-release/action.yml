@@ -23,7 +23,7 @@ runs:
       shell: bash
 
     - name: get version
-      uses: actions/github-script@v6
+      uses: actions/github-script@v8
       id: get-version
       with:
         script: |
@@ -60,7 +60,7 @@ runs:
           core.setOutput("package_version", version)
 
     - name: get release
-      uses: actions/github-script@v6
+      uses: actions/github-script@v8
       id: get-release
       with:
         script: |
