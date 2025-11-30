@@ -20,3 +20,9 @@ jobs:
         uses: golangci/golangci-lint-action@v9
         with:
           version: latest
+
+      - name: megalinter
+        uses: oxsecurity/megalinter@v9
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VALIDATE_ALL_CODEBASE: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'pull_request' }}
