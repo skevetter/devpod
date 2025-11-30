@@ -154,7 +154,7 @@ jobs:
           Remove-Item -Path "$env:LOCALAPPDATA\Android" -Recurse -Force -ErrorAction SilentlyContinue
           Remove-Item -Path "C:\hostedtoolcache\windows\dotnet" -Recurse -Force -ErrorAction SilentlyContinue
           Get-PSDrive
-      
+
       - uses: actions/checkout@v6
 
       - name: Log in to GitHub Container Registry
@@ -173,7 +173,7 @@ jobs:
           gh-access-token: ${{ secrets.GH_PRIVATE_REPO_TOKEN_TEST }}
           binary-cache-key: "test-binary-windows"
           binary-path: ./e2e/bin/devpod-windows-amd64.exe
-  
+
   docker-install-test:
     name: Docker Install Test
     needs: [compile-linux]
