@@ -245,12 +245,7 @@ impl CustomProtocol {
             match result {
                 Ok(..) => {}
                 Err(error) => {
-                    let mut is_flatpak = false;
-
-                    match env::var("FLATPAK_ID") {
-                        Ok(_) => is_flatpak = true,
-                        Err(_) => is_flatpak = false,
-                    }
+                    let is_flatpak = env::var("FLATPAK_ID").is_ok();
 
                     if !is_flatpak {
                         let msg = "Either update-desktop-database or xdg-mime are missing. Please make sure they are available on your system";

@@ -96,7 +96,7 @@ fn install(_app_handle: AppHandle, force: bool) -> Result<(), InstallCLIError> {
 
         // create .local/bin if necessary
         if let Some(path) = user_local_bin.clone().parent() {
-            fs::create_dir_all(path);
+            let _ = fs::create_dir_all(path);
         }
 
         target_paths.push(user_local_bin);
@@ -131,12 +131,7 @@ fn install(_app_handle: AppHandle, force: bool) -> Result<(), InstallCLIError> {
             target_path.to_string_lossy()
         );
 
-        let mut is_flatpak = false;
-
-        match env::var("FLATPAK_ID") {
-            Ok(_) => is_flatpak = true,
-            Err(_) => is_flatpak = false,
-        }
+        let is_flatpak = env::var("FLATPAK_ID").is_ok();
 
         if is_flatpak {
             match copy(cli_path.clone(), &target_path)

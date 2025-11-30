@@ -183,7 +183,7 @@ fn main() -> anyhow::Result<()> {
 
     app.run(move |app_handle, event| {
         let exit_requested_tx = tx.clone();
-        let reopen_tx = tx.clone();
+        let _reopen_tx = tx.clone();
 
         #[cfg(target_os = "macos")]
         {
@@ -221,7 +221,7 @@ fn main() -> anyhow::Result<()> {
                 // Otherwise, we stay alive in the system tray.
                 api.prevent_exit();
             }
-            tauri::RunEvent::WindowEvent { event, label, .. } => {
+            tauri::RunEvent::WindowEvent { event, .. } => {
                 if let tauri::WindowEvent::Destroyed = event {
                     providers::check_dangling_provider(app_handle);
                     #[cfg(target_os = "macos")]

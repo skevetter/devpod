@@ -87,11 +87,7 @@ impl Settings {
             return false;
         }
 
-        let mut is_flatpak = false;
-        match env::var("FLATPAK_ID") {
-            Ok(_) => is_flatpak = true,
-            Err(_) => is_flatpak = false,
-        }
+        let is_flatpak = env::var("FLATPAK_ID").is_ok();
         if is_flatpak {
             return false
         }
