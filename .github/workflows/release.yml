@@ -2,10 +2,21 @@ name: Release
 on:
   release:
     types: [prereleased]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "run as dry run (creates draft release for testing)"
+        required: true
+        type: boolean
+        default: true
+      auto_cleanup:
+        description: "cleanup release after dry run"
+        required: true
+        type: boolean
+        default: false
 
 jobs:
   create-release:
-    if: startsWith(github.ref, 'refs/tags/v') == true
     permissions:
       contents: write
     runs-on: ubuntu-latest
@@ -13,15 +24,70 @@ jobs:
       package_version: ${{ steps.create-release.outputs.package_version }}
       original_package_version: ${{ steps.create-release.outputs.original_package_version }}
       release_id: ${{ steps.create-release.outputs.release_id }}
+      is_dry_run: ${{ steps.check-mode.outputs.is_dry_run }}
     steps:
       - uses: actions/checkout@v6
 
-      - uses: ./.github/actions/create-release
+      - name: check mode
+        id: check-mode
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.dry_run }}" == "true" ]]; then
+            echo "is_dry_run=true" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ github.event_name }}" == "release" ]]; then
+            if [[ ! "${{ github.ref }}" =~ ^refs/tags/v ]]; then
+              echo "Error: Production release must be triggered by a tag starting with 'v'"
+              exit 1
+            fi
+            echo "is_dry_run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Error: Invalid workflow trigger"
+            exit 1
+          fi
+
+      - name: create draft release for dry run
+        if: steps.check-mode.outputs.is_dry_run == 'true'
+        id: create-draft
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const release = await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: 'v0.0.0-10',
+              name: 'Test Release (Dry Run)',
+              draft: true,
+              prerelease: true,
+              body: 'Automated dry run test release'
+            })
+
+            core.setOutput('package_version', '0.0.0-10')
+            core.setOutput('original_package_version', '0.0.0-10')
+            core.setOutput('release_id', release.data.id)
+
+      - name: get release from tag
+        if: steps.check-mode.outputs.is_dry_run == 'false'
+        uses: ./.github/actions/create-release
+        id: create-tag-release
+
+      - name: set outputs
         id: create-release
+        run: |
+          if [[ "${{ steps.check-mode.outputs.is_dry_run }}" == "true" ]]; then
+            {
+              echo "package_version=${{ steps.create-draft.outputs.package_version }}"
+              echo "original_package_version=${{ steps.create-draft.outputs.original_package_version }}"
+              echo "release_id=${{ steps.create-draft.outputs.release_id }}"
+            } >> "$GITHUB_OUTPUT"
+          else
+            {
+              echo "package_version=${{ steps.create-tag-release.outputs.package_version }}"
+              echo "original_package_version=${{ steps.create-tag-release.outputs.original_package_version }}"
+              echo "release_id=${{ steps.create-tag-release.outputs.release_id }}"
+            } >> "$GITHUB_OUTPUT"
+          fi
 
   build-linux:
     needs: [create-release]
-    if: startsWith(github.ref, 'refs/tags/v') == true
     permissions:
       contents: write
     strategy:
@@ -86,7 +152,6 @@ jobs:
 
   build-macos:
     needs: [create-release, build-linux]
-    if: startsWith(github.ref, 'refs/tags/v') == true
     permissions:
       contents: write
     strategy:
@@ -144,7 +209,6 @@ jobs:
 
   build-windows:
     needs: [create-release, build-linux]
-    if: startsWith(github.ref, 'refs/tags/v') == true
     permissions:
       contents: write
     name: windows-x86_64-pc-windows-msvc
@@ -187,7 +251,7 @@ jobs:
 
   publish:
     needs: [create-release, build-linux, build-macos, build-windows]
-    if: startsWith(github.ref, 'refs/tags/v') == true
+    if: needs.create-release.outputs.is_dry_run == 'false'
     permissions:
       contents: write
     runs-on: ubuntu-latest
@@ -205,3 +269,20 @@ jobs:
         with:
           release_id: ${{ needs.create-release.outputs.release_id }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
+
+  cleanup:
+    needs: [create-release, build-linux, build-macos, build-windows]
+    if: always() && needs.create-release.outputs.is_dry_run == 'true' && inputs.auto_cleanup
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v8
+        with:
+          script: |
+            await github.rest.repos.deleteRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: "${{ needs.create-release.outputs.release_id }}"
+            })
+            console.log("Deleted release: ${{ needs.create-release.outputs.release_id }}")
