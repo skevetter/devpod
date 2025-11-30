@@ -1,11 +1,10 @@
 use crate::ui_messages::{
-    send_ui_message, ImportWorkspaceMsg, OpenWorkspaceMsg, SetupProMsg, ShowToastMsg, ToastStatus,
+    send_ui_message, ImportWorkspaceMsg, OpenWorkspaceMsg, SetupProMsg,
     UiMessage,
 };
 use crate::AppState;
 use log::{error, info, warn};
 use serde::{Deserialize, Serialize};
-use std::env;
 use tauri::{AppHandle, Manager, State};
 use thiserror::Error;
 use url::Url;

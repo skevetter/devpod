@@ -184,7 +184,7 @@ impl WindowHelper {
                     });
                 });
             } else {
-                let result = TransformProcessType(
+                let _result = TransformProcessType(
                     &psn as *const ProcessSerialNumber,
                     TransformState::ProcessTransformToForegroundApplication,
                 );
