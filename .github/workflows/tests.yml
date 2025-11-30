@@ -7,21 +7,21 @@ on:
   pull_request:
 
 jobs:
-  test:
+  compile-linux:
     name: Compile and Test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
 
-      - uses: ./.github/actions/compile-test-binary
+      - uses: ./.github/actions/compile-linux-binary
         with:
-          cache-key-suffix: "test"
-          binary-cache-key: "test-binary"
+          cache-key-suffix: "test-linux"
+          binary-cache-key: "test-binary-linux"
           binary-path: ./e2e/bin/devpod-linux-amd64
 
   integration-test-wave-1:
     name: Integration Tests Wave 1
-    needs: [test]
+    needs: [compile-linux]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -67,12 +67,12 @@ jobs:
           needs-kind: false
           gh-username: ${{ secrets.GH_PRIVATE_REPO_USER_TEST }}
           gh-access-token: ${{ secrets.GH_PRIVATE_REPO_TOKEN_TEST }}
-          binary-cache-key: "test-binary"
+          binary-cache-key: "test-binary-linux"
           binary-path: ./e2e/bin/devpod-linux-amd64
 
   integration-test-wave-2:
     name: Integration Tests Wave 2
-    needs: [test]
+    needs: [integration-test-wave-1]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -111,12 +111,72 @@ jobs:
           needs-kind: ${{ matrix.needs-kind || false }}
           gh-username: ${{ secrets.GH_PRIVATE_REPO_USER_TEST }}
           gh-access-token: ${{ secrets.GH_PRIVATE_REPO_TOKEN_TEST }}
-          binary-cache-key: "test-binary"
+          binary-cache-key: "test-binary-linux"
           binary-path: ./e2e/bin/devpod-linux-amd64
 
+  compile-windows:
+    name: Compile Windows Binary
+    needs: [integration-test-wave-2]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: ./.github/actions/compile-windows-binary
+        with:
+          cache-key-suffix: "test-windows"
+          binary-cache-key: "test-binary-windows"
+          binary-path: ./e2e/bin/devpod-windows-amd64.exe
+
+  integration-test-wave-3:
+    name: Integration Tests Windows
+    needs: [compile-windows]
+    runs-on: windows-latest
+    permissions:
+      contents: read
+      packages: read
+    strategy:
+      matrix:
+        label:
+          - context
+          - ide
+          - integration
+          - provider
+          - ssh
+          - up-docker
+          - up-env-vars
+          - up-no-devcontainer
+    steps:
+      - name: Free disk space
+        shell: pwsh
+        run: |
+          Get-PSDrive
+          Remove-Item -Path "C:\Program Files\Android" -Recurse -Force -ErrorAction SilentlyContinue
+          Remove-Item -Path "$env:LOCALAPPDATA\Android" -Recurse -Force -ErrorAction SilentlyContinue
+          Remove-Item -Path "C:\hostedtoolcache\windows\dotnet" -Recurse -Force -ErrorAction SilentlyContinue
+          Get-PSDrive
+      
+      - uses: actions/checkout@v6
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run integration test
+        uses: ./.github/actions/run-integration-test
+        with:
+          label: ${{ matrix.label }}
+          needs-kind: false
+          gh-username: ${{ secrets.GH_PRIVATE_REPO_USER_TEST }}
+          gh-access-token: ${{ secrets.GH_PRIVATE_REPO_TOKEN_TEST }}
+          binary-cache-key: "test-binary-windows"
+          binary-path: ./e2e/bin/devpod-windows-amd64.exe
+  
   docker-install-test:
     name: Docker Install Test
-    needs: [test]
+    needs: [compile-linux]
     runs-on: ubuntu-latest
     steps:
       - uses: jlumbroso/free-disk-space@v1.3.1

@@ -1,5 +1,5 @@
-name: Compile and Test Binary
-description: Compile binary, run tests, and cache for integration tests
+name: Compile Windows Binary
+description: Compile Windows binary and cache for integration tests
 
 inputs:
   cache-key-suffix:
@@ -23,22 +23,12 @@ runs:
         go-version-file: go.mod
         cache-key-suffix: ${{ inputs.cache-key-suffix }}
 
-    - name: compile
+    - name: build Windows binary
       shell: bash
       run: |
         go generate ./...
-        CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build main.go
-
-    - name: test
-      shell: bash
-      run: |
-        go test $(go list ./... | grep -v -e /vendor/ -e /test -e /e2e) -race -coverprofile=profile.out -covermode=atomic ./...
-
-    - name: build binary
-      shell: bash
-      run: |
         mkdir -p $(dirname ${{ inputs.binary-path }})
-        CGO_ENABLED=0 go build -ldflags "-s -w" -o ${{ inputs.binary-path }}
+        CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags "-s -w" -o ${{ inputs.binary-path }}
 
     - name: cache binary
       uses: actions/cache/save@v4

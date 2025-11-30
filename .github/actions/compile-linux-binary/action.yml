@@ -1,0 +1,47 @@
+name: Compile Linux Binary
+description: Compile Linux binary, run tests, and cache for integration tests
+
+inputs:
+  cache-key-suffix:
+    description: Suffix for cache key
+    required: true
+  binary-cache-key:
+    description: Cache key for binary
+    required: true
+  binary-path:
+    description: Path where to build the binary
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/checkout@v6
+
+    - name: setup Go
+      uses: magnetikonline/action-golang-cache@v5
+      with:
+        go-version-file: go.mod
+        cache-key-suffix: ${{ inputs.cache-key-suffix }}
+
+    - name: compile
+      shell: bash
+      run: |
+        go generate ./...
+        CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build main.go
+
+    - name: test
+      shell: bash
+      run: |
+        go test $(go list ./... | grep -v -e /vendor/ -e /test -e /e2e) -race -coverprofile=profile.out -covermode=atomic ./...
+
+    - name: build binary
+      shell: bash
+      run: |
+        mkdir -p $(dirname ${{ inputs.binary-path }})
+        CGO_ENABLED=0 go build -ldflags "-s -w" -o ${{ inputs.binary-path }}
+
+    - name: cache binary
+      uses: actions/cache/save@v4
+      with:
+        path: ${{ inputs.binary-path }}
+        key: ${{ inputs.binary-cache-key }}-${{ github.sha }}

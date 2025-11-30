@@ -35,18 +35,25 @@ runs:
         fail-on-cache-miss: true
 
     - name: make binary executable
+      if: runner.os != 'Windows'
       shell: bash
       run: chmod +x ${{ inputs.binary-path }}
 
+    - name: verify binary
+      shell: bash
+      run: ls -la ${{ inputs.binary-path }}
+
+    # NOTE: engineerd/setup-kind does not work on Windows runners
     - name: setup kind
-      if: inputs.needs-kind == 'true'
+      if: inputs.needs-kind == 'true' && runner.os != 'Windows'
       uses: engineerd/setup-kind@v0.6.2
       with:
         version: "v0.24.0"
         image: kindest/node:v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a
         name: ${{ inputs.label }}
 
-    - name: run test
+    - name: run test (Linux)
+      if: runner.os != 'Windows'
       shell: bash
       working-directory: ./e2e
       env:
@@ -55,6 +62,21 @@ runs:
       run: |
         sudo \
           GH_USERNAME="${GH_USERNAME}" \
+          GH_ACCESS_TOKEN="${GH_ACCESS_TOKEN}" \
+          KUBECONFIG="${KUBECONFIG:-$HOME/.kube/config}" \
+          PATH="${PATH}" \
+          GOROOT="${GOROOT}" \
+          go test -v -ginkgo.v -timeout 3600s --ginkgo.label-filter=${{ inputs.label }}
+
+    - name: run test (Windows)
+      if: runner.os == 'Windows'
+      shell: bash
+      working-directory: ./e2e
+      env:
+        GH_USERNAME: ${{ inputs.gh-username }}
+        GH_ACCESS_TOKEN: ${{ inputs.gh-access-token }}
+      run: |
+        GH_USERNAME="${GH_USERNAME}" \
           GH_ACCESS_TOKEN="${GH_ACCESS_TOKEN}" \
           KUBECONFIG="${KUBECONFIG:-$HOME/.kube/config}" \
           PATH="${PATH}" \
