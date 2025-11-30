@@ -11,7 +11,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Setup Golang with cache
+      - name: Setup Go
         uses: magnetikonline/action-golang-cache@v5
         with:
           go-version-file: go.mod
