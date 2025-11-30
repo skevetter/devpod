@@ -33,6 +33,7 @@ runs:
         path: ${{ inputs.binary-path }}
         key: ${{ inputs.binary-cache-key }}-${{ github.sha }}
         fail-on-cache-miss: true
+        enableCrossOsArchive: true
 
     - name: make binary executable
       if: runner.os != 'Windows'

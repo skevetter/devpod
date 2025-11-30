@@ -8,7 +8,7 @@ on:
 
 jobs:
   compile-linux:
-    name: Compile and Test
+    name: Compile Linux Binary
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -126,9 +126,24 @@ jobs:
           binary-cache-key: "test-binary-windows"
           binary-path: ./e2e/bin/devpod-windows-amd64.exe
 
+  verify-windows-cache:
+    name: Verify Windows Binary Cache
+    needs: [compile-windows]
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Verify cache exists
+        uses: actions/cache/restore@v4
+        with:
+          path: ./e2e/bin/devpod-windows-amd64.exe
+          key: test-binary-windows-${{ github.sha }}
+          fail-on-cache-miss: true
+          enableCrossOsArchive: true
+
   integration-test-windows:
     name: Integration Tests Windows
-    needs: [compile-windows]
+    needs: [verify-windows-cache]
     runs-on: windows-latest
     permissions:
       contents: read
