@@ -34,7 +34,7 @@ jobs:
         with:
           host: ubuntu-latest
           target: ${{ matrix.target }}
-          package_version: 0.0.0-test
+          package_version: 0.0.0
           cli_only: ${{ matrix.target == 'aarch64-unknown-linux-gnu' }}
 
       - name: build CLI
@@ -44,7 +44,7 @@ jobs:
           target: ${{ matrix.target }}
           os: linux
           arch: ${{ matrix.target == 'x86_64-unknown-linux-gnu' && 'amd64' || 'arm64' }}
-          version: 0.0.0-test
+          version: 0.0.0
           telemetry_private_key: ""
           crane_private_key: ""
           output_path: artifacts
@@ -95,7 +95,7 @@ jobs:
         with:
           host: macos-latest
           target: ${{ matrix.target }}
-          package_version: 0.0.0-test
+          package_version: 0.0.0
           cli_only: false
 
       - name: build CLI
@@ -105,7 +105,7 @@ jobs:
           target: ${{ matrix.target }}
           os: darwin
           arch: ${{ matrix.target == 'x86_64-apple-darwin' && 'amd64' || 'arm64' }}
-          version: 0.0.0-test
+          version: 0.0.0
           telemetry_private_key: ""
           crane_private_key: ""
           output_path: artifacts
@@ -145,7 +145,7 @@ jobs:
         with:
           host: windows-latest
           target: x86_64-pc-windows-msvc
-          package_version: 0.0.0-test
+          package_version: 0.0.0
           cli_only: false
 
       - name: build CLI
@@ -155,7 +155,7 @@ jobs:
           target: x86_64-pc-windows-msvc
           os: windows
           arch: amd64
-          version: 0.0.0-test
+          version: 0.0.0
           telemetry_private_key: ""
           crane_private_key: ""
           output_path: artifacts
