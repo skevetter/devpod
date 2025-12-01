@@ -19,8 +19,8 @@ jobs:
           binary-cache-key: "test-binary-linux"
           binary-path: ./e2e/bin/devpod-linux-amd64
 
-  integration-test-all-linux:
-    name: Integration Tests All Linux
+  integration-tests:
+    name: Integration Tests
     needs: [compile-linux]
     runs-on: ubuntu-latest
     permissions:
@@ -55,6 +55,7 @@ jobs:
         with:
           version: "v0.24.0"
           image: kindest/node:v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a
+          name: integration-tests
 
       - name: run all tests
         shell: bash
