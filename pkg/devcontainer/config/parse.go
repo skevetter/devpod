@@ -92,21 +92,28 @@ func ParseDevContainerJSONFile(jsonFilePath string) (*DevContainerConfig, error)
 // ParseDevContainerUserJSON check if a file named devcontainer.user.json exists in the same directory as
 // the devcontainer.json file and parse it if it does.
 func ParseDevContainerUserJSON(config *DevContainerConfig) (*DevContainerConfig, error) {
+	if config == nil || config.Origin == "" {
+		return nil, nil
+	}
+
 	filename := filepath.Base(config.Origin)
 	filename = strings.TrimSuffix(filename, filepath.Ext(filename))
 
 	devContainerUserUserFilename := fmt.Sprintf("%s.user.json", filename)
 	devContainerUserUserFilePath := filepath.Join(filepath.Dir(config.Origin), devContainerUserUserFilename)
 
-	_, err := os.Stat(devContainerUserUserFilePath)
-	if err == nil {
-		userConfig, err := ParseDevContainerJSONFile(devContainerUserUserFilePath)
-		if err != nil {
-			return nil, err
+	if _, err := os.Stat(devContainerUserUserFilePath); err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
 		}
-		return userConfig, nil
+		return nil, errors.Wrap(err, "stat user config file")
 	}
-	return nil, nil
+
+	userConfig, err := ParseDevContainerJSONFile(devContainerUserUserFilePath)
+	if err != nil {
+		return nil, errors.Wrap(err, "parse user config file")
+	}
+	return userConfig, nil
 }
 
 // ParseDevContainerJSON check if a file named devcontainer.json exists in the given directory and parse it if it does
