@@ -112,7 +112,7 @@ func NewUpCmd(f *flags.GlobalFlags) *cobra.Command {
 			}
 
 			if len(cmd.ExtraDevContainerPaths) != 0 && client.Provider() != "docker" {
-				return fmt.Errorf("Extra devcontainer file is only supported with local provider")
+				return fmt.Errorf("extra devcontainer file is only supported with local provider")
 			}
 
 			telemetry.CollectorCLI.SetClient(client)
