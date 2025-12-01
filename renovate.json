@@ -7,5 +7,11 @@
   "pre-commit": {
     "enabled": true
   },
-  "dependencyDashboard": false
+  "dependencyDashboard": false,
+  "packageRules": [
+    {
+      "matchManagers": ["gomod"],
+      "automerge": true
+    }
+  ]
 }
