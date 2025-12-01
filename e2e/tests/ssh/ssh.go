@@ -150,10 +150,10 @@ var _ = DevPodDescribe("devpod ssh test suite", func() {
 			for range 30 {
 				conn, err := net.DialTimeout("tcp", address, 3*time.Second)
 				if err == nil {
-					conn.SetReadDeadline(time.Now().Add(2 * time.Second))
+					_ = conn.SetReadDeadline(time.Now().Add(2 * time.Second))
 					buf := make([]byte, 1024)
 					n, readErr := conn.Read(buf)
-					conn.Close()
+					_ = conn.Close()
 					if readErr == nil && n > 0 {
 						out = string(buf[:n])
 						pollReady = true
