@@ -21,7 +21,9 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 
 		ginkgo.Context("using docker provider", func() {
 			ginkgo.Context("with rootfull podman", ginkgo.Ordered, func() {
-				ginkgo.It("should setup rootful podman", func(ctx context.Context) {
+				var f *framework.Framework
+
+				ginkgo.BeforeAll(func(ctx context.Context) {
 					wrapper, err := os.Create(initialDir + "/bin/podman-rootful")
 					framework.ExpectNoError(err)
 
@@ -41,23 +43,17 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 
 					err = exec.Command(initialDir+"/bin/podman-rootful", "ps").Run()
 					framework.ExpectNoError(err)
-				}, ginkgo.SpecTimeout(framework.GetTimeout()))
+				})
+
+				ginkgo.BeforeEach(func(ctx context.Context) {
+					var err error
+					f, err = setupDockerProvider(initialDir+"/bin", initialDir+"/bin/podman-rootful")
+					framework.ExpectNoError(err)
+				})
 
 				ginkgo.It("should start a new workspace with existing image", func(ctx context.Context) {
-					tempDir, err := framework.CopyToTempDir("tests/up/testdata/docker")
+					tempDir, err := setupWorkspace("tests/up/testdata/docker", initialDir, f)
 					framework.ExpectNoError(err)
-					ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
-
-					f := framework.NewDefaultFramework(initialDir + "/bin")
-
-					_ = f.DevPodProviderDelete(ctx, "docker")
-					err = f.DevPodProviderAdd(ctx, "docker", "-o", "DOCKER_PATH="+initialDir+"/bin/podman-rootful")
-					framework.ExpectNoError(err)
-
-					err = f.DevPodProviderUse(ctx, "docker")
-					framework.ExpectNoError(err)
-
-					ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), tempDir)
 
 					// Wait for devpod workspace to come online (deadline: 30s)
 					err = f.DevPodUp(ctx, tempDir)
@@ -65,20 +61,17 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 				}, ginkgo.SpecTimeout(framework.GetTimeout()))
 			})
 			ginkgo.Context("with rootless podman", ginkgo.Ordered, func() {
+				var f *framework.Framework
+
+				ginkgo.BeforeEach(func(ctx context.Context) {
+					var err error
+					f, err = setupDockerProvider(initialDir+"/bin", "podman")
+					framework.ExpectNoError(err)
+				})
+
 				ginkgo.It("should start a new workspace with existing image", func(ctx context.Context) {
-					tempDir, err := framework.CopyToTempDir("tests/up/testdata/docker")
+					tempDir, err := setupWorkspace("tests/up/testdata/docker", initialDir, f)
 					framework.ExpectNoError(err)
-					ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
-
-					f := framework.NewDefaultFramework(initialDir + "/bin")
-
-					_ = f.DevPodProviderDelete(ctx, "docker")
-					err = f.DevPodProviderAdd(ctx, "docker", "-o", "DOCKER_PATH=podman")
-					framework.ExpectNoError(err)
-					err = f.DevPodProviderUse(ctx, "docker")
-					framework.ExpectNoError(err)
-
-					ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), tempDir)
 
 					// Wait for devpod workspace to come online (deadline: 30s)
 					err = f.DevPodUp(ctx, tempDir)

@@ -3,6 +3,7 @@ package up
 import (
 	"archive/tar"
 	"compress/gzip"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,6 +12,11 @@ import (
 
 	"github.com/loft-sh/log"
 	"github.com/loft-sh/log/scanner"
+	"github.com/onsi/ginkgo/v2"
+	"github.com/skevetter/devpod/e2e/framework"
+	"github.com/skevetter/devpod/pkg/compose"
+	docker "github.com/skevetter/devpod/pkg/docker"
+	provider2 "github.com/skevetter/devpod/pkg/provider"
 )
 
 func findMessage(reader io.Reader, message string) error {
@@ -90,4 +96,41 @@ func createTarGzArchive(outputFilePath string, filePaths []string) error {
 		}
 	}
 	return nil
+}
+
+// setupWorkspace copies testdata to a temp directory and registers cleanup
+func setupWorkspace(testdataPath, initialDir string, f *framework.Framework) (string, error) {
+	tempDir, err := framework.CopyToTempDir(testdataPath)
+	if err != nil {
+		return "", err
+	}
+	ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
+	ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, tempDir)
+	return tempDir, nil
+}
+
+// setupDockerProvider creates a framework and configures the docker provider with the specified docker path
+func setupDockerProvider(binDir, dockerPath string) (*framework.Framework, error) {
+	f := framework.NewDefaultFramework(binDir)
+	_ = f.DevPodProviderAdd(context.Background(), "docker", "-o", "DOCKER_PATH="+dockerPath)
+	err := f.DevPodProviderUse(context.Background(), "docker")
+	return f, err
+}
+
+// findComposeContainer finds a compose container by project and service name
+func findComposeContainer(ctx context.Context, dockerHelper *docker.DockerHelper, composeHelper *compose.ComposeHelper, workspaceUID, serviceName string) ([]string, error) {
+	return dockerHelper.FindContainer(ctx, []string{
+		fmt.Sprintf("%s=%s", compose.ProjectLabel, composeHelper.GetProjectName(workspaceUID)),
+		fmt.Sprintf("%s=%s", compose.ServiceLabel, serviceName),
+	})
+}
+
+// devPodUpAndFindWorkspace runs devpod up and returns the workspace
+func devPodUpAndFindWorkspace(ctx context.Context, f *framework.Framework, tempDir string, args ...string) (*provider2.Workspace, error) {
+	allArgs := append([]string{tempDir}, args...)
+	err := f.DevPodUp(ctx, allArgs...)
+	if err != nil {
+		return nil, err
+	}
+	return f.FindWorkspace(ctx, tempDir)
 }

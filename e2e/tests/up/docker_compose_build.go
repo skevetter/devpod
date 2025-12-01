@@ -17,11 +17,12 @@ import (
 
 var _ = DevPodDescribe("devpod up test suite", func() {
 	ginkgo.Context("testing up command", ginkgo.Label("up-docker-compose-build"), ginkgo.Ordered, func() {
+		var f *framework.Framework
 		var dockerHelper *docker.DockerHelper
 		var composeHelper *compose.ComposeHelper
 		var initialDir string
 
-		ginkgo.BeforeEach(func() {
+		ginkgo.BeforeEach(func(ctx context.Context) {
 			var err error
 			initialDir, err = os.Getwd()
 			framework.ExpectNoError(err)
@@ -29,20 +30,15 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 			dockerHelper = &docker.DockerHelper{DockerCommand: "docker", Log: log.Default}
 			composeHelper, err = compose.NewComposeHelper("", dockerHelper)
 			framework.ExpectNoError(err)
+
+			f, err = setupDockerProvider(initialDir+"/bin", "docker")
+			framework.ExpectNoError(err)
 		})
 
 		ginkgo.Context("with docker-compose", func() {
 			ginkgo.It("should start a new workspace with multistage build", func(ctx context.Context) {
-				tempDir, err := framework.CopyToTempDir("tests/up/testdata/docker-compose-with-multi-stage-build")
+				tempDir, err := setupWorkspace("tests/up/testdata/docker-compose-with-multi-stage-build", initialDir, f)
 				framework.ExpectNoError(err)
-				ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
-
-				f := framework.NewDefaultFramework(initialDir + "/bin")
-				_ = f.DevPodProviderAdd(ctx, "docker")
-				err = f.DevPodProviderUse(ctx, "docker")
-				framework.ExpectNoError(err)
-
-				ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), tempDir)
 
 				// Wait for devpod workspace to come online (deadline: 30s)
 				err = f.DevPodUp(ctx, tempDir, "--debug")
@@ -51,16 +47,8 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 
 			ginkgo.Context("with --recreate", func() {
 				ginkgo.It("should NOT delete container when rebuild fails", func(ctx context.Context) {
-					tempDir, err := framework.CopyToTempDir("tests/up/testdata/docker-compose-rebuild-fail")
+					tempDir, err := setupWorkspace("tests/up/testdata/docker-compose-rebuild-fail", initialDir, f)
 					framework.ExpectNoError(err)
-					ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
-
-					f := framework.NewDefaultFramework(initialDir + "/bin")
-					_ = f.DevPodProviderAdd(ctx, "docker")
-					err = f.DevPodProviderUse(ctx, "docker")
-					framework.ExpectNoError(err)
-
-					ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), tempDir)
 
 					ginkgo.By("Starting DevPod")
 					err = f.DevPodUp(ctx, tempDir)
@@ -109,16 +97,8 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 				})
 
 				ginkgo.It("should delete container upon successful rebuild", func(ctx context.Context) {
-					tempDir, err := framework.CopyToTempDir("tests/up/testdata/docker-compose-rebuild-success")
+					tempDir, err := setupWorkspace("tests/up/testdata/docker-compose-rebuild-success", initialDir, f)
 					framework.ExpectNoError(err)
-					ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
-
-					f := framework.NewDefaultFramework(initialDir + "/bin")
-					_ = f.DevPodProviderAdd(ctx, "docker")
-					err = f.DevPodProviderUse(ctx, "docker")
-					framework.ExpectNoError(err)
-
-					ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), tempDir)
 
 					ginkgo.By("Starting DevPod")
 					err = f.DevPodUp(ctx, tempDir)
