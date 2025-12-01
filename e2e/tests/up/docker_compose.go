@@ -22,7 +22,7 @@ import (
 )
 
 var _ = DevPodDescribe("devpod up test suite", func() {
-	ginkgo.Context("testing up command", ginkgo.Label("up-docker-compose"), ginkgo.Ordered, func() {
+	ginkgo.Context("testing up command", ginkgo.Label("up", "up-docker-compose"), ginkgo.Ordered, func() {
 		var f *framework.Framework
 		var dockerHelper *docker.DockerHelper
 		var composeHelper *compose.ComposeHelper

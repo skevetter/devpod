@@ -10,7 +10,7 @@ import (
 )
 
 var _ = DevPodDescribe("devpod up test suite", func() {
-	ginkgo.Context("testing up command", ginkgo.Label("up-podman"), ginkgo.Ordered, func() {
+	ginkgo.Context("testing up command", ginkgo.Label("up", "up-podman"), ginkgo.Ordered, func() {
 		var initialDir string
 
 		ginkgo.BeforeEach(func() {
