@@ -19,13 +19,61 @@ jobs:
           binary-cache-key: "test-binary-linux"
           binary-path: ./e2e/bin/devpod-linux-amd64
 
-  integration-tests:
-    name: Integration Tests
+  integration-test-wave-1:
+    name: Integration Tests Wave 1
     needs: [compile-linux]
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: read
+    strategy:
+      matrix:
+        label:
+          - context
+          - ide
+          - integration
+          - machine
+          - machineprovider
+          - provider
+          - ssh
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run integration test
+        uses: ./.github/actions/run-integration-test
+        with:
+          label: ${{ matrix.label }}
+          needs-kind: false
+          gh-username: ${{ secrets.GH_PRIVATE_REPO_USER_TEST }}
+          gh-access-token: ${{ secrets.GH_PRIVATE_REPO_TOKEN_TEST }}
+          binary-cache-key: "test-binary-linux"
+          binary-path: ./e2e/bin/devpod-linux-amd64
+
+  integration-test-wave-2:
+    name: Integration Tests Wave 2
+    needs: [integration-test-wave-1]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    strategy:
+      matrix:
+        label:
+          - build
+          - up
+        include:
+          - label: build
+            needs-kind: true
+          - label: up
+            needs-kind: true
+
     steps:
       - uses: jlumbroso/free-disk-space@v1.3.1
 
@@ -38,208 +86,89 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: restore cached binary
-        uses: actions/cache/restore@v4
+      - name: Run integration test
+        uses: ./.github/actions/run-integration-test
         with:
-          path: ./e2e/bin/devpod-linux-amd64
-          key: test-binary-linux-${{ github.run_id }}
-          fail-on-cache-miss: true
-          enableCrossOsArchive: true
+          label: ${{ matrix.label }}
+          needs-kind: ${{ matrix.needs-kind || false }}
+          gh-username: ${{ secrets.GH_PRIVATE_REPO_USER_TEST }}
+          gh-access-token: ${{ secrets.GH_PRIVATE_REPO_TOKEN_TEST }}
+          binary-cache-key: "test-binary-linux"
+          binary-path: ./e2e/bin/devpod-linux-amd64
 
-      - name: make binary executable
-        shell: bash
-        run: chmod +x ./e2e/bin/devpod-linux-amd64
+  compile-windows:
+    name: Compile Windows Binary
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
 
-      - name: setup kind
-        uses: engineerd/setup-kind@v0.6.2
+      - uses: ./.github/actions/compile-windows-binary
         with:
-          version: "v0.24.0"
-          image: kindest/node:v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a
-          name: integration-tests
+          cache-key-suffix: "test-windows"
+          binary-cache-key: "test-binary-windows"
+          binary-path: ./e2e/bin/devpod-windows-amd64.exe
 
-      - name: run all tests
-        shell: bash
-        working-directory: ./e2e
-        env:
-          GH_USERNAME: ${{ secrets.GH_PRIVATE_REPO_USER_TEST }}
-          GH_ACCESS_TOKEN: ${{ secrets.GH_PRIVATE_REPO_TOKEN_TEST }}
+  # NOTE: Integration tests on Windows that pull images fail due to missing Windows images
+  # I tried setting up Vampire/setup-wsl@v6 but encountered issues with docker refusing
+  # to connect to the WSL2 backend from within the GitHub Actions Windows runner.
+  # example error:
+  # ```
+  # Inspecting image mcr.microsoft.com/devcontainers/go:1-bookworm
+  # mcr.microsoft.com/devcontainers/go:1-bookworm not found
+  # Pulling image mcr.microsoft.com/devcontainers/go:1-bookworm
+  # 1-bookworm: Pulling from devcontainers/go
+  # no matching manifest for windows/amd64 10.0.26100 in the manifest list entries
+  # exit status 1
+  # ```
+  integration-test-windows:
+    name: Integration Tests Windows
+    needs: [compile-windows]
+    runs-on: windows-latest
+    permissions:
+      contents: read
+      packages: read
+    strategy:
+      matrix:
+        label:
+          - context
+          - provider
+    steps:
+      - name: Free disk space
+        shell: pwsh
         run: |
-          sudo \
-            GH_USERNAME="${GH_USERNAME}" \
-            GH_ACCESS_TOKEN="${GH_ACCESS_TOKEN}" \
-            KUBECONFIG="${KUBECONFIG:-$HOME/.kube/config}" \
-            PATH="${PATH}" \
-            GOROOT="${GOROOT}" \
-            go test -v -ginkgo.v -timeout 3600s
+          Get-PSDrive
+          Remove-Item -Path "C:\Program Files\Android" -Recurse -Force -ErrorAction SilentlyContinue
+          Remove-Item -Path "$env:LOCALAPPDATA\Android" -Recurse -Force -ErrorAction SilentlyContinue
+          Remove-Item -Path "C:\hostedtoolcache\windows\dotnet" -Recurse -Force -ErrorAction SilentlyContinue
+          Get-PSDrive
 
-  # integration-test-wave-1:
-  #   name: Integration Tests Wave 1
-  #   needs: [compile-linux]
-  #   runs-on: ubuntu-latest
-  #   permissions:
-  #     contents: read
-  #     packages: read
-  #   strategy:
-  #     matrix:
-  #       label:
-  #         - context
-  #         - ide
-  #         - integration
-  #         - machine
-  #         - machineprovider
-  #         - provider
-  #         - ssh
-  #         - up-cleanup-fail
-  #         - up-cleanup-invalid
-  #         - up-docker-compose
-  #         - up-env-vars
-  #         - up-error-output
-  #         - up-git-commit
-  #         - up-git-private
-  #         - up-no-devcontainer
-  #         - up-podman
-  #         - up-recreate-local
-  #         - up-recreate-remote
-  #         - up-reset-remote
-  #         - up-subpath
+      - uses: actions/checkout@v6
 
-  #   steps:
-  #     - uses: actions/checkout@v6
+      - name: Run integration test
+        uses: ./.github/actions/run-integration-test
+        with:
+          label: ${{ matrix.label }}
+          needs-kind: false
+          gh-username: ${{ secrets.GH_PRIVATE_REPO_USER_TEST }}
+          gh-access-token: ${{ secrets.GH_PRIVATE_REPO_TOKEN_TEST }}
+          binary-cache-key: "test-binary-windows"
+          binary-path: ./e2e/bin/devpod-windows-amd64.exe
 
-  #     - name: Log in to GitHub Container Registry
-  #       uses: docker/login-action@v3
-  #       with:
-  #         registry: ghcr.io
-  #         username: ${{ github.actor }}
-  #         password: ${{ secrets.GITHUB_TOKEN }}
+  docker-install-test:
+    name: Docker Install Test
+    needs: [compile-linux]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: jlumbroso/free-disk-space@v1.3.1
 
-  #     - name: Run integration test
-  #       uses: ./.github/actions/run-integration-test
-  #       with:
-  #         label: ${{ matrix.label }}
-  #         needs-kind: false
-  #         gh-username: ${{ secrets.GH_PRIVATE_REPO_USER_TEST }}
-  #         gh-access-token: ${{ secrets.GH_PRIVATE_REPO_TOKEN_TEST }}
-  #         binary-cache-key: "test-binary-linux"
-  #         binary-path: ./e2e/bin/devpod-linux-amd64
+      - uses: actions/checkout@v6
 
-  # integration-test-wave-2:
-  #   name: Integration Tests Wave 2
-  #   needs: [integration-test-wave-1]
-  #   runs-on: ubuntu-latest
-  #   permissions:
-  #     contents: read
-  #     packages: read
-  #   strategy:
-  #     matrix:
-  #       label:
-  #         - build
-  #         - up-docker
-  #         - up-docker-build
-  #         - up-docker-compose-build
-  #         - up-git-pr
-  #         - up-kubernetes
-  #       include:
-  #         - label: build
-  #           needs-kind: true
-  #         - label: up-kubernetes
-  #           needs-kind: true
+      - uses: ./.github/actions/docker-install-test
 
-  #   steps:
-  #     - uses: jlumbroso/free-disk-space@v1.3.1
+  user-interface-test:
+    name: User Interface Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
 
-  #     - uses: actions/checkout@v6
-
-  #     - name: Log in to GitHub Container Registry
-  #       uses: docker/login-action@v3
-  #       with:
-  #         registry: ghcr.io
-  #         username: ${{ github.actor }}
-  #         password: ${{ secrets.GITHUB_TOKEN }}
-
-  #     - name: Run integration test
-  #       uses: ./.github/actions/run-integration-test
-  #       with:
-  #         label: ${{ matrix.label }}
-  #         needs-kind: ${{ matrix.needs-kind || false }}
-  #         gh-username: ${{ secrets.GH_PRIVATE_REPO_USER_TEST }}
-  #         gh-access-token: ${{ secrets.GH_PRIVATE_REPO_TOKEN_TEST }}
-  #         binary-cache-key: "test-binary-linux"
-  #         binary-path: ./e2e/bin/devpod-linux-amd64
-
-  # compile-windows:
-  #   name: Compile Windows Binary
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v6
-
-  #     - uses: ./.github/actions/compile-windows-binary
-  #       with:
-  #         cache-key-suffix: "test-windows"
-  #         binary-cache-key: "test-binary-windows"
-  #         binary-path: ./e2e/bin/devpod-windows-amd64.exe
-
-  # # NOTE: Integration tests on Windows that pull images fail due to missing Windows images
-  # # I tried setting up Vampire/setup-wsl@v6 but encountered issues with docker refusing
-  # # to connect to the WSL2 backend from within the GitHub Actions Windows runner.
-  # # example error:
-  # # ```
-  # # Inspecting image mcr.microsoft.com/devcontainers/go:1-bookworm
-  # # mcr.microsoft.com/devcontainers/go:1-bookworm not found
-  # # Pulling image mcr.microsoft.com/devcontainers/go:1-bookworm
-  # # 1-bookworm: Pulling from devcontainers/go
-  # # no matching manifest for windows/amd64 10.0.26100 in the manifest list entries
-  # # exit status 1
-  # # ```
-  # integration-test-windows:
-  #   name: Integration Tests Windows
-  #   needs: [compile-windows]
-  #   runs-on: windows-latest
-  #   permissions:
-  #     contents: read
-  #     packages: read
-  #   strategy:
-  #     matrix:
-  #       label:
-  #         - context
-  #         - provider
-  #   steps:
-  #     - name: Free disk space
-  #       shell: pwsh
-  #       run: |
-  #         Get-PSDrive
-  #         Remove-Item -Path "C:\Program Files\Android" -Recurse -Force -ErrorAction SilentlyContinue
-  #         Remove-Item -Path "$env:LOCALAPPDATA\Android" -Recurse -Force -ErrorAction SilentlyContinue
-  #         Remove-Item -Path "C:\hostedtoolcache\windows\dotnet" -Recurse -Force -ErrorAction SilentlyContinue
-  #         Get-PSDrive
-
-  #     - uses: actions/checkout@v6
-
-  #     - name: Run integration test
-  #       uses: ./.github/actions/run-integration-test
-  #       with:
-  #         label: ${{ matrix.label }}
-  #         needs-kind: false
-  #         gh-username: ${{ secrets.GH_PRIVATE_REPO_USER_TEST }}
-  #         gh-access-token: ${{ secrets.GH_PRIVATE_REPO_TOKEN_TEST }}
-  #         binary-cache-key: "test-binary-windows"
-  #         binary-path: ./e2e/bin/devpod-windows-amd64.exe
-
-  # docker-install-test:
-  #   name: Docker Install Test
-  #   needs: [compile-linux]
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: jlumbroso/free-disk-space@v1.3.1
-
-  #     - uses: actions/checkout@v6
-
-  #     - uses: ./.github/actions/docker-install-test
-
-  # user-interface-test:
-  #   name: User Interface Test
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v6
-
-  #     - uses: ./.github/actions/build-user-interface
+      - uses: ./.github/actions/build-user-interface
