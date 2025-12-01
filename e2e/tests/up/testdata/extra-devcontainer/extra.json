@@ -1,0 +1,12 @@
+{
+  "remoteEnv": {
+    "EXTRA_VAR": "extra_value"
+  },
+  "mounts": [
+    {
+      "source": "/tmp",
+      "target": "/workspace/tmp",
+      "type": "bind"
+    }
+  ]
+}
