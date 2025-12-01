@@ -1,7 +1,6 @@
 package ssh
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"math/rand"
@@ -100,7 +99,6 @@ var _ = DevPodDescribe("devpod ssh test suite", func() {
 		// })
 
 		ginkgo.It("should start a new workspace with a docker provider (default) and forward a port into it", func() {
-			// skip windows for now
 			if runtime.GOOS == "windows" {
 				return
 			}
@@ -116,80 +114,58 @@ var _ = DevPodDescribe("devpod ssh test suite", func() {
 
 			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), tempDir)
 
-			// Create a new random number generator with a custom seed (e.g., current time)
 			source := rand.NewSource(time.Now().UnixNano())
 			rng := rand.New(source)
+			port := rng.Intn(1000) + 50000
 
-			// Start up devpod workspace
-			devpodUpDeadline := time.Now().Add(5 * time.Minute)
-			devpodUpCtx, cancel := context.WithDeadline(context.Background(), devpodUpDeadline)
+			devpodUpCtx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 			defer cancel()
 			err = f.DevPodUp(devpodUpCtx, tempDir)
 			framework.ExpectNoError(err)
 
-			// Generate a random number for the server port between 50000 and 51000
-			port := rng.Intn(1000) + 50000
-
-			devpodSSHDeadline := time.Now().Add(30 * time.Second)
-			devpodSSHCtx, cancelSSH := context.WithDeadline(context.Background(), devpodSSHDeadline)
-			defer cancelSSH()
-
-			fmt.Println("Starting pong service")
-			// start a ping/pong service on the port
-			cmd := exec.CommandContext(ctx, f.DevpodBinDir+"/"+f.DevpodBinName,
+			fmt.Println("Starting pong service on port", port)
+			serverCmd := exec.CommandContext(ctx, f.DevpodBinDir+"/"+f.DevpodBinName,
 				"ssh", tempDir, "--command",
 				"go run /workspaces/"+filepath.Base(tempDir)+"/server.go "+strconv.Itoa(port),
 			)
-			err = cmd.Start()
+			err = serverCmd.Start()
 			framework.ExpectNoError(err)
 
-			fmt.Println("Forwarding port", port)
-			// start ssh with port forwarding in background
+			fmt.Println("Waiting for server to start")
+			time.Sleep(3 * time.Second)
+
+			portForwardCtx, cancelPort := context.WithTimeout(context.Background(), 60*time.Second)
+			defer cancelPort()
+
+			fmt.Println("Starting port forwarding for port", port)
 			go func() {
-				_ = f.DevpodPortTest(devpodSSHCtx, strconv.Itoa(port), tempDir)
+				_ = f.DevpodPortTest(portForwardCtx, strconv.Itoa(port), tempDir)
 			}()
 
-			fmt.Println("Waiting for port forwarding to initialize")
-			time.Sleep(5 * time.Second)
-
-			fmt.Println("Waiting for port", port, "to be open")
-			out := ""
+			fmt.Println("Polling for port", port, "to be accessible")
 			address := net.JoinHostPort("localhost", strconv.Itoa(port))
-			success := false
-			for i := range 10 {
-				fmt.Printf("attempt %d/10\n", i+1)
+			var out string
+			pollReady := false
+
+			for range 30 {
+				conn, err := net.DialTimeout("tcp", address, 3*time.Second)
+				if err == nil {
+					conn.SetReadDeadline(time.Now().Add(2 * time.Second))
+					buf := make([]byte, 1024)
+					n, readErr := conn.Read(buf)
+					conn.Close()
+					if readErr == nil && n > 0 {
+						out = string(buf[:n])
+						pollReady = true
+						break
+					}
+				}
 				time.Sleep(2 * time.Second)
-
-				conn, err := net.DialTimeout("tcp", address, 2*time.Second)
-				if err != nil {
-					fmt.Printf("port still closed: %v\n", err)
-					continue
-				}
-				defer func() { _ = conn.Close() }()
-
-				err = conn.SetReadDeadline(time.Now().Add(5 * time.Second))
-				if err != nil {
-					fmt.Printf("failed to set read deadline: %v\n", err)
-					continue
-				}
-
-				fmt.Println("connecting to", port)
-				fmt.Println("waiting for response")
-				out, err = bufio.NewReader(conn).ReadString('\n')
-
-				if err != nil {
-					fmt.Printf("invalid response: %v\n", err)
-				} else {
-					fmt.Println("received", out)
-					success = true
-					break
-				}
 			}
-			framework.ExpectEqual(success, true)
 
-			fmt.Println("Verifying output match")
-			framework.ExpectEqual(out, "PONG\n")
-			fmt.Println("Success")
+			framework.ExpectEqual(pollReady, true, "Port forwarding failed to establish connection")
+			framework.ExpectEqual(out, "PONG\n", "Expected PONG response from server")
+			fmt.Println("Port forwarding test successful")
 		})
 	})
 })

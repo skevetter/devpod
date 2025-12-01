@@ -1,0 +1,12 @@
+{
+  "id": "test-hooks",
+  "version": "1.0.0",
+  "name": "Test Lifecycle Hooks",
+  "onCreateCommand": "echo 'feature-onCreate' > /tmp/feature-onCreate.txt",
+  "postCreateCommand": [
+    "sh",
+    "-c",
+    "echo 'feature-postCreate' > /tmp/feature-postCreate.txt"
+  ],
+  "postStartCommand": "echo 'feature-postStart' > /tmp/feature-postStart.txt"
+}

@@ -158,6 +158,26 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 					err = f.DevPodUp(ctx, tempDir, "--debug")
 					framework.ExpectNoError(err)
 				}, ginkgo.SpecTimeout(framework.GetTimeout()))
+
+				ginkgo.It("should execute feature lifecycle hooks", func(ctx context.Context) {
+					tempDir, err := setupWorkspace("tests/up/testdata/docker-feature-hooks", initialDir, f)
+					framework.ExpectNoError(err)
+
+					err = f.DevPodUp(ctx, tempDir)
+					framework.ExpectNoError(err)
+
+					out, err := f.DevPodSSH(ctx, tempDir, "cat /tmp/feature-onCreate.txt")
+					framework.ExpectNoError(err)
+					framework.ExpectEqual(strings.TrimSpace(out), "feature-onCreate")
+
+					out, err = f.DevPodSSH(ctx, tempDir, "cat /tmp/feature-postCreate.txt")
+					framework.ExpectNoError(err)
+					framework.ExpectEqual(strings.TrimSpace(out), "feature-postCreate")
+
+					out, err = f.DevPodSSH(ctx, tempDir, "cat /tmp/feature-postStart.txt")
+					framework.ExpectNoError(err)
+					framework.ExpectEqual(strings.TrimSpace(out), "feature-postStart")
+				}, ginkgo.SpecTimeout(framework.GetTimeout()))
 			})
 			ginkgo.It("should start a new workspace with dotfiles - no install script", func(ctx context.Context) {
 				tempDir, err := setupWorkspace("tests/up/testdata/docker", initialDir, f)
