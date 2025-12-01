@@ -156,7 +156,7 @@ jobs:
 
   docker-install-test:
     name: Docker Install Test
-    needs: [compile-linux]
+    needs: [compile-linux, integration-test-wave-1, integration-test-wave-2]
     runs-on: ubuntu-latest
     steps:
       - uses: jlumbroso/free-disk-space@v1.3.1
