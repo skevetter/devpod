@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       platform:
-        description: "Platform to build"
+        description: platform to build artifacts
         required: true
         type: choice
         options:
@@ -24,7 +24,7 @@ jobs:
       fail-fast: false
       matrix:
         target: [x86_64-unknown-linux-gnu, aarch64-unknown-linux-gnu]
-    name: test-linux-${{ matrix.target }}
+    name: linux-${{ matrix.target }}
 
     steps:
       - uses: actions/checkout@v6
@@ -78,14 +78,14 @@ jobs:
           if-no-files-found: warn
 
   build-macos:
-    # needs: [build-linux]
+    needs: [build-linux]
     if: github.event_name == 'pull_request'|| (github.event_name == 'push' && github.ref == 'refs/heads/main') || inputs.platform == 'all' || inputs.platform == 'macos'
     runs-on: macos-latest
     strategy:
       fail-fast: false
       matrix:
         target: [x86_64-apple-darwin, aarch64-apple-darwin]
-    name: test-macos-${{ matrix.target }}
+    name: macos-${{ matrix.target }}
 
     steps:
       - uses: actions/checkout@v6
@@ -132,10 +132,10 @@ jobs:
           if-no-files-found: warn
 
   build-windows:
-    # needs: [build-linux]
+    needs: [build-linux, build-macos]
     if: github.event_name == 'pull_request'|| (github.event_name == 'push' && github.ref == 'refs/heads/main') || inputs.platform == 'all' || inputs.platform == 'windows'
     runs-on: windows-latest
-    name: test-windows-x86_64
+    name: windows-x86_64
 
     steps:
       - uses: actions/checkout@v6
@@ -171,7 +171,7 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
           # TAURI_SIGNING_PRIVATE_KEY_PASSWORD:
 
-      - name: Upload Artifacts
+      - name: upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: windows-x86_64

@@ -28,12 +28,29 @@ runs:
     - uses: actions/checkout@v6
 
     - name: restore cached binary
+      id: cache-restore
       uses: actions/cache/restore@v4
       with:
         path: ${{ inputs.binary-path }}
         key: ${{ inputs.binary-cache-key }}-${{ github.run_id }}
-        fail-on-cache-miss: true
         enableCrossOsArchive: true
+
+    - name: setup Go (if cache miss)
+      if: steps.cache-restore.outputs.cache-hit != 'true'
+      uses: actions/setup-go@v6
+      with:
+        go-version-file: go.mod
+
+    - name: rebuild binary (if cache miss)
+      if: steps.cache-restore.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        mkdir -p $(dirname ${{ inputs.binary-path }})
+        if [[ "${{ inputs.binary-path }}" == *"windows"* ]]; then
+          CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags "-s -w" -o ${{ inputs.binary-path }}
+        else
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "-s -w" -o ${{ inputs.binary-path }}
+        fi
 
     - name: make binary executable
       if: runner.os != 'Windows'
