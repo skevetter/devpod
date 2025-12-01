@@ -26,12 +26,13 @@ const (
 type Flavor string
 
 const (
-	FlavorStable   Flavor = "stable"
-	FlavorInsiders Flavor = "insiders"
-	FlavorCursor   Flavor = "cursor"
-	FlavorPositron Flavor = "positron"
-	FlavorCodium   Flavor = "codium"
-	FlavorWindsurf Flavor = "windsurf"
+	FlavorStable      Flavor = "stable"
+	FlavorInsiders    Flavor = "insiders"
+	FlavorCursor      Flavor = "cursor"
+	FlavorPositron    Flavor = "positron"
+	FlavorCodium      Flavor = "codium"
+	FlavorWindsurf    Flavor = "windsurf"
+	FlavorAntigravity Flavor = "antigravity"
 )
 
 func (f Flavor) DisplayName() string {
@@ -48,6 +49,8 @@ func (f Flavor) DisplayName() string {
 		return "VSCodium"
 	case FlavorWindsurf:
 		return "Windsurf"
+	case FlavorAntigravity:
+		return "Antigravity"
 	default:
 		return "VSCode"
 	}
