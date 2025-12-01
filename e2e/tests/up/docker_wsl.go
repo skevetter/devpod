@@ -49,9 +49,9 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 
 		ginkgo.AfterEach(func() {
 			if originalDockerHost == "" {
-				os.Unsetenv("DOCKER_HOST")
+				_ = os.Unsetenv("DOCKER_HOST")
 			} else {
-				os.Setenv("DOCKER_HOST", originalDockerHost)
+				_ = os.Setenv("DOCKER_HOST", originalDockerHost)
 			}
 		})
 
