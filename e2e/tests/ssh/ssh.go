@@ -153,25 +153,23 @@ var _ = DevPodDescribe("devpod ssh test suite", func() {
 			time.Sleep(5 * time.Second)
 
 			fmt.Println("Waiting for port", port, "to be open")
-			retries := 10
 			out := ""
 			address := net.JoinHostPort("localhost", strconv.Itoa(port))
-			for retries > 0 {
-				fmt.Println("retries left", retries)
+			success := false
+			for i := range 10 {
+				fmt.Printf("attempt %d/10\n", i+1)
 				time.Sleep(2 * time.Second)
 
 				conn, err := net.DialTimeout("tcp", address, 2*time.Second)
 				if err != nil {
 					fmt.Printf("port still closed: %v\n", err)
-					retries = retries - 1
 					continue
 				}
-				defer conn.Close()
+				defer func() { _ = conn.Close() }()
 
 				err = conn.SetReadDeadline(time.Now().Add(5 * time.Second))
 				if err != nil {
 					fmt.Printf("failed to set read deadline: %v\n", err)
-					retries = retries - 1
 					continue
 				}
 
@@ -181,13 +179,13 @@ var _ = DevPodDescribe("devpod ssh test suite", func() {
 
 				if err != nil {
 					fmt.Printf("invalid response: %v\n", err)
-					retries = retries - 1
 				} else {
 					fmt.Println("received", out)
+					success = true
 					break
 				}
 			}
-			framework.ExpectNotEqual(retries, 0)
+			framework.ExpectEqual(success, true)
 
 			fmt.Println("Verifying output match")
 			framework.ExpectEqual(out, "PONG\n")
