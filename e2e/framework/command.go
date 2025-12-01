@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/skevetter/devpod/pkg/client"
 	provider2 "github.com/skevetter/devpod/pkg/provider"
@@ -194,9 +195,15 @@ func (f *Framework) DevPodStop(ctx context.Context, workspace string) error {
 func (f *Framework) DevPodProviderAdd(ctx context.Context, args ...string) error {
 	baseArgs := []string{"provider", "add"}
 	baseArgs = append(baseArgs, args...)
-	err := f.ExecCommand(ctx, false, false, "", baseArgs)
+	_, stderr, err := f.ExecCommandCapture(ctx, baseArgs)
 	if err != nil {
-		return fmt.Errorf("devpod provider add failed: %s", err.Error())
+		// Skip "already exists" errors to make this idempotent
+		// This occurs when another test begins before ginkgo.DeferCleanup
+		// is called to delete the workspace. The workspace is linked to the
+		// provider and the provider cannot be deleted until the workspace is deleted.
+		if !strings.Contains(stderr, "already exists") {
+			return fmt.Errorf("devpod provider add failed: %s", stderr)
+		}
 	}
 	return nil
 }

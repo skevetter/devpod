@@ -24,8 +24,13 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 	ginkgo.Context("testing up command", ginkgo.Label("up-docker-wsl"), ginkgo.Ordered, func() {
 		var dockerHelper *docker.DockerHelper
 		var initialDir string
+		var originalDockerHost string
 
 		ginkgo.BeforeEach(func() {
+			if runtime.GOOS != "windows" {
+				ginkgo.Skip("WSL tests only run on Windows")
+			}
+
 			var err error
 			initialDir, err = os.Getwd()
 			framework.ExpectNoError(err)
@@ -33,8 +38,17 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 			dockerHelper = &docker.DockerHelper{DockerCommand: "docker", Log: log.Default}
 			framework.ExpectNoError(err)
 
+			originalDockerHost = os.Getenv("DOCKER_HOST")
 			err = os.Setenv("DOCKER_HOST", "tcp://localhost:2375")
 			framework.ExpectNoError(err)
+		})
+
+		ginkgo.AfterEach(func() {
+			if originalDockerHost == "" {
+				os.Unsetenv("DOCKER_HOST")
+			} else {
+				os.Setenv("DOCKER_HOST", originalDockerHost)
+			}
 		})
 
 		ginkgo.Context("with docker", ginkgo.Ordered, func() {
