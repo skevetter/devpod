@@ -71,8 +71,6 @@ type UpCmd struct {
 	DotfilesScript        string
 	DotfilesScriptEnv     []string // Key=Value to pass to install script
 	DotfilesScriptEnvFile []string // Paths to files containing Key=Value pairs to pass to install script
-
-	ExtraDevContainerPaths []string
 }
 
 // NewUpCmd creates a new up command

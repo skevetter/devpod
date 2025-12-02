@@ -29,13 +29,22 @@ var _ = DevPodDescribe("devpod extra devcontainer test suite", func() {
 				framework.ExpectNoError(err)
 
 				extraConfigPath := filepath.Join(tempDir, "extra.json")
-				err = f.DevPodUp(ctx, tempDir, "--extra-devcontainer-path", extraConfigPath)
+				err = f.DevPodUp(ctx, "--extra-devcontainer-path", extraConfigPath, tempDir)
 				framework.ExpectNoError(err)
 
 				// Verify workspace is running
 				status, err := f.DevPodStatus(ctx, tempDir)
 				framework.ExpectNoError(err)
 				framework.ExpectEqual(status.State, "Running")
+
+				// Verify environment variable from extra config is set
+				out, err := f.DevPodSSH(ctx, tempDir, "echo -n $EXTRA_VAR")
+				framework.ExpectNoError(err)
+				framework.ExpectEqual(out, "extra_value")
+
+				// Verify mount from extra config exists
+				_, err = f.DevPodSSH(ctx, tempDir, "test -d /workspace/tmp")
+				framework.ExpectNoError(err)
 
 				// Cleanup
 				err = f.DevPodWorkspaceDelete(ctx, tempDir)
