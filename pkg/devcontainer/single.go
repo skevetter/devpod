@@ -82,16 +82,18 @@ func (r *runner) runSingleContainer(
 		userConfig, err := config.ParseDevContainerUserJSON(parsedConfig.Config)
 		if err != nil {
 			return nil, err
-		} else if userConfig != nil {
+		} else if userConfig != nil && imageMetadataConfig != nil {
 			config.AddConfigToImageMetadata(userConfig, imageMetadataConfig)
 		}
 
-		for _, v := range options.ExtraDevContainerPaths {
-			extraConfig, err := config.ParseDevContainerJSONFile(v)
-			if err != nil {
-				return nil, err
+		if imageMetadataConfig != nil {
+			for _, v := range options.ExtraDevContainerPaths {
+				extraConfig, err := config.ParseDevContainerJSONFile(v)
+				if err != nil {
+					return nil, err
+				}
+				config.AddConfigToImageMetadata(extraConfig, imageMetadataConfig)
 			}
-			config.AddConfigToImageMetadata(extraConfig, imageMetadataConfig)
 		}
 
 		mergedConfig, err = config.MergeConfiguration(parsedConfig.Config, imageMetadataConfig.Config)
@@ -146,16 +148,18 @@ func (r *runner) runSingleContainer(
 		userConfig, err := config.ParseDevContainerUserJSON(parsedConfig.Config)
 		if err != nil {
 			return nil, err
-		} else if userConfig != nil {
+		} else if userConfig != nil && buildInfo.ImageMetadata != nil {
 			config.AddConfigToImageMetadata(userConfig, buildInfo.ImageMetadata)
 		}
 
-		for _, v := range options.ExtraDevContainerPaths {
-			extraConfig, err := config.ParseDevContainerJSONFile(v)
-			if err != nil {
-				return nil, err
+		if buildInfo.ImageMetadata != nil {
+			for _, v := range options.ExtraDevContainerPaths {
+				extraConfig, err := config.ParseDevContainerJSONFile(v)
+				if err != nil {
+					return nil, err
+				}
+				config.AddConfigToImageMetadata(extraConfig, buildInfo.ImageMetadata)
 			}
-			config.AddConfigToImageMetadata(extraConfig, buildInfo.ImageMetadata)
 		}
 
 		// merge configuration
