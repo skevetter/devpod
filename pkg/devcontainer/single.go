@@ -112,9 +112,10 @@ func (r *runner) runSingleContainer(
 		// we need to build the container
 		buildInfo, err := r.build(ctx, parsedConfig, substitutionContext, provider2.BuildOptions{
 			CLIOptions: provider2.CLIOptions{
-				PrebuildRepositories: options.PrebuildRepositories,
-				ForceDockerless:      options.ForceDockerless,
-				Platform:             options.Platform,
+				PrebuildRepositories:  options.PrebuildRepositories,
+				ForceDockerless:       options.ForceDockerless,
+				Platform:              options.Platform,
+				ExtraDevContainerPath: options.ExtraDevContainerPath,
 			},
 			NoBuild:       options.NoBuild,
 			RegistryCache: options.RegistryCache,
@@ -137,17 +138,6 @@ func (r *runner) runSingleContainer(
 					return nil, errors.Wrap(err, "stop devcontainer")
 				}
 			}
-		}
-
-		if options.ExtraDevContainerPath != "" {
-			if buildInfo.ImageMetadata == nil {
-				buildInfo.ImageMetadata = &config.ImageMetadataConfig{}
-			}
-			extraConfig, err := config.ParseDevContainerJSONFile(options.ExtraDevContainerPath)
-			if err != nil {
-				return nil, err
-			}
-			config.AddConfigToImageMetadata(extraConfig, buildInfo.ImageMetadata)
 		}
 
 		// merge configuration

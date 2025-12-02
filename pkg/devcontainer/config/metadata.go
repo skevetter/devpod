@@ -20,5 +20,6 @@ func AddConfigToImageMetadata(config *DevContainerConfig, imageMetadataConfig *I
 	userMetadata.DevContainerConfigBase = config.DevContainerConfigBase
 	userMetadata.DevContainerActions = config.DevContainerActions
 	userMetadata.NonComposeBase = config.NonComposeBase
-	imageMetadataConfig.Config = append(imageMetadataConfig.Config, userMetadata)
+	imageMetadataConfig.Config = append([]*ImageMetadata{userMetadata}, imageMetadataConfig.Config...)
+	imageMetadataConfig.Raw = append([]*ImageMetadata{userMetadata}, imageMetadataConfig.Raw...)
 }

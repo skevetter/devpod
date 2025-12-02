@@ -27,13 +27,34 @@ func (r *runner) build(
 	substitutionContext *config.SubstitutionContext,
 	options provider.BuildOptions,
 ) (*config.BuildInfo, error) {
+	var buildInfo *config.BuildInfo
+	var err error
+
 	if isDockerFileConfig(parsedConfig.Config) {
-		return r.buildAndExtendImage(ctx, parsedConfig, substitutionContext, options)
+		buildInfo, err = r.buildAndExtendImage(ctx, parsedConfig, substitutionContext, options)
 	} else if isDockerComposeConfig(parsedConfig.Config) {
-		return r.buildDevImageCompose(ctx, parsedConfig, substitutionContext, options)
+		buildInfo, err = r.buildDevImageCompose(ctx, parsedConfig, substitutionContext, options)
+	} else {
+		buildInfo, err = r.extendImage(ctx, parsedConfig, substitutionContext, options)
 	}
 
-	return r.extendImage(ctx, parsedConfig, substitutionContext, options)
+	if err != nil {
+		return nil, err
+	}
+
+	// Add extra devcontainer config if provided
+	if options.ExtraDevContainerPath != "" {
+		if buildInfo.ImageMetadata == nil {
+			buildInfo.ImageMetadata = &config.ImageMetadataConfig{}
+		}
+		extraConfig, err := config.ParseDevContainerJSONFile(options.ExtraDevContainerPath)
+		if err != nil {
+			return nil, err
+		}
+		config.AddConfigToImageMetadata(extraConfig, buildInfo.ImageMetadata)
+	}
+
+	return buildInfo, nil
 }
 
 func (r *runner) extendImage(
