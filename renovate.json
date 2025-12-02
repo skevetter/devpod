@@ -8,23 +8,32 @@
     "enabled": true
   },
   "dependencyDashboard": false,
-  "prConcurrentLimit": 3,
+  "prConcurrentLimit": 1,
   "packageRules": [
     {
-      "matchManagers": ["gomod"],
-      "automerge": true
+      "matchManagers": ["github-actions"],
+      "automerge": true,
+      "prPriority": 5
     },
     {
       "matchManagers": ["pre-commit"],
-      "automerge": true
+      "automerge": true,
+      "prPriority": 4
+    },
+    {
+      "matchManagers": ["gomod"],
+      "automerge": true,
+      "prPriority": 3
     },
     {
       "matchManagers": ["npm"],
-      "automerge": true
+      "automerge": true,
+      "prPriority": 2
     },
     {
-      "matchManagers": ["github-actions"],
-      "automerge": true
+      "matchManagers": ["cargo"],
+      "automerge": true,
+      "prPriority": 1
     }
   ]
 }
