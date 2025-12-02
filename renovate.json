@@ -8,9 +8,22 @@
     "enabled": true
   },
   "dependencyDashboard": false,
+  "prConcurrentLimit": 3,
   "packageRules": [
     {
       "matchManagers": ["gomod"],
+      "automerge": true
+    },
+    {
+      "matchManagers": ["pre-commit"],
+      "automerge": true
+    },
+    {
+      "matchManagers": ["npm"],
+      "automerge": true
+    },
+    {
+      "matchManagers": ["github-actions"],
       "automerge": true
     }
   ]
