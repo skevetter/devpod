@@ -113,6 +113,7 @@ jobs:
           target: ${{ matrix.settings.target }}
           package_version: ${{ needs.create-release.outputs.package_version }}
           cli_only: ${{ matrix.settings.cli_only }}
+          cache-key-suffix: "relase-linux-${{ github.run_id }}"
 
       - name: build CLI
         uses: ./.github/actions/build-cli
@@ -175,6 +176,7 @@ jobs:
           target: ${{ matrix.settings.target }}
           package_version: ${{ needs.create-release.outputs.package_version }}
           cli_only: false
+          cache-key-suffix: "release-macos-${{ github.run_id }}"
 
       - name: build CLI
         uses: ./.github/actions/build-cli
@@ -224,6 +226,7 @@ jobs:
           target: x86_64-pc-windows-msvc
           package_version: ${{ needs.create-release.outputs.package_version }}
           cli_only: false
+          cache-key-suffix: "build-windows-${{ github.run_id }}"
 
       - name: build CLI
         uses: ./.github/actions/build-cli
