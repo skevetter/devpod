@@ -222,7 +222,7 @@ type CLIOptions struct {
 	GitSSHSigningKey            string            `json:"gitSshSigningKey,omitempty"`
 	SSHAuthSockID               string            `json:"sshAuthSockID,omitempty"` // ID to use when looking for SSH_AUTH_SOCK, defaults to a new random ID if not set (only used for browser IDEs)
 	StrictHostKeyChecking       bool              `json:"strictHostKeyChecking,omitempty"`
-	ExtraDevContainerPaths      []string          `json:"extraDevContainerPaths,omitempty"`
+	ExtraDevContainerPath       string            `json:"extraDevContainerPath,omitempty"`
 
 	// build options
 	Repository string   `json:"repository,omitempty"`

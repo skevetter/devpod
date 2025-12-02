@@ -1,0 +1,5 @@
+{
+  "remoteEnv": {
+    "TEST_VAR": "overridden_value"
+  }
+}

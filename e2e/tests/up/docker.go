@@ -336,6 +336,46 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 				framework.ExpectNoError(err)
 				server.Close()
 			}, ginkgo.SpecTimeout(framework.GetTimeout()))
+
+			ginkgo.It("should merge extra devcontainer path with base config", func(ctx context.Context) {
+				tempDir, err := setupWorkspace("tests/up/testdata/docker-extra-devcontainer", initialDir, f)
+				framework.ExpectNoError(err)
+
+				extraPath := path.Join(tempDir, "extra.json")
+				err = f.DevPodUp(ctx, tempDir, "--extra-devcontainer-path", extraPath)
+				framework.ExpectNoError(err)
+
+				// Verify base environment variable
+				out, err := f.DevPodSSH(ctx, tempDir, "bash -l -c 'echo -n $BASE_VAR'")
+				framework.ExpectNoError(err)
+				framework.ExpectEqual(out, "base_value")
+
+				// Verify extra environment variable is added
+				out, err = f.DevPodSSH(ctx, tempDir, "bash -l -c 'echo -n $EXTRA_VAR'")
+				framework.ExpectNoError(err)
+				framework.ExpectEqual(out, "extra_value")
+
+				err = f.DevPodWorkspaceDelete(ctx, tempDir)
+				framework.ExpectNoError(err)
+			}, ginkgo.SpecTimeout(framework.GetTimeout()))
+
+			ginkgo.It("should override base config with extra devcontainer path", func(ctx context.Context) {
+				tempDir, err := setupWorkspace("tests/up/testdata/docker-extra-override", initialDir, f)
+				framework.ExpectNoError(err)
+
+				extraPath := path.Join(tempDir, "override.json")
+				err = f.DevPodUp(ctx, tempDir, "--extra-devcontainer-path", extraPath)
+				framework.ExpectNoError(err)
+
+				// Verify variable is overridden by checking file written by postCreateCommand
+				// postCreateCommand runs with remoteEnv variables available
+				out, err := f.DevPodSSH(ctx, tempDir, "cat /tmp/test-var.out")
+				framework.ExpectNoError(err)
+				framework.ExpectEqual(strings.TrimSpace(out), "overridden_value")
+
+				err = f.DevPodWorkspaceDelete(ctx, tempDir)
+				framework.ExpectNoError(err)
+			}, ginkgo.SpecTimeout(framework.GetTimeout()))
 		})
 	})
 })

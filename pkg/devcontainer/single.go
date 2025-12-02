@@ -79,21 +79,15 @@ func (r *runner) runSingleContainer(
 			return nil, err
 		}
 
-		userConfig, err := config.ParseDevContainerUserJSON(parsedConfig.Config)
-		if err != nil {
-			return nil, err
-		} else if userConfig != nil && imageMetadataConfig != nil {
-			config.AddConfigToImageMetadata(userConfig, imageMetadataConfig)
-		}
-
-		if imageMetadataConfig != nil {
-			for _, v := range options.ExtraDevContainerPaths {
-				extraConfig, err := config.ParseDevContainerJSONFile(v)
-				if err != nil {
-					return nil, err
-				}
-				config.AddConfigToImageMetadata(extraConfig, imageMetadataConfig)
+		if options.ExtraDevContainerPath != "" {
+			if imageMetadataConfig == nil {
+				imageMetadataConfig = &config.ImageMetadataConfig{}
 			}
+			extraConfig, err := config.ParseDevContainerJSONFile(options.ExtraDevContainerPath)
+			if err != nil {
+				return nil, err
+			}
+			config.AddConfigToImageMetadata(extraConfig, imageMetadataConfig)
 		}
 
 		mergedConfig, err = config.MergeConfiguration(parsedConfig.Config, imageMetadataConfig.Config)
@@ -145,21 +139,15 @@ func (r *runner) runSingleContainer(
 			}
 		}
 
-		userConfig, err := config.ParseDevContainerUserJSON(parsedConfig.Config)
-		if err != nil {
-			return nil, err
-		} else if userConfig != nil && buildInfo.ImageMetadata != nil {
-			config.AddConfigToImageMetadata(userConfig, buildInfo.ImageMetadata)
-		}
-
-		if buildInfo.ImageMetadata != nil {
-			for _, v := range options.ExtraDevContainerPaths {
-				extraConfig, err := config.ParseDevContainerJSONFile(v)
-				if err != nil {
-					return nil, err
-				}
-				config.AddConfigToImageMetadata(extraConfig, buildInfo.ImageMetadata)
+		if options.ExtraDevContainerPath != "" {
+			if buildInfo.ImageMetadata == nil {
+				buildInfo.ImageMetadata = &config.ImageMetadataConfig{}
 			}
+			extraConfig, err := config.ParseDevContainerJSONFile(options.ExtraDevContainerPath)
+			if err != nil {
+				return nil, err
+			}
+			config.AddConfigToImageMetadata(extraConfig, buildInfo.ImageMetadata)
 		}
 
 		// merge configuration

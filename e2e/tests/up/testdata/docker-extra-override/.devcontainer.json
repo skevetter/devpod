@@ -1,0 +1,8 @@
+{
+  "name": "Override Test",
+  "image": "ubuntu:22.04",
+  "remoteEnv": {
+    "TEST_VAR": "base_value"
+  },
+  "postCreateCommand": ["sh", "-c", "echo $TEST_VAR > /tmp/test-var.out"]
+}

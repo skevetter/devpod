@@ -200,21 +200,15 @@ func (r *runner) runDockerCompose(
 		return nil, errors.Wrap(err, "get image metadata from container")
 	}
 
-	userConfig, err := config.ParseDevContainerUserJSON(parsedConfig.Config)
-	if err != nil {
-		return nil, err
-	} else if userConfig != nil && imageMetadataConfig != nil {
-		config.AddConfigToImageMetadata(userConfig, imageMetadataConfig)
-	}
-
-	if imageMetadataConfig != nil {
-		for _, v := range options.ExtraDevContainerPaths {
-			extraConfig, err := config.ParseDevContainerJSONFile(v)
-			if err != nil {
-				return nil, err
-			}
-			config.AddConfigToImageMetadata(extraConfig, imageMetadataConfig)
+	if options.ExtraDevContainerPath != "" {
+		if imageMetadataConfig == nil {
+			imageMetadataConfig = &config.ImageMetadataConfig{}
 		}
+		extraConfig, err := config.ParseDevContainerJSONFile(options.ExtraDevContainerPath)
+		if err != nil {
+			return nil, err
+		}
+		config.AddConfigToImageMetadata(extraConfig, imageMetadataConfig)
 	}
 
 	mergedConfig, err := config.MergeConfiguration(parsedConfig.Config, imageMetadataConfig.Config)
@@ -368,21 +362,15 @@ func (r *runner) startContainer(
 			return nil, errors.Wrap(err, "inspect image")
 		}
 
-		userConfig, err := config.ParseDevContainerUserJSON(parsedConfig.Config)
-		if err != nil {
-			return nil, err
-		} else if userConfig != nil && imageMetadata != nil {
-			config.AddConfigToImageMetadata(userConfig, imageMetadata)
-		}
-
-		if imageMetadata != nil {
-			for _, v := range options.ExtraDevContainerPaths {
-				extraConfig, err := config.ParseDevContainerJSONFile(v)
-				if err != nil {
-					return nil, err
-				}
-				config.AddConfigToImageMetadata(extraConfig, imageMetadata)
+		if options.ExtraDevContainerPath != "" {
+			if imageMetadata == nil {
+				imageMetadata = &config.ImageMetadataConfig{}
 			}
+			extraConfig, err := config.ParseDevContainerJSONFile(options.ExtraDevContainerPath)
+			if err != nil {
+				return nil, err
+			}
+			config.AddConfigToImageMetadata(extraConfig, imageMetadata)
 		}
 
 		mergedConfig, err := config.MergeConfiguration(parsedConfig.Config, imageMetadata.Config)
