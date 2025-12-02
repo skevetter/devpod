@@ -6,6 +6,10 @@ on:
   workflow_dispatch:
   pull_request:
 
+concurrency:
+  group: tests
+  cancel-in-progress: false
+
 jobs:
   compile-linux:
     name: Compile Linux Binary
@@ -15,8 +19,8 @@ jobs:
 
       - uses: ./.github/actions/compile-linux-binary
         with:
-          cache-key-suffix: "test-linux"
-          binary-cache-key: "test-binary-linux"
+          cache-key-suffix: "test-linux-${{ github.run_id }}"
+          binary-cache-key: "test-binary-linux-${{ github.run_id }}"
           binary-path: ./e2e/bin/devpod-linux-amd64
 
   integration-test-wave-1:
@@ -53,7 +57,7 @@ jobs:
           needs-kind: false
           gh-username: ${{ secrets.GH_PRIVATE_REPO_USER_TEST }}
           gh-access-token: ${{ secrets.GH_PRIVATE_REPO_TOKEN_TEST }}
-          binary-cache-key: "test-binary-linux"
+          binary-cache-key: "test-binary-linux-${{ github.run_id }}"
           binary-path: ./e2e/bin/devpod-linux-amd64
 
   integration-test-wave-2:
@@ -93,19 +97,20 @@ jobs:
           needs-kind: ${{ matrix.needs-kind || false }}
           gh-username: ${{ secrets.GH_PRIVATE_REPO_USER_TEST }}
           gh-access-token: ${{ secrets.GH_PRIVATE_REPO_TOKEN_TEST }}
-          binary-cache-key: "test-binary-linux"
+          binary-cache-key: "test-binary-linux-${{ github.run_id }}"
           binary-path: ./e2e/bin/devpod-linux-amd64
 
   compile-windows:
     name: Compile Windows Binary
+    needs: [integration-test-wave-2]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
 
       - uses: ./.github/actions/compile-windows-binary
         with:
-          cache-key-suffix: "test-windows"
-          binary-cache-key: "test-binary-windows"
+          cache-key-suffix: "test-windows-${{ github.run_id }}"
+          binary-cache-key: "test-binary-windows-${{ github.run_id }}"
           binary-path: ./e2e/bin/devpod-windows-amd64.exe
 
   # NOTE: Integration tests on Windows that pull images fail due to missing Windows images
@@ -151,7 +156,7 @@ jobs:
           needs-kind: false
           gh-username: ${{ secrets.GH_PRIVATE_REPO_USER_TEST }}
           gh-access-token: ${{ secrets.GH_PRIVATE_REPO_TOKEN_TEST }}
-          binary-cache-key: "test-binary-windows"
+          binary-cache-key: "test-binary-windows-${{ github.run_id }}"
           binary-path: ./e2e/bin/devpod-windows-amd64.exe
 
   docker-install-test:

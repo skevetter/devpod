@@ -32,7 +32,7 @@ runs:
       uses: actions/cache/restore@v4
       with:
         path: ${{ inputs.binary-path }}
-        key: ${{ inputs.binary-cache-key }}-${{ github.run_id }}
+        key: ${{ inputs.binary-cache-key }}
         enableCrossOsArchive: true
 
     - name: setup Go (if cache miss)

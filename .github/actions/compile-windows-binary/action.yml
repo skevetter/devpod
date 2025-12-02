@@ -34,5 +34,5 @@ runs:
       uses: actions/cache/save@v4
       with:
         path: ${{ inputs.binary-path }}
-        key: ${{ inputs.binary-cache-key }}-${{ github.run_id }}
+        key: ${{ inputs.binary-cache-key }}
         enableCrossOsArchive: true

@@ -16,6 +16,10 @@ on:
           - windows
   pull_request:
 
+concurrency:
+  group: build-artifacts
+  cancel-in-progress: false
+
 jobs:
   build-linux:
     if: github.event_name == 'pull_request' || inputs.platform == 'all' || inputs.platform == 'linux'
@@ -36,6 +40,7 @@ jobs:
           target: ${{ matrix.target }}
           package_version: 0.0.0
           cli_only: ${{ matrix.target == 'aarch64-unknown-linux-gnu' }}
+          cache-key-suffix: "build-artifacts-${{ github.run_id }}"
 
       - name: build CLI
         uses: ./.github/actions/build-cli
@@ -97,6 +102,7 @@ jobs:
           target: ${{ matrix.target }}
           package_version: 0.0.0
           cli_only: false
+          cache-key-suffix: "build-artifacts-${{ github.run_id }}"
 
       - name: build CLI
         uses: ./.github/actions/build-cli
@@ -147,6 +153,7 @@ jobs:
           target: x86_64-pc-windows-msvc
           package_version: 0.0.0
           cli_only: false
+          cache-key-suffix: "build-artifacts-${{ github.run_id }}"
 
       - name: build CLI
         uses: ./.github/actions/build-cli

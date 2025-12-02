@@ -14,6 +14,9 @@ inputs:
   cli_only:
     description: Whether this is a CLI-only build
     required: true
+  cache-key-suffix:
+    description: Cache key for binary
+    required: true
 
 runs:
   using: composite
@@ -53,7 +56,7 @@ runs:
       uses: magnetikonline/action-golang-cache@v5
       with:
         go-version-file: go.mod
-        cache-key-suffix: "release"
+        cache-key-suffix: ${{ inputs.cache-key-suffix }}
 
     - name: setup Node
       uses: actions/setup-node@v6
