@@ -15,5 +15,3 @@ jobs:
       - uses: 1Password/check-signed-commits-action@v1
 
       - uses: wagoid/commitlint-github-action@v6
-        with:
-          failOnErrors: false

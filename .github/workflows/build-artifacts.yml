@@ -16,10 +16,6 @@ on:
           - windows
   pull_request:
 
-concurrency:
-  group: build-artifacts
-  cancel-in-progress: false
-
 jobs:
   build-linux:
     if: github.event_name == 'pull_request' || inputs.platform == 'all' || inputs.platform == 'linux'
