@@ -56,7 +56,7 @@ require (
 	golang.org/x/sys v0.38.0
 	golang.org/x/term v0.37.0
 	google.golang.org/grpc v1.72.1
-	google.golang.org/protobuf v1.36.6
+	google.golang.org/protobuf v1.36.10
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce
 	gopkg.in/square/go-jose.v2 v2.6.0
 	gopkg.in/yaml.v2 v2.4.0
