@@ -16,7 +16,12 @@ func GetTimeout() time.Duration {
 		return 600 * time.Second
 	}
 
-	return 60 * time.Second
+	// NOTE: Downloading container images can be slow depending on network conditions.
+	// If tests need to download a large container image or multiple images, it
+	// may fail due to timeout. Recommend, pre-staging images in local Docker cache
+	// during the workflow before the start of the tests to mitigate timeout issues
+	// caused by slow image downloads.
+	return 120 * time.Second
 }
 
 func CreateTempDir() (string, error) {

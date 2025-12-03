@@ -1,6 +1,6 @@
 {
   "name": "Override Test",
-  "image": "ubuntu:22.04",
+  "image": "ubuntu",
   "remoteEnv": {
     "TEST_VAR": "base_value"
   },

@@ -1,4 +1,4 @@
 {
   "name": "Go",
-  "image": "golang:1-alpine"
+  "image": "mcr.microsoft.com/devcontainers/go:1"
 }

@@ -1,6 +1,6 @@
 {
   "name": "Feature Lifecycle Hooks Test",
-  "image": "mcr.microsoft.com/vscode/devcontainers/base:ubuntu",
+  "image": "ubuntu",
   "features": {
     "./.devcontainer/features/test-hooks": {}
   }

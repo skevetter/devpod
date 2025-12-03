@@ -1,6 +1,6 @@
 {
   "name": "Go",
-  "image": "mcr.microsoft.com/devcontainers/go:1-bookworm",
+  "image": "mcr.microsoft.com/devcontainers/go:1",
   "remoteEnv": {
     "FOO": "BAR",
     "LOCAL_ENV_HOME": "${localEnv:HOME}",

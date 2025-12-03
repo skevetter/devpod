@@ -57,6 +57,15 @@ runs:
       shell: bash
       run: chmod +x ${{ inputs.binary-path }}
 
+    - name: pre-pull docker images
+      description: Pre-pull commonly used docker images to speed up tests
+      shell: bash
+      run: |
+        docker pull alpine
+        docker pull ubuntu
+        docker pull mcr.microsoft.com/devcontainers/go:1
+        docker pull mcr.microsoft.com/devcontainers/python:1
+
     # NOTE: engineerd/setup-kind does not work on Windows runners
     - name: setup kind
       if: inputs.needs-kind == 'true' && runner.os != 'Windows'

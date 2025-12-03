@@ -1,6 +1,6 @@
-FROM golang:1.25-alpine AS base
+FROM mcr.microsoft.com/devcontainers/go:1 AS base
 
-RUN apk add --no-cache vim
+RUN apt-get update && apt-get install -y vim
 
 FROM base
 

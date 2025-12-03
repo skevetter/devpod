@@ -70,7 +70,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 				ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
 				ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, tempDir)
 
-				err = dockerHelper.Run(ctx, []string{"run", "-d", "--label", "devpod-e2e-test-container=true", "-w", "/workspaces/e2e", "mcr.microsoft.com/vscode/devcontainers/base:alpine", "sleep", "infinity"}, nil, nil, nil)
+				err = dockerHelper.Run(ctx, []string{"run", "-d", "--label", "devpod-e2e-test-container=true", "-w", "/workspaces/e2e", "alpine", "sleep", "infinity"}, nil, nil, nil)
 				framework.ExpectNoError(err)
 
 				ids, err := dockerHelper.FindContainer(ctx, []string{
@@ -259,7 +259,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 				framework.ExpectNoError(err)
 
 				// Wait for devpod workspace to come online (deadline: 30s)
-				err = f.DevPodUp(ctx, tempDir, "--devcontainer-image", "mcr.microsoft.com/vscode/devcontainers/base:alpine")
+				err = f.DevPodUp(ctx, tempDir, "--devcontainer-image", "alpine")
 				framework.ExpectNoError(err)
 
 				out, err := f.DevPodSSH(ctx, tempDir, "grep ^ID= /etc/os-release")
@@ -276,7 +276,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 				framework.ExpectNoError(err)
 
 				// Wait for devpod workspace to come online (deadline: 30s)
-				err = f.DevPodUp(ctx, tempDir, "--devcontainer-image", "mcr.microsoft.com/vscode/devcontainers/base:alpine")
+				err = f.DevPodUp(ctx, tempDir, "--devcontainer-image", "alpine")
 				framework.ExpectNoError(err)
 
 				out, err := f.DevPodSSH(ctx, tempDir, "grep ^ID= /etc/os-release")

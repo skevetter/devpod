@@ -1,6 +1,6 @@
 {
   "name": "Extra DevContainer Test",
-  "image": "ubuntu:22.04",
+  "image": "ubuntu",
   "remoteEnv": {
     "BASE_VAR": "base_value"
   }

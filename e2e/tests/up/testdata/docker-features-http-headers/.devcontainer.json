@@ -1,6 +1,6 @@
 {
   "name": "Test hello",
-  "image": "mcr.microsoft.com/vscode/devcontainers/base:ubuntu",
+  "image": "ubuntu",
   "features": {
     "#{server_url}/devcontainer-feature-hello.tgz": {}
   },

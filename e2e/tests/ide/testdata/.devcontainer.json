@@ -1,6 +1,6 @@
 {
   "name": "Python",
-  "image": "mcr.microsoft.com/devcontainers/python:0-3.11",
+  "image": "mcr.microsoft.com/devcontainers/python:1",
 
   "customizations": {
     "vscode": {
