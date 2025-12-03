@@ -112,6 +112,7 @@ func setupWorkspace(testdataPath, initialDir string, f *framework.Framework) (st
 // setupDockerProvider creates a framework and configures the docker provider with the specified docker path
 func setupDockerProvider(binDir, dockerPath string) (*framework.Framework, error) {
 	f := framework.NewDefaultFramework(binDir)
+	_ = f.DevPodProviderDelete(context.Background(), "docker")
 	_ = f.DevPodProviderAdd(context.Background(), "docker", "-o", "DOCKER_PATH="+dockerPath)
 	err := f.DevPodProviderUse(context.Background(), "docker")
 	return f, err

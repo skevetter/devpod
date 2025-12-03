@@ -58,12 +58,17 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 					framework.ExpectNoError(err)
 
 					ginkgo.By("Should start a docker-compose container")
-					ids, err := dockerHelper.FindContainer(ctx, []string{
-						fmt.Sprintf("%s=%s", compose.ProjectLabel, composeHelper.GetProjectName(workspace.UID)),
-						fmt.Sprintf("%s=%s", compose.ServiceLabel, "app"),
-					})
-					framework.ExpectNoError(err)
-					gomega.Expect(ids).To(gomega.HaveLen(1), "1 compose container to be created")
+					var ids []string
+					gomega.Eventually(func() int {
+						ids, err = dockerHelper.FindContainer(ctx, []string{
+							fmt.Sprintf("%s=%s", compose.ProjectLabel, composeHelper.GetProjectName(workspace.UID)),
+							fmt.Sprintf("%s=%s", compose.ServiceLabel, "app"),
+						})
+						if err != nil {
+							return 0
+						}
+						return len(ids)
+					}).Should(gomega.Equal(1), "1 compose container to be created")
 
 					ginkgo.By("Modifying .devcontainer.json with failing changes")
 					origPath := filepath.Join(tempDir, ".devcontainer.json")
@@ -108,12 +113,17 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 					framework.ExpectNoError(err)
 
 					ginkgo.By("Should start a docker-compose container")
-					ids, err := dockerHelper.FindContainer(ctx, []string{
-						fmt.Sprintf("%s=%s", compose.ProjectLabel, composeHelper.GetProjectName(workspace.UID)),
-						fmt.Sprintf("%s=%s", compose.ServiceLabel, "app"),
-					})
-					framework.ExpectNoError(err)
-					gomega.Expect(ids).To(gomega.HaveLen(1), "1 compose container to be created")
+					var ids []string
+					gomega.Eventually(func() int {
+						ids, err = dockerHelper.FindContainer(ctx, []string{
+							fmt.Sprintf("%s=%s", compose.ProjectLabel, composeHelper.GetProjectName(workspace.UID)),
+							fmt.Sprintf("%s=%s", compose.ServiceLabel, "app"),
+						})
+						if err != nil {
+							return 0
+						}
+						return len(ids)
+					}).Should(gomega.Equal(1), "1 compose container to be created")
 
 					ginkgo.By("Starting DevPod again with --recreate")
 					err = f.DevPodUp(ctx, tempDir, "--debug", "--recreate")

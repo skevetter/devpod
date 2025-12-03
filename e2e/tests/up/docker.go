@@ -51,28 +51,31 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 				tempDir, err := framework.CopyToTempDir("tests/up/testdata/no-devcontainer")
 				framework.ExpectNoError(err)
 				ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
-				ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, tempDir)
 
 				err = dockerHelper.Run(ctx, []string{"run", "-d", "--label", "devpod-e2e-test-container=true", "-w", "/workspaces/e2e", "mcr.microsoft.com/vscode/devcontainers/base:alpine", "sleep", "infinity"}, nil, nil, nil)
 				framework.ExpectNoError(err)
 
-				ids, err := dockerHelper.FindContainer(ctx, []string{
-					"devpod-e2e-test-container=true",
-				})
-				framework.ExpectNoError(err)
-				gomega.Expect(ids).To(gomega.HaveLen(1), "1 container is created")
+				var ids []string
+				gomega.Eventually(func() bool {
+					ids, err = dockerHelper.FindContainer(ctx, []string{"devpod-e2e-test-container=true"})
+					if err != nil || len(ids) != 1 {
+						return false
+					}
+					var containerDetails []types.ContainerJSON
+					err = dockerHelper.Inspect(ctx, ids, "container", &containerDetails)
+					return err == nil && containerDetails[0].State.Running
+				}).Should(gomega.BeTrue(), "container should be running")
+
 				ginkgo.DeferCleanup(dockerHelper.Remove, ids[0])
 				ginkgo.DeferCleanup(dockerHelper.Stop, ids[0])
+				ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, tempDir)
 
 				var containerDetails []types.ContainerJSON
 				err = dockerHelper.Inspect(ctx, ids, "container", &containerDetails)
 				framework.ExpectNoError(err)
+				gomega.Expect(containerDetails[0].Config.WorkingDir).To(gomega.Equal("/workspaces/e2e"))
 
-				containerDetail := containerDetails[0]
-				gomega.Expect(containerDetail.Config.WorkingDir).To(gomega.Equal("/workspaces/e2e"))
-
-				// Wait for devpod workspace to come online (deadline: 30s)
-				err = f.DevPodUp(ctx, tempDir, "--source", fmt.Sprintf("container:%s", containerDetail.ID))
+				err = f.DevPodUp(ctx, tempDir, "--source", fmt.Sprintf("container:%s", containerDetails[0].ID))
 				framework.ExpectNoError(err)
 			}, ginkgo.SpecTimeout(framework.GetTimeout()))
 			ginkgo.It("should start a new workspace and substitute devcontainer.json variables", func(ctx context.Context) {
