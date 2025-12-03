@@ -114,9 +114,9 @@ jobs:
   # to connect to the WSL2 backend from within the GitHub Actions Windows runner.
   # example error:
   # ```
-  # Inspecting image mcr.microsoft.com/devcontainers/go:1-bookworm
-  # mcr.microsoft.com/devcontainers/go:1-bookworm not found
-  # Pulling image mcr.microsoft.com/devcontainers/go:1-bookworm
+  # Inspecting image mcr.microsoft.com/devcontainers/go:1
+  # mcr.microsoft.com/devcontainers/go:1 not found
+  # Pulling image mcr.microsoft.com/devcontainers/go:1
   # 1-bookworm: Pulling from devcontainers/go
   # no matching manifest for windows/amd64 10.0.26100 in the manifest list entries
   # exit status 1

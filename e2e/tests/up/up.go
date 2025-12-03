@@ -264,7 +264,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 			framework.ExpectNoError(err)
 			framework.ExpectEqual(len(list.Items), 1, "Expect 1 pod")
 			framework.ExpectEqual(len(list.Items[0].Spec.Containers), 1, "Expect 1 container")
-			framework.ExpectEqual(list.Items[0].Spec.Containers[0].Image, "mcr.microsoft.com/devcontainers/go:1-bookworm", "Expect container image")
+			framework.ExpectEqual(list.Items[0].Spec.Containers[0].Image, "mcr.microsoft.com/devcontainers/go:1", "Expect container image")
 
 			// check if ssh works
 			err = f.DevPodSSHEchoTestString(ctx, tempDir)
