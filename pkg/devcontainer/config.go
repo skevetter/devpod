@@ -53,10 +53,36 @@ func (r *runner) getRawConfig(options provider2.CLIOptions) (*config.DevContaine
 	}
 
 	// parse the devcontainer json
-	rawParsedConfig, err := config.ParseDevContainerJSON(
-		localWorkspaceFolder,
-		r.WorkspaceConfig.Workspace.DevContainerPath,
-	)
+	var rawParsedConfig *config.DevContainerConfig
+	var err error
+
+	if options.DevContainerID != "" {
+		// Use selector to find specific devcontainer by ID
+		rawParsedConfig, err = config.ParseDevContainerJSONWithSelector(
+			localWorkspaceFolder,
+			r.WorkspaceConfig.Workspace.DevContainerPath,
+			func(matches []string) (string, error) {
+				for _, match := range matches {
+					if filepath.Base(filepath.Dir(match)) == options.DevContainerID {
+						return match, nil
+					}
+				}
+				return "", errors.Errorf("devcontainer with ID '%s' not found", options.DevContainerID)
+			},
+		)
+	} else {
+		rawParsedConfig, err = config.ParseDevContainerJSONWithSelector(
+			localWorkspaceFolder,
+			r.WorkspaceConfig.Workspace.DevContainerPath,
+			func(matches []string) (string, error) {
+				if len(matches) > 1 {
+					ids, _ := config.ListDevContainerIDs(localWorkspaceFolder)
+					return "", errors.Errorf("multiple devcontainer configurations found. Use --devcontainer-id to select one: %v", ids)
+				}
+				return matches[0], nil
+			},
+		)
+	}
 
 	// We want to fail only in case of real errors, non-existing devcontainer.jon
 	// will be gracefully handled by the auto-detection mechanism

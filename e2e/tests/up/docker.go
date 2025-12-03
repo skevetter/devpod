@@ -376,6 +376,33 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 				err = f.DevPodWorkspaceDelete(ctx, tempDir)
 				framework.ExpectNoError(err)
 			}, ginkgo.SpecTimeout(framework.GetTimeout()))
+
+			ginkgo.It("should select specific devcontainer by ID when multiple exist", func(ctx context.Context) {
+				tempDir, err := setupWorkspace("tests/up/testdata/docker-multi-devcontainer", initialDir, f)
+				framework.ExpectNoError(err)
+
+				// Test with python devcontainer
+				err = f.DevPodUp(ctx, tempDir, "--devcontainer-id", "python")
+				framework.ExpectNoError(err)
+
+				out, err := f.DevPodSSH(ctx, tempDir, "bash -l -c 'echo -n $DEVCONTAINER_TYPE'")
+				framework.ExpectNoError(err)
+				framework.ExpectEqual(out, "python")
+
+				err = f.DevPodWorkspaceDelete(ctx, tempDir)
+				framework.ExpectNoError(err)
+
+				// Test with node devcontainer
+				err = f.DevPodUp(ctx, tempDir, "--devcontainer-id", "node")
+				framework.ExpectNoError(err)
+
+				out, err = f.DevPodSSH(ctx, tempDir, "bash -l -c 'echo -n $DEVCONTAINER_TYPE'")
+				framework.ExpectNoError(err)
+				framework.ExpectEqual(out, "node")
+
+				err = f.DevPodWorkspaceDelete(ctx, tempDir)
+				framework.ExpectNoError(err)
+			}, ginkgo.SpecTimeout(framework.GetTimeout()))
 		})
 	})
 })

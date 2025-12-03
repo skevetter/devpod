@@ -209,6 +209,7 @@ type CLIOptions struct {
 	PrebuildRepositories        []string          `json:"prebuildRepositories,omitempty"`
 	DevContainerImage           string            `json:"devContainerImage,omitempty"`
 	DevContainerPath            string            `json:"devContainerPath,omitempty"`
+	DevContainerID              string            `json:"devContainerID,omitempty"`
 	WorkspaceEnv                []string          `json:"workspaceEnv,omitempty"`
 	WorkspaceEnvFile            []string          `json:"workspaceEnvFile,omitempty"`
 	InitEnv                     []string          `json:"initEnv,omitempty"`

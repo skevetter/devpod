@@ -1,0 +1,7 @@
+{
+  "name": "Node DevContainer",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:18",
+  "remoteEnv": {
+    "DEVCONTAINER_TYPE": "node"
+  }
+}
