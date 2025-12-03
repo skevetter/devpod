@@ -36,6 +36,7 @@ jobs:
           - machineprovider
           - provider
           - ssh
+          - commands
     steps:
       - uses: actions/checkout@v6
 
@@ -68,10 +69,13 @@ jobs:
         label:
           - build
           - up
+          - network
         include:
           - label: build
             needs-kind: true
           - label: up
+            needs-kind: true
+          - label: network
             needs-kind: true
 
     steps:

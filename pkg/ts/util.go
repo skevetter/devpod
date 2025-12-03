@@ -48,6 +48,12 @@ func GetURL(host string, port int) string {
 	return fmt.Sprintf("%s.%s:%d", host, LoftTSNetDomain, port)
 }
 
+// EnsureURL builds a host:port address, removing any protocol prefix
+func EnsureURL(host string, port int) string {
+	host = RemoveProtocol(host)
+	return fmt.Sprintf("%s:%d", host, port)
+}
+
 // WaitHostReachable polls until the given host is reachable via ts.
 func WaitHostReachable(ctx context.Context, lc *tailscale.LocalClient, addr Addr, maxRetries int, log log.Logger) error {
 	for i := 0; i < maxRetries; i++ {

@@ -192,26 +192,50 @@ func (f *Framework) DevPodStop(ctx context.Context, workspace string) error {
 	return nil
 }
 
+// CleanupProviderWorkspaces deletes all workspaces using the specified provider.
+// This is useful to cleanup dangling workspaces when running tests locally and you
+// create/delete providers multiple times.
+func (f *Framework) CleanupProviderWorkspaces(ctx context.Context, providerName string) error {
+	workspaces, err := f.DevPodListParsed(ctx)
+	if err != nil {
+		return err
+	}
+
+	for _, ws := range workspaces {
+		if ws.Provider.Name == providerName {
+			_ = f.DevPodWorkspaceDelete(ctx, ws.ID)
+		}
+	}
+
+	return nil
+}
+
 func (f *Framework) DevPodProviderAdd(ctx context.Context, args ...string) error {
 	baseArgs := []string{"provider", "add"}
 	baseArgs = append(baseArgs, args...)
 	_, stderr, err := f.ExecCommandCapture(ctx, baseArgs)
-	if err != nil {
-		// Skip "already exists" errors to make this idempotent
-		// This occurs when another test begins before ginkgo.DeferCleanup
-		// is called to delete the workspace. The workspace is linked to the
-		// provider and the provider cannot be deleted until the workspace is deleted.
-		if !strings.Contains(stderr, "already exists") {
-			return fmt.Errorf("devpod provider add failed: %s", stderr)
-		}
+	if err != nil && !strings.Contains(stderr, "already exists") {
+		return fmt.Errorf("devpod provider add failed %s", stderr)
 	}
 	return nil
 }
 
 func (f *Framework) DevPodProviderDelete(ctx context.Context, args ...string) error {
+	workspaces, err := f.DevPodListParsed(ctx)
+	if err != nil {
+		return err
+	}
+
+	// Skip deleting provider if there are workspaces using it
+	for _, ws := range workspaces {
+		if len(args) > 0 && ws.Provider.Name == args[0] {
+			return nil
+		}
+	}
+
 	baseArgs := []string{"provider", "delete"}
 	baseArgs = append(baseArgs, args...)
-	err := f.ExecCommand(ctx, false, false, "", baseArgs)
+	err = f.ExecCommand(ctx, false, false, "", baseArgs)
 	if err != nil {
 		return err
 	}

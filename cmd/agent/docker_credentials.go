@@ -15,11 +15,10 @@ import (
 	"time"
 
 	"github.com/loft-sh/log"
-	"github.com/skevetter/devpod/cmd/agent/container"
 	"github.com/skevetter/devpod/cmd/flags"
+	"github.com/skevetter/devpod/pkg/daemon/workspace/network"
 	"github.com/skevetter/devpod/pkg/dockercredentials"
 	devpodhttp "github.com/skevetter/devpod/pkg/http"
-	"github.com/skevetter/devpod/pkg/ts"
 	"github.com/spf13/cobra"
 )
 
@@ -117,7 +116,7 @@ func (cmd *DockerCredentialsCmd) handleGet(log log.Logger) error {
 		return fmt.Errorf("no credentials server URL")
 	}
 
-	credentials := getDockerCredentialsFromWorkspaceServer(&dockercredentials.Credentials{ServerURL: strings.TrimSpace(string(url))})
+	credentials := getDockerCredentialsFromServer(&dockercredentials.Credentials{ServerURL: strings.TrimSpace(string(url))})
 	if credentials != nil {
 		raw, err := json.Marshal(credentials)
 		if err != nil {
@@ -164,8 +163,8 @@ func (cmd *DockerCredentialsCmd) handleGet(log log.Logger) error {
 	return nil
 }
 
-func getDockerCredentialsFromWorkspaceServer(credentials *dockercredentials.Credentials) *dockercredentials.Credentials {
-	if _, err := os.Stat(filepath.Join(container.RootDir, ts.RunnerProxySocket)); err != nil {
+func getDockerCredentialsFromServer(credentials *dockercredentials.Credentials) *dockercredentials.Credentials {
+	if _, err := os.Stat(filepath.Join(network.RootDir, network.NetworkProxySocket)); err != nil {
 		// workspace server is not running
 		return nil
 	}
@@ -173,13 +172,13 @@ func getDockerCredentialsFromWorkspaceServer(credentials *dockercredentials.Cred
 	httpClient := &http.Client{
 		Transport: &http.Transport{
 			DialContext: func(_ context.Context, _, _ string) (net.Conn, error) {
-				return net.Dial("unix", filepath.Join(container.RootDir, ts.RunnerProxySocket))
+				return net.Dial("unix", filepath.Join(network.RootDir, network.NetworkProxySocket))
 			},
 		},
 		Timeout: 15 * time.Second,
 	}
 
-	credentials, credentialsErr := requestDockerCredentials(httpClient, credentials, "http://runner-proxy/docker-credentials")
+	credentials, credentialsErr := requestDockerCredentials(httpClient, credentials, "http://network-proxy/docker-credentials")
 	if credentialsErr != nil {
 		// append error to /var/devpod/docker-credentials.log
 		file, err := os.OpenFile("/var/devpod/docker-credentials-error.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)

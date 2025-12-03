@@ -1,0 +1,15 @@
+{
+  "name": "With Network Proxy",
+  "image": "mcr.microsoft.com/devcontainers/python:latest",
+  "customizations": {
+    "devpod": {
+      "networkProxy": {
+        "enabled": true,
+        "addr": "localhost:9090"
+      }
+    }
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {}
+  }
+}

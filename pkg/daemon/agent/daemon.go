@@ -25,9 +25,17 @@ type SshConfig struct {
 }
 
 type DaemonConfig struct {
-	Platform devpod.PlatformOptions `json:"platform,omitempty"`
-	Ssh      SshConfig              `json:"ssh,omitempty"`
-	Timeout  string                 `json:"timeout"`
+	Platform     devpod.PlatformOptions `json:"platform,omitempty"`
+	Ssh          SshConfig              `json:"ssh,omitempty"`
+	Timeout      string                 `json:"timeout"`
+	NetworkProxy NetworkProxyConfig     `json:"networkProxy,omitempty"`
+}
+
+type NetworkProxyConfig struct {
+	Enabled    bool   `json:"enabled"`
+	Addr       string `json:"addr,omitempty"`
+	GRPCTarget string `json:"grpcTarget,omitempty"`
+	HTTPTarget string `json:"httpTarget,omitempty"`
 }
 
 func BuildWorkspaceDaemonConfig(platformOptions devpod.PlatformOptions, workspaceConfig *provider2.Workspace, substitutionContext *config.SubstitutionContext, mergedConfig *config.MergedDevContainerConfig) (*DaemonConfig, error) {
