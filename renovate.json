@@ -34,6 +34,10 @@
       "matchManagers": ["cargo"],
       "automerge": true,
       "prPriority": 1
+    },
+    {
+      "matchPackageNames": ["@chakra-ui/react"],
+      "allowedVersions": "^2.0.0"
     }
   ]
 }

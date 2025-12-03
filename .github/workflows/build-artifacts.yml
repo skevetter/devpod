@@ -134,7 +134,7 @@ jobs:
           if-no-files-found: warn
 
   build-windows:
-    needs: [build-linux, build-macos]
+    needs: [build-linux]
     if: github.event_name == 'pull_request'|| (github.event_name == 'push' && github.ref == 'refs/heads/main') || inputs.platform == 'all' || inputs.platform == 'windows'
     runs-on: windows-latest
     name: windows-x86_64

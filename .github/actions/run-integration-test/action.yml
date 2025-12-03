@@ -61,10 +61,33 @@ runs:
     - name: pre-pull docker images
       shell: bash
       run: |
-        docker pull alpine
-        docker pull ubuntu
-        docker pull mcr.microsoft.com/devcontainers/go:1
-        docker pull mcr.microsoft.com/devcontainers/python:latest
+        pull_with_retry() {
+          local image=$1
+          local max_attempts=5
+          local attempt=1
+          local delay=3
+
+          while [ $attempt -le $max_attempts ]; do
+            echo "Pulling $image (attempt $attempt/$max_attempts)"
+            if docker pull "$image"; then
+              echo "Successfully pulled $image"
+              return 0
+            fi
+            if [ $attempt -lt $max_attempts ]; then
+              echo "Failed to pull $image, retrying in ${delay}s"
+              sleep $delay
+              delay=$((delay * 2))
+            fi
+            attempt=$((attempt + 1))
+          done
+          echo "Failed to pull $image after $max_attempts attempts"
+          return 1
+        }
+
+        pull_with_retry alpine
+        pull_with_retry ubuntu
+        pull_with_retry mcr.microsoft.com/devcontainers/go:1
+        pull_with_retry mcr.microsoft.com/devcontainers/python:latest
 
     # NOTE: engineerd/setup-kind does not work on Windows runners
     - name: setup kind
