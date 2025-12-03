@@ -57,8 +57,8 @@ runs:
       shell: bash
       run: chmod +x ${{ inputs.binary-path }}
 
+    # NOTE: Pre-pull commonly used docker images to speed up tests
     - name: pre-pull docker images
-      description: Pre-pull commonly used docker images to speed up tests
       shell: bash
       run: |
         docker pull alpine
