@@ -58,7 +58,10 @@ runs:
       run: chmod +x ${{ inputs.binary-path }}
 
     # NOTE: Pre-pull commonly used docker images to speed up tests
+    # with retry logic to handle transient network issues. Limited to 'up'
+    # tests to avoid unnecessary pulls.
     - name: pre-pull docker images
+      if: inputs.label == 'up'
       shell: bash
       run: |
         pull_with_retry() {
