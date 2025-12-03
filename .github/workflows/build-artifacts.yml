@@ -67,7 +67,7 @@ jobs:
           # TAURI_SIGNING_PRIVATE_KEY_PASSWORD:
 
       - name: upload CLI artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: linux-${{ matrix.target }}-cli
           path: artifacts/devpod-cli-*
@@ -75,7 +75,7 @@ jobs:
 
       - name: upload desktop app artifacts
         if: matrix.target == 'x86_64-unknown-linux-gnu'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: linux-${{ matrix.target }}-desktop
           path: desktop/src-tauri/target/${{ matrix.target }}/release/bundle/**/*
@@ -128,7 +128,7 @@ jobs:
           # TAURI_SIGNING_PRIVATE_KEY_PASSWORD:
 
       - name: upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: macos-${{ matrix.target }}
           path: |
@@ -179,7 +179,7 @@ jobs:
           # TAURI_SIGNING_PRIVATE_KEY_PASSWORD:
 
       - name: upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: windows-x86_64
           path: |
