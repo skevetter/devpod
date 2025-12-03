@@ -1,6 +1,6 @@
 {
   "name": "Python DevContainer",
-  "image": "mcr.microsoft.com/devcontainers/python:1",
+  "image": "mcr.microsoft.com/devcontainers/python:latest",
   "remoteEnv": {
     "DEVCONTAINER_TYPE": "python"
   }

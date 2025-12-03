@@ -64,7 +64,7 @@ runs:
         docker pull alpine
         docker pull ubuntu
         docker pull mcr.microsoft.com/devcontainers/go:1
-        docker pull mcr.microsoft.com/devcontainers/python:1
+        docker pull mcr.microsoft.com/devcontainers/python:latest
 
     # NOTE: engineerd/setup-kind does not work on Windows runners
     - name: setup kind
