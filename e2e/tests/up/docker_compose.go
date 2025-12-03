@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/loft-sh/log"
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
@@ -53,7 +53,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 				framework.ExpectNoError(err)
 				gomega.Expect(ids).To(gomega.HaveLen(1), "1 compose container to be created")
 
-				var containerDetails []types.ContainerJSON
+				var containerDetails []container.InspectResponse
 				err = dockerHelper.Inspect(ctx, ids, "container", &containerDetails)
 				framework.ExpectNoError(err)
 
@@ -77,7 +77,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 				framework.ExpectNoError(err)
 				gomega.Expect(ids).To(gomega.HaveLen(1), "1 compose container to be created")
 
-				var containerDetails []types.ContainerJSON
+				var containerDetails []container.InspectResponse
 				err = dockerHelper.Inspect(ctx, ids, "container", &containerDetails)
 				framework.ExpectNoError(err)
 
@@ -133,7 +133,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 				framework.ExpectNoError(err)
 				gomega.Expect(ids).To(gomega.HaveLen(1), "1 compose container to be created")
 
-				var containerDetails []types.ContainerJSON
+				var containerDetails []container.InspectResponse
 				err = dockerHelper.Inspect(ctx, ids, "container", &containerDetails)
 				framework.ExpectNoError(err)
 
@@ -189,7 +189,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 				framework.ExpectNoError(err)
 				gomega.Expect(ids).To(gomega.HaveLen(1), "1 compose container to be created")
 
-				var containerDetails []types.ContainerJSON
+				var containerDetails []container.InspectResponse
 				err = dockerHelper.Inspect(ctx, ids, "container", &containerDetails)
 				framework.ExpectNoError(err)
 
@@ -208,7 +208,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 				framework.ExpectNoError(err)
 				gomega.Expect(ids).To(gomega.HaveLen(1), "1 compose container to be created")
 
-				var containerDetails []types.ContainerJSON
+				var containerDetails []container.InspectResponse
 				err = dockerHelper.Inspect(ctx, ids, "container", &containerDetails)
 				framework.ExpectNoError(err)
 
@@ -229,7 +229,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 				framework.ExpectNoError(err)
 				gomega.Expect(ids).To(gomega.HaveLen(1), "1 compose container to be created")
 
-				var containerDetails []types.ContainerJSON
+				var containerDetails []container.InspectResponse
 				err = dockerHelper.Inspect(ctx, ids, "container", &containerDetails)
 				framework.ExpectNoError(err)
 
@@ -249,7 +249,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 				framework.ExpectNoError(err)
 				gomega.Expect(ids).To(gomega.HaveLen(1), "1 compose container to be created")
 
-				var containerDetails []types.ContainerJSON
+				var containerDetails []container.InspectResponse
 				err = dockerHelper.Inspect(ctx, ids, "container", &containerDetails)
 				framework.ExpectNoError(err)
 

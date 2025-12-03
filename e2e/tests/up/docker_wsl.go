@@ -10,7 +10,8 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
+
 	"github.com/loft-sh/log"
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
@@ -81,7 +82,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 				ginkgo.DeferCleanup(dockerHelper.Remove, ids[0])
 				ginkgo.DeferCleanup(dockerHelper.Stop, ids[0])
 
-				var containerDetails []types.ContainerJSON
+				var containerDetails []container.InspectResponse
 				err = dockerHelper.Inspect(ctx, ids, "container", &containerDetails)
 				framework.ExpectNoError(err)
 

@@ -5,6 +5,7 @@ on:
 
 jobs:
   commits:
+    name: Check Commits
     runs-on: ubuntu-latest
     permissions:
       contents: read

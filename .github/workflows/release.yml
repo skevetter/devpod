@@ -17,6 +17,7 @@ on:
 
 jobs:
   create-release:
+    name: Create Release
     permissions:
       contents: write
     runs-on: ubuntu-latest
@@ -87,6 +88,7 @@ jobs:
           fi
 
   build-linux:
+    name: Build Linux Release Artifacts ${{ matrix.settings.target }}
     needs: [create-release]
     permissions:
       contents: write
@@ -100,7 +102,6 @@ jobs:
           - target: aarch64-unknown-linux-gnu
             arch: arm64
             cli_only: true
-    name: linux-${{ matrix.settings.target }}
     runs-on: ubuntu-latest
 
     steps:
@@ -152,6 +153,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
   build-macos:
+    name: Build MacOS Release Artifacts ${{ matrix.settings.target }}
     needs: [create-release, build-linux]
     permissions:
       contents: write
@@ -163,7 +165,6 @@ jobs:
             arch: amd64
           - target: aarch64-apple-darwin
             arch: arm64
-    name: macos-${{ matrix.settings.target }}
     runs-on: macos-latest
 
     steps:
@@ -210,10 +211,10 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
   build-windows:
+    name: Build Windows Release Artifacts windows-x86_64-pc-windows-msvc
     needs: [create-release, build-linux]
     permissions:
       contents: write
-    name: windows-x86_64-pc-windows-msvc
     runs-on: windows-latest
 
     steps:
@@ -253,6 +254,7 @@ jobs:
           tauri_key_password: ${{ secrets.TAURI_KEY_PASSWORD }}
 
   publish:
+    name: Publish Release
     needs: [create-release, build-linux, build-macos, build-windows]
     if: needs.create-release.outputs.is_dry_run == 'false'
     permissions:
@@ -274,6 +276,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
   cleanup:
+    name: Cleanup Draft Release
     needs: [create-release, build-linux, build-macos, build-windows]
     if: always() && needs.create-release.outputs.is_dry_run == 'true' && inputs.auto_cleanup
     permissions:

@@ -10,7 +10,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/loft-sh/log"
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
@@ -61,7 +61,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 					if err != nil || len(ids) != 1 {
 						return false
 					}
-					var containerDetails []types.ContainerJSON
+					var containerDetails []container.InspectResponse
 					err = dockerHelper.Inspect(ctx, ids, "container", &containerDetails)
 					return err == nil && containerDetails[0].State.Running
 				}).Should(gomega.BeTrue(), "container should be running")
@@ -70,7 +70,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 				ginkgo.DeferCleanup(dockerHelper.Stop, ids[0])
 				ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, tempDir)
 
-				var containerDetails []types.ContainerJSON
+				var containerDetails []container.InspectResponse
 				err = dockerHelper.Inspect(ctx, ids, "container", &containerDetails)
 				framework.ExpectNoError(err)
 				gomega.Expect(containerDetails[0].Config.WorkingDir).To(gomega.Equal("/workspaces/e2e"))

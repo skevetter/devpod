@@ -18,13 +18,13 @@ on:
 
 jobs:
   build-linux:
+    name: Build Linux Artifacts ${{ matrix.target }}
     if: github.event_name == 'pull_request' || inputs.platform == 'all' || inputs.platform == 'linux'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         target: [x86_64-unknown-linux-gnu, aarch64-unknown-linux-gnu]
-    name: linux-${{ matrix.target }}
 
     steps:
       - uses: actions/checkout@v6
@@ -79,6 +79,7 @@ jobs:
           if-no-files-found: warn
 
   build-macos:
+    name: Build MacOS Artifacts ${{ matrix.target }}
     needs: [build-linux]
     if: github.event_name == 'pull_request'|| (github.event_name == 'push' && github.ref == 'refs/heads/main') || inputs.platform == 'all' || inputs.platform == 'macos'
     runs-on: macos-latest
@@ -86,7 +87,6 @@ jobs:
       fail-fast: false
       matrix:
         target: [x86_64-apple-darwin, aarch64-apple-darwin]
-    name: macos-${{ matrix.target }}
 
     steps:
       - uses: actions/checkout@v6
@@ -134,10 +134,10 @@ jobs:
           if-no-files-found: warn
 
   build-windows:
+    name: Build Windows Artifacts
     needs: [build-linux]
     if: github.event_name == 'pull_request'|| (github.event_name == 'push' && github.ref == 'refs/heads/main') || inputs.platform == 'all' || inputs.platform == 'windows'
     runs-on: windows-latest
-    name: windows-x86_64
 
     steps:
       - uses: actions/checkout@v6
