@@ -8,12 +8,14 @@ import (
 	"net"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/loft-sh/log"
 	"github.com/skevetter/devpod/cmd/flags"
 	"github.com/skevetter/devpod/pkg/agent/tunnel"
 	"github.com/skevetter/devpod/pkg/agent/tunnelserver"
 	"github.com/skevetter/devpod/pkg/credentials"
+	"github.com/skevetter/devpod/pkg/daemon/workspace/network"
 	"github.com/skevetter/devpod/pkg/dockercredentials"
 	"github.com/skevetter/devpod/pkg/gitcredentials"
 	"github.com/skevetter/devpod/pkg/gitsshsigning"
@@ -35,6 +37,10 @@ type CredentialsServerCmd struct {
 
 	ForwardPorts      bool
 	GitUserSigningKey string
+
+	// HTTP tunnel options
+	HTTPTunnelClient string
+	HTTPTunnelPort   string
 }
 
 // NewCredentialsServerCmd creates a new command
@@ -60,6 +66,8 @@ func NewCredentialsServerCmd(flags *flags.GlobalFlags) *cobra.Command {
 	credentialsServerCmd.Flags().BoolVar(&cmd.ForwardPorts, "forward-ports", false, "If true will automatically try to forward open ports within the container")
 	credentialsServerCmd.Flags().StringVar(&cmd.GitUserSigningKey, "git-user-signing-key", "", "")
 	credentialsServerCmd.Flags().StringVar(&cmd.User, "user", "", "The user to use")
+	credentialsServerCmd.Flags().StringVar(&cmd.HTTPTunnelClient, "http-tunnel-client", "", "HTTP tunnel client address (host:port)")
+	credentialsServerCmd.Flags().StringVar(&cmd.HTTPTunnelPort, "http-tunnel-port", "", "HTTP tunnel server port")
 	_ = credentialsServerCmd.MarkFlagRequired("user")
 
 	return credentialsServerCmd
@@ -67,10 +75,20 @@ func NewCredentialsServerCmd(flags *flags.GlobalFlags) *cobra.Command {
 
 // Run runs the command logic
 func (cmd *CredentialsServerCmd) Run(ctx context.Context, port int) error {
-	// create a grpc client
-	tunnelClient, err := tunnelserver.NewTunnelClient(os.Stdin, os.Stdout, true, ExitCodeIO)
-	if err != nil {
-		return fmt.Errorf("error creating tunnel client: %w", err)
+	var tunnelClient tunnel.TunnelClient
+	var err error
+
+	// Use transport layer if HTTP tunnel is configured
+	if cmd.HTTPTunnelClient != "" {
+		logger := log.Default.ErrorStreamOnly()
+		transport := cmd.setupTransport(logger)
+		tunnelClient = network.NewTransportTunnelClient(transport)
+	} else {
+		// Fallback to stdio tunnel client
+		tunnelClient, err = tunnelserver.NewTunnelClient(os.Stdin, os.Stdout, true, ExitCodeIO)
+		if err != nil {
+			return fmt.Errorf("error creating tunnel client: %w", err)
+		}
 	}
 
 	// this message serves as a ping to the client
@@ -149,6 +167,29 @@ func (cmd *CredentialsServerCmd) Run(ctx context.Context, port int) error {
 	}
 
 	return credentials.RunCredentialsServer(ctx, port, tunnelClient, log)
+}
+
+// setupTransport creates a transport with HTTP tunnel and stdio fallback
+func (cmd *CredentialsServerCmd) setupTransport(log log.Logger) network.Transport {
+	// Create stdio transport as fallback
+	stdioTransport := network.NewStdioTransport(os.Stdin, os.Stdout)
+
+	// If HTTP tunnel client is specified, use it with fallback
+	if cmd.HTTPTunnelClient != "" {
+		parts := strings.Split(cmd.HTTPTunnelClient, ":")
+		if len(parts) == 2 {
+			host := parts[0]
+			port := parts[1]
+			log.Debugf("Using HTTP tunnel to %s:%s with stdio fallback", host, port)
+			httpTransport := network.NewHTTPTransport(host, port)
+			return network.NewFallbackTransport(httpTransport, stdioTransport)
+		}
+		log.Warnf("Invalid HTTP tunnel client format: %s, using stdio only", cmd.HTTPTunnelClient)
+	}
+
+	// Default to stdio only
+	log.Debugf("Using stdio transport")
+	return stdioTransport
 }
 
 func configureGitUserLocally(ctx context.Context, userName string, client tunnel.TunnelClient) error {

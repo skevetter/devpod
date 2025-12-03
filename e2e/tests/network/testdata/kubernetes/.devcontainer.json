@@ -1,0 +1,12 @@
+{
+  "name": "Go with Network Proxy",
+  "image": "mcr.microsoft.com/devcontainers/go:1",
+  "customizations": {
+    "devpod": {
+      "networkProxy": {
+        "enabled": true,
+        "addr": "localhost:9090"
+      }
+    }
+  }
+}

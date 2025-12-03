@@ -1,0 +1,67 @@
+package local
+
+import (
+	"context"
+	"fmt"
+	"net"
+
+	"github.com/loft-sh/log"
+	"github.com/mwitkow/grpc-proxy/proxy"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+)
+
+// GRPCProxyServer is a client-side gRPC proxy
+type GRPCProxyServer struct {
+	targetAddr string
+	listener   net.Listener
+	server     *grpc.Server
+	conn       *grpc.ClientConn
+	log        log.Logger
+}
+
+// NewGRPCProxyServer creates a new client-side gRPC proxy
+func NewGRPCProxyServer(targetAddr string, log log.Logger) *GRPCProxyServer {
+	return &GRPCProxyServer{
+		targetAddr: targetAddr,
+		log:        log,
+	}
+}
+
+// Start starts the gRPC proxy server
+func (s *GRPCProxyServer) Start(ctx context.Context, listener net.Listener) error {
+	s.listener = listener
+
+	// Create director
+	director := func(ctx context.Context, fullMethodName string) (context.Context, *grpc.ClientConn, error) {
+		if s.conn == nil {
+			conn, err := grpc.NewClient(s.targetAddr,
+				grpc.WithTransportCredentials(insecure.NewCredentials()),
+			)
+			if err != nil {
+				return nil, nil, fmt.Errorf("failed to dial target: %w", err)
+			}
+			s.conn = conn
+		}
+		return ctx, s.conn, nil
+	}
+
+	// Create server
+	s.server = grpc.NewServer(
+		grpc.UnknownServiceHandler(proxy.TransparentHandler(director)),
+	)
+
+	s.log.Infof("Starting gRPC proxy on %s", listener.Addr())
+	return s.server.Serve(listener)
+}
+
+// Stop stops the gRPC proxy server
+func (s *GRPCProxyServer) Stop() error {
+	if s.server != nil {
+		s.server.GracefulStop()
+	}
+	if s.conn != nil {
+		return s.conn.Close()
+	}
+	return nil
+}

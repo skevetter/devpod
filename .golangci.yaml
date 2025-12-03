@@ -2,3 +2,21 @@ version: '2'
 run:
   timeout: 5m
   concurrency: 8
+
+linters:
+  enable:
+    - staticcheck
+    - unused
+    - govet
+
+linters-settings:
+  staticcheck:
+    checks: ["all"]  # Includes SA1019 for deprecated function detection
+
+issues:
+  # Don't exclude SA1019 (deprecation warnings)
+  exclude-use-default: false
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - errcheck

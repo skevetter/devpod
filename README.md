@@ -43,3 +43,29 @@ Compared to hosted services such as Github Codespaces, JetBrains Spaces, or Goog
 * **Open-Source**: DevPod is 100% open-source and extensible. A provider doesn't exist? Just create your own.
 * **Rich feature set**: DevPod already supports prebuilds, auto inactivity shutdown, git & docker credentials sync, and many more features to come.
 * **Desktop App**: DevPod comes with an easy-to-use desktop application that abstracts all the complexity away. If you want to build your own integration, DevPod offers a feature-rich CLI as well.
+
+## Network Proxy Features
+
+DevPod includes a built-in network proxy system for advanced networking scenarios:
+
+* **Port Forwarding**: Forward local ports to remote services with bidirectional data transfer
+* **SSH Tunneling**: Create secure SSH-style tunnels for port forwarding
+* **gRPC Proxy**: Reverse proxy for gRPC services with automatic routing
+* **HTTP Proxy**: Full HTTP proxy with connection hijacking support
+* **Connection Management**: Automatic connection tracking and heartbeat monitoring
+* **Platform Credentials**: Secure credential forwarding for git and docker
+
+### Quick Start
+
+```bash
+# Start network proxy server
+devpod agent container network-proxy --addr localhost:9090
+
+# Forward a port
+devpod agent container port-forward --local-port 8080 --remote-addr api:80
+
+# Create SSH tunnel
+devpod agent container ssh-tunnel --remote-addr ssh-server:22
+```
+
+See [Network Proxy Documentation](docs/network-proxy.md) for more details.

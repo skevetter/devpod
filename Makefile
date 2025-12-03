@@ -10,6 +10,15 @@ PLATFORM_HOST := localhost:8080
 build:
 	SKIP_INSTALL=$(SKIP_INSTALL) BUILD_PLATFORMS=$(GOOS) BUILD_ARCHS=$(GOARCH) ./hack/rebuild.sh
 
+# Run linter with deprecation checks
+.PHONY: lint
+lint:
+	@echo "Running linter with deprecation checks..."
+	@golangci-lint run ./...
+	@echo "Running staticcheck for deprecations (SA1019)..."
+	@staticcheck -checks=SA1019 ./...
+	@echo "✓ No deprecated functions found"
+
 # Run the desktop app
 .PHONY: run-desktop
 run-desktop: build

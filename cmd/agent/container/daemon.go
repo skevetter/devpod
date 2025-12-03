@@ -18,6 +18,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/agent"
 	agentd "github.com/skevetter/devpod/pkg/daemon/agent"
+	"github.com/skevetter/devpod/pkg/daemon/workspace/network"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	"github.com/skevetter/devpod/pkg/platform/client"
 	"github.com/skevetter/devpod/pkg/ts"
@@ -223,6 +224,13 @@ func runNetworkServer(ctx context.Context, cmd *DaemonCmd, errChan chan<- error,
 		return
 	}
 	logger := initLogging()
+
+	// Start our network proxy server if configured
+	if cmd.Config.NetworkProxy.Enabled {
+		wg.Add(1)
+		go runNetworkProxyServer(ctx, cmd, errChan, wg, logger)
+	}
+
 	config := client.NewConfig()
 	config.AccessKey = cmd.Config.Platform.AccessKey
 	config.Host = "https://" + cmd.Config.Platform.PlatformHost
@@ -244,6 +252,26 @@ func runNetworkServer(ctx context.Context, cmd *DaemonCmd, errChan chan<- error,
 	}, logger)
 	if err := tsServer.Start(ctx); err != nil {
 		errChan <- fmt.Errorf("network server: %w", err)
+	}
+}
+
+// runNetworkProxyServer starts the network proxy server
+func runNetworkProxyServer(ctx context.Context, cmd *DaemonCmd, errChan chan<- error, wg *sync.WaitGroup, logger log.Logger) {
+	defer wg.Done()
+
+	// Import network package
+	// This will be added at the top of the file
+	networkConfig := network.ServerConfig{
+		Addr:           cmd.Config.NetworkProxy.Addr,
+		GRPCTargetAddr: cmd.Config.NetworkProxy.GRPCTarget,
+		HTTPTargetAddr: cmd.Config.NetworkProxy.HTTPTarget,
+	}
+
+	server := network.NewServer(networkConfig, logger)
+	logger.Infof("Starting network proxy server on %s", networkConfig.Addr)
+
+	if err := server.Start(ctx); err != nil {
+		errChan <- fmt.Errorf("network proxy server: %w", err)
 	}
 }
 

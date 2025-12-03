@@ -11,3 +11,4 @@
 /package-lock.json
 /tagsvendor/
 node_modules/
+coverage.out

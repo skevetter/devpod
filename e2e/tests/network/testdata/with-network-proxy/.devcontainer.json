@@ -1,0 +1,12 @@
+{
+  "name": "With Network Proxy",
+  "image": "python:3.11-slim",
+  "customizations": {
+    "devpod": {
+      "networkProxy": {
+        "enabled": true,
+        "addr": "localhost:9090"
+      }
+    }
+  }
+}
