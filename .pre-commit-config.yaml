@@ -40,7 +40,7 @@ repos:
       - id: biome-ci
         exclude: '^(\.github/actions/|\.vscode/|desktop/|docs/|examples/)'
   - repo: https://github.com/gitleaks/gitleaks
-    rev: v8.28.0
+    rev: v8.30.0
     hooks:
       - id: gitleaks
   - repo: https://github.com/commitizen-tools/commitizen
