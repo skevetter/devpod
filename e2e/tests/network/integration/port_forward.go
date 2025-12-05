@@ -47,12 +47,12 @@ var _ = DevPodDescribe("port forwarding", func() {
 			err = f.DevPodUp(ctx, tempDir)
 			framework.ExpectNoError(err)
 
-			_, err = f.DevPodSSH(ctx, tempDir, "nohup python3 /tmp/server.py > /tmp/server.log 2>&1 &")
+			_, err = f.DevPodSSH(ctx, tempDir, "/tmp/start_server.sh")
 			framework.ExpectNoError(err)
 
 			time.Sleep(3 * time.Second)
 
-			out, err := f.DevPodSSH(ctx, tempDir, "curl -s http://localhost:8080 || echo 'failed'")
+			out, err := f.DevPodSSH(ctx, tempDir, "python3 -c 'import urllib.request; print(urllib.request.urlopen(\"http://localhost:8080\").read().decode())' 2>/dev/null || echo 'failed'")
 			framework.ExpectNoError(err)
 			framework.ExpectEqual(strings.Contains(out, "Hello from DevPod"), true)
 		})
