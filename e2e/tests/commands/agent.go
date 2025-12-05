@@ -3,7 +3,6 @@ package commands
 import (
 	"context"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/onsi/ginkgo/v2"
@@ -22,22 +21,16 @@ var _ = DevPodDescribe("agent commands", func() {
 
 		ginkgo.It("devpod agent container command works", ginkgo.Label("cli-agent"), func() {
 			ctx := context.Background()
-			f := framework.NewDefaultFramework(initialDir + "/../../bin")
+			f := setupDockerProvider(initialDir + "/bin")
 
-			_ = f.DevPodProviderDelete(ctx, "docker")
-			err := f.DevPodProviderAdd(ctx, "docker")
+			tempDir, err := framework.CopyToTempDir("tests/commands/testdata/simple-app")
 			framework.ExpectNoError(err)
-			err = f.DevPodProviderUse(ctx, "docker")
-			framework.ExpectNoError(err)
+			ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
 
-			testDir := filepath.Join(initialDir, "testdata", "simple-app")
-			name := "test-cli-agent"
-			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), name)
-
-			err = f.DevPodUp(ctx, testDir, "--id", name)
+			err = f.DevPodUp(ctx, tempDir)
 			framework.ExpectNoError(err)
 
-			out, err := f.DevPodSSH(ctx, name, "/usr/local/bin/devpod agent container 2>&1 || true")
+			out, err := f.DevPodSSH(ctx, tempDir, "/usr/local/bin/devpod agent container 2>&1 || true")
 			framework.ExpectNoError(err)
 			framework.ExpectEqual(len(strings.TrimSpace(out)) > 0, true, "command should produce output")
 		})

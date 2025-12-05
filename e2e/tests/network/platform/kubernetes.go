@@ -3,7 +3,6 @@ package platform
 import (
 	"context"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/onsi/ginkgo/v2"
@@ -22,28 +21,26 @@ var _ = DevPodDescribe("kubernetes integration", func() {
 
 		ginkgo.It("validates network proxy in kubernetes pod", ginkgo.Label("networkproxy-kubernetes"), func() {
 			ctx := context.Background()
-			f := framework.NewDefaultFramework(initialDir + "/../../bin")
-
-			testDir := filepath.Join(initialDir, "testdata", "kubernetes")
+			f := framework.NewDefaultFramework(initialDir + "/bin")
+			tempDir, err := framework.CopyToTempDir("tests/network/testdata/kubernetes")
+			framework.ExpectNoError(err)
 
 			_ = f.DevPodProviderDelete(ctx, "kubernetes")
-			err := f.DevPodProviderAdd(ctx, "kubernetes", "-o", "KUBERNETES_NAMESPACE=devpod")
+			err = f.DevPodProviderAdd(ctx, "kubernetes", "-o", "KUBERNETES_NAMESPACE=devpod")
 			framework.ExpectNoError(err)
 			ginkgo.DeferCleanup(func() {
-				_ = f.DevPodProviderDelete(ctx, "kubernetes")
+				err = f.DevPodProviderDelete(ctx, "kubernetes")
+				framework.ExpectNoError(err)
 			})
 
-			// Create workspace
-			err = f.DevPodUp(ctx, testDir)
+			err = f.DevPodUp(ctx, tempDir)
 			framework.ExpectNoError(err)
 
-			// Verify pod is accessible
-			out, err := f.DevPodSSH(ctx, testDir, "echo -n 'kubernetes'")
+			out, err := f.DevPodSSH(ctx, tempDir, "echo -n 'kubernetes'")
 			framework.ExpectNoError(err)
 			framework.ExpectEqual(strings.TrimSpace(out), "kubernetes")
 
-			// Cleanup
-			err = f.DevPodWorkspaceDelete(ctx, testDir)
+			err = f.DevPodWorkspaceDelete(ctx, tempDir)
 			framework.ExpectNoError(err)
 		})
 	})

@@ -202,13 +202,48 @@ func (f *Framework) DevPodProviderAdd(ctx context.Context, args ...string) error
 		// is called to delete the workspace. The workspace is linked to the
 		// provider and the provider cannot be deleted until the workspace is deleted.
 		if !strings.Contains(stderr, "already exists") {
-			return fmt.Errorf("devpod provider add failed: %s", stderr)
+			return fmt.Errorf("devpod provider add failed %s", stderr)
 		}
 	}
 	return nil
 }
 
+// CleanupProviderWorkspaces deletes all workspaces using the specified provider
+// This is useful to cleanup dangling workspaces when running tests locally and you
+// create/delete providers multiple times.
+func (f *Framework) CleanupProviderWorkspaces(ctx context.Context, providerName string) error {
+	workspaces, err := f.DevPodListParsed(ctx)
+	if err != nil {
+		return err
+	}
+
+	for _, ws := range workspaces {
+		if ws.Provider.Name == providerName {
+			_ = f.DevPodWorkspaceDelete(ctx, ws.ID)
+		}
+	}
+
+	return nil
+}
+
+// SetupDockerProvider sets up the docker provider for testing
+func (f *Framework) SetupDockerProvider(ctx context.Context) error {
+	_ = f.DevPodProviderDelete(ctx, "docker")
+	err := f.DevPodProviderAdd(ctx, "docker", "-o", "DOCKER_PATH=docker")
+	if err != nil && !strings.Contains(err.Error(), "already exists") {
+		return err
+	}
+	return f.DevPodProviderUse(ctx, "docker")
+}
+
 func (f *Framework) DevPodProviderDelete(ctx context.Context, args ...string) error {
+	// NOTE: Enabled only when running locally to cleanup existing workspaces. There is a
+	// race condition when multiple tests run in parallel and try to delete the same provider
+	// that causes failures.
+	// if len(args) > 0 {
+	// 	_ = f.CleanupProviderWorkspaces(ctx, args[0])
+	// }
+
 	baseArgs := []string{"provider", "delete"}
 	baseArgs = append(baseArgs, args...)
 	err := f.ExecCommand(ctx, false, false, "", baseArgs)

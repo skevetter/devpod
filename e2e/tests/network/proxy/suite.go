@@ -13,5 +13,5 @@ func TestProxy(t *testing.T) {
 }
 
 func DevPodDescribe(text string, body func()) bool {
-	return ginkgo.Describe("[network:proxy] "+text, body)
+	return ginkgo.Describe("[network:proxy] "+text, ginkgo.Label("network"), body)
 }

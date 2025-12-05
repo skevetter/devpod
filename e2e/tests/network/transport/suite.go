@@ -13,5 +13,5 @@ func TestTransport(t *testing.T) {
 }
 
 func DevPodDescribe(text string, body func()) bool {
-	return ginkgo.Describe("[network:transport] "+text, body)
+	return ginkgo.Describe("[network:transport] "+text, ginkgo.Label("network"), body)
 }

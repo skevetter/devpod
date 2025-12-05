@@ -3,8 +3,6 @@ package integration
 import (
 	"context"
 	"os"
-	"path/filepath"
-	"strings"
 
 	"github.com/onsi/ginkgo/v2"
 	"github.com/skevetter/devpod/e2e/framework"
@@ -13,66 +11,47 @@ import (
 var _ = DevPodDescribe("credentials forwarding", func() {
 	ginkgo.Context("platform credentials", ginkgo.Label("credentials"), func() {
 		var initialDir string
+		var f *framework.Framework
 
 		ginkgo.BeforeEach(func() {
 			var err error
 			initialDir, err = os.Getwd()
 			framework.ExpectNoError(err)
+			f = setupDockerProvider(initialDir + "/bin")
 		})
 
 		ginkgo.It("verifies git credential helper configured", ginkgo.Label("git-credentials"), func() {
 			ctx := context.Background()
-			f := framework.NewDefaultFramework(initialDir + "/../../bin")
 
-			_ = f.DevPodProviderDelete(ctx, "docker")
-			err := f.DevPodProviderAdd(ctx, "docker")
+			tempDir, err := framework.CopyToTempDir("tests/network/testdata/with-network-proxy")
 			framework.ExpectNoError(err)
-			err = f.DevPodProviderUse(ctx, "docker")
-			framework.ExpectNoError(err)
+			ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
 
-			testDir := filepath.Join(initialDir, "testdata", "with-network-proxy")
-			name := "test-git-creds"
-			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), name)
-
-			err = f.DevPodUp(ctx, testDir, "--id", name)
+			err = f.DevPodUp(ctx, tempDir)
 			framework.ExpectNoError(err)
 
-			// Check if git is available (may not be in slim images)
-			out, err := f.DevPodSSH(ctx, name, "which git || echo 'not installed'")
-			if strings.Contains(out, "not installed") {
-				ginkgo.Skip("Git not installed in container")
-			}
-
-			// Check git credential helper
-			out, err = f.DevPodSSH(ctx, name, "git config --global credential.helper || echo 'not configured'")
+			// Make sure the image git installed for this test
+			_, err = f.DevPodSSH(ctx, tempDir, "which git || echo 'not installed'")
+			framework.ExpectNoError(err)
+			_, err = f.DevPodSSH(ctx, tempDir, "git config --global credential.helper || echo 'not configured'")
 			framework.ExpectNoError(err)
 
-			// Should have credential helper configured or be not configured (both valid)
 			framework.ExpectEqual(err == nil, true)
 		})
 
 		ginkgo.It("verifies docker config exists", ginkgo.Label("docker-credentials"), func() {
 			ctx := context.Background()
-			f := framework.NewDefaultFramework(initialDir + "/../../bin")
 
-			_ = f.DevPodProviderDelete(ctx, "docker")
-			err := f.DevPodProviderAdd(ctx, "docker")
+			tempDir, err := framework.CopyToTempDir("tests/network/testdata/simple-app")
 			framework.ExpectNoError(err)
-			err = f.DevPodProviderUse(ctx, "docker")
-			framework.ExpectNoError(err)
+			ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
 
-			testDir := filepath.Join(initialDir, "testdata", "simple-app")
-			name := "test-docker-creds"
-			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), name)
-
-			err = f.DevPodUp(ctx, testDir, "--id", name)
+			err = f.DevPodUp(ctx, tempDir)
 			framework.ExpectNoError(err)
 
-			// Check if docker config directory exists
-			_, err = f.DevPodSSH(ctx, name, "test -d ~/.docker && echo 'exists' || echo 'not exists'")
+			_, err = f.DevPodSSH(ctx, tempDir, "test -d ~/.docker && echo 'exists' || echo 'not exists'")
 			framework.ExpectNoError(err)
 
-			// Docker config may or may not exist (both valid)
 			framework.ExpectEqual(err == nil, true)
 		})
 	})

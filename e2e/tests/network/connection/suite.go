@@ -13,5 +13,5 @@ func TestConnection(t *testing.T) {
 }
 
 func DevPodDescribe(text string, body func()) bool {
-	return ginkgo.Describe("[network:connection] "+text, body)
+	return ginkgo.Describe("[network:connection] "+text, ginkgo.Label("network"), body)
 }

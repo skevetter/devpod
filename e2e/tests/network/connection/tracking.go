@@ -3,7 +3,6 @@ package connection
 import (
 	"context"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/onsi/ginkgo/v2"
@@ -22,23 +21,16 @@ var _ = DevPodDescribe("connection tracking", func() {
 
 		ginkgo.It("tracks active connections", ginkgo.Label("connection-tracking"), func() {
 			ctx := context.Background()
-			f := framework.NewDefaultFramework(initialDir + "/../../bin")
+			f := setupDockerProvider(initialDir + "/bin")
 
-			_ = f.DevPodProviderDelete(ctx, "docker")
-			err := f.DevPodProviderAdd(ctx, "docker")
+			tempDir, err := framework.CopyToTempDir("tests/network/testdata/with-network-proxy")
 			framework.ExpectNoError(err)
-			err = f.DevPodProviderUse(ctx, "docker")
-			framework.ExpectNoError(err)
+			ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
 
-			testDir := filepath.Join(initialDir, "testdata", "with-network-proxy")
-			name := "test-connection-tracking"
-			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), name)
-
-			err = f.DevPodUp(ctx, testDir, "--id", name)
+			err = f.DevPodUp(ctx, tempDir)
 			framework.ExpectNoError(err)
 
-			// Verify workspace is accessible (creates connection)
-			out, err := f.DevPodSSH(ctx, name, "echo 'connected'")
+			out, err := f.DevPodSSH(ctx, tempDir, "echo 'connected'")
 			framework.ExpectNoError(err)
 			framework.ExpectEqual(strings.TrimSpace(out), "connected")
 		})

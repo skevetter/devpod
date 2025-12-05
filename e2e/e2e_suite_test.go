@@ -1,7 +1,9 @@
 package e2e
 
 import (
+	"context"
 	"os"
+	"path/filepath"
 	"runtime"
 	"testing"
 	"time"
@@ -14,6 +16,7 @@ import (
 
 	// Register tests
 	_ "github.com/skevetter/devpod/e2e/tests/build"
+	_ "github.com/skevetter/devpod/e2e/tests/commands"
 	_ "github.com/skevetter/devpod/e2e/tests/context"
 	_ "github.com/skevetter/devpod/e2e/tests/dockerinstall"
 	_ "github.com/skevetter/devpod/e2e/tests/ide"
@@ -29,6 +32,13 @@ import (
 	_ "github.com/skevetter/devpod/e2e/tests/ssh"
 	_ "github.com/skevetter/devpod/e2e/tests/up"
 )
+
+var _ = ginkgo.BeforeSuite(func() {
+	initialDir, _ := os.Getwd()
+	binDir := filepath.Join(initialDir, "bin")
+	f := framework.NewDefaultFramework(binDir)
+	_ = f.CleanupProviderWorkspaces(context.Background(), "docker")
+})
 
 // TestRunE2ETests checks configuration parameters (specified through flags) and then runs
 // E2E tests using the Ginkgo runner.

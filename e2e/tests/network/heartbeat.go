@@ -14,28 +14,23 @@ import (
 var _ = DevPodDescribe("heartbeat timeout", func() {
 	ginkgo.Context("stale connection removal", ginkgo.Label("heartbeat"), func() {
 		var initialDir string
+		var f *framework.Framework
 
 		ginkgo.BeforeEach(func() {
 			var err error
 			initialDir, err = os.Getwd()
 			framework.ExpectNoError(err)
+			f = setupDockerProvider(initialDir + "/bin")
 		})
 
 		ginkgo.It("maintains connection with regular activity", ginkgo.Label("heartbeat-active"), func() {
 			ctx := context.Background()
-			f := framework.NewDefaultFramework(initialDir + "/../../bin")
-
-			_ = f.DevPodProviderDelete(ctx, "docker")
-			err := f.DevPodProviderAdd(ctx, "docker")
-			framework.ExpectNoError(err)
-			err = f.DevPodProviderUse(ctx, "docker")
-			framework.ExpectNoError(err)
 
 			testDir := filepath.Join(initialDir, "testdata", "with-network-proxy")
 			name := "test-heartbeat-active"
 			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), name)
 
-			err = f.DevPodUp(ctx, testDir, "--id", name)
+			err := f.DevPodUp(ctx, testDir, "--id", name)
 			framework.ExpectNoError(err)
 
 			// Make connections every 2 seconds for 10 seconds
@@ -46,7 +41,6 @@ var _ = DevPodDescribe("heartbeat timeout", func() {
 				time.Sleep(2 * time.Second)
 			}
 
-			// Connection should still work
 			out, err := f.DevPodSSH(ctx, name, "echo 'still active'")
 			framework.ExpectNoError(err)
 			framework.ExpectEqual(strings.TrimSpace(out), "still active")
@@ -54,7 +48,7 @@ var _ = DevPodDescribe("heartbeat timeout", func() {
 
 		ginkgo.It("connection survives short idle period", ginkgo.Label("heartbeat-short-idle"), func() {
 			ctx := context.Background()
-			f := framework.NewDefaultFramework(initialDir + "/../../bin")
+			f := framework.NewDefaultFramework(initialDir + "/bin")
 
 			_ = f.DevPodProviderDelete(ctx, "docker")
 			err := f.DevPodProviderAdd(ctx, "docker")
@@ -74,7 +68,7 @@ var _ = DevPodDescribe("heartbeat timeout", func() {
 			framework.ExpectNoError(err)
 			framework.ExpectEqual(strings.TrimSpace(out), "before")
 
-			// Wait 10 seconds (well below typical 90s timeout)
+			// Wait 10 seconds (well below timeout)
 			time.Sleep(10 * time.Second)
 
 			// Should still work
@@ -85,19 +79,15 @@ var _ = DevPodDescribe("heartbeat timeout", func() {
 
 		ginkgo.It("workspace remains accessible after extended idle", ginkgo.Label("heartbeat-extended-idle"), func() {
 			ctx := context.Background()
-			f := framework.NewDefaultFramework(initialDir + "/../../bin")
 
-			_ = f.DevPodProviderDelete(ctx, "docker")
-			err := f.DevPodProviderAdd(ctx, "docker")
+			tempDir, err := framework.CopyToTempDir("tests/network/testdata/simple-app")
 			framework.ExpectNoError(err)
-			err = f.DevPodProviderUse(ctx, "docker")
-			framework.ExpectNoError(err)
+			ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
 
-			testDir := filepath.Join(initialDir, "testdata", "simple-app")
 			name := "test-heartbeat-extended"
 			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), name)
 
-			err = f.DevPodUp(ctx, testDir, "--id", name)
+			err = f.DevPodUp(ctx, tempDir, "--id", name)
 			framework.ExpectNoError(err)
 
 			// First connection
@@ -116,20 +106,16 @@ var _ = DevPodDescribe("heartbeat timeout", func() {
 
 		ginkgo.It("handles connection after workspace restart", ginkgo.Label("heartbeat-restart"), func() {
 			ctx := context.Background()
-			f := framework.NewDefaultFramework(initialDir + "/../../bin")
 
-			_ = f.DevPodProviderDelete(ctx, "docker")
-			err := f.DevPodProviderAdd(ctx, "docker")
+			tempDir, err := framework.CopyToTempDir("tests/network/testdata/simple-app")
 			framework.ExpectNoError(err)
-			err = f.DevPodProviderUse(ctx, "docker")
-			framework.ExpectNoError(err)
+			ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
 
-			testDir := filepath.Join(initialDir, "testdata", "simple-app")
 			name := "test-heartbeat-restart"
 			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), name)
 
 			// Create workspace
-			err = f.DevPodUp(ctx, testDir, "--id", name)
+			err = f.DevPodUp(ctx, tempDir, "--id", name)
 			framework.ExpectNoError(err)
 
 			// First connection
@@ -145,7 +131,7 @@ var _ = DevPodDescribe("heartbeat timeout", func() {
 			time.Sleep(5 * time.Second)
 
 			// Start workspace again
-			err = f.DevPodUp(ctx, testDir, "--id", name)
+			err = f.DevPodUp(ctx, tempDir, "--id", name)
 			framework.ExpectNoError(err)
 
 			// Should be able to connect

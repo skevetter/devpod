@@ -1,6 +1,6 @@
 {
   "name": "With Network Proxy",
-  "image": "python:3.11-slim",
+  "image": "mcr.microsoft.com/devcontainers/python:latest",
   "customizations": {
     "devpod": {
       "networkProxy": {
@@ -8,5 +8,8 @@
         "addr": "localhost:9090"
       }
     }
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {}
   }
 }

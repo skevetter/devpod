@@ -13,5 +13,5 @@ func TestPlatform(t *testing.T) {
 }
 
 func DevPodDescribe(text string, body func()) bool {
-	return ginkgo.Describe("[network:platform] "+text, body)
+	return ginkgo.Describe("[network:platform] "+text, ginkgo.Label("network"), body)
 }

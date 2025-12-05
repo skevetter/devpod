@@ -3,7 +3,6 @@ package platform
 import (
 	"context"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/onsi/ginkgo/v2"
@@ -13,55 +12,41 @@ import (
 var _ = DevPodDescribe("daemon integration", func() {
 	ginkgo.Context("network proxy daemon", ginkgo.Label("daemon"), func() {
 		var initialDir string
+		var f *framework.Framework
 
 		ginkgo.BeforeEach(func() {
 			var err error
 			initialDir, err = os.Getwd()
 			framework.ExpectNoError(err)
+			f = setupDockerProvider(initialDir + "/bin")
 		})
 
 		ginkgo.It("workspace starts successfully without network proxy", ginkgo.Label("daemon-default"), func() {
 			ctx := context.Background()
-			f := framework.NewDefaultFramework(initialDir + "/../../bin")
 
-			_ = f.DevPodProviderDelete(ctx, "docker")
-			err := f.DevPodProviderAdd(ctx, "docker")
+			tempDir, err := framework.CopyToTempDir("tests/network/testdata/simple-app")
 			framework.ExpectNoError(err)
-			err = f.DevPodProviderUse(ctx, "docker")
-			framework.ExpectNoError(err)
+			ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
 
-			testDir := filepath.Join(initialDir, "testdata", "simple-app")
-			name := "test-default-proxy"
-			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), name)
-
-			err = f.DevPodUp(ctx, testDir, "--id", name)
+			err = f.DevPodUp(ctx, tempDir)
 			framework.ExpectNoError(err)
 
-			// Verify workspace is accessible
-			out, err := f.DevPodSSH(ctx, name, "echo 'workspace running'")
+			out, err := f.DevPodSSH(ctx, tempDir, "echo 'workspace running'")
 			framework.ExpectNoError(err)
 			framework.ExpectEqual(strings.TrimSpace(out), "workspace running")
 		})
 
 		ginkgo.It("workspace starts successfully with network proxy config", ginkgo.Label("daemon-enabled"), func() {
 			ctx := context.Background()
-			f := framework.NewDefaultFramework(initialDir + "/../../bin")
 
-			_ = f.DevPodProviderDelete(ctx, "docker")
-			err := f.DevPodProviderAdd(ctx, "docker")
+			tempDir, err := framework.CopyToTempDir("tests/network/testdata/with-network-proxy")
 			framework.ExpectNoError(err)
-			err = f.DevPodProviderUse(ctx, "docker")
-			framework.ExpectNoError(err)
+			ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
 
-			testDir := filepath.Join(initialDir, "testdata", "with-network-proxy")
-			name := "test-enabled-proxy"
-			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), name)
-
-			err = f.DevPodUp(ctx, testDir, "--id", name)
+			err = f.DevPodUp(ctx, tempDir)
 			framework.ExpectNoError(err)
 
-			// Verify workspace is accessible
-			out, err := f.DevPodSSH(ctx, name, "echo 'workspace running'")
+			out, err := f.DevPodSSH(ctx, tempDir, "echo 'workspace running'")
 			framework.ExpectNoError(err)
 			framework.ExpectEqual(strings.TrimSpace(out), "workspace running")
 		})
