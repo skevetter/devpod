@@ -1,4 +1,4 @@
-package proxy
+package network
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 )
 
 var _ = DevPodDescribe("gRPC proxy test suite", func() {
-	ginkgo.Context("testing gRPC proxy", ginkgo.Label("grpc"), func() {
+	ginkgo.Context("testing gRPC proxy", ginkgo.Label("network", "grpc"), func() {
 		ginkgo.It("creates gRPC proxy", func() {
 			config := network.GRPCProxyConfig{
 				TargetAddr: "localhost:50051",

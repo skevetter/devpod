@@ -1,8 +1,7 @@
-package platform
+package network
 
 import (
 	"context"
-	"os"
 	"strings"
 
 	"github.com/onsi/ginkgo/v2"
@@ -10,20 +9,12 @@ import (
 )
 
 var _ = DevPodDescribe("kubernetes integration", func() {
-	ginkgo.Context("network proxy in kubernetes", ginkgo.Label("kubernetes"), func() {
-		var initialDir string
-
-		ginkgo.BeforeEach(func() {
-			var err error
-			initialDir, err = os.Getwd()
-			framework.ExpectNoError(err)
-		})
-
+	ginkgo.Context("network proxy in kubernetes", ginkgo.Label("network", "kubernetes"), func() {
 		ginkgo.It("validates network proxy in kubernetes pod", ginkgo.Label("networkproxy-kubernetes"), func() {
 			ctx := context.Background()
 			f := framework.NewDefaultFramework(initialDir + "/bin")
 
-			tempDir, err := framework.CopyToTempDir("tests/network/testdata/kubernetes")
+			tempDir, err := framework.CopyToTempDir(initialDir + "/tests/network/testdata/kubernetes")
 			framework.ExpectNoError(err)
 
 			_ = f.DevPodProviderDelete(ctx, "kubernetes")

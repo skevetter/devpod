@@ -2,7 +2,6 @@ package network
 
 import (
 	"context"
-	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -12,20 +11,14 @@ import (
 )
 
 var _ = DevPodDescribe("heartbeat timeout", func() {
-	ginkgo.Context("stale connection removal", ginkgo.Label("heartbeat"), func() {
-		var initialDir string
-
-		ginkgo.BeforeEach(func() {
-			var err error
-			initialDir, err = os.Getwd()
-			framework.ExpectNoError(err)
-		})
-
+	ginkgo.Context("stale connection removal", ginkgo.Ordered, ginkgo.Label("network", "heartbeat"), func() {
 		ginkgo.It("maintains connection with regular activity", ginkgo.Label("heartbeat-active"), func() {
 			ctx := context.Background()
-			f := setupDockerProvider(initialDir + "/bin")
+			f := framework.NewDefaultFramework(initialDir + "/bin")
+			_ = f.DevPodProviderAdd(ctx, "docker", "-o", "DOCKER_PATH=docker")
+			_ = f.DevPodProviderUse(ctx, "docker")
 
-			testDir := filepath.Join(initialDir, "testdata", "with-network-proxy")
+			testDir := filepath.Join(initialDir, "tests/network/testdata/with-network-proxy")
 			name := "test-heartbeat-active"
 			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), name)
 
@@ -47,9 +40,11 @@ var _ = DevPodDescribe("heartbeat timeout", func() {
 
 		ginkgo.It("connection survives short idle period", ginkgo.Label("heartbeat-short-idle"), func() {
 			ctx := context.Background()
-			f := setupDockerProvider(initialDir + "/bin")
+			f := framework.NewDefaultFramework(initialDir + "/bin")
+			_ = f.DevPodProviderAdd(ctx, "docker", "-o", "DOCKER_PATH=docker")
+			_ = f.DevPodProviderUse(ctx, "docker")
 
-			testDir := filepath.Join(initialDir, "testdata", "simple-app")
+			testDir := filepath.Join(initialDir, "tests/network/testdata", "simple-app")
 			name := "test-heartbeat-short-idle"
 			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), name)
 
@@ -72,9 +67,11 @@ var _ = DevPodDescribe("heartbeat timeout", func() {
 
 		ginkgo.It("workspace remains accessible after extended idle", ginkgo.Label("heartbeat-extended-idle"), func() {
 			ctx := context.Background()
-			f := setupDockerProvider(initialDir + "/bin")
+			f := framework.NewDefaultFramework(initialDir + "/bin")
+			_ = f.DevPodProviderAdd(ctx, "docker", "-o", "DOCKER_PATH=docker")
+			_ = f.DevPodProviderUse(ctx, "docker")
 
-			tempDir, err := framework.CopyToTempDir("tests/network/testdata/simple-app")
+			tempDir, err := framework.CopyToTempDir(initialDir + "/tests/network/testdata/simple-app")
 			framework.ExpectNoError(err)
 			ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
 
@@ -100,9 +97,11 @@ var _ = DevPodDescribe("heartbeat timeout", func() {
 
 		ginkgo.It("handles connection after workspace restart", ginkgo.Label("heartbeat-restart"), func() {
 			ctx := context.Background()
-			f := setupDockerProvider(initialDir + "/bin")
+			f := framework.NewDefaultFramework(initialDir + "/bin")
+			_ = f.DevPodProviderAdd(ctx, "docker", "-o", "DOCKER_PATH=docker")
+			_ = f.DevPodProviderUse(ctx, "docker")
 
-			tempDir, err := framework.CopyToTempDir("tests/network/testdata/simple-app")
+			tempDir, err := framework.CopyToTempDir(initialDir + "/tests/network/testdata/simple-app")
 			framework.ExpectNoError(err)
 			ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
 

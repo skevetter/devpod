@@ -2,7 +2,6 @@ package commands
 
 import (
 	"context"
-	"os"
 	"strings"
 
 	"github.com/onsi/ginkgo/v2"
@@ -11,14 +10,6 @@ import (
 
 var _ = DevPodDescribe("agent container port-forward", func() {
 	ginkgo.Context("port forwarding", ginkgo.Label("port-forward"), func() {
-		var initialDir string
-
-		ginkgo.BeforeEach(func() {
-			var err error
-			initialDir, err = os.Getwd()
-			framework.ExpectNoError(err)
-		})
-
 		ginkgo.It("validates required flags", ginkgo.Label("port-forward-flags"), func() {
 			ctx := context.Background()
 			f := setupDockerProvider(initialDir + "/bin")

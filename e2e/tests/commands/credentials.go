@@ -2,7 +2,6 @@ package commands
 
 import (
 	"context"
-	"os"
 	"strings"
 
 	"github.com/onsi/ginkgo/v2"
@@ -11,14 +10,6 @@ import (
 
 var _ = DevPodDescribe("agent container credentials-server", func() {
 	ginkgo.Context("credentials server", ginkgo.Label("credentials"), func() {
-		var initialDir string
-
-		ginkgo.BeforeEach(func() {
-			var err error
-			initialDir, err = os.Getwd()
-			framework.ExpectNoError(err)
-		})
-
 		ginkgo.It("command exists and shows help", ginkgo.Label("credentials-help"), func() {
 			ctx := context.Background()
 			f := setupDockerProvider(initialDir + "/bin")

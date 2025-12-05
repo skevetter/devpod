@@ -1,9 +1,8 @@
-package integration
+package network
 
 import (
 	"context"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/onsi/ginkgo/v2"
@@ -11,20 +10,14 @@ import (
 )
 
 var _ = DevPodDescribe("SSH tunnel traffic", func() {
-	ginkgo.Context("SSH tunnel data transfer", ginkgo.Label("ssh-tunnel"), func() {
-		var initialDir string
-
-		ginkgo.BeforeEach(func() {
-			var err error
-			initialDir, err = os.Getwd()
-			framework.ExpectNoError(err)
-		})
-
+	ginkgo.Context("SSH tunnel data transfer", ginkgo.Label("network", "ssh-tunnel"), func() {
 		ginkgo.It("transfers large data through SSH", ginkgo.Label("large-data"), func() {
 			ctx := context.Background()
-			f := setupDockerProvider(initialDir + "/bin")
+			f := framework.NewDefaultFramework(initialDir + "/bin")
+			_ = f.DevPodProviderAdd(ctx, "docker", "-o", "DOCKER_PATH=docker")
+			_ = f.DevPodProviderUse(ctx, "docker")
 
-			tempDir, err := framework.CopyToTempDir("tests/network/testdata/simple-app")
+			tempDir, err := framework.CopyToTempDir(initialDir + "/tests/network/testdata/simple-app")
 			framework.ExpectNoError(err)
 			ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
 
@@ -41,9 +34,11 @@ var _ = DevPodDescribe("SSH tunnel traffic", func() {
 
 		ginkgo.It("handles binary data transfer", ginkgo.Label("binary-data"), func() {
 			ctx := context.Background()
-			f := setupDockerProvider(initialDir + "/bin")
+			f := framework.NewDefaultFramework(initialDir + "/bin")
+			_ = f.DevPodProviderAdd(ctx, "docker", "-o", "DOCKER_PATH=docker")
+			_ = f.DevPodProviderUse(ctx, "docker")
 
-			tempDir, err := framework.CopyToTempDir("tests/network/testdata/simple-app")
+			tempDir, err := framework.CopyToTempDir(initialDir + "/tests/network/testdata/simple-app")
 			framework.ExpectNoError(err)
 			ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
 
@@ -69,9 +64,11 @@ var _ = DevPodDescribe("SSH tunnel traffic", func() {
 
 		ginkgo.It("maintains connection stability under load", ginkgo.Label("stability"), func() {
 			ctx := context.Background()
-			f := setupDockerProvider(initialDir + "/bin")
+			f := framework.NewDefaultFramework(initialDir + "/bin")
+			_ = f.DevPodProviderAdd(ctx, "docker", "-o", "DOCKER_PATH=docker")
+			_ = f.DevPodProviderUse(ctx, "docker")
 
-			tempDir, err := framework.CopyToTempDir("tests/network/testdata/simple-app")
+			tempDir, err := framework.CopyToTempDir(initialDir + "/tests/network/testdata/simple-app")
 			framework.ExpectNoError(err)
 			ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
 

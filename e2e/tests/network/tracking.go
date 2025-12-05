@@ -1,8 +1,7 @@
-package connection
+package network
 
 import (
 	"context"
-	"os"
 	"strings"
 
 	"github.com/onsi/ginkgo/v2"
@@ -10,20 +9,14 @@ import (
 )
 
 var _ = DevPodDescribe("connection tracking", func() {
-	ginkgo.Context("connection management", ginkgo.Label("connection"), func() {
-		var initialDir string
-
-		ginkgo.BeforeEach(func() {
-			var err error
-			initialDir, err = os.Getwd()
-			framework.ExpectNoError(err)
-		})
-
+	ginkgo.Context("connection management", ginkgo.Label("network", "connection"), func() {
 		ginkgo.It("tracks active connections", ginkgo.Label("connection-tracking"), func() {
 			ctx := context.Background()
-			f := setupDockerProvider(initialDir + "/bin")
+			f := framework.NewDefaultFramework(initialDir + "/bin")
+			_ = f.DevPodProviderAdd(ctx, "docker", "-o", "DOCKER_PATH=docker")
+			_ = f.DevPodProviderUse(ctx, "docker")
 
-			tempDir, err := framework.CopyToTempDir("tests/network/testdata/with-network-proxy")
+			tempDir, err := framework.CopyToTempDir(initialDir + "/tests/network/testdata/with-network-proxy")
 			framework.ExpectNoError(err)
 			ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
 

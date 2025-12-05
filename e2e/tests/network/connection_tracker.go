@@ -1,4 +1,4 @@
-package proxy
+package network
 
 import (
 	"context"
@@ -14,7 +14,7 @@ import (
 )
 
 var _ = DevPodDescribe("network proxy test suite", func() {
-	ginkgo.Context("testing connection tracker", ginkgo.Label("proxy"), func() {
+	ginkgo.Context("testing connection tracker", ginkgo.Label("network", "proxy"), func() {
 		ginkgo.It("tracks connections", func() {
 			tracker := network.NewConnectionTracker()
 

@@ -2,7 +2,6 @@ package commands
 
 import (
 	"context"
-	"os"
 	"strings"
 
 	"github.com/onsi/ginkgo/v2"
@@ -11,14 +10,6 @@ import (
 
 var _ = DevPodDescribe("agent container ssh-tunnel", func() {
 	ginkgo.Context("SSH tunneling", ginkgo.Label("ssh-tunnel"), func() {
-		var initialDir string
-
-		ginkgo.BeforeEach(func() {
-			var err error
-			initialDir, err = os.Getwd()
-			framework.ExpectNoError(err)
-		})
-
 		ginkgo.It("validates required flags", ginkgo.Label("ssh-tunnel-flags"), func() {
 			ctx := context.Background()
 			f := setupDockerProvider(initialDir + "/bin")

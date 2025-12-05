@@ -1,4 +1,4 @@
-package proxy
+package network
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 )
 
 var _ = DevPodDescribe("network server integration test suite", func() {
-	ginkgo.Context("testing network server", ginkgo.Label("server"), func() {
+	ginkgo.Context("testing network server", ginkgo.Label("network", "server"), func() {
 		ginkgo.It("creates and manages network server", func() {
 			logger := log.Default.ErrorStreamOnly()
 			config := network.ServerConfig{

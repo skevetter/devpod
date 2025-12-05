@@ -2,7 +2,6 @@ package commands
 
 import (
 	"context"
-	"os"
 	"strings"
 
 	"github.com/onsi/ginkgo/v2"
@@ -11,14 +10,6 @@ import (
 
 var _ = DevPodDescribe("agent container network-proxy", func() {
 	ginkgo.Context("network proxy server", ginkgo.Label("network-proxy"), func() {
-		var initialDir string
-
-		ginkgo.BeforeEach(func() {
-			var err error
-			initialDir, err = os.Getwd()
-			framework.ExpectNoError(err)
-		})
-
 		ginkgo.It("starts network proxy server", ginkgo.Label("network-proxy-start"), func() {
 			ctx := context.Background()
 			f := setupDockerProvider(initialDir + "/bin")
