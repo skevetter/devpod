@@ -12,17 +12,16 @@ import (
 var _ = DevPodDescribe("network proxy server", func() {
 	ginkgo.Context("server running", ginkgo.Label("server"), func() {
 		var initialDir string
-		var f *framework.Framework
 
 		ginkgo.BeforeEach(func() {
 			var err error
 			initialDir, err = os.Getwd()
 			framework.ExpectNoError(err)
-			f = setupDockerProvider(initialDir + "/bin")
 		})
 
 		ginkgo.It("verifies devpod binary exists", ginkgo.Label("server-binary"), func() {
 			ctx := context.Background()
+			f := setupDockerProvider(initialDir + "/bin")
 
 			tempDir, err := framework.CopyToTempDir("tests/network/testdata/simple-app")
 			framework.ExpectNoError(err)
@@ -38,6 +37,7 @@ var _ = DevPodDescribe("network proxy server", func() {
 
 		ginkgo.It("verifies workspace is functional", ginkgo.Label("server-functional"), func() {
 			ctx := context.Background()
+			f := setupDockerProvider(initialDir + "/bin")
 
 			tempDir, err := framework.CopyToTempDir("tests/network/testdata/with-network-proxy")
 			framework.ExpectNoError(err)

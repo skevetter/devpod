@@ -13,17 +13,16 @@ import (
 var _ = DevPodDescribe("SSH tunnel traffic", func() {
 	ginkgo.Context("SSH tunnel data transfer", ginkgo.Label("ssh-tunnel"), func() {
 		var initialDir string
-		var f *framework.Framework
 
 		ginkgo.BeforeEach(func() {
 			var err error
 			initialDir, err = os.Getwd()
 			framework.ExpectNoError(err)
-			f = setupDockerProvider(initialDir + "/bin")
 		})
 
 		ginkgo.It("transfers large data through SSH", ginkgo.Label("large-data"), func() {
 			ctx := context.Background()
+			f := setupDockerProvider(initialDir + "/bin")
 
 			tempDir, err := framework.CopyToTempDir("tests/network/testdata/simple-app")
 			framework.ExpectNoError(err)
@@ -42,6 +41,7 @@ var _ = DevPodDescribe("SSH tunnel traffic", func() {
 
 		ginkgo.It("handles binary data transfer", ginkgo.Label("binary-data"), func() {
 			ctx := context.Background()
+			f := setupDockerProvider(initialDir + "/bin")
 
 			tempDir, err := framework.CopyToTempDir("tests/network/testdata/simple-app")
 			framework.ExpectNoError(err)
@@ -69,6 +69,7 @@ var _ = DevPodDescribe("SSH tunnel traffic", func() {
 
 		ginkgo.It("maintains connection stability under load", ginkgo.Label("stability"), func() {
 			ctx := context.Background()
+			f := setupDockerProvider(initialDir + "/bin")
 
 			tempDir, err := framework.CopyToTempDir("tests/network/testdata/simple-app")
 			framework.ExpectNoError(err)

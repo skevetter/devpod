@@ -12,17 +12,16 @@ import (
 var _ = DevPodDescribe("agent container port-forward", func() {
 	ginkgo.Context("port forwarding", ginkgo.Label("port-forward"), func() {
 		var initialDir string
-		var f *framework.Framework
 
 		ginkgo.BeforeEach(func() {
 			var err error
 			initialDir, err = os.Getwd()
 			framework.ExpectNoError(err)
-			f = setupDockerProvider(initialDir + "/bin")
 		})
 
 		ginkgo.It("validates required flags", ginkgo.Label("port-forward-flags"), func() {
 			ctx := context.Background()
+			f := setupDockerProvider(initialDir + "/bin")
 
 			tempDir, err := framework.CopyToTempDir("tests/commands/testdata/simple-app")
 			framework.ExpectNoError(err)
@@ -37,6 +36,7 @@ var _ = DevPodDescribe("agent container port-forward", func() {
 
 		ginkgo.It("command exists and is executable", ginkgo.Label("port-forward-exists"), func() {
 			ctx := context.Background()
+			f := setupDockerProvider(initialDir + "/bin")
 
 			tempDir, err := framework.CopyToTempDir("tests/commands/testdata/simple-app")
 			framework.ExpectNoError(err)

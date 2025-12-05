@@ -12,19 +12,18 @@ import (
 
 var _ = DevPodDescribe("port forwarding", func() {
 	var initialDir string
-	var f *framework.Framework
-	var ctx context.Context
 
 	ginkgo.BeforeEach(func() {
 		var err error
 		initialDir, err = os.Getwd()
 		framework.ExpectNoError(err)
-		ctx = context.Background()
-		f = setupDockerProvider(initialDir + "/bin")
 	})
 
 	ginkgo.Context("basic network operations", ginkgo.Label("port-forward"), func() {
 		ginkgo.It("workspace supports network operations", ginkgo.Label("port-forward-basic"), func() {
+			ctx := context.Background()
+			f := setupDockerProvider(initialDir + "/bin")
+
 			tempDir, err := framework.CopyToTempDir("tests/network/testdata/simple-app")
 			framework.ExpectNoError(err)
 			ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
@@ -40,6 +39,9 @@ var _ = DevPodDescribe("port forwarding", func() {
 
 	ginkgo.Context("HTTP server forwarding", ginkgo.Label("port-forward-actual"), func() {
 		ginkgo.It("forwards HTTP port from container", ginkgo.Label("http-forward"), func() {
+			ctx := context.Background()
+			f := setupDockerProvider(initialDir + "/bin")
+
 			tempDir, err := framework.CopyToTempDir("tests/network/testdata/simple-app")
 			framework.ExpectNoError(err)
 			ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)

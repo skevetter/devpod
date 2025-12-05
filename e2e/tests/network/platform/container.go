@@ -12,17 +12,16 @@ import (
 var _ = DevPodDescribe("container compatibility", func() {
 	ginkgo.Context("running container operations", ginkgo.Label("compatibility"), func() {
 		var initialDir string
-		var f *framework.Framework
 
 		ginkgo.BeforeEach(func() {
 			var err error
 			initialDir, err = os.Getwd()
 			framework.ExpectNoError(err)
-			f = setupDockerProvider(initialDir + "/bin")
 		})
 
 		ginkgo.It("validates network proxy with running container", ginkgo.Label("container-running"), func() {
 			ctx := context.Background()
+			f := setupDockerProvider(initialDir + "/bin")
 
 			tempDir, err := framework.CopyToTempDir("tests/network/testdata/with-network-proxy")
 			framework.ExpectNoError(err)

@@ -22,6 +22,7 @@ var _ = DevPodDescribe("kubernetes integration", func() {
 		ginkgo.It("validates network proxy in kubernetes pod", ginkgo.Label("networkproxy-kubernetes"), func() {
 			ctx := context.Background()
 			f := framework.NewDefaultFramework(initialDir + "/bin")
+
 			tempDir, err := framework.CopyToTempDir("tests/network/testdata/kubernetes")
 			framework.ExpectNoError(err)
 

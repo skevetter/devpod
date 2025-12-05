@@ -12,17 +12,16 @@ import (
 var _ = DevPodDescribe("agent container ssh-tunnel", func() {
 	ginkgo.Context("SSH tunneling", ginkgo.Label("ssh-tunnel"), func() {
 		var initialDir string
-		var f *framework.Framework
 
 		ginkgo.BeforeEach(func() {
 			var err error
 			initialDir, err = os.Getwd()
 			framework.ExpectNoError(err)
-			f = setupDockerProvider(initialDir + "/bin")
 		})
 
 		ginkgo.It("validates required flags", ginkgo.Label("ssh-tunnel-flags"), func() {
 			ctx := context.Background()
+			f := setupDockerProvider(initialDir + "/bin")
 
 			tempDir, err := framework.CopyToTempDir("tests/commands/testdata/simple-app")
 			framework.ExpectNoError(err)
@@ -37,6 +36,7 @@ var _ = DevPodDescribe("agent container ssh-tunnel", func() {
 
 		ginkgo.It("command exists and is executable", ginkgo.Label("ssh-tunnel-exists"), func() {
 			ctx := context.Background()
+			f := setupDockerProvider(initialDir + "/bin")
 
 			tempDir, err := framework.CopyToTempDir("tests/commands/testdata/simple-app")
 			framework.ExpectNoError(err)

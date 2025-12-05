@@ -12,17 +12,16 @@ import (
 var _ = DevPodDescribe("agent container daemon", func() {
 	ginkgo.Context("container daemon", ginkgo.Label("daemon"), func() {
 		var initialDir string
-		var f *framework.Framework
 
 		ginkgo.BeforeEach(func() {
 			var err error
 			initialDir, err = os.Getwd()
 			framework.ExpectNoError(err)
-			f = setupDockerProvider(initialDir + "/bin")
 		})
 
 		ginkgo.It("command exists and shows help", ginkgo.Label("daemon-help"), func() {
 			ctx := context.Background()
+			f := setupDockerProvider(initialDir + "/bin")
 
 			tempDir, err := framework.CopyToTempDir("tests/commands/testdata/simple-app")
 			framework.ExpectNoError(err)
@@ -39,6 +38,7 @@ var _ = DevPodDescribe("agent container daemon", func() {
 
 		ginkgo.It("daemon command is available", ginkgo.Label("daemon-available"), func() {
 			ctx := context.Background()
+			f := setupDockerProvider(initialDir + "/bin")
 
 			tempDir, err := framework.CopyToTempDir("tests/commands/testdata/simple-app")
 			framework.ExpectNoError(err)

@@ -226,24 +226,7 @@ func (f *Framework) CleanupProviderWorkspaces(ctx context.Context, providerName 
 	return nil
 }
 
-// SetupDockerProvider sets up the docker provider for testing
-func (f *Framework) SetupDockerProvider(ctx context.Context) error {
-	_ = f.DevPodProviderDelete(ctx, "docker")
-	err := f.DevPodProviderAdd(ctx, "docker", "-o", "DOCKER_PATH=docker")
-	if err != nil && !strings.Contains(err.Error(), "already exists") {
-		return err
-	}
-	return f.DevPodProviderUse(ctx, "docker")
-}
-
 func (f *Framework) DevPodProviderDelete(ctx context.Context, args ...string) error {
-	// NOTE: Enabled only when running locally to cleanup existing workspaces. There is a
-	// race condition when multiple tests run in parallel and try to delete the same provider
-	// that causes failures.
-	// if len(args) > 0 {
-	// 	_ = f.CleanupProviderWorkspaces(ctx, args[0])
-	// }
-
 	baseArgs := []string{"provider", "delete"}
 	baseArgs = append(baseArgs, args...)
 	err := f.ExecCommand(ctx, false, false, "", baseArgs)

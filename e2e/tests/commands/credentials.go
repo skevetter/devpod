@@ -12,17 +12,16 @@ import (
 var _ = DevPodDescribe("agent container credentials-server", func() {
 	ginkgo.Context("credentials server", ginkgo.Label("credentials"), func() {
 		var initialDir string
-		var f *framework.Framework
 
 		ginkgo.BeforeEach(func() {
 			var err error
 			initialDir, err = os.Getwd()
 			framework.ExpectNoError(err)
-			f = setupDockerProvider(initialDir + "/bin")
 		})
 
 		ginkgo.It("command exists and shows help", ginkgo.Label("credentials-help"), func() {
 			ctx := context.Background()
+			f := setupDockerProvider(initialDir + "/bin")
 
 			tempDir, err := framework.CopyToTempDir("tests/commands/testdata/simple-app")
 			framework.ExpectNoError(err)
@@ -38,6 +37,7 @@ var _ = DevPodDescribe("agent container credentials-server", func() {
 
 		ginkgo.It("credentials-server command is available", ginkgo.Label("credentials-available"), func() {
 			ctx := context.Background()
+			f := setupDockerProvider(initialDir + "/bin")
 
 			tempDir, err := framework.CopyToTempDir("tests/commands/testdata/simple-app")
 			framework.ExpectNoError(err)

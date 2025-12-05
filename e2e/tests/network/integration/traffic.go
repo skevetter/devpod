@@ -14,17 +14,16 @@ import (
 var _ = DevPodDescribe("network traffic", func() {
 	ginkgo.Context("real network traffic", ginkgo.Label("traffic"), func() {
 		var initialDir string
-		var f *framework.Framework
 
 		ginkgo.BeforeEach(func() {
 			var err error
 			initialDir, err = os.Getwd()
 			framework.ExpectNoError(err)
-			f = setupDockerProvider(initialDir + "/bin")
 		})
 
 		ginkgo.It("forwards HTTP traffic through SSH tunnel", ginkgo.Label("http-traffic"), func() {
 			ctx := context.Background()
+			f := setupDockerProvider(initialDir + "/bin")
 
 			tempDir, err := framework.CopyToTempDir("tests/network/testdata/simple-app")
 			framework.ExpectNoError(err)
@@ -50,6 +49,7 @@ var _ = DevPodDescribe("network traffic", func() {
 
 		ginkgo.It("handles multiple concurrent connections", ginkgo.Label("concurrent-traffic"), func() {
 			ctx := context.Background()
+			f := setupDockerProvider(initialDir + "/bin")
 
 			tempDir, err := framework.CopyToTempDir("tests/network/testdata/simple-app")
 			framework.ExpectNoError(err)
@@ -82,6 +82,7 @@ var _ = DevPodDescribe("network traffic", func() {
 
 		ginkgo.It("transfers data through connection", ginkgo.Label("data-transfer"), func() {
 			ctx := context.Background()
+			f := setupDockerProvider(initialDir + "/bin")
 
 			tempDir, err := framework.CopyToTempDir("tests/network/testdata/simple-app")
 			framework.ExpectNoError(err)
@@ -101,6 +102,7 @@ var _ = DevPodDescribe("network traffic", func() {
 
 		ginkgo.It("handles connection errors gracefully", ginkgo.Label("error-handling"), func() {
 			ctx := context.Background()
+			f := setupDockerProvider(initialDir + "/bin")
 
 			tempDir, err := framework.CopyToTempDir("tests/network/testdata/simple-app")
 			framework.ExpectNoError(err)

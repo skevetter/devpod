@@ -14,17 +14,16 @@ import (
 var _ = DevPodDescribe("heartbeat timeout", func() {
 	ginkgo.Context("stale connection removal", ginkgo.Label("heartbeat"), func() {
 		var initialDir string
-		var f *framework.Framework
 
 		ginkgo.BeforeEach(func() {
 			var err error
 			initialDir, err = os.Getwd()
 			framework.ExpectNoError(err)
-			f = setupDockerProvider(initialDir + "/bin")
 		})
 
 		ginkgo.It("maintains connection with regular activity", ginkgo.Label("heartbeat-active"), func() {
 			ctx := context.Background()
+			f := setupDockerProvider(initialDir + "/bin")
 
 			testDir := filepath.Join(initialDir, "testdata", "with-network-proxy")
 			name := "test-heartbeat-active"
@@ -48,19 +47,13 @@ var _ = DevPodDescribe("heartbeat timeout", func() {
 
 		ginkgo.It("connection survives short idle period", ginkgo.Label("heartbeat-short-idle"), func() {
 			ctx := context.Background()
-			f := framework.NewDefaultFramework(initialDir + "/bin")
-
-			_ = f.DevPodProviderDelete(ctx, "docker")
-			err := f.DevPodProviderAdd(ctx, "docker")
-			framework.ExpectNoError(err)
-			err = f.DevPodProviderUse(ctx, "docker")
-			framework.ExpectNoError(err)
+			f := setupDockerProvider(initialDir + "/bin")
 
 			testDir := filepath.Join(initialDir, "testdata", "simple-app")
 			name := "test-heartbeat-short-idle"
 			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), name)
 
-			err = f.DevPodUp(ctx, testDir, "--id", name)
+			err := f.DevPodUp(ctx, testDir, "--id", name)
 			framework.ExpectNoError(err)
 
 			// First connection
@@ -79,6 +72,7 @@ var _ = DevPodDescribe("heartbeat timeout", func() {
 
 		ginkgo.It("workspace remains accessible after extended idle", ginkgo.Label("heartbeat-extended-idle"), func() {
 			ctx := context.Background()
+			f := setupDockerProvider(initialDir + "/bin")
 
 			tempDir, err := framework.CopyToTempDir("tests/network/testdata/simple-app")
 			framework.ExpectNoError(err)
@@ -106,6 +100,7 @@ var _ = DevPodDescribe("heartbeat timeout", func() {
 
 		ginkgo.It("handles connection after workspace restart", ginkgo.Label("heartbeat-restart"), func() {
 			ctx := context.Background()
+			f := setupDockerProvider(initialDir + "/bin")
 
 			tempDir, err := framework.CopyToTempDir("tests/network/testdata/simple-app")
 			framework.ExpectNoError(err)

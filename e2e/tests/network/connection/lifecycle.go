@@ -11,8 +11,6 @@ import (
 )
 
 var _ = DevPodDescribe("connection lifecycle", func() {
-	var f *framework.Framework
-
 	ginkgo.Context("connection management", ginkgo.Label("lifecycle"), func() {
 		var initialDir string
 
@@ -20,11 +18,11 @@ var _ = DevPodDescribe("connection lifecycle", func() {
 			var err error
 			initialDir, err = os.Getwd()
 			framework.ExpectNoError(err)
-			f = setupDockerProvider(initialDir + "/bin")
 		})
 
 		ginkgo.It("handles connection open and close", ginkgo.Label("open-close"), func() {
 			ctx := context.Background()
+			f := setupDockerProvider(initialDir + "/bin")
 
 			tempDir, err := framework.CopyToTempDir("tests/network/testdata/with-network-proxy")
 			framework.ExpectNoError(err)
@@ -44,6 +42,7 @@ var _ = DevPodDescribe("connection lifecycle", func() {
 
 		ginkgo.It("handles rapid connection cycling", ginkgo.Label("rapid-cycling"), func() {
 			ctx := context.Background()
+			f := setupDockerProvider(initialDir + "/bin")
 
 			tempDir, err := framework.CopyToTempDir("tests/network/testdata/simple-app")
 			framework.ExpectNoError(err)
@@ -60,6 +59,7 @@ var _ = DevPodDescribe("connection lifecycle", func() {
 
 		ginkgo.It("maintains connection after idle period", ginkgo.Label("idle-connection"), func() {
 			ctx := context.Background()
+			f := setupDockerProvider(initialDir + "/bin")
 
 			tempDir, err := framework.CopyToTempDir("tests/network/testdata/simple-app")
 			framework.ExpectNoError(err)
@@ -81,6 +81,7 @@ var _ = DevPodDescribe("connection lifecycle", func() {
 
 		ginkgo.It("recovers from command failures", ginkgo.Label("error-recovery"), func() {
 			ctx := context.Background()
+			f := setupDockerProvider(initialDir + "/bin")
 
 			tempDir, err := framework.CopyToTempDir("tests/network/testdata/simple-app")
 			framework.ExpectNoError(err)
