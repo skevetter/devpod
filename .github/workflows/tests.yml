@@ -39,14 +39,14 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Log in to GitHub Container Registry
+      - name: log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Run integration test
+      - name: run integration test
         uses: ./.github/actions/run-integration-test
         with:
           label: ${{ matrix.label }}
@@ -79,14 +79,21 @@ jobs:
 
       - uses: actions/checkout@v6
 
-      - name: Log in to GitHub Container Registry
+      - name: bitwarden secrets
+        uses: bitwarden/sm-action@v2
+        with:
+          access_token: ${{ secrets.BITWARDEN_SECRETS_ACCESS_TOKEN }}
+          secrets: |
+            ${{ secrets.DOCKERHUB_USERNAME_UUID }} > DOCKERHUB_USERNAME
+            ${{ secrets.DOCKERHUB_TOKEN_UUID }} > DOCKERHUB_TOKEN
+
+      - name: log in to container registry
         uses: docker/login-action@v3
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          username: ${{ env.DOCKERHUB_USERNAME }}
+          password: ${{ env.DOCKERHUB_TOKEN }}
 
-      - name: Run integration test
+      - name: run integration test
         uses: ./.github/actions/run-integration-test
         with:
           label: ${{ matrix.label }}
@@ -134,7 +141,7 @@ jobs:
           - context
           - provider
     steps:
-      - name: Free disk space
+      - name: free disk space
         shell: pwsh
         run: |
           Get-PSDrive
@@ -145,7 +152,7 @@ jobs:
 
       - uses: actions/checkout@v6
 
-      - name: Run integration test
+      - name: run integration test
         uses: ./.github/actions/run-integration-test
         with:
           label: ${{ matrix.label }}
