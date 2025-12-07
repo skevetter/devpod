@@ -196,10 +196,6 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 			username := os.Getenv("GH_USERNAME")
 			token := os.Getenv("GH_ACCESS_TOKEN")
 
-			if username == "" || token == "" {
-				ginkgo.Skip("WARNING: skipping test, secrets not found")
-			}
-
 			ctx := context.Background()
 			f := framework.NewDefaultFramework(initialDir + "/bin")
 

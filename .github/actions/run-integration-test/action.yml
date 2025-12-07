@@ -106,6 +106,7 @@ runs:
       shell: bash
       working-directory: ./e2e
       env:
+        # NOTE: Github credentials are required for tests using private repos
         GH_USERNAME: ${{ inputs.gh-username }}
         GH_ACCESS_TOKEN: ${{ inputs.gh-access-token }}
       run: |
