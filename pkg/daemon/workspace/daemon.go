@@ -27,14 +27,14 @@ const (
 
 // Daemon manages workspace services
 type Daemon struct {
-	config *DaemonConfig
+	Config *DaemonConfig
 	log    log.Logger
 }
 
 // NewDaemon creates a new workspace daemon
 func NewDaemon() *Daemon {
 	return &Daemon{
-		config: &DaemonConfig{},
+		Config: &DaemonConfig{},
 		log:    log.NewStreamLogger(os.Stdout, os.Stderr, logrus.InfoLevel),
 	}
 }
@@ -51,9 +51,9 @@ func (d *Daemon) Run(c *cobra.Command, args []string) error {
 
 	// Parse timeout
 	var timeoutDuration time.Duration
-	if d.config.Timeout != "" {
+	if d.Config.Timeout != "" {
 		var err error
-		timeoutDuration, err = time.ParseDuration(d.config.Timeout)
+		timeoutDuration, err = time.ParseDuration(d.Config.Timeout)
 		if err != nil {
 			return errors.Wrap(err, "parse timeout")
 		}
@@ -143,23 +143,23 @@ func (d *Daemon) loadConfig() error {
 		if err = json.Unmarshal(decoded, &cfg); err != nil {
 			return fmt.Errorf("unmarshal config: %w", err)
 		}
-		if d.config.Timeout != "" {
-			cfg.Timeout = d.config.Timeout
+		if d.Config.Timeout != "" {
+			cfg.Timeout = d.Config.Timeout
 		}
-		d.config = &cfg
+		d.Config = &cfg
 	}
 
 	return nil
 }
 
 func (d *Daemon) shouldRunNetworkServer() bool {
-	return d.config.Platform.AccessKey != "" &&
-		d.config.Platform.PlatformHost != "" &&
-		d.config.Platform.WorkspaceHost != ""
+	return d.Config.Platform.AccessKey != "" &&
+		d.Config.Platform.PlatformHost != "" &&
+		d.Config.Platform.WorkspaceHost != ""
 }
 
 func (d *Daemon) shouldRunSsh() bool {
-	return d.config.Ssh.Workdir != "" || d.config.Ssh.User != ""
+	return d.Config.Ssh.Workdir != "" || d.Config.Ssh.User != ""
 }
 
 // HandleSignals listens for termination signals

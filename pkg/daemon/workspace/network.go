@@ -26,8 +26,8 @@ func RunNetworkServer(ctx context.Context, d *Daemon, errChan chan<- error, wg *
 
 	// Create platform client
 	config := client.NewConfig()
-	config.AccessKey = d.config.Platform.AccessKey
-	config.Host = "https://" + d.config.Platform.PlatformHost
+	config.AccessKey = d.Config.Platform.AccessKey
+	config.Host = "https://" + d.Config.Platform.PlatformHost
 	config.Insecure = true
 	baseClient := client.NewClientFromConfig(config)
 
@@ -38,9 +38,9 @@ func RunNetworkServer(ctx context.Context, d *Daemon, errChan chan<- error, wg *
 
 	// Create workspace server with all services
 	workspaceServer := network.NewServer(&network.ServerConfig{
-		AccessKey:     d.config.Platform.AccessKey,
-		PlatformHost:  ts.RemoveProtocol(d.config.Platform.PlatformHost),
-		WorkspaceHost: d.config.Platform.WorkspaceHost,
+		AccessKey:     d.Config.Platform.AccessKey,
+		PlatformHost:  ts.RemoveProtocol(d.Config.Platform.PlatformHost),
+		WorkspaceHost: d.Config.Platform.WorkspaceHost,
 		Client:        baseClient,
 		RootDir:       rootDir,
 		LogF: func(format string, args ...any) {

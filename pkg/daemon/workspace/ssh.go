@@ -12,12 +12,12 @@ import (
 func RunSshServer(ctx context.Context, d *Daemon, errChan chan<- error, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	if d.config.Ssh.Workdir == "" {
+	if d.Config.Ssh.Workdir == "" {
 		errChan <- fmt.Errorf("ssh workdir not configured")
 		return
 	}
 
-	if err := os.Chdir(d.config.Ssh.Workdir); err != nil {
+	if err := os.Chdir(d.Config.Ssh.Workdir); err != nil {
 		errChan <- fmt.Errorf("chdir: %w", err)
 		return
 	}

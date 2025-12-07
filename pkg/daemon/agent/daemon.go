@@ -25,10 +25,10 @@ type SshConfig struct {
 }
 
 type DaemonConfig struct {
-	Platform     devpod.PlatformOptions `json:"platform,omitempty"`
-	Ssh          SshConfig              `json:"ssh,omitempty"`
+	Platform     devpod.PlatformOptions `json:"platform"`
+	Ssh          SshConfig              `json:"ssh"`
 	Timeout      string                 `json:"timeout"`
-	NetworkProxy NetworkProxyConfig     `json:"networkProxy,omitempty"`
+	NetworkProxy NetworkProxyConfig     `json:"networkProxy"`
 }
 
 type NetworkProxyConfig struct {

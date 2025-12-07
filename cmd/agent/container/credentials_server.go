@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/loft-sh/log"
+	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/cmd/flags"
 	"github.com/skevetter/devpod/pkg/agent/tunnel"
 	"github.com/skevetter/devpod/pkg/agent/tunnelserver"
@@ -24,7 +25,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const ExitCodeIO int = 64
+const (
+	ExitCodeIO     int    = 64
+	DefaultLogFile string = "/var/devpod/credentials-server.log"
+)
 
 // CredentialsServerCmd holds the cmd flags
 type CredentialsServerCmd struct {
@@ -80,7 +84,7 @@ func (cmd *CredentialsServerCmd) Run(ctx context.Context, port int) error {
 
 	// Use transport layer if HTTP tunnel is configured
 	if cmd.HTTPTunnelClient != "" {
-		logger := log.Default.ErrorStreamOnly()
+		logger := log.NewFileLogger(DefaultLogFile, logrus.DebugLevel)
 		transport := cmd.setupTransport(logger)
 		tunnelClient = network.NewTransportTunnelClient(transport)
 	} else {
@@ -166,7 +170,7 @@ func (cmd *CredentialsServerCmd) Run(ctx context.Context, port int) error {
 		}(cmd.User)
 	}
 
-	return credentials.RunCredentialsServer(ctx, port, tunnelClient, log)
+	return credentials.RunCredentialsServer(ctx, port, tunnelClient, cmd.HTTPTunnelClient, log)
 }
 
 // setupTransport creates a transport with HTTP tunnel and stdio fallback

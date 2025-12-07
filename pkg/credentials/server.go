@@ -15,43 +15,47 @@ import (
 	"github.com/skevetter/devpod/pkg/agent/tunnel"
 )
 
-const DefaultPort = "12049"
-const CredentialsServerPortEnv = "DEVPOD_CREDENTIALS_SERVER_PORT"
+const (
+	DefaultPort              = "12049"
+	CredentialsServerPortEnv = "DEVPOD_CREDENTIALS_SERVER_PORT"
+	CredentialsServerLogFile = "devpod-credentials-server.log"
+)
 
 func RunCredentialsServer(
 	ctx context.Context,
 	port int,
 	client tunnel.TunnelClient,
-	log log.Logger,
+	clientHost string,
+	logger log.Logger,
 ) error {
 	var handler http.Handler = http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		log.Debugf("Incoming client connection at %s", request.URL.Path)
+		logger.Debugf("Incoming client connection at %s", request.URL.Path)
 		switch request.URL.Path {
 		case "/git-credentials":
-			err := handleGitCredentialsRequest(ctx, writer, request, client, log)
+			err := handleGitCredentialsRequest(ctx, writer, request, client, clientHost, logger)
 			if err != nil {
 				http.Error(writer, err.Error(), http.StatusInternalServerError)
 				return
 			}
 		case "/docker-credentials":
-			err := handleDockerCredentialsRequest(ctx, writer, request, client, log)
+			err := handleDockerCredentialsRequest(ctx, writer, request, client, logger)
 			if err != nil {
 				http.Error(writer, err.Error(), http.StatusInternalServerError)
 				return
 			}
 		case "/git-ssh-signature":
-			err := handleGitSSHSignatureRequest(ctx, writer, request, client, log)
+			err := handleGitSSHSignatureRequest(ctx, writer, request, client, logger)
 			if err != nil {
 				http.Error(writer, err.Error(), http.StatusInternalServerError)
 				return
 			}
 		case "/loft-platform-credentials":
-			err := handleLoftPlatformCredentialsRequest(ctx, writer, request, client, log)
+			err := handleLoftPlatformCredentialsRequest(ctx, writer, request, client, logger)
 			if err != nil {
 				http.Error(writer, err.Error(), http.StatusInternalServerError)
 			}
 		case "/gpg-public-keys":
-			err := handleGPGPublicKeysRequest(ctx, writer, request, client, log)
+			err := handleGPGPublicKeysRequest(ctx, writer, request, client, logger)
 			if err != nil {
 				http.Error(writer, err.Error(), http.StatusInternalServerError)
 			}
@@ -63,7 +67,7 @@ func RunCredentialsServer(
 
 	errChan := make(chan error, 1)
 	go func() {
-		log.Debugf("Credentials server started on port %d...", port)
+		logger.Debugf("Credentials server started on port %d", port)
 
 		// always returns error. ErrServerClosed on graceful close
 		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
@@ -111,7 +115,7 @@ func handleDockerCredentialsRequest(ctx context.Context, writer http.ResponseWri
 	return nil
 }
 
-func handleGitCredentialsRequest(ctx context.Context, writer http.ResponseWriter, request *http.Request, client tunnel.TunnelClient, log log.Logger) error {
+func handleGitCredentialsRequest(ctx context.Context, writer http.ResponseWriter, request *http.Request, client tunnel.TunnelClient, clientHost string, log log.Logger) error {
 	out, err := io.ReadAll(request.Body)
 	if err != nil {
 		return errors.Wrap(err, "read request body")
