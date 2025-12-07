@@ -1,0 +1,6 @@
+{
+  "name": "Compose with name field",
+  "dockerComposeFile": ["./docker-compose.yml"],
+  "service": "app",
+  "workspaceFolder": "/workspaces"
+}

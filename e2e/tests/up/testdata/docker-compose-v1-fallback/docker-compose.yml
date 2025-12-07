@@ -1,0 +1,6 @@
+version: '3'
+
+services:
+  app:
+    image: ubuntu
+    command: sleep infinity

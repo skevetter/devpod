@@ -62,21 +62,23 @@ func NewComposeHelper(dockerComposeCLI string, dockerHelper *docker.DockerHelper
 		dockerComposeCLI = DockerComposeCommand
 	}
 
-	if out, err := exec.Command(dockerComposeCLI, "version", "--short").Output(); err == nil {
-		return &ComposeHelper{
-			Command: dockerComposeCLI,
-			Version: strings.TrimSpace(string(out)),
-			Args:    []string{},
-			Docker:  dockerHelper,
-		}, nil
-	}
-
+	// Use docker compose (v2)
 	out, err := exec.Command(dockerCLI, "compose", "version", "--short").Output()
 	if err == nil {
 		return &ComposeHelper{
 			Command: dockerCLI,
 			Version: strings.TrimSpace(string(out)),
 			Args:    []string{"compose"},
+			Docker:  dockerHelper,
+		}, nil
+	}
+
+	// Fallback to docker-compose (v1)
+	if out, err := exec.Command(dockerComposeCLI, "version", "--short").Output(); err == nil {
+		return &ComposeHelper{
+			Command: dockerComposeCLI,
+			Version: strings.TrimSpace(string(out)),
+			Args:    []string{},
 			Docker:  dockerHelper,
 		}, nil
 	}

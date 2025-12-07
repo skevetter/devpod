@@ -1,0 +1,6 @@
+name: testproject
+
+services:
+  app:
+    image: ubuntu
+    command: sleep infinity

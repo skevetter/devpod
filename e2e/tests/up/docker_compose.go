@@ -516,6 +516,40 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 					gomega.Expect(postAttachCommand).To(gomega.Equal("postAttachCommand"))
 				}, ginkgo.SpecTimeout(framework.GetTimeout()))
 			})
+
+			ginkgo.It("with docker compose v2 features", ginkgo.Label("up", "up-docker-compose", "v2"), func(ctx context.Context) {
+				tempDir, err := setupWorkspace("tests/up/testdata/docker-compose-v2-with-name", initialDir, f)
+				framework.ExpectNoError(err)
+
+				ws, err := devPodUpAndFindWorkspace(ctx, f, tempDir, "--debug")
+				framework.ExpectNoError(err)
+
+				ids, err := findComposeContainer(ctx, dockerHelper, composeHelper, ws.UID, "app")
+				framework.ExpectNoError(err)
+
+				gomega.Expect(ids).To(gomega.HaveLen(1), "1 compose container to be created")
+
+				var containerDetails []container.InspectResponse
+				err = dockerHelper.Inspect(ctx, ids, "container", &containerDetails)
+				framework.ExpectNoError(err)
+			}, ginkgo.SpecTimeout(framework.GetTimeout()))
+
+			ginkgo.It("with v1 compatible compose files", ginkgo.Label("up", "up-docker-compose", "v1", "backward-compat"), func(ctx context.Context) {
+				tempDir, err := setupWorkspace("tests/up/testdata/docker-compose-v1-fallback", initialDir, f)
+				framework.ExpectNoError(err)
+
+				ws, err := devPodUpAndFindWorkspace(ctx, f, tempDir, "--debug")
+				framework.ExpectNoError(err)
+
+				ids, err := findComposeContainer(ctx, dockerHelper, composeHelper, ws.UID, "app")
+				framework.ExpectNoError(err)
+
+				gomega.Expect(ids).To(gomega.HaveLen(1), "1 compose container to be created")
+
+				var containerDetails []container.InspectResponse
+				err = dockerHelper.Inspect(ctx, ids, "container", &containerDetails)
+				framework.ExpectNoError(err)
+			}, ginkgo.SpecTimeout(framework.GetTimeout()))
 		})
 	})
 })
