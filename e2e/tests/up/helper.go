@@ -78,13 +78,13 @@ func createTarGzArchive(outputFilePath string, filePaths []string) error {
 	if err != nil {
 		return err
 	}
-	defer outputFile.Close()
+	defer func() { _ = outputFile.Close() }()
 
 	gzipWriter := gzip.NewWriter(outputFile)
-	defer gzipWriter.Close()
+	defer func() { _ = gzipWriter.Close() }()
 
 	tarWriter := tar.NewWriter(gzipWriter)
-	defer tarWriter.Close()
+	defer func() { _ = tarWriter.Close() }()
 
 	for _, filePath := range filePaths {
 		if err := addFileToTar(tarWriter, filePath); err != nil {
@@ -99,7 +99,7 @@ func addFileToTar(tarWriter *tar.Writer, filePath string) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	fileInfo, err := file.Stat()
 	if err != nil {
