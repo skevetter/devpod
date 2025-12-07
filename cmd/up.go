@@ -41,6 +41,7 @@ import (
 	"github.com/skevetter/devpod/pkg/port"
 	provider2 "github.com/skevetter/devpod/pkg/provider"
 	devssh "github.com/skevetter/devpod/pkg/ssh"
+	"github.com/skevetter/devpod/pkg/stdio"
 	"github.com/skevetter/devpod/pkg/telemetry"
 	"github.com/skevetter/devpod/pkg/tunnel"
 	"github.com/skevetter/devpod/pkg/util"
@@ -474,8 +475,7 @@ func (cmd *UpCmd) devPodUpProxy(
 	// create container etc.
 	result, err := tunnelserver.RunUpServer(
 		cancelCtx,
-		stdoutReader,
-		stdinWriter,
+		stdio.NewStdioListener(stdoutReader, stdinWriter, false),
 		true,
 		true,
 		client.WorkspaceConfig(),
@@ -594,8 +594,7 @@ func (cmd *UpCmd) devPodUpMachine(
 		func(ctx context.Context, stdin io.WriteCloser, stdout io.Reader) (*config2.Result, error) {
 			return tunnelserver.RunUpServer(
 				ctx,
-				stdout,
-				stdin,
+				stdio.NewStdioListener(stdout, stdin, false),
 				client.AgentInjectGitCredentials(cmd.CLIOptions),
 				client.AgentInjectDockerCredentials(cmd.CLIOptions),
 				client.WorkspaceConfig(),
@@ -985,6 +984,7 @@ func startBrowserTunnel(
 				configureDockerCredentials,
 				configureGitCredentials,
 				configureGitSSHSignatureHelper,
+				"",
 				logger,
 			)
 			if err != nil {

@@ -23,6 +23,7 @@ import (
 	"github.com/skevetter/devpod/pkg/driver"
 	"github.com/skevetter/devpod/pkg/ide"
 	provider2 "github.com/skevetter/devpod/pkg/provider"
+	"github.com/skevetter/devpod/pkg/stdio"
 )
 
 func (r *runner) setupContainer(
@@ -127,8 +128,7 @@ func (r *runner) setupContainer(
 	runSetupServer := func(ctx context.Context, stdin io.WriteCloser, stdout io.Reader) (*config.Result, error) {
 		return tunnelserver.RunSetupServer(
 			ctx,
-			stdout,
-			stdin,
+			stdio.NewStdioListener(stdout, stdin, false),
 			r.WorkspaceConfig.Agent.InjectGitCredentials != "false",
 			r.WorkspaceConfig.Agent.InjectDockerCredentials != "false",
 			config.GetMounts(result),

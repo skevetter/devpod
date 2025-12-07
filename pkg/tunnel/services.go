@@ -43,6 +43,7 @@ func RunServices(
 	platformOptions *devpod.PlatformOptions,
 	workspace *provider.Workspace,
 	configureDockerCredentials, configureGitCredentials, configureGitSSHSignatureHelper bool,
+	client string,
 	log log.Logger,
 ) error {
 	// calculate exit after timeout
@@ -87,15 +88,28 @@ func RunServices(
 			forwarder = newForwarder(containerClient, append(forwardedPorts, fmt.Sprintf("%d", openvscode.DefaultVSCodePort)), log)
 		}
 
+		// Create channels for the port and errors
+		portChan := make(chan int, 1)
 		errChan := make(chan error, 1)
+
 		go func() {
 			defer cancel()
 			defer func() { _ = stdinWriter.Close() }()
 			// forward credentials to container
-			err := tunnelserver.RunServicesServer(
+			listener, port, err := tunnelserver.GetListener(client, stdoutReader, stdinWriter, false, log)
+
+			if err != nil {
+				errChan <- errors.Wrap(err, "create tunnel server listener")
+				return
+			}
+
+			// Send the generated port back
+			portChan <- port
+			defer listener.Close()
+
+			err = tunnelserver.RunServicesServer(
 				cancelCtx,
-				stdoutReader,
-				stdinWriter,
+				listener,
 				configureGitCredentials,
 				configureDockerCredentials,
 				forwarder,
@@ -110,12 +124,29 @@ func RunServices(
 		}()
 
 		// run credentials server
+		log.Debugf("waiting for credentials server port to be assigned")
+		var port int
+		select {
+		case port = <-portChan:
+			if port != 0 {
+				log.Infof("credentials server running on port %d\n", port)
+			}
+		case err = <-errChan:
+			return err
+		}
+
 		writer := log.ErrorStreamOnly().Writer(logrus.DebugLevel, false)
 		defer func() { _ = writer.Close() }()
 
 		command := fmt.Sprintf("'%s' agent container credentials-server --user '%s'", agent.ContainerDevPodHelperLocation, user)
+		if client != "" {
+			command += fmt.Sprintf(" --client '%s'", client)
+		}
 		if configureGitCredentials {
 			command += " --configure-git-helper"
+		}
+		if port != 0 {
+			command += fmt.Sprintf(" --port %d", port)
 		}
 		if configureGitSSHSignatureHelper {
 			format, userSigningKey, err := gitsshsigning.ExtractGitConfiguration()

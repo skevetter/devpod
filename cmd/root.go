@@ -11,7 +11,6 @@ import (
 	"github.com/skevetter/devpod/cmd/agent"
 	"github.com/skevetter/devpod/cmd/completion"
 	"github.com/skevetter/devpod/cmd/context"
-	"github.com/skevetter/devpod/cmd/daemon"
 	"github.com/skevetter/devpod/cmd/flags"
 	"github.com/skevetter/devpod/cmd/helper"
 	"github.com/skevetter/devpod/cmd/ide"
@@ -139,6 +138,5 @@ func BuildRoot() *cobra.Command {
 	rootCmd.AddCommand(NewUpgradeCmd())
 	rootCmd.AddCommand(NewTroubleshootCmd(globalFlags))
 	rootCmd.AddCommand(NewPingCmd(globalFlags))
-	rootCmd.AddCommand(daemon.NewStartHTTPTunnelCmd(globalFlags))
 	return rootCmd
 }

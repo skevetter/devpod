@@ -17,6 +17,7 @@ import (
 	config2 "github.com/skevetter/devpod/pkg/devcontainer/config"
 	"github.com/skevetter/devpod/pkg/image"
 	"github.com/skevetter/devpod/pkg/provider"
+	"github.com/skevetter/devpod/pkg/stdio"
 	workspace2 "github.com/skevetter/devpod/pkg/workspace"
 	"github.com/spf13/cobra"
 )
@@ -229,8 +230,7 @@ func buildAgentClient(ctx context.Context, workspaceClient client.WorkspaceClien
 	// create container etc.
 	result, err := tunnelserver.RunUpServer(
 		cancelCtx,
-		stdoutReader,
-		stdinWriter,
+		stdio.NewStdioListener(stdoutReader, stdinWriter, false),
 		workspaceClient.AgentInjectGitCredentials(cliOptions),
 		workspaceClient.AgentInjectDockerCredentials(cliOptions),
 		workspaceClient.WorkspaceConfig(),
