@@ -34,7 +34,7 @@ func getDevpodProviderList() error {
 		return err
 	}
 
-	var jsonResult []map[string]interface{}
+	var jsonResult []map[string]any
 	err = json.Unmarshal(result, &jsonResult)
 	if err != nil {
 		return err

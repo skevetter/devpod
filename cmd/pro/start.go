@@ -1628,11 +1628,11 @@ var (
 )
 
 type ContainerDetails struct {
-	NetworkSettings ContainerNetworkSettings `json:"NetworkSettings,omitempty"`
-	State           ContainerDetailsState    `json:"State,omitempty"`
+	NetworkSettings ContainerNetworkSettings `json:"NetworkSettings"`
+	State           ContainerDetailsState    `json:"State"`
 	ID              string                   `json:"ID,omitempty"`
 	Created         string                   `json:"Created,omitempty"`
-	Config          ContainerDetailsConfig   `json:"Config,omitempty"`
+	Config          ContainerDetailsConfig   `json:"Config"`
 }
 
 type ContainerNetworkSettings struct {

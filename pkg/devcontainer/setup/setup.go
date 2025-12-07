@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -299,15 +300,9 @@ func SetupKubeConfig(ctx context.Context, setupInfo *config.Result, tunnelClient
 		return err
 	}
 	// merge with existing kubeConfig
-	for name, cluster := range kubeConfig.Clusters {
-		existingConfig.Clusters[name] = cluster
-	}
-	for name, authInfo := range kubeConfig.AuthInfos {
-		existingConfig.AuthInfos[name] = authInfo
-	}
-	for name, context := range kubeConfig.Contexts {
-		existingConfig.Contexts[name] = context
-	}
+	maps.Copy(existingConfig.Clusters, kubeConfig.Clusters)
+	maps.Copy(existingConfig.AuthInfos, kubeConfig.AuthInfos)
+	maps.Copy(existingConfig.Contexts, kubeConfig.Contexts)
 
 	// Set the current context to the new one.
 	// This might not always be the correct choice but given that someone

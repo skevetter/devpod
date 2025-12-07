@@ -10,10 +10,10 @@ type Machine struct {
 	ID string `json:"id,omitempty"`
 
 	// Provider is the provider used to create this workspace
-	Provider MachineProviderConfig `json:"provider,omitempty"`
+	Provider MachineProviderConfig `json:"provider"`
 
 	// CreationTimestamp is the timestamp when this workspace was created
-	CreationTimestamp types.Time `json:"creationTimestamp,omitempty"`
+	CreationTimestamp types.Time `json:"creationTimestamp"`
 
 	// Context is the context where this config file was loaded from
 	Context string `json:"context,omitempty"`

@@ -6,7 +6,7 @@ type FeatureSet struct {
 	ConfigID string
 	Folder   string
 	Config   *FeatureConfig
-	Options  interface{}
+	Options  any
 }
 
 type FeatureConfig struct {

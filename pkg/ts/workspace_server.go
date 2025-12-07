@@ -52,7 +52,7 @@ type WorkspaceServerConfig struct {
 	AccessKey     string
 	PlatformHost  string
 	WorkspaceHost string
-	LogF          func(format string, args ...interface{})
+	LogF          func(format string, args ...any)
 	Client        client.Client
 	RootDir       string
 }

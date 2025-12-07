@@ -3,6 +3,8 @@ package resolver
 import (
 	"context"
 	"fmt"
+	"maps"
+	"slices"
 	"time"
 
 	"github.com/loft-sh/log/survey"
@@ -18,9 +20,7 @@ func (r *Resolver) resolveOptions(
 ) (map[string]config.OptionValue, error) {
 	// copy options
 	resolvedOptionValues := map[string]config.OptionValue{}
-	for optionName, v := range optionValues {
-		resolvedOptionValues[optionName] = v
-	}
+	maps.Copy(resolvedOptionValues, optionValues)
 
 	// resolve options in reverse order and walk from top to bottom
 	for optionNode := r.graph.NextFromTop(); optionNode != nil; optionNode = r.graph.NextFromTop() {
@@ -322,10 +322,5 @@ func (r *Resolver) dynamicOptionsForNode(children []string) config.OptionDefinit
 }
 
 func contains(stack []string, k string) bool {
-	for _, s := range stack {
-		if s == k {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(stack, k)
 }

@@ -2,8 +2,10 @@ package ideparse
 
 import (
 	"fmt"
+	"maps"
 	"reflect"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -255,9 +257,7 @@ func RefreshIDEOptions(devPodConfig *config.Config, workspace *provider.Workspac
 	if err != nil {
 		return nil, errors.Wrap(err, "parse options")
 	}
-	for k, v := range values {
-		retValues[k] = v
-	}
+	maps.Copy(retValues, values)
 
 	// check if we need to modify workspace
 	if workspace.IDE.Name != ide || !reflect.DeepEqual(workspace.IDE.Options, retValues) {
@@ -275,7 +275,6 @@ func RefreshIDEOptions(devPodConfig *config.Config, workspace *provider.Workspac
 func GetIDEOptions(ide string) (ide.Options, error) {
 	var match *AllowedIDE
 	for _, m := range AllowedIDEs {
-		m := m
 		if string(m.Name) == ide {
 			match = &m
 			break
@@ -333,13 +332,7 @@ func ParseOptions(options []string, ideOptions ide.Options) (map[string]config.O
 		}
 
 		if len(ideOption.Enum) > 0 {
-			found := false
-			for _, e := range ideOption.Enum {
-				if value == e {
-					found = true
-					break
-				}
-			}
+			found := slices.Contains(ideOption.Enum, value)
 			if !found {
 				return nil, fmt.Errorf("invalid value '%s' for option '%s', has to match one of the following values: %v", value, key, ideOption.Enum)
 			}

@@ -2,6 +2,7 @@ package provider
 
 import (
 	"encoding/json"
+	"maps"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -50,12 +51,8 @@ const (
 
 func combineOptions(resolvedOptions map[string]config.OptionValue, otherOptions map[string]config.OptionValue) map[string]config.OptionValue {
 	options := map[string]config.OptionValue{}
-	for k, v := range resolvedOptions {
-		options[k] = v
-	}
-	for k, v := range otherOptions {
-		options[k] = v
-	}
+	maps.Copy(options, resolvedOptions)
+	maps.Copy(options, otherOptions)
 	return options
 }
 
@@ -121,9 +118,7 @@ func ToOptionsWorkspace(workspace *Workspace) map[string]string {
 		if workspace.Pro != nil && workspace.Pro.Project != "" {
 			retVars[LOFT_PROJECT] = workspace.Pro.Project
 		}
-		for k, v := range GetBaseEnvironment(workspace.Context, workspace.Provider.Name) {
-			retVars[k] = v
-		}
+		maps.Copy(retVars, GetBaseEnvironment(workspace.Context, workspace.Provider.Name))
 	}
 	return retVars
 }
@@ -142,9 +137,7 @@ func ToOptionsMachine(machine *Machine) map[string]string {
 		if machine.Provider.Name != "" {
 			retVars[MACHINE_PROVIDER] = machine.Provider.Name
 		}
-		for k, v := range GetBaseEnvironment(machine.Context, machine.Provider.Name) {
-			retVars[k] = v
-		}
+		maps.Copy(retVars, GetBaseEnvironment(machine.Context, machine.Provider.Name))
 	}
 	return retVars
 }
@@ -163,12 +156,8 @@ func ToOptions(workspace *Workspace, machine *Machine, options map[string]config
 
 func Merge(m1 map[string]string, m2 map[string]string) map[string]string {
 	retMap := map[string]string{}
-	for k, v := range m1 {
-		retMap[k] = v
-	}
-	for k, v := range m2 {
-		retMap[k] = v
-	}
+	maps.Copy(retMap, m1)
+	maps.Copy(retMap, m2)
 
 	return retMap
 }
@@ -199,9 +188,7 @@ func GetProviderOptions(workspace *Workspace, server *Machine, devConfig *config
 		providerName = server.Provider.Name
 	}
 	if devConfig != nil && providerName != "" {
-		for k, v := range devConfig.Current().ProviderOptions(providerName) {
-			retValues[k] = v
-		}
+		maps.Copy(retValues, devConfig.Current().ProviderOptions(providerName))
 	}
 	return retValues
 }

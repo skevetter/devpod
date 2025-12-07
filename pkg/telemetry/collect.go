@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"runtime"
+	"slices"
 	"strings"
 	"time"
 
@@ -105,10 +106,8 @@ func (d *cliCollector) RecordCLI(err error) {
 	isUI := os.Getenv(UIEnvVar) == "true"
 	// Ignore certain commands triggered by DevPod Desktop
 	if isUI {
-		for _, exception := range UIEventsExceptions {
-			if cmd == exception {
-				return
-			}
+		if slices.Contains(UIEventsExceptions, cmd) {
+			return
 		}
 	}
 
@@ -123,7 +122,7 @@ func (d *cliCollector) RecordCLI(err error) {
 	}
 
 	timezone, _ := time.Now().Zone()
-	eventProperties := map[string]interface{}{
+	eventProperties := map[string]any{
 		"command":        cmd,
 		"version":        version.GetVersion(),
 		"desktop":        isUI,
@@ -138,7 +137,7 @@ func (d *cliCollector) RecordCLI(err error) {
 			eventProperties["ide"] = d.client.WorkspaceConfig().IDE.Name
 		}
 	}
-	userProperties := map[string]interface{}{
+	userProperties := map[string]any{
 		"os_name":  runtime.GOOS,
 		"os_arch":  runtime.GOARCH,
 		"timezone": timezone,

@@ -24,12 +24,12 @@ const tokenFileLocation = "/var/run/secrets/kubernetes.io/serviceaccount/token"
 
 // See https://github.com/kubernetes/kubernetes/blob/30ae12d018697d3c5f04e225b11f242f5310e097/pkg/serviceaccount/claims.go#L55
 type privateClaims struct {
-	Kubernetes kubernetesClaim `json:"kubernetes.io,omitempty"`
+	Kubernetes kubernetesClaim `json:"kubernetes.io"`
 }
 
 type kubernetesClaim struct {
 	Namespace string           `json:"namespace,omitempty"`
-	Svcacct   ref              `json:"serviceaccount,omitempty"`
+	Svcacct   ref              `json:"serviceaccount"`
 	Pod       *ref             `json:"pod,omitempty"`
 	Secret    *ref             `json:"secret,omitempty"`
 	Node      *ref             `json:"node,omitempty"`

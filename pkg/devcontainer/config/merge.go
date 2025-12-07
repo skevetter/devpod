@@ -1,13 +1,14 @@
 package config
 
 import (
+	"maps"
 	"strconv"
 
 	"github.com/skevetter/devpod/pkg/types"
 )
 
 func MergeConfiguration(config *DevContainerConfig, imageMetadataEntries []*ImageMetadata) (*MergedDevContainerConfig, error) {
-	customizations := map[string][]interface{}{}
+	customizations := map[string][]any{}
 	for _, imageMetadata := range imageMetadataEntries {
 		for k, v := range imageMetadata.Customizations {
 			customizations[k] = append(customizations[k], v)
@@ -73,9 +74,7 @@ func mergeMaps[K any](entries []*ImageMetadata, m func(entry *ImageMetadata) map
 	retMap := map[string]K{}
 	for _, entry := range entries {
 		entryMap := m(entry)
-		for k, v := range entryMap {
-			retMap[k] = v
-		}
+		maps.Copy(retMap, entryMap)
 	}
 
 	return retMap

@@ -61,7 +61,7 @@ func (cmd *GetCmd) Run(ctx context.Context, args []string) error {
 		}
 	}
 
-	v := interface{}(nil)
+	v := any(nil)
 	err := json.Unmarshal(jsonBytes, &v)
 	if err != nil {
 		return fmt.Errorf("parse json")

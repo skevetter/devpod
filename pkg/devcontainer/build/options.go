@@ -2,6 +2,7 @@ package build
 
 import (
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"strings"
@@ -109,18 +110,14 @@ func GetBuildArgsAndTarget(
 	extendedBuildInfo *feature.ExtendedBuildInfo,
 ) (map[string]string, string) {
 	buildArgs := map[string]string{}
-	for k, v := range parsedConfig.Config.GetArgs() {
-		buildArgs[k] = v
-	}
+	maps.Copy(buildArgs, parsedConfig.Config.GetArgs())
 
 	// get extended build info
 	if extendedBuildInfo != nil && extendedBuildInfo.FeaturesBuildInfo != nil {
 		featureBuildInfo := extendedBuildInfo.FeaturesBuildInfo
 
 		// track additional build args to include below
-		for k, v := range featureBuildInfo.BuildArgs {
-			buildArgs[k] = v
-		}
+		maps.Copy(buildArgs, featureBuildInfo.BuildArgs)
 	}
 
 	target := ""

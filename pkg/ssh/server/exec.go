@@ -45,25 +45,21 @@ func execNonPTY(sess ssh.Session, cmd *exec.Cmd, log log.Logger) (err error) {
 	}()
 
 	waitGroup := sync.WaitGroup{}
-	waitGroup.Add(1)
-	go func() {
-		defer waitGroup.Done()
+	waitGroup.Go(func() {
 
 		_, err := io.Copy(sess, stdout)
 		if err != nil {
 			log.Debugf("Error piping stdout: %v", err)
 		}
-	}()
+	})
 
-	waitGroup.Add(1)
-	go func() {
-		defer waitGroup.Done()
+	waitGroup.Go(func() {
 
 		_, err := io.Copy(sess.Stderr(), stderr)
 		if err != nil {
 			log.Debugf("Error piping stderr: %v", err)
 		}
-	}()
+	})
 
 	waitGroup.Wait()
 	err = cmd.Wait()

@@ -623,7 +623,6 @@ func (r *runner) extendedDockerComposeBuild(composeService *composetypes.Service
 
 	service.Build.Args = composetypes.NewMappingWithEquals([]string{"BUILDKIT_INLINE_CACHE=1"})
 	for k, v := range featuresBuildInfo.BuildArgs {
-		v := v
 		service.Build.Args[k] = &v
 	}
 

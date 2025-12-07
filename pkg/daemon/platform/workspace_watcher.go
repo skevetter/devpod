@@ -29,10 +29,10 @@ import (
 
 type ProWorkspaceInstance struct {
 	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.ObjectMeta `json:"metadata"`
 
-	Spec   managementv1.DevPodWorkspaceInstanceSpec `json:"spec,omitempty"`
-	Status ProWorkspaceInstanceStatus               `json:"status,omitempty"`
+	Spec   managementv1.DevPodWorkspaceInstanceSpec `json:"spec"`
+	Status ProWorkspaceInstanceStatus               `json:"status"`
 }
 
 type ProWorkspaceInstanceStatus struct {
@@ -73,7 +73,7 @@ func startWorkspaceWatcher(ctx context.Context, config watchConfig, onChange cha
 	workspaceInformer := factory.Management().V1().DevPodWorkspaceInstances()
 	instanceStore := newStore(self, config.Context, config.OwnerFilter, config.TsClient, config.Log)
 	_, err = workspaceInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
+		AddFunc: func(obj any) {
 			instance, ok := obj.(*managementv1.DevPodWorkspaceInstance)
 			if !ok {
 				return
@@ -83,7 +83,7 @@ func startWorkspaceWatcher(ctx context.Context, config watchConfig, onChange cha
 				onChange(instanceStore.List())
 			}
 		},
-		UpdateFunc: func(oldObj interface{}, newObj interface{}) {
+		UpdateFunc: func(oldObj any, newObj any) {
 			oldInstance, ok := oldObj.(*managementv1.DevPodWorkspaceInstance)
 			if !ok {
 				return
@@ -97,7 +97,7 @@ func startWorkspaceWatcher(ctx context.Context, config watchConfig, onChange cha
 				onChange(instanceStore.List())
 			}
 		},
-		DeleteFunc: func(obj interface{}) {
+		DeleteFunc: func(obj any) {
 			instance, ok := obj.(*managementv1.DevPodWorkspaceInstance)
 			if !ok {
 				// check for DeletedFinalStateUnknown. Can happen if the informer misses the delete event

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 
 	"github.com/pkg/errors"
 	"github.com/skevetter/devpod/pkg/driver"
@@ -68,9 +69,7 @@ func (k *KubernetesDriver) buildPersistentVolumeClaim(
 
 	labels := map[string]string{}
 	labels[DevPodWorkspaceUIDLabel] = options.UID
-	for k, v := range ExtraDevPodLabels {
-		labels[k] = v
-	}
+	maps.Copy(labels, ExtraDevPodLabels)
 
 	annotations := map[string]string{}
 	annotations[DevPodInfoAnnotation] = containerInfo
@@ -78,9 +77,7 @@ func (k *KubernetesDriver) buildPersistentVolumeClaim(
 	if err != nil {
 		k.Log.Error("Failed to parse annotations from PVC_ANNOTATIONS option: %v", err)
 	}
-	for k, v := range extraAnnotations {
-		annotations[k] = v
-	}
+	maps.Copy(annotations, extraAnnotations)
 
 	return &corev1.PersistentVolumeClaim{
 		TypeMeta: metav1.TypeMeta{

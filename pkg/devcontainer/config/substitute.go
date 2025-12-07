@@ -29,8 +29,8 @@ type SubstitutionContext struct {
 	WorkspaceMount string `json:"WorkspaceMount,omitempty"`
 }
 
-func Substitute(substitutionCtx *SubstitutionContext, config interface{}, out interface{}) error {
-	newVal := map[string]interface{}{}
+func Substitute(substitutionCtx *SubstitutionContext, config any, out any) error {
+	newVal := map[string]any{}
 	err := Convert(config, &newVal)
 	if err != nil {
 		return err
@@ -63,8 +63,8 @@ func Substitute(substitutionCtx *SubstitutionContext, config interface{}, out in
 	return nil
 }
 
-func SubstituteContainerEnv(containerEnv map[string]string, config interface{}, out interface{}) error {
-	newVal := map[string]interface{}{}
+func SubstituteContainerEnv(containerEnv map[string]string, config any, out any) error {
+	newVal := map[string]any{}
 	err := Convert(config, &newVal)
 	if err != nil {
 		return err
@@ -152,16 +152,16 @@ func lookupValue(isWindows bool, env map[string]string, args []string, match str
 	return match
 }
 
-func substitute0(val interface{}, replace ReplaceFunction) interface{} {
+func substitute0(val any, replace ReplaceFunction) any {
 	switch t := val.(type) {
 	case string:
 		return ResolveString(t, replace)
-	case []interface{}:
+	case []any:
 		for i, v := range t {
 			t[i] = substitute0(v, replace)
 		}
 		return t
-	case map[string]interface{}:
+	case map[string]any:
 		for k, v := range t {
 			t[k] = substitute0(v, replace)
 		}

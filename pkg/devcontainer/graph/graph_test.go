@@ -6,14 +6,14 @@ import (
 
 func TestGraph(t *testing.T) {
 	var (
-		root                   = NewNode[interface{}]("root", nil)
-		rootChild1             = NewNode[interface{}]("rootChild1", nil)
-		rootChild2             = NewNode[interface{}]("rootChild2", nil)
-		rootChild3             = NewNode[interface{}]("rootChild3", nil)
-		rootChild2Child1       = NewNode[interface{}]("rootChild2Child1", nil)
-		rootChild2Child1Child1 = NewNode[interface{}]("rootChild2Child1Child1", nil)
+		root                   = NewNode[any]("root", nil)
+		rootChild1             = NewNode[any]("rootChild1", nil)
+		rootChild2             = NewNode[any]("rootChild2", nil)
+		rootChild3             = NewNode[any]("rootChild3", nil)
+		rootChild2Child1       = NewNode[any]("rootChild2Child1", nil)
+		rootChild2Child1Child1 = NewNode[any]("rootChild2Child1Child1", nil)
 
-		testGraph = NewGraph[interface{}](root)
+		testGraph = NewGraph[any](root)
 	)
 
 	_, err := testGraph.InsertNodeAt("does not exits", rootChild1.ID, nil)
@@ -95,14 +95,14 @@ rootChild2Child1Child1`
 
 func TestRemoveSubGraph(t *testing.T) {
 	var (
-		root                   = NewNode[interface{}]("root", nil)
-		rootChild1             = NewNode[interface{}]("rootChild1", nil)
-		rootChild2             = NewNode[interface{}]("rootChild2", nil)
-		rootChild3             = NewNode[interface{}]("rootChild3", nil)
-		rootChild2Child1       = NewNode[interface{}]("rootChild2Child1", nil)
-		rootChild2Child1Child1 = NewNode[interface{}]("rootChild2Child1Child1", nil)
+		root                   = NewNode[any]("root", nil)
+		rootChild1             = NewNode[any]("rootChild1", nil)
+		rootChild2             = NewNode[any]("rootChild2", nil)
+		rootChild3             = NewNode[any]("rootChild3", nil)
+		rootChild2Child1       = NewNode[any]("rootChild2Child1", nil)
+		rootChild2Child1Child1 = NewNode[any]("rootChild2Child1Child1", nil)
 
-		testGraph = NewGraph[interface{}](root)
+		testGraph = NewGraph[any](root)
 	)
 
 	_, _ = testGraph.InsertNodeAt(root.ID, rootChild1.ID, nil)

@@ -119,7 +119,6 @@ func downloadGithubRelease(org, repo, release, file, token string) (io.ReadClose
 
 	var releaseAsset *GithubReleaseAsset
 	for _, asset := range releaseObj.Assets {
-		asset := asset
 		if asset.Name == file {
 			releaseAsset = &asset
 			break

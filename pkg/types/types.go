@@ -18,7 +18,7 @@ type StrIntArray []string
 // UnmarshalJSON convert JSON object array of string or
 // a string format strings to a golang string array
 func (sa *StrIntArray) UnmarshalJSON(data []byte) error {
-	var jsonObj interface{}
+	var jsonObj any
 	err := json.Unmarshal(data, &jsonObj)
 	if err != nil {
 		return errors.Wrap(err, "unmarshal str int array")
@@ -33,7 +33,7 @@ func (sa *StrIntArray) UnmarshalJSON(data []byte) error {
 	case float64:
 		*sa = StrIntArray([]string{strconv.Itoa(int(obj))})
 		return nil
-	case []interface{}:
+	case []any:
 		s := make([]string, 0, len(obj))
 		for _, v := range obj {
 			switch value := v.(type) {
@@ -59,7 +59,7 @@ type StrArray []string
 // UnmarshalJSON convert JSON object array of string or
 // a string format strings to a golang string array
 func (sa *StrArray) UnmarshalJSON(data []byte) error {
-	var jsonObj interface{}
+	var jsonObj any
 	err := json.Unmarshal(data, &jsonObj)
 	if err != nil {
 		return err
@@ -68,7 +68,7 @@ func (sa *StrArray) UnmarshalJSON(data []byte) error {
 	case string:
 		*sa = StrArray([]string{obj})
 		return nil
-	case []interface{}:
+	case []any:
 		s := make([]string, 0, len(obj))
 		for _, v := range obj {
 			value, ok := v.(string)
@@ -88,7 +88,7 @@ type LifecycleHook map[string][]string
 func (l *LifecycleHook) UnmarshalJSON(data []byte) error {
 	*l = make(map[string][]string)
 
-	var jsonObj interface{}
+	var jsonObj any
 	err := json.Unmarshal(data, &jsonObj)
 	if err != nil {
 		return err
@@ -98,7 +98,7 @@ func (l *LifecycleHook) UnmarshalJSON(data []byte) error {
 		// Anonymous string command
 		(*l)[""] = []string{obj}
 		return nil
-	case []interface{}:
+	case []any:
 		// Anonymous array of strings command
 		cmd := make([]string, 0)
 		for _, v := range obj {
@@ -110,7 +110,7 @@ func (l *LifecycleHook) UnmarshalJSON(data []byte) error {
 		}
 		(*l)[""] = cmd
 		return nil
-	case map[string]interface{}:
+	case map[string]any:
 		for k, v := range obj {
 			value, ok := v.(string)
 			if ok {
@@ -118,7 +118,7 @@ func (l *LifecycleHook) UnmarshalJSON(data []byte) error {
 				(*l)[k] = []string{value}
 			} else {
 				// Named array of strings command
-				stringArrayValue, ok := v.([]interface{})
+				stringArrayValue, ok := v.([]any)
 				if !ok {
 					return ErrUnsupportedType
 				}
@@ -141,7 +141,7 @@ type StrBool string
 
 // UnmarshalJSON parses fields that may be numbers or booleans.
 func (s *StrBool) UnmarshalJSON(data []byte) error {
-	var jsonObj interface{}
+	var jsonObj any
 	err := json.Unmarshal(data, &jsonObj)
 	if err != nil {
 		return err
@@ -173,13 +173,13 @@ type OptionEnum struct {
 type OptionEnumArray []OptionEnum
 
 func (e *OptionEnumArray) UnmarshalJSON(data []byte) error {
-	var jsonObj interface{}
+	var jsonObj any
 	err := json.Unmarshal(data, &jsonObj)
 	if err != nil {
 		return err
 	}
 	switch obj := jsonObj.(type) {
-	case []interface{}:
+	case []any:
 		if len(obj) == 0 {
 			*e = OptionEnumArray{}
 			return nil
@@ -192,9 +192,9 @@ func (e *OptionEnumArray) UnmarshalJSON(data []byte) error {
 					ret = append(ret, OptionEnum{Value: s})
 				}
 			}
-		case map[string]interface{}:
+		case map[string]any:
 			for _, v := range obj {
-				m, ok := v.(map[string]interface{})
+				m, ok := v.(map[string]any)
 				if !ok {
 					return ErrUnsupportedType
 				}

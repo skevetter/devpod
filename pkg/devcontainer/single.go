@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"strings"
 	"time"
 
@@ -240,9 +241,7 @@ func (r *runner) getDockerlessRunOptions(
 		"DOCKERLESS_DOCKERFILE": buildInfo.Dockerless.Dockerfile,
 		"GODEBUG":               "http2client=0", // https://github.com/GoogleContainerTools/kaniko/issues/875
 	}
-	for k, v := range mergedConfig.ContainerEnv {
-		env[k] = v
-	}
+	maps.Copy(env, mergedConfig.ContainerEnv)
 	if buildInfo.Dockerless.Target != "" {
 		env["DOCKERLESS_TARGET"] = buildInfo.Dockerless.Target
 	}

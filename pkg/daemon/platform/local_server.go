@@ -99,7 +99,7 @@ func newLocalServer(lc *tailscale.LocalClient, pc platformclient.Client, devPodC
 	}
 
 	router := httprouter.New()
-	router.PanicHandler = func(w http.ResponseWriter, r *http.Request, i interface{}) {
+	router.PanicHandler = func(w http.ResponseWriter, r *http.Request, i any) {
 		http.Error(w, fmt.Errorf("panic: %v", i).Error(), http.StatusInternalServerError)
 		l.log.Error(fmt.Errorf("panic: %v", i), string(debug.Stack()))
 	}
@@ -132,7 +132,7 @@ type panicLogger struct {
 	log log.Logger
 }
 
-func (r panicLogger) Println(args ...interface{}) {
+func (r panicLogger) Println(args ...any) {
 	r.log.Error(args...)
 }
 
@@ -528,10 +528,7 @@ func throttle(f func(instanceList []*ProWorkspaceInstance), interval time.Durati
 
 		// If no timer is set, schedule one to run when the interval expires.
 		if timer == nil {
-			remaining := interval - now.Sub(lastExecuted)
-			if remaining < 0 {
-				remaining = 0
-			}
+			remaining := max(interval-now.Sub(lastExecuted), 0)
 			timer = time.AfterFunc(remaining, func() {
 				mu.Lock()
 				// Grab the latest pending instanceList.
@@ -637,7 +634,7 @@ func (l *localServer) getDockerCredentials(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-func tryJSON(w http.ResponseWriter, obj interface{}) {
+func tryJSON(w http.ResponseWriter, obj any) {
 	out, err := json.Marshal(obj)
 	if err != nil {
 		http.Error(w, fmt.Errorf("marshal: %w", err).Error(), http.StatusInternalServerError)

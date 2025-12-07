@@ -199,7 +199,7 @@ func replaceLegacy(config *DevContainerConfig) (*DevContainerConfig, error) {
 
 	// make sure customizations exist
 	if config.Customizations == nil {
-		config.Customizations = map[string]interface{}{}
+		config.Customizations = map[string]any{}
 	}
 
 	vsCodeConfig := &VSCodeCustomizations{}
@@ -218,7 +218,7 @@ func replaceLegacy(config *DevContainerConfig) (*DevContainerConfig, error) {
 
 	if len(config.Settings) > 0 {
 		if vsCodeConfig.Settings == nil {
-			vsCodeConfig.Settings = map[string]interface{}{}
+			vsCodeConfig.Settings = map[string]any{}
 		}
 
 		for k, v := range config.Settings {
@@ -240,7 +240,7 @@ func replaceLegacy(config *DevContainerConfig) (*DevContainerConfig, error) {
 	return config, nil
 }
 
-func Convert(from interface{}, to interface{}) error {
+func Convert(from any, to any) error {
 	out, err := json.Marshal(from)
 	if err != nil {
 		return err

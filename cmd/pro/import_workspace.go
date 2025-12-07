@@ -233,7 +233,7 @@ func resolveInstanceOptions(ctx context.Context, instance *managementv1.DevPodWo
 }
 
 func fillParameterOptions(opts map[string]string, parameterDefinitions []storagev1.AppParameter, instanceParameters string) error {
-	parametersMap := map[string]interface{}{}
+	parametersMap := map[string]any{}
 	err := yaml.Unmarshal([]byte(instanceParameters), &parametersMap)
 	if err != nil {
 		return fmt.Errorf("unmarshal parameters: %w", err)

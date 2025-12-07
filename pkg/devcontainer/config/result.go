@@ -1,5 +1,10 @@
 package config
 
+import (
+	"maps"
+	"slices"
+)
+
 const UserLabel = "devpod.user"
 
 type Result struct {
@@ -62,7 +67,7 @@ func GetVSCodeConfiguration(mergedConfig *MergedDevContainerConfig) *VSCodeCusto
 	}
 
 	retVSCodeCustomizations := &VSCodeCustomizations{
-		Settings:   map[string]interface{}{},
+		Settings:   map[string]any{},
 		Extensions: nil,
 	}
 	for _, customization := range mergedConfig.Customizations["vscode"] {
@@ -80,19 +85,12 @@ func GetVSCodeConfiguration(mergedConfig *MergedDevContainerConfig) *VSCodeCusto
 			retVSCodeCustomizations.Extensions = append(retVSCodeCustomizations.Extensions, extension)
 		}
 
-		for k, v := range vsCode.Settings {
-			retVSCodeCustomizations.Settings[k] = v
-		}
+		maps.Copy(retVSCodeCustomizations.Settings, vsCode.Settings)
 	}
 
 	return retVSCodeCustomizations
 }
 
 func contains(stack []string, k string) bool {
-	for _, s := range stack {
-		if s == k {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(stack, k)
 }

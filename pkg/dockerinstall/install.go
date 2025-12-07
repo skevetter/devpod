@@ -171,10 +171,10 @@ func getDistribution() *distro {
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		line := scanner.Text()
-		if strings.HasPrefix(line, "ID=") {
-			distro.id = strings.Trim(strings.TrimPrefix(line, "ID="), "\"")
-		} else if strings.HasPrefix(line, "VERSION_CODENAME=") {
-			distro.version = strings.Trim(strings.TrimPrefix(line, "VERSION_CODENAME="), "\"")
+		if after, ok := strings.CutPrefix(line, "ID="); ok {
+			distro.id = strings.Trim(after, "\"")
+		} else if after, ok := strings.CutPrefix(line, "VERSION_CODENAME="); ok {
+			distro.version = strings.Trim(after, "\"")
 		} else if strings.HasPrefix(line, "VERSION_ID=") && distro.version == "" {
 			distro.version = strings.Trim(strings.TrimPrefix(line, "VERSION_ID="), "\"")
 		}
@@ -214,8 +214,8 @@ func checkForked(distro *distro) *distro {
 		return distro
 	}
 
-	lines := strings.Split(string(output), "\n")
-	for _, line := range lines {
+	lines := strings.SplitSeq(string(output), "\n")
+	for line := range lines {
 		line = strings.ToLower(line)
 		if strings.Contains(line, "distributor id:") {
 			parts := strings.Split(line, ":")
@@ -622,11 +622,11 @@ func getEnv(key, defaultValue string) string {
 }
 
 // Helper functions to ignore fmt errors (matching shell script behavior)
-func fprintln(w io.Writer, a ...interface{}) {
+func fprintln(w io.Writer, a ...any) {
 	_, _ = fmt.Fprintln(w, a...)
 }
 
-func fprintf(w io.Writer, format string, a ...interface{}) {
+func fprintf(w io.Writer, format string, a ...any) {
 	_, _ = fmt.Fprintf(w, format, a...)
 }
 

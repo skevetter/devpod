@@ -139,11 +139,11 @@ type ValidateOptions struct{}
 type StartOptions struct{}
 
 type StopOptions struct {
-	Platform devpod.PlatformOptions `json:"platform,omitempty"`
+	Platform devpod.PlatformOptions `json:"platform"`
 }
 
 type DeleteOptions struct {
-	Platform devpod.PlatformOptions `json:"platform,omitempty"`
+	Platform devpod.PlatformOptions `json:"platform"`
 
 	IgnoreNotFound bool   `json:"ignoreNotFound,omitempty"`
 	Force          bool   `json:"force,omitempty"`

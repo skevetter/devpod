@@ -10,5 +10,5 @@ type ProInstance struct {
 	Host string `json:"host,omitempty"`
 
 	// CreationTimestamp is the timestamp when this pro instance was created
-	CreationTimestamp types.Time `json:"creationTimestamp,omitempty"`
+	CreationTimestamp types.Time `json:"creationTimestamp"`
 }

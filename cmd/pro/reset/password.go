@@ -144,7 +144,7 @@ func (cmd *PasswordCmd) Run() error {
 			break
 		}
 	}
-	passwordHash := []byte(fmt.Sprintf("%x", sha256.Sum256([]byte(password))))
+	passwordHash := fmt.Appendf(nil, "%x", sha256.Sum256([]byte(password)))
 
 	// check if secret exists
 	passwordSecret, err := managementClient.CoreV1().Secrets(user.Spec.PasswordRef.SecretNamespace).Get(context.Background(), user.Spec.PasswordRef.SecretName, metav1.GetOptions{})

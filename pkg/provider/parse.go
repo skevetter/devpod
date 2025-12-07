@@ -5,6 +5,7 @@ import (
 	"io"
 	"reflect"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
@@ -312,10 +313,5 @@ func ParseOptions(options []string) (map[string]string, error) {
 }
 
 func contains(haystack []string, needle string) bool {
-	for _, s := range haystack {
-		if s == needle {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(haystack, needle)
 }

@@ -2,6 +2,7 @@ package resolver
 
 import (
 	"fmt"
+	"maps"
 	"sort"
 
 	"github.com/skevetter/devpod/pkg/config"
@@ -11,9 +12,7 @@ import (
 
 func combine(resolvedOptions map[string]config.OptionValue, extraValues map[string]string) map[string]string {
 	options := map[string]string{}
-	for k, v := range extraValues {
-		options[k] = v
-	}
+	maps.Copy(options, extraValues)
 	for k, v := range resolvedOptions {
 		options[k] = v.Value
 	}
@@ -182,12 +181,8 @@ func findVariables(str string) []string {
 
 func mergeMaps[K comparable, V any](existing map[K]V, newOpts map[K]V) map[K]V {
 	retOpts := map[K]V{}
-	for k, v := range existing {
-		retOpts[k] = v
-	}
-	for k, v := range newOpts {
-		retOpts[k] = v
-	}
+	maps.Copy(retOpts, existing)
+	maps.Copy(retOpts, newOpts)
 
 	return retOpts
 }

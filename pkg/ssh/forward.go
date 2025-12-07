@@ -126,18 +126,16 @@ func forward(
 			log.Debugf("error copying to remote: %v", err)
 		}
 	}()
-	waitGroup.Add(1)
 
 	// Copy sshConn.Reader to localConn.Writer
-	go func() {
-		defer waitGroup.Done()
+	waitGroup.Go(func() {
 		defer func() { _ = localConn.Close() }()
 
 		_, err = io.Copy(localConn, sshConn)
 		if err != nil {
 			log.Debugf("error copying to local: %v", err)
 		}
-	}()
+	})
 	waitGroup.Add(1)
 	waitGroup.Wait()
 }
@@ -167,18 +165,16 @@ func reverseForward(
 			log.Debugf("error copying to local: %v", err)
 		}
 	}()
-	waitGroup.Add(1)
 
 	// Copy sshConn.Reader to localConn.Writer
-	go func() {
-		defer waitGroup.Done()
+	waitGroup.Go(func() {
 		defer func() { _ = remoteConn.Close() }()
 
 		_, err = io.Copy(remoteConn, localConn)
 		if err != nil {
 			log.Debugf("error copying to remote: %v", err)
 		}
-	}()
+	})
 	waitGroup.Add(1)
 	waitGroup.Wait()
 }

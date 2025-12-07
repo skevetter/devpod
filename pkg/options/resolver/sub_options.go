@@ -3,6 +3,7 @@ package resolver
 import (
 	"bytes"
 	"context"
+	"maps"
 	"os"
 	"strings"
 	"time"
@@ -56,9 +57,7 @@ func resolveSubOptions(ctx context.Context, option *types.Option, resolvedOption
 	// prepare new options
 	// need to look for option in graph. should be rather easy because we don't need to traverse the whole graph
 	retOpts := config.OptionDefinitions{}
-	for k, v := range subOptions.Options {
-		retOpts[k] = v
-	}
+	maps.Copy(retOpts, subOptions.Options)
 
 	return retOpts, nil
 }

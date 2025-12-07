@@ -25,7 +25,7 @@ type ProviderConfig struct {
 	Home string `json:"home,omitempty"`
 
 	// Source is the source the provider was loaded from
-	Source ProviderSource `json:"source,omitempty"`
+	Source ProviderSource `json:"source"`
 
 	// Description is the provider description
 	Description string `json:"description,omitempty"`
@@ -37,10 +37,10 @@ type ProviderConfig struct {
 	Options map[string]*types.Option `json:"options,omitempty"`
 
 	// Agent allows you to override agent configuration
-	Agent ProviderAgentConfig `json:"agent,omitempty"`
+	Agent ProviderAgentConfig `json:"agent"`
 
 	// Exec holds the provider commands
-	Exec ProviderCommands `json:"exec,omitempty"`
+	Exec ProviderCommands `json:"exec"`
 
 	// Binaries is an optional field to specify a binary to execute the commands
 	Binaries map[string][]*ProviderBinary `json:"binaries,omitempty"`
@@ -104,26 +104,26 @@ type ProviderAgentConfig struct {
 	InjectDockerCredentials types.StrBool `json:"injectDockerCredentials,omitempty"`
 
 	// Exec commands that can be used on the remote
-	Exec ProviderAgentConfigExec `json:"exec,omitempty"`
+	Exec ProviderAgentConfigExec `json:"exec"`
 
 	// Binaries is an optional field to specify a binary to execute the commands
 	Binaries map[string][]*ProviderBinary `json:"binaries,omitempty"`
 
 	// Dockerless holds custom dockerless configuration
-	Dockerless ProviderDockerlessOptions `json:"dockerless,omitempty"`
+	Dockerless ProviderDockerlessOptions `json:"dockerless"`
 
 	// Driver is the driver to use for deploying the devcontainer. Currently supports
 	// docker (default) or kubernetes (experimental)
 	Driver string `json:"driver,omitempty"`
 
 	// Docker holds docker specific configuration
-	Docker ProviderDockerDriverConfig `json:"docker,omitempty"`
+	Docker ProviderDockerDriverConfig `json:"docker"`
 
 	// Custom holds custom driver specific configuration
-	Custom ProviderCustomDriverConfig `json:"custom,omitempty"`
+	Custom ProviderCustomDriverConfig `json:"custom"`
 
 	// Kubernetes holds kubernetes specific configuration
-	Kubernetes ProviderKubernetesDriverConfig `json:"kubernetes,omitempty"`
+	Kubernetes ProviderKubernetesDriverConfig `json:"kubernetes"`
 }
 
 type ProviderDockerlessOptions struct {
@@ -299,19 +299,19 @@ type ProxyCommands struct {
 	Health types.StrArray `json:"health,omitempty"`
 
 	// Create creates entities associated with this provider
-	Create CreateProxyCommands `json:"create,omitempty"`
+	Create CreateProxyCommands `json:"create"`
 
 	// Get gets entities associated with this provider
-	Get GetProxyCommands `json:"get,omitempty"`
+	Get GetProxyCommands `json:"get"`
 
 	// List lists all entities associated with this provider
-	List ListProxyCommands `json:"list,omitempty"`
+	List ListProxyCommands `json:"list"`
 
 	// Watch lists all entities associated with this provider and then watches for changes
-	Watch WatchProxyCommands `json:"watch,omitempty"`
+	Watch WatchProxyCommands `json:"watch"`
 
 	// Update updates entities associated with this provider
-	Update UpdateProxyCommands `json:"update,omitempty"`
+	Update UpdateProxyCommands `json:"update"`
 }
 
 type ListProxyCommands struct {

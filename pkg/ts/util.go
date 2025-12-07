@@ -50,7 +50,7 @@ func GetURL(host string, port int) string {
 
 // WaitHostReachable polls until the given host is reachable via ts.
 func WaitHostReachable(ctx context.Context, lc *tailscale.LocalClient, addr Addr, maxRetries int, log log.Logger) error {
-	for i := 0; i < maxRetries; i++ {
+	for i := range maxRetries {
 		timeoutCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 		defer cancel()
 		conn, err := lc.DialTCP(timeoutCtx, addr.Host(), uint16(addr.Port()))

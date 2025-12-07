@@ -2,6 +2,7 @@ package options
 
 import (
 	"context"
+	"maps"
 	"os"
 	"reflect"
 	"strings"
@@ -202,14 +203,10 @@ func ResolveOptions(
 			devConfig.Current().Providers[provider.Name] = &config.ProviderConfig{}
 		}
 		devConfig.Current().Providers[provider.Name].Options = map[string]config.OptionValue{}
-		for k, v := range resolvedOptionValues {
-			devConfig.Current().Providers[provider.Name].Options[k] = v
-		}
+		maps.Copy(devConfig.Current().Providers[provider.Name].Options, resolvedOptionValues)
 
 		devConfig.Current().Providers[provider.Name].DynamicOptions = config.OptionDefinitions{}
-		for k, v := range dynamicOptionDefinitions {
-			devConfig.Current().Providers[provider.Name].DynamicOptions[k] = v
-		}
+		maps.Copy(devConfig.Current().Providers[provider.Name].DynamicOptions, dynamicOptionDefinitions)
 		if singleMachine != nil {
 			devConfig.Current().Providers[provider.Name].SingleMachine = *singleMachine
 		}

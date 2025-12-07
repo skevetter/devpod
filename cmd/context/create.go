@@ -3,6 +3,8 @@ package context
 import (
 	"context"
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -84,13 +86,9 @@ func setOptions(devPodConfig *config.Config, context string, options []string) e
 
 	newValues := map[string]config.OptionValue{}
 	if devPodConfig.Contexts[context].Options != nil {
-		for k, v := range devPodConfig.Contexts[context].Options {
-			newValues[k] = v
-		}
+		maps.Copy(newValues, devPodConfig.Contexts[context].Options)
 	}
-	for k, v := range optionValues {
-		newValues[k] = v
-	}
+	maps.Copy(newValues, optionValues)
 
 	devPodConfig.Contexts[context].Options = newValues
 	return nil
@@ -119,13 +117,7 @@ func parseOptions(options []string) (map[string]config.OptionValue, error) {
 		}
 
 		if len(contextOption.Enum) > 0 {
-			found := false
-			for _, e := range contextOption.Enum {
-				if value == e {
-					found = true
-					break
-				}
-			}
+			found := slices.Contains(contextOption.Enum, value)
 			if !found {
 				return nil, fmt.Errorf("invalid value '%s' for option '%s', has to match one of the following values: %v", value, key, contextOption.Enum)
 			}

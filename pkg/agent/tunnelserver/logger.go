@@ -54,7 +54,7 @@ func (s *tunnelLogger) worker() {
 	}
 }
 
-func (s *tunnelLogger) Debug(args ...interface{}) {
+func (s *tunnelLogger) Debug(args ...any) {
 	if s.level < logrus.DebugLevel {
 		return
 	}
@@ -65,7 +65,7 @@ func (s *tunnelLogger) Debug(args ...interface{}) {
 	}
 }
 
-func (s *tunnelLogger) Debugf(format string, args ...interface{}) {
+func (s *tunnelLogger) Debugf(format string, args ...any) {
 	if s.level < logrus.DebugLevel {
 		return
 	}
@@ -76,7 +76,7 @@ func (s *tunnelLogger) Debugf(format string, args ...interface{}) {
 	}
 }
 
-func (s *tunnelLogger) Info(args ...interface{}) {
+func (s *tunnelLogger) Info(args ...any) {
 	if s.level < logrus.InfoLevel {
 		return
 	}
@@ -87,7 +87,7 @@ func (s *tunnelLogger) Info(args ...interface{}) {
 	}
 }
 
-func (s *tunnelLogger) Infof(format string, args ...interface{}) {
+func (s *tunnelLogger) Infof(format string, args ...any) {
 	if s.level < logrus.InfoLevel {
 		return
 	}
@@ -98,7 +98,7 @@ func (s *tunnelLogger) Infof(format string, args ...interface{}) {
 	}
 }
 
-func (s *tunnelLogger) Warn(args ...interface{}) {
+func (s *tunnelLogger) Warn(args ...any) {
 	if s.level < logrus.WarnLevel {
 		return
 	}
@@ -109,7 +109,7 @@ func (s *tunnelLogger) Warn(args ...interface{}) {
 	}
 }
 
-func (s *tunnelLogger) Warnf(format string, args ...interface{}) {
+func (s *tunnelLogger) Warnf(format string, args ...any) {
 	if s.level < logrus.WarnLevel {
 		return
 	}
@@ -120,7 +120,7 @@ func (s *tunnelLogger) Warnf(format string, args ...interface{}) {
 	}
 }
 
-func (s *tunnelLogger) Error(args ...interface{}) {
+func (s *tunnelLogger) Error(args ...any) {
 	if s.level < logrus.ErrorLevel {
 		return
 	}
@@ -131,7 +131,7 @@ func (s *tunnelLogger) Error(args ...interface{}) {
 	}
 }
 
-func (s *tunnelLogger) Errorf(format string, args ...interface{}) {
+func (s *tunnelLogger) Errorf(format string, args ...any) {
 	if s.level < logrus.ErrorLevel {
 		return
 	}
@@ -142,7 +142,7 @@ func (s *tunnelLogger) Errorf(format string, args ...interface{}) {
 	}
 }
 
-func (s *tunnelLogger) Fatal(args ...interface{}) {
+func (s *tunnelLogger) Fatal(args ...any) {
 	if s.level < logrus.FatalLevel {
 		return
 	}
@@ -155,7 +155,7 @@ func (s *tunnelLogger) Fatal(args ...interface{}) {
 	os.Exit(1)
 }
 
-func (s *tunnelLogger) Fatalf(format string, args ...interface{}) {
+func (s *tunnelLogger) Fatalf(format string, args ...any) {
 	if s.level < logrus.FatalLevel {
 		return
 	}
@@ -168,7 +168,7 @@ func (s *tunnelLogger) Fatalf(format string, args ...interface{}) {
 	os.Exit(1)
 }
 
-func (s *tunnelLogger) Done(args ...interface{}) {
+func (s *tunnelLogger) Done(args ...any) {
 	if s.level < logrus.InfoLevel {
 		return
 	}
@@ -179,7 +179,7 @@ func (s *tunnelLogger) Done(args ...interface{}) {
 	}
 }
 
-func (s *tunnelLogger) Donef(format string, args ...interface{}) {
+func (s *tunnelLogger) Donef(format string, args ...any) {
 	if s.level < logrus.InfoLevel {
 		return
 	}
@@ -190,7 +190,7 @@ func (s *tunnelLogger) Donef(format string, args ...interface{}) {
 	}
 }
 
-func (s *tunnelLogger) Print(level logrus.Level, args ...interface{}) {
+func (s *tunnelLogger) Print(level logrus.Level, args ...any) {
 	switch level {
 	case logrus.InfoLevel:
 		s.Info(args...)
@@ -209,7 +209,7 @@ func (s *tunnelLogger) Print(level logrus.Level, args ...interface{}) {
 	}
 }
 
-func (s *tunnelLogger) Printf(level logrus.Level, format string, args ...interface{}) {
+func (s *tunnelLogger) Printf(level logrus.Level, format string, args ...any) {
 	switch level {
 	case logrus.InfoLevel:
 		s.Infof(format, args...)

@@ -40,85 +40,85 @@ func (c *CombinedLogger) log(level logrus.Level, logFunc func(logLib.Logger)) {
 	}
 }
 
-func (c *CombinedLogger) Debug(args ...interface{}) {
+func (c *CombinedLogger) Debug(args ...any) {
 	c.log(logrus.DebugLevel, func(logger logLib.Logger) {
 		logger.Debug(args...)
 	})
 }
 
-func (c *CombinedLogger) Debugf(format string, args ...interface{}) {
+func (c *CombinedLogger) Debugf(format string, args ...any) {
 	c.log(logrus.DebugLevel, func(logger logLib.Logger) {
 		logger.Debugf(format, args...)
 	})
 }
 
-func (c *CombinedLogger) Info(args ...interface{}) {
+func (c *CombinedLogger) Info(args ...any) {
 	c.log(logrus.InfoLevel, func(logger logLib.Logger) {
 		logger.Info(args...)
 	})
 }
 
-func (c *CombinedLogger) Infof(format string, args ...interface{}) {
+func (c *CombinedLogger) Infof(format string, args ...any) {
 	c.log(logrus.InfoLevel, func(logger logLib.Logger) {
 		logger.Infof(format, args...)
 	})
 }
 
-func (c *CombinedLogger) Warn(args ...interface{}) {
+func (c *CombinedLogger) Warn(args ...any) {
 	c.log(logrus.WarnLevel, func(logger logLib.Logger) {
 		logger.Warn(args...)
 	})
 }
 
-func (c *CombinedLogger) Warnf(format string, args ...interface{}) {
+func (c *CombinedLogger) Warnf(format string, args ...any) {
 	c.log(logrus.WarnLevel, func(logger logLib.Logger) {
 		logger.Warnf(format, args...)
 	})
 }
 
-func (c *CombinedLogger) Error(args ...interface{}) {
+func (c *CombinedLogger) Error(args ...any) {
 	c.log(logrus.ErrorLevel, func(logger logLib.Logger) {
 		logger.Error(args...)
 	})
 }
 
-func (c *CombinedLogger) Errorf(format string, args ...interface{}) {
+func (c *CombinedLogger) Errorf(format string, args ...any) {
 	c.log(logrus.ErrorLevel, func(logger logLib.Logger) {
 		logger.Errorf(format, args...)
 	})
 }
 
-func (c *CombinedLogger) Fatal(args ...interface{}) {
+func (c *CombinedLogger) Fatal(args ...any) {
 	c.log(logrus.FatalLevel, func(logger logLib.Logger) {
 		logger.Fatal(args...)
 	})
 }
 
-func (c *CombinedLogger) Fatalf(format string, args ...interface{}) {
+func (c *CombinedLogger) Fatalf(format string, args ...any) {
 	c.log(logrus.FatalLevel, func(logger logLib.Logger) {
 		logger.Fatalf(format, args...)
 	})
 }
 
-func (c *CombinedLogger) Done(args ...interface{}) {
+func (c *CombinedLogger) Done(args ...any) {
 	c.log(logrus.InfoLevel, func(logger logLib.Logger) {
 		logger.Done(args...)
 	})
 }
 
-func (c *CombinedLogger) Donef(format string, args ...interface{}) {
+func (c *CombinedLogger) Donef(format string, args ...any) {
 	c.log(logrus.InfoLevel, func(logger logLib.Logger) {
 		logger.Donef(format, args...)
 	})
 }
 
-func (c *CombinedLogger) Print(level logrus.Level, args ...interface{}) {
+func (c *CombinedLogger) Print(level logrus.Level, args ...any) {
 	c.log(level, func(logger logLib.Logger) {
 		logger.Print(level, args...)
 	})
 }
 
-func (c *CombinedLogger) Printf(level logrus.Level, format string, args ...interface{}) {
+func (c *CombinedLogger) Printf(level logrus.Level, format string, args ...any) {
 	c.log(level, func(logger logLib.Logger) {
 		logger.Printf(level, format, args...)
 	})

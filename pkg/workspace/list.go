@@ -155,9 +155,7 @@ func listProWorkspaces(ctx context.Context, devPodConfig *config.Config, owner p
 			continue
 		}
 
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			workspaces, err := listProWorkspacesForProvider(ctx, devPodConfig, provider, providerConfig, owner, log)
 			mu.Lock()
 			defer mu.Unlock()
@@ -165,7 +163,7 @@ func listProWorkspaces(ctx context.Context, devPodConfig *config.Config, owner p
 				workspaces: workspaces,
 				err:        err,
 			}
-		}()
+		})
 	}
 	wg.Wait()
 

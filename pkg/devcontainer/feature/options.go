@@ -2,12 +2,13 @@ package feature
 
 import (
 	"fmt"
+	"maps"
 	"sort"
 
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 )
 
-func getFeatureEnvVariables(feature *config.FeatureConfig, featureOptions interface{}) []string {
+func getFeatureEnvVariables(feature *config.FeatureConfig, featureOptions any) []string {
 	options := getFeatureValueObject(feature, featureOptions)
 	variables := []string{}
 	for k, v := range options {
@@ -19,13 +20,11 @@ func getFeatureEnvVariables(feature *config.FeatureConfig, featureOptions interf
 	return variables
 }
 
-func getFeatureValueObject(feature *config.FeatureConfig, featureOptions interface{}) map[string]interface{} {
+func getFeatureValueObject(feature *config.FeatureConfig, featureOptions any) map[string]any {
 	defaults := getFeatureDefaults(feature)
 	switch t := featureOptions.(type) {
-	case map[string]interface{}:
-		for k, v := range t {
-			defaults[k] = v
-		}
+	case map[string]any:
+		maps.Copy(defaults, t)
 
 		return defaults
 	case string:
@@ -44,8 +43,8 @@ func getFeatureValueObject(feature *config.FeatureConfig, featureOptions interfa
 	return defaults
 }
 
-func getFeatureDefaults(feature *config.FeatureConfig) map[string]interface{} {
-	ret := map[string]interface{}{}
+func getFeatureDefaults(feature *config.FeatureConfig) map[string]any {
+	ret := map[string]any{}
 	for k, v := range feature.Options {
 		ret[k] = string(v.Default)
 	}

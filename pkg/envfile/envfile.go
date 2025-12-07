@@ -2,6 +2,7 @@ package envfile
 
 import (
 	"encoding/json"
+	"maps"
 	"os"
 
 	"github.com/loft-sh/log"
@@ -59,9 +60,7 @@ func MergeAndApply(env map[string]string, log log.Logger) {
 	if envFile.Env == nil {
 		envFile.Env = map[string]string{}
 	}
-	for k, v := range env {
-		envFile.Env[k] = v
-	}
+	maps.Copy(envFile.Env, env)
 
 	out, err = json.Marshal(envFile)
 	if err != nil {

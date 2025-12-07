@@ -247,7 +247,7 @@ func (c *client) Ping(ctx context.Context, writer io.Writer) error {
 		return fmt.Errorf("no network peer for hostname %s", wAddr.Host())
 	}
 
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		timeoutCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 		defer cancel()
 		result, err := c.tsClient.Ping(timeoutCtx, *ip, tailcfg.PingDisco)

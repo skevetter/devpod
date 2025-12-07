@@ -3,6 +3,7 @@ package parameters
 import (
 	"fmt"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -11,7 +12,7 @@ import (
 	storagev1 "github.com/loft-sh/api/v4/pkg/apis/storage/v1"
 )
 
-func VerifyValue(value string, parameter storagev1.AppParameter) (interface{}, error) {
+func VerifyValue(value string, parameter storagev1.AppParameter) (any, error) {
 	switch parameter.Type {
 	case "":
 		fallthrough
@@ -27,10 +28,8 @@ func VerifyValue(value string, parameter storagev1.AppParameter) (interface{}, e
 		if parameter.Required && value == "" {
 			return nil, fmt.Errorf("parameter %s (%s) is required", parameter.Label, parameter.Variable)
 		}
-		for _, option := range parameter.Options {
-			if option == value {
-				return value, nil
-			}
+		if slices.Contains(parameter.Options, value) {
+			return value, nil
 		}
 		if parameter.Validation != "" {
 			regEx, err := regexp.Compile(parameter.Validation)
@@ -101,14 +100,14 @@ func VerifyValue(value string, parameter storagev1.AppParameter) (interface{}, e
 	return nil, fmt.Errorf("unrecognized type %s for parameter %s (%s)", parameter.Type, parameter.Label, parameter.Variable)
 }
 
-func GetDeepValue(parameters interface{}, path string) interface{} {
+func GetDeepValue(parameters any, path string) any {
 	if parameters == nil {
 		return nil
 	}
 
 	pathSegments := strings.Split(path, ".")
 	switch t := parameters.(type) {
-	case map[string]interface{}:
+	case map[string]any:
 		val, ok := t[pathSegments[0]]
 		if !ok {
 			return nil
@@ -117,7 +116,7 @@ func GetDeepValue(parameters interface{}, path string) interface{} {
 		}
 
 		return GetDeepValue(val, strings.Join(pathSegments[1:], "."))
-	case []interface{}:
+	case []any:
 		index, err := strconv.Atoi(pathSegments[0])
 		if err != nil {
 			return nil

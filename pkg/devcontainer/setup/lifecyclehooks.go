@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"os/exec"
 	"os/user"
@@ -188,12 +189,8 @@ func mergeRemoteEnv(remoteEnv map[string]string, probedEnv map[string]string, re
 
 	// Order matters here
 	// remoteEnv should always override probedEnv as it has been specified explicitly by the devcontainer author
-	for k, v := range probedEnv {
-		retEnv[k] = v
-	}
-	for k, v := range remoteEnv {
-		retEnv[k] = v
-	}
+	maps.Copy(retEnv, probedEnv)
+	maps.Copy(retEnv, remoteEnv)
 	probedPath, probeOk := probedEnv["PATH"]
 	remotePath, remoteOk := remoteEnv["PATH"]
 	if probeOk && remoteOk {
@@ -201,7 +198,7 @@ func mergeRemoteEnv(remoteEnv map[string]string, probedEnv map[string]string, re
 		sbinRegex := regexp.MustCompile(`/sbin(/|$)`)
 		probedTokens := strings.Split(probedPath, ":")
 		insertAt := 0
-		for _, e := range strings.Split(remotePath, ":") {
+		for e := range strings.SplitSeq(remotePath, ":") {
 			// check if remotePath entry is in probed tokens
 			i := slices.Index(probedTokens, e)
 			if i == -1 {

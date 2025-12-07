@@ -30,16 +30,16 @@ type Workspace struct {
 	Picture string `json:"picture,omitempty"`
 
 	// Provider is the provider used to create this workspace
-	Provider WorkspaceProviderConfig `json:"provider,omitempty"`
+	Provider WorkspaceProviderConfig `json:"provider"`
 
 	// Machine is the machine to use for this workspace
-	Machine WorkspaceMachineConfig `json:"machine,omitempty"`
+	Machine WorkspaceMachineConfig `json:"machine"`
 
 	// IDE holds IDE specific settings
-	IDE WorkspaceIDEConfig `json:"ide,omitempty"`
+	IDE WorkspaceIDEConfig `json:"ide"`
 
 	// Source is the source where this workspace will be created from
-	Source WorkspaceSource `json:"source,omitempty"`
+	Source WorkspaceSource `json:"source"`
 
 	// DevContainerImage is the container image to use, overriding whatever is in the devcontainer.json
 	DevContainerImage string `json:"devContainerImage,omitempty"`
@@ -51,10 +51,10 @@ type Workspace struct {
 	DevContainerConfig *devcontainerconfig.DevContainerConfig `json:"devContainerConfig,omitempty"`
 
 	// CreationTimestamp is the timestamp when this workspace was created
-	CreationTimestamp types.Time `json:"creationTimestamp,omitempty"`
+	CreationTimestamp types.Time `json:"creationTimestamp"`
 
 	// LastUsedTimestamp holds the timestamp when this workspace was last accessed
-	LastUsedTimestamp types.Time `json:"lastUsed,omitempty"`
+	LastUsedTimestamp types.Time `json:"lastUsed"`
 
 	// Context is the context where this config file was loaded from
 	Context string `json:"context,omitempty"`
@@ -136,20 +136,20 @@ type WorkspaceSource struct {
 
 type ContainerWorkspaceInfo struct {
 	// IDE holds the ide config options
-	IDE WorkspaceIDEConfig `json:"ide,omitempty"`
+	IDE WorkspaceIDEConfig `json:"ide"`
 
 	// CLIOptions holds the cli options
-	CLIOptions CLIOptions `json:"cliOptions,omitempty"`
+	CLIOptions CLIOptions `json:"cliOptions"`
 
 	// Dockerless holds custom dockerless configuration
-	Dockerless ProviderDockerlessOptions `json:"dockerless,omitempty"`
+	Dockerless ProviderDockerlessOptions `json:"dockerless"`
 
 	// ContainerTimeout is the timeout in minutes to wait until the agent tries
 	// to delete the container.
 	ContainerTimeout string `json:"containerInactivityTimeout,omitempty"`
 
 	// Source is a WorkspaceSource to be used inside the container
-	Source WorkspaceSource `json:"source,omitempty"`
+	Source WorkspaceSource `json:"source"`
 
 	// ContentFolder holds the folder where the content is stored
 	ContentFolder string `json:"contentFolder,omitempty"`
@@ -158,7 +158,7 @@ type ContainerWorkspaceInfo struct {
 	PullFromInsideContainer types.StrBool `json:"pullFromInsideContainer,omitempty"`
 
 	// Agent holds the agent info
-	Agent ProviderAgentConfig `json:"agent,omitempty"`
+	Agent ProviderAgentConfig `json:"agent"`
 }
 
 type AgentWorkspaceInfo struct {
@@ -176,10 +176,10 @@ type AgentWorkspaceInfo struct {
 	Machine *Machine `json:"machine,omitempty"`
 
 	// Agent holds the agent info
-	Agent ProviderAgentConfig `json:"agent,omitempty"`
+	Agent ProviderAgentConfig `json:"agent"`
 
 	// CLIOptions holds the cli options
-	CLIOptions CLIOptions `json:"cliOptions,omitempty"`
+	CLIOptions CLIOptions `json:"cliOptions"`
 
 	// Options holds the filled provider options for this workspace
 	Options map[string]config.OptionValue `json:"options,omitempty"`
@@ -199,7 +199,7 @@ type AgentWorkspaceInfo struct {
 
 type CLIOptions struct {
 	// Platform are the platform options
-	Platform devpod.PlatformOptions `json:"platformOptions,omitempty"`
+	Platform devpod.PlatformOptions `json:"platformOptions"`
 
 	// up options
 	ID                          string            `json:"id,omitempty"`
@@ -290,8 +290,8 @@ func (w WorkspaceSource) Type() string {
 }
 
 func ParseWorkspaceSource(source string) *WorkspaceSource {
-	if strings.HasPrefix(source, WorkspaceSourceGit) {
-		gitRepo, gitPRReference, gitBranch, gitCommit, gitSubdir := git.NormalizeRepository(strings.TrimPrefix(source, WorkspaceSourceGit))
+	if after, ok := strings.CutPrefix(source, WorkspaceSourceGit); ok {
+		gitRepo, gitPRReference, gitBranch, gitCommit, gitSubdir := git.NormalizeRepository(after)
 		return &WorkspaceSource{
 			GitRepository:  gitRepo,
 			GitPRReference: gitPRReference,
@@ -299,17 +299,17 @@ func ParseWorkspaceSource(source string) *WorkspaceSource {
 			GitCommit:      gitCommit,
 			GitSubPath:     gitSubdir,
 		}
-	} else if strings.HasPrefix(source, WorkspaceSourceLocal) {
+	} else if after, ok := strings.CutPrefix(source, WorkspaceSourceLocal); ok {
 		return &WorkspaceSource{
-			LocalFolder: strings.TrimPrefix(source, WorkspaceSourceLocal),
+			LocalFolder: after,
 		}
-	} else if strings.HasPrefix(source, WorkspaceSourceImage) {
+	} else if after, ok := strings.CutPrefix(source, WorkspaceSourceImage); ok {
 		return &WorkspaceSource{
-			Image: strings.TrimPrefix(source, WorkspaceSourceImage),
+			Image: after,
 		}
-	} else if strings.HasPrefix(source, WorkspaceSourceContainer) {
+	} else if after, ok := strings.CutPrefix(source, WorkspaceSourceContainer); ok {
 		return &WorkspaceSource{
-			Container: strings.TrimPrefix(source, WorkspaceSourceContainer),
+			Container: after,
 		}
 	}
 

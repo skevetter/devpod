@@ -48,7 +48,7 @@ type DevContainerConfigBase struct {
 	Name string `json:"name,omitempty"`
 
 	// Features to add to the dev container.
-	Features map[string]interface{} `json:"features,omitempty"`
+	Features map[string]any `json:"features,omitempty"`
 
 	// Array consisting of the Feature id (without the semantic version) of Features in the order the user wants them to be installed.
 	OverrideFeatureInstallOrder []string `json:"overrideFeatureInstallOrder,omitempty"`
@@ -94,7 +94,7 @@ type DevContainerConfigBase struct {
 
 	// DEPRECATED: Use 'customizations/vscode/settings' instead
 	// Machine specific settings that should be copied into the container. These are only copied when connecting to the container for the first time, rebuilding the container then triggers it again.
-	Settings map[string]interface{} `json:"settings,omitempty"`
+	Settings map[string]any `json:"settings,omitempty"`
 
 	// DEPRECATED: Use 'customizations/vscode/extensions' instead
 	// An array of extensions that should be installed into the container.
@@ -127,7 +127,7 @@ type DevContainerActions struct {
 	PostAttachCommand types.LifecycleHook `json:"postAttachCommand,omitempty"`
 
 	// Tool-specific configuration. Each tool should use a JSON object subproperty with a unique name to group its customizations.
-	Customizations map[string]interface{} `json:"customizations,omitempty"`
+	Customizations map[string]any `json:"customizations,omitempty"`
 }
 
 type UpdatedConfigProperties struct {
@@ -155,7 +155,7 @@ type UpdatedConfigProperties struct {
 	PostAttachCommands []types.LifecycleHook `json:"postAttachCommand,omitempty"`
 
 	// Tool-specific configuration. Each tool should use a JSON object subproperty with a unique name to group its customizations.
-	Customizations map[string][]interface{} `json:"customizations,omitempty"`
+	Customizations map[string][]any `json:"customizations,omitempty"`
 }
 
 type ComposeContainer struct {
@@ -330,9 +330,9 @@ type DevPodCustomizations struct {
 }
 
 type VSCodeCustomizations struct {
-	Settings   map[string]interface{} `json:"settings,omitempty"`
-	Extensions []string               `json:"extensions,omitempty"`
-	DevPort    int                    `json:"devPort,omitempty"`
+	Settings   map[string]any `json:"settings,omitempty"`
+	Extensions []string       `json:"extensions,omitempty"`
+	DevPort    int            `json:"devPort,omitempty"`
 }
 
 type Mount struct {
@@ -377,8 +377,8 @@ func GetContextPath(parsedConfig *DevContainerConfig) string {
 
 func ParseMount(str string) Mount {
 	retMount := Mount{}
-	splitted := strings.Split(str, ",")
-	for _, split := range splitted {
+	splitted := strings.SplitSeq(str, ",")
+	for split := range splitted {
 		splitted2 := strings.Split(split, "=")
 		key := splitted2[0]
 		switch key {
@@ -403,7 +403,7 @@ func ParseMount(str string) Mount {
 }
 
 func (m *Mount) UnmarshalJSON(data []byte) error {
-	var jsonObj interface{}
+	var jsonObj any
 	err := json.Unmarshal(data, &jsonObj)
 	if err != nil {
 		return err
@@ -412,7 +412,7 @@ func (m *Mount) UnmarshalJSON(data []byte) error {
 	case string:
 		*m = ParseMount(obj)
 		return nil
-	case map[string]interface{}:
+	case map[string]any:
 		sourceStr, ok := obj["source"].(string)
 		if ok {
 			m.Source = sourceStr
@@ -429,7 +429,7 @@ func (m *Mount) UnmarshalJSON(data []byte) error {
 		if ok {
 			m.External = externalStr
 		}
-		otherInterface, ok := obj["other"].([]interface{})
+		otherInterface, ok := obj["other"].([]any)
 		if ok {
 			otherStr := make([]string, len(otherInterface))
 			for i := range otherInterface {

@@ -85,7 +85,7 @@ func DownloadBinaries(binaries map[string][]*provider2.ProviderBinary, targetFol
 			}
 
 			// try to download the binary
-			for i := 0; i < 3; i++ {
+			for range 3 {
 				binaryPath, err := downloadBinary(binaryName, binary, targetFolder, log)
 				if err != nil {
 					return nil, errors.Wrapf(err, "downloading binary %s", binaryName)

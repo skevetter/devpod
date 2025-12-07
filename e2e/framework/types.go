@@ -6,7 +6,7 @@ type PodList struct {
 }
 
 type Pod struct {
-	Spec PodSpec `json:"spec,omitempty"`
+	Spec PodSpec `json:"spec"`
 }
 
 type PodSpec struct {

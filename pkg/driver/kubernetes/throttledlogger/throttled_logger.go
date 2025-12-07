@@ -20,17 +20,17 @@ func NewThrottledLogger(logger log.Logger, throttlingInterval time.Duration) *Th
 	}
 }
 
-func (t *ThrottledLogger) Infof(format string, args ...interface{}) {
+func (t *ThrottledLogger) Infof(format string, args ...any) {
 	t.log(t.logger.Infof, format, args...)
 }
 
-func (t *ThrottledLogger) Debugf(format string, args ...interface{}) {
+func (t *ThrottledLogger) Debugf(format string, args ...any) {
 	t.log(t.logger.Debugf, format, args...)
 }
 
-type LoggingFunc func(string, ...interface{})
+type LoggingFunc func(string, ...any)
 
-func (t *ThrottledLogger) log(loggingFunc LoggingFunc, format string, args ...interface{}) {
+func (t *ThrottledLogger) log(loggingFunc LoggingFunc, format string, args ...any) {
 	now := time.Now()
 	if t.timer.IntervalPassed(now) {
 		loggingFunc(format, args...)

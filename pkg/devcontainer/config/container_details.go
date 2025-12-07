@@ -16,8 +16,8 @@ type ImageDetailsConfig struct {
 type ContainerDetails struct {
 	ID      string                 `json:"ID,omitempty"`
 	Created string                 `json:"Created,omitempty"`
-	State   ContainerDetailsState  `json:"State,omitempty"`
-	Config  ContainerDetailsConfig `json:"Config,omitempty"`
+	State   ContainerDetailsState  `json:"State"`
+	Config  ContainerDetailsConfig `json:"Config"`
 }
 
 type ContainerDetailsConfig struct {

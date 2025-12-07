@@ -76,8 +76,8 @@ func configureCredentials(userName, shebang string, targetDir, configDir string,
 	// write credentials helper
 	credentialHelperPath := filepath.Join(targetDir, "docker-credential-devpod")
 	log.Debugf("Wrote docker credentials helper to %s", credentialHelperPath)
-	err = os.WriteFile(credentialHelperPath, []byte(fmt.Sprintf(shebang+`
-'%s' agent docker-credentials --port '%d' "$@"`, binaryPath, port)), 0755)
+	err = os.WriteFile(credentialHelperPath, fmt.Appendf(nil, shebang+`
+'%s' agent docker-credentials --port '%d' "$@"`, binaryPath, port), 0755)
 	if err != nil {
 		return errors.Wrap(err, "write credential helper")
 	}

@@ -18,7 +18,7 @@ func WriteFiles(folder string, files map[string]string) error {
 	return nil
 }
 
-func FillTemplate(templateString string, vars interface{}) (string, error) {
+func FillTemplate(templateString string, vars any) (string, error) {
 	t, err := template.New("gotmpl").Parse(templateString)
 	if err != nil {
 		return "", err

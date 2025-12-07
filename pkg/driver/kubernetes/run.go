@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -431,23 +432,17 @@ func getVolumeMount(idx int, mount *config.Mount) corev1.VolumeMount {
 func getLabels(pod *corev1.Pod, rawLabels string) (map[string]string, error) {
 	labels := map[string]string{}
 	if pod.Labels != nil {
-		for k, v := range pod.Labels {
-			labels[k] = v
-		}
+		maps.Copy(labels, pod.Labels)
 	}
 	if rawLabels != "" {
 		extraLabels, err := parseLabels(rawLabels)
 		if err != nil {
 			return nil, fmt.Errorf("parse labels: %w", err)
 		}
-		for k, v := range extraLabels {
-			labels[k] = v
-		}
+		maps.Copy(labels, extraLabels)
 	}
 	// make sure we don't overwrite the devpod labels
-	for k, v := range ExtraDevPodLabels {
-		labels[k] = v
-	}
+	maps.Copy(labels, ExtraDevPodLabels)
 
 	return labels, nil
 }
@@ -455,9 +450,7 @@ func getLabels(pod *corev1.Pod, rawLabels string) (map[string]string, error) {
 func getNodeSelector(pod *corev1.Pod, rawNodeSelector string) (map[string]string, error) {
 	nodeSelector := map[string]string{}
 	if pod.Spec.NodeSelector != nil {
-		for k, v := range pod.Spec.NodeSelector {
-			nodeSelector[k] = v
-		}
+		maps.Copy(nodeSelector, pod.Spec.NodeSelector)
 	}
 
 	if rawNodeSelector != "" {
@@ -465,9 +458,7 @@ func getNodeSelector(pod *corev1.Pod, rawNodeSelector string) (map[string]string
 		if err != nil {
 			return nil, fmt.Errorf("parsing node selector: %w", err)
 		}
-		for k, v := range selector {
-			nodeSelector[k] = v
-		}
+		maps.Copy(nodeSelector, selector)
 	}
 
 	return nodeSelector, nil

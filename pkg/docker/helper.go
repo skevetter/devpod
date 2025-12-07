@@ -253,7 +253,7 @@ func (r *DockerHelper) IsNerdctl() bool {
 	return strings.Contains(string(out), "nerdctl")
 }
 
-func (r *DockerHelper) Inspect(ctx context.Context, ids []string, inspectType string, obj interface{}) error {
+func (r *DockerHelper) Inspect(ctx context.Context, ids []string, inspectType string, obj any) error {
 	args := []string{"inspect", "--type", inspectType}
 	args = append(args, ids...)
 	out, err := r.buildCmd(ctx, args...).Output()
@@ -304,8 +304,8 @@ func (r *DockerHelper) FindContainerJSON(ctx context.Context, labels []string) (
 
 	result := []string{}
 
-	ids := strings.Split(strings.TrimSuffix(string(out), "\n"), "\n")
-	for _, id := range ids {
+	ids := strings.SplitSeq(strings.TrimSuffix(string(out), "\n"), "\n")
+	for id := range ids {
 		id = strings.TrimSpace(id)
 		found := true
 

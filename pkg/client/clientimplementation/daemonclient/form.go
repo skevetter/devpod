@@ -184,9 +184,9 @@ func updateInstanceInteractive(ctx context.Context, baseClient platformclient.Cl
 	renderedParameters := ""
 	if len(parameters) > 0 {
 		tRef := instance.Spec.TemplateRef
-		var existingParameters map[string]interface{}
+		var existingParameters map[string]any
 		if tRef != nil && tRef.Name == selectedTemplate.GetName() && tRef.Version == selectedTemplateVersion {
-			existingParameters = map[string]interface{}{}
+			existingParameters = map[string]any{}
 			err = yaml.Unmarshal([]byte(instance.Spec.Parameters), &existingParameters)
 			if err != nil {
 				return nil, err
@@ -196,7 +196,7 @@ func updateInstanceInteractive(ctx context.Context, baseClient platformclient.Cl
 		fieldParameters := []*FieldParameter{}
 		// reuse existing parameters as starting point
 		for _, p := range parameters {
-			var value interface{} = p.DefaultValue
+			var value any = p.DefaultValue
 			if existingParameters != nil {
 				value = getDeepValue(existingParameters, p.Variable)
 			}
@@ -445,7 +445,7 @@ func parameterFields(fieldParameters []*FieldParameter) []huh.Field {
 }
 
 func renderParameters(fieldParameters []*FieldParameter) (string, error) {
-	p := map[string]interface{}{}
+	p := map[string]any{}
 	for _, fp := range fieldParameters {
 		if fp.StringValue != "" {
 			p[fp.Variable] = fp.StringValue
@@ -462,14 +462,14 @@ func renderParameters(fieldParameters []*FieldParameter) (string, error) {
 	return string(rawParameters), nil
 }
 
-func getDeepValue(parameters interface{}, path string) interface{} {
+func getDeepValue(parameters any, path string) any {
 	if parameters == nil {
 		return nil
 	}
 
 	pathSegments := strings.Split(path, ".")
 	switch t := parameters.(type) {
-	case map[string]interface{}:
+	case map[string]any:
 		val, ok := t[pathSegments[0]]
 		if !ok {
 			return nil
@@ -478,7 +478,7 @@ func getDeepValue(parameters interface{}, path string) interface{} {
 		}
 
 		return getDeepValue(val, strings.Join(pathSegments[1:], "."))
-	case []interface{}:
+	case []any:
 		index, err := strconv.Atoi(pathSegments[0])
 		if err != nil {
 			return nil

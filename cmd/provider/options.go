@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"sort"
 	"strconv"
 
@@ -147,12 +148,8 @@ func printOptions(devPodConfig *config.Config, provider *workspace.ProviderWithO
 // MergeDynamicOptions merges the static provider options and dynamic options
 func MergeDynamicOptions(options map[string]*types.Option, dynamicOptions config.OptionDefinitions) map[string]*types.Option {
 	retOptions := map[string]*types.Option{}
-	for k, option := range options {
-		retOptions[k] = option
-	}
-	for k, option := range dynamicOptions {
-		retOptions[k] = option
-	}
+	maps.Copy(retOptions, options)
+	maps.Copy(retOptions, dynamicOptions)
 
 	return retOptions
 }

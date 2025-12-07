@@ -3,6 +3,7 @@ package ide
 import (
 	"context"
 	"fmt"
+	"maps"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -86,13 +87,9 @@ func setOptions(devPodConfig *config.Config, ide string, options []string, ideOp
 
 	newValues := map[string]config.OptionValue{}
 	if devPodConfig.Current().IDEs[ide] != nil {
-		for k, v := range devPodConfig.Current().IDEs[ide].Options {
-			newValues[k] = v
-		}
+		maps.Copy(newValues, devPodConfig.Current().IDEs[ide].Options)
 	}
-	for k, v := range optionValues {
-		newValues[k] = v
-	}
+	maps.Copy(newValues, optionValues)
 
 	devPodConfig.Current().IDEs[ide] = &config.IDEConfig{
 		Options: newValues,

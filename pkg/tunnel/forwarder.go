@@ -2,6 +2,7 @@ package tunnel
 
 import (
 	"context"
+	"slices"
 	"sync"
 
 	"github.com/loft-sh/log"
@@ -73,11 +74,5 @@ func (f *forwarder) StopForward(port string) error {
 }
 
 func (f *forwarder) isExcluded(port string) bool {
-	for _, p := range f.forwardedPorts {
-		if p == port {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(f.forwardedPorts, port)
 }

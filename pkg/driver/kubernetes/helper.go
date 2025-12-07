@@ -25,8 +25,8 @@ func parseResources(resourceString string, log log.Logger) corev1.ResourceRequir
 		resourceName = strings.TrimSpace(resourceName)
 
 		// requests
-		if strings.HasPrefix(resourceName, requestsPrefix) {
-			strippedResource := strings.TrimPrefix(resourceName, requestsPrefix)
+		if after, ok := strings.CutPrefix(resourceName, requestsPrefix); ok {
+			strippedResource := after
 			name, quantity, err := parseResource(strippedResource)
 			if err != nil {
 				log.Error(err.Error())
@@ -37,8 +37,8 @@ func parseResources(resourceString string, log log.Logger) corev1.ResourceRequir
 		}
 
 		// limits
-		if strings.HasPrefix(resourceName, limitsPrefix) {
-			strippedResource := strings.TrimPrefix(resourceName, limitsPrefix)
+		if after, ok := strings.CutPrefix(resourceName, limitsPrefix); ok {
+			strippedResource := after
 			name, quantity, err := parseResource(strippedResource)
 			if err != nil {
 				log.Error(err.Error())

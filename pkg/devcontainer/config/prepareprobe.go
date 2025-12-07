@@ -4,6 +4,7 @@ package config
 
 import (
 	"fmt"
+	"maps"
 	"os/exec"
 	"os/user"
 	"strconv"
@@ -43,9 +44,7 @@ func patchEnvVars(env []string, patches map[string]string) []string {
 	}
 
 	// apply patches
-	for k, v := range patches {
-		newEnv[k] = v
-	}
+	maps.Copy(newEnv, patches)
 
 	retEnv := []string{}
 	for k, v := range newEnv {

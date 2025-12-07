@@ -392,8 +392,8 @@ func parseIgnorePaths(ignorePaths string) []string {
 	}
 
 	retPaths := []string{}
-	splitted := strings.Split(ignorePaths, ",")
-	for _, s := range splitted {
+	splitted := strings.SplitSeq(ignorePaths, ",")
+	for s := range splitted {
 		retPaths = append(retPaths, "--ignore-path", strings.TrimSpace(s))
 	}
 

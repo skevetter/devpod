@@ -108,11 +108,9 @@ func (cmd *DaemonCmd) Run(c *cobra.Command, args []string) error {
 
 	// In case no task is configured, just wait indefinitely.
 	if !tasksStarted {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			<-ctx.Done()
-		}()
+		})
 	}
 
 	// Listen for OS termination signals.
@@ -238,7 +236,7 @@ func runNetworkServer(ctx context.Context, cmd *DaemonCmd, errChan chan<- error,
 		WorkspaceHost: cmd.Config.Platform.WorkspaceHost,
 		Client:        baseClient,
 		RootDir:       RootDir,
-		LogF: func(format string, args ...interface{}) {
+		LogF: func(format string, args ...any) {
 			logger.Infof(format, args...)
 		},
 	}, logger)

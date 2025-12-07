@@ -3,6 +3,7 @@ package config
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -80,7 +81,7 @@ type ProviderConfig struct {
 	DynamicOptions OptionDefinitions `json:"dynamicOptions,omitempty"`
 
 	// CreationTimestamp is the timestamp when this provider was added
-	CreationTimestamp types.Time `json:"creationTimestamp,omitempty"`
+	CreationTimestamp types.Time `json:"creationTimestamp"`
 }
 
 type OptionDefinitions = map[string]*types.Option
@@ -150,9 +151,7 @@ func (c *ContextConfig) IDEOptions(ide string) map[string]OptionValue {
 		return retOptions
 	}
 
-	for k, v := range c.IDEs[ide].Options {
-		retOptions[k] = v
-	}
+	maps.Copy(retOptions, c.IDEs[ide].Options)
 	return retOptions
 }
 
@@ -162,9 +161,7 @@ func (c *ContextConfig) ProviderOptions(provider string) map[string]OptionValue 
 		return retOptions
 	}
 
-	for k, v := range c.Providers[provider].Options {
-		retOptions[k] = v
-	}
+	maps.Copy(retOptions, c.Providers[provider].Options)
 	return retOptions
 }
 
@@ -174,9 +171,7 @@ func (c *ContextConfig) DynamicProviderOptionDefinitions(provider string) Option
 		return retOptions
 	}
 
-	for k, v := range c.Providers[provider].DynamicOptions {
-		retOptions[k] = v
-	}
+	maps.Copy(retOptions, c.Providers[provider].DynamicOptions)
 	return retOptions
 }
 

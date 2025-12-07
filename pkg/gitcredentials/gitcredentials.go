@@ -94,8 +94,8 @@ func RemoveHelperFromPath(gitConfigPath string) error {
 
 func Parse(raw string) (*GitCredentials, error) {
 	credentials := &GitCredentials{}
-	lines := strings.Split(raw, "\n")
-	for _, line := range lines {
+	lines := strings.SplitSeq(raw, "\n")
+	for line := range lines {
 		line = strings.TrimSpace(line)
 		splitted := strings.Split(line, "=")
 		if len(splitted) == 1 {
