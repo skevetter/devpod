@@ -87,6 +87,11 @@ jobs:
             ${{ secrets.DOCKERHUB_USERNAME_UUID }} > DOCKERHUB_USERNAME
             ${{ secrets.DOCKERHUB_TOKEN_UUID }} > DOCKERHUB_TOKEN
 
+      - name: debug credentials
+        run: |
+          echo "Username first 3 chars: ${DOCKERHUB_USERNAME:0:3}"
+          echo "Token first 3 chars: ${DOCKERHUB_TOKEN:0:3}"
+
       - name: log in to container registry
         uses: docker/login-action@v3
         with:
