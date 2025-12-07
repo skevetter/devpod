@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/loft-sh/log"
 	"github.com/skevetter/devpod/pkg/agent/tunnel"
@@ -59,7 +60,7 @@ func (s *HTTPTunnelServer) Start(ctx context.Context) error {
 // Stop stops the HTTP tunnel server
 func (s *HTTPTunnelServer) Stop() error {
 	if s.server != nil {
-		ctx, cancel := context.WithTimeout(context.Background(), 5)
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 		return s.server.Shutdown(ctx)
 	}
