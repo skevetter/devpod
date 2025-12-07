@@ -13,7 +13,7 @@ import (
 	providercmd "github.com/skevetter/devpod/cmd/provider"
 	"github.com/skevetter/devpod/pkg/client/clientimplementation"
 	"github.com/skevetter/devpod/pkg/config"
-	daemon "github.com/skevetter/devpod/pkg/daemon/platform"
+	daemon "github.com/skevetter/devpod/pkg/daemon/local"
 	"github.com/skevetter/devpod/pkg/platform"
 	"github.com/skevetter/devpod/pkg/provider"
 	"github.com/skevetter/devpod/pkg/workspace"

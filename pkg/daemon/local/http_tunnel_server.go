@@ -74,7 +74,7 @@ func (s *HTTPTunnelServer) handleRequest(w http.ResponseWriter, r *http.Request)
 	// Read request body
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		s.log.Errorf("Failed to read request body: %v", err)
+		s.log.Errorf("failed to read request body %v", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -83,7 +83,7 @@ func (s *HTTPTunnelServer) handleRequest(w http.ResponseWriter, r *http.Request)
 	// Decode message
 	var msg tunnel.Message
 	if err := json.Unmarshal(body, &msg); err != nil {
-		s.log.Errorf("Failed to decode message: %v", err)
+		s.log.Errorf("failed to decode message %v", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -106,11 +106,11 @@ func (s *HTTPTunnelServer) handleRequest(w http.ResponseWriter, r *http.Request)
 	case "kube-config":
 		response, err = s.tunnelClient.KubeConfig(ctx, &msg)
 	default:
-		err = fmt.Errorf("unknown message type: %s", msg.Message)
+		err = fmt.Errorf("unknown message type %s", msg.Message)
 	}
 
 	if err != nil {
-		s.log.Errorf("Failed to handle request: %v", err)
+		s.log.Errorf("failed to handle request %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -118,7 +118,7 @@ func (s *HTTPTunnelServer) handleRequest(w http.ResponseWriter, r *http.Request)
 	// Encode response
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(response); err != nil {
-		s.log.Errorf("Failed to encode response: %v", err)
+		s.log.Errorf("failed to encode response %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

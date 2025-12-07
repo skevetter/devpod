@@ -26,7 +26,7 @@ const (
 
 	DefaultEntrypoint = `
 while ! command -v /usr/local/bin/devpod >/dev/null 2>&1; do
-  echo "Waiting for devpod tool..."
+  echo "Waiting for devpod tool to be installed"
   sleep 1
 done
 exec /usr/local/bin/devpod agent container daemon
@@ -148,11 +148,11 @@ func (r *runner) runSingleContainer(
 
 		// Inject the daemon entrypoint if platform configuration is provided.
 		if options.Platform.AccessKey != "" {
-			r.Log.Debugf("Platform config detected, injecting DevPod daemon entrypoint.")
+			r.Log.Debugf("platform config detected, injecting DevPod daemon entrypoint")
 
 			data, err := agent.GetEncodedWorkspaceDaemonConfig(options.Platform, r.WorkspaceConfig.Workspace, substitutionContext, mergedConfig)
 			if err != nil {
-				r.Log.Errorf("Failed to marshal daemon config: %v", err)
+				r.Log.Errorf("failed to marshal daemon config %v", err)
 			} else {
 				mergedConfig.ContainerEnv[config.WorkspaceDaemonConfigExtraEnvVar] = data
 			}
@@ -169,7 +169,7 @@ func (r *runner) runSingleContainer(
 		// get from build info
 		containerDetails, err = r.Driver.FindDevContainer(ctx, r.ID)
 		if err != nil {
-			return nil, fmt.Errorf("find dev container: %w", err)
+			return nil, fmt.Errorf("find dev container %w", err)
 		}
 	}
 
@@ -191,13 +191,13 @@ func (r *runner) runContainer(
 	if buildInfo.Dockerless != nil {
 		runOptions, err = r.getDockerlessRunOptions(mergedConfig, substitutionContext, buildInfo)
 		if err != nil {
-			return fmt.Errorf("build dockerless run options: %w", err)
+			return fmt.Errorf("build dockerless run options %w", err)
 		}
 	} else {
 		// build run options
 		runOptions, err = r.getRunOptions(mergedConfig, substitutionContext, buildInfo)
 		if err != nil {
-			return fmt.Errorf("build run options: %w", err)
+			return fmt.Errorf("build run options %w", err)
 		}
 	}
 

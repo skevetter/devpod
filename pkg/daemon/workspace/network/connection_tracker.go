@@ -97,19 +97,19 @@ func (c *ConnTracker) Add(serviceName string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.count++
-	c.logger.Debugf("%s: Added new connection, connection count %d\n", serviceName, c.count)
+	c.logger.Debugf("%s: added new connection, connection count %d\n", serviceName, c.count)
 }
 
 func (c *ConnTracker) Remove(serviceName string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.count--
-	c.logger.Debugf("%s: Removed connection, connection count %d\n", serviceName, c.count)
+	c.logger.Debugf("%s: aemoved connection, connection count %d\n", serviceName, c.count)
 }
 
 func (c *ConnTracker) Count(serviceName string) int {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.logger.Debugf("%s: Get connection count %d\n", serviceName, c.count)
+	c.logger.Debugf("%s: get connection count %d\n", serviceName, c.count)
 	return c.count
 }

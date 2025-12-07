@@ -1,54 +1,83 @@
 package workspace
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
+	"runtime"
+
+	"github.com/loft-sh/log"
+	perrors "github.com/pkg/errors"
+	"github.com/skevetter/devpod/pkg/single"
+	"github.com/takama/daemon"
 )
 
 // InstallDaemon installs workspace daemon
-func InstallDaemon(workspaceDir string) error {
-	executable, err := os.Executable()
+func InstallDaemon(agentDir string, interval string, log log.Logger) error {
+	if runtime.GOOS == "windows" || runtime.GOOS == "darwin" {
+		return fmt.Errorf("unsupported daemon os")
+	}
+
+	// check if admin
+	service, err := daemon.New("devpod", "DevPod Agent Service", daemon.SystemDaemon)
 	if err != nil {
-		return fmt.Errorf("get executable: %w", err)
+		return err
 	}
 
-	// Create systemd service or init script
-	serviceContent := fmt.Sprintf(`[Unit]
-Description=DevPod Workspace Daemon
-After=network.target
-
-[Service]
-Type=simple
-ExecStart=%s agent workspace daemon
-Restart=always
-WorkingDirectory=%s
-
-[Install]
-WantedBy=multi-user.target
-`, executable, workspaceDir)
-
-	servicePath := "/etc/systemd/system/devpod-workspace.service"
-	if err := os.WriteFile(servicePath, []byte(serviceContent), 0644); err != nil {
-		return fmt.Errorf("write service: %w", err)
+	// install ourselves with devpod watch
+	args := []string{"agent", "daemon"}
+	if agentDir != "" {
+		args = append(args, "--agent-dir", agentDir)
+	}
+	if interval != "" {
+		args = append(args, "--interval", interval)
+	}
+	_, err = service.Install(args...)
+	if err != nil && !errors.Is(err, daemon.ErrAlreadyInstalled) {
+		return perrors.Wrap(err, "install service")
 	}
 
-	// Enable and start service
-	if err := exec.Command("systemctl", "daemon-reload").Run(); err != nil {
-		return fmt.Errorf("daemon-reload: %w", err)
+	// make sure daemon is started
+	_, err = service.Start()
+	if err != nil && !errors.Is(err, daemon.ErrAlreadyRunning) {
+		log.Warnf("Error starting service: %v", err)
+
+		err = single.Single("daemon.pid", func() (*exec.Cmd, error) {
+			executable, err := os.Executable()
+			if err != nil {
+				return nil, err
+			}
+
+			log.Infof("started DevPod daemon into server")
+			return exec.Command(executable, args...), nil
+		})
+		if err != nil {
+			return fmt.Errorf("start daemon %w", err)
+		}
+	} else if err == nil {
+		log.Infof("installed DevPod daemon into server")
 	}
 
-	if err := exec.Command("systemctl", "enable", "devpod-workspace").Run(); err != nil {
-		return fmt.Errorf("enable service: %w", err)
-	}
-
-	return exec.Command("systemctl", "start", "devpod-workspace").Run()
+	return nil
 }
 
-// UninstallDaemon removes workspace daemon
-func UninstallDaemon() error {
-	_ = exec.Command("systemctl", "stop", "devpod-workspace").Run()
-	_ = exec.Command("systemctl", "disable", "devpod-workspace").Run()
-	_ = os.Remove("/etc/systemd/system/devpod-workspace.service")
-	return exec.Command("systemctl", "daemon-reload").Run()
+func RemoveDaemon() error {
+	if runtime.GOOS == "windows" || runtime.GOOS == "darwin" {
+		return fmt.Errorf("unsupported daemon os")
+	}
+
+	// check if admin
+	service, err := daemon.New("devpod", "DevPod Agent Service", daemon.SystemDaemon)
+	if err != nil {
+		return err
+	}
+
+	// remove daemon
+	_, err = service.Remove()
+	if err != nil && !errors.Is(err, daemon.ErrNotInstalled) {
+		return err
+	}
+
+	return nil
 }

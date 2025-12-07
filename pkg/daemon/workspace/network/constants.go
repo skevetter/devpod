@@ -8,5 +8,5 @@ const (
 	NetworkProxySocket = "devpod-net.sock"
 
 	// RootDir is the default root directory
-	RootDir = "/var/devpod"
+	RootDir = "/var/run/devpod"
 )

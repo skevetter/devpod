@@ -17,7 +17,7 @@ import (
 	perrors "github.com/pkg/errors"
 	clientpkg "github.com/skevetter/devpod/pkg/client"
 	"github.com/skevetter/devpod/pkg/config"
-	daemon "github.com/skevetter/devpod/pkg/daemon/platform"
+	daemon "github.com/skevetter/devpod/pkg/daemon/local"
 	"github.com/skevetter/devpod/pkg/options"
 	"github.com/skevetter/devpod/pkg/platform"
 	platformclient "github.com/skevetter/devpod/pkg/platform/client"

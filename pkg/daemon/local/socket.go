@@ -1,6 +1,6 @@
 //go:build linux || darwin || unix
 
-package daemon
+package local
 
 import (
 	"errors"
@@ -23,7 +23,7 @@ func listen(addr string) (net.Listener, error) {
 	conn, err := net.Dial("unix", addr)
 	if err == nil {
 		_ = conn.Close()
-		return nil, fmt.Errorf("%s: address already in use", addr)
+		return nil, fmt.Errorf("%s address already in use", addr)
 	}
 	_ = os.Remove(addr)
 

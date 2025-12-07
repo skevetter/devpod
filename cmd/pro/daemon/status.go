@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	platformdaemon "github.com/skevetter/devpod/pkg/daemon/platform"
+	localdaemon "github.com/skevetter/devpod/pkg/daemon/local"
 
 	"github.com/loft-sh/log"
 	"github.com/skevetter/devpod/cmd/agent"
@@ -64,7 +64,7 @@ func NewStatusCmd(flags *proflags.GlobalFlags) *cobra.Command {
 }
 
 func (cmd *StatusCmd) Run(ctx context.Context, devPodConfig *config.Config, provider *providerpkg.ProviderConfig) error {
-	status, err := platformdaemon.NewLocalClient(provider.Name).Status(ctx, cmd.Debug)
+	status, err := localdaemon.NewLocalClient(provider.Name).Status(ctx, cmd.Debug)
 	if err != nil {
 		return err
 	}

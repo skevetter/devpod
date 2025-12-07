@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	RootDir                          = "/var/devpod"
+	RootDir                          = "/var/run/devpod"
 	DaemonConfigPath                 = "/var/run/secrets/devpod/daemon_config"
 	WorkspaceDaemonConfigExtraEnvVar = "DEVPOD_WORKSPACE_DAEMON_CONFIG"
 )
@@ -98,11 +98,9 @@ func (d *Daemon) Run(c *cobra.Command, args []string) error {
 
 	// Wait indefinitely if no tasks
 	if !tasksStarted {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			<-ctx.Done()
-		}()
+		})
 	}
 
 	// Handle signals
@@ -114,7 +112,7 @@ func (d *Daemon) Run(c *cobra.Command, args []string) error {
 	wg.Wait()
 
 	if err != nil {
-		d.log.Errorf("Daemon error: %v", err)
+		d.log.Errorf("daemon error %v", err)
 		os.Exit(1)
 	}
 	os.Exit(0)
@@ -128,7 +126,7 @@ func (d *Daemon) loadConfig() error {
 		if errors.Is(err, os.ErrNotExist) {
 			encodedCfg = os.Getenv(config.WorkspaceDaemonConfigExtraEnvVar)
 		} else {
-			return fmt.Errorf("read config: %w", err)
+			return fmt.Errorf("read config %w", err)
 		}
 	} else {
 		encodedCfg = string(configBytes)
@@ -137,11 +135,11 @@ func (d *Daemon) loadConfig() error {
 	if strings.TrimSpace(encodedCfg) != "" {
 		decoded, err := base64.StdEncoding.DecodeString(encodedCfg)
 		if err != nil {
-			return fmt.Errorf("decode config: %w", err)
+			return fmt.Errorf("decode config %w", err)
 		}
 		var cfg DaemonConfig
 		if err = json.Unmarshal(decoded, &cfg); err != nil {
-			return fmt.Errorf("unmarshal config: %w", err)
+			return fmt.Errorf("unmarshal config %w", err)
 		}
 		if d.Config.Timeout != "" {
 			cfg.Timeout = d.Config.Timeout

@@ -20,7 +20,7 @@ import (
 	"github.com/skevetter/devpod/pkg/agent"
 	client2 "github.com/skevetter/devpod/pkg/client"
 	"github.com/skevetter/devpod/pkg/config"
-	daemon "github.com/skevetter/devpod/pkg/daemon/platform"
+	daemon "github.com/skevetter/devpod/pkg/daemon/local"
 	"github.com/skevetter/devpod/pkg/gpg"
 	"github.com/skevetter/devpod/pkg/port"
 	"github.com/skevetter/devpod/pkg/provider"

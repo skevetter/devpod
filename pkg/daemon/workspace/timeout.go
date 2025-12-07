@@ -7,16 +7,16 @@ import (
 	"path/filepath"
 	"sync"
 	"time"
-)
 
-const ActivityFile = "/var/devpod/activity"
+	"github.com/skevetter/devpod/pkg/agent"
+)
 
 // SetupActivityFile creates activity file
 func SetupActivityFile() error {
-	if err := os.MkdirAll(filepath.Dir(ActivityFile), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(agent.ContainerActivityFile), 0755); err != nil {
 		return err
 	}
-	return os.WriteFile(ActivityFile, fmt.Appendf(nil, "%d", time.Now().Unix()), 0644)
+	return os.WriteFile(agent.ContainerActivityFile, fmt.Appendf(nil, "%d", time.Now().Unix()), 0644)
 }
 
 // RunTimeoutMonitor monitors activity and shuts down on timeout
@@ -31,14 +31,14 @@ func RunTimeoutMonitor(ctx context.Context, timeout time.Duration, errChan chan<
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			data, err := os.ReadFile(ActivityFile)
+			data, err := os.ReadFile(agent.ContainerActivityFile)
 			if err != nil {
 				continue
 			}
 
 			var lastActivity int64
 			if _, err := fmt.Sscanf(string(data), "%d", &lastActivity); err != nil {
-				log.Debugf("Failed to parse activity timestamp: %v", err)
+				log.Debugf("failed to parse activity timestamp  %v", err)
 				continue
 			}
 

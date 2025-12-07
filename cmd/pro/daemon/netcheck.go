@@ -10,7 +10,7 @@ import (
 	"github.com/skevetter/devpod/cmd/pro/completion"
 	proflags "github.com/skevetter/devpod/cmd/pro/flags"
 	"github.com/skevetter/devpod/pkg/config"
-	daemon "github.com/skevetter/devpod/pkg/daemon/platform"
+	daemon "github.com/skevetter/devpod/pkg/daemon/local"
 	providerpkg "github.com/skevetter/devpod/pkg/provider"
 	"github.com/spf13/cobra"
 	"tailscale.com/client/tailscale"

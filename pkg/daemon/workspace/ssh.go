@@ -6,28 +6,52 @@ import (
 	"os"
 	"os/exec"
 	"sync"
+	"syscall"
 )
 
 // RunSshServer starts SSH server
 func RunSshServer(ctx context.Context, d *Daemon, errChan chan<- error, wg *sync.WaitGroup) {
 	defer wg.Done()
-
-	if d.Config.Ssh.Workdir == "" {
-		errChan <- fmt.Errorf("ssh workdir not configured")
+	binaryPath, err := os.Executable()
+	if err != nil {
+		errChan <- err
 		return
 	}
 
-	if err := os.Chdir(d.Config.Ssh.Workdir); err != nil {
-		errChan <- fmt.Errorf("chdir: %w", err)
+	args := []string{"agent", "container", "ssh-server"}
+	if d.Config.Ssh.Workdir != "" {
+		args = append(args, "--workdir", d.Config.Ssh.Workdir)
+	}
+	if d.Config.Ssh.User != "" {
+		args = append(args, "--remote-user", d.Config.Ssh.User)
+	}
+
+	sshCmd := exec.Command(binaryPath, args...)
+	sshCmd.Stdout = os.Stdout
+	sshCmd.Stderr = os.Stderr
+
+	if err := sshCmd.Start(); err != nil {
+		errChan <- fmt.Errorf("failed to start SSH server %w", err)
 		return
 	}
 
-	cmd := exec.CommandContext(ctx, "/usr/sbin/sshd", "-D", "-e")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	done := make(chan struct{})
+	go func() {
+		select {
+		case <-ctx.Done():
+			if sshCmd.Process != nil {
+				if err := sshCmd.Process.Signal(syscall.SIGTERM); err != nil {
+					errChan <- fmt.Errorf("failed to send SIGTERM to SSH server %w", err)
+				}
+			}
+		case <-done:
+		}
+	}()
 
-	d.log.Info("Starting SSH server")
-	if err := cmd.Run(); err != nil && ctx.Err() == nil {
-		errChan <- fmt.Errorf("sshd: %w", err)
+	if err := sshCmd.Wait(); err != nil {
+		errChan <- fmt.Errorf("SSH server exited abnormally %w", err)
+		close(done)
+		return
 	}
+	close(done)
 }

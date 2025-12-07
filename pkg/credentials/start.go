@@ -25,7 +25,7 @@ func StartCredentialsServer(ctx context.Context, cancel context.CancelFunc, clie
 
 		err := RunCredentialsServer(ctx, port, client, "", log)
 		if err != nil {
-			log.Errorf("Error running git credentials server: %v", err)
+			log.Errorf("error running git credentials server %v", err)
 		}
 	}()
 
@@ -42,12 +42,12 @@ Outer:
 			case <-time.After(time.Second):
 			}
 		} else {
-			log.Debugf("Credentials server started...")
+			log.Debugf("credentials server started")
 			break
 		}
 
 		if time.Since(now) > maxWait {
-			log.Debugf("Credentials server didn't start in time...")
+			log.Debugf("credentials server didn't start in time")
 			break
 		}
 	}
@@ -71,7 +71,7 @@ func PingURL(ctx context.Context, url string) error {
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode >= 400 {
-		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		return fmt.Errorf("unexpected status code %d", resp.StatusCode)
 	}
 	return nil
 }

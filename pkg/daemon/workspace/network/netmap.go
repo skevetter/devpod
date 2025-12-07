@@ -89,14 +89,14 @@ func (nm *NetworkMap) Count() int {
 	return len(nm.peers)
 }
 
-// NetmapWatcherService watches the Tailscale netmap and writes it to a file.
+// NetmapWatcherService watches the Tailscale netmap and writes it to a file
 type NetmapWatcherService struct {
 	rootDir string
 	lc      *tailscale.LocalClient
 	log     log.Logger
 }
 
-// NewNetmapWatcherService creates a new NetmapWatcherService.
+// NewNetmapWatcherService creates a new NetmapWatcherService
 func NewNetmapWatcherService(rootDir string, lc *tailscale.LocalClient, log log.Logger) *NetmapWatcherService {
 	return &NetmapWatcherService{
 		rootDir: rootDir,
@@ -105,7 +105,7 @@ func NewNetmapWatcherService(rootDir string, lc *tailscale.LocalClient, log log.
 	}
 }
 
-// Start begins watching the netmap.
+// Start begins watching the netmap
 func (s *NetmapWatcherService) Start(ctx context.Context) {
 	lastUpdate := time.Now()
 	if err := ts.WatchNetmap(ctx, s.lc, func(netMap *netmap.NetworkMap) {

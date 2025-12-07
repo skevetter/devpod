@@ -19,9 +19,10 @@ import (
 )
 
 const (
-	HeaderTargetHost = "x-target-host"
-	HeaderTargetPort = "x-target-port"
-	HeaderProxyPort  = "x-proxy-port"
+	HeaderTargetHost      = "x-target-host"
+	HeaderTargetPort      = "x-target-port"
+	HeaderProxyPort       = "x-proxy-port"
+	networkProxyLogPrefix = "NetworkProxyService: "
 )
 
 // NetworkProxyService proxies gRPC and HTTP over DevPod network
@@ -46,15 +47,15 @@ func NewNetworkProxyService(socketPath string, tsServer *tsnet.Server, lc *tails
 
 	l, err := net.Listen("unix", socketPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to listen on socket %s: %w", socketPath, err)
+		return nil, fmt.Errorf("failed to listen on socket %s %w", socketPath, err)
 	}
 
 	if err := os.Chmod(socketPath, 0777); err != nil {
 		_ = l.Close()
-		return nil, fmt.Errorf("failed to set socket permissions on %s: %w", socketPath, err)
+		return nil, fmt.Errorf("failed to set socket permissions on %s %w", socketPath, err)
 	}
 
-	log.Infof("NetworkProxyService: network proxy listening on socket %s", socketPath)
+	log.Infof(networkProxyLogPrefix+"network proxy listening on socket %s", socketPath)
 
 	grpcDirector := NewGrpcDirector(tsServer, log)
 	httpProxy := NewHttpProxyHandler(tsServer, lc, config, projectName, workspaceName, log)
@@ -86,66 +87,60 @@ func (s *NetworkProxyService) Start(ctx context.Context) error {
 	var runWg sync.WaitGroup
 	errChan := make(chan error, 3)
 
-	runWg.Add(1)
-	go func() {
-		defer runWg.Done()
-		s.log.Debugf("NetworkProxyService: starting gRPC server...")
+	runWg.Go(func() {
+		s.log.Debugf(networkProxyLogPrefix + "starting gRPC server")
 		if err := s.grpcServer.Serve(grpcL); err != nil && !errors.Is(err, grpc.ErrServerStopped) && !errors.Is(err, cmux.ErrListenerClosed) {
-			s.log.Errorf("NetworkProxyService: gRPC server error: %v", err)
-			errChan <- fmt.Errorf("gRPC server error: %w", err)
+			s.log.Errorf(networkProxyLogPrefix+"gRPC server error %v", err)
+			errChan <- fmt.Errorf("gRPC server error %w", err)
 		} else {
-			s.log.Debugf("NetworkProxyService: gRPC server stopped.")
+			s.log.Debugf(networkProxyLogPrefix + "gRPC server stopped")
 		}
-	}()
+	})
 
-	runWg.Add(1)
-	go func() {
-		defer runWg.Done()
-		s.log.Debugf("NetworkProxyService: starting HTTP server...")
+	runWg.Go(func() {
+		s.log.Debugf(networkProxyLogPrefix + "starting HTTP server")
 		if err := s.httpServer.Serve(httpL); err != nil && !errors.Is(err, http.ErrServerClosed) && !errors.Is(err, cmux.ErrListenerClosed) {
-			s.log.Errorf("NetworkProxyService: HTTP server error: %v", err)
-			errChan <- fmt.Errorf("HTTP server error: %w", err)
+			s.log.Errorf(networkProxyLogPrefix+"HTTP server error %v", err)
+			errChan <- fmt.Errorf("HTTP server error %w", err)
 		} else {
-			s.log.Debugf("NetworkProxyService: HTTP server stopped.")
+			s.log.Debugf(networkProxyLogPrefix + "HTTP server stopped")
 		}
-	}()
+	})
 
-	runWg.Add(1)
-	go func() {
-		defer runWg.Done()
-		s.log.Infof("NetworkProxyService: starting server...")
+	runWg.Go(func() {
+		s.log.Infof(networkProxyLogPrefix + "starting server")
 		err := s.mux.Serve()
 		if err != nil && !errors.Is(err, net.ErrClosed) && !errors.Is(err, cmux.ErrListenerClosed) {
-			s.log.Errorf("NetworkProxyService: server error: %v", err)
-			errChan <- fmt.Errorf("server error: %w", err)
+			s.log.Errorf(networkProxyLogPrefix+"server error %v", err)
+			errChan <- fmt.Errorf("server error %w", err)
 		} else {
-			s.log.Infof("NetworkProxyService: server stopped.")
+			s.log.Infof(networkProxyLogPrefix + "server stopped")
 		}
-	}()
+	})
 
-	s.log.Infof("NetworkProxyService: successfully started listeners on %s", s.socketPath)
+	s.log.Infof(networkProxyLogPrefix+"successfully started listeners on %s", s.socketPath)
 
 	var finalErr error
 	select {
 	case <-ctx.Done():
-		s.log.Infof("NetworkProxyService: context cancelled, shutting down proxy service")
+		s.log.Infof(networkProxyLogPrefix + "context cancelled, shutting down proxy service")
 		finalErr = ctx.Err()
 	case err := <-errChan:
-		s.log.Errorf("NetworkProxyService: server error triggered shutdown: %v", err)
+		s.log.Errorf(networkProxyLogPrefix+"server error triggered shutdown %v", err)
 		finalErr = err
 	}
 
 	s.Stop()
 
-	s.log.Debugf("NetworkProxyService: Waiting for servers to exit...")
+	s.log.Debugf(networkProxyLogPrefix + "waiting for servers to exit")
 	runWg.Wait()
-	s.log.Debugf("NetworkProxyService: All servers exited.")
+	s.log.Debugf(networkProxyLogPrefix + "all servers exited")
 
 	return finalErr
 }
 
 func (s *NetworkProxyService) Stop() {
-	s.log.Infof("NetworkProxyService: stopping proxy service...")
+	s.log.Infof(networkProxyLogPrefix + "stopping proxy service")
 
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
@@ -157,7 +152,7 @@ func (s *NetworkProxyService) Stop() {
 		defer shutdownWg.Done()
 		if s.grpcServer != nil {
 			s.grpcServer.GracefulStop()
-			s.log.Debugf("NetworkProxyService: gRPC server stopped.")
+			s.log.Debugf(networkProxyLogPrefix + "gRPC server stopped")
 		}
 	}()
 
@@ -165,14 +160,14 @@ func (s *NetworkProxyService) Stop() {
 		defer shutdownWg.Done()
 		if s.httpServer != nil {
 			if err := s.httpServer.Shutdown(shutdownCtx); err != nil {
-				s.log.Warnf("NetworkProxyService: HTTP server shutdown error: %v", err)
+				s.log.Warnf(networkProxyLogPrefix+"HTTP server shutdown error %v", err)
 			} else {
-				s.log.Debugf("NetworkProxyService: HTTP server stopped.")
+				s.log.Debugf(networkProxyLogPrefix + "HTTP server stopped")
 			}
 		}
 	}()
 
-	s.log.Infof("NetworkProxyService: waiting for servers to stop...")
+	s.log.Infof(networkProxyLogPrefix + "waiting for servers to stop")
 
 	waitDone := make(chan struct{})
 	go func() {
@@ -182,34 +177,34 @@ func (s *NetworkProxyService) Stop() {
 
 	select {
 	case <-waitDone:
-		s.log.Debugf("NetworkProxyService: All server shutdowns completed.")
+		s.log.Debugf(networkProxyLogPrefix + "all server shutdowns completed")
 	case <-shutdownCtx.Done():
-		s.log.Warnf("NetworkProxyService: Graceful shutdown timed out after waiting for servers.")
+		s.log.Warnf(networkProxyLogPrefix + "graceful shutdown timed out after waiting for servers")
 	}
 
-	s.log.Debugf("NetworkProxyService: Listener and socket cleanup.")
+	s.log.Debugf(networkProxyLogPrefix + "listener and socket cleanup")
 
 	if s.mainListener != nil {
-		s.log.Debugf("NetworkProxyService: Closing main listener...")
+		s.log.Debugf(networkProxyLogPrefix + "closing main listener")
 		if err := s.mainListener.Close(); err != nil {
 			if !errors.Is(err, net.ErrClosed) && !errors.Is(err, cmux.ErrListenerClosed) {
-				s.log.Errorf("NetworkProxyService: Error closing main listener: %v", err)
+				s.log.Errorf(networkProxyLogPrefix+"error closing main listener %v", err)
 			} else {
-				s.log.Debugf("NetworkProxyService: Main listener closed.")
+				s.log.Debugf(networkProxyLogPrefix + "main listener closed")
 			}
 		} else {
-			s.log.Debugf("NetworkProxyService: Main listener closed successfully.")
+			s.log.Debugf(networkProxyLogPrefix + "main listener closed successfully")
 		}
 	} else {
-		s.log.Warnf("NetworkProxyService: Main listener was nil during stop.")
+		s.log.Warnf(networkProxyLogPrefix + "main listener was nil during stop")
 	}
 
-	s.log.Debugf("NetworkProxyService: Removing socket file %s", s.socketPath)
+	s.log.Debugf(networkProxyLogPrefix+"removing socket file %s", s.socketPath)
 	if err := os.Remove(s.socketPath); err != nil && !errors.Is(err, os.ErrNotExist) {
-		s.log.Warnf("NetworkProxyService: Failed to remove socket file %s: %v", s.socketPath, err)
+		s.log.Warnf(networkProxyLogPrefix+"failed to remove socket file %s %v", s.socketPath, err)
 	} else if err == nil {
-		s.log.Debugf("NetworkProxyService: Removed socket file %s", s.socketPath)
+		s.log.Debugf(networkProxyLogPrefix+"removed socket file %s", s.socketPath)
 	}
 
-	s.log.Infof("NetworkProxyService: Proxy service stopped.")
+	s.log.Infof(networkProxyLogPrefix + "proxy service stopped")
 }

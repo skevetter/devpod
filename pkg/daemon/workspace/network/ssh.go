@@ -11,7 +11,9 @@ import (
 	"tailscale.com/tsnet"
 )
 
-// SSHService handles SSH connections.
+const sshServiceLogPrefix = "SSHService: "
+
+// SSHService handles SSH connections
 type SSHService struct {
 	listener net.Listener
 	tsServer *tsnet.Server
@@ -19,11 +21,11 @@ type SSHService struct {
 	tracker  *ConnTracker
 }
 
-// NewSSHService creates a new SSHService.
+// NewSSHService creates a new SSHService
 func NewSSHService(tsServer *tsnet.Server, tracker *ConnTracker, log log.Logger) (*SSHService, error) {
 	l, err := tsServer.Listen("tcp", fmt.Sprintf(":%d", sshServer.DefaultUserPort))
 	if err != nil {
-		return nil, fmt.Errorf("failed to listen for SSH on port %d: %w", sshServer.DefaultUserPort, err)
+		return nil, fmt.Errorf("failed to listen for SSH on port %d %w", sshServer.DefaultUserPort, err)
 	}
 	return &SSHService{
 		listener: l,
@@ -33,9 +35,9 @@ func NewSSHService(tsServer *tsnet.Server, tracker *ConnTracker, log log.Logger)
 	}, nil
 }
 
-// Start begins accepting SSH connections.
+// Start begins accepting SSH connections
 func (s *SSHService) Start(ctx context.Context) {
-	s.log.Infof("Starting SSH listener")
+	s.log.Infof("starting SSH listener")
 	go s.acceptLoop(ctx)
 }
 
@@ -51,7 +53,7 @@ func (s *SSHService) acceptLoop(ctx context.Context) {
 			if ctx.Err() != nil {
 				return
 			}
-			s.log.Errorf("SSHService: failed to accept connection: %v", err)
+			s.log.Errorf(sshServiceLogPrefix+"failed to accept connection: %v", err)
 			continue
 		}
 		go s.handleConnection(conn)
@@ -66,7 +68,7 @@ func (s *SSHService) handleConnection(conn net.Conn) {
 	localAddr := fmt.Sprintf("127.0.0.1:%d", sshServer.DefaultUserPort)
 	backendConn, err := net.Dial("tcp", localAddr)
 	if err != nil {
-		s.log.Errorf("SSHService: failed to connect to local address %s: %v", localAddr, err)
+		s.log.Errorf(sshServiceLogPrefix+"failed to connect to local address %s %v", localAddr, err)
 		return
 	}
 	defer func() { _ = backendConn.Close() }()
@@ -90,11 +92,11 @@ func (s *SSHService) handleConnection(conn net.Conn) {
 	// <-errChan
 }
 
-// Stop stops the SSH server by closing its listener.
+// Stop stops the SSH server by closing its listener
 func (s *SSHService) Stop() {
 	if s.listener != nil {
 		if err := s.listener.Close(); err != nil {
-			s.log.Errorf("Failed to close SSH listener: %v", err)
+			s.log.Errorf("failed to close SSH listener %v", err)
 		}
 	}
 }

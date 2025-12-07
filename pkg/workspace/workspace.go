@@ -149,7 +149,7 @@ func Get(ctx context.Context, devPodConfig *config.Config, args []string, change
 		}
 	} else {
 		if localOnly {
-			workspace = findLocalWorkspace(ctx, devPodConfig, args, "", log)
+			workspace = findLocalWorkspace(devPodConfig, args, "", log)
 		} else {
 			workspace = findWorkspace(ctx, devPodConfig, args, "", owner, log)
 		}
@@ -488,7 +488,7 @@ func ensureWorkspaceID(args []string, workspaceID string) string {
 	return workspaceID
 }
 
-func findLocalWorkspace(ctx context.Context, devPodConfig *config.Config, args []string, workspaceID string, log log.Logger) *providerpkg.Workspace {
+func findLocalWorkspace(devPodConfig *config.Config, args []string, workspaceID string, log log.Logger) *providerpkg.Workspace {
 	workspaceID = ensureWorkspaceID(args, workspaceID)
 	if workspaceID == "" {
 		return nil

@@ -68,7 +68,11 @@ func CalculatePrebuildHash(
 	if buildInfo.Dockerfile != nil {
 		includes = buildInfo.Dockerfile.BuildContextFiles()
 	}
-	log.Debug("Build context files to use for hash are ", includes)
+	if len(includes) == 0 {
+		log.Debug("no build context files specified for hash")
+	} else {
+		log.Debug("build context files to use for hash are ", includes)
+	}
 
 	// get hash of the context directory
 	contextHash, err := util.DirectoryHash(contextPath, excludes, includes)
@@ -76,11 +80,7 @@ func CalculatePrebuildHash(
 		return "", err
 	}
 
-	log.Debugf("Prebuild hash from:")
-	log.Debugf("    Arch: %s", architecture)
-	log.Debugf("    Config: %s", string(configStr))
-	log.Debugf("    DockerfileContent: %s", dockerfileContent)
-	log.Debugf("    ContextHash: %s", contextHash)
+	log.Debugf("prebuild hash from: Arch=%s Config=%s DockerfileContent=%s ContextHash=%s", architecture, string(configStr), dockerfileContent, contextHash)
 	return "devpod-" + hash.String(architecture + string(configStr) + dockerfileContent + contextHash)[:32], nil
 }
 

@@ -13,13 +13,8 @@ func TestNewHTTPPortForwardService(t *testing.T) {
 	tracker := &ConnTracker{logger: log.Default}
 	logger := log.Default
 
-	service, err := NewHTTPPortForwardService(tsServer, tracker, logger)
-	// Will fail because tsServer is not started, but we're testing the constructor
-	if err != nil {
-		assert.Error(t, err)
-	} else {
-		assert.NotNil(t, service)
-		assert.Equal(t, tsServer, service.tsServer)
-		assert.Equal(t, tracker, service.tracker)
-	}
+	service, _ := NewHTTPPortForwardService(tsServer, tracker, logger)
+	assert.NotNil(t, service)
+	assert.Equal(t, tsServer, service.tsServer)
+	assert.Equal(t, tracker, service.tracker)
 }

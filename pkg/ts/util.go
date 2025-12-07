@@ -41,6 +41,7 @@ func ParseWorkspaceHostname(hostname string) (name string, project string, err e
 	return name, project, nil
 }
 
+// GetURL builds network url from host and port
 func GetURL(host string, port int) string {
 	if port == 0 {
 		return fmt.Sprintf("%s.%s", host, LoftTSNetDomain)
@@ -49,14 +50,21 @@ func GetURL(host string, port int) string {
 }
 
 // EnsureURL builds a host:port address, removing any protocol prefix
-func EnsureURL(host string, port int) string {
-	host = RemoveProtocol(host)
-	return fmt.Sprintf("%s:%d", host, port)
+func EnsureURL(hostOrUrl string, port int) string {
+	// ts peer name from netmap might end with a dot, so we need to trim it
+	hostOrUrl = strings.TrimSuffix(hostOrUrl, ".")
+	if strings.HasSuffix(hostOrUrl, LoftTSNetDomain) {
+		if port == 0 {
+			return hostOrUrl
+		}
+		return fmt.Sprintf("%s:%d", hostOrUrl, port)
+	}
+	return GetURL(hostOrUrl, port)
 }
 
 // WaitHostReachable polls until the given host is reachable via ts.
 func WaitHostReachable(ctx context.Context, lc *tailscale.LocalClient, addr Addr, maxRetries int, log log.Logger) error {
-	for i := 0; i < maxRetries; i++ {
+	for i := range maxRetries {
 		timeoutCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 		defer cancel()
 		conn, err := lc.DialTCP(timeoutCtx, addr.Host(), uint16(addr.Port()))

@@ -1,5 +1,7 @@
 package config
 
+import "slices"
+
 const UserLabel = "devpod.user"
 
 type Result struct {
@@ -89,10 +91,5 @@ func GetVSCodeConfiguration(mergedConfig *MergedDevContainerConfig) *VSCodeCusto
 }
 
 func contains(stack []string, k string) bool {
-	for _, s := range stack {
-		if s == k {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(stack, k)
 }

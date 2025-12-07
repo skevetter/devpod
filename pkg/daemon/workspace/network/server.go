@@ -18,7 +18,7 @@ type ServerConfig struct {
 	AccessKey     string
 	PlatformHost  string
 	WorkspaceHost string
-	LogF          func(format string, args ...interface{})
+	LogF          func(format string, args ...any)
 	Client        client.Client
 	RootDir       string
 }
@@ -28,8 +28,8 @@ type Server struct {
 	network     *tsnet.Server
 	config      *ServerConfig
 	log         log.Logger
-	connTracker *ConnTracker // PR's simple tracker
-	metrics     *Metrics     // Your observability
+	connTracker *ConnTracker
+	metrics     *Metrics
 
 	// Services
 	sshSvc        *SSHService
@@ -111,6 +111,13 @@ func (s *Server) Metrics() *Metrics {
 	return s.metrics
 }
 
+// HealthStatus represents the health status of the server
+type HealthStatus struct {
+	Healthy   bool
+	Transport string
+	Error     string
+}
+
 // Health returns health status of the workspace server
 func (s *Server) Health() HealthStatus {
 	return HealthStatus{
@@ -181,7 +188,7 @@ func (s *Server) setupControlURL(ctx context.Context) (*url.URL, error) {
 }
 
 func (s *Server) initNetworkServer(ctx context.Context, controlURL *url.URL) error {
-	s.log.Infof("Connecting to control URL - %s/coordinator/", controlURL.String())
+	s.log.Infof("connecting to control URL %s/coordinator/", controlURL.String())
 	var err error
 	s.network, err = ts.StartServer(ctx, &ts.ServerConfig{
 		Hostname:   s.config.WorkspaceHost,

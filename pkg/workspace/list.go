@@ -17,7 +17,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/client/clientimplementation"
 	"github.com/skevetter/devpod/pkg/config"
-	daemon "github.com/skevetter/devpod/pkg/daemon/platform"
+	daemon "github.com/skevetter/devpod/pkg/daemon/local"
 	"github.com/skevetter/devpod/pkg/platform"
 	providerpkg "github.com/skevetter/devpod/pkg/provider"
 	"github.com/skevetter/devpod/pkg/types"
@@ -180,7 +180,7 @@ func listProWorkspacesForProvider(ctx context.Context, devPodConfig *config.Conf
 	if providerConfig.IsProxyProvider() {
 		instances, err = listInstancesProxyProvider(ctx, devPodConfig, provider, providerConfig, log)
 	} else if providerConfig.IsDaemonProvider() {
-		instances, err = listInstancesDaemonProvider(ctx, provider, owner, log)
+		instances, err = listInstancesDaemonProvider(ctx, provider, owner)
 	} else {
 		return nil, fmt.Errorf("cannot list pro workspaces with provider %s", provider)
 	}
@@ -331,7 +331,7 @@ func listInstancesProxyProvider(ctx context.Context, devPodConfig *config.Config
 	return instances, nil
 }
 
-func listInstancesDaemonProvider(ctx context.Context, provider string, owner platform.OwnerFilter, log log.Logger) ([]managementv1.DevPodWorkspaceInstance, error) {
+func listInstancesDaemonProvider(ctx context.Context, provider string, owner platform.OwnerFilter) ([]managementv1.DevPodWorkspaceInstance, error) {
 	return daemon.NewLocalClient(provider).ListWorkspaces(ctx, owner)
 }
 

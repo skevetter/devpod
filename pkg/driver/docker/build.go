@@ -43,7 +43,7 @@ func (d *dockerDriver) BuildDevContainer(
 				Tags:          options.Tag,
 			}, nil
 		} else if err != nil {
-			d.Log.Debugf("Error trying to find local image %s: %v", imageName, err)
+			d.Log.Debugf("error trying to find local image %s %v", imageName, err)
 		}
 	}
 

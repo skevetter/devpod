@@ -51,6 +51,6 @@ func RunNetworkServer(ctx context.Context, d *Daemon, errChan chan<- error, wg *
 	}, logger)
 
 	if err := workspaceServer.Start(ctx); err != nil {
-		errChan <- fmt.Errorf("network server: %w", err)
+		errChan <- fmt.Errorf("network server %w", err)
 	}
 }

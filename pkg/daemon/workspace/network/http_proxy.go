@@ -3,6 +3,7 @@ package network
 import (
 	"fmt"
 	"io"
+	"maps"
 	"net"
 	"net/http"
 	"time"
@@ -11,6 +12,8 @@ import (
 	"tailscale.com/client/tailscale"
 	"tailscale.com/tsnet"
 )
+
+const httpProxyLogPrefix = "HttpProxyHandler: "
 
 // HttpProxyHandler handles HTTP proxying with Tailscale
 type HttpProxyHandler struct {
@@ -94,7 +97,7 @@ func (h *HttpProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *HttpProxyHandler) handleGitCredentials(w http.ResponseWriter, r *http.Request) {
-	h.log.Infof("HttpProxyHandler: received git credentials request from %s", r.RemoteAddr)
+	h.log.Infof(httpProxyLogPrefix+"received git credentials request from %s", r.RemoteAddr)
 
 	discoveredRunner, err := discoverRunner(r.Context(), h.lc, h.log)
 	if err != nil {
@@ -119,14 +122,12 @@ func (h *HttpProxyHandler) handleGitCredentials(w http.ResponseWriter, r *http.R
 
 	resp, err := client.Do(parsedURL)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("request failed: %v", err), http.StatusBadGateway)
+		http.Error(w, fmt.Sprintf("request failed %v", err), http.StatusBadGateway)
 		return
 	}
 	defer func() { _ = resp.Body.Close() }()
 
-	for k, v := range resp.Header {
-		w.Header()[k] = v
-	}
+	maps.Copy(w.Header(), resp.Header)
 	w.WriteHeader(resp.StatusCode)
 	_, _ = io.Copy(w, resp.Body)
 }
