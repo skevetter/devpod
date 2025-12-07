@@ -3,8 +3,8 @@ module github.com/skevetter/devpod
 go 1.25.4
 
 require (
+	al.essio.dev/pkg/shellescape v1.6.0
 	github.com/PaesslerAG/jsonpath v0.1.1
-	github.com/alessio/shellescape v1.6.0
 	github.com/awslabs/amazon-ecr-credential-helper/ecr-login v0.0.0-20230510185313-f5e39e5f34c7
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/blang/semver/v4 v4.0.0

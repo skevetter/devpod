@@ -1,7 +1,7 @@
 package command
 
 import (
-	"github.com/alessio/shellescape"
+	"al.essio.dev/pkg/shellescape"
 )
 
 func Quote(args []string) string {
