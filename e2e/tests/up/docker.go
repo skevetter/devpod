@@ -18,290 +18,253 @@ import (
 	"github.com/skevetter/devpod/e2e/framework"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	docker "github.com/skevetter/devpod/pkg/docker"
+	provider2 "github.com/skevetter/devpod/pkg/provider"
 )
+
+type dockerTestContext struct {
+	baseTestContext
+}
+
+func (dtc *dockerTestContext) setupAndUp(ctx context.Context, testDataPath string, upArgs ...string) (string, error) {
+	return setupWorkspaceAndUp(ctx, testDataPath, dtc.initialDir, dtc.f, upArgs...)
+}
+
+func (dtc *dockerTestContext) findWorkspaceContainer(ctx context.Context, workspace *provider2.Workspace) ([]string, error) {
+	return dtc.dockerHelper.FindContainer(ctx, []string{fmt.Sprintf("%s=%s", config.DockerIDLabel, workspace.UID)})
+}
 
 var _ = DevPodDescribe("devpod up test suite", func() {
 	ginkgo.Context("testing up command", ginkgo.Label("up", "up-docker"), ginkgo.Ordered, func() {
-		var f *framework.Framework
-		var dockerHelper *docker.DockerHelper
-		var initialDir string
+		var dtc *dockerTestContext
 
 		ginkgo.BeforeEach(func(ctx context.Context) {
 			var err error
-			initialDir, err = os.Getwd()
+			dtc = &dockerTestContext{}
+			dtc.initialDir, err = os.Getwd()
 			framework.ExpectNoError(err)
 
-			dockerHelper = &docker.DockerHelper{DockerCommand: "docker", Log: log.Default}
-			framework.ExpectNoError(err)
-
-			f, err = setupDockerProvider(initialDir+"/bin", "docker")
+			dtc.dockerHelper = &docker.DockerHelper{DockerCommand: "docker", Log: log.Default}
+			dtc.f, err = setupDockerProvider(dtc.initialDir+"/bin", "docker")
 			framework.ExpectNoError(err)
 		})
 
-		ginkgo.Context("with docker", ginkgo.Ordered, func() {
-			ginkgo.It("should start a new workspace with existing image", func(ctx context.Context) {
-				tempDir, err := setupWorkspace("tests/up/testdata/docker", initialDir, f)
-				framework.ExpectNoError(err)
-
-				// Wait for devpod workspace to come online (deadline: 30s)
-				err = f.DevPodUp(ctx, tempDir)
+		ginkgo.Context("basic workspace creation", func() {
+			ginkgo.It("existing image", func(ctx context.Context) {
+				_, err := dtc.setupAndUp(ctx, "tests/up/testdata/docker")
 				framework.ExpectNoError(err)
 			}, ginkgo.SpecTimeout(framework.GetTimeout()))
-			ginkgo.It("should start a new workspace with existing running container", func(ctx context.Context) {
+
+			ginkgo.It("existing running container", func(ctx context.Context) {
 				tempDir, err := framework.CopyToTempDir("tests/up/testdata/no-devcontainer")
 				framework.ExpectNoError(err)
-				ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
+				ginkgo.DeferCleanup(framework.CleanupTempDir, dtc.initialDir, tempDir)
+				ginkgo.DeferCleanup(dtc.f.DevPodWorkspaceDelete, tempDir)
 
-				err = dockerHelper.Run(ctx, []string{"run", "-d", "--label", "devpod-e2e-test-container=true", "-w", "/workspaces/e2e", "alpine", "sleep", "infinity"}, nil, nil, nil)
+				err = dtc.dockerHelper.Run(ctx, []string{"run", "-d", "--label", "devpod-e2e-test-container=true", "-w", "/workspaces/e2e", "alpine", "sleep", "infinity"}, nil, nil, nil)
 				framework.ExpectNoError(err)
 
 				var ids []string
 				gomega.Eventually(func() bool {
-					ids, err = dockerHelper.FindContainer(ctx, []string{"devpod-e2e-test-container=true"})
+					ids, err = dtc.dockerHelper.FindContainer(ctx, []string{"devpod-e2e-test-container=true"})
 					if err != nil || len(ids) != 1 {
 						return false
 					}
 					var containerDetails []container.InspectResponse
-					err = dockerHelper.Inspect(ctx, ids, "container", &containerDetails)
+					err = dtc.dockerHelper.Inspect(ctx, ids, "container", &containerDetails)
 					return err == nil && containerDetails[0].State.Running
-				}).Should(gomega.BeTrue(), "container should be running")
+				}).Should(gomega.BeTrue())
 
-				ginkgo.DeferCleanup(dockerHelper.Remove, ids[0])
-				ginkgo.DeferCleanup(dockerHelper.Stop, ids[0])
-				ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, tempDir)
+				ginkgo.DeferCleanup(dtc.dockerHelper.Remove, ids[0])
+				ginkgo.DeferCleanup(dtc.dockerHelper.Stop, ids[0])
 
 				var containerDetails []container.InspectResponse
-				err = dockerHelper.Inspect(ctx, ids, "container", &containerDetails)
+				err = dtc.dockerHelper.Inspect(ctx, ids, "container", &containerDetails)
 				framework.ExpectNoError(err)
 				gomega.Expect(containerDetails[0].Config.WorkingDir).To(gomega.Equal("/workspaces/e2e"))
 
-				err = f.DevPodUp(ctx, tempDir, "--source", fmt.Sprintf("container:%s", containerDetails[0].ID))
+				err = dtc.f.DevPodUp(ctx, tempDir, "--source", fmt.Sprintf("container:%s", containerDetails[0].ID))
 				framework.ExpectNoError(err)
 			}, ginkgo.SpecTimeout(framework.GetTimeout()))
-			ginkgo.It("should start a new workspace and substitute devcontainer.json variables", func(ctx context.Context) {
-				tempDir, err := setupWorkspace("tests/up/testdata/docker-variables", initialDir, f)
+		})
+
+		ginkgo.Context("devcontainer configuration", func() {
+			ginkgo.It("variables substitution", func(ctx context.Context) {
+				tempDir, err := dtc.setupAndUp(ctx, "tests/up/testdata/docker-variables")
 				framework.ExpectNoError(err)
 
-				err = f.DevPodUp(ctx, tempDir)
+				workspace, err := dtc.f.FindWorkspace(ctx, tempDir)
 				framework.ExpectNoError(err)
 
-				workspace, err := f.FindWorkspace(ctx, tempDir)
+				ids, err := dtc.findWorkspaceContainer(ctx, workspace)
 				framework.ExpectNoError(err)
+				gomega.Expect(ids).To(gomega.HaveLen(1))
 
-				projectName := workspace.ID
-				ids, err := dockerHelper.FindContainer(ctx, []string{
-					fmt.Sprintf("%s=%s", config.DockerIDLabel, workspace.UID),
-				})
-				framework.ExpectNoError(err)
-				gomega.Expect(ids).To(gomega.HaveLen(1), "1 compose container to be created")
-
-				devContainerID, _, err := f.ExecCommandCapture(ctx, []string{"ssh", "--command", "cat $HOME/dev-container-id.out", projectName})
+				devContainerID, err := dtc.execSSHCapture(ctx, workspace.ID, "cat $HOME/dev-container-id.out")
 				framework.ExpectNoError(err)
 				gomega.Expect(devContainerID).NotTo(gomega.BeEmpty())
 
-				containerEnvPath, _, err := f.ExecCommandCapture(ctx, []string{"ssh", "--command", "cat $HOME/container-env-path.out", projectName})
+				containerEnvPath, err := dtc.execSSHCapture(ctx, workspace.ID, "cat $HOME/container-env-path.out")
 				framework.ExpectNoError(err)
 				gomega.Expect(containerEnvPath).To(gomega.ContainSubstring("/usr/local/bin"))
 
-				localEnvHome, _, err := f.ExecCommandCapture(ctx, []string{"ssh", "--command", "cat $HOME/local-env-home.out", projectName})
+				localEnvHome, err := dtc.execSSHCapture(ctx, workspace.ID, "cat $HOME/local-env-home.out")
 				framework.ExpectNoError(err)
 				gomega.Expect(localEnvHome).To(gomega.Equal(os.Getenv("HOME")))
 
-				localWorkspaceFolder, _, err := f.ExecCommandCapture(ctx, []string{"ssh", "--command", "cat $HOME/local-workspace-folder.out", projectName})
+				localWorkspaceFolder, err := dtc.execSSHCapture(ctx, workspace.ID, "cat $HOME/local-workspace-folder.out")
 				framework.ExpectNoError(err)
 				gomega.Expect(framework.CleanString(localWorkspaceFolder)).To(gomega.Equal(framework.CleanString(tempDir)))
 
-				localWorkspaceFolderBasename, _, err := f.ExecCommandCapture(ctx, []string{"ssh", "--command", "cat $HOME/local-workspace-folder-basename.out", projectName})
+				localWorkspaceFolderBasename, err := dtc.execSSHCapture(ctx, workspace.ID, "cat $HOME/local-workspace-folder-basename.out")
 				framework.ExpectNoError(err)
 				gomega.Expect(localWorkspaceFolderBasename).To(gomega.Equal(filepath.Base(tempDir)))
 
-				containerWorkspaceFolder, _, err := f.ExecCommandCapture(ctx, []string{"ssh", "--command", "cat $HOME/container-workspace-folder.out", projectName})
+				containerWorkspaceFolder, err := dtc.execSSHCapture(ctx, workspace.ID, "cat $HOME/container-workspace-folder.out")
 				framework.ExpectNoError(err)
-				gomega.Expect(framework.CleanString(containerWorkspaceFolder)).To(gomega.Equal(
-					framework.CleanString("workspaces" + filepath.Base(tempDir)),
-				))
+				gomega.Expect(framework.CleanString(containerWorkspaceFolder)).To(gomega.Equal(framework.CleanString("workspaces" + filepath.Base(tempDir))))
 
-				containerWorkspaceFolderBasename, _, err := f.ExecCommandCapture(ctx, []string{"ssh", "--command", "cat $HOME/container-workspace-folder-basename.out", projectName})
+				containerWorkspaceFolderBasename, err := dtc.execSSHCapture(ctx, workspace.ID, "cat $HOME/container-workspace-folder-basename.out")
 				framework.ExpectNoError(err)
 				gomega.Expect(containerWorkspaceFolderBasename).To(gomega.Equal(filepath.Base(tempDir)))
 			}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
-			ginkgo.It("should start a new workspace with mounts", func(ctx context.Context) {
-				tempDir, err := setupWorkspace("tests/up/testdata/docker-mounts", initialDir, f)
+			ginkgo.It("mounts", func(ctx context.Context) {
+				tempDir, err := dtc.setupAndUp(ctx, "tests/up/testdata/docker-mounts", "--debug")
 				framework.ExpectNoError(err)
 
-				err = f.DevPodUp(ctx, tempDir, "--debug")
+				workspace, err := dtc.f.FindWorkspace(ctx, tempDir)
 				framework.ExpectNoError(err)
 
-				workspace, err := f.FindWorkspace(ctx, tempDir)
+				ids, err := dtc.findWorkspaceContainer(ctx, workspace)
 				framework.ExpectNoError(err)
-				projectName := workspace.ID
+				gomega.Expect(ids).To(gomega.HaveLen(1))
 
-				ids, err := dockerHelper.FindContainer(ctx, []string{
-					fmt.Sprintf("%s=%s", config.DockerIDLabel, workspace.UID),
-				})
-				framework.ExpectNoError(err)
-				gomega.Expect(ids).To(gomega.HaveLen(1), "1 compose container to be created")
-
-				foo, _, err := f.ExecCommandCapture(ctx, []string{"ssh", "--command", "cat $HOME/mnt1/foo.txt", projectName})
+				foo, err := dtc.execSSHCapture(ctx, workspace.ID, "cat $HOME/mnt1/foo.txt")
 				framework.ExpectNoError(err)
 				gomega.Expect(strings.TrimSpace(foo)).To(gomega.Equal("BAR"))
 
-				bar, _, err := f.ExecCommandCapture(ctx, []string{"ssh", "--command", "cat $HOME/mnt2/bar.txt", projectName})
+				bar, err := dtc.execSSHCapture(ctx, workspace.ID, "cat $HOME/mnt2/bar.txt")
 				framework.ExpectNoError(err)
 				gomega.Expect(strings.TrimSpace(bar)).To(gomega.Equal("FOO"))
 			}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
-			ginkgo.Context("should start a new workspace with features", func() {
-				ginkgo.It("ensure dependencies installed via features are accessible in lifecycle hooks", func(ctx context.Context) {
-					tempDir, err := setupWorkspace("tests/up/testdata/docker-features-lifecycle-hooks", initialDir, f)
-					framework.ExpectNoError(err)
-
-					// Wait for devpod workspace to come online (deadline: 30s)
-					err = f.DevPodUp(ctx, tempDir, "--debug")
-					framework.ExpectNoError(err)
-				}, ginkgo.SpecTimeout(framework.GetTimeout()))
-
-				ginkgo.It("should execute feature lifecycle hooks", func(ctx context.Context) {
-					tempDir, err := setupWorkspace("tests/up/testdata/docker-feature-hooks", initialDir, f)
-					framework.ExpectNoError(err)
-
-					err = f.DevPodUp(ctx, tempDir)
-					framework.ExpectNoError(err)
-
-					out, err := f.DevPodSSH(ctx, tempDir, "cat /tmp/feature-onCreate.txt")
-					framework.ExpectNoError(err)
-					framework.ExpectEqual(strings.TrimSpace(out), "feature-onCreate")
-
-					out, err = f.DevPodSSH(ctx, tempDir, "cat /tmp/feature-postCreate.txt")
-					framework.ExpectNoError(err)
-					framework.ExpectEqual(strings.TrimSpace(out), "feature-postCreate")
-
-					out, err = f.DevPodSSH(ctx, tempDir, "cat /tmp/feature-postStart.txt")
-					framework.ExpectNoError(err)
-					framework.ExpectEqual(strings.TrimSpace(out), "feature-postStart")
-				}, ginkgo.SpecTimeout(framework.GetTimeout()))
-			})
-			ginkgo.It("should start a new workspace with dotfiles - no install script", func(ctx context.Context) {
-				tempDir, err := setupWorkspace("tests/up/testdata/docker", initialDir, f)
-				framework.ExpectNoError(err)
-
-				// Wait for devpod workspace to come online (deadline: 30s)
-				err = f.DevPodUp(ctx, tempDir, "--dotfiles", "https://github.com/loft-sh/example-dotfiles")
-				framework.ExpectNoError(err)
-
-				out, err := f.DevPodSSH(ctx, tempDir, "ls ~/.file*")
-				framework.ExpectNoError(err)
-
-				expectedOutput := `/home/vscode/.file1
-/home/vscode/.file2
-/home/vscode/.file3
-`
-				framework.ExpectEqual(out, expectedOutput, "should match")
-			}, ginkgo.SpecTimeout(framework.GetTimeout()))
-			ginkgo.It("should start a new workspace with dotfiles - install script", func(ctx context.Context) {
-				tempDir, err := setupWorkspace("tests/up/testdata/docker", initialDir, f)
-				framework.ExpectNoError(err)
-
-				// Wait for devpod workspace to come online (deadline: 30s)
-				err = f.DevPodUp(ctx, tempDir, "--dotfiles", "https://github.com/loft-sh/example-dotfiles", "--dotfiles-script", "install-example")
-				framework.ExpectNoError(err)
-
-				out, err := f.DevPodSSH(ctx, tempDir, "ls /tmp/worked")
-				framework.ExpectNoError(err)
-
-				expectedOutput := "/tmp/worked\n"
-
-				framework.ExpectEqual(out, expectedOutput, "should match")
-			}, ginkgo.SpecTimeout(framework.GetTimeout()))
-
-			ginkgo.It("should start a new workspace with dotfiles - no install script, commit", func(ctx context.Context) {
-				// need to debug
+			ginkgo.It("custom image", func(ctx context.Context) {
 				if runtime.GOOS == "windows" {
 					ginkgo.Skip("skipping on windows")
 				}
 
-				tempDir, err := setupWorkspace("tests/up/testdata/docker", initialDir, f)
+				tempDir, err := dtc.setupAndUp(ctx, "tests/up/testdata/docker", "--devcontainer-image", "alpine")
 				framework.ExpectNoError(err)
 
-				// Wait for devpod workspace to come online (deadline: 30s)
-				err = f.DevPodUp(ctx, tempDir, "--dotfiles", "https://github.com/loft-sh/example-dotfiles@sha256:9a0b41808bf8f50e9871b3b5c9280fe22bf46a04")
+				out, err := dtc.execSSH(ctx, tempDir, "grep ^ID= /etc/os-release")
 				framework.ExpectNoError(err)
-
-				out, err := f.DevPodSSH(ctx, tempDir, "ls ~/.file*")
-				framework.ExpectNoError(err)
-
-				expectedOutput := `/home/vscode/.file1
-/home/vscode/.file2
-/home/vscode/.file3
-`
-				framework.ExpectEqual(out, expectedOutput, "should match")
-			}, ginkgo.SpecTimeout(framework.GetTimeout()))
-			ginkgo.It("should start a new workspace with dotfiles - no install script, branch", func(ctx context.Context) {
-				// need to debug
-				if runtime.GOOS == "windows" {
-					ginkgo.Skip("skipping on windows")
-				}
-
-				tempDir, err := setupWorkspace("tests/up/testdata/docker", initialDir, f)
-				framework.ExpectNoError(err)
-
-				// Wait for devpod workspace to come online (deadline: 30s)
-				err = f.DevPodUp(ctx, tempDir, "--dotfiles", "https://github.com/loft-sh/example-dotfiles@do-not-delete")
-				framework.ExpectNoError(err)
-
-				out, err := f.DevPodSSH(ctx, tempDir, "cat ~/.branch_test")
-				framework.ExpectNoError(err)
-
-				expectedOutput := "test\n"
-				framework.ExpectEqual(out, expectedOutput, "should match")
+				framework.ExpectEqual(out, "ID=alpine\n")
+				framework.ExpectNotEqual(out, "ID=debian\n")
 			}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
-			ginkgo.It("should start a new workspace with custom image", func(ctx context.Context) {
-				if runtime.GOOS == "windows" {
-					ginkgo.Skip("skipping on windows")
-				}
-
-				tempDir, err := setupWorkspace("tests/up/testdata/docker", initialDir, f)
+			ginkgo.It("custom image skip build", func(ctx context.Context) {
+				tempDir, err := dtc.setupAndUp(ctx, "tests/up/testdata/docker-with-multi-stage-build", "--devcontainer-image", "alpine")
 				framework.ExpectNoError(err)
 
-				// Wait for devpod workspace to come online (deadline: 30s)
-				err = f.DevPodUp(ctx, tempDir, "--devcontainer-image", "alpine")
+				out, err := dtc.execSSH(ctx, tempDir, "grep ^ID= /etc/os-release")
 				framework.ExpectNoError(err)
-
-				out, err := f.DevPodSSH(ctx, tempDir, "grep ^ID= /etc/os-release")
-				framework.ExpectNoError(err)
-
-				expectedOutput := "ID=alpine\n"
-				unexpectedOutput := "ID=debian\n"
-
-				framework.ExpectEqual(out, expectedOutput, "should match")
-				framework.ExpectNotEqual(out, unexpectedOutput, "should NOT match")
+				framework.ExpectEqual(out, "ID=alpine\n")
+				framework.ExpectNotEqual(out, "ID=debian\n")
 			}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
-			ginkgo.It("should start a new workspace with custom image and skip building", func(ctx context.Context) {
-				tempDir, err := setupWorkspace("tests/up/testdata/docker-with-multi-stage-build", initialDir, f)
+			ginkgo.It("extra devcontainer merge", func(ctx context.Context) {
+				tempDir, err := setupWorkspace("tests/up/testdata/docker-extra-devcontainer", dtc.initialDir, dtc.f)
 				framework.ExpectNoError(err)
 
-				// Wait for devpod workspace to come online (deadline: 30s)
-				err = f.DevPodUp(ctx, tempDir, "--devcontainer-image", "alpine")
+				extraPath := path.Join(tempDir, "extra.json")
+				err = dtc.f.DevPodUp(ctx, tempDir, "--extra-devcontainer-path", extraPath)
 				framework.ExpectNoError(err)
 
-				out, err := f.DevPodSSH(ctx, tempDir, "grep ^ID= /etc/os-release")
+				out, err := dtc.execSSH(ctx, tempDir, "bash -l -c 'echo -n $BASE_VAR'")
 				framework.ExpectNoError(err)
+				framework.ExpectEqual(out, "base_value")
 
-				expectedOutput := "ID=alpine\n"
-				unexpectedOutput := "ID=debian\n"
+				out, err = dtc.execSSH(ctx, tempDir, "bash -l -c 'echo -n $EXTRA_VAR'")
+				framework.ExpectNoError(err)
+				framework.ExpectEqual(out, "extra_value")
 
-				framework.ExpectEqual(out, expectedOutput, "should match")
-				framework.ExpectNotEqual(out, unexpectedOutput, "should NOT match")
+				err = dtc.f.DevPodWorkspaceDelete(ctx, tempDir)
+				framework.ExpectNoError(err)
 			}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
-			ginkgo.It("should use http headers to download feature", func(ctx context.Context) {
+			ginkgo.It("extra devcontainer override", func(ctx context.Context) {
+				tempDir, err := setupWorkspace("tests/up/testdata/docker-extra-override", dtc.initialDir, dtc.f)
+				framework.ExpectNoError(err)
+
+				extraPath := path.Join(tempDir, "override.json")
+				err = dtc.f.DevPodUp(ctx, tempDir, "--extra-devcontainer-path", extraPath)
+				framework.ExpectNoError(err)
+
+				out, err := dtc.execSSH(ctx, tempDir, "cat /tmp/test-var.out")
+				framework.ExpectNoError(err)
+				framework.ExpectEqual(strings.TrimSpace(out), "overridden_value")
+
+				err = dtc.f.DevPodWorkspaceDelete(ctx, tempDir)
+				framework.ExpectNoError(err)
+			}, ginkgo.SpecTimeout(framework.GetTimeout()))
+
+			ginkgo.It("multi devcontainer selection", func(ctx context.Context) {
+				tempDir, err := setupWorkspace("tests/up/testdata/docker-multi-devcontainer", dtc.initialDir, dtc.f)
+				framework.ExpectNoError(err)
+
+				err = dtc.f.DevPodUp(ctx, tempDir, "--devcontainer-id", "python")
+				framework.ExpectNoError(err)
+
+				out, err := dtc.execSSH(ctx, tempDir, "bash -l -c 'echo -n $DEVCONTAINER_TYPE'")
+				framework.ExpectNoError(err)
+				framework.ExpectEqual(out, "python")
+
+				err = dtc.f.DevPodWorkspaceDelete(ctx, tempDir)
+				framework.ExpectNoError(err)
+
+				err = dtc.f.DevPodUp(ctx, tempDir, "--devcontainer-id", "go")
+				framework.ExpectNoError(err)
+
+				out, err = dtc.execSSH(ctx, tempDir, "bash -l -c 'echo -n $DEVCONTAINER_TYPE'")
+				framework.ExpectNoError(err)
+				framework.ExpectEqual(out, "go")
+
+				err = dtc.f.DevPodWorkspaceDelete(ctx, tempDir)
+				framework.ExpectNoError(err)
+			}, ginkgo.SpecTimeout(framework.GetTimeout()))
+		})
+
+		ginkgo.Context("features", func() {
+			ginkgo.It("lifecycle hooks dependencies", func(ctx context.Context) {
+				_, err := dtc.setupAndUp(ctx, "tests/up/testdata/docker-features-lifecycle-hooks", "--debug")
+				framework.ExpectNoError(err)
+			}, ginkgo.SpecTimeout(framework.GetTimeout()))
+
+			ginkgo.It("lifecycle hooks execution", func(ctx context.Context) {
+				tempDir, err := dtc.setupAndUp(ctx, "tests/up/testdata/docker-feature-hooks")
+				framework.ExpectNoError(err)
+
+				out, err := dtc.execSSH(ctx, tempDir, "cat /tmp/feature-onCreate.txt")
+				framework.ExpectNoError(err)
+				framework.ExpectEqual(strings.TrimSpace(out), "feature-onCreate")
+
+				out, err = dtc.execSSH(ctx, tempDir, "cat /tmp/feature-postCreate.txt")
+				framework.ExpectNoError(err)
+				framework.ExpectEqual(strings.TrimSpace(out), "feature-postCreate")
+
+				out, err = dtc.execSSH(ctx, tempDir, "cat /tmp/feature-postStart.txt")
+				framework.ExpectNoError(err)
+				framework.ExpectEqual(strings.TrimSpace(out), "feature-postStart")
+			}, ginkgo.SpecTimeout(framework.GetTimeout()))
+
+			ginkgo.It("http headers download", func(ctx context.Context) {
 				server := ghttp.NewServer()
+				ginkgo.DeferCleanup(server.Close)
 
 				tempDir, err := framework.CopyToTempDir("tests/up/testdata/docker-features-http-headers")
 				framework.ExpectNoError(err)
+				ginkgo.DeferCleanup(framework.CleanupTempDir, dtc.initialDir, tempDir)
+				ginkgo.DeferCleanup(dtc.f.DevPodWorkspaceDelete, context.Background(), tempDir)
 
 				featureArchiveFilePath := path.Join(tempDir, "devcontainer-feature-hello.tgz")
 				featureFiles := []string{path.Join(tempDir, "devcontainer-feature.json"), path.Join(tempDir, "install.sh")}
@@ -314,9 +277,6 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 				output := strings.ReplaceAll(string(devContainerFileBuf), "#{server_url}", server.URL())
 				err = os.WriteFile(path.Join(tempDir, ".devcontainer.json"), []byte(output), 0644)
 				framework.ExpectNoError(err)
-
-				ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
-				ginkgo.DeferCleanup(server.Close)
 
 				respHeader := http.Header{}
 				respHeader.Set("Content-Disposition", "attachment; filename=devcontainer-feature-hello.tgz")
@@ -332,79 +292,52 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 					),
 				)
 
-				ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), tempDir)
-
-				// Wait for devpod workspace to come online (deadline: 30s)
-				err = f.DevPodUp(ctx, tempDir)
-				framework.ExpectNoError(err)
-				server.Close()
-			}, ginkgo.SpecTimeout(framework.GetTimeout()))
-
-			ginkgo.It("should merge extra devcontainer path with base config", func(ctx context.Context) {
-				tempDir, err := setupWorkspace("tests/up/testdata/docker-extra-devcontainer", initialDir, f)
-				framework.ExpectNoError(err)
-
-				extraPath := path.Join(tempDir, "extra.json")
-				err = f.DevPodUp(ctx, tempDir, "--extra-devcontainer-path", extraPath)
-				framework.ExpectNoError(err)
-
-				// Verify base environment variable
-				out, err := f.DevPodSSH(ctx, tempDir, "bash -l -c 'echo -n $BASE_VAR'")
-				framework.ExpectNoError(err)
-				framework.ExpectEqual(out, "base_value")
-
-				// Verify extra environment variable is added
-				out, err = f.DevPodSSH(ctx, tempDir, "bash -l -c 'echo -n $EXTRA_VAR'")
-				framework.ExpectNoError(err)
-				framework.ExpectEqual(out, "extra_value")
-
-				err = f.DevPodWorkspaceDelete(ctx, tempDir)
+				err = dtc.f.DevPodUp(ctx, tempDir)
 				framework.ExpectNoError(err)
 			}, ginkgo.SpecTimeout(framework.GetTimeout()))
+		})
 
-			ginkgo.It("should override base config with extra devcontainer path", func(ctx context.Context) {
-				tempDir, err := setupWorkspace("tests/up/testdata/docker-extra-override", initialDir, f)
+		ginkgo.Context("dotfiles", func() {
+			ginkgo.BeforeEach(func() {
+				if runtime.GOOS == "windows" {
+					ginkgo.Skip("skipping on windows")
+				}
+			})
+
+			ginkgo.It("without install script", func(ctx context.Context) {
+				tempDir, err := dtc.setupAndUp(ctx, "tests/up/testdata/docker", "--dotfiles", "https://github.com/loft-sh/example-dotfiles")
 				framework.ExpectNoError(err)
 
-				extraPath := path.Join(tempDir, "override.json")
-				err = f.DevPodUp(ctx, tempDir, "--extra-devcontainer-path", extraPath)
+				out, err := dtc.execSSH(ctx, tempDir, "ls ~/.file*")
 				framework.ExpectNoError(err)
-
-				// Verify variable is overridden by checking file written by postCreateCommand
-				// postCreateCommand runs with remoteEnv variables available
-				out, err := f.DevPodSSH(ctx, tempDir, "cat /tmp/test-var.out")
-				framework.ExpectNoError(err)
-				framework.ExpectEqual(strings.TrimSpace(out), "overridden_value")
-
-				err = f.DevPodWorkspaceDelete(ctx, tempDir)
-				framework.ExpectNoError(err)
+				framework.ExpectEqual(out, "/home/vscode/.file1\n/home/vscode/.file2\n/home/vscode/.file3\n")
 			}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
-			ginkgo.It("should select specific devcontainer by ID when multiple exist", func(ctx context.Context) {
-				tempDir, err := setupWorkspace("tests/up/testdata/docker-multi-devcontainer", initialDir, f)
+			ginkgo.It("with install script", func(ctx context.Context) {
+				tempDir, err := dtc.setupAndUp(ctx, "tests/up/testdata/docker", "--dotfiles", "https://github.com/loft-sh/example-dotfiles", "--dotfiles-script", "install-example")
 				framework.ExpectNoError(err)
 
-				// Test with python devcontainer
-				err = f.DevPodUp(ctx, tempDir, "--devcontainer-id", "python")
+				out, err := dtc.execSSH(ctx, tempDir, "ls /tmp/worked")
+				framework.ExpectNoError(err)
+				framework.ExpectEqual(out, "/tmp/worked\n")
+			}, ginkgo.SpecTimeout(framework.GetTimeout()))
+
+			ginkgo.It("specific commit", func(ctx context.Context) {
+				tempDir, err := dtc.setupAndUp(ctx, "tests/up/testdata/docker", "--dotfiles", "https://github.com/loft-sh/example-dotfiles@sha256:9a0b41808bf8f50e9871b3b5c9280fe22bf46a04")
 				framework.ExpectNoError(err)
 
-				out, err := f.DevPodSSH(ctx, tempDir, "bash -l -c 'echo -n $DEVCONTAINER_TYPE'")
+				out, err := dtc.execSSH(ctx, tempDir, "ls ~/.file*")
 				framework.ExpectNoError(err)
-				framework.ExpectEqual(out, "python")
+				framework.ExpectEqual(out, "/home/vscode/.file1\n/home/vscode/.file2\n/home/vscode/.file3\n")
+			}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
-				err = f.DevPodWorkspaceDelete(ctx, tempDir)
-				framework.ExpectNoError(err)
-
-				// Test with go devcontainer
-				err = f.DevPodUp(ctx, tempDir, "--devcontainer-id", "go")
+			ginkgo.It("specific branch", func(ctx context.Context) {
+				tempDir, err := dtc.setupAndUp(ctx, "tests/up/testdata/docker", "--dotfiles", "https://github.com/loft-sh/example-dotfiles@do-not-delete")
 				framework.ExpectNoError(err)
 
-				out, err = f.DevPodSSH(ctx, tempDir, "bash -l -c 'echo -n $DEVCONTAINER_TYPE'")
+				out, err := dtc.execSSH(ctx, tempDir, "cat ~/.branch_test")
 				framework.ExpectNoError(err)
-				framework.ExpectEqual(out, "go")
-
-				err = f.DevPodWorkspaceDelete(ctx, tempDir)
-				framework.ExpectNoError(err)
+				framework.ExpectEqual(out, "test\n")
 			}, ginkgo.SpecTimeout(framework.GetTimeout()))
 		})
 	})

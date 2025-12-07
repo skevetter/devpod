@@ -10,6 +10,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/docker/docker/api/types/container"
 	"github.com/loft-sh/log"
 	"github.com/loft-sh/log/scanner"
 	"github.com/onsi/ginkgo/v2"
@@ -19,39 +20,56 @@ import (
 	provider2 "github.com/skevetter/devpod/pkg/provider"
 )
 
+type baseTestContext struct {
+	f            *framework.Framework
+	dockerHelper *docker.DockerHelper
+	initialDir   string
+}
+
+func (btc *baseTestContext) execSSHCapture(ctx context.Context, projectName, command string) (string, error) {
+	output, _, err := btc.f.ExecCommandCapture(ctx, []string{"ssh", "--command", command, projectName})
+	return output, err
+}
+
+func (btc *baseTestContext) execSSH(ctx context.Context, tempDir, command string) (string, error) {
+	return btc.f.DevPodSSH(ctx, tempDir, command)
+}
+
+func (btc *baseTestContext) inspectContainer(ctx context.Context, ids []string) (*container.InspectResponse, error) {
+	if len(ids) == 0 {
+		return nil, fmt.Errorf("no container IDs provided")
+	}
+	var details []container.InspectResponse
+	if err := btc.dockerHelper.Inspect(ctx, ids, "container", &details); err != nil {
+		return nil, err
+	}
+	return &details[0], nil
+}
+
+// Log scanning functions
 func findMessage(reader io.Reader, message string) error {
 	scan := scanner.NewScanner(reader)
 	for scan.Scan() {
-		line := scan.Bytes()
-		if len(line) == 0 {
-			continue
-		}
-
-		lineObject := &log.Line{}
-		err := json.Unmarshal(line, lineObject)
-		if err == nil && strings.Contains(lineObject.Message, message) {
-			return nil
+		if line := scan.Bytes(); len(line) > 0 {
+			lineObject := &log.Line{}
+			if err := json.Unmarshal(line, lineObject); err == nil && strings.Contains(lineObject.Message, message) {
+				return nil
+			}
 		}
 	}
-
 	return fmt.Errorf("couldn't find message '%s' in log", message)
 }
 
 func verifyLogStream(reader io.Reader) error {
 	scan := scanner.NewScanner(reader)
 	for scan.Scan() {
-		line := scan.Bytes()
-		if len(line) == 0 {
-			continue
-		}
-
-		lineObject := &log.Line{}
-		err := json.Unmarshal(line, lineObject)
-		if err != nil {
-			return fmt.Errorf("error reading line %s: %w", string(line), err)
+		if line := scan.Bytes(); len(line) > 0 {
+			lineObject := &log.Line{}
+			if err := json.Unmarshal(line, lineObject); err != nil {
+				return fmt.Errorf("error reading line %s: %w", string(line), err)
+			}
 		}
 	}
-
 	return nil
 }
 
@@ -60,45 +78,47 @@ func createTarGzArchive(outputFilePath string, filePaths []string) error {
 	if err != nil {
 		return err
 	}
-	defer func() { _ = outputFile.Close() }()
+	defer outputFile.Close()
 
 	gzipWriter := gzip.NewWriter(outputFile)
-	defer func() { _ = gzipWriter.Close() }()
+	defer gzipWriter.Close()
 
 	tarWriter := tar.NewWriter(gzipWriter)
-	defer func() { _ = gzipWriter.Close() }()
+	defer tarWriter.Close()
 
 	for _, filePath := range filePaths {
-		file, err := os.Open(filePath)
-		if err != nil {
-			return err
-		}
-		defer func() { _ = file.Close() }()
-
-		fileInfo, err := file.Stat()
-		if err != nil {
-			return err
-		}
-
-		fileInfoHdr, err := tar.FileInfoHeader(fileInfo, fileInfo.Name())
-		if err != nil {
-			return err
-		}
-
-		err = tarWriter.WriteHeader(fileInfoHdr)
-		if err != nil {
-			return err
-		}
-
-		_, err = io.Copy(tarWriter, file)
-		if err != nil {
+		if err := addFileToTar(tarWriter, filePath); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-// setupWorkspace copies testdata to a temp directory and registers cleanup
+func addFileToTar(tarWriter *tar.Writer, filePath string) error {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	fileInfo, err := file.Stat()
+	if err != nil {
+		return err
+	}
+
+	header, err := tar.FileInfoHeader(fileInfo, fileInfo.Name())
+	if err != nil {
+		return err
+	}
+
+	if err := tarWriter.WriteHeader(header); err != nil {
+		return err
+	}
+
+	_, err = io.Copy(tarWriter, file)
+	return err
+}
+
 func setupWorkspace(testdataPath, initialDir string, f *framework.Framework) (string, error) {
 	tempDir, err := framework.CopyToTempDir(testdataPath)
 	if err != nil {
@@ -109,16 +129,21 @@ func setupWorkspace(testdataPath, initialDir string, f *framework.Framework) (st
 	return tempDir, nil
 }
 
-// setupDockerProvider creates a framework and configures the docker provider with the specified docker path
 func setupDockerProvider(binDir, dockerPath string) (*framework.Framework, error) {
 	f := framework.NewDefaultFramework(binDir)
 	_ = f.DevPodProviderDelete(context.Background(), "docker")
 	_ = f.DevPodProviderAdd(context.Background(), "docker", "-o", "DOCKER_PATH="+dockerPath)
-	err := f.DevPodProviderUse(context.Background(), "docker")
-	return f, err
+	return f, f.DevPodProviderUse(context.Background(), "docker")
 }
 
-// findComposeContainer finds a compose container by project and service name
+func setupWorkspaceAndUp(ctx context.Context, testdataPath, initialDir string, f *framework.Framework, args ...string) (string, error) {
+	tempDir, err := setupWorkspace(testdataPath, initialDir, f)
+	if err != nil {
+		return "", err
+	}
+	return tempDir, f.DevPodUp(ctx, append([]string{tempDir}, args...)...)
+}
+
 func findComposeContainer(ctx context.Context, dockerHelper *docker.DockerHelper, composeHelper *compose.ComposeHelper, workspaceUID, serviceName string) ([]string, error) {
 	return dockerHelper.FindContainer(ctx, []string{
 		fmt.Sprintf("%s=%s", compose.ProjectLabel, composeHelper.GetProjectName(workspaceUID)),
@@ -126,11 +151,8 @@ func findComposeContainer(ctx context.Context, dockerHelper *docker.DockerHelper
 	})
 }
 
-// devPodUpAndFindWorkspace runs devpod up and returns the workspace
 func devPodUpAndFindWorkspace(ctx context.Context, f *framework.Framework, tempDir string, args ...string) (*provider2.Workspace, error) {
-	allArgs := append([]string{tempDir}, args...)
-	err := f.DevPodUp(ctx, allArgs...)
-	if err != nil {
+	if err := f.DevPodUp(ctx, append([]string{tempDir}, args...)...); err != nil {
 		return nil, err
 	}
 	return f.FindWorkspace(ctx, tempDir)
