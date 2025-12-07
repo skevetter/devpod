@@ -90,8 +90,8 @@ jobs:
       - name: log in to container registry
         uses: docker/login-action@v3
         with:
-          username: ${{ env.DOCKERHUB_USERNAME }}
-          password: ${{ env.DOCKERHUB_TOKEN }}
+          username: "$DOCKERHUB_USERNAME"
+          password: "$DOCKERHUB_TOKEN"
 
       - name: run integration test
         uses: ./.github/actions/run-integration-test
