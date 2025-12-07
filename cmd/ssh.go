@@ -556,6 +556,7 @@ func (cmd *SSHCmd) startServices(
 			configureDockerCredentials,
 			configureGitCredentials,
 			configureGitSSHSignatureHelper,
+			"",
 			log,
 		)
 		if err != nil {
@@ -667,6 +668,10 @@ func startServicesDaemon(ctx context.Context, devPodConfig *config.Config, clien
 	if err != nil {
 		return err
 	}
+	clientHost, err := client.GetClientAddress(ctx)
+	if err != nil {
+		return err
+	}
 
 	configureDockerCredentials := devPodConfig.ContextOption(config.ContextOptionSSHInjectDockerCredentials) == "true"
 	configureGitCredentials := devPodConfig.ContextOption(config.ContextOptionSSHInjectGitCredentials) == "true"
@@ -695,6 +700,7 @@ func startServicesDaemon(ctx context.Context, devPodConfig *config.Config, clien
 			configureDockerCredentials,
 			configureGitCredentials,
 			configureGitSSHSignatureHelper,
+			clientHost,
 			log,
 		)
 	}

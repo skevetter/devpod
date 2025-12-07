@@ -13,11 +13,10 @@ import (
 	"strconv"
 
 	"github.com/loft-sh/log"
-	"github.com/skevetter/devpod/cmd/agent/container"
 	"github.com/skevetter/devpod/cmd/flags"
+	"github.com/skevetter/devpod/pkg/daemon/workspace/network"
 	"github.com/skevetter/devpod/pkg/gitcredentials"
 	devpodhttp "github.com/skevetter/devpod/pkg/http"
-	"github.com/skevetter/devpod/pkg/ts"
 	"github.com/spf13/cobra"
 )
 
@@ -62,7 +61,7 @@ func (cmd *GitCredentialsCmd) Run(ctx context.Context, args []string, log log.Lo
 	}
 
 	// try to get the credentials from the workspace server first
-	credentials := getCredentialsFromWorkspaceServer(credentialsReq)
+	credentials := getCredentialsFromServer(credentialsReq)
 	if credentials == nil && cmd.Port != 0 {
 		// try to get the credentials from the local machine
 		credentials = getCredentialsFromLocalMachine(credentialsReq, cmd.Port)
@@ -78,8 +77,8 @@ func (cmd *GitCredentialsCmd) Run(ctx context.Context, args []string, log log.Lo
 	return nil
 }
 
-func getCredentialsFromWorkspaceServer(credentials *gitcredentials.GitCredentials) *gitcredentials.GitCredentials {
-	if _, err := os.Stat(filepath.Join(container.RootDir, ts.RunnerProxySocket)); err != nil {
+func getCredentialsFromServer(credentials *gitcredentials.GitCredentials) *gitcredentials.GitCredentials {
+	if _, err := os.Stat(filepath.Join(network.RootDir, network.NetworkProxySocket)); err != nil {
 		// workspace server is not running
 		return nil
 	}
@@ -87,12 +86,12 @@ func getCredentialsFromWorkspaceServer(credentials *gitcredentials.GitCredential
 	httpClient := &http.Client{
 		Transport: &http.Transport{
 			DialContext: func(_ context.Context, _, _ string) (net.Conn, error) {
-				return net.Dial("unix", filepath.Join(container.RootDir, ts.RunnerProxySocket))
+				return net.Dial("unix", filepath.Join(network.RootDir, network.NetworkProxySocket))
 			},
 		},
 	}
 
-	credentials, credentialsErr := doRequest(httpClient, credentials, "http://runner-proxy/git-credentials")
+	credentials, credentialsErr := doRequest(httpClient, credentials, "http://network-proxy/git-credentials")
 	if credentialsErr != nil {
 		// append error to /tmp/git-credentials.log
 		file, err := os.OpenFile("/tmp/git-credentials-error.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)

@@ -67,7 +67,7 @@ func (cmd *DeleteCmd) Run(ctx context.Context, devPodConfig *config.Config, args
 		if err != nil {
 			return err
 		}
-		log.Default.Donef("Successfully deleted workspace '%s'", workspaceName)
+		log.Default.Donef("Deleted workspace '%s'", workspaceName)
 		return nil
 	}
 

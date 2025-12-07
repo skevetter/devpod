@@ -1,0 +1,5 @@
+{
+  "name": "Simple HTTP Server",
+  "image": "mcr.microsoft.com/devcontainers/python:latest",
+  "postCreateCommand": "bash -c 'cat > /tmp/server.py << \"EOF\"\nfrom http.server import HTTPServer, BaseHTTPRequestHandler\nimport sys\n\nclass Handler(BaseHTTPRequestHandler):\n    def do_GET(self):\n        self.send_response(200)\n        self.send_header(\"Content-type\", \"text/plain\")\n        self.end_headers()\n        self.wfile.write(b\"Hello from DevPod\")\n    def log_message(self, format, *args):\n        pass\n\nif __name__ == \"__main__\":\n    server = HTTPServer((\"\", 8080), Handler)\n    server.serve_forever()\nEOF\ncat > /tmp/start_server.sh << \"EOF\"\n#!/bin/bash\npython3 /tmp/server.py > /tmp/server.log 2>&1 &\necho $! > /tmp/server.pid\nEOF\nchmod +x /tmp/start_server.sh'"
+}

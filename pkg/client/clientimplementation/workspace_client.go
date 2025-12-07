@@ -353,7 +353,7 @@ func (s *workspaceClient) Delete(ctx context.Context, opt client.DeleteOptions) 
 			writer := s.log.Writer(logrus.InfoLevel, false)
 			defer func() { _ = writer.Close() }()
 
-			s.log.Infof("Deleting container...")
+			s.log.Infof("Deleting container")
 			compressed, info, err := s.compressedAgentInfo(provider.CLIOptions{})
 			if err != nil {
 				return fmt.Errorf("agent info")
