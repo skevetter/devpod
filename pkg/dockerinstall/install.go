@@ -279,7 +279,7 @@ func installDebian(distro *distro, shC string, opts *installOptions) error {
 		"apt-get update -qq >/dev/null",
 	}
 
-	if err := runCommands(shC, opts, cmds); err != nil {
+	if err := runCommandsWithRetry(shC, opts, cmds, 5*time.Minute); err != nil {
 		return err
 	}
 
@@ -319,7 +319,7 @@ func installDebian(distro *distro, shC string, opts *installOptions) error {
 	pkgs := buildPackageList(opts.version, strings.TrimSuffix(pkgVersion, "="), strings.TrimSuffix(cliPkgVersion, "="))
 
 	installCmd := fmt.Sprintf("DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends %s >/dev/null", pkgs)
-	if err := runShellCmd(shC, installCmd, opts); err != nil {
+	if err := runShellCmdWithRetry(shC, installCmd, opts, 5*time.Minute); err != nil {
 		return err
 	}
 
@@ -662,4 +662,62 @@ func runCommands(shC string, opts *installOptions, cmds []string) error {
 		}
 	}
 	return nil
+}
+
+func runCommandsWithRetry(shC string, opts *installOptions, cmds []string, timeout time.Duration) error {
+	for _, cmd := range cmds {
+		if err := runShellCmdWithRetry(shC, cmd, opts, timeout); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func runShellCmdWithRetry(shC, cmdStr string, opts *installOptions, timeout time.Duration) error {
+	start := time.Now()
+	retryDelay := 10 * time.Second
+	attempt := 0
+
+	for {
+		attempt++
+		fprintln(opts.stdout, fmt.Sprintf("attempt %d to run command: %s", attempt, cmdStr))
+
+		// Capture stderr to check for lock errors
+		stderrBuf := &strings.Builder{}
+		origStderr := opts.stderr
+		opts.stderr = io.MultiWriter(origStderr, stderrBuf)
+
+		err := runShellCmd(shC, cmdStr, opts)
+		opts.stderr = origStderr
+
+		if err == nil {
+			fprintln(opts.stdout, fmt.Sprintf("command succeeded on attempt %d", attempt))
+			return nil
+		}
+
+		stderrStr := stderrBuf.String()
+		fprintln(opts.stdout, fmt.Sprintf("command failed with error: %v", err))
+		fprintln(opts.stdout, fmt.Sprintf("stderr contains: %s", stderrStr))
+
+		// Check if it's a dpkg lock error
+		isDpkgLock := strings.Contains(stderrStr, "Could not get lock") ||
+			strings.Contains(stderrStr, "/var/lib/dpkg/lock")
+
+		fprintln(opts.stdout, fmt.Sprintf("is dpkg lock error: %v", isDpkgLock))
+
+		if !isDpkgLock {
+			fprintln(opts.stdout, "not a dpkg lock error, failing immediately")
+			return err
+		}
+
+		if time.Since(start) >= timeout {
+			fprintln(opts.stdout, fmt.Sprintf("timeout reached after %v", time.Since(start)))
+			return fmt.Errorf("timeout waiting for dpkg lock after %v: %w", timeout, err)
+		}
+
+		remaining := timeout - time.Since(start)
+		fprintln(origStderr, fmt.Sprintf("waiting for dpkg lock to be released (will retry for %v)...", remaining.Round(time.Second)))
+		fprintln(opts.stdout, fmt.Sprintf("sleeping for %v before retry", retryDelay))
+		time.Sleep(retryDelay)
+	}
 }
