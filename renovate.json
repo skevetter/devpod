@@ -48,6 +48,10 @@
     {
       "matchPackageNames": ["@chakra-ui/react"],
       "allowedVersions": "^2.0.0"
+    },
+    {
+      "matchPackageNames": ["github.com/loft-sh/api/v4"],
+      "allowedVersions": "v4.3.0-devpod.alpha.31"
     }
   ]
 }
