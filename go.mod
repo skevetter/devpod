@@ -40,7 +40,7 @@ require (
 	github.com/moby/buildkit v0.26.2
 	github.com/moby/term v0.5.2
 	github.com/onsi/ginkgo/v2 v2.27.3
-	github.com/onsi/gomega v1.38.2
+	github.com/onsi/gomega v1.38.3
 	github.com/otiai10/copy v1.7.0
 	github.com/pkg/errors v0.9.1
 	github.com/pkg/sftp v1.13.10
