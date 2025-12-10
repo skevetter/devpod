@@ -620,6 +620,8 @@ github.com/prometheus/procfs v0.16.1 h1:hZ15bTNuirocR6u0JZ6BAHHmwS1p8B4P6MRqxtzM
 github.com/prometheus/procfs v0.16.1/go.mod h1:teAbpZRB1iIAJYREa1LsoWUXykVXA1KlTmWl8x/U+Is=
 github.com/ramr/go-reaper v0.2.3 h1:2dSj+5SaIiWr6Lzaq2J7Fok0vUuF4zK1AmsE6iuxyao=
 github.com/ramr/go-reaper v0.2.3/go.mod h1:bgru3llkYWSj8qb6akpA0sh0pq468OQ5wqvFT3BFHsE=
+github.com/ramr/go-reaper v0.3.1 h1:rvMDXjaQf9hQFP4Zq2qneaBNizatCIMgPwIpFOsfdlI=
+github.com/ramr/go-reaper v0.3.1/go.mod h1:bgru3llkYWSj8qb6akpA0sh0pq468OQ5wqvFT3BFHsE=
 github.com/rhysd/go-github-selfupdate v1.2.3 h1:iaa+J202f+Nc+A8zi75uccC8Wg3omaM7HDeimXA22Ag=
 github.com/rhysd/go-github-selfupdate v1.2.3/go.mod h1:mp/N8zj6jFfBQy/XMYoWsmfzxazpPAODuqarmPDe2Rg=
 github.com/rivo/uniseg v0.2.0/go.mod h1:J6wj4VEh+S6ZtnVlnTBMWIodfgj8LQOQFoIToxlJtxc=
