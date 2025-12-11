@@ -46,8 +46,10 @@ func RunEmulatedShell(ctx context.Context, command string, stdin io.Reader, stdo
 		interp.StdIO(stdin, stdout, stderr),
 		interp.Env(expand.ListEnviron(env...)),
 		interp.Dir(dir),
-		interp.ExecHandler(func(ctx context.Context, args []string) error {
-			return defaultExecHandler(ctx, args)
+		interp.ExecHandlers(func(next interp.ExecHandlerFunc) interp.ExecHandlerFunc {
+			return func(ctx context.Context, args []string) error {
+				return defaultExecHandler(ctx, args)
+			}
 		}),
 		interp.OpenHandler(func(ctx context.Context, path string, flag int, perm os.FileMode) (io.ReadWriteCloser, error) {
 			if path == "/dev/null" {
@@ -67,7 +69,8 @@ func RunEmulatedShell(ctx context.Context, command string, stdin io.Reader, stdo
 	// Run command
 	err = r.Run(ctx, parsed)
 	if err != nil {
-		if status, ok := interp.IsExitStatus(err); ok && status == 0 {
+		var exitStatus interp.ExitStatus
+		if errors.As(err, &exitStatus) && exitStatus == 0 {
 			return nil
 		}
 
