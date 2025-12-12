@@ -1,0 +1,5 @@
+{
+  "name": "Test Bind Mount Validation",
+  "image": "alpine:latest",
+  "mounts": ["source=/nonexistent/path,target=/mnt/test,type=bind"]
+}
