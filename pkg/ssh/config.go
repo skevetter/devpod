@@ -138,7 +138,7 @@ func addHostSection(config, execPath, host, user, context, workspace, workdir, c
 func GetUser(workspaceID string, sshConfigPath string) (string, error) {
 	path, err := ResolveSSHConfigPath(sshConfigPath)
 	if err != nil {
-		return "", fmt.Errorf("Invalid ssh config path %w", err)
+		return "", fmt.Errorf("invalid ssh config path %w", err)
 	}
 	sshConfigPath = path
 

@@ -1004,7 +1004,7 @@ func startBrowserTunnel(
 func configureSSH(client client2.BaseWorkspaceClient, sshConfigPath, user, workdir string, gpgagent bool, devPodHome string) error {
 	path, err := devssh.ResolveSSHConfigPath(sshConfigPath)
 	if err != nil {
-		return fmt.Errorf("Invalid ssh config path %w", err)
+		return fmt.Errorf("invalid ssh config path %w", err)
 	}
 	sshConfigPath = path
 

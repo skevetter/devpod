@@ -133,9 +133,15 @@ func (c *ContainerTunnel) Run(ctx context.Context, handler Handler, cfg *config.
 	// wait for result
 	select {
 	case err := <-containerChan:
-		return fmt.Errorf("tunnel to container %w", err)
+		if err != nil {
+			return fmt.Errorf("tunnel to container %w", err)
+		}
+		return nil
 	case err := <-tunnelChan:
-		return fmt.Errorf("connect to server %w", err)
+		if err != nil {
+			return fmt.Errorf("connect to server %w", err)
+		}
+		return nil
 	}
 }
 
