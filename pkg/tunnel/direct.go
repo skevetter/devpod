@@ -2,10 +2,10 @@ package tunnel
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 
-	"github.com/pkg/errors"
 	devssh "github.com/skevetter/devpod/pkg/ssh"
 )
 
@@ -56,8 +56,8 @@ func NewTunnel(ctx context.Context, tunnel Tunnel, handler Handler) error {
 	// wait for result
 	select {
 	case err := <-innerTunnelChan:
-		return errors.Wrap(err, "inner tunnel")
+		return fmt.Errorf("inner tunnel %w", err)
 	case err := <-outerTunnelChan:
-		return errors.Wrap(err, "outer tunnel")
+		return fmt.Errorf("outer tunnel %w", err)
 	}
 }

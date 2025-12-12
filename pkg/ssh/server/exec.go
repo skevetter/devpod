@@ -10,7 +10,6 @@ import (
 
 	"github.com/loft-sh/log"
 	"github.com/loft-sh/ssh"
-	perrors "github.com/pkg/errors"
 )
 
 func execNonPTY(sess ssh.Session, cmd *exec.Cmd, log log.Logger) (err error) {
@@ -32,7 +31,7 @@ func execNonPTY(sess ssh.Session, cmd *exec.Cmd, log log.Logger) (err error) {
 	// start the command
 	err = cmd.Start()
 	if err != nil {
-		return perrors.Wrap(err, "start command")
+		return fmt.Errorf("start command %w", err)
 	}
 
 	go func() {
@@ -82,7 +81,7 @@ func execPTY(
 	cmd.Env = append(cmd.Env, fmt.Sprintf("TERM=%s", ptyReq.Term))
 	f, err := startPTY(cmd)
 	if err != nil {
-		return perrors.Wrap(err, "start pty")
+		return fmt.Errorf("start pty %w", err)
 	}
 	defer func() { _ = f.Close() }()
 

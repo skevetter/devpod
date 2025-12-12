@@ -16,7 +16,6 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/loft-sh/log"
 	"github.com/loft-sh/log/hash"
-	"github.com/pkg/errors"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	"github.com/skevetter/devpod/pkg/extract"
 	devpodhttp "github.com/skevetter/devpod/pkg/http"
@@ -167,29 +166,29 @@ func downloadLayer(img v1.Image, id, destFile string, log log.Logger) error {
 	log.Debugf("Download feature %s layer %s into %s...", id, manifest.Layers[0].Digest, destFile)
 	layer, err := img.LayerByDigest(manifest.Layers[0].Digest)
 	if err != nil {
-		return errors.Wrap(err, "retrieve layer")
+		return fmt.Errorf("retrieve layer %w", err)
 	}
 
 	data, err := layer.Uncompressed()
 	if err != nil {
-		return errors.Wrap(err, "download")
+		return fmt.Errorf("download %w", err)
 	}
 	defer func() { _ = data.Close() }()
 
 	err = os.MkdirAll(filepath.Dir(destFile), 0755)
 	if err != nil {
-		return errors.Wrap(err, "create target folder")
+		return fmt.Errorf("create target folder %w", err)
 	}
 
 	file, err := os.Create(destFile)
 	if err != nil {
-		return errors.Wrap(err, "create file")
+		return fmt.Errorf("create file %w", err)
 	}
 	defer func() { _ = file.Close() }()
 
 	_, err = io.Copy(file, data)
 	if err != nil {
-		return errors.Wrap(err, "download layer")
+		return fmt.Errorf("download layer %w", err)
 	}
 
 	return nil
@@ -227,7 +226,7 @@ func processDirectTarFeature(id string, httpHeaders map[string]string, log log.L
 	err = extract.Extract(file, featureExtractedFolder)
 	if err != nil {
 		_ = os.RemoveAll(featureExtractedFolder)
-		return "", errors.Wrap(err, "extract folder")
+		return "", fmt.Errorf("extract folder %w", err)
 	}
 
 	return featureExtractedFolder, nil
@@ -237,14 +236,14 @@ func downloadFeatureFromURL(url string, destFile string, httpHeaders map[string]
 	// create the features temp folder
 	err := os.MkdirAll(filepath.Dir(destFile), 0755)
 	if err != nil {
-		return errors.Wrap(err, "create feature folder")
+		return fmt.Errorf("create feature folder %w", err)
 	}
 
 	// initiate download
 	log.Debugf("Download feature from %s", url)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return errors.Wrap(err, "make request")
+		return fmt.Errorf("make request %w", err)
 	}
 	for key, value := range httpHeaders {
 		req.Header.Set(key, value)
@@ -252,7 +251,7 @@ func downloadFeatureFromURL(url string, destFile string, httpHeaders map[string]
 
 	resp, err := devpodhttp.GetHTTPClient().Do(req)
 	if err != nil {
-		return errors.Wrap(err, "make request")
+		return fmt.Errorf("make request %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode >= 400 {
@@ -262,13 +261,13 @@ func downloadFeatureFromURL(url string, destFile string, httpHeaders map[string]
 	// download the tar.gz file
 	file, err := os.Create(destFile)
 	if err != nil {
-		return errors.Wrap(err, "create download file")
+		return fmt.Errorf("create download file %w", err)
 	}
 	defer func() { _ = file.Close() }()
 
 	_, err = io.Copy(file, resp.Body)
 	if err != nil {
-		return errors.Wrap(err, "download feature")
+		return fmt.Errorf("download feature %w", err)
 	}
 
 	return nil

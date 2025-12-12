@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/loft-sh/log"
-	"github.com/pkg/errors"
 	"github.com/skevetter/devpod/cmd/flags"
 	"github.com/skevetter/devpod/pkg/provider"
 	"github.com/skevetter/devpod/pkg/workspace"
@@ -40,12 +39,12 @@ func (cmd *GetProviderNameCmd) Run(ctx context.Context, args []string) error {
 
 	providerRaw, _, err := workspace.ResolveProvider(args[0], log.Default.ErrorStreamOnly())
 	if err != nil {
-		return errors.Wrap(err, "resolve provider")
+		return fmt.Errorf("resolve provider %w", err)
 	}
 
 	providerConfig, err := provider.ParseProvider(bytes.NewReader(providerRaw))
 	if err != nil {
-		return errors.Wrap(err, "parse provider")
+		return fmt.Errorf("parse provider %w", err)
 	}
 
 	fmt.Print(providerConfig.Name)

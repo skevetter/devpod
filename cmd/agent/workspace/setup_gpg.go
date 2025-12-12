@@ -145,12 +145,12 @@ func (cmd *SetupGPGCmd) Run(ctx context.Context, log log.Logger) error {
 func getPublicKeys(log log.Logger) (string, error) {
 	port, err := credentials.GetPort()
 	if err != nil {
-		return "", fmt.Errorf("get port: %w", err)
+		return "", fmt.Errorf("get port %w", err)
 	}
 
 	out, err := credentials.PostWithRetry(port, "gpg-public-keys", nil, log)
 	if err != nil {
-		return "", fmt.Errorf("get public gpg keys: %w", err)
+		return "", fmt.Errorf("get public gpg keys %w", err)
 	}
 
 	return string(out), nil

@@ -7,7 +7,6 @@ import (
 	"os"
 
 	"github.com/loft-sh/log"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/cmd/flags"
 	"github.com/skevetter/devpod/pkg/agent"
@@ -238,7 +237,7 @@ func buildAgentClient(ctx context.Context, workspaceClient client.WorkspaceClien
 		options...,
 	)
 	if err != nil {
-		return nil, errors.Wrap(err, "run tunnel machine")
+		return nil, fmt.Errorf("run tunnel machine %w", err)
 	}
 
 	// wait until command finished

@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/loft-sh/log"
-	"github.com/pkg/errors"
 	"github.com/skevetter/devpod/cmd/completion"
 	"github.com/skevetter/devpod/cmd/flags"
 	client2 "github.com/skevetter/devpod/pkg/client"
@@ -39,7 +38,7 @@ func NewStopCmd(flags *flags.GlobalFlags) *cobra.Command {
 
 			err = clientimplementation.DecodePlatformOptionsFromEnv(&cmd.Platform)
 			if err != nil {
-				return fmt.Errorf("decode platform options: %w", err)
+				return fmt.Errorf("decode platform options %w", err)
 			}
 
 			client, err := workspace2.Get(ctx, devPodConfig, args, false, cmd.Owner, false, log.Default)
@@ -103,7 +102,7 @@ func (cmd *StopCmd) stopSingleMachine(ctx context.Context, client client2.BaseWo
 	// try to find other workspace with same machine
 	workspaces, err := workspace2.List(ctx, devPodConfig, false, cmd.Owner, log.Default)
 	if err != nil {
-		return false, errors.Wrap(err, "list workspaces")
+		return false, fmt.Errorf("list workspaces %w", err)
 	}
 
 	// loop workspaces
@@ -123,13 +122,13 @@ func (cmd *StopCmd) stopSingleMachine(ctx context.Context, client client2.BaseWo
 	// if we haven't found another workspace on this machine, delete the whole machine
 	machineClient, err := workspace2.GetMachine(devPodConfig, []string{singleMachineName}, log.Default)
 	if err != nil {
-		return false, errors.Wrap(err, "get machine")
+		return false, fmt.Errorf("get machine %w", err)
 	}
 
 	// stop the machine
 	err = machineClient.Stop(ctx, client2.StopOptions{})
 	if err != nil {
-		return false, errors.Wrap(err, "delete machine")
+		return false, fmt.Errorf("delete machine %w", err)
 	}
 
 	log.Default.Donef("Successfully stopped workspace '%s'", client.Workspace())

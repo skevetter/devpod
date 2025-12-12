@@ -11,7 +11,6 @@ import (
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/loft-sh/log"
-	"github.com/pkg/errors"
 )
 
 var (
@@ -27,12 +26,12 @@ func GetImage(ctx context.Context, image string) (v1.Image, error) {
 
 	keychain, err := GetKeychain(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("create authentication keychain: %w", err)
+		return nil, fmt.Errorf("create authentication keychain %w", err)
 	}
 
 	img, err := remote.Image(ref, remote.WithAuthFromKeychain(keychain))
 	if err != nil {
-		return nil, errors.Wrapf(err, "retrieve image %s", image)
+		return nil, fmt.Errorf("retrieve image %s %w", image, err)
 	}
 
 	return img, err
@@ -46,7 +45,7 @@ func GetImageForArch(ctx context.Context, image, arch string) (v1.Image, error) 
 
 	keychain, err := GetKeychain(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("create authentication keychain: %w", err)
+		return nil, fmt.Errorf("create authentication keychain %w", err)
 	}
 
 	remoteOptions := []remote.Option{
@@ -56,7 +55,7 @@ func GetImageForArch(ctx context.Context, image, arch string) (v1.Image, error) 
 
 	img, err := remote.Image(ref, remoteOptions...)
 	if err != nil {
-		return nil, errors.Wrapf(err, "retrieve image %s", image)
+		return nil, fmt.Errorf("retrieve image %s %w", image, err)
 	}
 
 	return img, err
@@ -86,7 +85,7 @@ func GetImageConfig(ctx context.Context, image string, log log.Logger) (*v1.Conf
 
 	configFile, err := img.ConfigFile()
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "config file")
+		return nil, nil, fmt.Errorf("config file %w", err)
 	}
 
 	return configFile, img, nil

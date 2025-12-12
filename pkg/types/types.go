@@ -2,9 +2,9 @@ package types
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"strconv"
-
-	"github.com/pkg/errors"
 )
 
 var (
@@ -21,7 +21,7 @@ func (sa *StrIntArray) UnmarshalJSON(data []byte) error {
 	var jsonObj any
 	err := json.Unmarshal(data, &jsonObj)
 	if err != nil {
-		return errors.Wrap(err, "unmarshal str int array")
+		return fmt.Errorf("unmarshal str int array %w", err)
 	}
 	switch obj := jsonObj.(type) {
 	case string:

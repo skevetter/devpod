@@ -40,7 +40,7 @@ func WaitForSSHClient(ctx context.Context, dialer Dialer, network, address strin
 func newSSHClient(ctx context.Context, dialer Dialer, network, address string, user string) (*ssh.Client, error) {
 	conn, err := dialer(ctx, network, address)
 	if err != nil {
-		return nil, fmt.Errorf("dial %s: %w", address, err)
+		return nil, fmt.Errorf("dial %s %w", address, err)
 	}
 
 	clientConfig := &ssh.ClientConfig{
@@ -51,7 +51,7 @@ func newSSHClient(ctx context.Context, dialer Dialer, network, address string, u
 
 	sshConn, channels, requests, err := ssh.NewClientConn(conn, address, clientConfig)
 	if err != nil {
-		return nil, fmt.Errorf("establish SSH connection: %w", err)
+		return nil, fmt.Errorf("establish SSH connection %w", err)
 	}
 
 	return ssh.NewClient(sshConn, channels, requests), nil

@@ -9,7 +9,6 @@ import (
 	"github.com/docker/cli/cli/config"
 	"github.com/docker/cli/cli/config/types"
 	"github.com/loft-sh/log"
-	"github.com/pkg/errors"
 	"github.com/skevetter/devpod/pkg/command"
 	"github.com/skevetter/devpod/pkg/docker"
 	"github.com/skevetter/devpod/pkg/file"
@@ -79,7 +78,7 @@ func configureCredentials(userName, shebang string, targetDir, configDir string,
 	err = os.WriteFile(credentialHelperPath, fmt.Appendf(nil, shebang+`
 '%s' agent docker-credentials --port '%d' "$@"`, binaryPath, port), 0755)
 	if err != nil {
-		return errors.Wrap(err, "write credential helper")
+		return fmt.Errorf("write credential helper %w", err)
 	}
 
 	dockerConfig.CredentialsStore = "devpod"

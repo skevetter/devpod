@@ -48,18 +48,18 @@ func Init(ctx context.Context, config InitConfig) (*Daemon, error) {
 	// listen to socket for early return  in case it's already in use
 	socketListener, err := listen(socketAddr)
 	if err != nil {
-		return nil, fmt.Errorf("listen on socket: %w", err)
+		return nil, fmt.Errorf("listen on socket %w", err)
 	}
 
 	platformConfig := config.PlatformClient.Config()
 	tsServer, lc, err := newTSServer(ctx, platformConfig.Host, platformConfig.AccessKey, config.UserName, config.RootDir, platformConfig.Insecure, log)
 	if err != nil {
-		return nil, fmt.Errorf("create tailscale server: %w", err)
+		return nil, fmt.Errorf("create tailscale server %w", err)
 	}
 
 	localServer, err := newLocalServer(lc, config.PlatformClient, config.Context, log)
 	if err != nil {
-		return nil, fmt.Errorf("create local server: %w", err)
+		return nil, fmt.Errorf("create local server %w", err)
 	}
 
 	return &Daemon{
@@ -111,7 +111,7 @@ func (d *Daemon) Start(ctx context.Context) error {
 func (d *Daemon) Listen(ln net.Listener) error {
 	lc, err := d.tsServer.LocalClient()
 	if err != nil {
-		return fmt.Errorf("get local tailscale client: %w", err)
+		return fmt.Errorf("get local tailscale client %w", err)
 	}
 
 	for {

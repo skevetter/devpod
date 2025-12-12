@@ -39,14 +39,14 @@ func (c *client) Stop(ctx context.Context, opt clientpkg.StopOptions) error {
 		},
 	}, metav1.CreateOptions{})
 	if err != nil {
-		return fmt.Errorf("error stopping workspace: %w", err)
+		return fmt.Errorf("error stopping workspace %w", err)
 	} else if retStop.Status.TaskID == "" {
 		return fmt.Errorf("no stop task id returned from server")
 	}
 
 	_, err = observeTask(ctx, managementClient, workspace, retStop.Status.TaskID, c.log)
 	if err != nil {
-		return fmt.Errorf("stop: %w", err)
+		return fmt.Errorf("stop %w", err)
 	}
 
 	return nil

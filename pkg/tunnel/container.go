@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/loft-sh/log"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/agent"
 	"github.com/skevetter/devpod/pkg/client"
@@ -107,7 +106,7 @@ func (c *ContainerTunnel) Run(ctx context.Context, handler Handler, cfg *config.
 		// start ssh client as root / default user
 		sshClient, err := devssh.StdioClient(stdoutReader, stdinWriter, false)
 		if err != nil {
-			containerChan <- errors.Wrap(err, "create ssh client")
+			containerChan <- fmt.Errorf("create ssh client %w", err)
 			return
 		}
 
@@ -125,7 +124,7 @@ func (c *ContainerTunnel) Run(ctx context.Context, handler Handler, cfg *config.
 
 		// wait until we are done
 		if err := c.runInContainer(cancelCtx, sshClient, handler, envVars); err != nil {
-			containerChan <- fmt.Errorf("run in container: %w", err)
+			containerChan <- fmt.Errorf("run in container %w", err)
 		} else {
 			containerChan <- nil
 		}
@@ -134,9 +133,9 @@ func (c *ContainerTunnel) Run(ctx context.Context, handler Handler, cfg *config.
 	// wait for result
 	select {
 	case err := <-containerChan:
-		return errors.Wrap(err, "tunnel to container")
+		return fmt.Errorf("tunnel to container %w", err)
 	case err := <-tunnelChan:
-		return errors.Wrap(err, "connect to server")
+		return fmt.Errorf("connect to server %w", err)
 	}
 }
 

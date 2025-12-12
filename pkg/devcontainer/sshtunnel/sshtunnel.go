@@ -59,7 +59,7 @@ func ExecuteCommand(
 		log.Debugf("Inject and run command: %s", sshCommand)
 		err := agentInject(ctx, sshCommand, sshTunnelStdinReader, sshTunnelStdoutWriter, writer)
 		if err != nil && !errors.Is(err, context.Canceled) && !strings.Contains(err.Error(), "signal: ") {
-			errChan <- fmt.Errorf("executing agent command: %w", err)
+			errChan <- fmt.Errorf("executing agent command %w", err)
 		} else {
 			errChan <- nil
 		}
@@ -93,7 +93,7 @@ func ExecuteCommand(
 		// start ssh client as root / default user
 		sshClient, err := devssh.StdioClient(sshTunnelStdoutReader, sshTunnelStdinWriter, false)
 		if err != nil {
-			errChan <- errors.Wrap(err, "create ssh client")
+			errChan <- fmt.Errorf("create ssh client %w", err)
 			return
 		}
 		defer log.Debugf("Connection to SSH Server closed")
@@ -103,7 +103,7 @@ func ExecuteCommand(
 
 		sess, err := sshClient.NewSession()
 		if err != nil {
-			errChan <- errors.Wrap(err, "create ssh session")
+			errChan <- fmt.Errorf("create ssh session %w", err)
 		}
 		defer func() { _ = sess.Close() }()
 
@@ -114,11 +114,11 @@ func ExecuteCommand(
 			log.Debugf("Forwarding ssh-agent using %s", identityAgent)
 			err = devsshagent.ForwardToRemote(sshClient, identityAgent)
 			if err != nil {
-				errChan <- errors.Wrap(err, "forward agent")
+				errChan <- fmt.Errorf("forward agent %w", err)
 			}
 			err = devsshagent.RequestAgentForwarding(sess)
 			if err != nil {
-				errChan <- errors.Wrap(err, "request agent forwarding failed")
+				errChan <- fmt.Errorf("request agent forwarding failed %w", err)
 			}
 		}
 
@@ -133,7 +133,7 @@ func ExecuteCommand(
 			if stderrBuf.Len() > 0 {
 				errChan <- fmt.Errorf("run agent command %w\n%s", err, stderrBuf.String())
 			} else {
-				errChan <- fmt.Errorf("run agent command: %w", err)
+				errChan <- fmt.Errorf("run agent command %w", err)
 			}
 		} else {
 			errChan <- nil
@@ -142,7 +142,7 @@ func ExecuteCommand(
 
 	result, err := tunnelServerFunc(cancelCtx, gRPCConnStdinWriter, gRPCConnStdoutReader)
 	if err != nil {
-		return nil, fmt.Errorf("start tunnel server: %w", err)
+		return nil, fmt.Errorf("start tunnel server %w", err)
 	}
 
 	// wait until command finished

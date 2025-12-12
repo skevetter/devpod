@@ -11,7 +11,6 @@ import (
 	"runtime"
 
 	"github.com/loft-sh/log"
-	"github.com/pkg/errors"
 	"github.com/skevetter/devpod/pkg/command"
 	"github.com/skevetter/devpod/pkg/config"
 	copy2 "github.com/skevetter/devpod/pkg/copy"
@@ -121,7 +120,7 @@ func (o *GenericJetBrainsServer) Install() error {
 
 	err = copy2.ChownR(path.Join(baseFolder, ".cache"), o.userName)
 	if err != nil {
-		return errors.Wrap(err, "chown")
+		return fmt.Errorf("chown %w", err)
 	}
 	o.log.Infof("Successfully installed %s backend", o.options.DisplayName)
 	return nil
@@ -174,12 +173,12 @@ func (o *GenericJetBrainsServer) download(targetFolder string, log log.Logger) (
 	defer log.Debugf("Successfully downloaded %s", o.options.DisplayName)
 	resp, err := devpodhttp.GetHTTPClient().Get(downloadURL)
 	if err != nil {
-		return "", errors.Wrap(err, "download binary")
+		return "", fmt.Errorf("download binary %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-		return "", errors.Wrapf(err, "download binary returned status code %d", resp.StatusCode)
+		return "", fmt.Errorf("download binary returned status code %d %w", resp.StatusCode, err)
 	}
 
 	stat, err := os.Stat(targetPath)
@@ -199,7 +198,7 @@ func (o *GenericJetBrainsServer) download(targetFolder string, log log.Logger) (
 		Log:       log,
 	})
 	if err != nil {
-		return "", errors.Wrap(err, "download file")
+		return "", fmt.Errorf("download file %w", err)
 	}
 
 	return targetPath, nil

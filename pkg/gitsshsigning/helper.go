@@ -9,7 +9,6 @@ import (
 
 	"github.com/loft-sh/log"
 	"github.com/loft-sh/log/scanner"
-	"github.com/pkg/errors"
 	"github.com/skevetter/devpod/pkg/command"
 	"github.com/skevetter/devpod/pkg/file"
 )
@@ -126,7 +125,7 @@ func readGitConfig(gitConfigPath string) (string, error) {
 
 func writeGitConfig(gitConfigPath, content, userName string) error {
 	if err := os.WriteFile(gitConfigPath, []byte(content), 0600); err != nil {
-		return errors.Wrap(err, "write git config")
+		return fmt.Errorf("write git config %w", err)
 	}
 	return file.Chown(userName, gitConfigPath)
 }

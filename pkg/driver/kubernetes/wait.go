@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	perrors "github.com/pkg/errors"
 	"github.com/skevetter/devpod/pkg/driver/kubernetes/throttledlogger"
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
@@ -20,7 +19,7 @@ func (k *KubernetesDriver) waitPodRunning(ctx context.Context, id string) (*core
 
 	timeoutDuration, err := time.ParseDuration(k.options.PodTimeout)
 	if err != nil {
-		return nil, perrors.Wrap(err, "parse pod timeout")
+		return nil, fmt.Errorf("parse pod timeout %w", err)
 	}
 
 	started := time.Now()
@@ -158,7 +157,7 @@ func (k *KubernetesDriver) getPod(ctx context.Context, id string) (*corev1.Pod, 
 			return nil, nil
 		}
 
-		return nil, fmt.Errorf("find container: %w", err)
+		return nil, fmt.Errorf("find container %w", err)
 	}
 
 	return pod, nil
@@ -187,7 +186,7 @@ func (k *KubernetesDriver) waitPodDeleted(ctx context.Context, id string) error 
 			return nil
 		}
 
-		return fmt.Errorf("delete pod: %w", err)
+		return fmt.Errorf("delete pod %w", err)
 	}
 
 	err = wait.PollUntilContextTimeout(ctx, time.Second, time.Minute*2, true, func(ctx context.Context) (bool, error) {

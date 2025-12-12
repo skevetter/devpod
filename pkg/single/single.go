@@ -1,6 +1,7 @@
 package single
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -8,7 +9,6 @@ import (
 	"time"
 
 	"github.com/gofrs/flock"
-	"github.com/pkg/errors"
 	"github.com/skevetter/devpod/pkg/command"
 )
 
@@ -19,7 +19,7 @@ func Single(file string, createCommand CreateCommand) error {
 	fileLock := flock.New(file + ".lock")
 	locked, err := fileLock.TryLock()
 	if err != nil {
-		return errors.Wrap(err, "acquire lock")
+		return fmt.Errorf("acquire lock %w", err)
 	} else if !locked {
 		return nil
 	}

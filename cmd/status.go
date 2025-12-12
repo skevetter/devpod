@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/loft-sh/log"
-	"github.com/pkg/errors"
 	"github.com/skevetter/devpod/cmd/completion"
 	"github.com/skevetter/devpod/cmd/flags"
 	client2 "github.com/skevetter/devpod/pkg/client"
@@ -37,7 +36,7 @@ func NewStatusCmd(flags *flags.GlobalFlags) *cobra.Command {
 		RunE: func(cobraCmd *cobra.Command, args []string) error {
 			_, err := clientimplementation.DecodeOptionsFromEnv(clientimplementation.DevPodFlagsStatus, &cmd.StatusOptions)
 			if err != nil {
-				return fmt.Errorf("decode status options: %w", err)
+				return fmt.Errorf("decode status options %w", err)
 			}
 
 			ctx := cobraCmd.Context()
@@ -71,7 +70,7 @@ func (cmd *StatusCmd) Run(ctx context.Context, client client2.BaseWorkspaceClien
 	if cmd.Timeout != "" {
 		duration, err := time.ParseDuration(cmd.Timeout)
 		if err != nil {
-			return errors.Wrap(err, "parse --timeout")
+			return fmt.Errorf("parse --timeout %w", err)
 		}
 
 		var cancel context.CancelFunc

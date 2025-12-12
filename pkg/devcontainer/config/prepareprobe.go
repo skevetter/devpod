@@ -16,7 +16,7 @@ func PrepareCmdUser(cmd *exec.Cmd, userName string) error {
 	// execute as user
 	u, err := user.Lookup(userName)
 	if err != nil {
-		return fmt.Errorf("lookup user %s: %w", userName, err)
+		return fmt.Errorf("lookup user %s %w", userName, err)
 	}
 	uid, _ := strconv.Atoi(u.Uid)
 	gid, _ := strconv.Atoi(u.Gid)

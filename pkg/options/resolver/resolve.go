@@ -9,7 +9,6 @@ import (
 
 	"github.com/loft-sh/log/survey"
 	"github.com/loft-sh/log/terminal"
-	"github.com/pkg/errors"
 	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/types"
 )
@@ -27,13 +26,13 @@ func (r *Resolver) resolveOptions(
 		// resolve next option
 		err := r.resolveOption(ctx, optionNode.ID, resolvedOptionValues)
 		if err != nil {
-			return nil, errors.Wrap(err, "resolve option "+optionNode.ID)
+			return nil, fmt.Errorf("resolve option %s %w", optionNode.ID, err)
 		}
 
 		// resolve sub options
 		err = r.refreshSubOptions(ctx, optionNode.ID, resolvedOptionValues)
 		if err != nil {
-			return nil, fmt.Errorf("refresh sub options for %s: %w", optionNode.ID, err)
+			return nil, fmt.Errorf("refresh sub options for %s %w", optionNode.ID, err)
 		}
 	}
 
@@ -64,7 +63,7 @@ func (r *Resolver) resolveOption(
 			} else if option.Cache != "" {
 				duration, err := time.ParseDuration(option.Cache)
 				if err != nil {
-					return errors.Wrapf(err, "parse cache duration of option %s", optionName)
+					return fmt.Errorf("parse cache duration of option %s %w", optionName, err)
 				}
 
 				// has value expired?
@@ -259,7 +258,7 @@ func (r *Resolver) refreshSubOptions(
 	// add options to graph
 	err = addOptionsToGraph(r.graph, newDynamicOptions, resolvedOptionValues)
 	if err != nil {
-		return fmt.Errorf("add sub options: %w", err)
+		return fmt.Errorf("add sub options %w", err)
 	}
 
 	return nil

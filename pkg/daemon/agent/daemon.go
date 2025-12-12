@@ -12,7 +12,6 @@ import (
 
 	"github.com/loft-sh/api/v4/pkg/devpod"
 	"github.com/loft-sh/log"
-	perrors "github.com/pkg/errors"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	provider2 "github.com/skevetter/devpod/pkg/provider"
 	"github.com/skevetter/devpod/pkg/single"
@@ -98,7 +97,7 @@ func InstallDaemon(agentDir string, interval string, log log.Logger) error {
 	}
 	_, err = service.Install(args...)
 	if err != nil && !errors.Is(err, daemon.ErrAlreadyInstalled) {
-		return perrors.Wrap(err, "install service")
+		return fmt.Errorf("install service %w", err)
 	}
 
 	// make sure daemon is started
@@ -116,7 +115,7 @@ func InstallDaemon(agentDir string, interval string, log log.Logger) error {
 			return exec.Command(executable, args...), nil
 		})
 		if err != nil {
-			return fmt.Errorf("start daemon: %w", err)
+			return fmt.Errorf("start daemon %w", err)
 		}
 	} else if err == nil {
 		log.Infof("Successfully installed DevPod daemon into server")

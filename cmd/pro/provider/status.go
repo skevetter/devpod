@@ -77,7 +77,7 @@ func (cmd *StatusCmd) Run(ctx context.Context, stdin io.Reader, stdout io.Writer
 
 	_, err = remotecommand.ExecuteConn(ctx, conn, stdin, stdout, stderr, cmd.Log.ErrorStreamOnly())
 	if err != nil {
-		return fmt.Errorf("error executing: %w", err)
+		return fmt.Errorf("error executing %w", err)
 	}
 
 	return nil

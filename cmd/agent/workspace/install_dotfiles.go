@@ -2,13 +2,13 @@ package workspace
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
 	"github.com/loft-sh/log"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/cmd/flags"
 	"github.com/skevetter/devpod/pkg/git"
@@ -73,7 +73,7 @@ func (cmd *InstallDotfilesCmd) Run(ctx context.Context) error {
 
 		err := ensureExecutable(command)
 		if err != nil {
-			return errors.Wrapf(err, "failed to make install script %s executable", command)
+			return fmt.Errorf("failed to make install script %s executable %w", command, err)
 		}
 
 		scriptCmd := exec.Command(command)
@@ -162,13 +162,13 @@ func ensureExecutable(path string) error {
 	checkCmd := exec.Command("test", "-f", path)
 	err := checkCmd.Run()
 	if err != nil {
-		return errors.Wrapf(err, "install script %s not found", path)
+		return fmt.Errorf("install script %s not found %w", path, err)
 	}
 
 	chmodCmd := exec.Command("chmod", "+x", path)
 	err = chmodCmd.Run()
 	if err != nil {
-		return errors.Wrapf(err, "failed to make install script %s executable", path)
+		return fmt.Errorf("failed to make install script %s executable %w", path, err)
 	}
 
 	return nil

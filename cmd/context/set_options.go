@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/pkg/errors"
 	"github.com/skevetter/devpod/cmd/flags"
 	"github.com/skevetter/devpod/pkg/config"
 	"github.com/spf13/cobra"
@@ -67,7 +66,7 @@ func (cmd *SetOptionsCmd) Run(ctx context.Context, context string) error {
 
 	err = config.SaveConfig(devPodConfig)
 	if err != nil {
-		return errors.Wrap(err, "save config")
+		return fmt.Errorf("save config %w", err)
 	}
 
 	return nil

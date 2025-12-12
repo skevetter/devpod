@@ -58,7 +58,7 @@ func (cmd *WorkspaceCmd) Run(ctx context.Context, stdin io.Reader, stdout io.Wri
 		instance := &managementv1.DevPodWorkspaceInstance{} // init pointer
 		err := json.Unmarshal([]byte(instanceEnv), instance)
 		if err != nil {
-			return fmt.Errorf("unmarshal workpace instance %s: %w", instanceEnv, err)
+			return fmt.Errorf("unmarshal workpace instance %s %w", instanceEnv, err)
 		}
 
 		updatedInstance, err := createInstance(ctx, baseClient, instance, cmd.Log)
@@ -111,7 +111,7 @@ func (cmd *WorkspaceCmd) Run(ctx context.Context, stdin io.Reader, stdout io.Wri
 	// TODO: Do we need a file lock?
 	workspaceConfig, err := provider.LoadWorkspaceConfig(workspaceContext, workspaceID)
 	if err != nil {
-		return fmt.Errorf("load workspace config: %w", err)
+		return fmt.Errorf("load workspace config %w", err)
 	}
 	workspaceConfig.Pro = &provider.ProMetadata{
 		InstanceName: instance.GetName(),
@@ -121,7 +121,7 @@ func (cmd *WorkspaceCmd) Run(ctx context.Context, stdin io.Reader, stdout io.Wri
 
 	err = provider.SaveWorkspaceConfig(workspaceConfig)
 	if err != nil {
-		return fmt.Errorf("save workspace config: %w", err)
+		return fmt.Errorf("save workspace config %w", err)
 	}
 
 	return nil
@@ -137,7 +137,7 @@ func createInstance(ctx context.Context, client client.Client, instance *managem
 		DevPodWorkspaceInstances(instance.GetNamespace()).
 		Create(ctx, instance, metav1.CreateOptions{})
 	if err != nil {
-		return nil, fmt.Errorf("create workspace instance: %w", err)
+		return nil, fmt.Errorf("create workspace instance %w", err)
 	}
 
 	return platform.WaitForInstance(ctx, client, updatedInstance, log)

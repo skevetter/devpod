@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	perrors "github.com/pkg/errors"
 	"github.com/skevetter/devpod/pkg/dockercredentials"
 	k8sv1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
@@ -20,7 +19,7 @@ func (k *KubernetesDriver) EnsurePullSecret(
 
 	host, err := GetRegistryFromImageName(dockerImage)
 	if err != nil {
-		return false, fmt.Errorf("get registry from image name: %w", err)
+		return false, fmt.Errorf("get registry from image name %w", err)
 	}
 
 	dockerCredentials, err := dockercredentials.GetAuthConfig(host)
@@ -58,7 +57,7 @@ func (k *KubernetesDriver) ReadSecretContents(
 ) (string, error) {
 	secret, err := k.client.Client().CoreV1().Secrets(k.namespace).Get(ctx, pullSecretName, metav1.GetOptions{})
 	if err != nil {
-		return "", perrors.Wrap(err, "get secret")
+		return "", fmt.Errorf("get secret %w", err)
 	}
 
 	return DecodeAuthTokenFromPullSecret(secret, host)
@@ -73,7 +72,7 @@ func (k *KubernetesDriver) DeleteSecret(
 
 	err := k.client.Client().CoreV1().Secrets(k.namespace).Delete(ctx, secretName, metav1.DeleteOptions{})
 	if err != nil && !kerrors.IsNotFound(err) {
-		return perrors.Wrap(err, "delete secret")
+		return fmt.Errorf("delete secret %w", err)
 	}
 
 	return nil
@@ -105,7 +104,7 @@ func (k *KubernetesDriver) createPullSecret(
 
 	encodedSecretData, err := PreparePullSecretData(dockerCredentials.ServerURL, authToken, email)
 	if err != nil {
-		return perrors.Wrap(err, "prepare pull secret data")
+		return fmt.Errorf("prepare pull secret data %w", err)
 	}
 
 	_, err = k.client.Client().CoreV1().Secrets(k.namespace).Create(ctx, &k8sv1.Secret{
@@ -118,7 +117,7 @@ func (k *KubernetesDriver) createPullSecret(
 		},
 	}, metav1.CreateOptions{})
 	if err != nil {
-		return perrors.Wrap(err, "create pull secret")
+		return fmt.Errorf("create pull secret %w", err)
 	}
 
 	return nil

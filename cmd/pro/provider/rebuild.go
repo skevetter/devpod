@@ -78,7 +78,7 @@ func (cmd *RebuildCmd) Run(ctx context.Context, args []string) error {
 
 	_, err = remotecommand.ExecuteConn(ctx, conn, os.Stdin, os.Stdout, os.Stderr, cmd.Log.ErrorStreamOnly())
 	if err != nil {
-		return fmt.Errorf("error executing: %w", err)
+		return fmt.Errorf("error executing %w", err)
 	}
 
 	return nil

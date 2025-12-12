@@ -7,7 +7,6 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/skevetter/devpod/cmd/flags"
 	"github.com/skevetter/devpod/pkg/config"
 	provider2 "github.com/skevetter/devpod/pkg/provider"
@@ -70,7 +69,7 @@ func (cmd *CreateCmd) Run(ctx context.Context, context string) error {
 	devPodConfig.DefaultContext = context
 	err = config.SaveConfig(devPodConfig)
 	if err != nil {
-		return errors.Wrap(err, "save config")
+		return fmt.Errorf("save config %w", err)
 	}
 
 	return nil

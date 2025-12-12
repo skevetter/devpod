@@ -14,7 +14,7 @@ func (k *KubernetesDriver) createServiceAccount(ctx context.Context, id, service
 	// try to find pvc
 	_, err := k.client.Client().CoreV1().ServiceAccounts(k.namespace).Get(ctx, serviceAccount, metav1.GetOptions{})
 	if err != nil && !kerrors.IsNotFound(err) {
-		return fmt.Errorf("get service account: %w", err)
+		return fmt.Errorf("get service account %w", err)
 	} else if kerrors.IsNotFound(err) {
 		// create service account if it does not exist
 		k.Log.Infof("Create Service Account '%s'", serviceAccount)
@@ -25,7 +25,7 @@ func (k *KubernetesDriver) createServiceAccount(ctx context.Context, id, service
 			},
 		}, metav1.CreateOptions{})
 		if err != nil && !kerrors.IsAlreadyExists(err) {
-			return fmt.Errorf("create service account: %w", err)
+			return fmt.Errorf("create service account %w", err)
 		}
 	}
 
@@ -33,7 +33,7 @@ func (k *KubernetesDriver) createServiceAccount(ctx context.Context, id, service
 	if k.options.ClusterRole != "" {
 		_, err := k.client.Client().RbacV1().RoleBindings(k.namespace).Get(ctx, id, metav1.GetOptions{})
 		if err != nil && !kerrors.IsNotFound(err) {
-			return fmt.Errorf("get role binding: %w", err)
+			return fmt.Errorf("get role binding %w", err)
 		} else if kerrors.IsNotFound(err) {
 			// create role binding
 			k.Log.Infof("Create Role Binding '%s'", serviceAccount)
@@ -55,7 +55,7 @@ func (k *KubernetesDriver) createServiceAccount(ctx context.Context, id, service
 				},
 			}, metav1.CreateOptions{})
 			if err != nil && !kerrors.IsAlreadyExists(err) {
-				return fmt.Errorf("create role binding: %w", err)
+				return fmt.Errorf("create role binding %w", err)
 			}
 		}
 	}

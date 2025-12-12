@@ -8,8 +8,6 @@ import (
 	"os/user"
 	"path/filepath"
 	"strconv"
-
-	"github.com/pkg/errors"
 )
 
 func Chown(path string, userName string) error {
@@ -19,7 +17,7 @@ func Chown(path string, userName string) error {
 
 	userID, err := user.Lookup(userName)
 	if err != nil {
-		return errors.Wrap(err, "lookup user")
+		return fmt.Errorf("lookup user %w", err)
 	}
 
 	uid, _ := strconv.Atoi(userID.Uid)
@@ -34,7 +32,7 @@ func ChownR(path string, userName string) error {
 
 	userID, err := user.Lookup(userName)
 	if err != nil {
-		return errors.Wrap(err, "lookup user")
+		return fmt.Errorf("lookup user %w", err)
 	}
 
 	uid, _ := strconv.Atoi(userID.Uid)

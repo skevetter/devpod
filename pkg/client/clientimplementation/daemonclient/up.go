@@ -57,7 +57,7 @@ func (c *client) Up(ctx context.Context, opt clientpkg.UpOptions) (*config.Resul
 
 		instance, err = platform.UpdateInstance(ctx, baseClient, oldInstance, instance, c.log)
 		if err != nil {
-			return nil, fmt.Errorf("update instance: %w", err)
+			return nil, fmt.Errorf("update instance %w", err)
 		}
 		c.log.Info("Successfully updated template")
 	}
@@ -66,14 +66,14 @@ func (c *client) Up(ctx context.Context, opt clientpkg.UpOptions) (*config.Resul
 	rawOptions, _ := json.Marshal(opt)
 	managementClient, err := baseClient.Management()
 	if err != nil {
-		return nil, fmt.Errorf("error getting management client: %w", err)
+		return nil, fmt.Errorf("error getting management client %w", err)
 	}
 
 	// prompt user to attach to active task or start new one
 	c.log.Debug("Check active up task")
 	activeUpTask, err := findActiveUpTask(ctx, managementClient, instance)
 	if err != nil {
-		return nil, fmt.Errorf("find active up task: %w", err)
+		return nil, fmt.Errorf("find active up task %w", err)
 	}
 
 	// if we have an active up task, cancel it before creating a new one
@@ -83,7 +83,7 @@ func (c *client) Up(ctx context.Context, opt clientpkg.UpOptions) (*config.Resul
 			TaskID: activeUpTask.ID,
 		}, metav1.CreateOptions{})
 		if err != nil {
-			return nil, fmt.Errorf("cancel task: %w", err)
+			return nil, fmt.Errorf("cancel task %w", err)
 		}
 	}
 
@@ -95,7 +95,7 @@ func (c *client) Up(ctx context.Context, opt clientpkg.UpOptions) (*config.Resul
 		},
 	}, metav1.CreateOptions{})
 	if err != nil {
-		return nil, fmt.Errorf("error creating up: %w", err)
+		return nil, fmt.Errorf("error creating up %w", err)
 	} else if task.Status.TaskID == "" {
 		return nil, fmt.Errorf("no up task id returned from server")
 	}
@@ -106,7 +106,7 @@ func (c *client) Up(ctx context.Context, opt clientpkg.UpOptions) (*config.Resul
 func waitTaskDone(ctx context.Context, managementClient kube.Interface, instance *managementv1.DevPodWorkspaceInstance, taskID string, log log.Logger) (*config.Result, error) {
 	exitCode, err := observeTask(ctx, managementClient, instance, taskID, log)
 	if err != nil {
-		return nil, fmt.Errorf("up: %w", err)
+		return nil, fmt.Errorf("up %w", err)
 	} else if exitCode != 0 {
 		return nil, fmt.Errorf("up failed with exit code %d", exitCode)
 	}
@@ -124,7 +124,7 @@ func waitTaskDone(ctx context.Context, managementClient kube.Interface, instance
 		Do(ctx).
 		Into(tasks)
 	if err != nil {
-		return nil, fmt.Errorf("error getting up result: %w", err)
+		return nil, fmt.Errorf("error getting up result %w", err)
 	} else if len(tasks.Tasks) == 0 || tasks.Tasks[0].Result == nil {
 		return nil, fmt.Errorf("up result not found")
 	} else if len(tasks.Tasks) > 1 {
@@ -135,7 +135,7 @@ func waitTaskDone(ctx context.Context, managementClient kube.Interface, instance
 	result := &config.Result{}
 	err = json.Unmarshal(tasks.Tasks[0].Result, result)
 	if err != nil {
-		return nil, fmt.Errorf("error unmarshalling up result: %w", err)
+		return nil, fmt.Errorf("error unmarshalling up result %w", err)
 	}
 
 	// return result
@@ -239,7 +239,7 @@ func printLogs(ctx context.Context, managementClient kube.Interface, workspace *
 		}, builders.ParameterCodec).
 		Stream(ctx)
 	if err != nil {
-		return -1, fmt.Errorf("error getting task logs: %w", err)
+		return -1, fmt.Errorf("error getting task logs %w", err)
 	}
 	defer func() { _ = logsReader.Close() }()
 
@@ -296,7 +296,7 @@ func printLogs(ctx context.Context, managementClient kube.Interface, workspace *
 		if errors.Is(err, context.Canceled) {
 			return 0, nil
 		}
-		return -1, fmt.Errorf("logs reader error: %w", err)
+		return -1, fmt.Errorf("logs reader error %w", err)
 	}
 
 	return 0, nil

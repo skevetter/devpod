@@ -16,7 +16,6 @@ import (
 	"github.com/gofrs/flock"
 	"github.com/loft-sh/api/v4/pkg/devpod"
 	"github.com/loft-sh/log"
-	perrors "github.com/pkg/errors"
 	"github.com/skevetter/devpod/pkg/client"
 	"github.com/skevetter/devpod/pkg/config"
 	devpodlog "github.com/skevetter/devpod/pkg/log"
@@ -64,7 +63,7 @@ func (s *proxyClient) Lock(ctx context.Context) error {
 	s.log.Debugf("Acquire workspace lock...")
 	err := tryLock(ctx, s.workspaceLock, "workspace", s.log)
 	if err != nil {
-		return fmt.Errorf("error locking workspace: %w", err)
+		return fmt.Errorf("error locking workspace %w", err)
 	}
 	s.log.Debugf("Acquired workspace lock...")
 
@@ -113,7 +112,7 @@ func (s *proxyClient) initLock() {
 		// get locks dir
 		workspaceLocksDir, err := provider.GetLocksDir(s.workspace.Context)
 		if err != nil {
-			panic(fmt.Errorf("get workspaces dir: %w", err))
+			panic(fmt.Errorf("get workspaces dir %w", err))
 		}
 		_ = os.MkdirAll(workspaceLocksDir, 0777)
 
@@ -150,7 +149,7 @@ func (s *proxyClient) RefreshOptions(ctx context.Context, userOptionsRaw []strin
 
 	userOptions, err := provider.ParseOptions(userOptionsRaw)
 	if err != nil {
-		return perrors.Wrap(err, "parse options")
+		return fmt.Errorf("parse options %w", err)
 	}
 
 	workspace, err := options.ResolveAndSaveOptionsProxy(ctx, s.devPodConfig, s.config, s.workspace, userOptions, s.log)
@@ -185,7 +184,7 @@ func (s *proxyClient) Create(ctx context.Context, stdin io.Reader, stdout io.Wri
 		stderr,
 		s.log)
 	if err != nil {
-		return fmt.Errorf("create remote workspace : %w", err)
+		return fmt.Errorf("create remote workspace  %w", err)
 	}
 
 	return nil
@@ -205,18 +204,18 @@ func (s *proxyClient) Up(ctx context.Context, opt client.UpOptions) error {
 	if providerOptions["LOFT_CONFIG"].Value != "" {
 		baseClient, err := platformclient.InitClientFromPath(ctx, providerOptions["LOFT_CONFIG"].Value)
 		if err != nil {
-			return fmt.Errorf("error initializing platform client: %w", err)
+			return fmt.Errorf("error initializing platform client %w", err)
 		}
 
 		version, err := baseClient.Version()
 		if err != nil {
-			return fmt.Errorf("error retrieving platform version: %w", err)
+			return fmt.Errorf("error retrieving platform version %w", err)
 		}
 
 		// check if the version is lower than v4.3.0-devpod.alpha.19
 		parsedVersion, err := semver.Parse(strings.TrimPrefix(version.DevPodVersion, "v"))
 		if err != nil {
-			return fmt.Errorf("error parsing platform version: %w", err)
+			return fmt.Errorf("error parsing platform version %w", err)
 		}
 
 		// if devpod version is greater than 0.7.0 we error here
@@ -241,7 +240,7 @@ func (s *proxyClient) Up(ctx context.Context, opt client.UpOptions) error {
 		s.log.ErrorStreamOnly(),
 	)
 	if err != nil {
-		return fmt.Errorf("error running devpod up: %w", err)
+		return fmt.Errorf("error running devpod up %w", err)
 	}
 
 	return nil
@@ -312,7 +311,7 @@ func (s *proxyClient) Delete(ctx context.Context, opt client.DeleteOptions) erro
 	)
 	if err != nil {
 		if !opt.Force {
-			return fmt.Errorf("error deleting workspace: %w", err)
+			return fmt.Errorf("error deleting workspace %w", err)
 		}
 
 		s.log.Errorf("Error deleting workspace: %v", err)
@@ -344,7 +343,7 @@ func (s *proxyClient) Stop(ctx context.Context, opt client.StopOptions) error {
 		s.log,
 	)
 	if err != nil {
-		return fmt.Errorf("error stopping container: %w", err)
+		return fmt.Errorf("error stopping container %w", err)
 	}
 
 	return nil

@@ -10,7 +10,6 @@ import (
 
 	"github.com/loft-sh/log"
 	"github.com/loft-sh/log/table"
-	"github.com/pkg/errors"
 	"github.com/skevetter/devpod/cmd/flags"
 	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/provider"
@@ -65,7 +64,7 @@ func (cmd *ListCmd) Run(ctx context.Context) error {
 		for _, entry := range entries {
 			machineConfig, err := provider.LoadMachineConfig(devPodConfig.DefaultContext, entry.Name())
 			if err != nil {
-				return errors.Wrap(err, "load machine config")
+				return fmt.Errorf("load machine config %w", err)
 			}
 
 			tableEntries = append(tableEntries, []string{
@@ -88,7 +87,7 @@ func (cmd *ListCmd) Run(ctx context.Context) error {
 		for _, entry := range entries {
 			machineConfig, err := provider.LoadMachineConfig(devPodConfig.DefaultContext, entry.Name())
 			if err != nil {
-				return errors.Wrap(err, "load machine config")
+				return fmt.Errorf("load machine config %w", err)
 			}
 
 			tableEntries = append(tableEntries, machineConfig)

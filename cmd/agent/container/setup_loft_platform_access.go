@@ -51,7 +51,7 @@ func (c *SetupLoftPlatformAccessCmd) Run(_ *cobra.Command, args []string) error 
 
 	port, err := credentials.GetPort()
 	if err != nil {
-		return fmt.Errorf("get port: %w", err)
+		return fmt.Errorf("get port %w", err)
 	}
 	// backwards compatibility, remove in future release
 	if c.Port > 0 {

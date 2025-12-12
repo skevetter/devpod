@@ -51,7 +51,7 @@ func (cmd *LogsCmd) Run(ctx context.Context) error {
 	// create new runner
 	runner, err := devcontainer.NewRunner(agent.ContainerDevPodHelperLocation, agent.DefaultAgentDownloadURL(), workspaceInfo, logger)
 	if err != nil {
-		return fmt.Errorf("create runner: %w", err)
+		return fmt.Errorf("create runner %w", err)
 	}
 
 	// write devcontainer logs to stdout

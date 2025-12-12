@@ -46,7 +46,7 @@ func (c *client) Create(ctx context.Context, stdin io.Reader, stdout io.Writer, 
 
 	err = provider.SaveWorkspaceConfig(c.workspace)
 	if err != nil {
-		return fmt.Errorf("save workspace config: %w", err)
+		return fmt.Errorf("save workspace config %w", err)
 	}
 
 	return nil

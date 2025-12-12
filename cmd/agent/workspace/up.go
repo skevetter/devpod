@@ -64,7 +64,7 @@ func (cmd *UpCmd) Run(ctx context.Context) error {
 		return deleteWorkspace(ctx, workspaceInfo, log)
 	}, log.Default.ErrorStreamOnly())
 	if err != nil {
-		return fmt.Errorf("error parsing workspace info: %w", err)
+		return fmt.Errorf("error parsing workspace info %w", err)
 	} else if shouldExit {
 		return nil
 	}
@@ -83,7 +83,7 @@ func (cmd *UpCmd) Run(ctx context.Context) error {
 	if err != nil {
 		err1 := clientimplementation.DeleteWorkspaceFolder(workspaceInfo.Workspace.Context, workspaceInfo.Workspace.ID, workspaceInfo.Workspace.SSHConfigPath, logger)
 		if err1 != nil {
-			return errors.Wrap(err, err1.Error())
+			return fmt.Errorf("%s %w", err1.Error(), err)
 		}
 		return err
 	} else if credentialsDir != "" {
@@ -95,7 +95,7 @@ func (cmd *UpCmd) Run(ctx context.Context) error {
 	// start up
 	err = cmd.up(ctx, workspaceInfo, tunnelClient, logger)
 	if err != nil {
-		return errors.Wrap(err, "devcontainer up")
+		return fmt.Errorf("devcontainer up %w", err)
 	}
 
 	return nil
@@ -115,7 +115,7 @@ func (cmd *UpCmd) up(ctx context.Context, workspaceInfo *provider2.AgentWorkspac
 	}
 	_, err = tunnelClient.SendResult(ctx, &tunnel.Message{Message: string(out)})
 	if err != nil {
-		return errors.Wrap(err, "send result")
+		return fmt.Errorf("send result %w", err)
 	}
 
 	return nil
@@ -155,21 +155,21 @@ func InitContentFolder(workspaceInfo *provider2.AgentWorkspaceInfo, log log.Logg
 	log.Debugf("Create content folder %s", workspaceInfo.ContentFolder)
 	err = os.MkdirAll(workspaceInfo.ContentFolder, 0o777)
 	if err != nil {
-		return false, errors.Wrap(err, "make workspace folder")
+		return false, fmt.Errorf("make workspace folder %w", err)
 	}
 
 	// download provider
 	binariesDir, err := agent.GetAgentBinariesDir(workspaceInfo.Agent.DataPath, workspaceInfo.Workspace.Context, workspaceInfo.Workspace.ID)
 	if err != nil {
 		_ = os.RemoveAll(workspaceInfo.ContentFolder)
-		return false, fmt.Errorf("error getting workspace %s binaries dir: %w", workspaceInfo.Workspace.ID, err)
+		return false, fmt.Errorf("error getting workspace %s binaries dir %w", workspaceInfo.Workspace.ID, err)
 	}
 
 	// download binaries
 	_, err = binaries.DownloadBinaries(workspaceInfo.Agent.Binaries, binariesDir, log)
 	if err != nil {
 		_ = os.RemoveAll(workspaceInfo.ContentFolder)
-		return false, fmt.Errorf("error downloading workspace %s binaries: %w", workspaceInfo.Workspace.ID, err)
+		return false, fmt.Errorf("error downloading workspace %s binaries %w", workspaceInfo.Workspace.ID, err)
 	}
 
 	// if workspace was already executed, we skip this part
@@ -190,7 +190,7 @@ func initWorkspace(ctx context.Context, cancel context.CancelFunc, workspaceInfo
 	// create a grpc client
 	tunnelClient, err := tunnelserver.NewTunnelClient(os.Stdin, os.Stdout, true, 0)
 	if err != nil {
-		return nil, nil, "", fmt.Errorf("error creating tunnel client: %w", err)
+		return nil, nil, "", fmt.Errorf("error creating tunnel client %w", err)
 	}
 
 	// create debug logger
@@ -200,7 +200,7 @@ func initWorkspace(ctx context.Context, cancel context.CancelFunc, workspaceInfo
 	// this message serves as a ping to the client
 	_, err = tunnelClient.Ping(ctx, &tunnel.Empty{})
 	if err != nil {
-		return nil, nil, "", errors.Wrap(err, "ping client")
+		return nil, nil, "", fmt.Errorf("ping client %w", err)
 	}
 
 	// get docker credentials
@@ -268,7 +268,7 @@ func initWorkspace(ctx context.Context, cancel context.CancelFunc, workspaceInfo
 	}
 	err = <-errChan
 	if err != nil {
-		return nil, nil, "", errors.Wrap(err, "install docker")
+		return nil, nil, "", fmt.Errorf("install docker %w", err)
 	}
 
 	// If we are provisioning the machine, ensure the daemon has required options
@@ -367,20 +367,20 @@ func ensureLastDevContainerJson(workspaceInfo *provider2.AgentWorkspaceInfo) err
 	if os.IsNotExist(err) {
 		err = os.MkdirAll(filepath.Dir(filePath), 0o755)
 		if err != nil {
-			return fmt.Errorf("create %s: %w", filepath.Dir(filePath), err)
+			return fmt.Errorf("create %s %w", filepath.Dir(filePath), err)
 		}
 
 		raw, err := json.Marshal(workspaceInfo.LastDevContainerConfig.Config)
 		if err != nil {
-			return fmt.Errorf("marshal devcontainer.json: %w", err)
+			return fmt.Errorf("marshal devcontainer.json %w", err)
 		}
 
 		err = os.WriteFile(filePath, raw, 0o600)
 		if err != nil {
-			return fmt.Errorf("write %s: %w", filePath, err)
+			return fmt.Errorf("write %s %w", filePath, err)
 		}
 	} else if err != nil {
-		return fmt.Errorf("error stating %s: %w", filePath, err)
+		return fmt.Errorf("error stating %s %w", filePath, err)
 	}
 
 	return nil
@@ -430,7 +430,7 @@ func installDaemon(workspaceInfo *provider2.AgentWorkspaceInfo, log log.Logger) 
 	log.Debugf("Installing DevPod daemon into server...")
 	err := agentdaemon.InstallDaemon(workspaceInfo.Agent.DataPath, workspaceInfo.CLIOptions.DaemonInterval, log)
 	if err != nil {
-		return errors.Wrap(err, "install daemon")
+		return fmt.Errorf("install daemon %w", err)
 	}
 
 	return nil
@@ -440,12 +440,12 @@ func downloadLocalFolder(ctx context.Context, workspaceDir string, client tunnel
 	log.Infof("Upload folder to server")
 	stream, err := client.StreamWorkspace(ctx, &tunnel.Empty{})
 	if err != nil {
-		return errors.Wrap(err, "read workspace")
+		return fmt.Errorf("read workspace %w", err)
 	}
 
 	err = extract.Extract(tunnelserver.NewStreamReader(stream, log), workspaceDir)
 	if err != nil {
-		return errors.Wrap(err, "extract local folder")
+		return fmt.Errorf("extract local folder %w", err)
 	}
 
 	return nil

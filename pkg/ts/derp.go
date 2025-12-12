@@ -30,12 +30,12 @@ func CheckDerpConnection(ctx context.Context, baseUrl *url.URL) error {
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, derpUrl.String(), nil)
 	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
+		return fmt.Errorf("failed to create request %w", err)
 	}
 
 	res, err := client.Do(req)
 	if err != nil || (res != nil && res.StatusCode != http.StatusOK) {
-		return fmt.Errorf("failed to reach the coordinator server: %w", err)
+		return fmt.Errorf("failed to reach the coordinator server %w", err)
 	}
 
 	return nil

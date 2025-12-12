@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/pkg/errors"
 	"github.com/skevetter/devpod/pkg/stdio"
 	"golang.org/x/crypto/ssh"
 )
@@ -24,7 +23,7 @@ func NewSSHPassClient(user, addr, password string) (*ssh.Client, error) {
 
 	client, err := ssh.Dial("tcp", addr, clientConfig)
 	if err != nil {
-		return nil, fmt.Errorf("dial to %v failed: %w", addr, err)
+		return nil, fmt.Errorf("dial to %v failed %w", addr, err)
 	}
 
 	return client, nil
@@ -42,7 +41,7 @@ func NewSSHClient(user, addr string, keyBytes []byte) (*ssh.Client, error) {
 
 	client, err := ssh.Dial("tcp", addr, sshConfig)
 	if err != nil {
-		return nil, fmt.Errorf("dial to %v failed: %w", addr, err)
+		return nil, fmt.Errorf("dial to %v failed %w", addr, err)
 	}
 
 	return client, nil
@@ -82,7 +81,7 @@ func ConfigFromKeyBytes(keyBytes []byte) (*ssh.ClientConfig, error) {
 	if len(keyBytes) > 0 {
 		signer, err := ssh.ParsePrivateKey(keyBytes)
 		if err != nil {
-			return nil, errors.Wrap(err, "parse private key")
+			return nil, fmt.Errorf("parse private key %w", err)
 		}
 
 		clientConfig.Auth = append(clientConfig.Auth, ssh.PublicKeys(signer))

@@ -97,7 +97,7 @@ func (cmd *SleepCmd) Run(ctx context.Context, args []string) error {
 	}
 	patchData, err := patch.Data(workspaceInstance)
 	if err != nil {
-		return fmt.Errorf("create patch: %w", err)
+		return fmt.Errorf("create patch %w", err)
 	}
 
 	_, err = managementClient.Loft().ManagementV1().DevPodWorkspaceInstances(project.ProjectNamespace(cmd.Project)).Patch(ctx, workspaceInstance.Name, patch.Type(), patchData, metav1.PatchOptions{})
@@ -116,7 +116,7 @@ func (cmd *SleepCmd) Run(ctx context.Context, args []string) error {
 		return workspaceInstance.Status.Phase == storagev1.InstanceSleeping, nil
 	})
 	if err != nil {
-		return fmt.Errorf("error waiting for workspace to start sleeping: %w", err)
+		return fmt.Errorf("error waiting for workspace to start sleeping %w", err)
 	}
 
 	cmd.Log.Donef("Successfully put workspace %s to sleep", workspaceInstance.Name)

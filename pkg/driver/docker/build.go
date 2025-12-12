@@ -7,7 +7,6 @@ import (
 	"io"
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/devcontainer/build"
 	"github.com/skevetter/devpod/pkg/devcontainer/buildkit"
@@ -82,7 +81,7 @@ func (d *dockerDriver) BuildDevContainer(
 			d.Log.Info("Build with docker buildx...")
 			err := d.buildxBuild(ctx, writer, options.Platform, buildOptions)
 			if err != nil {
-				return nil, errors.Wrap(err, "buildx build")
+				return nil, fmt.Errorf("buildx build %w", err)
 			}
 		} else {
 			return nil, fmt.Errorf("buildx is not available on your host. Use buildkit builder")
@@ -91,7 +90,7 @@ func (d *dockerDriver) BuildDevContainer(
 		d.Log.Info("Build with internal buildkit...")
 		err := d.internalBuild(ctx, writer, options.Platform, buildOptions)
 		if err != nil {
-			return nil, errors.Wrap(err, "internal build")
+			return nil, fmt.Errorf("internal build %w", err)
 		}
 	case docker.DockerBuilderDefault:
 		return nil, fmt.Errorf("invalid docker builder: %s", builder)
@@ -100,7 +99,7 @@ func (d *dockerDriver) BuildDevContainer(
 	// inspect image
 	imageDetails, err := d.Docker.InspectImage(ctx, imageName, false)
 	if err != nil {
-		return nil, errors.Wrap(err, "get image details")
+		return nil, fmt.Errorf("get image details %w", err)
 	}
 
 	return &config.BuildInfo{
@@ -123,19 +122,19 @@ func (d *dockerDriver) buildxExists(ctx context.Context) bool {
 func (d *dockerDriver) internalBuild(ctx context.Context, writer io.Writer, platform string, options *build.BuildOptions) error {
 	dockerClient, err := docker.NewClient(ctx, d.Log)
 	if err != nil {
-		return errors.Wrap(err, "create docker client")
+		return fmt.Errorf("create docker client %w", err)
 	}
 	defer func() { _ = dockerClient.Close() }()
 
 	buildKitClient, err := buildkit.NewDockerClient(ctx, dockerClient)
 	if err != nil {
-		return errors.Wrap(err, "create buildkit client")
+		return fmt.Errorf("create buildkit client %w", err)
 	}
 	defer func() { _ = buildKitClient.Close() }()
 
 	err = buildkit.Build(ctx, buildKitClient, writer, platform, options, d.Log)
 	if err != nil {
-		return errors.Wrap(err, "build")
+		return fmt.Errorf("build %w", err)
 	}
 
 	return nil
@@ -197,7 +196,7 @@ func (d *dockerDriver) buildxBuild(ctx context.Context, writer io.Writer, platfo
 	d.Log.Debugf("Running docker %s: docker %s", d.Docker.DockerCommand, strings.Join(args, " "))
 	err := d.Docker.Run(ctx, args, nil, writer, writer)
 	if err != nil {
-		return errors.Wrap(err, "build image")
+		return fmt.Errorf("build image %w", err)
 	}
 
 	return nil

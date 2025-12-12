@@ -26,7 +26,7 @@ func GetProInstanceDevPodVersion(proInstance *provider.ProInstance) (string, err
 func GetPlatformVersion(url string) (*VersionObject, error) {
 	resp, err := http.GetHTTPClient().Get(url + "/version")
 	if err != nil {
-		return nil, fmt.Errorf("get %s: %w", url, err)
+		return nil, fmt.Errorf("get %s %w", url, err)
 	} else if resp.StatusCode != 200 {
 		out, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("get %s: %s (Status: %d)", url, string(out), resp.StatusCode)
@@ -34,13 +34,13 @@ func GetPlatformVersion(url string) (*VersionObject, error) {
 
 	versionRaw, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("read %s: %w", url, err)
+		return nil, fmt.Errorf("read %s %w", url, err)
 	}
 
 	version := &VersionObject{}
 	err = json.Unmarshal(versionRaw, version)
 	if err != nil {
-		return nil, fmt.Errorf("parse %s: %w", url, err)
+		return nil, fmt.Errorf("parse %s %w", url, err)
 	}
 
 	return version, nil

@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/skevetter/devpod/pkg/devcontainer/build"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	"github.com/skevetter/devpod/pkg/driver"
@@ -41,7 +40,7 @@ func (r *runner) Build(ctx context.Context, options provider.BuildOptions) (stri
 	// check if we need to build container
 	buildInfo, err := r.build(ctx, substitutedConfig, substitutionContext, options)
 	if err != nil {
-		return "", errors.Wrap(err, "build image")
+		return "", fmt.Errorf("build image %w", err)
 	}
 
 	// have a fallback value for PrebuildHash
@@ -72,7 +71,7 @@ func (r *runner) Build(ctx context.Context, options provider.BuildOptions) (stri
 
 	if isDockerComposeConfig(substitutedConfig.Config) {
 		if err := dockerDriver.TagDevContainer(ctx, buildInfo.ImageName, prebuildImage); err != nil {
-			return "", errors.Wrap(err, "tag image")
+			return "", fmt.Errorf("tag image %w", err)
 		}
 	}
 
@@ -98,14 +97,14 @@ func (r *runner) Build(ctx context.Context, options provider.BuildOptions) (stri
 	// tag the image
 	for _, imageRef := range imageRefs {
 		if err := dockerDriver.TagDevContainer(ctx, prebuildImage, imageRef); err != nil {
-			return "", errors.Wrap(err, "tag image")
+			return "", fmt.Errorf("tag image %w", err)
 		}
 	}
 
 	// push the image to the registry
 	for _, imageRef := range imageRefs {
 		if err := dockerDriver.PushDevContainer(ctx, imageRef); err != nil {
-			return "", errors.Wrap(err, "push image")
+			return "", fmt.Errorf("push image %w", err)
 		}
 	}
 

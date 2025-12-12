@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/loft-sh/log"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/command"
 	"github.com/skevetter/devpod/pkg/config"
@@ -167,7 +166,7 @@ func (o *VsCodeServer) Install() error {
 	if o.userName != "" {
 		err = copy2.ChownR(location, o.userName)
 		if err != nil {
-			return errors.Wrap(err, "chown")
+			return fmt.Errorf("chown %w", err)
 		}
 	}
 
@@ -405,7 +404,7 @@ func (o *VsCodeServer) findCodeServerBinary(location string) (string, error) {
 	serversDir := filepath.Join(location, "cli", "servers")
 	entries, err := os.ReadDir(serversDir)
 	if err != nil {
-		return "", fmt.Errorf("read dir %s: %w", serversDir, err)
+		return "", fmt.Errorf("read dir %s %w", serversDir, err)
 	} else if len(entries) == 0 {
 		return "", fmt.Errorf("read dir %s: install dir is missing", serversDir)
 	}
@@ -432,7 +431,7 @@ func (o *VsCodeServer) findCodeServerBinary(location string) (string, error) {
 	out, err := exec.CommandContext(ctx, binPath, "--help").CombinedOutput()
 	cancel()
 	if err != nil {
-		return "", fmt.Errorf("execute %s: %w", binPath, command.WrapCommandError(out, err))
+		return "", fmt.Errorf("execute %s %w", binPath, command.WrapCommandError(out, err))
 	}
 
 	return binPath, nil

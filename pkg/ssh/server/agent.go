@@ -14,7 +14,7 @@ func setupAgentListener(sess ssh.Session, reuseSock string) (net.Listener, strin
 	// that we have a compliant directory structure
 	err := os.MkdirAll("/tmp", 0o777)
 	if err != nil {
-		return nil, "", fmt.Errorf("create /tmp dir: %w", err)
+		return nil, "", fmt.Errorf("create /tmp dir %w", err)
 	}
 
 	// Check if we should create a "shared" socket to be reused by clients
@@ -24,13 +24,13 @@ func setupAgentListener(sess ssh.Session, reuseSock string) (net.Listener, strin
 		dir = filepath.Join(os.TempDir(), fmt.Sprintf("auth-agent-%s", reuseSock))
 		err = os.MkdirAll(dir, 0777)
 		if err != nil {
-			return nil, "", fmt.Errorf("creating SSH_AUTH_SOCK dir in /tmp: %w", err)
+			return nil, "", fmt.Errorf("creating SSH_AUTH_SOCK dir in /tmp %w", err)
 		}
 	}
 
 	l, tmpDir, err := ssh.NewAgentListener(dir)
 	if err != nil {
-		return nil, "", fmt.Errorf("new agent listener: %w", err)
+		return nil, "", fmt.Errorf("new agent listener %w", err)
 	}
 
 	return l, tmpDir, nil

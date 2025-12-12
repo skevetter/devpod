@@ -17,12 +17,12 @@ type Interface interface {
 func NewForConfig(c *rest.Config) (Interface, error) {
 	kubeClient, err := kubernetes.NewForConfig(c)
 	if err != nil {
-		return nil, fmt.Errorf("create kube client: %w", err)
+		return nil, fmt.Errorf("create kube client %w", err)
 	}
 
 	loftClient, err := loftclient.NewForConfig(c)
 	if err != nil {
-		return nil, fmt.Errorf("create loft client: %w", err)
+		return nil, fmt.Errorf("create loft client %w", err)
 	}
 
 	return &client{

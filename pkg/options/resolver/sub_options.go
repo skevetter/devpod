@@ -3,13 +3,13 @@ package resolver
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"maps"
 	"os"
 	"strings"
 	"time"
 
 	"github.com/ghodss/yaml"
-	"github.com/pkg/errors"
 	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/provider"
 	"github.com/skevetter/devpod/pkg/shell"
@@ -26,7 +26,7 @@ func execOptionCommand(ctx context.Context, command string, resolvedOptions map[
 
 	err := shell.RunEmulatedShell(ctx, command, nil, stdout, stderr, env)
 	if err != nil {
-		return nil, errors.Wrapf(err, "exec command: %s%s", stdout.String(), stderr.String())
+		return nil, fmt.Errorf("exec command: %s%s %w", stdout.String(), stderr.String(), err)
 	}
 
 	return stdout, nil
@@ -35,7 +35,7 @@ func execOptionCommand(ctx context.Context, command string, resolvedOptions map[
 func resolveFromCommand(ctx context.Context, option *types.Option, resolvedOptions map[string]config.OptionValue, extraValues map[string]string) (config.OptionValue, error) {
 	cmdOut, err := execOptionCommand(ctx, option.Command, resolvedOptions, extraValues)
 	if err != nil {
-		return config.OptionValue{}, errors.Wrap(err, "run command")
+		return config.OptionValue{}, fmt.Errorf("run command %w", err)
 	}
 	optionValue := config.OptionValue{Value: strings.TrimSpace(cmdOut.String())}
 	expire := types.NewTime(time.Now())
@@ -46,12 +46,12 @@ func resolveFromCommand(ctx context.Context, option *types.Option, resolvedOptio
 func resolveSubOptions(ctx context.Context, option *types.Option, resolvedOptions map[string]config.OptionValue, extraValues map[string]string) (config.OptionDefinitions, error) {
 	cmdOut, err := execOptionCommand(ctx, option.SubOptionsCommand, resolvedOptions, extraValues)
 	if err != nil {
-		return nil, errors.Wrap(err, "run subOptionsCommand")
+		return nil, fmt.Errorf("run subOptionsCommand %w", err)
 	}
 	subOptions := provider.SubOptions{}
 	err = yaml.Unmarshal(cmdOut.Bytes(), &subOptions)
 	if err != nil {
-		return nil, errors.Wrapf(err, "parse subOptionsCommand: %s", cmdOut.String())
+		return nil, fmt.Errorf("parse subOptionsCommand: %s %w", cmdOut.String(), err)
 	}
 
 	// prepare new options

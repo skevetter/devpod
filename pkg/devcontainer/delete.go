@@ -2,16 +2,16 @@ package devcontainer
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 )
 
 func (r *runner) Delete(ctx context.Context) error {
 	containerDetails, err := r.Driver.FindDevContainer(ctx, r.ID)
 	if err != nil {
-		return errors.Wrap(err, "find dev container")
+		return fmt.Errorf("find dev container %w", err)
 	} else if containerDetails == nil {
 		return nil
 	}
@@ -42,7 +42,7 @@ func (r *runner) Delete(ctx context.Context) error {
 func (r *runner) Stop(ctx context.Context) error {
 	containerDetails, err := r.Driver.FindDevContainer(ctx, r.ID)
 	if err != nil {
-		return errors.Wrap(err, "find dev container")
+		return fmt.Errorf("find dev container %w", err)
 	} else if containerDetails == nil {
 		return nil
 	}

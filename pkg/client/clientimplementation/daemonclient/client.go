@@ -14,7 +14,6 @@ import (
 
 	storagev1 "github.com/loft-sh/api/v4/pkg/apis/storage/v1"
 	"github.com/loft-sh/log"
-	perrors "github.com/pkg/errors"
 	clientpkg "github.com/skevetter/devpod/pkg/client"
 	"github.com/skevetter/devpod/pkg/config"
 	daemon "github.com/skevetter/devpod/pkg/daemon/platform"
@@ -103,7 +102,7 @@ func (c *client) RefreshOptions(ctx context.Context, userOptionsRaw []string, re
 
 	userOptions, err := provider.ParseOptions(userOptionsRaw)
 	if err != nil {
-		return perrors.Wrap(err, "parse options")
+		return fmt.Errorf("parse options %w", err)
 	}
 
 	workspace, err := options.ResolveAndSaveOptionsProxy(ctx, c.devPodConfig, c.config, c.workspace, userOptions, c.log)
@@ -125,7 +124,7 @@ func (c *client) RefreshOptions(ctx context.Context, userOptionsRaw []string, re
 func (c *client) CheckWorkspaceReachable(ctx context.Context) error {
 	wAddr, err := c.getWorkspaceAddress()
 	if err != nil {
-		return fmt.Errorf("resolve workspace hostname: %w", err)
+		return fmt.Errorf("resolve workspace hostname %w", err)
 	}
 	err = ts.WaitHostReachable(ctx, c.tsClient, wAddr, 5, c.log)
 	if err != nil {
@@ -150,14 +149,14 @@ func (c *client) CheckWorkspaceReachable(ctx context.Context) error {
 		}
 
 		if getWorkspaceErr != nil {
-			return fmt.Errorf("couldn't get workspace: %w", getWorkspaceErr)
+			return fmt.Errorf("couldn't get workspace %w", getWorkspaceErr)
 		} else if instance.Status.Phase != storagev1.InstanceReady {
 			return fmt.Errorf("workspace is '%s', please run `devpod up %s` to start it again", instance.Status.Phase, c.workspace.ID)
 		} else if instance.Status.LastWorkspaceStatus != storagev1.WorkspaceStatusRunning {
 			return fmt.Errorf("workspace is '%s', please run `devpod up %s` to start it again", instance.Status.LastWorkspaceStatus, c.workspace.ID)
 		}
 
-		return fmt.Errorf("reach host: %w", err)
+		return fmt.Errorf("reach host %w", err)
 	}
 
 	c.log.Debugf("Host %s is reachable. Proceeding with SSH session...", wAddr.Host())
@@ -167,7 +166,7 @@ func (c *client) CheckWorkspaceReachable(ctx context.Context) error {
 func (c *client) SSHClients(ctx context.Context, user string) (toolClient *ssh.Client, userClient *ssh.Client, err error) {
 	wAddr, err := c.getWorkspaceAddress()
 	if err != nil {
-		return nil, nil, fmt.Errorf("resolve workspace hostname: %w", err)
+		return nil, nil, fmt.Errorf("resolve workspace hostname %w", err)
 	}
 
 	address := fmt.Sprintf("%s:%d", wAddr.Host(), wAddr.Port())
@@ -187,11 +186,11 @@ func (c *client) SSHClients(ctx context.Context, user string) (toolClient *ssh.C
 
 	toolClient, err = ts.WaitForSSHClient(ctx, dial, "tcp", address, "root", time.Second*10, c.log)
 	if err != nil {
-		return nil, nil, fmt.Errorf("create SSH tool client: %w", err)
+		return nil, nil, fmt.Errorf("create SSH tool client %w", err)
 	}
 	userClient, err = ts.WaitForSSHClient(ctx, dial, "tcp", address, user, time.Second*10, c.log)
 	if err != nil {
-		return nil, nil, fmt.Errorf("create SSH user client: %w", err)
+		return nil, nil, fmt.Errorf("create SSH user client %w", err)
 	}
 
 	return toolClient, userClient, nil
@@ -200,11 +199,11 @@ func (c *client) SSHClients(ctx context.Context, user string) (toolClient *ssh.C
 func (c *client) DirectTunnel(ctx context.Context, stdin io.Reader, stdout io.Writer) error {
 	wAddr, err := c.getWorkspaceAddress()
 	if err != nil {
-		return fmt.Errorf("resolve workspace hostname: %w", err)
+		return fmt.Errorf("resolve workspace hostname %w", err)
 	}
 	conn, err := c.tsClient.DialTCP(ctx, wAddr.Host(), uint16(wAddr.Port()))
 	if err != nil {
-		return fmt.Errorf("failed to connect to SSH server in proxy mode: %w", err)
+		return fmt.Errorf("failed to connect to SSH server in proxy mode %w", err)
 	}
 	defer func() { _ = conn.Close() }()
 
@@ -264,7 +263,7 @@ func (c *client) Ping(ctx context.Context, writer io.Writer) error {
 		}
 		_, err = fmt.Fprintf(writer, "pong from %s (%s) via %v in %v\n", result.NodeName, result.NodeIP, via, latency)
 		if err != nil {
-			return fmt.Errorf("failed to write ping result: %w", err)
+			return fmt.Errorf("failed to write ping result %w", err)
 		}
 
 		time.Sleep(time.Second)

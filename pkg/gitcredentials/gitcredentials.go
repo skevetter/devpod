@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/loft-sh/log/scanner"
-	"github.com/pkg/errors"
 	"github.com/skevetter/devpod/pkg/command"
 	"github.com/skevetter/devpod/pkg/file"
 	"github.com/skevetter/devpod/pkg/git"
@@ -55,7 +54,7 @@ func ConfigureHelper(binaryPath, userName string, port int) error {
 
 		err = os.WriteFile(gitConfigPath, []byte(content), 0600)
 		if err != nil {
-			return errors.Wrap(err, "write git config")
+			return fmt.Errorf("write git config %w", err)
 		}
 
 		err = file.Chown(userName, gitConfigPath)
@@ -85,7 +84,7 @@ func RemoveHelperFromPath(gitConfigPath string) error {
 	if strings.Contains(string(out), "[credential]") {
 		err = os.WriteFile(gitConfigPath, []byte(removeCredentialHelper(string(out))), 0600)
 		if err != nil {
-			return errors.Wrap(err, "write git config")
+			return fmt.Errorf("write git config %w", err)
 		}
 	}
 
@@ -157,7 +156,7 @@ func SetUser(userName string, user *GitUser) error {
 
 		out, err := exec.Command(args[0], args[1:]...).CombinedOutput()
 		if err != nil {
-			return fmt.Errorf("set user.name '%s': %w", strings.Join(args, " "), command.WrapCommandError(out, err))
+			return fmt.Errorf("set user.name '%s' %w", strings.Join(args, " "), command.WrapCommandError(out, err))
 		}
 	}
 	if user.Email != "" {
@@ -171,7 +170,7 @@ func SetUser(userName string, user *GitUser) error {
 
 		out, err := exec.Command(args[0], args[1:]...).CombinedOutput()
 		if err != nil {
-			return fmt.Errorf("set user.email '%s': %w", strings.Join(args, " "), command.WrapCommandError(out, err))
+			return fmt.Errorf("set user.email '%s' %w", strings.Join(args, " "), command.WrapCommandError(out, err))
 		}
 	}
 	return nil
@@ -184,7 +183,7 @@ func GetUser(userName string) (*GitUser, error) {
 	if userName != "" {
 		p, err := getGlobalGitConfigPath(userName)
 		if err != nil {
-			return gitUser, fmt.Errorf("get git global dir for %s: %w", userName, err)
+			return gitUser, fmt.Errorf("get git global dir for %s %w", userName, err)
 		}
 		scopeArgs = append(scopeArgs, "--file", p)
 	} else {
@@ -258,7 +257,7 @@ func GetHTTPPath(ctx context.Context, params GetHttpPathParameters) (string, err
 	// request credentials for it
 	url, err := netUrl.Parse(params.Repository)
 	if err != nil {
-		return "", fmt.Errorf("parse workspace repository: %w", err)
+		return "", fmt.Errorf("parse workspace repository %w", err)
 	}
 
 	return url.Path, nil
@@ -269,7 +268,7 @@ func SetupGpgGitKey(gitSignKey string) error {
 
 	out, err := gitConfigCmd.Output()
 	if err != nil {
-		return errors.Wrap(err, "git signkey: "+string(out))
+		return fmt.Errorf("git signkey: %s %w", string(out), err)
 	}
 
 	return nil
@@ -309,7 +308,7 @@ func getGlobalGitConfigPath(userName string) (string, error) {
 
 	home, err := command.GetHome(userName)
 	if err != nil {
-		return "", fmt.Errorf("get homedir for %s: %w", userName, err)
+		return "", fmt.Errorf("get homedir for %s %w", userName, err)
 	}
 
 	return filepath.Join(home, ".gitconfig"), nil

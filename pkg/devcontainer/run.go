@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/loft-sh/log"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	"github.com/skevetter/devpod/pkg/driver"
@@ -163,7 +162,7 @@ func (r *runner) Command(
 func (r *runner) Find(ctx context.Context) (*config.ContainerDetails, error) {
 	containerDetails, err := r.Driver.FindDevContainer(ctx, r.ID)
 	if err != nil {
-		return nil, errors.Wrap(err, "find dev container")
+		return nil, fmt.Errorf("find dev container %w", err)
 	}
 
 	return containerDetails, nil

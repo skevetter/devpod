@@ -2,12 +2,12 @@ package workspace
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 
 	"github.com/loft-sh/log"
-	"github.com/pkg/errors"
 	"github.com/skevetter/devpod/cmd/flags"
 	"github.com/skevetter/devpod/pkg/agent"
 	"github.com/spf13/cobra"
@@ -54,7 +54,7 @@ func (cmd *LogsDaemonCmd) Run(ctx context.Context) error {
 
 	f, err := os.Open(filepath.Join(logFolder, "agent-daemon.log"))
 	if err != nil {
-		return errors.Wrap(err, "open agent-daemon.log")
+		return fmt.Errorf("open agent-daemon.log %w", err)
 	}
 	defer func() { _ = f.Close() }()
 

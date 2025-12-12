@@ -68,7 +68,7 @@ func (cmd *ImportCmd) Run(ctx context.Context, devPodConfig *config.Config, log 
 	exportConfig := &provider.ExportConfig{}
 	err := json.Unmarshal([]byte(cmd.Data), exportConfig)
 	if err != nil {
-		return fmt.Errorf("decode workspace data: %w", err)
+		return fmt.Errorf("decode workspace data %w", err)
 	} else if exportConfig.Workspace == nil {
 		return fmt.Errorf("workspace is missing in imported data")
 	} else if exportConfig.Provider == nil {
@@ -116,28 +116,28 @@ func (cmd *ImportCmd) Run(ctx context.Context, devPodConfig *config.Config, log 
 func (cmd *ImportCmd) importWorkspace(devPodConfig *config.Config, exportConfig *provider.ExportConfig, log log.Logger) error {
 	workspaceDir, err := provider.GetWorkspaceDir(devPodConfig.DefaultContext, cmd.WorkspaceID)
 	if err != nil {
-		return fmt.Errorf("get workspace dir: %w", err)
+		return fmt.Errorf("get workspace dir %w", err)
 	}
 
 	err = os.MkdirAll(workspaceDir, 0755)
 	if err != nil {
-		return fmt.Errorf("create workspace dir: %w", err)
+		return fmt.Errorf("create workspace dir %w", err)
 	}
 
 	decoded, err := base64.RawStdEncoding.DecodeString(exportConfig.Workspace.Data)
 	if err != nil {
-		return fmt.Errorf("decode workspace data: %w", err)
+		return fmt.Errorf("decode workspace data %w", err)
 	}
 
 	err = extract.Extract(bytes.NewReader(decoded), workspaceDir)
 	if err != nil {
-		return fmt.Errorf("extract workspace data: %w", err)
+		return fmt.Errorf("extract workspace data %w", err)
 	}
 
 	// exchange config
 	workspaceConfig, err := provider.LoadWorkspaceConfig(devPodConfig.DefaultContext, cmd.WorkspaceID)
 	if err != nil {
-		return fmt.Errorf("load machine config: %w", err)
+		return fmt.Errorf("load machine config %w", err)
 	}
 	workspaceConfig.ID = cmd.WorkspaceID
 	workspaceConfig.Context = devPodConfig.DefaultContext
@@ -147,7 +147,7 @@ func (cmd *ImportCmd) importWorkspace(devPodConfig *config.Config, exportConfig 
 	// save machine config
 	err = provider.SaveWorkspaceConfig(workspaceConfig)
 	if err != nil {
-		return fmt.Errorf("save workspace config: %w", err)
+		return fmt.Errorf("save workspace config %w", err)
 	}
 
 	log.Donef("Successfully imported workspace %s", cmd.WorkspaceID)
@@ -167,28 +167,28 @@ func (cmd *ImportCmd) importMachine(devPodConfig *config.Config, exportConfig *p
 
 	machineDir, err := provider.GetMachineDir(devPodConfig.DefaultContext, cmd.MachineID)
 	if err != nil {
-		return fmt.Errorf("get machine dir: %w", err)
+		return fmt.Errorf("get machine dir %w", err)
 	}
 
 	err = os.MkdirAll(machineDir, 0755)
 	if err != nil {
-		return fmt.Errorf("create machine dir: %w", err)
+		return fmt.Errorf("create machine dir %w", err)
 	}
 
 	decoded, err := base64.RawStdEncoding.DecodeString(exportConfig.Machine.Data)
 	if err != nil {
-		return fmt.Errorf("decode machine data: %w", err)
+		return fmt.Errorf("decode machine data %w", err)
 	}
 
 	err = extract.Extract(bytes.NewReader(decoded), machineDir)
 	if err != nil {
-		return fmt.Errorf("extract machine data: %w", err)
+		return fmt.Errorf("extract machine data %w", err)
 	}
 
 	// exchange config
 	machineConfig, err := provider.LoadMachineConfig(devPodConfig.DefaultContext, cmd.MachineID)
 	if err != nil {
-		return fmt.Errorf("load machine config: %w", err)
+		return fmt.Errorf("load machine config %w", err)
 	}
 	machineConfig.ID = cmd.MachineID
 	machineConfig.Context = devPodConfig.DefaultContext
@@ -197,7 +197,7 @@ func (cmd *ImportCmd) importMachine(devPodConfig *config.Config, exportConfig *p
 	// save machine config
 	err = provider.SaveMachineConfig(machineConfig)
 	if err != nil {
-		return fmt.Errorf("save machine config: %w", err)
+		return fmt.Errorf("save machine config %w", err)
 	}
 
 	log.Donef("Successfully imported machine %s", cmd.MachineID)
@@ -213,35 +213,35 @@ func (cmd *ImportCmd) importProvider(devPodConfig *config.Config, exportConfig *
 
 	providerDir, err := provider.GetProviderDir(devPodConfig.DefaultContext, cmd.ProviderID)
 	if err != nil {
-		return fmt.Errorf("get provider dir: %w", err)
+		return fmt.Errorf("get provider dir %w", err)
 	}
 
 	err = os.MkdirAll(providerDir, 0755)
 	if err != nil {
-		return fmt.Errorf("create provider dir: %w", err)
+		return fmt.Errorf("create provider dir %w", err)
 	}
 
 	decoded, err := base64.RawStdEncoding.DecodeString(exportConfig.Provider.Data)
 	if err != nil {
-		return fmt.Errorf("decode provider data: %w", err)
+		return fmt.Errorf("decode provider data %w", err)
 	}
 
 	err = extract.Extract(bytes.NewReader(decoded), providerDir)
 	if err != nil {
-		return fmt.Errorf("extract provider data: %w", err)
+		return fmt.Errorf("extract provider data %w", err)
 	}
 
 	// exchange config
 	providerConfig, err := provider.LoadProviderConfig(devPodConfig.DefaultContext, cmd.ProviderID)
 	if err != nil {
-		return fmt.Errorf("load provider config: %w", err)
+		return fmt.Errorf("load provider config %w", err)
 	}
 	providerConfig.Name = cmd.ProviderID
 
 	// save provider config
 	err = provider.SaveProviderConfig(devPodConfig.DefaultContext, providerConfig)
 	if err != nil {
-		return fmt.Errorf("save provider config: %w", err)
+		return fmt.Errorf("save provider config %w", err)
 	}
 
 	// add provider options
@@ -253,7 +253,7 @@ func (cmd *ImportCmd) importProvider(devPodConfig *config.Config, exportConfig *
 		devPodConfig.Current().Providers[cmd.ProviderID] = exportConfig.Provider.Config
 		err = config.SaveConfig(devPodConfig)
 		if err != nil {
-			return fmt.Errorf("save devpod config: %w", err)
+			return fmt.Errorf("save devpod config %w", err)
 		}
 	}
 
@@ -264,7 +264,7 @@ func (cmd *ImportCmd) importProvider(devPodConfig *config.Config, exportConfig *
 func (cmd *ImportCmd) checkForConflictingIDs(ctx context.Context, exportConfig *provider.ExportConfig, devPodConfig *config.Config, log log.Logger) error {
 	workspaces, err := workspace.List(ctx, devPodConfig, false, cmd.Owner, log)
 	if err != nil {
-		return fmt.Errorf("error listing workspaces: %w", err)
+		return fmt.Errorf("error listing workspaces %w", err)
 	}
 
 	// check for workspace duplicate

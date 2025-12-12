@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/loft-sh/log"
-	perrors "github.com/pkg/errors"
 	"github.com/skevetter/devpod/pkg/command"
 )
 
@@ -218,7 +217,7 @@ func performMutualHandshake(line string, stdin io.WriteCloser) error {
 	// send our response
 	_, err := stdin.Write([]byte("pong\n"))
 	if err != nil {
-		return perrors.Wrap(err, "write to stdin")
+		return fmt.Errorf("write to stdin %w", err)
 	}
 
 	// successful handshake

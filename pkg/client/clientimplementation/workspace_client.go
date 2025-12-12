@@ -15,7 +15,6 @@ import (
 
 	"github.com/gofrs/flock"
 	"github.com/loft-sh/log"
-	perrors "github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/binaries"
 	"github.com/skevetter/devpod/pkg/client"
@@ -108,7 +107,7 @@ func (s *workspaceClient) RefreshOptions(ctx context.Context, userOptionsRaw []s
 
 	userOptions, err := provider.ParseOptions(userOptionsRaw)
 	if err != nil {
-		return perrors.Wrap(err, "parse options")
+		return fmt.Errorf("parse options %w", err)
 	}
 
 	if s.isMachineProvider() {
@@ -234,7 +233,7 @@ func (s *workspaceClient) initLock() {
 		// get locks dir
 		workspaceLocksDir, err := provider.GetLocksDir(s.workspace.Context)
 		if err != nil {
-			panic(fmt.Errorf("get workspaces dir: %w", err))
+			panic(fmt.Errorf("get workspaces dir %w", err))
 		}
 		_ = os.MkdirAll(workspaceLocksDir, 0777)
 
@@ -255,7 +254,7 @@ func (s *workspaceClient) Lock(ctx context.Context) error {
 	s.log.Debugf("Acquire workspace lock...")
 	err := tryLock(ctx, s.workspaceLock, "workspace", s.log)
 	if err != nil {
-		return fmt.Errorf("error locking workspace: %w", err)
+		return fmt.Errorf("error locking workspace %w", err)
 	}
 	s.log.Debugf("Acquired workspace lock...")
 
@@ -264,7 +263,7 @@ func (s *workspaceClient) Lock(ctx context.Context) error {
 		s.log.Debugf("Acquire machine lock...")
 		err := tryLock(ctx, s.machineLock, "machine", s.log)
 		if err != nil {
-			return fmt.Errorf("error locking machine: %w", err)
+			return fmt.Errorf("error locking machine %w", err)
 		}
 		s.log.Debugf("Acquired machine lock...")
 	}
@@ -418,7 +417,7 @@ func (s *workspaceClient) isMachineRunning(ctx context.Context) (bool, error) {
 	// retrieve status
 	status, err := machineClient.Status(ctx, client.StatusOptions{})
 	if err != nil {
-		return false, perrors.Wrap(err, "retrieve machine status")
+		return false, fmt.Errorf("retrieve machine status %w", err)
 	} else if status == client.StatusRunning {
 		return true, nil
 	}

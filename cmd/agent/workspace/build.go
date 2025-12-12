@@ -2,10 +2,10 @@ package workspace
 
 import (
 	"context"
+	"fmt"
 	"os"
 
 	"github.com/loft-sh/log"
-	"github.com/pkg/errors"
 	"github.com/skevetter/devpod/cmd/flags"
 	"github.com/skevetter/devpod/pkg/agent"
 	provider2 "github.com/skevetter/devpod/pkg/provider"
@@ -88,7 +88,7 @@ func (cmd *BuildCmd) Run(ctx context.Context) error {
 		})
 		if err != nil {
 			logger.Errorf("Error building image: %v", err)
-			return errors.Wrap(err, "build")
+			return fmt.Errorf("build %w", err)
 		}
 
 		if workspaceInfo.CLIOptions.SkipPush {

@@ -24,7 +24,7 @@ func RunEmulatedShell(ctx context.Context, command string, stdin io.Reader, stdo
 	// Let's parse the complete command
 	parsed, err := syntax.NewParser().Parse(strings.NewReader(command), "")
 	if err != nil {
-		return errors.Wrap(err, "parse shell command")
+		return fmt.Errorf("parse shell command %w", err)
 	}
 
 	// use system default as environ if unspecified
@@ -63,7 +63,7 @@ func RunEmulatedShell(ctx context.Context, command string, stdin io.Reader, stdo
 	// Create shell runner
 	r, err := interp.New(options...)
 	if err != nil {
-		return errors.Wrap(err, "create shell runner")
+		return fmt.Errorf("create shell runner %w", err)
 	}
 
 	// Run command

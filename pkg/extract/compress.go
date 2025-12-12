@@ -3,6 +3,7 @@ package extract
 import (
 	"archive/tar"
 	"compress/gzip"
+	"fmt"
 	"io"
 	"os"
 	"path"
@@ -17,13 +18,13 @@ import (
 func WriteTarExclude(writer io.Writer, localPath string, compress bool, excludedPaths []string) error {
 	absolute, err := filepath.Abs(localPath)
 	if err != nil {
-		return errors.Wrap(err, "absolute")
+		return fmt.Errorf("absolute %w", err)
 	}
 
 	// Check if target is there
 	stat, err := os.Stat(absolute)
 	if err != nil {
-		return errors.Wrap(err, "stat")
+		return fmt.Errorf("stat %w", err)
 	}
 
 	// Use compression
@@ -129,7 +130,7 @@ func (a *Archiver) tarFolder(target string, targetStat os.FileInfo) error {
 		hdr.Mode = fillGo18FileTypeBits(int64(chmodTarEntry(os.FileMode(hdr.Mode))), targetStat)
 		hdr.Name = target
 		if err := a.writer.WriteHeader(hdr); err != nil {
-			return errors.Wrap(err, "tar write header")
+			return fmt.Errorf("tar write header %w", err)
 		}
 		a.writtenFiles[target] = true
 	}
@@ -141,7 +142,7 @@ func (a *Archiver) tarFolder(target string, targetStat os.FileInfo) error {
 		}
 
 		if err = a.AddToArchive(path.Join(target, f.Name())); err != nil {
-			return errors.Wrap(err, "recursive tar "+f.Name())
+			return fmt.Errorf("recursive tar %s %w", f.Name(), err)
 		}
 	}
 
@@ -163,7 +164,7 @@ func (a *Archiver) tarFile(target string, targetStat os.FileInfo) error {
 
 	hdr, err := tar.FileInfoHeader(targetStat, linkName)
 	if err != nil {
-		return errors.Wrap(err, "create tar file info header")
+		return fmt.Errorf("create tar file info header %w", err)
 	}
 	hdr.Name = target
 	hdr.Uid = 0
@@ -172,7 +173,7 @@ func (a *Archiver) tarFile(target string, targetStat os.FileInfo) error {
 	hdr.ModTime = time.Unix(targetStat.ModTime().Unix(), 0)
 
 	if err := a.writer.WriteHeader(hdr); err != nil {
-		return errors.Wrap(err, "tar write header")
+		return fmt.Errorf("tar write header %w", err)
 	}
 
 	// nothing more to do for non-regular
@@ -190,7 +191,7 @@ func (a *Archiver) tarFile(target string, targetStat os.FileInfo) error {
 	defer func() { _ = f.Close() }()
 	copied, err := io.CopyN(a.writer, f, targetStat.Size())
 	if err != nil {
-		return errors.Wrap(err, "tar copy file")
+		return fmt.Errorf("tar copy file %w", err)
 	} else if copied != targetStat.Size() {
 		return errors.New("tar: file truncated during read")
 	}

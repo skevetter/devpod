@@ -9,7 +9,6 @@ import (
 	"github.com/blang/semver"
 	"github.com/loft-sh/log"
 	"github.com/mgutz/ansi"
-	"github.com/pkg/errors"
 	proflags "github.com/skevetter/devpod/cmd/pro/flags"
 	providercmd "github.com/skevetter/devpod/cmd/provider"
 	"github.com/skevetter/devpod/pkg/config"
@@ -84,7 +83,7 @@ func (cmd *LoginCmd) Run(ctx context.Context, fullURL string, log log.Logger) er
 	// get host from url
 	parsedURL, err := url.Parse(fullURL)
 	if err != nil {
-		return fmt.Errorf("invalid url %s: %w", fullURL, err)
+		return fmt.Errorf("invalid url %s %w", fullURL, err)
 	}
 
 	// extract host
@@ -122,7 +121,7 @@ func (cmd *LoginCmd) Run(ctx context.Context, fullURL string, log log.Logger) er
 		// check if provider already exists
 		providers, err := workspace.LoadAllProviders(devPodConfig, log)
 		if err != nil {
-			return fmt.Errorf("load providers: %w", err)
+			return fmt.Errorf("load providers %w", err)
 		}
 
 		// provider already exists?
@@ -149,7 +148,7 @@ func (cmd *LoginCmd) Run(ctx context.Context, fullURL string, log log.Logger) er
 		}
 		rv, err := semver.Parse(strings.TrimPrefix(remoteVersion, "v"))
 		if err != nil {
-			return fmt.Errorf("invalid version %s: %w", remoteVersion, err)
+			return fmt.Errorf("invalid version %s %w", remoteVersion, err)
 		}
 		if rv.LT(semver.Version{Major: 0, Minor: 6, Patch: 999}) && remoteVersion != versionpkg.DevVersion {
 			log.Debug("remote version < 0.7.0, installing proxy provider")
@@ -198,7 +197,7 @@ func (cmd *LoginCmd) Run(ctx context.Context, fullURL string, log log.Logger) er
 	if cmd.Use {
 		err := providercmd.ConfigureProvider(ctx, providerConfig, devPodConfig.DefaultContext, cmd.Options, false, false, false, nil, log)
 		if err != nil {
-			return errors.Wrap(err, "configure provider")
+			return fmt.Errorf("configure provider %w", err)
 		}
 	}
 
@@ -244,7 +243,7 @@ func (cmd *LoginCmd) resolveProviderSource(url string) error {
 
 	version, err := platform.GetDevPodVersion(url)
 	if err != nil {
-		return fmt.Errorf("get version: %w", err)
+		return fmt.Errorf("get version %w", err)
 	}
 	cmd.ProviderSource = providerRepo + "@" + version
 

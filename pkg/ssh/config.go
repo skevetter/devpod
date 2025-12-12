@@ -13,7 +13,6 @@ import (
 
 	"github.com/loft-sh/log"
 	"github.com/loft-sh/log/scanner"
-	"github.com/pkg/errors"
 	"github.com/skevetter/devpod/pkg/util"
 )
 
@@ -34,7 +33,7 @@ func configureSSHConfigSameFile(sshConfigPath, context, workspace, user, workdir
 
 	newFile, err := addHost(sshConfigPath, workspace+"."+"devpod", user, context, workspace, workdir, command, gpgagent, devPodHome)
 	if err != nil {
-		return errors.Wrap(err, "parse ssh config")
+		return fmt.Errorf("parse ssh config %w", err)
 	}
 
 	return writeSSHConfig(sshConfigPath, newFile, log)
@@ -139,7 +138,7 @@ func addHostSection(config, execPath, host, user, context, workspace, workdir, c
 func GetUser(workspaceID string, sshConfigPath string) (string, error) {
 	path, err := ResolveSSHConfigPath(sshConfigPath)
 	if err != nil {
-		return "", errors.Wrap(err, "Invalid ssh config path")
+		return "", fmt.Errorf("Invalid ssh config path %w", err)
 	}
 	sshConfigPath = path
 
@@ -165,7 +164,7 @@ func RemoveFromConfig(workspaceID string, sshConfigPath string, log log.Logger) 
 
 	newFile, err := removeFromConfig(sshConfigPath, workspaceID+"."+"devpod")
 	if err != nil {
-		return errors.Wrap(err, "parse ssh config")
+		return fmt.Errorf("parse ssh config %w", err)
 	}
 
 	return writeSSHConfig(sshConfigPath, newFile, log)
@@ -179,7 +178,7 @@ func writeSSHConfig(path, content string, log log.Logger) error {
 
 	err = os.WriteFile(path, []byte(content), 0600)
 	if err != nil {
-		return errors.Wrap(err, "write ssh config")
+		return fmt.Errorf("write ssh config %w", err)
 	}
 
 	return nil
@@ -188,7 +187,7 @@ func writeSSHConfig(path, content string, log log.Logger) error {
 func ResolveSSHConfigPath(sshConfigPath string) (string, error) {
 	homeDir, err := util.UserHomeDir()
 	if err != nil {
-		return "", errors.Wrap(err, "get home dir")
+		return "", fmt.Errorf("get home dir %w", err)
 	}
 
 	if sshConfigPath == "" {
@@ -243,7 +242,7 @@ func transformHostSection(path, host string, transform func(line string) string)
 		}
 	}
 	if configScanner.Err() != nil {
-		return "", errors.Wrap(err, "parse ssh config")
+		return "", fmt.Errorf("parse ssh config %w", err)
 	}
 
 	// remove residual empty line at start file

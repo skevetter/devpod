@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/loft-sh/log"
-	"github.com/pkg/errors"
 	"github.com/skevetter/devpod/cmd/flags"
 	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/provider"
@@ -102,10 +101,10 @@ func (cmd *AddCmd) Run(ctx context.Context, devPodConfig *config.Config, args []
 
 			err = DeleteProvider(ctx, devPodConfig, providerConfig.Name, true, true, log.Default)
 			if err != nil {
-				return errors.Wrap(err, "delete provider")
+				return fmt.Errorf("delete provider %w", err)
 			}
 
-			return errors.Wrap(configureErr, "configure provider")
+			return fmt.Errorf("configure provider %w", configureErr)
 		}
 
 		return nil

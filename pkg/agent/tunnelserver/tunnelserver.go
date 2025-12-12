@@ -14,7 +14,6 @@ import (
 	"github.com/loft-sh/api/v4/pkg/devpod"
 	"github.com/loft-sh/log"
 	"github.com/moby/patternmatcher/ignorefile"
-	perrors "github.com/pkg/errors"
 	"github.com/skevetter/devpod/pkg/agent/tunnel"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	"github.com/skevetter/devpod/pkg/dockercredentials"
@@ -126,7 +125,7 @@ func (t *tunnelServer) ForwardPort(ctx context.Context, portRequest *tunnel.Forw
 
 	err := t.forwarder.Forward(portRequest.Port)
 	if err != nil {
-		return nil, fmt.Errorf("error forwarding port %s: %w", portRequest.Port, err)
+		return nil, fmt.Errorf("error forwarding port %s %w", portRequest.Port, err)
 	}
 
 	return &tunnel.ForwardPortResponse{}, nil
@@ -138,7 +137,7 @@ func (t *tunnelServer) StopForwardPort(ctx context.Context, portRequest *tunnel.
 
 	err := t.forwarder.StopForward(portRequest.Port)
 	if err != nil {
-		return nil, fmt.Errorf("error stop forwarding port %s: %w", portRequest.Port, err)
+		return nil, fmt.Errorf("error stop forwarding port %s %w", portRequest.Port, err)
 	}
 
 	return &tunnel.StopForwardPortResponse{}, nil
@@ -208,7 +207,7 @@ func (t *tunnelServer) GitCredentials(ctx context.Context, message *tunnel.Messa
 	credentials := &gitcredentials.GitCredentials{}
 	err := json.Unmarshal([]byte(message.Message), credentials)
 	if err != nil {
-		return nil, perrors.Wrap(err, "decode git credentials request")
+		return nil, fmt.Errorf("decode git credentials request %w", err)
 	}
 
 	if t.platformOptions != nil && t.platformOptions.Enabled {
@@ -238,7 +237,7 @@ func (t *tunnelServer) GitCredentials(ctx context.Context, message *tunnel.Messa
 				Repository:  t.workspace.Source.GitRepository,
 			})
 			if err != nil {
-				return nil, fmt.Errorf("get http path: %w", err)
+				return nil, fmt.Errorf("get http path %w", err)
 			}
 			// Set the credentials `path` field to the path component of the git repository URL.
 			// This allows downstream credential helpers to figure out which passwords needs to be fetched
@@ -247,7 +246,7 @@ func (t *tunnelServer) GitCredentials(ctx context.Context, message *tunnel.Messa
 
 		response, err := gitcredentials.GetCredentials(credentials)
 		if err != nil {
-			return nil, perrors.Wrap(err, "get git response")
+			return nil, fmt.Errorf("get git response %w", err)
 		}
 		credentials = response
 	}
@@ -264,12 +263,12 @@ func (t *tunnelServer) GitSSHSignature(ctx context.Context, message *tunnel.Mess
 	signatureRequest := &gitsshsigning.GitSSHSignatureRequest{}
 	err := json.Unmarshal([]byte(message.Message), signatureRequest)
 	if err != nil {
-		return nil, perrors.Wrap(err, "git ssh sign request")
+		return nil, fmt.Errorf("git ssh sign request %w", err)
 	}
 
 	signatureResponse, err := signatureRequest.Sign()
 	if err != nil {
-		return nil, perrors.Wrap(err, "get git ssh signature")
+		return nil, fmt.Errorf("get git ssh signature %w", err)
 	}
 
 	out, err := json.Marshal(signatureResponse)
@@ -284,19 +283,19 @@ func (t *tunnelServer) LoftConfig(ctx context.Context, message *tunnel.Message) 
 	loftConfigRequest := &loftconfig.LoftConfigRequest{}
 	err := json.Unmarshal([]byte(message.Message), loftConfigRequest)
 	if err != nil {
-		return nil, perrors.Wrap(err, "loft platform config request")
+		return nil, fmt.Errorf("loft platform config request %w", err)
 	}
 
 	var response *loftconfig.LoftConfigResponse
 	if t.workspace != nil {
 		response, err = loftconfig.ReadFromWorkspace(t.workspace)
 		if err != nil {
-			return nil, fmt.Errorf("read loft config: %w", err)
+			return nil, fmt.Errorf("read loft config %w", err)
 		}
 	} else {
 		response, err = loftconfig.Read(loftConfigRequest)
 		if err != nil {
-			return nil, fmt.Errorf("read loft config: %w", err)
+			return nil, fmt.Errorf("read loft config %w", err)
 		}
 	}
 
@@ -315,7 +314,7 @@ func (t *tunnelServer) KubeConfig(ctx context.Context, message *tunnel.Message) 
 
 	kubeConfig, err := platform.NewInstanceKubeConfig(ctx, t.platformOptions)
 	if err != nil {
-		return nil, fmt.Errorf("create kube config: %w", err)
+		return nil, fmt.Errorf("create kube config %w", err)
 	}
 
 	return &tunnel.Message{Message: string(kubeConfig)}, nil
@@ -324,7 +323,7 @@ func (t *tunnelServer) KubeConfig(ctx context.Context, message *tunnel.Message) 
 func (t *tunnelServer) GPGPublicKeys(ctx context.Context, message *tunnel.Message) (*tunnel.Message, error) {
 	rawPubKeys, err := gpg.GetHostPubKey()
 	if err != nil {
-		return nil, fmt.Errorf("get gpg host public keys: %w", err)
+		return nil, fmt.Errorf("get gpg host public keys %w", err)
 	}
 
 	pubKeyArgument := base64.StdEncoding.EncodeToString(rawPubKeys)

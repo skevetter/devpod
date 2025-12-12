@@ -9,7 +9,6 @@ import (
 	storagev1 "github.com/loft-sh/api/v4/pkg/apis/storage/v1"
 	"github.com/loft-sh/log"
 	"github.com/loft-sh/log/survey"
-	"github.com/pkg/errors"
 	"github.com/skevetter/devpod/cmd/pro/flags"
 	"github.com/skevetter/devpod/pkg/platform/kube"
 	"github.com/skevetter/devpod/pkg/random"
@@ -67,7 +66,7 @@ devpod pro reset password --user admin
 func (cmd *PasswordCmd) Run() error {
 	restConfig, err := ctrl.GetConfig()
 	if err != nil {
-		return errors.Wrap(err, "get kube config")
+		return fmt.Errorf("get kube config %w", err)
 	}
 
 	managementClient, err := kube.NewForConfig(restConfig)
@@ -79,7 +78,7 @@ func (cmd *PasswordCmd) Run() error {
 	cmd.Log.Infof("Resetting password of user %s", cmd.User)
 	user, err := managementClient.Loft().StorageV1().Users().Get(context.Background(), cmd.User, metav1.GetOptions{})
 	if err != nil && !kerrors.IsNotFound(err) {
-		return errors.Wrap(err, "get user")
+		return fmt.Errorf("get user %w", err)
 	} else if kerrors.IsNotFound(err) {
 		// create user
 		if !cmd.Create {
@@ -121,7 +120,7 @@ func (cmd *PasswordCmd) Run() error {
 		}
 		user, err = managementClient.Loft().StorageV1().Users().Update(context.Background(), user, metav1.UpdateOptions{})
 		if err != nil {
-			return errors.Wrap(err, "update user")
+			return fmt.Errorf("update user %w", err)
 		}
 	}
 
@@ -161,7 +160,7 @@ func (cmd *PasswordCmd) Run() error {
 			},
 		}, metav1.CreateOptions{})
 		if err != nil {
-			return errors.Wrap(err, "create password secret")
+			return fmt.Errorf("create password secret %w", err)
 		}
 	} else {
 		if passwordSecret.Data == nil {
@@ -170,7 +169,7 @@ func (cmd *PasswordCmd) Run() error {
 		passwordSecret.Data[user.Spec.PasswordRef.Key] = passwordHash
 		_, err = managementClient.CoreV1().Secrets(user.Spec.PasswordRef.SecretNamespace).Update(context.Background(), passwordSecret, metav1.UpdateOptions{})
 		if err != nil {
-			return errors.Wrap(err, "update password secret")
+			return fmt.Errorf("update password secret %w", err)
 		}
 	}
 

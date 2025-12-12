@@ -8,7 +8,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/pkg/errors"
 	devpodhttp "github.com/skevetter/devpod/pkg/http"
 	"github.com/spf13/cobra"
 )
@@ -75,7 +74,7 @@ func (cmd *RequestCmd) Run(ctx context.Context, args []string) error {
 
 	_, err = io.Copy(os.Stdout, resp.Body)
 	if err != nil {
-		return errors.Wrap(err, "read response")
+		return fmt.Errorf("read response %w", err)
 	}
 
 	return nil

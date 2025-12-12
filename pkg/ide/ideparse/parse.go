@@ -8,7 +8,6 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/skevetter/devpod/pkg/command"
 	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/ide"
@@ -255,7 +254,7 @@ func RefreshIDEOptions(devPodConfig *config.Config, workspace *provider.Workspac
 	// get user options
 	values, err := ParseOptions(options, ideOptions)
 	if err != nil {
-		return nil, errors.Wrap(err, "parse options")
+		return nil, fmt.Errorf("parse options %w", err)
 	}
 	maps.Copy(retValues, values)
 
@@ -265,7 +264,7 @@ func RefreshIDEOptions(devPodConfig *config.Config, workspace *provider.Workspac
 		workspace.IDE.Options = retValues
 		err = provider.SaveWorkspaceConfig(workspace)
 		if err != nil {
-			return nil, errors.Wrap(err, "save workspace")
+			return nil, fmt.Errorf("save workspace %w", err)
 		}
 	}
 

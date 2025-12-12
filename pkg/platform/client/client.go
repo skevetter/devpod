@@ -127,7 +127,7 @@ type client struct {
 func (c *client) RefreshSelf(ctx context.Context) error {
 	managementClient, err := c.Management()
 	if err != nil {
-		return fmt.Errorf("create mangement client: %w", err)
+		return fmt.Errorf("create mangement client %w", err)
 	}
 
 	c.self, err = managementClient.Loft().ManagementV1().Selves().Create(ctx, &managementv1.Self{}, metav1.CreateOptions{})
@@ -153,18 +153,18 @@ func (c *client) Self() *managementv1.Self {
 func (c *client) Logout(ctx context.Context) error {
 	managementClient, err := c.Management()
 	if err != nil {
-		return fmt.Errorf("create management client: %w", err)
+		return fmt.Errorf("create management client %w", err)
 	}
 
 	self, err := managementClient.Loft().ManagementV1().Selves().Create(ctx, &managementv1.Self{}, metav1.CreateOptions{})
 	if err != nil {
-		return fmt.Errorf("get self: %w", err)
+		return fmt.Errorf("get self %w", err)
 	}
 
 	if self.Status.AccessKey != "" && self.Status.AccessKeyType == storagev1.AccessKeyTypeLogin {
 		err = managementClient.Loft().ManagementV1().OwnedAccessKeys().Delete(ctx, self.Status.AccessKey, metav1.DeleteOptions{})
 		if err != nil {
-			return fmt.Errorf("delete access key: %w", err)
+			return fmt.Errorf("delete access key %w", err)
 		}
 	}
 
@@ -276,7 +276,7 @@ func (c *client) Version() (*auth.Version, error) {
 	version := &auth.Version{}
 	err = json.Unmarshal(raw, version)
 	if err != nil {
-		return nil, perrors.Wrap(err, "parse version response")
+		return nil, fmt.Errorf("parse version response %w", err)
 	}
 
 	return version, nil
@@ -360,7 +360,7 @@ func (c *client) LoginWithAccessKey(host, accessKey string, insecure bool, force
 	// verify the connection works
 	managementClient, err := c.Management()
 	if err != nil {
-		return perrors.Wrap(err, "create management client")
+		return fmt.Errorf("create management client %w", err)
 	}
 
 	// try to get self
@@ -391,7 +391,7 @@ func VerifyVersion(baseClient Client) error {
 
 	backendMajor, err := strconv.Atoi(v.Major)
 	if err != nil {
-		return perrors.Wrap(err, "parse major version string")
+		return fmt.Errorf("parse major version string %w", err)
 	}
 
 	cliVersionStr := version.GetVersion()

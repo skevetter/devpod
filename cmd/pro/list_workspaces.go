@@ -68,7 +68,7 @@ func (cmd *ListWorkspacesCmd) Run(ctx context.Context, devPodConfig *config.Conf
 		nil,
 		cmd.Log)
 	if err != nil {
-		return fmt.Errorf("list workspaces: %w", err)
+		return fmt.Errorf("list workspaces %w", err)
 	}
 
 	fmt.Println(buf.String())

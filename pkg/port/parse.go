@@ -25,12 +25,12 @@ func ParsePortSpec(port string) (Mapping, error) {
 
 	hostAddress, err := toAddress(hostIP, hostPort)
 	if err != nil {
-		return Mapping{}, fmt.Errorf("parse host address: %w", err)
+		return Mapping{}, fmt.Errorf("parse host address %w", err)
 	}
 
 	containerAddress, err := toAddress(containerIP, containerPort)
 	if err != nil {
-		return Mapping{}, fmt.Errorf("parse container address: %w", err)
+		return Mapping{}, fmt.Errorf("parse container address %w", err)
 	}
 
 	return Mapping{

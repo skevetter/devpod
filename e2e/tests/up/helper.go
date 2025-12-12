@@ -66,7 +66,7 @@ func verifyLogStream(reader io.Reader) error {
 		if line := scan.Bytes(); len(line) > 0 {
 			lineObject := &log.Line{}
 			if err := json.Unmarshal(line, lineObject); err != nil {
-				return fmt.Errorf("error reading line %s: %w", string(line), err)
+				return fmt.Errorf("error reading line %s %w", string(line), err)
 			}
 		}
 	}

@@ -79,7 +79,7 @@ func AddProviderRaw(devPodConfig *config.Config, providerName string, providerSo
 	}
 	err = config.SaveConfig(devPodConfig)
 	if err != nil {
-		return nil, errors.Wrap(err, "save config")
+		return nil, fmt.Errorf("save config %w", err)
 	}
 
 	return providerConfig, nil
@@ -120,7 +120,7 @@ func ResolveProviderSource(devPodConfig *config.Config, providerName string, log
 
 	providerConfig, err := FindProvider(devPodConfig, providerName, log)
 	if err != nil {
-		return "", errors.Wrap(err, "find provider")
+		return "", fmt.Errorf("find provider %w", err)
 	}
 
 	if providerConfig.Config.Source.Internal {
@@ -185,7 +185,7 @@ func ResolveProvider(providerSource string, log log.Logger) ([]byte, *providerpk
 	// check if github
 	out, source, err := DownloadProviderGithub(providerSource, log)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "download github")
+		return nil, nil, fmt.Errorf("download github %w", err)
 	} else if len(out) > 0 {
 		return out, source, nil
 	}
@@ -223,7 +223,7 @@ func DownloadProviderGithub(originalPath string, log log.Logger) ([]byte, *provi
 	// download
 	body, err := download.File(requestURL, log)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "download")
+		return nil, nil, fmt.Errorf("download %w", err)
 	}
 	defer func() { _ = body.Close() }()
 
@@ -243,7 +243,7 @@ func downloadProvider(url string) ([]byte, error) {
 	// initiate download
 	resp, err := devpodhttp.GetHTTPClient().Get(url)
 	if err != nil {
-		return nil, errors.Wrap(err, "download binary")
+		return nil, fmt.Errorf("download binary %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 
@@ -278,13 +278,13 @@ func updateProvider(devPodConfig *config.Config, providerName string, raw []byte
 
 	binariesDir, err := providerpkg.GetProviderBinariesDir(devPodConfig.DefaultContext, providerConfig.Name)
 	if err != nil {
-		return nil, errors.Wrap(err, "get binaries dir")
+		return nil, fmt.Errorf("get binaries dir %w", err)
 	}
 
 	_, err = binaries.DownloadBinaries(providerConfig.Binaries, binariesDir, log)
 	if err != nil {
 		_ = os.RemoveAll(binariesDir)
-		return nil, errors.Wrap(err, "download binaries")
+		return nil, fmt.Errorf("download binaries %w", err)
 	}
 
 	err = providerpkg.SaveProviderConfig(devPodConfig.DefaultContext, providerConfig)
@@ -324,13 +324,13 @@ func installProvider(devPodConfig *config.Config, providerConfig *providerpkg.Pr
 
 	binariesDir, err := providerpkg.GetProviderBinariesDir(devPodConfig.DefaultContext, providerConfig.Name)
 	if err != nil {
-		return nil, errors.Wrap(err, "get binaries dir")
+		return nil, fmt.Errorf("get binaries dir %w", err)
 	}
 
 	_, err = binaries.DownloadBinaries(providerConfig.Binaries, binariesDir, log)
 	if err != nil {
 		_ = os.RemoveAll(providerDir)
-		return nil, errors.Wrap(err, "download binaries")
+		return nil, fmt.Errorf("download binaries %w", err)
 	}
 
 	err = providerpkg.SaveProviderConfig(devPodConfig.DefaultContext, providerConfig)
@@ -406,12 +406,12 @@ func LoadAllProviders(devPodConfig *config.Config, log log.Logger) (map[string]*
 func ProviderFromHost(ctx context.Context, devPodConfig *config.Config, proHost string, log log.Logger) (*providerpkg.ProviderConfig, error) {
 	proInstanceConfig, err := providerpkg.LoadProInstanceConfig(devPodConfig.DefaultContext, proHost)
 	if err != nil {
-		return nil, fmt.Errorf("load pro instance %s: %w", proHost, err)
+		return nil, fmt.Errorf("load pro instance %s %w", proHost, err)
 	}
 
 	provider, err := FindProvider(devPodConfig, proInstanceConfig.Provider, log)
 	if err != nil {
-		return nil, fmt.Errorf("find provider: %w", err)
+		return nil, fmt.Errorf("find provider %w", err)
 	} else if !provider.Config.IsProxyProvider() && !provider.Config.IsDaemonProvider() {
 		return nil, fmt.Errorf("provider is not a pro provider")
 	}

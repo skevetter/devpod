@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/loft-sh/log/hash"
-	"github.com/pkg/errors"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	"github.com/skevetter/devpod/pkg/devcontainer/feature"
 	"github.com/skevetter/devpod/pkg/devcontainer/metadata"
@@ -149,7 +148,7 @@ func RewriteDockerfile(
 		finalDockerfilePath := filepath.Join(featureBuildInfo.FeaturesFolder, "Dockerfile-with-features")
 		err := os.WriteFile(finalDockerfilePath, []byte(finalDockerfileContent), 0600)
 		if err != nil {
-			return "", errors.Wrap(err, "write Dockerfile with features")
+			return "", fmt.Errorf("write Dockerfile with features %w", err)
 		}
 
 		return finalDockerfilePath, nil

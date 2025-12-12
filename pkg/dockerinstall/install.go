@@ -28,7 +28,7 @@ func Install(stdout, stderr io.Writer) (string, error) {
 		stderr:      stderr,
 	}
 	if err := doInstall(opts); err != nil {
-		return "", fmt.Errorf("docker installation failed: %w", err)
+		return "", fmt.Errorf("docker installation failed %w", err)
 	}
 
 	commonPaths := []string{"/usr/bin/docker", "/usr/local/bin/docker", "/bin/docker"}
@@ -712,7 +712,7 @@ func runShellCmdWithRetry(shC, cmdStr string, opts *installOptions, timeout time
 
 		if time.Since(start) >= timeout {
 			fprintln(opts.stdout, fmt.Sprintf("timeout reached after %v", time.Since(start)))
-			return fmt.Errorf("timeout waiting for dpkg lock after %v: %w", timeout, err)
+			return fmt.Errorf("timeout waiting for dpkg lock after %v %w", timeout, err)
 		}
 
 		remaining := timeout - time.Since(start)

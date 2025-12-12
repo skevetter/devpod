@@ -29,7 +29,7 @@ func GetLoftConfig(context, provider string, port int, logger log.Logger) (*clie
 	}
 	err = json.Unmarshal(out, configResponse)
 	if err != nil {
-		return nil, fmt.Errorf("decode loft config %s: %w", string(out), err)
+		return nil, fmt.Errorf("decode loft config %s %w", string(out), err)
 	}
 
 	return configResponse.LoftConfig, nil

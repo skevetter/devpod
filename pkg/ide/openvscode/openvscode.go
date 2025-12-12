@@ -9,7 +9,6 @@ import (
 	"strconv"
 
 	"github.com/loft-sh/log"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/command"
 	"github.com/skevetter/devpod/pkg/config"
@@ -103,7 +102,7 @@ func (o *OpenVSCodeServer) InstallExtensions() error {
 	// install extensions
 	err := o.installExtensions()
 	if err != nil {
-		return errors.Wrap(err, "install extensions")
+		return fmt.Errorf("install extensions %w", err)
 	}
 
 	return nil
@@ -135,21 +134,21 @@ func (o *OpenVSCodeServer) Install() error {
 
 	err = extract.Extract(resp.Body, location, extract.StripLevels(1))
 	if err != nil {
-		return errors.Wrap(err, "extract vscode")
+		return fmt.Errorf("extract vscode %w", err)
 	}
 
 	// chown location
 	if o.userName != "" {
 		err = copy2.ChownR(location, o.userName)
 		if err != nil {
-			return errors.Wrap(err, "chown")
+			return fmt.Errorf("chown %w", err)
 		}
 	}
 
 	// paste settings
 	err = o.installSettings()
 	if err != nil {
-		return errors.Wrap(err, "install settings")
+		return fmt.Errorf("install settings %w", err)
 	}
 
 	return nil
@@ -256,7 +255,7 @@ func (o *OpenVSCodeServer) Start() error {
 	binaryPath := filepath.Join(location, "bin", "openvscode-server")
 	_, err = os.Stat(binaryPath)
 	if err != nil {
-		return errors.Wrap(err, "find binary")
+		return fmt.Errorf("find binary %w", err)
 	}
 
 	return single.Single("openvscode.pid", func() (*exec.Cmd, error) {

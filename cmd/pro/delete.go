@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/loft-sh/log"
-	"github.com/pkg/errors"
 	proflags "github.com/skevetter/devpod/cmd/pro/flags"
 	providercmd "github.com/skevetter/devpod/cmd/provider"
 	"github.com/skevetter/devpod/pkg/client/clientimplementation"
@@ -63,12 +62,12 @@ func (cmd *DeleteCmd) Run(ctx context.Context, args []string) error {
 			return nil
 		}
 
-		return fmt.Errorf("load pro instance %s: %w", proInstanceName, err)
+		return fmt.Errorf("load pro instance %s %w", proInstanceName, err)
 	}
 
 	providerConfig, err := provider.LoadProviderConfig(devPodConfig.DefaultContext, proInstanceConfig.Provider)
 	if err != nil {
-		return fmt.Errorf("load provider: %w", err)
+		return fmt.Errorf("load provider %w", err)
 	}
 
 	// stop daemon and clean up local workspaces
@@ -107,7 +106,7 @@ func (cmd *DeleteCmd) Run(ctx context.Context, args []string) error {
 
 	err = os.RemoveAll(proInstanceDir)
 	if err != nil {
-		return errors.Wrap(err, "delete pro instance dir")
+		return fmt.Errorf("delete pro instance dir %w", err)
 	}
 
 	log.Default.Donef("Successfully deleted pro instance '%s'", proInstanceName)

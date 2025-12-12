@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/loft-sh/log"
-	"github.com/pkg/errors"
 	client2 "github.com/skevetter/devpod/pkg/client"
 	"github.com/skevetter/devpod/pkg/client/clientimplementation"
 	"github.com/skevetter/devpod/pkg/config"
@@ -105,7 +104,7 @@ func deleteSingleMachine(ctx context.Context, client client2.BaseWorkspaceClient
 	// try to find other workspace with same machine
 	workspaces, err := List(ctx, devPodConfig, false, platform.SelfOwnerFilter, log)
 	if err != nil {
-		return false, errors.Wrap(err, "list workspaces")
+		return false, fmt.Errorf("list workspaces %w", err)
 	}
 
 	// loop workspaces
@@ -125,13 +124,13 @@ func deleteSingleMachine(ctx context.Context, client client2.BaseWorkspaceClient
 	// if we haven't found another workspace on this machine, delete the whole machine
 	machineClient, err := GetMachine(devPodConfig, []string{singleMachineName}, log)
 	if err != nil {
-		return false, errors.Wrap(err, "get machine")
+		return false, fmt.Errorf("get machine %w", err)
 	}
 
 	// delete the machine
 	err = machineClient.Delete(ctx, deleteOptions)
 	if err != nil {
-		return false, errors.Wrap(err, "delete machine")
+		return false, fmt.Errorf("delete machine %w", err)
 	}
 
 	// delete workspace folder

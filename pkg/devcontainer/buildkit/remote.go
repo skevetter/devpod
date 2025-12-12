@@ -69,7 +69,7 @@ func BuildRemote(
 	// temporarily write certs to disk because buildkit only accepts paths
 	tmpDir, caPath, keyPath, certPath, err := ensureCertPaths(options.CLIOptions.Platform.Build)
 	if err != nil {
-		return nil, fmt.Errorf("ensure certificates: %w", err)
+		return nil, fmt.Errorf("ensure certificates %w", err)
 	}
 	defer func() {
 		_ = os.RemoveAll(tmpDir)
@@ -84,25 +84,25 @@ func BuildRemote(
 		client.WithCredentials(certPath, keyPath),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("get client: %w", err)
+		return nil, fmt.Errorf("get client %w", err)
 	}
 	defer func() { _ = c.Close() }()
 
 	info, err := c.Info(timeoutCtx)
 	if err != nil {
-		return nil, fmt.Errorf("get remote builder info: %w", err)
+		return nil, fmt.Errorf("get remote builder info %w", err)
 	}
 
 	imageName := options.CLIOptions.Platform.Build.Repository + "/" + build.GetImageName(localWorkspaceFolder, prebuildHash)
 	ref, err := name.ParseReference(imageName)
 	if err != nil {
-		return nil, fmt.Errorf("unable to resolve registry %s and image %s: %w",
+		return nil, fmt.Errorf("unable to resolve registry %s and image %s %w",
 			options.CLIOptions.Platform.Build.Repository,
 			build.GetImageName(localWorkspaceFolder, prebuildHash), err)
 	}
 	keychain, err := image.GetKeychain(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("get docker auth keychain: %w", err)
+		return nil, fmt.Errorf("get docker auth keychain %w", err)
 	}
 	// we can return early if we find an existing image with the exact configuration in the repository
 	imageDetails, err := getImageDetails(ctx, ref, targetArch, keychain)
@@ -121,17 +121,17 @@ func BuildRemote(
 	// check push permissions early
 	err = remote.CheckPushPermission(ref, keychain, http.DefaultTransport)
 	if err != nil {
-		return nil, fmt.Errorf("pushing %s is not allowed: %w", ref, err)
+		return nil, fmt.Errorf("pushing %s is not allowed %w", ref, err)
 	}
 
 	// resolve credentials for registry
 	auth, err := keychain.Resolve(ref.Context())
 	if err != nil {
-		return nil, fmt.Errorf("get authentication for %s: %w", ref.Context().String(), err)
+		return nil, fmt.Errorf("get authentication for %s %w", ref.Context().String(), err)
 	}
 	authConfig, err := auth.Authorization()
 	if err != nil {
-		return nil, fmt.Errorf("get auth config for %s: %w", ref.Context().String(), err)
+		return nil, fmt.Errorf("get auth config for %s %w", ref.Context().String(), err)
 	}
 
 	registry := ref.Context().RegistryStr()
@@ -153,7 +153,7 @@ func BuildRemote(
 
 	buildOptions, err := build.NewOptions(dockerfilePath, dockerfileContent, parsedConfig, extendedBuildInfo, imageName, options, prebuildHash)
 	if err != nil {
-		return nil, fmt.Errorf("create build buildOptions: %w", err)
+		return nil, fmt.Errorf("create build buildOptions %w", err)
 	}
 
 	// cache from
@@ -170,12 +170,12 @@ func BuildRemote(
 	localMounts := map[string]fsutil.FS{}
 	dockerfileMount, err := fsutil.NewFS(dockerfileDir)
 	if err != nil {
-		return nil, fmt.Errorf("create local dockerfile mount: %w", err)
+		return nil, fmt.Errorf("create local dockerfile mount %w", err)
 	}
 	localMounts["dockerfile"] = dockerfileMount
 	contextMount, err := fsutil.NewFS(buildOptions.Context)
 	if err != nil {
-		return nil, fmt.Errorf("create local context mount: %w", err)
+		return nil, fmt.Errorf("create local context mount %w", err)
 	}
 	localMounts["context"] = contextMount
 
@@ -208,7 +208,7 @@ func BuildRemote(
 	for k, v := range buildOptions.Contexts {
 		st, err := os.Stat(v)
 		if err != nil {
-			return nil, fmt.Errorf("get build context %v: %w", k, err)
+			return nil, fmt.Errorf("get build context %v %w", k, err)
 		}
 		if !st.IsDir() {
 			return nil, fmt.Errorf("build context '%s' is not a directory", v)
@@ -220,7 +220,7 @@ func BuildRemote(
 
 		solveOptions.LocalMounts[localName], err = fsutil.NewFS(v)
 		if err != nil {
-			return nil, fmt.Errorf("create local mount for %s at %s: %w", localName, v, err)
+			return nil, fmt.Errorf("create local mount for %s at %s %w", localName, v, err)
 		}
 
 		solveOptions.FrontendAttrs["context:"+k] = "local:" + localName
@@ -265,7 +265,7 @@ func BuildRemote(
 
 	imageDetails, err = getImageDetails(ctx, ref, targetArch, keychain)
 	if err != nil {
-		return nil, fmt.Errorf("get image details: %w", err)
+		return nil, fmt.Errorf("get image details %w", err)
 	}
 	return &config.BuildInfo{
 		ImageDetails:  imageDetails,
@@ -287,7 +287,7 @@ func getImageDetails(ctx context.Context, ref name.Reference, targetArch string,
 	}
 	imageConfig, err := remoteImage.ConfigFile()
 	if err != nil {
-		return nil, fmt.Errorf("get image config file: %w", err)
+		return nil, fmt.Errorf("get image config file %w", err)
 	}
 
 	imageDetails := &config.ImageDetails{
@@ -307,40 +307,40 @@ func getImageDetails(ctx context.Context, ref name.Reference, targetArch string,
 func ensureCertPaths(buildOpts *devpod.PlatformBuildOptions) (parentDir string, caPath string, keyPath string, certPath string, err error) {
 	parentDir, err = os.MkdirTemp("", "build-certs-*")
 	if err != nil {
-		return parentDir, caPath, keyPath, caPath, fmt.Errorf("create temp dir: %w", err)
+		return parentDir, caPath, keyPath, caPath, fmt.Errorf("create temp dir %w", err)
 	}
 
 	// write CA
 	caPath = filepath.Join(parentDir, "ca.pem")
 	caBytes, err := base64.StdEncoding.DecodeString(buildOpts.CertCA)
 	if err != nil {
-		return parentDir, caPath, keyPath, caPath, fmt.Errorf("decode CA: %w", err)
+		return parentDir, caPath, keyPath, caPath, fmt.Errorf("decode CA %w", err)
 	}
 	err = os.WriteFile(caPath, caBytes, 0o700)
 	if err != nil {
-		return parentDir, caPath, keyPath, caPath, fmt.Errorf("write CA file: %w", err)
+		return parentDir, caPath, keyPath, caPath, fmt.Errorf("write CA file %w", err)
 	}
 
 	// write key
 	keyPath = filepath.Join(parentDir, "key.pem")
 	keyBytes, err := base64.StdEncoding.DecodeString(buildOpts.CertKey)
 	if err != nil {
-		return parentDir, caPath, keyPath, caPath, fmt.Errorf("decode private key: %w", err)
+		return parentDir, caPath, keyPath, caPath, fmt.Errorf("decode private key %w", err)
 	}
 	err = os.WriteFile(keyPath, keyBytes, 0o700)
 	if err != nil {
-		return parentDir, caPath, keyPath, caPath, fmt.Errorf("write private key file: %w", err)
+		return parentDir, caPath, keyPath, caPath, fmt.Errorf("write private key file %w", err)
 	}
 
 	// write cert
 	certPath = filepath.Join(parentDir, "cert.pem")
 	certBytes, err := base64.StdEncoding.DecodeString(buildOpts.Cert)
 	if err != nil {
-		return parentDir, caPath, keyPath, caPath, fmt.Errorf("decode cert: %w", err)
+		return parentDir, caPath, keyPath, caPath, fmt.Errorf("decode cert %w", err)
 	}
 	err = os.WriteFile(certPath, certBytes, 0o700)
 	if err != nil {
-		return parentDir, caPath, keyPath, caPath, fmt.Errorf("write cert file: %w", err)
+		return parentDir, caPath, keyPath, caPath, fmt.Errorf("write cert file %w", err)
 	}
 
 	return parentDir, caPath, keyPath, caPath, nil

@@ -168,7 +168,7 @@ func (s *WorkspaceServer) setupControlURL(ctx context.Context) (*url.URL, error)
 		Host:   s.config.PlatformHost,
 	}
 	if err := CheckDerpConnection(ctx, baseURL); err != nil {
-		return nil, fmt.Errorf("failed to verify DERP connection: %w", err)
+		return nil, fmt.Errorf("failed to verify DERP connection %w", err)
 	}
 	return baseURL, nil
 }
@@ -215,7 +215,7 @@ func (s *WorkspaceServer) startListeners(ctx context.Context, projectName, works
 	s.log.Infof("Starting HTTP reverse proxy listener on TSNet port %s", TSPortForwardPort)
 	wsListener, err := s.createListener(fmt.Sprintf(":%s", TSPortForwardPort))
 	if err != nil {
-		return fmt.Errorf("failed to create listener on TS port %s: %w", TSPortForwardPort, err)
+		return fmt.Errorf("failed to create listener on TS port %s %w", TSPortForwardPort, err)
 	}
 
 	// Create and start the platform HTTP git credentials listener
@@ -224,7 +224,7 @@ func (s *WorkspaceServer) startListeners(ctx context.Context, projectName, works
 	_ = os.Remove(runnerProxySocket)
 	runnerProxyListener, err := net.Listen("unix", runnerProxySocket)
 	if err != nil {
-		return fmt.Errorf("failed to create listener on TS port %s: %w", TSPortForwardPort, err)
+		return fmt.Errorf("failed to create listener on TS port %s %w", TSPortForwardPort, err)
 	}
 
 	// make sure all users can access the socket
@@ -276,7 +276,7 @@ func (s *WorkspaceServer) startListeners(ctx context.Context, projectName, works
 func (s *WorkspaceServer) createListener(addr string) (net.Listener, error) {
 	l, err := s.tsServer.Listen("tcp", addr)
 	if err != nil {
-		return nil, fmt.Errorf("failed to listen on %s: %w", addr, err)
+		return nil, fmt.Errorf("failed to listen on %s %w", addr, err)
 	}
 
 	// create a new tracked listener to track the number of connections
@@ -479,20 +479,20 @@ func (s *WorkspaceServer) sendHeartbeat(ctx context.Context, client *http.Client
 
 	discoveredRunner, err := s.discoverRunner(ctx, lc)
 	if err != nil {
-		return fmt.Errorf("failed to discover runner: %w", err)
+		return fmt.Errorf("failed to discover runner %w", err)
 	}
 
 	heartbeatURL := fmt.Sprintf("http://%s.ts.loft/devpod/%s/%s/heartbeat", discoveredRunner, projectName, workspaceName)
 	s.log.Infof("Sending heartbeat to %s, because there are %d active connections", heartbeatURL, connections)
 	req, err := http.NewRequestWithContext(ctx, "GET", heartbeatURL, nil)
 	if err != nil {
-		return fmt.Errorf("failed to create request for %s: %w", heartbeatURL, err)
+		return fmt.Errorf("failed to create request for %s %w", heartbeatURL, err)
 	}
 
 	req.Header.Set("Authorization", "Bearer "+s.config.AccessKey)
 	resp, err := client.Do(req)
 	if err != nil {
-		return fmt.Errorf("request to %s failed: %w", heartbeatURL, err)
+		return fmt.Errorf("request to %s failed %w", heartbeatURL, err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 
@@ -507,7 +507,7 @@ func (s *WorkspaceServer) sendHeartbeat(ctx context.Context, client *http.Client
 func (s *WorkspaceServer) discoverRunner(ctx context.Context, lc *local.Client) (string, error) {
 	status, err := lc.Status(ctx)
 	if err != nil {
-		return "", fmt.Errorf("failed to get status: %w", err)
+		return "", fmt.Errorf("failed to get status %w", err)
 	}
 
 	var runner string

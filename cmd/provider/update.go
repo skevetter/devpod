@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/loft-sh/log"
-	"github.com/pkg/errors"
 	"github.com/skevetter/devpod/cmd/flags"
 	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/workspace"
@@ -64,7 +63,7 @@ func (cmd *UpdateCmd) Run(ctx context.Context, devPodConfig *config.Config, args
 		err = ConfigureProvider(ctx, providerConfig, devPodConfig.DefaultContext, cmd.Options, false, false, false, nil, log.Default)
 		if err != nil {
 			log.Default.Errorf("Error configuring provider, please retry with 'devpod provider use %s --reconfigure'", providerConfig.Name)
-			return errors.Wrap(err, "configure provider")
+			return fmt.Errorf("configure provider %w", err)
 		}
 
 		return nil

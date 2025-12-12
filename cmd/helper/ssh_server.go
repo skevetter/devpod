@@ -8,7 +8,6 @@ import (
 
 	"github.com/loft-sh/log"
 	"github.com/loft-sh/ssh"
-	"github.com/pkg/errors"
 	"github.com/skevetter/devpod/cmd/flags"
 	"github.com/skevetter/devpod/pkg/agent"
 	helperssh "github.com/skevetter/devpod/pkg/ssh/server"
@@ -63,7 +62,7 @@ func (cmd *SSHServerCmd) Run(_ *cobra.Command, _ []string) error {
 		// parse token
 		t, err := token.ParseToken(cmd.Token)
 		if err != nil {
-			return errors.Wrap(err, "parse token")
+			return fmt.Errorf("parse token %w", err)
 		}
 
 		if t.AuthorizedKeys != "" {
@@ -75,7 +74,7 @@ func (cmd *SSHServerCmd) Run(_ *cobra.Command, _ []string) error {
 			for len(keyBytes) > 0 {
 				key, _, _, rest, err := ssh.ParseAuthorizedKey(keyBytes)
 				if err != nil {
-					return errors.Wrap(err, "parse authorized key")
+					return fmt.Errorf("parse authorized key %w", err)
 				}
 
 				keys = append(keys, key)
@@ -128,7 +127,7 @@ func (cmd *SSHServerCmd) Run(_ *cobra.Command, _ []string) error {
 	available, err := port.IsAvailable(cmd.Address)
 	if !available {
 		if err != nil {
-			return fmt.Errorf("address %s already in use: %w", cmd.Address, err)
+			return fmt.Errorf("address %s already in use %w", cmd.Address, err)
 		}
 
 		log.Default.ErrorStreamOnly().Infof("address %s already in use", cmd.Address)

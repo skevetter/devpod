@@ -14,7 +14,6 @@ import (
 	"strings"
 
 	"github.com/loft-sh/log"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/compose"
 	config2 "github.com/skevetter/devpod/pkg/config"
@@ -106,7 +105,7 @@ func (d *dockerDriver) PushDevContainer(ctx context.Context, image string) error
 	d.Log.Debugf("Running docker command: %s %s", d.Docker.DockerCommand, strings.Join(args, " "))
 	err := d.Docker.Run(ctx, args, nil, writer, writer)
 	if err != nil {
-		return errors.Wrap(err, "push image")
+		return fmt.Errorf("push image %w", err)
 	}
 
 	return nil
@@ -128,7 +127,7 @@ func (d *dockerDriver) TagDevContainer(ctx context.Context, image, tag string) e
 	d.Log.Debugf("Running docker command: %s %s", d.Docker.DockerCommand, strings.Join(args, " "))
 	err := d.Docker.Run(ctx, args, nil, writer, writer)
 	if err != nil {
-		return errors.Wrap(err, "tag image")
+		return fmt.Errorf("tag image %w", err)
 	}
 
 	return nil

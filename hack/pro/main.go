@@ -51,7 +51,7 @@ func main() {
 				continue
 			}
 
-			panic(fmt.Errorf("generate checksum for %s: %w", k, err))
+			panic(fmt.Errorf("generate checksum for %s %w", k, err))
 		}
 
 		replaced = strings.ReplaceAll(replaced, v, checksum)

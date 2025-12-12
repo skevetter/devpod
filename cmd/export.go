@@ -79,21 +79,21 @@ func exportWorkspace(devPodConfig *config.Config, workspaceConfig *provider.Work
 	// export workspace
 	retConfig.Workspace, err = provider.ExportWorkspace(workspaceConfig.Context, workspaceConfig.ID)
 	if err != nil {
-		return nil, fmt.Errorf("export workspace config: %w", err)
+		return nil, fmt.Errorf("export workspace config %w", err)
 	}
 
 	// has machine?
 	if workspaceConfig.Machine.ID != "" {
 		retConfig.Machine, err = provider.ExportMachine(workspaceConfig.Context, workspaceConfig.Machine.ID)
 		if err != nil {
-			return nil, fmt.Errorf("export machine config: %w", err)
+			return nil, fmt.Errorf("export machine config %w", err)
 		}
 	}
 
 	// export provider
 	retConfig.Provider, err = provider.ExportProvider(devPodConfig, workspaceConfig.Context, workspaceConfig.Provider.Name)
 	if err != nil {
-		return nil, fmt.Errorf("export provider config: %w", err)
+		return nil, fmt.Errorf("export provider config %w", err)
 	}
 
 	return retConfig, nil

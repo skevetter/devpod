@@ -102,7 +102,7 @@ func (cmd *ClusterCmd) Run(ctx context.Context, args []string) error {
 
 	loftVersion, err := baseClient.Version()
 	if err != nil {
-		return fmt.Errorf("get pro version: %w", err)
+		return fmt.Errorf("get pro version %w", err)
 	}
 
 	user, team := getUserOrTeam(ctx, baseClient)
@@ -124,12 +124,12 @@ func (cmd *ClusterCmd) Run(ctx context.Context, args []string) error {
 		},
 	}, metav1.CreateOptions{})
 	if err != nil && !kerrors.IsAlreadyExists(err) {
-		return fmt.Errorf("create cluster: %w", err)
+		return fmt.Errorf("create cluster %w", err)
 	}
 
 	accessKey, err := managementClient.Loft().ManagementV1().Clusters().GetAccessKey(ctx, clusterName, metav1.GetOptions{})
 	if err != nil {
-		return fmt.Errorf("get cluster access key: %w", err)
+		return fmt.Errorf("get cluster access key %w", err)
 	}
 
 	namespace := cmd.Namespace
@@ -214,7 +214,7 @@ func (cmd *ClusterCmd) Run(ctx context.Context, args []string) error {
 
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		return fmt.Errorf("create kube client: %w", err)
+		return fmt.Errorf("create kube client %w", err)
 	}
 
 	errChan := make(chan error)
@@ -231,7 +231,7 @@ func (cmd *ClusterCmd) Run(ctx context.Context, args []string) error {
 
 		err = helmCmd.Run()
 		if err != nil {
-			errChan <- fmt.Errorf("failed to install chart: %w", err)
+			errChan <- fmt.Errorf("failed to install chart %w", err)
 		}
 
 		close(errChan)
@@ -239,7 +239,7 @@ func (cmd *ClusterCmd) Run(ctx context.Context, args []string) error {
 
 	_, err = platform.WaitForPodReady(ctx, clientset, namespace, cmd.Log)
 	if err = errors.Join(err, <-errChan); err != nil {
-		return fmt.Errorf("wait for pod: %w", err)
+		return fmt.Errorf("wait for pod %w", err)
 	}
 
 	if cmd.Wait {
@@ -253,7 +253,7 @@ func (cmd *ClusterCmd) Run(ctx context.Context, args []string) error {
 			return clusterInstance != nil && clusterInstance.Status.Phase == storagev1.ClusterStatusPhaseInitialized, nil
 		})
 		if waitErr != nil {
-			return fmt.Errorf("get cluster: %w", waitErr)
+			return fmt.Errorf("get cluster %w", waitErr)
 		}
 	}
 
@@ -269,7 +269,7 @@ func ensureHost(devPodConfig *config.Config, host string, log log.Logger) (strin
 
 	proInstances, err := workspace.ListProInstances(devPodConfig, log)
 	if err != nil {
-		return "", fmt.Errorf("list pro instances: %w", err)
+		return "", fmt.Errorf("list pro instances %w", err)
 	}
 	options := []string{}
 	for _, pro := range proInstances {
@@ -281,7 +281,7 @@ func ensureHost(devPodConfig *config.Config, host string, log log.Logger) (strin
 		DefaultValue: options[0],
 	})
 	if err != nil {
-		return "", fmt.Errorf("select pro instance: %w", err)
+		return "", fmt.Errorf("select pro instance %w", err)
 	}
 
 	return h, nil

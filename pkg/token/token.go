@@ -3,8 +3,8 @@ package token
 import (
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 
-	"github.com/pkg/errors"
 	"github.com/skevetter/devpod/pkg/ssh"
 )
 
@@ -17,13 +17,13 @@ func GetDevPodToken() (string, error) {
 	// get host key
 	hostKey, err := ssh.GetDevPodHostKey()
 	if err != nil {
-		return "", errors.Wrap(err, "generate host key")
+		return "", fmt.Errorf("generate host key %w", err)
 	}
 
 	// get public key
 	publicKey, err := ssh.GetDevPodPublicKey()
 	if err != nil {
-		return "", errors.Wrap(err, "generate key pair")
+		return "", fmt.Errorf("generate key pair %w", err)
 	}
 
 	return buildToken(hostKey, publicKey)

@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/loft-sh/log"
-	perrors "github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/command"
 	"github.com/skevetter/devpod/pkg/compress"
@@ -52,13 +51,13 @@ func DefaultAgentDownloadURL() string {
 func DecodeContainerWorkspaceInfo(workspaceInfoRaw string) (*provider2.ContainerWorkspaceInfo, string, error) {
 	decoded, err := compress.Decompress(workspaceInfoRaw)
 	if err != nil {
-		return nil, "", perrors.Wrap(err, "decode workspace info")
+		return nil, "", fmt.Errorf("decode workspace info %w", err)
 	}
 
 	workspaceInfo := &provider2.ContainerWorkspaceInfo{}
 	err = json.Unmarshal([]byte(decoded), workspaceInfo)
 	if err != nil {
-		return nil, "", perrors.Wrap(err, "parse workspace info")
+		return nil, "", fmt.Errorf("parse workspace info %w", err)
 	}
 
 	return workspaceInfo, decoded, nil
@@ -67,13 +66,13 @@ func DecodeContainerWorkspaceInfo(workspaceInfoRaw string) (*provider2.Container
 func DecodeWorkspaceInfo(workspaceInfoRaw string) (*provider2.AgentWorkspaceInfo, string, error) {
 	decoded, err := compress.Decompress(workspaceInfoRaw)
 	if err != nil {
-		return nil, "", perrors.Wrap(err, "decode workspace info")
+		return nil, "", fmt.Errorf("decode workspace info %w", err)
 	}
 
 	workspaceInfo := &provider2.AgentWorkspaceInfo{}
 	err = json.Unmarshal([]byte(decoded), workspaceInfo)
 	if err != nil {
-		return nil, "", perrors.Wrap(err, "parse workspace info")
+		return nil, "", fmt.Errorf("parse workspace info %w", err)
 	}
 
 	return workspaceInfo, decoded, nil
@@ -101,7 +100,7 @@ func ParseAgentWorkspaceInfo(workspaceConfigFile string) (*provider2.AgentWorksp
 	workspaceInfo := &provider2.AgentWorkspaceInfo{}
 	err = json.Unmarshal(out, workspaceInfo)
 	if err != nil {
-		return nil, perrors.Wrap(err, "parse workspace info")
+		return nil, fmt.Errorf("parse workspace info %w", err)
 	}
 
 	workspaceInfo.Origin = filepath.Dir(workspaceConfigFile)
@@ -117,7 +116,7 @@ func ReadAgentWorkspaceInfo(agentFolder, context, id string, log log.Logger) (bo
 	// check if we need to become root
 	shouldExit, err := rerunAsRoot(workspaceInfo, log)
 	if err != nil {
-		return false, nil, perrors.Wrap(err, "rerun as root")
+		return false, nil, fmt.Errorf("rerun as root %w", err)
 	} else if shouldExit {
 		return true, nil, nil
 	} else if workspaceInfo == nil {
@@ -153,7 +152,7 @@ func decodeWorkspaceInfoAndWrite(
 	// check if we need to become root
 	shouldExit, err := rerunAsRoot(workspaceInfo, log)
 	if err != nil {
-		return false, nil, fmt.Errorf("rerun as root: %w", err)
+		return false, nil, fmt.Errorf("rerun as root %w", err)
 	} else if shouldExit {
 		return true, nil, nil
 	}
@@ -174,7 +173,7 @@ func decodeWorkspaceInfoAndWrite(
 			log.Infof("Delete old workspace '%s'", oldWorkspaceInfo.Workspace.ID)
 			err = deleteWorkspace(oldWorkspaceInfo, log)
 			if err != nil {
-				return false, nil, perrors.Wrap(err, "delete old workspace")
+				return false, nil, fmt.Errorf("delete old workspace %w", err)
 			}
 
 			// recreate workspace folder again
@@ -250,7 +249,7 @@ func writeWorkspaceInfo(file string, workspaceInfo *provider2.AgentWorkspaceInfo
 	// write workspace config
 	err = os.WriteFile(file, encoded, 0600)
 	if err != nil {
-		return fmt.Errorf("write workspace config file: %w", err)
+		return fmt.Errorf("write workspace config file %w", err)
 	}
 
 	return nil
@@ -374,7 +373,7 @@ func dockerReachable(dockerOverride string, envs map[string]string) (bool, error
 			}
 		}
 
-		return false, perrors.Wrapf(err, "%s ps", docker)
+		return false, fmt.Errorf("%s ps %w", docker, err)
 	}
 
 	return false, nil

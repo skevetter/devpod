@@ -7,7 +7,6 @@ import (
 	"sync"
 
 	"github.com/loft-sh/log"
-	"github.com/pkg/errors"
 	versionpkg "github.com/skevetter/devpod/pkg/version"
 
 	"github.com/blang/semver"
@@ -87,12 +86,12 @@ func Upgrade(flagVersion string, log log.Logger) error {
 		Filters: []string{"devpod"},
 	})
 	if err != nil {
-		return fmt.Errorf("failed to initialize updater: %w", err)
+		return fmt.Errorf("failed to initialize updater %w", err)
 	}
 	if flagVersion != "" {
 		release, found, err := updater.DetectVersion(githubSlug, flagVersion)
 		if err != nil {
-			return errors.Wrap(err, "find version")
+			return fmt.Errorf("find version %w", err)
 		} else if !found {
 			return fmt.Errorf("devpod version %s couldn't be found", flagVersion)
 		}

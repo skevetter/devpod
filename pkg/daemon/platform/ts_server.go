@@ -24,19 +24,19 @@ func newTSServer(ctx context.Context, host, accessKey, userName, rootDir string,
 		Host:   ts.RemoveProtocol(host),
 	}
 	if err := ts.CheckDerpConnection(ctx, &baseUrl); err != nil {
-		return nil, nil, fmt.Errorf("failed to verify DERP connection: %w", err)
+		return nil, nil, fmt.Errorf("failed to verify DERP connection %w", err)
 	}
 	if insecure {
 		envknob.Setenv("TS_DEBUG_TLS_DIAL_INSECURE_SKIP_VERIFY", "true")
 	}
 	hostname, err := ts.GetClientHostname(userName)
 	if err != nil {
-		return nil, nil, fmt.Errorf("get hostname: %w", err)
+		return nil, nil, fmt.Errorf("get hostname %w", err)
 	}
 	statePath := filepath.Join(rootDir, provider.DaemonStateFile)
 	store, err := store.NewFileStore(logger.Discard, statePath)
 	if err != nil {
-		return nil, nil, fmt.Errorf("new state store: %w", err)
+		return nil, nil, fmt.Errorf("new state store %w", err)
 	}
 
 	logPrefix := "[ts] "

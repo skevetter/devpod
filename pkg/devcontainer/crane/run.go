@@ -59,7 +59,7 @@ func (c *command) Run() (string, error) {
 	cmd.Stderr = &errBuf
 
 	if err := cmd.Run(); err != nil {
-		return "", fmt.Errorf("failed to execute command: %v, error: %w", errBuf.String(), err)
+		return "", fmt.Errorf("failed to execute command: %v, error %w", errBuf.String(), err)
 	}
 
 	return outBuf.String(), nil
@@ -144,7 +144,7 @@ func storeFilesInDirectory(content *Content, path string) (string, error) {
 		err := os.WriteFile(filePath, []byte(fileContent), os.ModePerm)
 		if err != nil {
 			_ = os.RemoveAll(path)
-			return "", fmt.Errorf("failed to write file %s: %w", filename, err)
+			return "", fmt.Errorf("failed to write file %s %w", filename, err)
 		}
 	}
 

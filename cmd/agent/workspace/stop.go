@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/loft-sh/log"
-	"github.com/pkg/errors"
 	"github.com/skevetter/devpod/cmd/flags"
 	"github.com/skevetter/devpod/pkg/agent"
 	provider2 "github.com/skevetter/devpod/pkg/provider"
@@ -41,7 +40,7 @@ func (cmd *StopCmd) Run(ctx context.Context) error {
 	// get workspace
 	shouldExit, workspaceInfo, err := agent.WriteWorkspaceInfo(cmd.WorkspaceInfo, log.Default.ErrorStreamOnly())
 	if err != nil {
-		return fmt.Errorf("error parsing workspace info: %w", err)
+		return fmt.Errorf("error parsing workspace info %w", err)
 	} else if shouldExit {
 		return nil
 	}
@@ -49,7 +48,7 @@ func (cmd *StopCmd) Run(ctx context.Context) error {
 	// stop docker container
 	err = stopContainer(ctx, workspaceInfo, log.Default)
 	if err != nil {
-		return errors.Wrap(err, "stop container")
+		return fmt.Errorf("stop container %w", err)
 	}
 
 	return nil

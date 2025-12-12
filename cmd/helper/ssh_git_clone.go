@@ -81,12 +81,12 @@ func getConfig(userName string, keyFilePaths []string) (*ssh.ClientConfig, error
 	for _, keyFilePath := range keyFilePaths {
 		out, err := os.ReadFile(keyFilePath)
 		if err != nil {
-			return nil, fmt.Errorf("read private ssh key: %w", err)
+			return nil, fmt.Errorf("read private ssh key %w", err)
 		}
 
 		signer, err := ssh.ParsePrivateKey(out)
 		if err != nil {
-			return nil, fmt.Errorf("parse private key: %w", err)
+			return nil, fmt.Errorf("parse private key %w", err)
 		}
 
 		signers = append(signers, signer)

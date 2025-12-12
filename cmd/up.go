@@ -17,7 +17,6 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/loft-sh/log"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/cmd/flags"
 	"github.com/skevetter/devpod/pkg/agent"
@@ -103,7 +102,7 @@ func NewUpCmd(f *flags.GlobalFlags) *cobra.Command {
 
 			client, logger, err := cmd.prepareClient(ctx, devPodConfig, args)
 			if err != nil {
-				return fmt.Errorf("prepare workspace client: %w", err)
+				return fmt.Errorf("prepare workspace client %w", err)
 			}
 
 			if cmd.ExtraDevContainerPath != "" && client.Provider() != "docker" {
@@ -407,7 +406,7 @@ func (cmd *UpCmd) devPodUp(
 	// save result to file
 	err = provider2.SaveWorkspaceResult(client.WorkspaceConfig(), result)
 	if err != nil {
-		return nil, fmt.Errorf("save workspace result: %w", err)
+		return nil, fmt.Errorf("save workspace result %w", err)
 	}
 
 	return result, nil
@@ -465,7 +464,7 @@ func (cmd *UpCmd) devPodUpProxy(
 			Stdout: stdoutWriter,
 		})
 		if err != nil {
-			errChan <- fmt.Errorf("executing up proxy command: %w", err)
+			errChan <- fmt.Errorf("executing up proxy command %w", err)
 		} else {
 			errChan <- nil
 		}
@@ -482,7 +481,7 @@ func (cmd *UpCmd) devPodUpProxy(
 		log,
 	)
 	if err != nil {
-		return nil, errors.Wrap(err, "run tunnel machine")
+		return nil, fmt.Errorf("run tunnel machine %w", err)
 	}
 
 	// wait until command finished
@@ -829,14 +828,14 @@ func parseAddressAndPort(bindAddressOption string, defaultPort int) (string, int
 		address = bindAddressOption
 		_, port, err := net.SplitHostPort(address)
 		if err != nil {
-			return "", 0, fmt.Errorf("parse host:port: %w", err)
+			return "", 0, fmt.Errorf("parse host:port %w", err)
 		} else if port == "" {
 			return "", 0, fmt.Errorf("parse ADDRESS: expected host:port, got %s", address)
 		}
 
 		portName, err = strconv.Atoi(port)
 		if err != nil {
-			return "", 0, fmt.Errorf("parse host:port: %w", err)
+			return "", 0, fmt.Errorf("parse host:port %w", err)
 		}
 	}
 
@@ -988,7 +987,7 @@ func startBrowserTunnel(
 				logger,
 			)
 			if err != nil {
-				return fmt.Errorf("run credentials server in browser tunnel: %w", err)
+				return fmt.Errorf("run credentials server in browser tunnel %w", err)
 			}
 
 			<-ctx.Done()
@@ -1005,7 +1004,7 @@ func startBrowserTunnel(
 func configureSSH(client client2.BaseWorkspaceClient, sshConfigPath, user, workdir string, gpgagent bool, devPodHome string) error {
 	path, err := devssh.ResolveSSHConfigPath(sshConfigPath)
 	if err != nil {
-		return errors.Wrap(err, "Invalid ssh config path")
+		return fmt.Errorf("Invalid ssh config path %w", err)
 	}
 	sshConfigPath = path
 
@@ -1033,7 +1032,7 @@ func mergeDevPodUpOptions(baseOptions *provider2.CLIOptions) error {
 		baseOptions,
 	)
 	if err != nil {
-		return fmt.Errorf("decode up options: %w", err)
+		return fmt.Errorf("decode up options %w", err)
 	} else if found {
 		baseOptions.WorkspaceEnv = append(oldOptions.WorkspaceEnv, baseOptions.WorkspaceEnv...)
 		baseOptions.InitEnv = append(oldOptions.InitEnv, baseOptions.InitEnv...)
@@ -1043,7 +1042,7 @@ func mergeDevPodUpOptions(baseOptions *provider2.CLIOptions) error {
 
 	err = clientimplementation.DecodePlatformOptionsFromEnv(&baseOptions.Platform)
 	if err != nil {
-		return fmt.Errorf("decode platform options: %w", err)
+		return fmt.Errorf("decode platform options %w", err)
 	}
 
 	return nil
@@ -1326,12 +1325,12 @@ func checkProviderUpdate(devPodConfig *config.Config, proInstance *provider2.Pro
 	// compare versions
 	newVersion, err := platform.GetProInstanceDevPodVersion(proInstance)
 	if err != nil {
-		return fmt.Errorf("version for pro instance %s: %w", proInstance.Host, err)
+		return fmt.Errorf("version for pro instance %s %w", proInstance.Host, err)
 	}
 
 	p, err := workspace2.FindProvider(devPodConfig, proInstance.Provider, log)
 	if err != nil {
-		return fmt.Errorf("get provider config for pro provider %s: %w", proInstance.Provider, err)
+		return fmt.Errorf("get provider config for pro provider %s %w", proInstance.Provider, err)
 	}
 	if p.Config.Version == version.DevVersion {
 		return nil
@@ -1342,11 +1341,11 @@ func checkProviderUpdate(devPodConfig *config.Config, proInstance *provider2.Pro
 
 	v1, err := semver.Parse(strings.TrimPrefix(newVersion, "v"))
 	if err != nil {
-		return fmt.Errorf("parse version %s: %w", newVersion, err)
+		return fmt.Errorf("parse version %s %w", newVersion, err)
 	}
 	v2, err := semver.Parse(strings.TrimPrefix(p.Config.Version, "v"))
 	if err != nil {
-		return fmt.Errorf("parse version %s: %w", p.Config.Version, err)
+		return fmt.Errorf("parse version %s %w", p.Config.Version, err)
 	}
 	if v1.Compare(v2) == 0 {
 		return nil
@@ -1355,7 +1354,7 @@ func checkProviderUpdate(devPodConfig *config.Config, proInstance *provider2.Pro
 
 	providerSource, err := workspace2.ResolveProviderSource(devPodConfig, proInstance.Provider, log)
 	if err != nil {
-		return fmt.Errorf("resolve provider source %s: %w", proInstance.Provider, err)
+		return fmt.Errorf("resolve provider source %s %w", proInstance.Provider, err)
 	}
 
 	splitted := strings.Split(providerSource, "@")
@@ -1366,7 +1365,7 @@ func checkProviderUpdate(devPodConfig *config.Config, proInstance *provider2.Pro
 
 	_, err = workspace2.UpdateProvider(devPodConfig, proInstance.Provider, providerSource, log)
 	if err != nil {
-		return fmt.Errorf("update provider %s: %w", proInstance.Provider, err)
+		return fmt.Errorf("update provider %s %w", proInstance.Provider, err)
 	}
 
 	log.Donef("Successfully updated provider %s", proInstance.Provider)

@@ -55,7 +55,7 @@ func NewInstanceKubeConfig(ctx context.Context, platformOptions *devpod.Platform
 	})
 	err := baseClient.RefreshSelf(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("refresh self: %w", err)
+		return nil, fmt.Errorf("refresh self %w", err)
 	}
 
 	var kubeConfig *clientcmdapi.Config
@@ -83,13 +83,13 @@ func kubeConfigForSpaceInstance(ctx context.Context, baseClient client.Client, s
 
 	spaceInstance, err := managementClient.Loft().ManagementV1().SpaceInstances(namespace).Get(ctx, spaceInstanceName, metav1.GetOptions{})
 	if err != nil {
-		return nil, fmt.Errorf("get space instance: %w", err)
+		return nil, fmt.Errorf("get space instance %w", err)
 	}
 
 	// find cluster by clusterRef
 	hostCluster, err := findHostCluster(ctx, baseClient, projectName, spaceInstance.Spec.ClusterRef)
 	if err != nil {
-		return nil, fmt.Errorf("find host cluster: %w", err)
+		return nil, fmt.Errorf("find host cluster %w", err)
 	}
 
 	scope := &storagev1.AccessKeyScope{
@@ -110,7 +110,7 @@ func kubeConfigForSpaceInstance(ctx context.Context, baseClient client.Client, s
 		}
 		directClusterEndpointToken, err := managementClient.Loft().ManagementV1().DirectClusterEndpointTokens().Create(ctx, tok, metav1.CreateOptions{})
 		if err != nil {
-			return nil, fmt.Errorf("create direct cluster endpoint token: %w", err)
+			return nil, fmt.Errorf("create direct cluster endpoint token %w", err)
 		}
 
 		directClusterEndpoint := hostCluster.GetAnnotations()[annotations.LoftDirectClusterEndpoint]
@@ -132,7 +132,7 @@ func kubeConfigForSpaceInstance(ctx context.Context, baseClient client.Client, s
 	}
 	ownedAccessKey, err := managementClient.Loft().ManagementV1().OwnedAccessKeys().Create(ctx, key, metav1.CreateOptions{})
 	if err != nil {
-		return nil, fmt.Errorf("create access key: %w", err)
+		return nil, fmt.Errorf("create access key %w", err)
 	}
 	hostName := strings.TrimPrefix(strings.TrimPrefix(baseClient.Config().Host, "https://"), "https://")
 	host := fmt.Sprintf("https://%s/kubernetes/project/%s/space/%s", hostName, projectName, spaceInstance.Name)
@@ -149,7 +149,7 @@ func kubeConfigForVirtualClusterInstance(ctx context.Context, baseClient client.
 
 	virtualClusterInstance, err := managementClient.Loft().ManagementV1().VirtualClusterInstances(namespace).Get(ctx, virtualClusterInstanceName, metav1.GetOptions{})
 	if err != nil {
-		return nil, fmt.Errorf("get virtual cluster instance: %w", err)
+		return nil, fmt.Errorf("get virtual cluster instance %w", err)
 	}
 
 	scope := &storagev1.AccessKeyScope{
@@ -172,7 +172,7 @@ func kubeConfigForVirtualClusterInstance(ctx context.Context, baseClient client.
 		directVirtualClusterKubeConfig, err := managementClient.Loft().ManagementV1().VirtualClusterInstances(namespace).
 			GetKubeConfig(ctx, virtualClusterInstance.Name, config, metav1.CreateOptions{})
 		if err != nil {
-			return nil, fmt.Errorf("create direct cluster endpoint token: %w", err)
+			return nil, fmt.Errorf("create direct cluster endpoint token %w", err)
 		}
 
 		kubeConfig, err := clientcmd.Load([]byte(directVirtualClusterKubeConfig.Status.KubeConfig))
@@ -186,7 +186,7 @@ func kubeConfigForVirtualClusterInstance(ctx context.Context, baseClient client.
 	// find cluster by clusterRef
 	hostCluster, err := findHostCluster(ctx, baseClient, projectName, virtualClusterInstance.Spec.ClusterRef.ClusterRef)
 	if err != nil {
-		return nil, fmt.Errorf("find host cluster: %w", err)
+		return nil, fmt.Errorf("find host cluster %w", err)
 	}
 
 	// direct cluster access?
@@ -199,7 +199,7 @@ func kubeConfigForVirtualClusterInstance(ctx context.Context, baseClient client.
 		}
 		directClusterEndpointToken, err := managementClient.Loft().ManagementV1().DirectClusterEndpointTokens().Create(ctx, tok, metav1.CreateOptions{})
 		if err != nil {
-			return nil, fmt.Errorf("create direct cluster endpoint token: %w", err)
+			return nil, fmt.Errorf("create direct cluster endpoint token %w", err)
 		}
 
 		directClusterEndpoint := hostCluster.GetAnnotations()[annotations.LoftDirectClusterEndpoint]
@@ -221,7 +221,7 @@ func kubeConfigForVirtualClusterInstance(ctx context.Context, baseClient client.
 	}
 	ownedAccessKey, err := managementClient.Loft().ManagementV1().OwnedAccessKeys().Create(ctx, key, metav1.CreateOptions{})
 	if err != nil {
-		return nil, fmt.Errorf("create access key: %w", err)
+		return nil, fmt.Errorf("create access key %w", err)
 	}
 	hostName := strings.TrimPrefix(strings.TrimPrefix(baseClient.Config().Host, "https://"), "https://")
 	host := fmt.Sprintf("https://%s/kubernetes/project/%s/virtualcluster/%s", hostName, projectName, virtualClusterInstance.Name)
@@ -236,7 +236,7 @@ func findHostCluster(ctx context.Context, baseClient client.Client, projectName 
 	}
 	projectClusters, err := managementClient.Loft().ManagementV1().Projects().ListClusters(ctx, projectName, metav1.GetOptions{})
 	if err != nil {
-		return managementv1.Cluster{}, fmt.Errorf("get project clusters: %w", err)
+		return managementv1.Cluster{}, fmt.Errorf("get project clusters %w", err)
 	}
 
 	for _, cluster := range projectClusters.Clusters {

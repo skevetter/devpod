@@ -98,7 +98,7 @@ func openViaCLI(ctx context.Context, workspace, folder string, newWindow bool, f
 		log.Debugf("Run vscode command %s %s", codePath, strings.Join(args, " "))
 		out, err := exec.CommandContext(ctx, codePath, args...).Output()
 		if err != nil {
-			return fmt.Errorf("install ssh extension: %w", command.WrapCommandError(out, err))
+			return fmt.Errorf("install ssh extension %w", command.WrapCommandError(out, err))
 		}
 	}
 

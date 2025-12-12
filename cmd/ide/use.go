@@ -6,7 +6,6 @@ import (
 	"maps"
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/skevetter/devpod/cmd/flags"
 	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/ide"
@@ -69,7 +68,7 @@ func (cmd *UseCmd) Run(ctx context.Context, ide string) error {
 	devPodConfig.Current().DefaultIDE = ide
 	err = config.SaveConfig(devPodConfig)
 	if err != nil {
-		return errors.Wrap(err, "save config")
+		return fmt.Errorf("save config %w", err)
 	}
 
 	return nil

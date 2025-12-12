@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/loft-sh/log"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/agent"
 	"github.com/skevetter/devpod/pkg/agent/tunnelserver"
@@ -38,7 +37,7 @@ func (r *runner) setupContainer(
 		return r.Driver.CommandDevContainer(ctx, r.ID, "root", command, stdin, stdout, stderr)
 	}, false, agent.ContainerDevPodHelperLocation, agent.DefaultAgentDownloadURL(), false, r.Log, timeout)
 	if err != nil {
-		return nil, errors.Wrap(err, "inject agent")
+		return nil, fmt.Errorf("inject agent %w", err)
 	}
 	r.Log.Debugf("Injected into container")
 	defer r.Log.Debugf("Done setting up container")

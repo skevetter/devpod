@@ -12,7 +12,6 @@ import (
 
 	"github.com/loft-sh/log"
 	"github.com/loft-sh/log/hash"
-	"github.com/pkg/errors"
 	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/copy"
 	"github.com/skevetter/devpod/pkg/download"
@@ -46,7 +45,7 @@ func GetBinariesFrom(config *provider2.ProviderConfig, binariesDir string) (map[
 			binaryPath := getBinaryPath(binary, targetFolder)
 			_, err := os.Stat(binaryPath)
 			if err != nil {
-				return nil, fmt.Errorf("error trying to find binary %s: %w", binaryName, err)
+				return nil, fmt.Errorf("error trying to find binary %s %w", binaryName, err)
 			}
 
 			retBinaries[binaryName] = binaryPath
@@ -88,7 +87,7 @@ func DownloadBinaries(binaries map[string][]*provider2.ProviderBinary, targetFol
 			for range 3 {
 				binaryPath, err := downloadBinary(binaryName, binary, targetFolder, log)
 				if err != nil {
-					return nil, errors.Wrapf(err, "downloading binary %s", binaryName)
+					return nil, fmt.Errorf("downloading binary %s %w", binaryName, err)
 				}
 
 				if binary.Checksum != "" {
@@ -234,7 +233,7 @@ func downloadBinary(binaryName string, binary *provider2.ProviderBinary, targetF
 
 		err := os.MkdirAll(targetFolder, 0755)
 		if err != nil {
-			return "", errors.Wrap(err, "create folder")
+			return "", fmt.Errorf("create folder %w", err)
 		}
 
 		targetPath := localTargetPath(binary, targetFolder)
@@ -262,7 +261,7 @@ func downloadBinary(binaryName string, binary *provider2.ProviderBinary, targetF
 	// create target folder
 	err = os.MkdirAll(targetFolder, 0755)
 	if err != nil {
-		return "", errors.Wrap(err, "create folder")
+		return "", fmt.Errorf("create folder %w", err)
 	}
 
 	// check if archive
@@ -317,7 +316,7 @@ func downloadFile(binaryName string, binary *provider2.ProviderBinary, targetFol
 	defer log.Debugf("Successfully downloaded binary %s", binary.Path)
 	body, err := download.File(binary.Path, log)
 	if err != nil {
-		return "", errors.Wrap(err, "download binary")
+		return "", fmt.Errorf("download binary %w", err)
 	}
 	defer func() { _ = body.Close() }()
 
@@ -329,7 +328,7 @@ func downloadFile(binaryName string, binary *provider2.ProviderBinary, targetFol
 
 	_, err = io.Copy(file, body)
 	if err != nil {
-		return "", errors.Wrap(err, "download file")
+		return "", fmt.Errorf("download file %w", err)
 	}
 
 	return targetPath, nil

@@ -7,6 +7,7 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/pem"
+	"fmt"
 	"os"
 	"path/filepath"
 	"sync"
@@ -133,24 +134,24 @@ func GetPrivateKeyRawBase(dir string) ([]byte, error) {
 	if err != nil {
 		pubKey, privateKey, err := makeSSHKeyPair()
 		if err != nil {
-			return nil, errors.Wrap(err, "generate key pair")
+			return nil, fmt.Errorf("generate key pair %w", err)
 		}
 
 		err = os.WriteFile(publicKeyFile, []byte(pubKey), 0644)
 		if err != nil {
-			return nil, errors.Wrap(err, "write public ssh key")
+			return nil, fmt.Errorf("write public ssh key %w", err)
 		}
 
 		err = os.WriteFile(privateKeyFile, []byte(privateKey), 0600)
 		if err != nil {
-			return nil, errors.Wrap(err, "write private ssh key")
+			return nil, fmt.Errorf("write private ssh key %w", err)
 		}
 	}
 
 	// read private key
 	out, err := os.ReadFile(privateKeyFile)
 	if err != nil {
-		return nil, errors.Wrap(err, "read private ssh key")
+		return nil, fmt.Errorf("read private ssh key %w", err)
 	}
 
 	return out, nil
@@ -171,19 +172,19 @@ func GetHostKeyBase(dir string) (string, error) {
 	if err != nil {
 		privateKey, err := makeHostKey()
 		if err != nil {
-			return "", errors.Wrap(err, "generate host key")
+			return "", fmt.Errorf("generate host key %w", err)
 		}
 
 		err = os.WriteFile(hostKeyFile, []byte(privateKey), 0600)
 		if err != nil {
-			return "", errors.Wrap(err, "write host key")
+			return "", fmt.Errorf("write host key %w", err)
 		}
 	}
 
 	// read public key
 	out, err := os.ReadFile(hostKeyFile)
 	if err != nil {
-		return "", errors.Wrap(err, "read host ssh key")
+		return "", fmt.Errorf("read host ssh key %w", err)
 	}
 
 	return base64.StdEncoding.EncodeToString(out), nil
@@ -205,24 +206,24 @@ func GetPublicKeyBase(dir string) (string, error) {
 	if err != nil {
 		pubKey, privateKey, err := makeSSHKeyPair()
 		if err != nil {
-			return "", errors.Wrap(err, "generate key pair")
+			return "", fmt.Errorf("generate key pair %w", err)
 		}
 
 		err = os.WriteFile(publicKeyFile, []byte(pubKey), 0644)
 		if err != nil {
-			return "", errors.Wrap(err, "write public ssh key")
+			return "", fmt.Errorf("write public ssh key %w", err)
 		}
 
 		err = os.WriteFile(privateKeyFile, []byte(privateKey), 0600)
 		if err != nil {
-			return "", errors.Wrap(err, "write private ssh key")
+			return "", fmt.Errorf("write private ssh key %w", err)
 		}
 	}
 
 	// read public key
 	out, err := os.ReadFile(publicKeyFile)
 	if err != nil {
-		return "", errors.Wrap(err, "read public ssh key")
+		return "", fmt.Errorf("read public ssh key %w", err)
 	}
 
 	return base64.StdEncoding.EncodeToString(out), nil

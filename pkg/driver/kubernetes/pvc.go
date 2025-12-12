@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"maps"
 
-	"github.com/pkg/errors"
 	"github.com/skevetter/devpod/pkg/driver"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -26,7 +25,7 @@ func (k *KubernetesDriver) createPersistentVolumeClaim(
 	k.Log.Infof("Create Persistent Volume Claim '%s'", id)
 	_, err = k.client.Client().CoreV1().PersistentVolumeClaims(k.namespace).Create(ctx, pvc, metav1.CreateOptions{})
 	if err != nil {
-		return fmt.Errorf("create pvc: %w", err)
+		return fmt.Errorf("create pvc %w", err)
 	}
 
 	return nil
@@ -44,7 +43,7 @@ func (k *KubernetesDriver) buildPersistentVolumeClaim(
 	size := k.options.DiskSize
 	quantity, err := resource.ParseQuantity(size)
 	if err != nil {
-		return nil, errors.Wrapf(err, "parse persistent volume size '%s'", size)
+		return nil, fmt.Errorf("parse persistent volume size '%s' %w", size, err)
 	}
 
 	var storageClassName *string

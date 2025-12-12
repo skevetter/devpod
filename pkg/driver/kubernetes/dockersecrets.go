@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	perrors "github.com/pkg/errors"
 	k8sv1 "k8s.io/api/core/v1"
 )
 
@@ -35,7 +34,7 @@ func PreparePullSecretData(registryURL, authToken, email string) (string, error)
 
 	pullSecretData, err := toPullSecretData(dockerConfig)
 	if err != nil {
-		return "", perrors.Wrap(err, "new pull secret")
+		return "", fmt.Errorf("new pull secret %w", err)
 	}
 
 	return pullSecretData, nil
@@ -51,7 +50,7 @@ func newDockerConfigEntry(authToken, email string) DockerConfigEntry {
 func toPullSecretData(dockerConfig *DockerConfigJSON) (string, error) {
 	data, err := json.Marshal(dockerConfig)
 	if err != nil {
-		return "", perrors.Wrap(err, "marshal docker config")
+		return "", fmt.Errorf("marshal docker config %w", err)
 	}
 
 	return string(data), nil
@@ -66,7 +65,7 @@ func DecodeAuthTokenFromPullSecret(secret *k8sv1.Secret, host string) (string, e
 	var dockerConfig DockerConfigJSON
 	err := json.Unmarshal(dockerConfigBytes, &dockerConfig)
 	if err != nil {
-		return "", perrors.Wrap(err, "unmarshal docker config")
+		return "", fmt.Errorf("unmarshal docker config %w", err)
 	}
 
 	auth, ok := dockerConfig.Auths[host]
@@ -76,7 +75,7 @@ func DecodeAuthTokenFromPullSecret(secret *k8sv1.Secret, host string) (string, e
 
 	decodedAuthToken, err := base64.StdEncoding.DecodeString(auth.Auth)
 	if err != nil {
-		return "", perrors.Wrap(err, "decode auth token")
+		return "", fmt.Errorf("decode auth token %w", err)
 	}
 
 	return string(decodedAuthToken), nil

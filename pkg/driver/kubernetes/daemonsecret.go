@@ -39,7 +39,7 @@ func (k *KubernetesDriver) EnsureDaemonConfigSecret(
 		Data: map[string][]byte{DaemonConfigKey: []byte(data)},
 	}, metav1.CreateOptions{})
 	if err != nil {
-		return fmt.Errorf("create daemon config secret: %w", err)
+		return fmt.Errorf("create daemon config secret %w", err)
 	}
 
 	k.Log.Infof("Daemon config secret '%s' created", secretName)
@@ -68,7 +68,7 @@ func (k *KubernetesDriver) DeleteDaemonConfigSecret(
 
 	err := k.client.Client().CoreV1().Secrets(k.namespace).Delete(ctx, secretName, metav1.DeleteOptions{})
 	if err != nil && !kerrors.IsNotFound(err) {
-		return fmt.Errorf("delete daemon config secret: %w", err)
+		return fmt.Errorf("delete daemon config secret %w", err)
 	}
 
 	return nil

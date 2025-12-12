@@ -7,8 +7,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/pkg/errors"
-
 	storagev1 "github.com/loft-sh/api/v4/pkg/apis/storage/v1"
 )
 
@@ -34,7 +32,7 @@ func VerifyValue(value string, parameter storagev1.AppParameter) (any, error) {
 		if parameter.Validation != "" {
 			regEx, err := regexp.Compile(parameter.Validation)
 			if err != nil {
-				return nil, errors.Wrap(err, "compile validation regex "+parameter.Validation)
+				return nil, fmt.Errorf("compile validation regex %s %w", parameter.Validation, err)
 			}
 
 			if !regEx.MatchString(value) {
@@ -44,7 +42,7 @@ func VerifyValue(value string, parameter storagev1.AppParameter) (any, error) {
 		if parameter.Invalidation != "" {
 			regEx, err := regexp.Compile(parameter.Invalidation)
 			if err != nil {
-				return nil, errors.Wrap(err, "compile invalidation regex "+parameter.Invalidation)
+				return nil, fmt.Errorf("compile invalidation regex %s %w", parameter.Invalidation, err)
 			}
 
 			if regEx.MatchString(value) {
@@ -57,7 +55,7 @@ func VerifyValue(value string, parameter storagev1.AppParameter) (any, error) {
 		if parameter.DefaultValue != "" && value == "" {
 			boolValue, err := strconv.ParseBool(parameter.DefaultValue)
 			if err != nil {
-				return nil, errors.Wrapf(err, "parse default value for parameter %s (%s)", parameter.Label, parameter.Variable)
+				return nil, fmt.Errorf("parse default value for parameter %s (%s) %w", parameter.Label, parameter.Variable, err)
 			}
 
 			return boolValue, nil
@@ -68,14 +66,14 @@ func VerifyValue(value string, parameter storagev1.AppParameter) (any, error) {
 
 		boolValue, err := strconv.ParseBool(value)
 		if err != nil {
-			return nil, errors.Wrapf(err, "parse value for parameter %s (%s)", parameter.Label, parameter.Variable)
+			return nil, fmt.Errorf("parse value for parameter %s (%s) %w", parameter.Label, parameter.Variable, err)
 		}
 		return boolValue, nil
 	case "number":
 		if parameter.DefaultValue != "" && value == "" {
 			intValue, err := strconv.Atoi(parameter.DefaultValue)
 			if err != nil {
-				return nil, errors.Wrapf(err, "parse default value for parameter %s (%s)", parameter.Label, parameter.Variable)
+				return nil, fmt.Errorf("parse default value for parameter %s (%s) %w", parameter.Label, parameter.Variable, err)
 			}
 
 			return intValue, nil
@@ -85,7 +83,7 @@ func VerifyValue(value string, parameter storagev1.AppParameter) (any, error) {
 		}
 		num, err := strconv.Atoi(value)
 		if err != nil {
-			return nil, errors.Wrapf(err, "parse value for parameter %s (%s)", parameter.Label, parameter.Variable)
+			return nil, fmt.Errorf("parse value for parameter %s (%s) %w", parameter.Label, parameter.Variable, err)
 		}
 		if parameter.Min != nil && num < *parameter.Min {
 			return nil, fmt.Errorf("parameter %s (%s) cannot be smaller than %d", parameter.Label, parameter.Variable, *parameter.Min)

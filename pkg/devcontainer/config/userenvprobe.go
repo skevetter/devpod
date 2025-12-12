@@ -60,7 +60,7 @@ func ProbeUserEnv(ctx context.Context, probe string, userName string, log log.Lo
 
 	preferredShell, err := shell.GetShell(userName)
 	if err != nil {
-		return nil, fmt.Errorf("find shell for user %s: %w", userName, err)
+		return nil, fmt.Errorf("find shell for user %s %w", userName, err)
 	}
 
 	log.Debugf("running user env probe with shell \"%s\", probe \"%s\", user \"%s\" and command \"%s\"",
@@ -95,12 +95,12 @@ func doProbe(ctx context.Context, userEnvProbe UserEnvProbe, preferredShell []st
 
 	err := PrepareCmdUser(cmd, userName)
 	if err != nil {
-		return nil, fmt.Errorf("prepare probe: %w", err)
+		return nil, fmt.Errorf("prepare probe %w", err)
 	}
 
 	out, err := cmd.Output()
 	if err != nil {
-		return nil, fmt.Errorf("probe user env: %w", err)
+		return nil, fmt.Errorf("probe user env %w", err)
 	}
 
 	scanner := bufio.NewScanner(bytes.NewBuffer(out))
@@ -117,7 +117,7 @@ func doProbe(ctx context.Context, userEnvProbe UserEnvProbe, preferredShell []st
 		retEnv[tokens[0]] = tokens[1]
 	}
 	if scanner.Err() != nil {
-		return nil, fmt.Errorf("scan shell output: %w", err)
+		return nil, fmt.Errorf("scan shell output %w", err)
 	}
 	delete(retEnv, "PWD")
 

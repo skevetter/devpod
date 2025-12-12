@@ -58,7 +58,7 @@ func (c *client) Delete(ctx context.Context, opt clientpkg.DeleteOptions) error 
 	err = managementClient.Loft().ManagementV1().DevPodWorkspaceInstances(workspace.Namespace).Delete(ctx, workspace.Name, metav1.DeleteOptions{})
 	if err != nil {
 		if !opt.Force {
-			return fmt.Errorf("delete workspace: %w", err)
+			return fmt.Errorf("delete workspace %w", err)
 		}
 
 		if !kerrors.IsNotFound(err) {
@@ -85,7 +85,7 @@ func (c *client) Delete(ctx context.Context, opt clientpkg.DeleteOptions) error 
 		if kerrors.IsNotFound(err) {
 			return true, nil
 		} else if err != nil {
-			return false, fmt.Errorf("error getting workspace: %w", err)
+			return false, fmt.Errorf("error getting workspace %w", err)
 		} else if workspaceInstance.DeletionTimestamp == nil {
 			// this can occur if the workspace is already deleted and was recreated
 			return true, nil
@@ -95,7 +95,7 @@ func (c *client) Delete(ctx context.Context, opt clientpkg.DeleteOptions) error 
 		return false, nil
 	})
 	if err != nil {
-		return fmt.Errorf("error waiting for workspace to get deleted: %w", err)
+		return fmt.Errorf("error waiting for workspace to get deleted %w", err)
 	}
 
 	return nil

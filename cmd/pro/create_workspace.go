@@ -75,7 +75,7 @@ func (cmd *CreateWorkspaceCmd) Run(ctx context.Context, devPodConfig *config.Con
 		cmd.Log.ErrorStreamOnly().Writer(logrus.ErrorLevel, true),
 		cmd.Log)
 	if err != nil {
-		return fmt.Errorf("create workspace: %w", err)
+		return fmt.Errorf("create workspace %w", err)
 	}
 
 	fmt.Println(buf.String())

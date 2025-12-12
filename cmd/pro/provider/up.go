@@ -94,7 +94,7 @@ func (cmd *UpCmd) Run(ctx context.Context) error {
 
 		instance, err = platform.UpdateInstance(ctx, baseClient, oldInstance, instance, cmd.Log)
 		if err != nil {
-			return fmt.Errorf("update instance: %w", err)
+			return fmt.Errorf("update instance %w", err)
 		}
 		cmd.Log.Info("Successfully updated template")
 	}
@@ -115,7 +115,7 @@ func (cmd *UpCmd) up(ctx context.Context, workspace *managementv1.DevPodWorkspac
 
 	_, err = remotecommand.ExecuteConn(ctx, conn, cmd.streams.Stdin, cmd.streams.Stdout, cmd.streams.Stderr, cmd.Log)
 	if err != nil {
-		return fmt.Errorf("error executing: %w", err)
+		return fmt.Errorf("error executing %w", err)
 	}
 
 	return nil

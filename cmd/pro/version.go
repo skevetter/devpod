@@ -72,7 +72,7 @@ func (cmd *VersionCmd) Run(ctx context.Context, devPodConfig *config.Config, pro
 		nil,
 		cmd.Log)
 	if err != nil {
-		return fmt.Errorf("get version: %w", err)
+		return fmt.Errorf("get version %w", err)
 	}
 
 	fmt.Print(buf.String())

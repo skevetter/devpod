@@ -33,7 +33,7 @@ If the workspace is not found, you can use the --ignore-not-found flag to treat 
 		RunE: func(_ *cobra.Command, args []string) error {
 			_, err := clientimplementation.DecodeOptionsFromEnv(clientimplementation.DevPodFlagsDelete, &cmd.DeleteOptions)
 			if err != nil {
-				return fmt.Errorf("decode up options: %w", err)
+				return fmt.Errorf("decode up options %w", err)
 			}
 
 			ctx := context.Background()
@@ -44,7 +44,7 @@ If the workspace is not found, you can use the --ignore-not-found flag to treat 
 
 			err = clientimplementation.DecodePlatformOptionsFromEnv(&cmd.Platform)
 			if err != nil {
-				return fmt.Errorf("decode platform options: %w", err)
+				return fmt.Errorf("decode platform options %w", err)
 			}
 
 			return cmd.Run(ctx, devPodConfig, args)

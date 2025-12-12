@@ -67,7 +67,7 @@ func ParseMessage(reader io.Reader) (*Message, error) {
 	case ExitCode:
 		exitCode, err := binary.ReadVarint(buf)
 		if err != nil {
-			return nil, fmt.Errorf("read exit code: %w", err)
+			return nil, fmt.Errorf("read exit code %w", err)
 		}
 
 		return &Message{

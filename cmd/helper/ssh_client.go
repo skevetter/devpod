@@ -2,9 +2,9 @@ package helper
 
 import (
 	"context"
+	"fmt"
 	"os"
 
-	"github.com/pkg/errors"
 	command2 "github.com/skevetter/devpod/pkg/command"
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh"
@@ -74,12 +74,12 @@ func (cmd *SSHClient) getConfig() (*ssh.ClientConfig, error) {
 	if cmd.KeyFile != "" {
 		out, err := os.ReadFile(cmd.KeyFile)
 		if err != nil {
-			return nil, errors.Wrap(err, "read private ssh key")
+			return nil, fmt.Errorf("read private ssh key %w", err)
 		}
 
 		signer, err := ssh.ParsePrivateKey(out)
 		if err != nil {
-			return nil, errors.Wrap(err, "parse private key")
+			return nil, fmt.Errorf("parse private key %w", err)
 		}
 
 		clientConfig.Auth = append(clientConfig.Auth, ssh.PublicKeys(signer))

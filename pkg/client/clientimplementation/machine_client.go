@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/loft-sh/log"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/client"
 	"github.com/skevetter/devpod/pkg/config"
@@ -55,7 +54,7 @@ func (s *machineClient) MachineConfig() *provider.Machine {
 func (s *machineClient) RefreshOptions(ctx context.Context, userOptionsRaw []string, reconfigure bool) error {
 	userOptions, err := provider.ParseOptions(userOptionsRaw)
 	if err != nil {
-		return errors.Wrap(err, "parse options")
+		return fmt.Errorf("parse options %w", err)
 	}
 
 	machine, err := options.ResolveAndSaveOptionsMachine(ctx, s.devPodConfig, s.config, s.machine, userOptions, s.log)

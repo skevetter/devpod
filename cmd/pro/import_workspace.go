@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"github.com/loft-sh/log"
-	"github.com/pkg/errors"
 	proflags "github.com/skevetter/devpod/cmd/pro/flags"
 	"github.com/skevetter/devpod/cmd/pro/provider/list"
 	"github.com/skevetter/devpod/pkg/config"
@@ -80,7 +79,7 @@ func (cmd *ImportCmd) Run(ctx context.Context, args []string) error {
 	if provider2.WorkspaceExists(devPodConfig.DefaultContext, cmd.WorkspaceId) {
 		workspaceConfig, err := provider2.LoadWorkspaceConfig(devPodConfig.DefaultContext, cmd.WorkspaceId)
 		if err != nil {
-			return fmt.Errorf("load workspace: %w", err)
+			return fmt.Errorf("load workspace %w", err)
 		} else if workspaceConfig.UID == cmd.WorkspaceUid {
 			cmd.log.Infof("Workspace %s already imported", cmd.WorkspaceId)
 			return nil
@@ -97,16 +96,16 @@ func (cmd *ImportCmd) Run(ctx context.Context, args []string) error {
 
 	provider, err := workspace.ProviderFromHost(ctx, devPodConfig, devPodProHost, cmd.log)
 	if err != nil {
-		return fmt.Errorf("resolve provider: %w", err)
+		return fmt.Errorf("resolve provider %w", err)
 	}
 
 	baseClient, err := platform.InitClientFromProvider(ctx, devPodConfig, provider.Name, cmd.log)
 	if err != nil {
-		return fmt.Errorf("base client: %w", err)
+		return fmt.Errorf("base client %w", err)
 	}
 	instance, err := platform.FindInstanceInProject(ctx, baseClient, cmd.WorkspaceUid, cmd.WorkspaceProject)
 	if err != nil {
-		return fmt.Errorf("find workspace instance: %w", err)
+		return fmt.Errorf("find workspace instance %w", err)
 	}
 	if instance == nil {
 		return fmt.Errorf("workspace instance with UID %s not found", cmd.WorkspaceUid)
@@ -116,12 +115,12 @@ func (cmd *ImportCmd) Run(ctx context.Context, args []string) error {
 	if !provider.HasHealthCheck() {
 		instanceOpts, err := resolveInstanceOptions(ctx, instance, baseClient)
 		if err != nil {
-			return fmt.Errorf("resolve instance options: %w", err)
+			return fmt.Errorf("resolve instance options %w", err)
 		}
 
 		err = cmd.writeWorkspaceDefinition(devPodConfig, provider, instanceOpts, instance)
 		if err != nil {
-			return errors.Wrap(err, "prepare workspace to import definition")
+			return fmt.Errorf("prepare workspace to import definition %w", err)
 		}
 		cmd.log.Infof("Successfully imported workspace %s", cmd.WorkspaceId)
 		return nil
@@ -130,7 +129,7 @@ func (cmd *ImportCmd) Run(ctx context.Context, args []string) error {
 	// new pro provider
 	err = cmd.writeNewWorkspaceDefinition(devPodConfig, instance, provider.Name)
 	if err != nil {
-		return errors.Wrap(err, "prepare workspace to import definition")
+		return fmt.Errorf("prepare workspace to import definition %w", err)
 	}
 	cmd.log.Infof("Successfully imported workspace %s", cmd.WorkspaceId)
 
@@ -173,7 +172,7 @@ func (cmd *ImportCmd) writeWorkspaceDefinition(devPodConfig *config.Config, prov
 
 	devPodConfig, err := options.ResolveOptions(context.Background(), devPodConfig, provider, instanceOpts, false, false, nil, cmd.log)
 	if err != nil {
-		return fmt.Errorf("resolve options: %w", err)
+		return fmt.Errorf("resolve options %w", err)
 	}
 	if devPodConfig.Current() == nil || devPodConfig.Current().Providers[provider.Name] == nil {
 		return fmt.Errorf("unable to resolve provider config for provider %s", provider.Name)
@@ -211,22 +210,22 @@ func resolveInstanceOptions(ctx context.Context, instance *managementv1.DevPodWo
 	}
 	managementClient, err := baseClient.Management()
 	if err != nil {
-		return nil, fmt.Errorf("get management client: %w", err)
+		return nil, fmt.Errorf("get management client %w", err)
 	}
 	template, err := list.FindTemplate(ctx, managementClient, projectName, instance.Spec.TemplateRef.Name)
 	if err != nil {
-		return nil, fmt.Errorf("find template: %w", err)
+		return nil, fmt.Errorf("find template %w", err)
 	}
 	templateParameters := template.Spec.Parameters
 	if len(template.Spec.Versions) > 0 {
 		templateParameters, err = list.GetTemplateParameters(template, instance.Spec.TemplateRef.Version)
 		if err != nil {
-			return nil, fmt.Errorf("get template parameters: %w", err)
+			return nil, fmt.Errorf("get template parameters %w", err)
 		}
 	}
 	err = fillParameterOptions(opts, templateParameters, instance.Spec.Parameters)
 	if err != nil {
-		return nil, fmt.Errorf("fill parameter options: %w", err)
+		return nil, fmt.Errorf("fill parameter options %w", err)
 	}
 
 	return opts, nil
@@ -236,7 +235,7 @@ func fillParameterOptions(opts map[string]string, parameterDefinitions []storage
 	parametersMap := map[string]any{}
 	err := yaml.Unmarshal([]byte(instanceParameters), &parametersMap)
 	if err != nil {
-		return fmt.Errorf("unmarshal parameters: %w", err)
+		return fmt.Errorf("unmarshal parameters %w", err)
 	}
 
 	for _, parameter := range parameterDefinitions {

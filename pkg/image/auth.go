@@ -49,7 +49,7 @@ func GetKeychain(ctx context.Context) (authn.Keychain, error) {
 			return authn.DefaultKeychain, nil
 		}
 
-		return nil, fmt.Errorf("failed to read kubernetes service account token: %w", err)
+		return nil, fmt.Errorf("failed to read kubernetes service account token %w", err)
 	}
 
 	// in-cluster auth
@@ -92,19 +92,19 @@ type podMetadata struct {
 func getPodMetadata(token []byte) (podMetadata, error) {
 	t, err := jwt.ParseSigned(string(token))
 	if err != nil {
-		return podMetadata{}, fmt.Errorf("failed to parse kubernetes service account token: %w", err)
+		return podMetadata{}, fmt.Errorf("failed to parse kubernetes service account token %w", err)
 	}
 
 	privateClaims := privateClaims{}
 	err = t.UnsafeClaimsWithoutVerification(&privateClaims)
 	if err != nil {
-		return podMetadata{}, fmt.Errorf("failed to get claims from kubernetes service account token: %w", err)
+		return podMetadata{}, fmt.Errorf("failed to get claims from kubernetes service account token %w", err)
 	}
 
 	kubeClaim := privateClaims.Kubernetes
 	// get serviceaccount name and imagepullsecret
 	if kubeClaim.Namespace == "" || kubeClaim.Svcacct.Name == "" {
-		return podMetadata{}, fmt.Errorf("failed to retrieve pod metadata from kubernetes service account token: %w", err)
+		return podMetadata{}, fmt.Errorf("failed to retrieve pod metadata from kubernetes service account token %w", err)
 	}
 
 	return podMetadata{

@@ -11,7 +11,6 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/loft-sh/log"
-	"github.com/pkg/errors"
 	"github.com/skevetter/devpod/pkg/copy"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	"github.com/skevetter/devpod/pkg/devcontainer/graph"
@@ -54,12 +53,12 @@ type BuildInfo struct {
 func GetExtendedBuildInfo(ctx *config.SubstitutionContext, imageBuildInfo *config.ImageBuildInfo, target string, devContainerConfig *config.SubstitutedConfig, log log.Logger, forceBuild bool) (*ExtendedBuildInfo, error) {
 	features, err := fetchFeatures(devContainerConfig.Config, log, forceBuild)
 	if err != nil {
-		return nil, errors.Wrap(err, "fetch features")
+		return nil, fmt.Errorf("fetch features %w", err)
 	}
 
 	mergedImageMetadataConfig, err := metadata.GetDevContainerMetadata(ctx, imageBuildInfo.Metadata, devContainerConfig, features)
 	if err != nil {
-		return nil, errors.Wrap(err, "get dev container metadata")
+		return nil, fmt.Errorf("get dev container metadata %w", err)
 	}
 
 	marshalled, err := json.Marshal(mergedImageMetadataConfig.Raw)
@@ -141,7 +140,7 @@ func copyFeaturesToDestination(features []*config.FeatureSet, targetDir string) 
 
 		err = copy.Directory(feature.Folder, featureDir)
 		if err != nil {
-			return errors.Wrapf(err, "copy feature %s", feature.ConfigID)
+			return fmt.Errorf("copy feature %s %w", feature.ConfigID, err)
 		}
 
 		// copy feature folder
@@ -149,14 +148,14 @@ func copyFeaturesToDestination(features []*config.FeatureSet, targetDir string) 
 		variables := getFeatureEnvVariables(feature.Config, feature.Options)
 		err = os.WriteFile(envPath, []byte(strings.Join(variables, "\n")), 0600)
 		if err != nil {
-			return errors.Wrapf(err, "write variables of feature %s", feature.ConfigID)
+			return fmt.Errorf("write variables of feature %s %w", feature.ConfigID, err)
 		}
 
 		installWrapperPath := filepath.Join(featureDir, "devcontainer-features-install.sh")
 		installWrapperContent := getFeatureInstallWrapperScript(feature.ConfigID, feature.Config, variables)
 		err = os.WriteFile(installWrapperPath, []byte(installWrapperContent), 0600)
 		if err != nil {
-			return errors.Wrapf(err, "write install wrapper script for feature %s", feature.ConfigID)
+			return fmt.Errorf("write install wrapper script for feature %s %w", feature.ConfigID, err)
 		}
 	}
 
@@ -233,14 +232,14 @@ func fetchFeatures(devContainerConfig *config.DevContainerConfig, log log.Logger
 	for featureID, featureOptions := range devContainerConfig.Features {
 		featureFolder, err := ProcessFeatureID(featureID, devContainerConfig, log, forceBuild)
 		if err != nil {
-			return nil, errors.Wrap(err, "process feature "+featureID)
+			return nil, fmt.Errorf("process feature %s %w", featureID, err)
 		}
 
 		// parse feature
 		log.Debugf("Parse dev container feature in %s", featureFolder)
 		featureConfig, err := config.ParseDevContainerFeature(featureFolder)
 		if err != nil {
-			return nil, errors.Wrap(err, "parse feature "+featureID)
+			return nil, fmt.Errorf("parse feature %s %w", featureID, err)
 		}
 
 		// add to return array
@@ -255,7 +254,7 @@ func fetchFeatures(devContainerConfig *config.DevContainerConfig, log log.Logger
 	// compute order here
 	featureSets, err := computeFeatureOrder(devContainerConfig, featureSets)
 	if err != nil {
-		return nil, errors.Wrap(err, "compute feature order")
+		return nil, fmt.Errorf("compute feature order %w", err)
 	}
 
 	return featureSets, nil

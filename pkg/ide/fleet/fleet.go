@@ -12,7 +12,6 @@ import (
 
 	"github.com/loft-sh/log"
 	"github.com/loft-sh/log/scanner"
-	"github.com/pkg/errors"
 	"github.com/skevetter/devpod/pkg/command"
 	"github.com/skevetter/devpod/pkg/config"
 	copy2 "github.com/skevetter/devpod/pkg/copy"
@@ -104,7 +103,7 @@ func (o *FleetServer) Install(projectDir string) error {
 
 	_, err = io.Copy(f, resp.Body)
 	if err != nil {
-		return fmt.Errorf("download fleet: %w", err)
+		return fmt.Errorf("download fleet %w", err)
 	}
 	_ = f.Close()
 
@@ -112,7 +111,7 @@ func (o *FleetServer) Install(projectDir string) error {
 	if o.userName != "" {
 		err = copy2.ChownR(location, o.userName)
 		if err != nil {
-			return errors.Wrap(err, "chown")
+			return fmt.Errorf("chown %w", err)
 		}
 	}
 

@@ -56,7 +56,7 @@ func (cmd *WorkspacesCmd) Run(ctx context.Context) error {
 
 	projectList, err := managementClient.Loft().ManagementV1().Projects().List(ctx, metav1.ListOptions{})
 	if err != nil {
-		return fmt.Errorf("list projects: %w", err)
+		return fmt.Errorf("list projects %w", err)
 	} else if len(projectList.Items) == 0 {
 		return fmt.Errorf("you don't have access to any projects within DevPod Pro, please make sure you have at least access to 1 project")
 	}
@@ -88,7 +88,7 @@ func (cmd *WorkspacesCmd) Run(ctx context.Context) error {
 
 	wBytes, err := json.Marshal(workspaces)
 	if err != nil {
-		return fmt.Errorf("marshal workspaces: %w", err)
+		return fmt.Errorf("marshal workspaces %w", err)
 	}
 	fmt.Println(string(wBytes))
 

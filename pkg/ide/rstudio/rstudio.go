@@ -174,7 +174,7 @@ func getDistroCodename(log log.Logger) (string, error) {
 	// Base distro needs to be ubuntu
 	all, err := os.ReadFile("/etc/os-release")
 	if err != nil {
-		return "", fmt.Errorf("read /etc/os-release: %w", err)
+		return "", fmt.Errorf("read /etc/os-release %w", err)
 	}
 	if !bytes.Contains(all, []byte("ID=ubuntu")) {
 		return "", fmt.Errorf("RStudio Server is only supported on ubuntu images, OS information is %s", string(all))
@@ -198,7 +198,7 @@ func downloadRStudioDeb(ubuntuCodename string, log log.Logger) (string, error) {
 	// Download .deb
 	debPath, err := download(downloadFolder, downloadURL, log)
 	if err != nil {
-		return "", fmt.Errorf("download: %w", err)
+		return "", fmt.Errorf("download %w", err)
 	}
 	log.Done("Successfully downloaded RStudio")
 
@@ -219,7 +219,7 @@ func download(targetFolder, downloadURL string, log log.Logger) (string, error) 
 
 	resp, err := devpodhttp.GetHTTPClient().Get(downloadURL)
 	if err != nil {
-		return "", fmt.Errorf("download deb: %w", err)
+		return "", fmt.Errorf("download deb %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 
@@ -248,7 +248,7 @@ func download(targetFolder, downloadURL string, log log.Logger) (string, error) 
 		Log:       log,
 	})
 	if err != nil {
-		return "", fmt.Errorf("download file: %w", err)
+		return "", fmt.Errorf("download file %w", err)
 	}
 
 	return targetPath, nil
@@ -274,11 +274,11 @@ func installDeb(debPath string, log log.Logger) error {
 	// We need to symlink to /usr/local/bin to ensure remoteUser has access later on
 	err = os.Symlink(defaultBinaryPathRStudioServer, "/usr/local/bin/rstudio-server")
 	if err != nil {
-		return fmt.Errorf("symlink rstudio-server: %w", err)
+		return fmt.Errorf("symlink rstudio-server %w", err)
 	}
 	err = os.Symlink(defaultBinaryPathRServer, "/usr/local/bin/rserver")
 	if err != nil {
-		return fmt.Errorf("symlink rserver: %w", err)
+		return fmt.Errorf("symlink rserver %w", err)
 	}
 
 	return nil
@@ -305,7 +305,7 @@ directory=%s`, configFolder)
 	dbConfPath := filepath.Join(configFolder, "dbconf.conf")
 	err := os.WriteFile(dbConfPath, []byte(dbConf), os.ModePerm)
 	if err != nil {
-		return fmt.Errorf("save db conf: %w", err)
+		return fmt.Errorf("save db conf %w", err)
 	}
 
 	rServerConf := fmt.Sprintf(`# https://docs.posit.co/ide/server-pro/access_and_security/server_permissions.html#running-without-permissions
@@ -321,7 +321,7 @@ database-config-file=%s/dbconf.conf
 	_ = os.Remove(serverConfPath)
 	err = os.WriteFile(serverConfPath, []byte(rServerConf), os.ModePerm)
 	if err != nil {
-		return fmt.Errorf("save rserver conf: %w", err)
+		return fmt.Errorf("save rserver conf %w", err)
 	}
 
 	return nil
@@ -351,7 +351,7 @@ func setupPreferences(workspaceFolder, userName string) error {
 	prefsPath := filepath.Join(prefsDir, "rstudio-prefs.json")
 	err = os.WriteFile(prefsPath, outPrefs, os.ModePerm)
 	if err != nil {
-		return fmt.Errorf("save preferences: %w", err)
+		return fmt.Errorf("save preferences %w", err)
 	}
 	err = copypkg.Chown(prefsPath, userName)
 	if err != nil {

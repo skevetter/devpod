@@ -73,7 +73,7 @@ func Clusters(ctx context.Context, client client.Client, projectName string) (*m
 
 	clustersList, err := managementClient.Loft().ManagementV1().Projects().ListClusters(ctx, projectName, metav1.GetOptions{})
 	if err != nil {
-		return clustersList, fmt.Errorf("list clusters: %w", err)
+		return clustersList, fmt.Errorf("list clusters %w", err)
 	}
 
 	return clustersList, nil

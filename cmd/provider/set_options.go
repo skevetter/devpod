@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"github.com/loft-sh/log"
-	"github.com/pkg/errors"
 	"github.com/skevetter/devpod/cmd/completion"
 	"github.com/skevetter/devpod/cmd/flags"
 	"github.com/skevetter/devpod/pkg/config"
@@ -98,13 +97,13 @@ func (cmd *SetOptionsCmd) Run(ctx context.Context, args []string, log log.Logger
 	if !cmd.Dry {
 		err = config.SaveConfig(devPodConfig)
 		if err != nil {
-			return errors.Wrap(err, "save config")
+			return fmt.Errorf("save config %w", err)
 		}
 	} else {
 		// print options to stdout
 		err = printOptions(devPodConfig, providerWithOptions, "json", true)
 		if err != nil {
-			return fmt.Errorf("print options: %w", err)
+			return fmt.Errorf("print options %w", err)
 		}
 	}
 

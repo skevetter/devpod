@@ -104,11 +104,11 @@ func (cmd *CheckProviderUpdateCmd) Run(ctx context.Context, devPodConfig *config
 func loadLatestProvider(providerSourceRaw string, log log.Logger) (*provider.ProviderConfig, error) {
 	providerRaw, _, err := workspace.ResolveProvider(providerSourceRaw, log)
 	if err != nil {
-		return nil, errors.Wrap(err, "resolve provider")
+		return nil, fmt.Errorf("resolve provider %w", err)
 	}
 	providerConfig, err := provider.ParseProvider(bytes.NewReader(providerRaw))
 	if err != nil {
-		return nil, errors.Wrap(err, "parse provider")
+		return nil, fmt.Errorf("parse provider %w", err)
 	}
 
 	return providerConfig, nil

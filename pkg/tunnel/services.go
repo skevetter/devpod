@@ -15,7 +15,6 @@ import (
 	"github.com/docker/go-connections/nat"
 	"github.com/loft-sh/api/v4/pkg/devpod"
 	"github.com/loft-sh/log"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/agent"
 	"github.com/skevetter/devpod/pkg/agent/tunnelserver"
@@ -54,7 +53,7 @@ func RunServices(
 	// forward ports
 	forwardedPorts, err := forwardDevContainerPorts(ctx, containerClient, extraPorts, exitAfterTimeout, log)
 	if err != nil {
-		return errors.Wrap(err, "forward ports")
+		return fmt.Errorf("forward ports %w", err)
 	}
 
 	return retry.OnError(wait.Backoff{
@@ -104,7 +103,7 @@ func RunServices(
 				tunnelserver.WithPlatformOptions(platformOptions),
 			)
 			if err != nil {
-				errChan <- errors.Wrap(err, "run tunnel server")
+				errChan <- fmt.Errorf("run tunnel server %w", err)
 			}
 			close(errChan)
 		}()
@@ -160,7 +159,7 @@ func forwardDevContainerPorts(ctx context.Context, containerClient *ssh.Client, 
 	result := &config2.Result{}
 	err = json.Unmarshal(stdout.Bytes(), result)
 	if err != nil {
-		return nil, fmt.Errorf("error parsing container result %s: %w", stdout.String(), err)
+		return nil, fmt.Errorf("error parsing container result %s %w", stdout.String(), err)
 	}
 	log.Debugf("Successfully parsed result at %s", setup.ResultLocation)
 
