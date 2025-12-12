@@ -29,7 +29,7 @@ runs:
 
     - name: restore cached binary
       id: cache-restore
-      uses: actions/cache/restore@v4
+      uses: actions/cache/restore@v5
       with:
         path: ${{ inputs.binary-path }}
         key: ${{ inputs.binary-cache-key }}

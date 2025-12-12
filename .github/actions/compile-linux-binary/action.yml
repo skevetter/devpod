@@ -41,7 +41,7 @@ runs:
         CGO_ENABLED=0 go build -ldflags "-s -w" -o ${{ inputs.binary-path }}
 
     - name: cache binary
-      uses: actions/cache/save@v4
+      uses: actions/cache/save@v5
       with:
         path: ${{ inputs.binary-path }}
         key: ${{ inputs.binary-cache-key }}
