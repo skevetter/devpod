@@ -306,8 +306,18 @@ func (d *dockerDriver) RunDockerDevContainer(
 		args = append(args, "--security-opt", securityOpt)
 	}
 
-	// mounts
 	for _, mount := range options.Mounts {
+		if mount.Type == "bind" && mount.Source != "" {
+			d.Log.Debugf("Mount is of type bind, ensuring source path %s exists", mount.Source)
+			if _, err := os.Stat(mount.Source); os.IsNotExist(err) {
+				d.Log.Warn("Mount does not exist, creating it")
+				if err := os.MkdirAll(mount.Source, 0755); err != nil {
+					d.Log.Warnf("Failed to create mount source directory %s %v", mount.Source, err)
+					continue
+				}
+				d.Log.Debugf("Created mount source directory %s", mount.Source)
+			}
+		}
 		args = append(args, "--mount", mount.String())
 	}
 
@@ -378,13 +388,15 @@ func (d *dockerDriver) RunDockerDevContainer(
 	args = append(args, options.Cmd...)
 
 	// run the command
-	d.Log.Debugf("Running docker command: %s %s", d.Docker.DockerCommand, strings.Join(args, " "))
+	d.Log.Infof("Running docker command %s %s", d.Docker.DockerCommand, strings.Join(args, " "))
 	writer := d.Log.Writer(logrus.InfoLevel, false)
 	defer func() { _ = writer.Close() }()
 
 	err = d.Docker.Run(ctx, args, nil, writer, writer)
 	if err != nil {
-		return err
+		d.Log.Errorf("Docker container failed to start %v", err)
+		d.Log.Errorf("Docker command that failed %s %s", d.Docker.DockerCommand, strings.Join(args, " "))
+		return fmt.Errorf("failed to start dev container %w", err)
 	}
 
 	if runtime.GOOS == "linux" && ((parsedConfig.ContainerUser != "" || parsedConfig.RemoteUser != "") &&
