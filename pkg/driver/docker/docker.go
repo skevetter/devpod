@@ -308,14 +308,8 @@ func (d *dockerDriver) RunDockerDevContainer(
 
 	for _, mount := range options.Mounts {
 		if mount.Type == "bind" && mount.Source != "" {
-			d.Log.Debugf("Mount is of type bind, ensuring source path %s exists", mount.Source)
 			if _, err := os.Stat(mount.Source); os.IsNotExist(err) {
-				d.Log.Warn("Mount does not exist, creating it")
-				if err := os.MkdirAll(mount.Source, 0755); err != nil {
-					d.Log.Warnf("Failed to create mount source directory %s %v", mount.Source, err)
-					continue
-				}
-				d.Log.Debugf("Created mount source directory %s", mount.Source)
+				return fmt.Errorf("bind mount source path does not exist %s", mount.Source)
 			}
 		}
 		args = append(args, "--mount", mount.String())
