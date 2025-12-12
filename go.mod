@@ -304,7 +304,7 @@ require (
 	github.com/moby/sys/signal v0.7.1 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
-	github.com/tonistiigi/fsutil v0.0.0-20250605211040-586307ad452f
+	github.com/tonistiigi/fsutil v0.0.0-20251211185533-a2aa163d723f
 	github.com/tonistiigi/units v0.0.0-20180711220420-6950e57a87ea // indirect
 	github.com/tonistiigi/vt100 v0.0.0-20240514184818-90bafcd6abab // indirect
 	golang.org/x/net v0.47.0 // indirect
