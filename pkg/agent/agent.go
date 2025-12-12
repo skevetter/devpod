@@ -266,7 +266,7 @@ func rerunAsRoot(workspaceInfo *provider2.AgentWorkspaceInfo, log log.Logger) (b
 	dockerRootRequired := false
 	if workspaceInfo != nil && (workspaceInfo.Agent.Driver == "" || workspaceInfo.Agent.Driver == provider2.DockerDriver) {
 		var err error
-		dockerRootRequired, err = dockerReachable(workspaceInfo.Agent.Docker.Path, workspaceInfo.Agent.Docker.Env)
+		dockerRootRequired, err = dockerReachable(workspaceInfo.Agent.Docker.Path, workspaceInfo.Agent.Docker.Env, log)
 		if err != nil {
 			log.Debugf("Error trying to reach docker daemon: %v", err)
 			dockerRootRequired = true
@@ -342,7 +342,7 @@ func Tunnel(
 	return nil
 }
 
-func dockerReachable(dockerOverride string, envs map[string]string) (bool, error) {
+func dockerReachable(dockerOverride string, envs map[string]string, log log.Logger) (bool, error) {
 	docker := "docker"
 	if dockerOverride != "" {
 		docker = dockerOverride
@@ -357,25 +357,44 @@ func dockerReachable(dockerOverride string, envs map[string]string) (bool, error
 		return true, nil
 	}
 
-	cmd := exec.Command(docker, "ps")
-	if len(envs) > 0 {
-		newEnvs := os.Environ()
-		for k, v := range envs {
-			newEnvs = append(newEnvs, k+"="+v)
-		}
-		cmd.Env = newEnvs
-	}
+	for i := range 3 {
+		log.Debugf("Trying to reach docker daemon (attempt %d)", i+1)
 
-	_, err := cmd.CombinedOutput()
-	if err != nil {
-		if strings.Contains(err.Error(), "permission denied") {
-			if dockerOverride == "" {
-				return true, nil
-			}
+		cmd := exec.Command(docker, "ps")
+		if len(envs) > 0 {
+			cmd.Env = append(os.Environ(), envMapToSlice(envs)...)
 		}
 
-		return false, perrors.Wrapf(err, "%s ps", docker)
+		output, err := cmd.CombinedOutput()
+		if err == nil {
+			log.Debug("Reached docker daemon")
+			return false, nil
+		}
+
+		log.Debugf("Error trying to reach docker daemon %v", err)
+
+		if isPermissionError(err, output) && dockerOverride == "" {
+			log.Warn("Docker permission denied, root required")
+			return true, nil
+		}
+
+		if i < 2 {
+			time.Sleep(time.Duration(1<<i) * time.Second)
+		}
 	}
 
-	return false, nil
+	return false, perrors.Errorf("%s ps failed after retries", docker)
+}
+
+func envMapToSlice(envs map[string]string) []string {
+	result := make([]string, 0, len(envs))
+	for k, v := range envs {
+		result = append(result, k+"="+v)
+	}
+	return result
+}
+
+func isPermissionError(err error, output []byte) bool {
+	return strings.Contains(err.Error(), "permission denied") ||
+		strings.Contains(string(output), "permission denied")
 }
