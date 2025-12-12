@@ -1,6 +1,7 @@
 package sshtunnel
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -121,12 +122,19 @@ func ExecuteCommand(
 			}
 		}
 
-		writer := log.Writer(logrus.InfoLevel, false)
-		defer func() { _ = writer.Close() }()
+		stdoutWriter := log.Writer(logrus.InfoLevel, false)
+		defer func() { _ = stdoutWriter.Close() }()
 
-		err = devssh.Run(ctx, sshClient, command, gRPCConnStdinReader, gRPCConnStdoutWriter, writer, nil)
+		var stderrBuf bytes.Buffer
+		stderrWriter := io.MultiWriter(&stderrBuf, log.Writer(logrus.ErrorLevel, false))
+
+		err = devssh.Run(ctx, sshClient, command, gRPCConnStdinReader, gRPCConnStdoutWriter, stderrWriter, nil)
 		if err != nil {
-			errChan <- errors.Wrap(err, "run agent command")
+			if stderrBuf.Len() > 0 {
+				errChan <- fmt.Errorf("run agent command %w\n%s", err, stderrBuf.String())
+			} else {
+				errChan <- fmt.Errorf("run agent command: %w", err)
+			}
 		} else {
 			errChan <- nil
 		}

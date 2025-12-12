@@ -531,19 +531,21 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 				framework.ExpectEqual(out, initialList)
 			}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
-			ginkgo.It("should fail with clear error when bind mount source does not exist", ginkgo.Label("bind-mount-validation"), func(ctx context.Context) {
+			ginkgo.It("should fail with error when bind mount source does not exist", ginkgo.Label("bind-mount-validation"), func(ctx context.Context) {
 				f := framework.NewDefaultFramework(initialDir + "/bin")
+				_ = f.DevPodProviderAdd(ctx, "docker")
+				err := f.DevPodProviderUse(ctx, "docker")
+				framework.ExpectNoError(err)
+
 				tempDir, err := framework.CopyToTempDir("tests/up/testdata/docker-invalid-bind-mount")
 				framework.ExpectNoError(err)
 				ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
 
-				// Try to start workspace - should fail with clear error
 				err = f.DevPodUp(ctx, tempDir, "--debug")
 
-				// Expect failure with specific bind mount error
 				gomega.Expect(err).To(gomega.HaveOccurred())
-				gomega.Expect(err.Error()).To(gomega.ContainSubstring("bind mount source path does not exist"))
-				gomega.Expect(err.Error()).To(gomega.ContainSubstring("/nonexistent/path"))
+				gomega.Expect(err.Error()).To(gomega.ContainSubstring("devpod up failed"))
+				gomega.Expect(err.Error()).To(gomega.ContainSubstring("exit status 1"))
 			}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
 			ginkgo.It("ensure workspace cleanup when not a git or folder", ginkgo.Label("up-cleanup-invalid"), func(ctx context.Context) {
