@@ -23,7 +23,7 @@ import (
 	"github.com/skevetter/devpod/pkg/platform/project"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
-	"tailscale.com/client/tailscale"
+	"tailscale.com/client/local"
 	"tailscale.com/ipn"
 	"tailscale.com/ipn/ipnstate"
 	"tailscale.com/net/memnet"
@@ -32,7 +32,7 @@ import (
 type localServer struct {
 	devPodContext  string
 	httpServer     *http.Server
-	lc             *tailscale.LocalClient
+	lc             *local.Client
 	listener       *memnet.Listener
 	pc             platformclient.Client
 	platformStatus *platformStatus
@@ -87,7 +87,7 @@ var (
 	routeDockerCredentials = "/docker-credentials"
 )
 
-func newLocalServer(lc *tailscale.LocalClient, pc platformclient.Client, devPodContext string, log log.Logger) (*localServer, error) {
+func newLocalServer(lc *local.Client, pc platformclient.Client, devPodContext string, log log.Logger) (*localServer, error) {
 	l := &localServer{
 		lc:             lc,
 		pc:             pc,

@@ -26,7 +26,7 @@ import (
 	"github.com/skevetter/devpod/pkg/ts"
 	"github.com/skratchdot/open-golang/open"
 	"golang.org/x/crypto/ssh"
-	"tailscale.com/client/tailscale"
+	"tailscale.com/client/local"
 	"tailscale.com/tailcfg"
 )
 
@@ -40,7 +40,7 @@ var (
 )
 
 func New(devPodConfig *config.Config, prov *provider.ProviderConfig, workspace *provider.Workspace, log log.Logger) (clientpkg.DaemonClient, error) {
-	tsClient := &tailscale.LocalClient{
+	tsClient := &local.Client{
 		Socket:        daemon.GetSocketAddr(workspace.Provider.Name),
 		UseSocketOnly: true,
 	}
@@ -62,7 +62,7 @@ type client struct {
 	config       *provider.ProviderConfig
 	workspace    *provider.Workspace
 	log          log.Logger
-	tsClient     *tailscale.LocalClient
+	tsClient     *local.Client
 	localClient  *daemon.LocalClient
 }
 

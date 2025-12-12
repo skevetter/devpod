@@ -22,7 +22,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
-	"tailscale.com/client/tailscale"
+	"tailscale.com/client/local"
 	"tailscale.com/ipn/ipnstate"
 	"tailscale.com/tailcfg"
 )
@@ -47,7 +47,7 @@ type watchConfig struct {
 	Context        string
 	Project        string
 	PlatformClient client.Client
-	TsClient       *tailscale.LocalClient
+	TsClient       *local.Client
 	OwnerFilter    platform.OwnerFilter
 	Log            log.Logger
 }
@@ -151,7 +151,7 @@ type instanceStore struct {
 
 	m         sync.Mutex
 	instances map[string]*ProWorkspaceInstance
-	tsClient  *tailscale.LocalClient
+	tsClient  *local.Client
 
 	metricsMu        sync.RWMutex
 	metrics          map[string][]WorkspaceNetworkMetrics
@@ -180,7 +180,7 @@ type WorkspaceNetworkMetrics struct {
 	Timestamp      int64          `json:"timestamp,omitempty"`
 }
 
-func newStore(self *managementv1.Self, context string, ownerFilter platform.OwnerFilter, tsClient *tailscale.LocalClient, log log.Logger) *instanceStore {
+func newStore(self *managementv1.Self, context string, ownerFilter platform.OwnerFilter, tsClient *local.Client, log log.Logger) *instanceStore {
 	return &instanceStore{
 		self:             self,
 		context:          context,

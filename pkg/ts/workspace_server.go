@@ -19,7 +19,7 @@ import (
 
 	"github.com/skevetter/devpod/pkg/platform/client"
 	sshServer "github.com/skevetter/devpod/pkg/ssh/server"
-	"tailscale.com/client/tailscale"
+	"tailscale.com/client/local"
 	"tailscale.com/envknob"
 	"tailscale.com/ipn/store/mem"
 	"tailscale.com/tsnet"
@@ -203,7 +203,7 @@ func (s *WorkspaceServer) parseWorkspaceHostname() (workspace, project string, e
 }
 
 // startListeners creates and starts the SSH and HTTP reverse proxy listeners.
-func (s *WorkspaceServer) startListeners(ctx context.Context, projectName, workspaceName string, lc *tailscale.LocalClient) error {
+func (s *WorkspaceServer) startListeners(ctx context.Context, projectName, workspaceName string, lc *local.Client) error {
 	// Create and start the SSH listener.
 	s.log.Infof("Starting SSH listener")
 	sshListener, err := s.createListener(fmt.Sprintf(":%d", sshServer.DefaultUserPort))
@@ -296,7 +296,7 @@ func (s *WorkspaceServer) removeConnection() {
 }
 
 // gitCredentialsHandler is the handler for git credentials requests for workspace.
-func (s *WorkspaceServer) gitCredentialsHandler(w http.ResponseWriter, r *http.Request, lc *tailscale.LocalClient, transport *http.Transport, projectName, workspaceName string) {
+func (s *WorkspaceServer) gitCredentialsHandler(w http.ResponseWriter, r *http.Request, lc *local.Client, transport *http.Transport, projectName, workspaceName string) {
 	s.log.Infof("Received git credentials request from %s", r.RemoteAddr)
 
 	// create a new http client with a custom transport
@@ -327,7 +327,7 @@ func (s *WorkspaceServer) gitCredentialsHandler(w http.ResponseWriter, r *http.R
 }
 
 // dockerCredentialsHandler is the handler for docker credentials requests for workspace.
-func (s *WorkspaceServer) dockerCredentialsHandler(w http.ResponseWriter, r *http.Request, lc *tailscale.LocalClient, transport *http.Transport, projectName, workspaceName string) {
+func (s *WorkspaceServer) dockerCredentialsHandler(w http.ResponseWriter, r *http.Request, lc *local.Client, transport *http.Transport, projectName, workspaceName string) {
 	s.log.Infof("Received docker credentials request from %s", r.RemoteAddr)
 
 	// create a new http client with a custom transport
@@ -444,7 +444,7 @@ func (s *WorkspaceServer) handleSSHConnection(clientConn net.Conn) {
 	_, err = io.Copy(clientConn, backendConn)
 }
 
-func (s *WorkspaceServer) sendHeartbeats(ctx context.Context, projectName, workspaceName string, lc *tailscale.LocalClient) {
+func (s *WorkspaceServer) sendHeartbeats(ctx context.Context, projectName, workspaceName string, lc *local.Client) {
 	// create a new http client with a custom transport
 	transport := &http.Transport{DialContext: s.tsServer.Dial}
 	client := &http.Client{Transport: transport, Timeout: 10 * time.Second}
@@ -473,7 +473,7 @@ func (s *WorkspaceServer) sendHeartbeats(ctx context.Context, projectName, works
 	}
 }
 
-func (s *WorkspaceServer) sendHeartbeat(ctx context.Context, client *http.Client, projectName, workspaceName string, lc *tailscale.LocalClient, connections int) error {
+func (s *WorkspaceServer) sendHeartbeat(ctx context.Context, client *http.Client, projectName, workspaceName string, lc *local.Client, connections int) error {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
@@ -504,7 +504,7 @@ func (s *WorkspaceServer) sendHeartbeat(ctx context.Context, client *http.Client
 }
 
 // discoverRunner attempts to find the runner peer from the TSNet status.
-func (s *WorkspaceServer) discoverRunner(ctx context.Context, lc *tailscale.LocalClient) (string, error) {
+func (s *WorkspaceServer) discoverRunner(ctx context.Context, lc *local.Client) (string, error) {
 	status, err := lc.Status(ctx)
 	if err != nil {
 		return "", fmt.Errorf("failed to get status: %w", err)

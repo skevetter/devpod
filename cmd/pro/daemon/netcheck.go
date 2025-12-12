@@ -13,7 +13,7 @@ import (
 	daemon "github.com/skevetter/devpod/pkg/daemon/platform"
 	providerpkg "github.com/skevetter/devpod/pkg/provider"
 	"github.com/spf13/cobra"
-	"tailscale.com/client/tailscale"
+	"tailscale.com/client/local"
 )
 
 // NetcheckCmd holds the DevPod daemon flags
@@ -64,7 +64,7 @@ func NewNetcheckCmd(flags *proflags.GlobalFlags) *cobra.Command {
 }
 
 func (cmd *NetcheckCmd) Run(ctx context.Context, devPodConfig *config.Config, provider *providerpkg.ProviderConfig) error {
-	tsClient := &tailscale.LocalClient{
+	tsClient := &local.Client{
 		Socket:        daemon.GetSocketAddr(provider.Name),
 		UseSocketOnly: true,
 	}

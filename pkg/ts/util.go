@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/loft-sh/log"
-	"tailscale.com/client/tailscale"
+	"tailscale.com/client/local"
 	"tailscale.com/ipn"
 	"tailscale.com/types/netmap"
 )
@@ -49,7 +49,7 @@ func GetURL(host string, port int) string {
 }
 
 // WaitHostReachable polls until the given host is reachable via ts.
-func WaitHostReachable(ctx context.Context, lc *tailscale.LocalClient, addr Addr, maxRetries int, log log.Logger) error {
+func WaitHostReachable(ctx context.Context, lc *local.Client, addr Addr, maxRetries int, log log.Logger) error {
 	for i := range maxRetries {
 		timeoutCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 		defer cancel()
@@ -71,7 +71,7 @@ func WaitHostReachable(ctx context.Context, lc *tailscale.LocalClient, addr Addr
 	return fmt.Errorf("host %s not reachable", addr.String())
 }
 
-func WatchNetmap(ctx context.Context, lc *tailscale.LocalClient, netmapChangedFn func(nm *netmap.NetworkMap)) error {
+func WatchNetmap(ctx context.Context, lc *local.Client, netmapChangedFn func(nm *netmap.NetworkMap)) error {
 	watcher, err := lc.WatchIPNBus(ctx, ipn.NotifyInitialNetMap|ipn.NotifyRateLimit|ipn.NotifyWatchEngineUpdates)
 	if err != nil {
 		return err

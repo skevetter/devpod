@@ -17,7 +17,7 @@ import (
 	devpodlog "github.com/skevetter/devpod/pkg/log"
 	"github.com/skevetter/devpod/pkg/platform/client"
 	"github.com/skevetter/devpod/pkg/ts"
-	"tailscale.com/client/tailscale"
+	"tailscale.com/client/local"
 	"tailscale.com/tsnet"
 	"tailscale.com/types/netmap"
 )
@@ -193,7 +193,7 @@ func initLogging(rootDir string, debug bool) log.Logger {
 
 type dialFunc func(context.Context) (net.Conn, error)
 
-func dialTS(lc *tailscale.LocalClient) dialFunc {
+func dialTS(lc *local.Client) dialFunc {
 	return func(ctx context.Context) (net.Conn, error) {
 		return lc.Dial(ctx, "tcp", "local-tailscaled.sock:80")
 	}

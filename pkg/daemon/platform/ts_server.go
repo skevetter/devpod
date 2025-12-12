@@ -10,14 +10,14 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/provider"
 	"github.com/skevetter/devpod/pkg/ts"
-	"tailscale.com/client/tailscale"
+	"tailscale.com/client/local"
 	"tailscale.com/envknob"
 	"tailscale.com/ipn/store"
 	"tailscale.com/tsnet"
 	"tailscale.com/types/logger"
 )
 
-func newTSServer(ctx context.Context, host, accessKey, userName, rootDir string, insecure bool, log log.Logger) (*tsnet.Server, *tailscale.LocalClient, error) {
+func newTSServer(ctx context.Context, host, accessKey, userName, rootDir string, insecure bool, log log.Logger) (*tsnet.Server, *local.Client, error) {
 	// Build the platform URL
 	baseUrl := url.URL{
 		Scheme: ts.GetEnvOrDefault("LOFT_TSNET_SCHEME", "https"),
