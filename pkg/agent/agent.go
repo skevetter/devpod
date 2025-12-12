@@ -38,11 +38,11 @@ const WorkspaceBusyFile = "workspace.lock"
 func DefaultAgentDownloadURL() string {
 	devPodAgentURL := os.Getenv(EnvDevPodAgentURL)
 	if devPodAgentURL != "" {
-		return strings.TrimSuffix(devPodAgentURL, "/") + "/"
+		return strings.TrimRight(devPodAgentURL, "/")
 	}
 
 	if version.GetVersion() == version.DevVersion {
-		return "https://github.com/skevetter/devpod/releases/latest/download/"
+		return "https://github.com/skevetter/devpod/releases/latest/download"
 	}
 
 	return defaultAgentDownloadURL + version.GetVersion()
