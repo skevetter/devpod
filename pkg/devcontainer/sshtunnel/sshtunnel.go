@@ -124,15 +124,12 @@ func ExecuteCommand(
 					log.Debugf("SSH session created")
 					goto sessionReady
 				}
-				log.Debugf("SSH server not ready yet: %v", err)
+				log.Debugf("SSH server not ready yet %v", err)
 			}
 		}
 
 	sessionReady:
 		defer func() { _ = sess.Close() }()
-
-		log.Debugf("SSH session created")
-
 		identityAgent := devsshagent.GetSSHAuthSocket()
 		if identityAgent != "" {
 			log.Debugf("Forwarding ssh-agent using %s", identityAgent)
