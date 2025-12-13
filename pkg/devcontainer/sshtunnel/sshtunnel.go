@@ -43,8 +43,8 @@ func NewPipeManager() (*PipeManager, error) {
 
 	pm.sshStdinReader, pm.sshStdinWriter, err = os.Pipe()
 	if err != nil {
-		pm.sshStdoutWriter.Close()
-		pm.sshStdoutReader.Close()
+		_ = pm.sshStdoutWriter.Close()
+		_ = pm.sshStdoutReader.Close()
 		return nil, err
 	}
 
