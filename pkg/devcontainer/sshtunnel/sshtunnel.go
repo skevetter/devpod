@@ -1,6 +1,7 @@
 package sshtunnel
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -60,7 +61,7 @@ func ExecuteCommand(
 		log.Debugf("Inject and run command: %s", sshCommand)
 		err := agentInject(ctx, sshCommand, sshTunnelStdinReader, sshTunnelStdoutWriter, writer)
 		if err != nil && !errors.Is(err, context.Canceled) && !strings.Contains(err.Error(), "signal: ") {
-			errChan <- fmt.Errorf("executing agent command: %w", err)
+			errChan <- fmt.Errorf("executing agent command %w", err)
 		} else {
 			errChan <- nil
 		}
@@ -94,15 +95,13 @@ func ExecuteCommand(
 		// start ssh client as root / default user
 		sshClient, err := devssh.StdioClient(sshTunnelStdoutReader, sshTunnelStdinWriter, false)
 		if err != nil {
-			errChan <- errors.Wrap(err, "create ssh client")
+			errChan <- fmt.Errorf("create ssh client %w", err)
 			return
 		}
 		defer log.Debugf("Connection to SSH Server closed")
 		defer func() { _ = sshClient.Close() }()
 
 		log.Debugf("SSH client created")
-
-		// Wait for SSH server to be ready with retry
 		log.Debugf("Waiting for SSH server to be ready")
 		var sess *ssh.Session
 		timeout := time.After(60 * time.Second)
@@ -124,31 +123,39 @@ func ExecuteCommand(
 					log.Debugf("SSH session created")
 					goto sessionReady
 				}
-				log.Debugf("SSH server not ready yet %v", err)
+				log.Debugf("SSH server not ready %v", err)
 			}
 		}
 
 	sessionReady:
 		defer func() { _ = sess.Close() }()
+
 		identityAgent := devsshagent.GetSSHAuthSocket()
 		if identityAgent != "" {
 			log.Debugf("Forwarding ssh-agent using %s", identityAgent)
 			err = devsshagent.ForwardToRemote(sshClient, identityAgent)
 			if err != nil {
-				errChan <- errors.Wrap(err, "forward agent")
+				errChan <- fmt.Errorf("forward agent %w", err)
 			}
 			err = devsshagent.RequestAgentForwarding(sess)
 			if err != nil {
-				errChan <- errors.Wrap(err, "request agent forwarding failed")
+				errChan <- fmt.Errorf("request agent forwarding failed %w", err)
 			}
 		}
 
-		writer := log.Writer(logrus.InfoLevel, false)
-		defer func() { _ = writer.Close() }()
+		stdoutWriter := log.Writer(logrus.InfoLevel, false)
+		defer func() { _ = stdoutWriter.Close() }()
 
-		err = devssh.Run(ctx, sshClient, command, gRPCConnStdinReader, gRPCConnStdoutWriter, writer, nil)
+		var stderrBuf bytes.Buffer
+		stderrWriter := io.MultiWriter(&stderrBuf, log.Writer(logrus.ErrorLevel, false))
+
+		err = devssh.Run(ctx, sshClient, command, gRPCConnStdinReader, gRPCConnStdoutWriter, stderrWriter, nil)
 		if err != nil {
-			errChan <- errors.Wrap(err, "run agent command")
+			if stderrBuf.Len() > 0 {
+				errChan <- fmt.Errorf("run agent command %w\n%s", err, stderrBuf.String())
+			} else {
+				errChan <- fmt.Errorf("run agent command %w", err)
+			}
 		} else {
 			errChan <- nil
 		}
@@ -156,7 +163,7 @@ func ExecuteCommand(
 
 	result, err := tunnelServerFunc(cancelCtx, gRPCConnStdinWriter, gRPCConnStdoutReader)
 	if err != nil {
-		return nil, fmt.Errorf("start tunnel server: %w", err)
+		return nil, fmt.Errorf("start tunnel server %w", err)
 	}
 
 	// wait until command finished
