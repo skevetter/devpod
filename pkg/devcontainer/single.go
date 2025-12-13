@@ -99,7 +99,7 @@ func (r *runner) runSingleContainer(
 		if d, ok := r.Driver.(driver.ReprovisioningDriver); ok && d.CanReprovision() {
 			err = r.Driver.RunDevContainer(ctx, r.ID, nil)
 			if err != nil {
-				return nil, fmt.Errorf("start dev container %w", err)
+				return nil, fmt.Errorf("runner driver run dev container %w", err)
 			}
 
 			// get from build info
@@ -161,7 +161,7 @@ func (r *runner) runSingleContainer(
 		// run dev container
 		err = r.runContainer(ctx, parsedConfig, substitutionContext, mergedConfig, buildInfo)
 		if err != nil {
-			return nil, fmt.Errorf("start dev container %w", err)
+			return nil, fmt.Errorf("runner run container %w", err)
 		}
 
 		// TODO: wait here a bit for correct startup?

@@ -18,26 +18,26 @@ func (s *AgentTestSuite) SetupTest() {
 
 func (s *AgentTestSuite) TearDownTest() {
 	if s.originalEnv != "" {
-		os.Setenv(EnvDevPodAgentURL, s.originalEnv)
+		_ = os.Setenv(EnvDevPodAgentURL, s.originalEnv)
 	} else {
-		os.Unsetenv(EnvDevPodAgentURL)
+		_ = os.Unsetenv(EnvDevPodAgentURL)
 	}
 }
 
 func (s *AgentTestSuite) TestDefaultAgentDownloadURL_NoTrailingSlash() {
-	os.Setenv(EnvDevPodAgentURL, "https://example.com/releases/latest/download")
+	_ = os.Setenv(EnvDevPodAgentURL, "https://example.com/releases/latest/download")
 	result := DefaultAgentDownloadURL()
 	s.Equal("https://example.com/releases/latest/download", result)
 }
 
 func (s *AgentTestSuite) TestDefaultAgentDownloadURL_SingleTrailingSlash() {
-	os.Setenv(EnvDevPodAgentURL, "https://example.com/releases/latest/download/")
+	_ = os.Setenv(EnvDevPodAgentURL, "https://example.com/releases/latest/download/")
 	result := DefaultAgentDownloadURL()
 	s.Equal("https://example.com/releases/latest/download", result)
 }
 
 func (s *AgentTestSuite) TestDefaultAgentDownloadURL_MultipleTrailingSlashes() {
-	os.Setenv(EnvDevPodAgentURL, "https://example.com/releases/latest/download///")
+	_ = os.Setenv(EnvDevPodAgentURL, "https://example.com/releases/latest/download///")
 	result := DefaultAgentDownloadURL()
 	s.Equal("https://example.com/releases/latest/download", result)
 }
