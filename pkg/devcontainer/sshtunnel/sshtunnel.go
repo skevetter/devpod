@@ -7,6 +7,8 @@ import (
 	"io"
 	"os"
 	"strings"
+	"sync/atomic"
+	"time"
 
 	"github.com/loft-sh/log"
 
@@ -16,12 +18,121 @@ import (
 	config2 "github.com/skevetter/devpod/pkg/devcontainer/config"
 	devssh "github.com/skevetter/devpod/pkg/ssh"
 	devsshagent "github.com/skevetter/devpod/pkg/ssh/agent"
+	"golang.org/x/crypto/ssh"
 )
 
 type AgentInjectFunc func(context.Context, string, *os.File, *os.File, io.WriteCloser) error
 type TunnelServerFunc func(ctx context.Context, stdin io.WriteCloser, stdout io.Reader) (*config2.Result, error)
 
-// ExecuteCommand runs the command in an SSH Tunnel and returns the result.
+type PipeManager struct {
+	sshStdoutReader, sshStdoutWriter   *os.File
+	sshStdinReader, sshStdinWriter     *os.File
+	grpcStdoutReader, grpcStdoutWriter *os.File
+	grpcStdinReader, grpcStdinWriter   *os.File
+	closed                             atomic.Bool
+}
+
+func NewPipeManager() (*PipeManager, error) {
+	pm := &PipeManager{}
+
+	var err error
+	pm.sshStdoutReader, pm.sshStdoutWriter, err = os.Pipe()
+	if err != nil {
+		return nil, err
+	}
+
+	pm.sshStdinReader, pm.sshStdinWriter, err = os.Pipe()
+	if err != nil {
+		pm.sshStdoutWriter.Close()
+		pm.sshStdoutReader.Close()
+		return nil, err
+	}
+
+	pm.grpcStdoutReader, pm.grpcStdoutWriter, err = os.Pipe()
+	if err != nil {
+		pm.Close()
+		return nil, err
+	}
+
+	pm.grpcStdinReader, pm.grpcStdinWriter, err = os.Pipe()
+	if err != nil {
+		pm.Close()
+		return nil, err
+	}
+
+	return pm, nil
+}
+
+func (pm *PipeManager) Close() {
+	if pm.closed.CompareAndSwap(false, true) {
+		pipes := []*os.File{
+			pm.sshStdoutReader, pm.sshStdoutWriter,
+			pm.sshStdinReader, pm.sshStdinWriter,
+			pm.grpcStdoutReader, pm.grpcStdoutWriter,
+			pm.grpcStdinReader, pm.grpcStdinWriter,
+		}
+		for _, pipe := range pipes {
+			if pipe != nil {
+				_ = pipe.Close()
+			}
+		}
+	}
+}
+
+// SSHClientManager manages SSH client lifecycle with readiness checking
+type SSHClientManager struct {
+	client  *ssh.Client
+	session *ssh.Session
+	log     log.Logger
+}
+
+func NewSSHClientManager(stdout *os.File, stdin *os.File, log log.Logger) (*SSHClientManager, error) {
+	client, err := devssh.StdioClient(stdout, stdin, false)
+	if err != nil {
+		return nil, fmt.Errorf("create ssh client %w", err)
+	}
+
+	return &SSHClientManager{
+		client: client,
+		log:    log,
+	}, nil
+}
+
+func (scm *SSHClientManager) WaitForReady(ctx context.Context, timeout time.Duration) error {
+	scm.log.Debugf("Waiting for SSH server to be ready")
+
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	ticker := time.NewTicker(500 * time.Millisecond)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("SSH server not ready after %v %w", timeout, ctx.Err())
+		case <-ticker.C:
+			sess, err := scm.client.NewSession()
+			if err == nil {
+				scm.session = sess
+				scm.log.Debugf("SSH session created")
+				return nil
+			}
+			scm.log.Debugf("SSH server not ready %v", err)
+		}
+	}
+}
+
+func (scm *SSHClientManager) Close() {
+	if scm.session != nil {
+		_ = scm.session.Close()
+	}
+	if scm.client != nil {
+		_ = scm.client.Close()
+	}
+}
+
+// ExecuteCommand runs the command in an SSH Tunnel and returns the result
 func ExecuteCommand(
 	ctx context.Context,
 	client client2.WorkspaceClient,
@@ -32,23 +143,18 @@ func ExecuteCommand(
 	log log.Logger,
 	tunnelServerFunc TunnelServerFunc,
 ) (*config2.Result, error) {
-	// create pipes
-	sshTunnelStdoutReader, sshTunnelStdoutWriter, err := os.Pipe()
+	// Setup pipes
+	pipes, err := NewPipeManager()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("create pipes %w", err)
 	}
-	sshTunnelStdinReader, sshTunnelStdinWriter, err := os.Pipe()
-	if err != nil {
-		return nil, err
-	}
-	defer func() { _ = sshTunnelStdoutWriter.Close() }()
-	defer func() { _ = sshTunnelStdinWriter.Close() }()
+	defer pipes.Close()
 
-	// start machine on stdio
+	// Start agent injection
 	cancelCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	errChan := make(chan error, 2)
+	injectionDone := make(chan error, 1)
 	go func() {
 		defer log.Debugf("Done executing ssh server helper command")
 		defer cancel()
@@ -57,98 +163,90 @@ func ExecuteCommand(
 		defer func() { _ = writer.Close() }()
 
 		log.Debugf("Inject and run command: %s", sshCommand)
-		err := agentInject(ctx, sshCommand, sshTunnelStdinReader, sshTunnelStdoutWriter, writer)
+		err := agentInject(cancelCtx, sshCommand, pipes.sshStdinReader, pipes.sshStdoutWriter, writer)
 		if err != nil && !errors.Is(err, context.Canceled) && !strings.Contains(err.Error(), "signal: ") {
-			errChan <- fmt.Errorf("executing agent command %w", err)
+			injectionDone <- fmt.Errorf("executing agent command %w", err)
 		} else {
-			errChan <- nil
+			injectionDone <- nil
 		}
 	}()
 
+	// Add SSH keys to agent if required
 	if addPrivateKeys {
-		log.Debug("Adding ssh keys to agent, disable via 'devpod context set-options -o SSH_ADD_PRIVATE_KEYS=false'")
+		log.Debug("adding ssh keys to agent, disable via 'devpod context set-options -o SSH_ADD_PRIVATE_KEYS=false'")
 		err := devssh.AddPrivateKeysToAgent(ctx, log)
 		if err != nil {
-			log.Debugf("Error adding private keys to ssh-agent: %v", err)
+			log.Debugf("error adding private keys to ssh-agent %v", err)
 		}
 	}
 
-	// create pipes
-	gRPCConnStdoutReader, gRPCConnStdoutWriter, err := os.Pipe()
+	// Create SSH client
+	log.Debugf("attempting to create SSH client")
+	sshManager, err := NewSSHClientManager(pipes.sshStdoutReader, pipes.sshStdinWriter, log)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("create ssh client manager %w", err)
 	}
-	gRPCConnStdinReader, gRPCConnStdinWriter, err := os.Pipe()
-	if err != nil {
-		return nil, err
-	}
-	defer func() { _ = gRPCConnStdoutWriter.Close() }()
-	defer func() { _ = gRPCConnStdinWriter.Close() }()
-
-	// connect to container
-	go func() {
-		defer cancel()
-
-		log.Debugf("Attempting to create SSH client")
-		// start ssh client as root / default user
-		sshClient, err := devssh.StdioClient(sshTunnelStdoutReader, sshTunnelStdinWriter, false)
-		if err != nil {
-			errChan <- fmt.Errorf("create ssh client %w", err)
-			return
-		}
-		defer log.Debugf("Connection to SSH Server closed")
-		defer func() { _ = sshClient.Close() }()
-
-		log.Debugf("SSH client created")
-
-		sess, err := sshClient.NewSession()
-		if err != nil {
-			errChan <- fmt.Errorf("create ssh session %w", err)
-		}
-		defer func() { _ = sess.Close() }()
-
-		log.Debugf("SSH session created")
-
-		identityAgent := devsshagent.GetSSHAuthSocket()
-		if identityAgent != "" {
-			log.Debugf("Forwarding ssh-agent using %s", identityAgent)
-			err = devsshagent.ForwardToRemote(sshClient, identityAgent)
-			if err != nil {
-				errChan <- fmt.Errorf("forward agent %w", err)
-			}
-			err = devsshagent.RequestAgentForwarding(sess)
-			if err != nil {
-				errChan <- fmt.Errorf("request agent forwarding failed %w", err)
-			}
-		}
-
-		stdoutWriter := log.Writer(logrus.InfoLevel, false)
-		defer func() { _ = stdoutWriter.Close() }()
-
-		var stderrBuf bytes.Buffer
-		stderrWriter := io.MultiWriter(&stderrBuf, log.Writer(logrus.ErrorLevel, false))
-
-		err = devssh.Run(ctx, sshClient, command, gRPCConnStdinReader, gRPCConnStdoutWriter, stderrWriter, nil)
-		if err != nil {
-			if stderrBuf.Len() > 0 {
-				errChan <- fmt.Errorf("run agent command %w\n%s", err, stderrBuf.String())
-			} else {
-				errChan <- fmt.Errorf("run agent command %w", err)
-			}
-		} else {
-			errChan <- nil
-		}
+	defer func() {
+		log.Debugf("connection to SSH Server closed")
+		sshManager.Close()
 	}()
 
-	result, err := tunnelServerFunc(cancelCtx, gRPCConnStdinWriter, gRPCConnStdoutReader)
+	// Wait for SSH server to be ready
+	if err := sshManager.WaitForReady(cancelCtx, 60*time.Second); err != nil {
+		return nil, fmt.Errorf("SSH server readiness check failed %w", err)
+	}
+
+	// Setup SSH agent forwarding
+	identityAgent := devsshagent.GetSSHAuthSocket()
+	if identityAgent != "" {
+		log.Debugf("forwarding ssh-agent using %s", identityAgent)
+		err = devsshagent.ForwardToRemote(sshManager.client, identityAgent)
+		if err != nil {
+			return nil, fmt.Errorf("forward agent %w", err)
+		}
+		err = devsshagent.RequestAgentForwarding(sshManager.session)
+		if err != nil {
+			return nil, fmt.Errorf("request agent forwarding failed %w", err)
+		}
+	}
+
+	// Setup session I/O
+	stdoutWriter := log.Writer(logrus.InfoLevel, false)
+	defer func() { _ = stdoutWriter.Close() }()
+
+	var stderrBuf bytes.Buffer
+	stderrWriter := io.MultiWriter(&stderrBuf, log.Writer(logrus.ErrorLevel, false))
+
+	sshManager.session.Stdout = stdoutWriter
+	sshManager.session.Stderr = stderrWriter
+	sshManager.session.Stdin = pipes.grpcStdoutReader
+
+	// Start the session command
+	log.Debugf("run command '%s'", command)
+	err = sshManager.session.Start(command)
+	if err != nil {
+		return nil, fmt.Errorf("start ssh command %w", err)
+	}
+
+	// Run tunnel server
+	result, err := tunnelServerFunc(cancelCtx, pipes.grpcStdinWriter, pipes.grpcStdoutReader)
 	if err != nil {
 		return nil, fmt.Errorf("start tunnel server %w", err)
 	}
 
-	// wait until command finished
-	if err := <-errChan; err != nil {
-		return result, err
+	// Wait for session to complete
+	sessionErr := sshManager.session.Wait()
+	if sessionErr != nil {
+		log.Debugf("SSH session error %v", sessionErr)
+		if stderrBuf.Len() > 0 {
+			log.Debugf("SSH session stderr %s", stderrBuf.String())
+		}
 	}
 
-	return result, <-errChan
+	// Wait for injection to complete
+	if injErr := <-injectionDone; injErr != nil {
+		return result, injErr
+	}
+
+	return result, sessionErr
 }
