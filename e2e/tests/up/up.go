@@ -35,12 +35,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 
 		ginkgo.It("with env vars", ginkgo.Label("up-env-vars"), func() {
 			ctx := context.Background()
-			f := framework.NewDefaultFramework(initialDir + "/bin")
-
-			_ = f.DevPodProviderDelete(ctx, "docker")
-			err := f.DevPodProviderAdd(ctx, "docker")
-			framework.ExpectNoError(err)
-			err = f.DevPodProviderUse(ctx, "docker")
+			f, err := setupDockerProvider(initialDir+"/bin", "docker")
 			framework.ExpectNoError(err)
 
 			name := "vscode-remote-try-python"
@@ -153,12 +148,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 
 		ginkgo.It("should allow checkout of a GitRepo from a commit hash", ginkgo.Label("up-git-commit"), func() {
 			ctx := context.Background()
-			f := framework.NewDefaultFramework(initialDir + "/bin")
-
-			_ = f.DevPodProviderDelete(ctx, "docker")
-			err := f.DevPodProviderAdd(ctx, "docker")
-			framework.ExpectNoError(err)
-			err = f.DevPodProviderUse(ctx, "docker")
+			f, err := setupDockerProvider(initialDir+"/bin", "docker")
 			framework.ExpectNoError(err)
 
 			name := "sha256-0c1547c"
@@ -171,12 +161,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 
 		ginkgo.It("should allow checkout of a GitRepo from a pull request reference", ginkgo.Label("up-git-pr"), func() {
 			ctx := context.Background()
-			f := framework.NewDefaultFramework(initialDir + "/bin")
-
-			_ = f.DevPodProviderDelete(ctx, "docker")
-			err := f.DevPodProviderAdd(ctx, "docker")
-			framework.ExpectNoError(err)
-			err = f.DevPodProviderUse(ctx, "docker")
+			f, err := setupDockerProvider(initialDir+"/bin", "docker")
 			framework.ExpectNoError(err)
 
 			name := "pr3"
@@ -197,12 +182,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 			token := os.Getenv("GH_ACCESS_TOKEN")
 
 			ctx := context.Background()
-			f := framework.NewDefaultFramework(initialDir + "/bin")
-
-			_ = f.DevPodProviderDelete(ctx, "docker")
-			err := f.DevPodProviderAdd(ctx, "docker")
-			framework.ExpectNoError(err)
-			err = f.DevPodProviderUse(ctx, "docker")
+			f, err := setupDockerProvider(initialDir+"/bin", "docker")
 			framework.ExpectNoError(err)
 
 			// setup git credentials
@@ -515,9 +495,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 
 		ginkgo.Context("cleanup up on failure", func() {
 			ginkgo.It("ensure workspace cleanup when failing to create a workspace", ginkgo.Label("up-cleanup-fail"), func(ctx context.Context) {
-				f := framework.NewDefaultFramework(initialDir + "/bin")
-				_ = f.DevPodProviderAdd(ctx, "docker")
-				err := f.DevPodProviderUse(ctx, "docker")
+				f, err := setupDockerProvider(initialDir+"/bin", "docker")
 				framework.ExpectNoError(err)
 
 				initialList, err := f.DevPodList(ctx)
@@ -532,9 +510,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 			}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
 			ginkgo.It("should fail with error when bind mount source does not exist", ginkgo.Label("bind-mount-validation"), func(ctx context.Context) {
-				f := framework.NewDefaultFramework(initialDir + "/bin")
-				_ = f.DevPodProviderAdd(ctx, "docker")
-				err := f.DevPodProviderUse(ctx, "docker")
+				f, err := setupDockerProvider(initialDir+"/bin", "docker")
 				framework.ExpectNoError(err)
 
 				tempDir, err := framework.CopyToTempDir("tests/up/testdata/docker-invalid-bind-mount")
@@ -549,9 +525,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 			}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
 			ginkgo.It("ensure workspace cleanup when not a git or folder", ginkgo.Label("up-cleanup-invalid"), func(ctx context.Context) {
-				f := framework.NewDefaultFramework(initialDir + "/bin")
-				_ = f.DevPodProviderAdd(ctx, "docker")
-				err := f.DevPodProviderUse(ctx, "docker")
+				f, err := setupDockerProvider(initialDir+"/bin", "docker")
 				framework.ExpectNoError(err)
 
 				initialList, err := f.DevPodList(ctx)
