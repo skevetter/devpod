@@ -5,6 +5,7 @@ import {
   MenuItem,
   PlacementWithLogical,
   Popover,
+  PopoverArrow,
   PopoverContent,
   PopoverTrigger,
   Portal,
@@ -54,6 +55,7 @@ export function IDEGroup({
       </PopoverTrigger>
       <Portal>
         <PopoverContent zIndex="popover" width="fit-content" ref={popoverRef}>
+          <PopoverArrow />
           {ides?.map((ide) => (
             <IDEItem key={ide.name} ide={ide} onItemClick={onItemClick} disabled={disabled} />
           ))}
