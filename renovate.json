@@ -56,6 +56,10 @@
     {
       "matchPackageNames": ["github.com/tailscale/tailscale"],
       "allowedVersions": "v1.92.2"
+    },
+    {
+      "matchPackageNames": ["gopkg.in/yaml.v2"],
+      "allowedVersions": "v2.4.0"
     }
   ]
 }
