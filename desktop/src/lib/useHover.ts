@@ -7,18 +7,28 @@ export function useHover<T extends HTMLButtonElement>(): [boolean, LegacyRef<T>]
 
   useEffect(
     () => {
-      const handleMouseOver = () => setIsHovering(true)
-      const handleMouseOut = () => setIsHovering(false)
+      let timeoutId: NodeJS.Timeout
+
+      const handleMouseEnter = () => {
+        clearTimeout(timeoutId)
+        setIsHovering(true)
+      }
+
+      const handleMouseLeave = () => {
+        // Add small delay to prevent flickering when moving between elements
+        timeoutId = setTimeout(() => setIsHovering(false), 100)
+      }
 
       setTimeout(() => {
         const node = ref.current
         if (node) {
-          node.addEventListener("mouseover", handleMouseOver)
-          node.addEventListener("mouseout", handleMouseOut)
+          node.addEventListener("mouseenter", handleMouseEnter)
+          node.addEventListener("mouseleave", handleMouseLeave)
 
           return () => {
-            node.removeEventListener("mouseover", handleMouseOver)
-            node.removeEventListener("mouseout", handleMouseOut)
+            clearTimeout(timeoutId)
+            node.removeEventListener("mouseenter", handleMouseEnter)
+            node.removeEventListener("mouseleave", handleMouseLeave)
           }
         }
       })

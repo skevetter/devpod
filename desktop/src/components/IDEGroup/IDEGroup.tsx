@@ -42,8 +42,8 @@ export function IDEGroup({
   return (
     <Popover
       isOpen={popoverHover || triggerHover}
-      placement={placement ?? "right-end"}
-      offset={offset ?? [100, 0]}>
+      placement={placement ?? "right-start"}
+      offset={offset ?? [0, 0]}>
       <PopoverTrigger>
         <MenuItem ref={triggerRef} isDisabled={disabled}>
           <HStack width="full" justifyContent="space-between">
@@ -53,7 +53,11 @@ export function IDEGroup({
         </MenuItem>
       </PopoverTrigger>
       <Portal>
-        <PopoverContent zIndex="popover" width="fit-content" ref={popoverRef}>
+        <PopoverContent
+          zIndex="popover"
+          width="fit-content"
+          ref={popoverRef}
+          marginLeft="-1px">
           {ides?.map((ide) => (
             <IDEItem key={ide.name} ide={ide} onItemClick={onItemClick} disabled={disabled} />
           ))}
