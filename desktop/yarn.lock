@@ -2094,10 +2094,12 @@
   resolved "https://registry.yarnpkg.com/@eslint-community/regexpp/-/regexpp-4.12.2.tgz#bccdf615bcf7b6e8db830ec0b8d21c9a25de597b"
   integrity sha512-EriSTlt5OC9/7SXkRSCAhfSxxoSUgBm33OH+IkwbdpgoqsSsUg7y3uh+IICI/Qg4BBWr3U2i39RpmycbxMq4ew==
 
-"@eslint/compat@1.2.7":
-  version "1.2.7"
-  resolved "https://registry.yarnpkg.com/@eslint/compat/-/compat-1.2.7.tgz#f1a890281631ad27530479420b743dd92626e819"
-  integrity sha512-xvv7hJE32yhegJ8xNAnb62ggiAwTYHBpUCWhRxEj/ksvgDJuSXfoDkBcRYaYNFiJ+jH0IE3K16hd+xXzhBgNbg==
+"@eslint/compat@1.4.1":
+  version "1.4.1"
+  resolved "https://registry.yarnpkg.com/@eslint/compat/-/compat-1.4.1.tgz#81eaabb3e0b080350582c1a8092a2d355fabf03e"
+  integrity sha512-cfO82V9zxxGBxcQDr1lfaYB7wykTa0b00mGa36FrJl7iTFd0Z2cHfEYuxcBRP/iNijCsWsEkA+jzT8hGYmv33w==
+  dependencies:
+    "@eslint/core" "^0.17.0"
 
 "@eslint/config-array@^0.19.2":
   version "0.19.2"
@@ -2124,6 +2126,13 @@
   version "0.13.0"
   resolved "https://registry.yarnpkg.com/@eslint/core/-/core-0.13.0.tgz#bf02f209846d3bf996f9e8009db62df2739b458c"
   integrity sha512-yfkgDw1KR66rkT5A8ci4irzDysN7FRpq3ttJolR88OqQikAWqwA8j5VZyas+vjyBNFIJ7MfybJ9plMILI2UrCw==
+  dependencies:
+    "@types/json-schema" "^7.0.15"
+
+"@eslint/core@^0.17.0":
+  version "0.17.0"
+  resolved "https://registry.yarnpkg.com/@eslint/core/-/core-0.17.0.tgz#77225820413d9617509da9342190a2019e78761c"
+  integrity sha512-yL/sLrpmtDaFEiUj1osRP4TI2MDz1AddJL+jZ7KSqvBuliN4xqYY54IfdN8qD8Toa6g1iloph1fxQNkjOxrrpQ==
   dependencies:
     "@types/json-schema" "^7.0.15"
 
