@@ -53,7 +53,7 @@ export function IDEGroup({
         </MenuItem>
       </PopoverTrigger>
       <Portal>
-        <PopoverContent zIndex="popover" width="fit-content" ref={popoverRef} marginLeft="-1px">
+        <PopoverContent zIndex="popover" width="fit-content" ref={popoverRef}>
           {ides?.map((ide) => (
             <IDEItem key={ide.name} ide={ide} onItemClick={onItemClick} disabled={disabled} />
           ))}

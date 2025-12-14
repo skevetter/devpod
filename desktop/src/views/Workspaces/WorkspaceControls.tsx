@@ -178,11 +178,7 @@ export function WorkspaceControls({
                   </MenuItem>
                 </PopoverTrigger>
                 <Portal>
-                  <PopoverContent
-                    zIndex="popover"
-                    width="fit-content"
-                    ref={popoverContentRef}
-                    marginLeft="-1px">
+                  <PopoverContent zIndex="popover" width="fit-content" ref={popoverContentRef}>
                     {groupedIDEs?.primary.map((ide) => (
                       <MenuItem
                         isDisabled={isOpenDisabled || isLoading}
@@ -201,8 +197,6 @@ export function WorkspaceControls({
                         onHoverChange={setIdeGroupHovered}
                         disabled={isOpenDisabled || isLoading}
                         onItemClick={onIDESelected}
-                        placement="right-start"
-                        offset={[0, 0]}
                       />
                     ))}
                   </PopoverContent>
