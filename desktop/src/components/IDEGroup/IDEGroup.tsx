@@ -43,7 +43,7 @@ export function IDEGroup({
     <Popover
       isOpen={popoverHover || triggerHover}
       placement={placement ?? "right-start"}
-      offset={offset ?? [0, 0]}>
+      offset={offset}>
       <PopoverTrigger>
         <MenuItem ref={triggerRef} isDisabled={disabled}>
           <HStack width="full" justifyContent="space-between">

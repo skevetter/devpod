@@ -164,8 +164,7 @@ export function WorkspaceControls({
             <MenuList>
               <Popover
                 isOpen={isStartWithHovering || isPopoverHovering || ideGroupHovered}
-                placement="right-start"
-                offset={[0, 0]}>
+                placement="right-start">
                 <PopoverTrigger>
                   <MenuItem
                     ref={startWithRef}
