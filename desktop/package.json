@@ -25,7 +25,7 @@
     "@chakra-ui/react": "2.8.1",
     "@emotion/react": "11.11.1",
     "@emotion/styled": "11.11.0",
-    "@headlessui/react": "1.7.17",
+    "@headlessui/react": "1.7.19",
     "@kubernetes/client-node": "1.0.0",
     "@loft-enterprise/client": "https://github.com/loft-sh/loft-javascript-client#v4.3.0-devpod.alpha.11",
     "@tanstack/react-query": "4.36.1",
