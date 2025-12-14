@@ -11,6 +11,7 @@ import {
   MenuItem,
   MenuList,
   Popover,
+  PopoverArrow,
   PopoverContent,
   PopoverTrigger,
   Portal,
@@ -178,6 +179,7 @@ export function WorkspaceControls({
                 </PopoverTrigger>
                 <Portal>
                   <PopoverContent zIndex="popover" width="fit-content" ref={popoverContentRef}>
+                    <PopoverArrow />
                     {groupedIDEs?.primary.map((ide) => (
                       <MenuItem
                         isDisabled={isOpenDisabled || isLoading}
