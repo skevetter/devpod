@@ -7,7 +7,7 @@ import {
   MenuOptionGroup,
 } from "@chakra-ui/react"
 import { ChevronDownIcon } from "@chakra-ui/icons"
-import { DEFAULT_SORT_WORKSPACE_MODE, ESortWorkspaceMode } from "@/lib/useSortWorkspaces"
+import { DEFAULT_SORT_WORKSPACE_MODE, ESortWorkspaceMode } from "@/lib/sortWorkspaceConstants"
 import { useCallback } from "react"
 
 export function WorkspaceSorter({

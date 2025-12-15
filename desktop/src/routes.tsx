@@ -127,7 +127,6 @@ export const Routes = {
   },
 } as const
 
-// eslint-disable-next-line react-refresh/only-export-components
 export const router = createBrowserRouter([
   {
     path: Routes.ROOT,
