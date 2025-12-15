@@ -123,9 +123,9 @@ export class FileStorageBackend<T extends TBaseStore> implements TStorageBackend
   }
 }
 
-export class LocalStorageToFileMigrationBackend<T extends TBaseStore>
-  implements TStorageBackend<T>
-{
+export class LocalStorageToFileMigrationBackend<
+  T extends TBaseStore,
+> implements TStorageBackend<T> {
   private lsBackend: LocalStorageBackend<T>
   private fsBackend: FileStorageBackend<T>
 

@@ -159,55 +159,51 @@ export const Terminal = forwardRef<TTerminalRef, TTerminalProps>(function T(
     }
   }, [fontSize])
 
-  useImperativeHandle(
-    ref,
-    () => {
-      return {
-        clear() {
-          terminalRef.current?.clear()
-        },
-        write(data) {
-          terminalRef.current?.write(data)
-          termFitRef.current?.fit()
-        },
-        writeln(data) {
-          terminalRef.current?.writeln(data)
-          termFitRef.current?.fit()
-        },
-        highlight(row: number, startCol: number, len: number, color: string, invertText: boolean) {
-          const terminal = terminalRef.current
+  useImperativeHandle(ref, () => {
+    return {
+      clear() {
+        terminalRef.current?.clear()
+      },
+      write(data) {
+        terminalRef.current?.write(data)
+        termFitRef.current?.fit()
+      },
+      writeln(data) {
+        terminalRef.current?.writeln(data)
+        termFitRef.current?.fit()
+      },
+      highlight(row: number, startCol: number, len: number, color: string, invertText: boolean) {
+        const terminal = terminalRef.current
 
-          if (!terminal) {
-            return undefined
-          }
+        if (!terminal) {
+          return undefined
+        }
 
-          const rowRelative = -terminal.buffer.active.baseY - terminal.buffer.active.cursorY + row
+        const rowRelative = -terminal.buffer.active.baseY - terminal.buffer.active.cursorY + row
 
-          const marker = terminal.registerMarker(rowRelative)
-          const decoration = terminal.registerDecoration({
-            marker,
-            x: startCol,
-            width: len,
-            backgroundColor: color,
-            foregroundColor: invertText ? "#000000" : "#FFFFFF",
-            layer: "top",
-            overviewRulerOptions: {
-              color: color,
-            },
-          })
+        const marker = terminal.registerMarker(rowRelative)
+        const decoration = terminal.registerDecoration({
+          marker,
+          x: startCol,
+          width: len,
+          backgroundColor: color,
+          foregroundColor: invertText ? "#000000" : "#FFFFFF",
+          layer: "top",
+          overviewRulerOptions: {
+            color: color,
+          },
+        })
 
-          return () => {
-            marker.dispose()
-            decoration?.dispose()
-          }
-        },
-        getTerminal() {
-          return terminalRef.current
-        },
-      }
-    },
-    [terminalRef]
-  )
+        return () => {
+          marker.dispose()
+          decoration?.dispose()
+        }
+      },
+      getTerminal() {
+        return terminalRef.current
+      },
+    }
+  }, [terminalRef])
 
   return (
     <Box width="full" height="full">

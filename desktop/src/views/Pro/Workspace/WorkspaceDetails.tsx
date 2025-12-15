@@ -412,8 +412,8 @@ function KubernetesDetails({ status }: TKubernetesDetailsProps) {
                   ? resource.usagePercentage + "%"
                   : "-"
                 : resource.used != null
-                ? resource.used + (resource.unit ?? "")
-                : "-"}
+                  ? resource.used + (resource.unit ?? "")
+                  : "-"}
             </Text>
           </StackedWorkspaceInfoDetail>
         )

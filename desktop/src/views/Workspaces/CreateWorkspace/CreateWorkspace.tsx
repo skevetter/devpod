@@ -245,7 +245,7 @@ export function CreateWorkspace() {
                       key={example.source}
                       size="sm"
                       image={
-                        colorMode === "dark" ? example.imageDark ?? example.image : example.image
+                        colorMode === "dark" ? (example.imageDark ?? example.image) : example.image
                       }
                       name={example.name}
                       isSelected={currentSource === example.source}

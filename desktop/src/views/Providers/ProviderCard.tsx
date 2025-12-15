@@ -179,8 +179,8 @@ export function ProviderCard({ id, provider, remove }: TProviderCardProps) {
                 providerWorkspaces.length === 1
                   ? "1 workspace"
                   : providerWorkspaces.length > 0
-                  ? providerWorkspaces.length + " workspaces"
-                  : "No workspaces"
+                    ? providerWorkspaces.length + " workspaces"
+                    : "No workspaces"
               }
               info={`This provider is used by ${providerWorkspaces.length} ${
                 providerWorkspaces.length === 1 ? "workspace" : "workspaces"
