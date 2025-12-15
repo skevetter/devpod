@@ -17,4 +17,4 @@ fi
 EOF
 
 chmod +x /usr/local/bin/test-depends-on
-echo "dependsOnDemo feature installed successfully"
+echo "dependsOnDemo feature installed"
