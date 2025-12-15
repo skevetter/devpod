@@ -81,7 +81,7 @@
     "eslint-plugin-react-hooks": "5.2.0",
     "eslint-plugin-react-refresh": "0.4.25",
     "globals": "16.5.0",
-    "prettier": "3.0.3",
+    "prettier": "3.7.4",
     "typescript": "5.0.4",
     "vite": "6.2.0"
   },
