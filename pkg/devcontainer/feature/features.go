@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
@@ -233,14 +234,35 @@ func processDirectTarFeature(id string, httpHeaders map[string]string, log log.L
 }
 
 func downloadFeatureFromURL(url string, destFile string, httpHeaders map[string]string, log log.Logger) error {
-	// create the features temp folder
 	err := os.MkdirAll(filepath.Dir(destFile), 0755)
 	if err != nil {
 		return fmt.Errorf("create feature folder %w", err)
 	}
 
-	// initiate download
-	log.Debugf("Download feature from %s", url)
+	attempt := 0
+	for range 3 {
+		if attempt > 0 {
+			delay := time.Duration(1<<uint(attempt-1)) * time.Second
+			log.Debugf("retrying download in %v", delay)
+			time.Sleep(delay)
+		}
+
+		log.Debugf("download feature from %s", url)
+		if err := tryDownload(url, destFile, httpHeaders); err != nil {
+			if attempt == 2 {
+				return err
+			}
+			log.Debugf("download attempt failed %v", err)
+			attempt++
+			continue
+		}
+		return nil
+	}
+
+	return fmt.Errorf("download failed")
+}
+
+func tryDownload(url, destFile string, httpHeaders map[string]string) error {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return fmt.Errorf("make request %w", err)
@@ -254,11 +276,11 @@ func downloadFeatureFromURL(url string, destFile string, httpHeaders map[string]
 		return fmt.Errorf("make request %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
+
 	if resp.StatusCode >= 400 {
-		return fmt.Errorf("GET request failed, status code is '%d'", resp.StatusCode)
+		return fmt.Errorf("GET request failed, status code is %d", resp.StatusCode)
 	}
 
-	// download the tar.gz file
 	file, err := os.Create(destFile)
 	if err != nil {
 		return fmt.Errorf("create download file %w", err)
