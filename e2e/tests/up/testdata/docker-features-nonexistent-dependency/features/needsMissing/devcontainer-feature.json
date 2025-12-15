@@ -1,0 +1,9 @@
+{
+  "name": "Needs Missing Feature",
+  "id": "needsMissing",
+  "version": "1.0.0",
+  "description": "Feature that depends on non-existent dependency",
+  "dependsOn": {
+    "ghcr.io/nonexistent/missing-feature:latest": {}
+  }
+}

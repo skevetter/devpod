@@ -58,6 +58,9 @@ type FeatureConfig struct {
 	// Array of ID's of Features that should execute before this one. Allows control for feature authors on soft dependencies between different Features.
 	InstallsAfter []string `json:"installsAfter,omitempty"`
 
+	// The optional dependsOn property indicates a set of required, “hard” dependencies for a given Feature. Hard dependencies must be satisfied before this Feature is installed.
+	DependsOn map[string]any `json:"dependsOn,omitempty"`
+
 	// Container environment variables.
 	ContainerEnv map[string]string `json:"containerEnv,omitempty"`
 

@@ -65,7 +65,7 @@ func (g *Graph[T]) Clone() *Graph[T] {
 
 	// copy nodes
 	for k, v := range g.Nodes {
-		retGraph.Nodes[k] = NewNode[T](v.ID, v.Data)
+		retGraph.Nodes[k] = NewNode(v.ID, v.Data)
 	}
 	retGraph.Root = retGraph.Nodes[g.Root.ID]
 
@@ -124,7 +124,7 @@ func (g *Graph[T]) InsertNodeAt(parentID string, id string, data T) (*Node[T], e
 		return existingNode, nil
 	}
 
-	node := NewNode[T](id, data)
+	node := NewNode(id, data)
 
 	g.Nodes[node.ID] = node
 

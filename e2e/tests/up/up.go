@@ -539,5 +539,159 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 				framework.ExpectEqual(out, initialList)
 			}, ginkgo.SpecTimeout(framework.GetTimeout()))
 		})
+
+		ginkgo.Context("devcontainer features dependsOn", func() {
+			ginkgo.It("should automatically install dependsOn features", ginkgo.Label("features-depends-on"), func(ctx context.Context) {
+				f, err := setupDockerProvider(initialDir+"/bin", "docker")
+				framework.ExpectNoError(err)
+
+				tempDir, err := framework.CopyToTempDir("tests/up/testdata/docker-features-depends-on")
+				framework.ExpectNoError(err)
+				ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
+
+				workspaceName := filepath.Base(tempDir)
+				ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), workspaceName)
+
+				// This should now succeed with dependsOn implementation
+				err = f.DevPodUp(ctx, tempDir)
+				framework.ExpectNoError(err)
+
+				// Test if the dependency (hello command) is available
+				out, err := f.DevPodSSH(ctx, workspaceName, "test-depends-on")
+				framework.ExpectNoError(err)
+				// The output contains ANSI color codes, so only check for the text
+				gomega.Expect(out).To(gomega.ContainSubstring("SUCCESS: hello command is available"))
+				gomega.Expect(out).To(gomega.ContainSubstring("hey, vscode"))
+			}, ginkgo.SpecTimeout(framework.GetTimeout()))
+
+			ginkgo.It("should handle nested dependencies", ginkgo.Label("features-nested-depends-on"), func(ctx context.Context) {
+				f, err := setupDockerProvider(initialDir+"/bin", "docker")
+				framework.ExpectNoError(err)
+
+				tempDir, err := framework.CopyToTempDir("tests/up/testdata/docker-features-nested-depends-on")
+				framework.ExpectNoError(err)
+				ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
+
+				workspaceName := filepath.Base(tempDir)
+				ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), workspaceName)
+
+				err = f.DevPodUp(ctx, tempDir)
+				framework.ExpectNoError(err)
+
+				// Test nested dependency chain works
+				out, err := f.DevPodSSH(ctx, workspaceName, "test-nested-chain")
+				framework.ExpectNoError(err)
+				gomega.Expect(out).To(gomega.ContainSubstring("All dependencies available"))
+			}, ginkgo.SpecTimeout(framework.GetTimeout()))
+
+			ginkgo.It("should detect circular dependencies", ginkgo.Label("features-circular-depends-on"), func(ctx context.Context) {
+				f, err := setupDockerProvider(initialDir+"/bin", "docker")
+				framework.ExpectNoError(err)
+
+				tempDir, err := framework.CopyToTempDir("tests/up/testdata/docker-features-circular-depends-on")
+				framework.ExpectNoError(err)
+				ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
+
+				workspaceName := filepath.Base(tempDir)
+				ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), workspaceName)
+
+				// This should fail with circular dependency error
+				err = f.DevPodUp(ctx, tempDir)
+				// The logs show "circular dependency detected" in the debug output
+				framework.ExpectError(err)
+			}, ginkgo.SpecTimeout(framework.GetTimeout()))
+
+			ginkgo.It("should handle dependsOn with options", ginkgo.Label("features-depends-on-options"), func(ctx context.Context) {
+				f, err := setupDockerProvider(initialDir+"/bin", "docker")
+				framework.ExpectNoError(err)
+
+				tempDir, err := framework.CopyToTempDir("tests/up/testdata/docker-features-depends-on-options")
+				framework.ExpectNoError(err)
+				ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
+
+				workspaceName := filepath.Base(tempDir)
+				ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), workspaceName)
+
+				err = f.DevPodUp(ctx, tempDir)
+				framework.ExpectNoError(err)
+
+				// Test dependency installed with correct options
+				out, err := f.DevPodSSH(ctx, workspaceName, "hello")
+				framework.ExpectNoError(err)
+				gomega.Expect(out).To(gomega.ContainSubstring("custom greeting"))
+			}, ginkgo.SpecTimeout(framework.GetTimeout()))
+
+			ginkgo.It("should handle mixed dependsOn and installsAfter", ginkgo.Label("features-mixed-dependencies"), func(ctx context.Context) {
+				f, err := setupDockerProvider(initialDir+"/bin", "docker")
+				framework.ExpectNoError(err)
+
+				tempDir, err := framework.CopyToTempDir("tests/up/testdata/docker-features-mixed-dependencies")
+				framework.ExpectNoError(err)
+				ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
+
+				workspaceName := filepath.Base(tempDir)
+				ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), workspaceName)
+
+				err = f.DevPodUp(ctx, tempDir)
+				framework.ExpectNoError(err)
+
+				// Test correct installation order
+				out, err := f.DevPodSSH(ctx, workspaceName, "test-install-order")
+				framework.ExpectNoError(err)
+				gomega.Expect(out).To(gomega.ContainSubstring("Correct order"))
+			}, ginkgo.SpecTimeout(framework.GetTimeout()))
+			ginkgo.It("should detect self-dependency", ginkgo.Label("features-self-dependency"), func(ctx context.Context) {
+				f, err := setupDockerProvider(initialDir+"/bin", "docker")
+				framework.ExpectNoError(err)
+
+				tempDir, err := framework.CopyToTempDir("tests/up/testdata/docker-features-self-dependency")
+				framework.ExpectNoError(err)
+				ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
+
+				workspaceName := filepath.Base(tempDir)
+				ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), workspaceName)
+
+				// Should fail with circular dependency error
+				err = f.DevPodUp(ctx, tempDir)
+				framework.ExpectError(err)
+			}, ginkgo.SpecTimeout(framework.GetTimeout()))
+
+			ginkgo.It("should handle non-existent dependency gracefully", ginkgo.Label("features-nonexistent-dependency"), func(ctx context.Context) {
+				f, err := setupDockerProvider(initialDir+"/bin", "docker")
+				framework.ExpectNoError(err)
+
+				tempDir, err := framework.CopyToTempDir("tests/up/testdata/docker-features-nonexistent-dependency")
+				framework.ExpectNoError(err)
+				ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
+
+				workspaceName := filepath.Base(tempDir)
+				ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), workspaceName)
+
+				// Should fail when dependency cannot be resolved
+				err = f.DevPodUp(ctx, tempDir)
+				framework.ExpectError(err)
+			}, ginkgo.SpecTimeout(framework.GetTimeout()))
+
+			ginkgo.It("should handle shared dependencies correctly", ginkgo.Label("features-shared-dependency"), func(ctx context.Context) {
+				f, err := setupDockerProvider(initialDir+"/bin", "docker")
+				framework.ExpectNoError(err)
+
+				tempDir, err := framework.CopyToTempDir("tests/up/testdata/docker-features-shared-dependency")
+				framework.ExpectNoError(err)
+				ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
+
+				workspaceName := filepath.Base(tempDir)
+				ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), workspaceName)
+
+				err = f.DevPodUp(ctx, tempDir)
+				framework.ExpectNoError(err)
+
+				// Verify shared dependency was installed only once and both features work
+				out, err := f.DevPodSSH(ctx, workspaceName, "hello")
+				framework.ExpectNoError(err)
+				// Should contain greeting from one of the features (last one wins)
+				gomega.Expect(out).To(gomega.ContainSubstring("from"))
+			}, ginkgo.SpecTimeout(framework.GetTimeout()))
+		})
 	})
 })

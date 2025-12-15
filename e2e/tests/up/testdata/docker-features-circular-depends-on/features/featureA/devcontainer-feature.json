@@ -1,0 +1,9 @@
+{
+  "id": "featureA",
+  "version": "1.0.0",
+  "name": "Feature A",
+  "description": "Feature A depends on B",
+  "dependsOn": {
+    "./features/featureB": {}
+  }
+}

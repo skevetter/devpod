@@ -228,36 +228,121 @@ func findContainerUsers(baseImageMetadata *config.ImageMetadataConfig, composeSe
 }
 
 func fetchFeatures(devContainerConfig *config.DevContainerConfig, log log.Logger, forceBuild bool) ([]*config.FeatureSet, error) {
-	featureSets := []*config.FeatureSet{}
+	// Process user-defined features first
+	userFeatures := map[string]*config.FeatureSet{}
 	for featureID, featureOptions := range devContainerConfig.Features {
-		featureFolder, err := ProcessFeatureID(featureID, devContainerConfig, log, forceBuild)
+		featureSet, err := processFeature(featureID, featureOptions, devContainerConfig, log, forceBuild)
 		if err != nil {
 			return nil, fmt.Errorf("process feature %s %w", featureID, err)
 		}
-
-		// parse feature
-		log.Debugf("Parse dev container feature in %s", featureFolder)
-		featureConfig, err := config.ParseDevContainerFeature(featureFolder)
-		if err != nil {
-			return nil, fmt.Errorf("parse feature %s %w", featureID, err)
-		}
-
-		// add to return array
-		featureSets = append(featureSets, &config.FeatureSet{
-			ConfigID: NormalizeFeatureID(featureID),
-			Folder:   featureFolder,
-			Config:   featureConfig,
-			Options:  featureOptions,
-		})
+		userFeatures[featureSet.ConfigID] = featureSet
 	}
 
-	// compute order here
-	featureSets, err := computeFeatureOrder(devContainerConfig, featureSets)
+	// Resolve dependencies recursively
+	allFeatures, err := resolveDependencies(devContainerConfig, userFeatures, log, forceBuild)
+	if err != nil {
+		return nil, fmt.Errorf("resolve dependencies %w", err)
+	}
+
+	// Convert map to slice
+	featureSets := make([]*config.FeatureSet, 0, len(allFeatures))
+	for _, featureSet := range allFeatures {
+		featureSets = append(featureSets, featureSet)
+	}
+
+	// Compute order
+	featureSets, err = computeFeatureOrder(devContainerConfig, featureSets)
 	if err != nil {
 		return nil, fmt.Errorf("compute feature order %w", err)
 	}
 
 	return featureSets, nil
+}
+
+func processFeature(featureID string, featureOptions any, devContainerConfig *config.DevContainerConfig, log log.Logger, forceBuild bool) (*config.FeatureSet, error) {
+	featureFolder, err := ProcessFeatureID(featureID, devContainerConfig, log, forceBuild)
+	if err != nil {
+		return nil, fmt.Errorf("process feature ID %w", err)
+	}
+
+	log.Debugf("parse dev container feature in %s", featureFolder)
+	featureConfig, err := config.ParseDevContainerFeature(featureFolder)
+	if err != nil {
+		return nil, fmt.Errorf("parse feature %w", err)
+	}
+
+	return &config.FeatureSet{
+		ConfigID: NormalizeFeatureID(featureID),
+		Folder:   featureFolder,
+		Config:   featureConfig,
+		Options:  featureOptions,
+	}, nil
+}
+
+func resolveFeatureDependency(
+	featureID string,
+	featureSet *config.FeatureSet,
+	features map[string]*config.FeatureSet,
+	resolved map[string]*config.FeatureSet,
+	visiting map[string]bool,
+	devContainerConfig *config.DevContainerConfig,
+	log log.Logger,
+	forceBuild bool,
+) error {
+	if resolved[featureID] != nil {
+		return nil // Already resolved
+	}
+
+	if visiting[featureID] {
+		return fmt.Errorf("circular dependency detected involving feature %s", featureID)
+	}
+
+	visiting[featureID] = true
+	defer func() { visiting[featureID] = false }()
+
+	// Process dependencies first
+	for depID, depOptions := range featureSet.Config.DependsOn {
+		normalizedDepID := NormalizeFeatureID(depID)
+		depFeatureSet, exists := features[normalizedDepID]
+		if !exists {
+			// Auto-install dependency
+			log.Debugf("installing dependency feature %s", depID)
+			var err error
+			depFeatureSet, err = processFeature(depID, depOptions, devContainerConfig, log, forceBuild)
+			if err != nil {
+				return fmt.Errorf("failed to resolve dependency %s %w", depID, err)
+			}
+			features[normalizedDepID] = depFeatureSet
+		}
+
+		err := resolveFeatureDependency(normalizedDepID, depFeatureSet, features, resolved, visiting, devContainerConfig, log, forceBuild)
+		if err != nil {
+			return err
+		}
+	}
+
+	resolved[featureID] = featureSet
+	return nil
+}
+
+func resolveDependencies(
+	devContainerConfig *config.DevContainerConfig,
+	features map[string]*config.FeatureSet,
+	log log.Logger,
+	forceBuild bool,
+) (map[string]*config.FeatureSet, error) {
+	resolved := make(map[string]*config.FeatureSet)
+	visiting := make(map[string]bool)
+
+	// Resolve all features
+	for featureID, featureSet := range features {
+		err := resolveFeatureDependency(featureID, featureSet, features, resolved, visiting, devContainerConfig, log, forceBuild)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return resolved, nil
 }
 
 func NormalizeFeatureID(featureID string) string {
@@ -306,7 +391,7 @@ func computeFeatureOrder(devContainer *config.DevContainerConfig, features []*co
 }
 
 func computeAutomaticFeatureOrder(features []*config.FeatureSet) ([]*config.FeatureSet, error) {
-	g := graph.NewGraph[*config.FeatureSet](graph.NewNode[*config.FeatureSet]("root", nil))
+	g := graph.NewGraph(graph.NewNode[*config.FeatureSet]("root", nil))
 
 	// build lookup map
 	lookup := map[string]*config.FeatureSet{}
@@ -321,22 +406,36 @@ func computeAutomaticFeatureOrder(features []*config.FeatureSet) ([]*config.Feat
 			return nil, err
 		}
 
-		// add edges
+		// Add hard dependency edges (dependsOn); these dependencies must come first
+		for depID := range feature.Config.DependsOn {
+			normalizedDepID := NormalizeFeatureID(depID)
+			depFeature, ok := lookup[normalizedDepID]
+			if ok {
+				// Add edge from feature to dependency (feature -> dependency)
+				// This ensures dependency is installed first (removed as leaf first)
+				_, err = g.InsertNodeAt(feature.ConfigID, normalizedDepID, depFeature)
+				if err != nil {
+					return nil, err
+				}
+			}
+		}
+
+		// Add soft dependency edges (installsAfter); only add if already in the list
 		for _, installAfter := range feature.Config.InstallsAfter {
-			installAfterFeature, ok := lookup[installAfter]
+			_, ok := lookup[installAfter]
 			if !ok {
 				continue
 			}
 
-			// add an edge from feature to installAfterFeature
-			_, err = g.InsertNodeAt(feature.ConfigID, installAfter, installAfterFeature)
+			// Add an edge from installAfter feature to current feature
+			_, err = g.InsertNodeAt(installAfter, feature.ConfigID, feature)
 			if err != nil {
 				return nil, err
 			}
 		}
 	}
 
-	// now remove node after node
+	// now remove node after node (topological sort)
 	ordered := []*config.FeatureSet{}
 	for {
 		leaf := g.GetNextLeaf(g.Root)

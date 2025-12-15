@@ -87,8 +87,8 @@ runs:
           return 1
         }
 
-        pull_with_retry alpine
         pull_with_retry ubuntu
+        pull_with_retry mcr.microsoft.com/devcontainers/base:alpine
         pull_with_retry mcr.microsoft.com/devcontainers/go:1
         pull_with_retry mcr.microsoft.com/devcontainers/python:latest
 
