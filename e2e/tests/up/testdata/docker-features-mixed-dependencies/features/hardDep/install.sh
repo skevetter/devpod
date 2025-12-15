@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-echo "Installing hard dependency..."
+echo "Installing hard dependency"
 
 cat >/usr/local/bin/hard-dep <<'EOF'
 #!/bin/bash
