@@ -224,22 +224,33 @@ func initWorkspace(ctx context.Context, cancel context.CancelFunc, workspaceInfo
 				installDisabled = true
 			}
 
-			// If docker does not exist, install it even if disabled
-			if !command.Exists("docker") {
-				if installDisabled {
-					logger.Debug("Docker not found but installation was disabled, installing anyway as it's required")
+			// Check if docker command exists
+			dockerCmd := "docker"
+			if workspaceInfo.Agent.Docker.Path != "" {
+				logger.Debugf("using custom docker path %s", workspaceInfo.Agent.Docker.Path)
+				dockerCmd = workspaceInfo.Agent.Docker.Path
+			}
+
+			if !command.Exists(dockerCmd) {
+				// If using alternative docker tool (e.g., podman), do not install docker
+				if dockerCmd != "docker" {
+					errChan <- fmt.Errorf("docker command '%s' not found", dockerCmd)
+					dockerPathChan <- ""
+					return
 				}
-				logger.Debug("Attempting to install docker")
+
+				// Install docker
+				if installDisabled {
+					logger.Debug("docker not found but installation was disabled, installing anyway as it is required")
+				}
+				logger.Debug("attempting to install docker")
 				dockerPath, err := installDocker(logger)
-				logger.Debugf("Docker installation result: path=%q, err=%v", dockerPath, err)
+				logger.Debugf("docker installation path=%q, err=%v", dockerPath, err)
 				dockerPathChan <- dockerPath
 				errChan <- err
-			} else if installDisabled {
-				logger.Debug("Docker installation disabled and docker already exists")
-				dockerPathChan <- ""
-				errChan <- nil
 			} else {
-				logger.Debug("Docker already exists, skipping installation")
+				// Docker command exists, skip installation
+				logger.Debug("docker command exists, skipping installation")
 				dockerPathChan <- ""
 				errChan <- nil
 			}
@@ -264,7 +275,7 @@ func initWorkspace(ctx context.Context, cancel context.CancelFunc, workspaceInfo
 	dockerPath := <-dockerPathChan
 	if dockerPath != "" && workspaceInfo.Agent.Docker.Path == "" {
 		workspaceInfo.Agent.Docker.Path = dockerPath
-		logger.Debugf("Set docker path to %s", dockerPath)
+		logger.Debugf("set docker path to %s", dockerPath)
 	}
 	err = <-errChan
 	if err != nil {

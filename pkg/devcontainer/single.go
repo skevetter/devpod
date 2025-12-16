@@ -45,7 +45,11 @@ func (r *runner) runSingleContainer(
 	// Check if Docker exists before trying to find containers
 	var containerDetails *config.ContainerDetails
 	var err error
-	if command.Exists("docker") {
+	dockerCmd := "docker"
+	if r.WorkspaceConfig.Agent.Docker.Path != "" {
+		dockerCmd = r.WorkspaceConfig.Agent.Docker.Path
+	}
+	if command.Exists(dockerCmd) {
 		containerDetails, err = r.Driver.FindDevContainer(ctx, r.ID)
 		if err != nil {
 			return nil, fmt.Errorf("find dev container %w", err)
