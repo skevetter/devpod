@@ -6,11 +6,13 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"runtime"
 
 	"github.com/loft-sh/log"
+	"github.com/pkg/browser"
 	"github.com/skevetter/devpod/pkg/command"
 	"github.com/skevetter/devpod/pkg/config"
 	copy2 "github.com/skevetter/devpod/pkg/copy"
@@ -18,7 +20,6 @@ import (
 	devpodhttp "github.com/skevetter/devpod/pkg/http"
 	"github.com/skevetter/devpod/pkg/ide"
 	"github.com/skevetter/devpod/pkg/util"
-	"github.com/skratchdot/open-golang/open"
 )
 
 const (
@@ -74,11 +75,41 @@ type GenericJetBrainsServer struct {
 }
 
 func (o *GenericJetBrainsServer) OpenGateway(workspaceFolder, workspaceID string) error {
-	o.log.Infof("Starting %s through JetBrains Gateway...", o.options.DisplayName)
-	err := open.Run(`jetbrains-gateway://connect#idePath=` + url.QueryEscape(o.getDirectory(path.Join("/", "home", o.userName))) + `&projectPath=` + url.QueryEscape(workspaceFolder) + `&host=` + workspaceID + `.devpod&port=22&user=` + url.QueryEscape(o.userName) + `&type=ssh&deploy=false`)
+	o.log.Infof("starting %s through JetBrains Gateway", o.options.DisplayName)
+
+	// Build JetBrains Gateway URL
+	// Reference: https://www.jetbrains.com/help/idea/remote-development-a.html#use_idea
+	// Format: jetbrains-gateway://connect#idePath=<path>&projectPath=<path>&host=<host>&port=<port>&user=<user>&type=ssh&deploy=false
+	params := url.Values{}
+	params.Set("idePath", o.getDirectory(path.Join("/", "home", o.userName)))
+	params.Set("projectPath", workspaceFolder)
+	params.Set("host", workspaceID+".devpod")
+	params.Set("port", "22") // Standard SSH port - TODO: make configurable
+	params.Set("user", o.userName)
+	params.Set("type", "ssh")
+	params.Set("deploy", "false") // Do not auto-deploy IDE backend
+
+	gatewayURL := "jetbrains-gateway://connect#" + params.Encode()
+
+	err := browser.OpenURL(gatewayURL)
 	if err != nil {
-		o.log.Debugf("Error opening jetbrains-gateway: %v", err)
-		o.log.Errorf("Seems like you don't have JetBrains Gateway installed on your computer. Please install JetBrains Gateway via https://www.jetbrains.com/remote-development/gateway/")
+		o.log.Debugf("error opening jetbrains-gateway with browser %v", err)
+
+		if runtime.GOOS == "linux" {
+			o.log.Debugf("falling back to xdg-open on Linux")
+			out, execErr := exec.Command("xdg-open", gatewayURL).CombinedOutput()
+			if execErr != nil {
+				o.log.Debugf("error opening jetbrains-gateway with xdg-open %v", execErr)
+				o.log.Debugf("xdg-open output %s", string(out))
+				err = execErr
+			} else {
+				err = nil // xdg-open succeeded
+			}
+		}
+	}
+
+	if err != nil {
+		o.log.Errorf("Failed to open JetBrains Gateway. Ensure JetBrains Gateway is installed. Download from https://www.jetbrains.com/remote-development/gateway/")
 		return err
 	}
 	return nil
