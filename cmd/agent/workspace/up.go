@@ -234,7 +234,8 @@ func initWorkspace(ctx context.Context, cancel context.CancelFunc, workspaceInfo
 			if !command.Exists(dockerCmd) {
 				// If using alternative docker tool (e.g., podman), do not install docker
 				if dockerCmd != "docker" {
-					errChan <- fmt.Errorf("docker command '%s' not found", dockerCmd)
+					_, err := exec.LookPath(dockerCmd)
+					errChan <- err
 					dockerPathChan <- ""
 					return
 				}
