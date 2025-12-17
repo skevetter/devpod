@@ -90,17 +90,18 @@ func (o *GenericJetBrainsServer) OpenGateway(workspaceFolder, workspaceID string
 	params.Set("deploy", "false") // Do not auto-deploy IDE backend
 
 	gatewayURL := "jetbrains-gateway://connect#" + params.Encode()
+	o.log.Infof("opening gateway URL %s", gatewayURL)
 
 	err := browser.OpenURL(gatewayURL)
 	if err != nil {
-		o.log.Debugf("error opening jetbrains-gateway with browser %v", err)
+		o.log.Errorf("error opening jetbrains-gateway with browser %v", err)
 
 		if runtime.GOOS == "linux" {
 			o.log.Debugf("falling back to xdg-open on Linux")
 			out, execErr := exec.Command("xdg-open", gatewayURL).CombinedOutput()
 			if execErr != nil {
-				o.log.Debugf("error opening jetbrains-gateway with xdg-open %v", execErr)
-				o.log.Debugf("xdg-open output %s", string(out))
+				o.log.Errorf("error opening jetbrains-gateway with xdg-open %v", execErr)
+				o.log.Errorf("xdg-open output %s", string(out))
 				err = execErr
 			} else {
 				err = nil // xdg-open succeeded
