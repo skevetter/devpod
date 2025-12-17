@@ -179,7 +179,7 @@ export function WorkspaceCard({ workspaceID, isSelected, onSelectionChange }: TW
       const workspaceOptions = workspace.data?.provider?.options ?? {}
       for (const [k, v] of Object.entries(extraProviderOptions)) {
         // check if current workspace option doesn't contain option or it does but value is different
-        if (!workspaceOptions[k] || workspaceOptions[k]?.value !== v) {
+        if (!workspaceOptions[k] || workspaceOptions[k].value !== v) {
           changedOptions[k] = v
         }
       }

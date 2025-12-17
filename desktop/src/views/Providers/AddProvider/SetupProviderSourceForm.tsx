@@ -251,8 +251,8 @@ export function SetupProviderSourceForm({
                     size={exampleCardSize}
                     key={source.name}
                     image={
-                      colorMode == "dark" && source.imageDarkMode
-                        ? source.imageDarkMode
+                      colorMode === "dark" && (source as any).imageDarkMode
+                        ? (source as any).imageDarkMode
                         : source.image
                     }
                     name={source.name}
@@ -274,8 +274,8 @@ export function SetupProviderSourceForm({
                     size={exampleCardSize}
                     key={source.name}
                     image={
-                      colorMode == "dark" && source.imageDarkMode
-                        ? source.imageDarkMode
+                      colorMode === "dark" && (source as any).imageDarkMode
+                        ? (source as any).imageDarkMode
                         : source.image
                     }
                     name={source.name}

@@ -20,7 +20,14 @@ const compat = new FlatCompat({
 
 export default [
   {
-    ignores: ["dist/**/*", "src-tauri/**/*", "public/**/*", "src/gen/**/*", "eslint.config.js"],
+    ignores: [
+      "dist/**/*",
+      "src-tauri/**/*",
+      "public/**/*",
+      "src/gen/**/*",
+      "eslint.config.js",
+      "vite.config.ts",
+    ],
   },
   ...fixupConfigRules(
     compat.extends(

@@ -30,7 +30,7 @@ export function useAddProvider({ onSuccess, onError }: TUseAddProvider) {
       // list all providers
       let providers = (await client.providers.listAll()).unwrap()
       if (providers?.[providerID]) {
-        if (!providers[providerID]?.state?.initialized) {
+        if (!providers[providerID].state?.initialized) {
           ;(await client.providers.remove(providerID)).unwrap()
         } else {
           throw new Error(

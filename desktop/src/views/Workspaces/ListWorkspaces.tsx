@@ -236,7 +236,7 @@ function getProviderIcon(provider: TProvider, colorMode: ColorMode): string | un
   )
   if (maybeProviderSource) {
     if (colorMode === "dark") {
-      return maybeProviderSource.imageDarkMode ?? maybeProviderSource.image
+      return (maybeProviderSource as any).imageDarkMode ?? maybeProviderSource.image
     }
 
     return maybeProviderSource.image

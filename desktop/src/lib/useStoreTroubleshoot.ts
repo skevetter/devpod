@@ -29,7 +29,7 @@ export function useStoreTroubleshoot() {
 
       const unwrappedLogFiles: [src: [string], targetFolder: string][] = logFiles
         .filter((f) => f.ok)
-        .map((f) => f.unwrap() ?? "")
+        .map((f) => f.unwrap())
         .map((f) => [[f], f.split(client.pathSeparator()).pop() ?? ""])
 
       const zip = new JSZip()
