@@ -68,6 +68,7 @@ jobs:
           name: linux-${{ matrix.target }}-cli
           path: artifacts/devpod-cli-*
           if-no-files-found: error
+          retention-days: ${{ vars.BUILD_ARTIFACTS_RETENTION_DAYS || 3 }}
 
       - name: upload desktop app artifacts
         if: matrix.target == 'x86_64-unknown-linux-gnu'
