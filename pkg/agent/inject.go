@@ -19,6 +19,36 @@ import (
 
 var waitForInstanceConnectionTimeout = time.Minute * 5
 
+// progressReader wraps an io.Reader to provide download progress logging
+type progressReader struct {
+	reader  io.Reader
+	total   int64
+	read    int64
+	log     log.Logger
+	start   time.Time
+	lastLog time.Time
+}
+
+func (pr *progressReader) Read(p []byte) (int, error) {
+	n, err := pr.reader.Read(p)
+	pr.read += int64(n)
+
+	// Log progress every 10 seconds or at completion
+	now := time.Now()
+	if now.Sub(pr.lastLog) >= 10*time.Second || err == io.EOF {
+		pr.lastLog = now
+		if pr.total > 0 {
+			percent := float64(pr.read) / float64(pr.total) * 100
+			elapsed := now.Sub(pr.start)
+			speed := float64(pr.read) / (1024 * 1024) / elapsed.Seconds() // MB/s
+			pr.log.Infof("download progress %.1f%% (%d/%d bytes, %.2f MB/s)",
+				percent, pr.read, pr.total, speed)
+		}
+	}
+
+	return n, err
+}
+
 func InjectAgent(
 	ctx context.Context,
 	exec inject.ExecFunc,
@@ -216,11 +246,26 @@ func downloadAgentLocally(tryDownloadURL, targetArch string, log log.Logger) (st
 	}
 	defer func() { _ = file.Close() }()
 
-	_, err = io.Copy(file, resp.Body)
+	// Track download progress
+	startTime := time.Now()
+	log.Infof("Starting agent download from %s (size: %d bytes)", fullDownloadURL, resp.ContentLength)
+
+	// Create a progress reader
+	progressReader := &progressReader{
+		reader: resp.Body,
+		total:  resp.ContentLength,
+		log:    log,
+		start:  startTime,
+	}
+
+	_, err = io.Copy(file, progressReader)
 	if err != nil {
 		_ = os.Remove(agentPath)
 		return "", fmt.Errorf("failed to download devpod from URL %s %w", fullDownloadURL, err)
 	}
+
+	duration := time.Since(startTime)
+	log.Infof("Agent download completed in %v (%.2f MB/s)", duration, float64(resp.ContentLength)/(1024*1024)/duration.Seconds())
 
 	return agentPath, nil
 }
