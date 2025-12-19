@@ -73,6 +73,11 @@ func (s *workspaceClient) WorkspaceConfig() *provider.Workspace {
 	s.m.Lock()
 	defer s.m.Unlock()
 
+	if s.workspace == nil {
+		s.log.Debugf("workspace is nil in WorkspaceConfig")
+		return nil
+	}
+
 	return provider.CloneWorkspace(s.workspace)
 }
 
@@ -126,10 +131,16 @@ func (s *workspaceClient) RefreshOptions(ctx context.Context, userOptionsRaw []s
 
 	workspace, err := options.ResolveAndSaveOptionsWorkspace(ctx, s.devPodConfig, s.config, s.workspace, userOptions, s.log)
 	if err != nil {
+		s.log.Errorf("failed to resolve workspace options %v", err)
 		return err
 	}
 
-	s.workspace = workspace
+	if workspace != nil {
+		s.workspace = workspace
+		s.log.Debugf("workspace options refreshed")
+	} else {
+		s.log.Warnf("ResolveAndSaveOptionsWorkspace returned nil, keeping original workspace")
+	}
 	return nil
 }
 
