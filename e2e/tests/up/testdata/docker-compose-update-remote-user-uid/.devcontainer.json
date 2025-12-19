@@ -1,0 +1,8 @@
+{
+  "name": "Update Remote User UID Test",
+  "dockerComposeFile": "./docker-compose.yaml",
+  "service": "app",
+  "workspaceFolder": "/workspaces",
+  "remoteUser": "testuser",
+  "updateRemoteUserUID": true
+}

@@ -252,6 +252,29 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 					framework.ExpectNoError(err)
 				}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
+				ginkgo.It("update remote user UID", func(ctx context.Context) {
+					_, workspace, err := tc.setupAndStartWorkspace(ctx, "tests/up/testdata/docker-compose-update-remote-user-uid")
+					framework.ExpectNoError(err)
+
+					ids, err := findComposeContainer(ctx, tc.dockerHelper, tc.composeHelper, workspace.UID, "app")
+					framework.ExpectNoError(err)
+					gomega.Expect(ids).To(gomega.HaveLen(1), "1 compose container to be created")
+
+					// Get host user UID/GID
+					hostUID := os.Getuid()
+					hostGID := os.Getgid()
+
+					// Verify container user UID matches host
+					containerUID, _, err := tc.f.ExecCommandCapture(ctx, []string{"ssh", "--command", "id -u testuser", workspace.ID})
+					framework.ExpectNoError(err)
+					gomega.Expect(strings.TrimSpace(containerUID)).To(gomega.Equal(fmt.Sprintf("%d", hostUID)))
+
+					// Verify container user GID matches host
+					containerGID, _, err := tc.f.ExecCommandCapture(ctx, []string{"ssh", "--command", "id -g testuser", workspace.ID})
+					framework.ExpectNoError(err)
+					gomega.Expect(strings.TrimSpace(containerGID)).To(gomega.Equal(fmt.Sprintf("%d", hostGID)))
+				}, ginkgo.SpecTimeout(framework.GetTimeout()))
+
 				ginkgo.It("variables substitution", func(ctx context.Context) {
 					tempDir, workspace, err := tc.setupAndStartWorkspace(ctx, "tests/up/testdata/docker-compose-variables")
 					framework.ExpectNoError(err)

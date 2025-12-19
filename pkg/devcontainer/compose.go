@@ -425,6 +425,15 @@ func (r *runner) startContainer(
 		return nil, fmt.Errorf("find dev container %w", err)
 	}
 
+	// Update remote user UID/GID for docker-compose containers
+	dockerDriver, ok := r.Driver.(driver.DockerDriver)
+	if ok {
+		err = dockerDriver.UpdateRemoteUserUID(ctx, r.ID, parsedConfig.Config)
+		if err != nil {
+			r.Log.Warnf("failed to update remote user UID/GID %v", err)
+		}
+	}
+
 	return containerDetails, nil
 }
 

@@ -53,4 +53,7 @@ type DockerDriver interface {
 
 	// DockerHellper returns the docker helper
 	DockerHelper() (*docker.DockerHelper, error)
+
+	// UpdateRemoteUserUID updates the container user's UID/GID to match the local user
+	UpdateRemoteUserUID(ctx context.Context, workspaceId string, parsedConfig *config.DevContainerConfig) error
 }
