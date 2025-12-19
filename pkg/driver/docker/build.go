@@ -5,7 +5,9 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os/exec"
 	"strings"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/devcontainer/build"
@@ -192,12 +194,75 @@ func (d *dockerDriver) buildxBuild(ctx context.Context, writer io.Writer, platfo
 	// context
 	args = append(args, options.Context)
 
+	// Start disk space monitoring
+	monitorCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	go func() {
+		ticker := time.NewTicker(30 * time.Second)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-monitorCtx.Done():
+				return
+			case <-ticker.C:
+				// Monitor Docker directory
+				if output, err := exec.CommandContext(monitorCtx, "df", "-h", "/var/lib/docker").Output(); err == nil {
+					lines := strings.Split(strings.TrimSpace(string(output)), "\n")
+					if len(lines) > 1 {
+						d.Log.Infof("docker disk usage %s", lines[1])
+					}
+				}
+				// Monitor root filesystem
+				if output, err := exec.CommandContext(monitorCtx, "df", "-h", "/").Output(); err == nil {
+					lines := strings.Split(strings.TrimSpace(string(output)), "\n")
+					if len(lines) > 1 {
+						d.Log.Infof("system disk usage %s", lines[1])
+					}
+				}
+				// Monitor memory usage
+				if output, err := exec.CommandContext(monitorCtx, "free", "-h").Output(); err == nil {
+					lines := strings.Split(strings.TrimSpace(string(output)), "\n")
+					if len(lines) > 1 {
+						d.Log.Infof("memory usage %s", lines[1])
+					}
+				}
+			}
+		}
+	}()
+
+	// Log build start
+	buildStart := time.Now()
+	d.Log.Infof("starting Docker build at %s", buildStart.Format("15:04:05"))
+
 	// run command
-	d.Log.Debugf("Running docker %s: docker %s", d.Docker.DockerCommand, strings.Join(args, " "))
+	d.Log.Infof("docker %s", strings.Join(args, " "))
 	err := d.Docker.Run(ctx, args, nil, writer, writer)
+
+	// Enhanced error handling
 	if err != nil {
+		buildDuration := time.Since(buildStart)
+		d.Log.Errorf("build failed at %s after %v", time.Now().Format("15:04:05"), buildDuration)
+
+		// Log final resource state on failure
+		if output, dfErr := exec.CommandContext(ctx, "df", "-h", "/var/lib/docker").Output(); dfErr == nil {
+			lines := strings.Split(strings.TrimSpace(string(output)), "\n")
+			if len(lines) > 1 {
+				d.Log.Errorf("final docker disk usage %s", lines[1])
+			}
+		}
+
+		// Check Docker daemon status
+		if daemonErr := d.Docker.Run(ctx, []string{"version"}, nil, nil, nil); daemonErr != nil {
+			d.Log.Errorf("docker daemon appears unhealthy %v", daemonErr)
+		}
+
 		return fmt.Errorf("build image %w", err)
 	}
+
+	buildDuration := time.Since(buildStart)
+	d.Log.Infof("build completed at %s (duration: %v)", time.Now().Format("15:04:05"), buildDuration)
 
 	return nil
 }
