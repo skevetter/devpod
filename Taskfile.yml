@@ -18,6 +18,31 @@ tasks:
         task: build:platform
         vars:
           PLATFORM: "{{.ITEM}}"
+      - task: build:cache-binaries
+      - task: build:verify-cache
+
+  build:cache-binaries:
+    desc: Copy Linux binaries to cache for injection
+    status:
+      - test ! -f test/devpod-cli-linux-amd64
+    cmds:
+      - rm -rf "${TMPDIR:-/tmp/}devpod-cache" 2>/dev/null || true
+      - mkdir -p "${TMPDIR:-/tmp/}devpod-cache"
+      - cp test/devpod-cli-linux-arm64 "${TMPDIR:-/tmp/}devpod-cache/devpod-linux-arm64"
+      - cp test/devpod-cli-linux-amd64 "${TMPDIR:-/tmp/}devpod-cache/devpod-linux-amd64"
+      - ls -la "${TMPDIR:-/tmp/}devpod-cache/devpod-linux-*"
+
+  build:verify-cache:
+    desc: Verify cached binaries exist for local injection
+    cmds:
+      - |
+        CACHE_DIR="${TMPDIR:-/tmp/}devpod-cache"
+        if [ -f "$CACHE_DIR/devpod-linux-amd64" ] && [ -f "$CACHE_DIR/devpod-linux-arm64" ]; then
+          echo "Cached binaries found"
+          ls -la "$CACHE_DIR/devpod-linux-*"
+        else
+          echo "Cached binaries missing"
+        fi
 
   build:platform:
     desc: Build DevPod binaries for a specific platform
