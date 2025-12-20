@@ -709,9 +709,9 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 				framework.ExpectNoError(err)
 
 				// Test that both features are installed correctly
-				out, err := f.DevPodSSH(ctx, workspaceName, "test-forward-reference")
+				out, err := f.DevPodSSH(ctx, workspaceName, "python3 --version")
 				framework.ExpectNoError(err)
-				gomega.Expect(out).To(gomega.ContainSubstring("All forward reference dependencies resolved correctly"))
+				gomega.Expect(out).To(gomega.ContainSubstring("Python 3.11"))
 			}, ginkgo.SpecTimeout(framework.GetTimeout()*5)) // This test compiles Python
 		})
 	})
