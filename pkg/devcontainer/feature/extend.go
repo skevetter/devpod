@@ -399,13 +399,16 @@ func computeAutomaticFeatureOrder(features []*config.FeatureSet) ([]*config.Feat
 		lookup[feature.ConfigID] = feature
 	}
 
-	// build graph
+	// First: add all features to graph
 	for _, feature := range features {
 		_, err := g.InsertNodeAt("root", feature.ConfigID, feature)
 		if err != nil {
 			return nil, err
 		}
+	}
 
+	// Second: add dependency edges after all nodes exist
+	for _, feature := range features {
 		// Add hard dependency edges (dependsOn); these dependencies must come first
 		for depID := range feature.Config.DependsOn {
 			normalizedDepID := NormalizeFeatureID(depID)
@@ -413,7 +416,7 @@ func computeAutomaticFeatureOrder(features []*config.FeatureSet) ([]*config.Feat
 			if ok {
 				// Add edge from feature to dependency (feature -> dependency)
 				// This ensures dependency is installed first (removed as leaf first)
-				_, err = g.InsertNodeAt(feature.ConfigID, normalizedDepID, depFeature)
+				_, err := g.InsertNodeAt(feature.ConfigID, normalizedDepID, depFeature)
 				if err != nil {
 					return nil, err
 				}
@@ -428,7 +431,7 @@ func computeAutomaticFeatureOrder(features []*config.FeatureSet) ([]*config.Feat
 			}
 
 			// Add an edge from installAfter feature to current feature
-			_, err = g.InsertNodeAt(installAfter, feature.ConfigID, feature)
+			_, err := g.InsertNodeAt(installAfter, feature.ConfigID, feature)
 			if err != nil {
 				return nil, err
 			}
