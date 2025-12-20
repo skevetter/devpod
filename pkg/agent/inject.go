@@ -195,10 +195,14 @@ func injectBinary(arm bool, tryDownloadURL string, log log.Logger) (io.ReadClose
 	// try to look up runner binaries
 	if binaryPath == "" {
 		binaryPath = getRunnerBinary(targetArch)
+		if binaryPath != "" {
+			log.Infof("Using cached agent binary: %s", binaryPath)
+		}
 	}
 
 	// download devpod locally
 	if binaryPath == "" {
+		log.Infof("Downloading agent binary for %s architecture", targetArch)
 		binaryPath, err = downloadAgentLocally(tryDownloadURL, targetArch, log)
 		if err != nil {
 			return nil, fmt.Errorf("download agent locally %w", err)

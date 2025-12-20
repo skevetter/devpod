@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/loft-sh/log"
@@ -173,7 +174,7 @@ func inject(
 			return false, err
 		}
 		defer func() { _ = fileReader.Close() }()
-		err = injectBinary(fileReader, stdin, stdout)
+		err = injectBinary(fileReader, stdin, stdout, log)
 		if err != nil {
 			return false, err
 		}
@@ -224,19 +225,107 @@ func performMutualHandshake(line string, stdin io.WriteCloser) error {
 	return nil
 }
 
+type ProgressReader struct {
+	reader    io.Reader
+	total     int64
+	current   int64
+	startTime time.Time
+	log       log.Logger
+	mu        sync.Mutex
+}
+
+func NewProgressReader(reader io.Reader, total int64, log log.Logger) *ProgressReader {
+	return &ProgressReader{
+		reader:    reader,
+		total:     total,
+		startTime: time.Now(),
+		log:       log,
+	}
+}
+
+func (pr *ProgressReader) Read(p []byte) (int, error) {
+	n, err := pr.reader.Read(p)
+	if n > 0 {
+		pr.mu.Lock()
+		pr.current += int64(n)
+		current := pr.current
+		pr.mu.Unlock()
+
+		// Log progress every 5MB or at completion
+		if current%5242880 == 0 || current == pr.total || err == io.EOF {
+			elapsed := time.Since(pr.startTime)
+			speed := float64(current) / elapsed.Seconds() / 1024 / 1024 // MB/s
+			percent := float64(current) / float64(pr.total) * 100
+			pr.log.Infof("copying agent binary %.1f MB / %.1f MB (%.0f%%) %.1f MB/s",
+				float64(current)/1024/1024, float64(pr.total)/1024/1024, percent, speed)
+		}
+	}
+	return n, err
+}
+
 func injectBinary(
 	fileReader io.ReadCloser,
 	stdin io.WriteCloser,
 	stdout io.ReadCloser,
+	log log.Logger,
 ) error {
-	// copy into writer
-	_, err := io.Copy(stdin, fileReader)
-	if err != nil {
-		return err
+	// Get file size for progress tracking
+	var totalSize int64
+	if seeker, ok := fileReader.(io.Seeker); ok {
+		if size, err := seeker.Seek(0, io.SeekEnd); err == nil {
+			totalSize = size
+			seeker.Seek(0, io.SeekStart)
+		}
+	}
+
+	// Wrap with progress tracker if we have size
+	var reader io.Reader = fileReader
+	if totalSize > 0 {
+		log.Infof("copying agent binary to remote (%.1f MB)", float64(totalSize)/1024/1024)
+		reader = NewProgressReader(fileReader, totalSize, log)
+	}
+
+	// copy into writer with retry logic
+	const maxRetries = 3
+	const baseDelay = 2 * time.Second
+
+	var copyErr error
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		// Reset file position for retry
+		if seeker, ok := fileReader.(io.Seeker); ok {
+			seeker.Seek(0, io.SeekStart)
+		}
+
+		if attempt > 1 {
+			log.Infof("Retrying binary copy (attempt %d/%d)", attempt, maxRetries)
+			// Recreate progress reader for retry
+			if totalSize > 0 {
+				reader = NewProgressReader(fileReader, totalSize, log)
+			}
+		}
+
+		_, copyErr = io.Copy(stdin, reader)
+		if copyErr == nil {
+			break
+		}
+
+		if attempt < maxRetries {
+			delay := time.Duration(attempt) * baseDelay
+			log.Warnf("Binary copy failed: %v. Retrying in %v...", copyErr, delay)
+			time.Sleep(delay)
+		}
+	}
+
+	if copyErr != nil {
+		return fmt.Errorf("binary copy failed after %d attempts: %w", maxRetries, copyErr)
 	}
 
 	// close stdin
 	_ = stdin.Close()
+
+	if totalSize > 0 {
+		log.Infof("copy agent binary to remote completed")
+	}
 
 	// wait for done
 	line, err := readLine(stdout)
