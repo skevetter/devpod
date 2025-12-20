@@ -705,7 +705,6 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 				ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), workspaceName)
 
 				// This should not fail with "Parent does not exist" error
-				// even though git feature depends on common-utils but is declared first
 				err = f.DevPodUp(ctx, tempDir)
 				framework.ExpectNoError(err)
 

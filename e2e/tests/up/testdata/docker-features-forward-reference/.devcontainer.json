@@ -1,5 +1,5 @@
 {
-  "image": "mcr.microsoft.com/devcontainers/base:alpine",
+  "image": "ubuntu",
   "features": {
     "ghcr.io/devcontainers/features/python:1": {
       "version": "3.11"
