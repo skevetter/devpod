@@ -102,7 +102,7 @@ func (d *dockerDriver) PushDevContainer(ctx context.Context, image string) error
 	}
 
 	// run command
-	d.Log.Debugf("Running docker command: %s %s", d.Docker.DockerCommand, strings.Join(args, " "))
+	d.Log.Infof("docker %s", strings.Join(args, " "))
 	err := d.Docker.Run(ctx, args, nil, writer, writer)
 	if err != nil {
 		return fmt.Errorf("push image %w", err)
@@ -124,7 +124,7 @@ func (d *dockerDriver) TagDevContainer(ctx context.Context, image, tag string) e
 	}
 
 	// run command
-	d.Log.Debugf("Running docker command: %s %s", d.Docker.DockerCommand, strings.Join(args, " "))
+	d.Log.Infof("docker %s", strings.Join(args, " "))
 	err := d.Docker.Run(ctx, args, nil, writer, writer)
 	if err != nil {
 		return fmt.Errorf("tag image %w", err)
@@ -381,7 +381,7 @@ func (d *dockerDriver) RunDockerDevContainer(
 	args = append(args, options.Cmd...)
 
 	// run the command
-	d.Log.Infof("Running docker command %s %s", d.Docker.DockerCommand, strings.Join(args, " "))
+	d.Log.Infof("docker %s", strings.Join(args, " "))
 	writer := d.Log.Writer(logrus.InfoLevel, false)
 	defer func() { _ = writer.Close() }()
 
@@ -444,14 +444,14 @@ func (d *dockerDriver) RunDockerDevContainer(
 
 		// Copy /etc/passwd and /etc/group from the container to the temporary files
 		args = []string{"cp", fmt.Sprintf("%s:/etc/passwd", container.ID), containerPasswdFileIn.Name()}
-		d.Log.Debugf("Running docker command: %s %s", d.Docker.DockerCommand, strings.Join(args, " "))
+		d.Log.Infof("docker %s", strings.Join(args, " "))
 		err = d.Docker.Run(ctx, args, nil, writer, writer)
 		if err != nil {
 			return err
 		}
 
 		args = []string{"cp", fmt.Sprintf("%s:/etc/group", container.ID), containerGroupFileIn.Name()}
-		d.Log.Debugf("Running docker command: %s %s", d.Docker.DockerCommand, strings.Join(args, " "))
+		d.Log.Infof("docker %s", strings.Join(args, " "))
 		err = d.Docker.Run(ctx, args, nil, writer, writer)
 		if err != nil {
 			return err
@@ -541,28 +541,28 @@ func (d *dockerDriver) RunDockerDevContainer(
 
 		// Copy /etc/passwd and /etc/group back to the container
 		args = []string{"cp", containerPasswdFileOut.Name(), fmt.Sprintf("%s:/etc/passwd", container.ID)}
-		d.Log.Debugf("Running docker command: %s %s", d.Docker.DockerCommand, strings.Join(args, " "))
+		d.Log.Infof("docker %s", strings.Join(args, " "))
 		err = d.Docker.Run(ctx, args, nil, writer, writer)
 		if err != nil {
 			return err
 		}
 
 		args = []string{"cp", containerGroupFileOut.Name(), fmt.Sprintf("%s:/etc/group", container.ID)}
-		d.Log.Debugf("Running docker command: %s %s", d.Docker.DockerCommand, strings.Join(args, " "))
+		d.Log.Infof("docker %s", strings.Join(args, " "))
 		err = d.Docker.Run(ctx, args, nil, writer, writer)
 		if err != nil {
 			return err
 		}
 
 		args = []string{"exec", "-u", "root", container.ID, "chmod", "644", "/etc/passwd", "/etc/group"}
-		d.Log.Debugf("Running docker command: %s %s", d.Docker.DockerCommand, strings.Join(args, " "))
+		d.Log.Infof("docker %s", strings.Join(args, " "))
 		err = d.Docker.Run(ctx, args, nil, writer, writer)
 		if err != nil {
 			return err
 		}
 
 		args = []string{"exec", "-u", "root", container.ID, "chown", "-R", fmt.Sprintf("%s:%s", localUid, localGid), containerHome}
-		d.Log.Debugf("Running docker command: %s %s", d.Docker.DockerCommand, strings.Join(args, " "))
+		d.Log.Infof("docker %s", strings.Join(args, " "))
 		err = d.Docker.Run(ctx, args, nil, writer, writer)
 		if err != nil {
 			return err

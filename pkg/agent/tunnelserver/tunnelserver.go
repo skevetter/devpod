@@ -43,6 +43,8 @@ func RunServicesServer(ctx context.Context, reader io.Reader, writer io.WriteClo
 }
 
 func RunUpServer(ctx context.Context, reader io.Reader, writer io.WriteCloser, allowGitCredentials, allowDockerCredentials bool, workspace *provider2.Workspace, log log.Logger, options ...Option) (*config.Result, error) {
+	log.Debugf("RunUpServer workspace_nil=%v, git_creds=%v", workspace == nil, allowGitCredentials)
+
 	opts := append(options, []Option{
 		WithWorkspace(workspace),
 		WithAllowGitCredentials(allowGitCredentials),
@@ -200,6 +202,7 @@ func (t *tunnelServer) GitUser(ctx context.Context, empty *tunnel.Empty) (*tunne
 }
 
 func (t *tunnelServer) GitCredentials(ctx context.Context, message *tunnel.Message) (*tunnel.Message, error) {
+	t.log.Debugf("GitCredentials called allowGitCredentials=%v, workspace_nil=%v", t.allowGitCredentials, t.workspace == nil)
 	if !t.allowGitCredentials {
 		return nil, fmt.Errorf("git credentials forbidden")
 	}
@@ -229,7 +232,7 @@ func (t *tunnelServer) GitCredentials(ctx context.Context, message *tunnel.Messa
 			}
 		}
 	} else {
-		if t.workspace.Source.GitRepository != "" {
+		if t.workspace != nil && t.workspace.Source.GitRepository != "" {
 			path, err := gitcredentials.GetHTTPPath(ctx, gitcredentials.GetHttpPathParameters{
 				Host:        credentials.Host,
 				Protocol:    credentials.Protocol,
@@ -242,6 +245,8 @@ func (t *tunnelServer) GitCredentials(ctx context.Context, message *tunnel.Messa
 			// Set the credentials `path` field to the path component of the git repository URL.
 			// This allows downstream credential helpers to figure out which passwords needs to be fetched
 			credentials.Path = path
+		} else {
+			t.log.Debugf("workspace unavailable for Git credentials workspace=%v", t.workspace != nil)
 		}
 
 		response, err := gitcredentials.GetCredentials(credentials)
