@@ -274,7 +274,9 @@ func injectBinary(
 	if seeker, ok := fileReader.(io.Seeker); ok {
 		if size, err := seeker.Seek(0, io.SeekEnd); err == nil {
 			totalSize = size
-			seeker.Seek(0, io.SeekStart)
+			if _, err := seeker.Seek(0, io.SeekStart); err != nil {
+				log.Debugf("Failed to seek to start: %v", err)
+			}
 		}
 	}
 
@@ -293,7 +295,9 @@ func injectBinary(
 	for attempt := 1; attempt <= maxRetries; attempt++ {
 		// Reset file position for retry
 		if seeker, ok := fileReader.(io.Seeker); ok {
-			seeker.Seek(0, io.SeekStart)
+			if _, err := seeker.Seek(0, io.SeekStart); err != nil {
+				log.Debugf("Failed to seek to start for retry: %v", err)
+			}
 		}
 
 		if attempt > 1 {

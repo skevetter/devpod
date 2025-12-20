@@ -5,6 +5,11 @@ vars:
   BUILD_ARCHS: '{{default "amd64 arm64" .BUILD_ARCHS}}'
 
 tasks:
+  lint:
+    desc: Run golangci-lint
+    cmds:
+      - golangci-lint run
+
   setup:development:
     desc: Setup development environment
     cmds:
