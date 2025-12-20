@@ -1,0 +1,154 @@
+version: "3"
+
+vars:
+  BUILD_PLATFORMS: '{{default "darwin linux" .BUILD_PLATFORMS}}'
+  BUILD_ARCHS: '{{default "amd64 arm64" .BUILD_ARCHS}}'
+
+tasks:
+  setup:development:
+    desc: Setup development environment
+    cmds:
+      - task: build:devpod
+      - task: build:desktop
+
+  build:devpod:
+    desc: Build DevPod binaries for multiple platforms
+    cmds:
+      - for: { var: BUILD_PLATFORMS, split: " " }
+        task: build:platform
+        vars:
+          PLATFORM: "{{.ITEM}}"
+
+  build:platform:
+    desc: Build DevPod binaries for a specific platform
+    internal: true
+    cmds:
+      - for: { var: BUILD_ARCHS, split: " " }
+        task: build:binary
+        vars:
+          PLATFORM: "{{.PLATFORM}}"
+          ARCH: "{{.ITEM}}"
+
+  build:binary:
+    desc: Build DevPod binary for a specific platform and architecture
+    internal: true
+    silent: false
+    status:
+      - '{{if and (eq .PLATFORM "windows") (eq .ARCH "arm64")}}exit 0{{else}}exit 1{{end}}'
+    cmds:
+      - |
+        {{if eq .RACE "yes"}}
+        CGO_ENABLED=1 GOOS={{.PLATFORM}} GOARCH={{.ARCH}} go build -race -ldflags "-s -w" -o "test/devpod-cli-{{.PLATFORM}}-{{.ARCH}}{{if eq .PLATFORM "windows"}}.exe{{end}}"
+        {{else}}
+        CGO_ENABLED=0 GOOS={{.PLATFORM}} GOARCH={{.ARCH}} go build -ldflags "-s -w" -o "test/devpod-cli-{{.PLATFORM}}-{{.ARCH}}{{if eq .PLATFORM "windows"}}.exe{{end}}"
+        {{end}}
+
+  install:
+    desc: Install DevPod binary
+    status:
+      - '{{if eq .SKIP_INSTALL "true"}}exit 0{{else}}exit 1{{end}}'
+    silent: false
+    cmds:
+      - |
+        if command -v sudo >/dev/null 2>&1; then
+          go build -o test/devpod && sudo mv test/devpod /usr/local/bin/
+        else
+          go install .
+        fi
+
+  build:desktop:
+    desc: Build desktop application
+    status:
+      - test ! -d desktop
+    cmds:
+      - task: desktop:copy-binaries
+      - task: desktop:update-tauri-deps
+      - task: desktop:generate-types
+      - task: desktop:build-desktop-app
+
+  desktop:copy-binaries:
+    desc: Copy CLI binaries for desktop
+    internal: true
+    status:
+      - test ! -d desktop/src-tauri/bin
+    cmds:
+      - |
+        if [ -f "test/devpod-cli-linux-amd64" ]; then
+          cp test/devpod-cli-linux-amd64 desktop/src-tauri/bin/devpod-cli-x86_64-unknown-linux-gnu
+          cp test/devpod-cli-linux-arm64 desktop/src-tauri/bin/devpod-cli-aarch64-unknown-linux-gnu
+        fi
+        if [ -f "test/devpod-cli-windows-amd64.exe" ]; then
+          cp test/devpod-cli-windows-amd64.exe desktop/src-tauri/bin/devpod-cli-x86_64-pc-windows-msvc.exe
+        fi
+        if [ -f "test/devpod-cli-darwin-amd64" ]; then
+          cp test/devpod-cli-darwin-amd64 desktop/src-tauri/bin/devpod-cli-x86_64-apple-darwin
+          cp test/devpod-cli-darwin-arm64 desktop/src-tauri/bin/devpod-cli-aarch64-apple-darwin
+        fi
+
+  desktop:generate-types:
+    desc: Generate desktop types
+    cmds:
+      - rm -rf desktop/src/gen
+      - mkdir -p desktop/dist
+      - touch desktop/dist/index.html
+      - cd desktop/src-tauri && cargo test
+      - mkdir -p desktop/src/gen
+      - cp -r desktop/src-tauri/bindings/* desktop/src/gen/
+      - rm -rf desktop/src-tauri/bindings
+      - |
+        touch desktop/src/gen/index.ts
+        for f in desktop/src/gen/*.ts; do
+          echo "export * from './$(basename "$f" .ts)'" >> desktop/src/gen/index.ts
+        done
+      - cd desktop && yarn prettier --write src/gen
+
+  desktop:update-tauri-deps:
+    desc: Update desktop dependencies
+    dir: desktop/src-tauri
+    cmds:
+      - cargo update
+
+  desktop:tauri-dev:
+    desc: Run desktop app in dev mode
+    dir: desktop
+    env:
+      DEBUG: true
+    cmds:
+      - yarn tauri dev
+
+  desktop:build-desktop-app:
+    desc: Build desktop app
+    dir: desktop
+    env:
+      DEBUG: true
+    cmds:
+      - yarn install
+      - yarn desktop:build:dev
+
+  desktop:generate-tauri-signing-keys:
+    desc: Generate Tauri signing keys
+    dir: desktop
+    cmds:
+      - |
+        yarn tauri signer generate -- --ci -w ../app.key
+
+  release:upload-binaries:
+    desc: "Copy binaries to release names and upload to GitHub"
+    cmds:
+      - task: release:copy
+      - task: release:upload
+
+  release:copy:
+    desc: "Copy binaries to expected release names"
+    internal: true
+    cmds:
+      - cp test/devpod-cli-linux-amd64 test/devpod-linux-amd64
+      - cp test/devpod-cli-linux-arm64 test/devpod-linux-arm64
+      - cp test/devpod-cli-darwin-amd64 test/devpod-darwin-amd64
+      - cp test/devpod-cli-darwin-arm64 test/devpod-darwin-arm64
+
+  release:upload:
+    desc: "Upload binaries to GitHub release"
+    internal: true
+    cmds:
+      - gh release upload v0.0.0-10 test/devpod-linux-amd64 test/devpod-linux-arm64 test/devpod-darwin-amd64 test/devpod-darwin-arm64 --repo skevetter/devpod --clobber
