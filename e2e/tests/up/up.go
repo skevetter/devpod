@@ -692,6 +692,28 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 				// Should contain greeting from one of the features (last one wins)
 				gomega.Expect(out).To(gomega.ContainSubstring("from"))
 			}, ginkgo.SpecTimeout(framework.GetTimeout()))
+
+			ginkgo.It("should handle forward reference dependencies", ginkgo.Label("features-forward-reference"), func(ctx context.Context) {
+				f, err := setupDockerProvider(initialDir+"/bin", "docker")
+				framework.ExpectNoError(err)
+
+				tempDir, err := framework.CopyToTempDir("tests/up/testdata/docker-features-forward-reference")
+				framework.ExpectNoError(err)
+				ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
+
+				workspaceName := filepath.Base(tempDir)
+				ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), workspaceName)
+
+				// This should not fail with "Parent does not exist" error
+				// even though git feature depends on common-utils but is declared first
+				err = f.DevPodUp(ctx, tempDir)
+				framework.ExpectNoError(err)
+
+				// Test that both features are installed correctly
+				out, err := f.DevPodSSH(ctx, workspaceName, "test-forward-reference")
+				framework.ExpectNoError(err)
+				gomega.Expect(out).To(gomega.ContainSubstring("All forward reference dependencies resolved correctly"))
+			}, ginkgo.SpecTimeout(framework.GetTimeout()))
 		})
 	})
 })

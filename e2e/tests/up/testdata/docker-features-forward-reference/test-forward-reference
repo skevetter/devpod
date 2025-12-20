@@ -1,0 +1,21 @@
+#!/bin/bash
+# Test that both features are installed and git depends on common-utils
+echo "Testing forward reference dependencies"
+
+# Check if zsh is installed (from common-utils)
+if command -v zsh >/dev/null 2>&1; then
+    echo "SUCCESS: zsh from common-utils is available"
+else
+    echo "FAIL: zsh from common-utils is not available"
+    exit 1
+fi
+
+# Check if git is installed
+if command -v git >/dev/null 2>&1; then
+    echo "SUCCESS: git is available"
+else
+    echo "FAIL: git is not available"
+    exit 1
+fi
+
+echo "All forward reference dependencies resolved correctly"
