@@ -712,7 +712,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 				out, err := f.DevPodSSH(ctx, workspaceName, "test-forward-reference")
 				framework.ExpectNoError(err)
 				gomega.Expect(out).To(gomega.ContainSubstring("All forward reference dependencies resolved correctly"))
-			}, ginkgo.SpecTimeout(framework.GetTimeout()))
+			}, ginkgo.SpecTimeout(framework.GetTimeout()*5)) // This test compiles Python
 		})
 	})
 })
