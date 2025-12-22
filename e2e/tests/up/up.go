@@ -693,5 +693,26 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 				gomega.Expect(out).To(gomega.ContainSubstring("from"))
 			}, ginkgo.SpecTimeout(framework.GetTimeout()))
 		})
+
+		ginkgo.It("should handle forward reference dependencies", ginkgo.Label("features-forward-reference"), func(ctx context.Context) {
+			f, err := setupDockerProvider(initialDir+"/bin", "docker")
+			framework.ExpectNoError(err)
+
+			tempDir, err := framework.CopyToTempDir("tests/up/testdata/docker-features-forward-reference")
+			framework.ExpectNoError(err)
+			ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
+
+			workspaceName := filepath.Base(tempDir)
+			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), workspaceName)
+
+			// This should not fail with "Parent does not exist" error
+			err = f.DevPodUp(ctx, tempDir)
+			framework.ExpectNoError(err)
+
+			// Test that both features are installed correctly
+			out, err := f.DevPodSSH(ctx, workspaceName, "python3 --version")
+			framework.ExpectNoError(err)
+			gomega.Expect(out).To(gomega.ContainSubstring("Python 3.11"))
+		}, ginkgo.SpecTimeout(framework.GetTimeout()*5)) // This test compiles Python
 	})
 })

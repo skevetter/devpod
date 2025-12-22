@@ -70,6 +70,8 @@ export const Terminal = forwardRef<TTerminalRef, TTerminalProps>(function T(
         disableStdin: true,
         cursorBlink: false,
         fontSize: remToPx(fontSize),
+        fontFamily:
+          '"JetBrains Mono", "SF Mono", Consolas, "Ubuntu Mono", "DejaVu Sans Mono", "Liberation Mono", monospace',
       })
       terminalRef.current = terminal
 
@@ -240,6 +242,12 @@ export const Terminal = forwardRef<TTerminalRef, TTerminalProps>(function T(
             &::-webkit-scrollbar {
               width: 6px;
             }
+          }
+          .xterm-screen {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
+            font-variant-ligatures: none;
           }
         `}
       />
