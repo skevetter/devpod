@@ -1,0 +1,9 @@
+{
+  "image": "ubuntu",
+  "features": {
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.11"
+    },
+    "./features/test-feature": {}
+  }
+}
