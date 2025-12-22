@@ -9,9 +9,9 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/loft-sh/log"
-	"github.com/loft-sh/log/survey"
 	"github.com/sirupsen/logrus"
+	"github.com/skevetter/log"
+	"github.com/skevetter/log/survey"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
 

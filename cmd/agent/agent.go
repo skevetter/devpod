@@ -3,7 +3,6 @@ package agent
 import (
 	"os"
 
-	"github.com/loft-sh/log"
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/cmd/agent/container"
 	"github.com/skevetter/devpod/cmd/agent/workspace"
@@ -11,6 +10,7 @@ import (
 	"github.com/skevetter/devpod/pkg/client/clientimplementation"
 	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/envfile"
+	"github.com/skevetter/log"
 	"github.com/spf13/cobra"
 )
 

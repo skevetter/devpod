@@ -14,7 +14,6 @@ import (
 	"strings"
 
 	"github.com/loft-sh/api/v4/pkg/devpod"
-	"github.com/loft-sh/log"
 	"github.com/pkg/errors"
 	"github.com/skevetter/devpod/pkg/agent/tunnel"
 	"github.com/skevetter/devpod/pkg/command"
@@ -22,6 +21,7 @@ import (
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	"github.com/skevetter/devpod/pkg/envfile"
 	"github.com/skevetter/devpod/pkg/gitcredentials"
+	"github.com/skevetter/log"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 )

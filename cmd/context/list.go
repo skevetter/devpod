@@ -7,10 +7,10 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/loft-sh/log"
-	"github.com/loft-sh/log/table"
 	"github.com/skevetter/devpod/cmd/flags"
 	"github.com/skevetter/devpod/pkg/config"
+	"github.com/skevetter/log"
+	"github.com/skevetter/log/table"
 	"github.com/spf13/cobra"
 )
 

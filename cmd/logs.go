@@ -6,7 +6,6 @@ import (
 	"io"
 	"os"
 
-	"github.com/loft-sh/log"
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/cmd/completion"
 	"github.com/skevetter/devpod/cmd/flags"
@@ -15,6 +14,7 @@ import (
 	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/ssh"
 	"github.com/skevetter/devpod/pkg/workspace"
+	"github.com/skevetter/log"
 	"github.com/spf13/cobra"
 )
 

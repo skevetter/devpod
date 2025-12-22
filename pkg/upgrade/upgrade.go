@@ -6,8 +6,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/loft-sh/log"
 	versionpkg "github.com/skevetter/devpod/pkg/version"
+	"github.com/skevetter/log"
 
 	"github.com/blang/semver"
 	"github.com/rhysd/go-github-selfupdate/selfupdate"

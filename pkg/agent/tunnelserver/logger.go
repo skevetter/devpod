@@ -4,15 +4,17 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"maps"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
-	"github.com/loft-sh/log"
-	"github.com/loft-sh/log/scanner"
-	"github.com/loft-sh/log/survey"
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/agent/tunnel"
+	"github.com/skevetter/log"
+	"github.com/skevetter/log/scanner"
+	"github.com/skevetter/log/survey"
 )
 
 func NewTunnelLogger(ctx context.Context, client tunnel.TunnelClient, debug bool) log.Logger {
@@ -38,6 +40,7 @@ type tunnelLogger struct {
 	level   logrus.Level
 	client  tunnel.TunnelClient
 	logChan chan *tunnel.LogMessage
+	fields  log.Fields
 }
 
 func (s *tunnelLogger) worker() {
@@ -54,6 +57,19 @@ func (s *tunnelLogger) worker() {
 	}
 }
 
+// formatMessage appends structured fields to the message
+func (s *tunnelLogger) formatMessage(message string) string {
+	if len(s.fields) == 0 {
+		return message
+	}
+
+	var fieldsStr strings.Builder
+	for k, v := range s.fields {
+		fmt.Fprintf(&fieldsStr, " %s=%v", k, v)
+	}
+	return message + fieldsStr.String()
+}
+
 func (s *tunnelLogger) Debug(args ...any) {
 	if s.level < logrus.DebugLevel {
 		return
@@ -61,7 +77,7 @@ func (s *tunnelLogger) Debug(args ...any) {
 
 	s.logChan <- &tunnel.LogMessage{
 		LogLevel: tunnel.LogLevel_DEBUG,
-		Message:  fmt.Sprintln(args...),
+		Message:  s.formatMessage(fmt.Sprintln(args...)),
 	}
 }
 
@@ -72,7 +88,7 @@ func (s *tunnelLogger) Debugf(format string, args ...any) {
 
 	s.logChan <- &tunnel.LogMessage{
 		LogLevel: tunnel.LogLevel_DEBUG,
-		Message:  fmt.Sprintf(format, args...) + "\n",
+		Message:  s.formatMessage(fmt.Sprintf(format, args...) + "\n"),
 	}
 }
 
@@ -83,7 +99,7 @@ func (s *tunnelLogger) Info(args ...any) {
 
 	s.logChan <- &tunnel.LogMessage{
 		LogLevel: tunnel.LogLevel_INFO,
-		Message:  fmt.Sprintln(args...),
+		Message:  s.formatMessage(fmt.Sprintln(args...)),
 	}
 }
 
@@ -94,7 +110,7 @@ func (s *tunnelLogger) Infof(format string, args ...any) {
 
 	s.logChan <- &tunnel.LogMessage{
 		LogLevel: tunnel.LogLevel_INFO,
-		Message:  fmt.Sprintf(format, args...) + "\n",
+		Message:  s.formatMessage(fmt.Sprintf(format, args...) + "\n"),
 	}
 }
 
@@ -105,7 +121,7 @@ func (s *tunnelLogger) Warn(args ...any) {
 
 	s.logChan <- &tunnel.LogMessage{
 		LogLevel: tunnel.LogLevel_WARNING,
-		Message:  fmt.Sprintln(args...),
+		Message:  s.formatMessage(fmt.Sprintln(args...)),
 	}
 }
 
@@ -116,7 +132,7 @@ func (s *tunnelLogger) Warnf(format string, args ...any) {
 
 	s.logChan <- &tunnel.LogMessage{
 		LogLevel: tunnel.LogLevel_WARNING,
-		Message:  fmt.Sprintf(format, args...) + "\n",
+		Message:  s.formatMessage(fmt.Sprintf(format, args...) + "\n"),
 	}
 }
 
@@ -127,7 +143,7 @@ func (s *tunnelLogger) Error(args ...any) {
 
 	s.logChan <- &tunnel.LogMessage{
 		LogLevel: tunnel.LogLevel_ERROR,
-		Message:  fmt.Sprintln(args...),
+		Message:  s.formatMessage(fmt.Sprintln(args...)),
 	}
 }
 
@@ -138,7 +154,7 @@ func (s *tunnelLogger) Errorf(format string, args ...any) {
 
 	s.logChan <- &tunnel.LogMessage{
 		LogLevel: tunnel.LogLevel_ERROR,
-		Message:  fmt.Sprintf(format, args...) + "\n",
+		Message:  s.formatMessage(fmt.Sprintf(format, args...) + "\n"),
 	}
 }
 
@@ -149,7 +165,7 @@ func (s *tunnelLogger) Fatal(args ...any) {
 
 	s.logChan <- &tunnel.LogMessage{
 		LogLevel: tunnel.LogLevel_ERROR,
-		Message:  fmt.Sprintln(args...),
+		Message:  s.formatMessage(fmt.Sprintln(args...)),
 	}
 
 	os.Exit(1)
@@ -162,7 +178,7 @@ func (s *tunnelLogger) Fatalf(format string, args ...any) {
 
 	s.logChan <- &tunnel.LogMessage{
 		LogLevel: tunnel.LogLevel_ERROR,
-		Message:  fmt.Sprintf(format, args...) + "\n",
+		Message:  s.formatMessage(fmt.Sprintf(format, args...) + "\n"),
 	}
 
 	os.Exit(1)
@@ -175,7 +191,7 @@ func (s *tunnelLogger) Done(args ...any) {
 
 	s.logChan <- &tunnel.LogMessage{
 		LogLevel: tunnel.LogLevel_DONE,
-		Message:  fmt.Sprintln(args...),
+		Message:  s.formatMessage(fmt.Sprintln(args...)),
 	}
 }
 
@@ -186,7 +202,7 @@ func (s *tunnelLogger) Donef(format string, args ...any) {
 
 	s.logChan <- &tunnel.LogMessage{
 		LogLevel: tunnel.LogLevel_DONE,
-		Message:  fmt.Sprintf(format, args...) + "\n",
+		Message:  s.formatMessage(fmt.Sprintf(format, args...) + "\n"),
 	}
 }
 
@@ -280,6 +296,20 @@ func (s *tunnelLogger) Question(params *survey.QuestionOptions) (string, error) 
 
 func (s *tunnelLogger) ErrorStreamOnly() log.Logger {
 	return s
+}
+
+func (s *tunnelLogger) WithFields(fields log.Fields) log.Logger {
+	newFields := make(log.Fields)
+	maps.Copy(newFields, s.fields)
+	maps.Copy(newFields, fields)
+
+	return &tunnelLogger{
+		ctx:     s.ctx,
+		client:  s.client,
+		level:   s.level,
+		logChan: s.logChan,
+		fields:  newFields,
+	}
 }
 
 func (*tunnelLogger) LogrLogSink() logr.LogSink {

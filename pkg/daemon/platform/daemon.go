@@ -12,11 +12,11 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/loft-sh/log"
 	"github.com/sirupsen/logrus"
 	devpodlog "github.com/skevetter/devpod/pkg/log"
 	"github.com/skevetter/devpod/pkg/platform/client"
 	"github.com/skevetter/devpod/pkg/ts"
+	"github.com/skevetter/log"
 	"tailscale.com/client/local"
 	"tailscale.com/tsnet"
 	"tailscale.com/types/netmap"

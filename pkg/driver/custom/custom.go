@@ -9,8 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/loft-sh/log"
-	"github.com/loft-sh/log/scanner"
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/agent"
 	"github.com/skevetter/devpod/pkg/binaries"
@@ -19,6 +17,8 @@ import (
 	"github.com/skevetter/devpod/pkg/driver"
 	provider2 "github.com/skevetter/devpod/pkg/provider"
 	"github.com/skevetter/devpod/pkg/types"
+	"github.com/skevetter/log"
+	"github.com/skevetter/log/scanner"
 )
 
 func NewCustomDriver(workspaceInfo *provider2.AgentWorkspaceInfo, log log.Logger) driver.Driver {

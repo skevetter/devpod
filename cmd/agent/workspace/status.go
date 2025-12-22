@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/loft-sh/log"
 	"github.com/skevetter/devpod/cmd/flags"
 	"github.com/skevetter/devpod/pkg/agent"
 	"github.com/skevetter/devpod/pkg/client"
+	"github.com/skevetter/log"
 	"github.com/spf13/cobra"
 )
 

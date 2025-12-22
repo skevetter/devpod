@@ -6,7 +6,7 @@ import (
 	"io"
 
 	"github.com/gorilla/websocket"
-	"github.com/loft-sh/log"
+	"github.com/skevetter/log"
 )
 
 func ExecuteConn(ctx context.Context, rawConn *websocket.Conn, stdin io.Reader, stdout io.Writer, stderr io.Writer, log log.Logger) (int, error) {

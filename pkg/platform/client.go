@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/loft-sh/log"
 	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/platform/client"
 	"github.com/skevetter/devpod/pkg/provider"
+	"github.com/skevetter/log"
 )
 
 func InitClientFromHost(ctx context.Context, devPodConfig *config.Config, devPodProHost string, log log.Logger) (client.Client, error) {

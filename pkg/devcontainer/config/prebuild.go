@@ -11,8 +11,8 @@ import (
 	"github.com/pkg/errors"
 	util "github.com/skevetter/devpod/pkg/util/hash"
 
-	"github.com/loft-sh/log"
-	"github.com/loft-sh/log/hash"
+	"github.com/skevetter/log"
+	"github.com/skevetter/log/hash"
 )
 
 func CalculatePrebuildHash(

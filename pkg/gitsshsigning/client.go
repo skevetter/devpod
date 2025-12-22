@@ -7,9 +7,9 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/loft-sh/log"
 	"github.com/skevetter/devpod/pkg/credentials"
 	devpodhttp "github.com/skevetter/devpod/pkg/http"
+	"github.com/skevetter/log"
 )
 
 // HandleGitSSHProgramCall implements logic handling call from git when signing a commit

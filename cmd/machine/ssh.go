@@ -6,7 +6,6 @@ import (
 	"io"
 	"os"
 
-	"github.com/loft-sh/log"
 	"github.com/mattn/go-isatty"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -17,6 +16,7 @@ import (
 	devssh "github.com/skevetter/devpod/pkg/ssh"
 	devsshagent "github.com/skevetter/devpod/pkg/ssh/agent"
 	"github.com/skevetter/devpod/pkg/workspace"
+	"github.com/skevetter/log"
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/term"

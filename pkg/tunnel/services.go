@@ -14,7 +14,6 @@ import (
 
 	"github.com/docker/go-connections/nat"
 	"github.com/loft-sh/api/v4/pkg/devpod"
-	"github.com/loft-sh/log"
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/agent"
 	"github.com/skevetter/devpod/pkg/agent/tunnelserver"
@@ -26,6 +25,7 @@ import (
 	"github.com/skevetter/devpod/pkg/netstat"
 	"github.com/skevetter/devpod/pkg/provider"
 	devssh "github.com/skevetter/devpod/pkg/ssh"
+	"github.com/skevetter/log"
 	"golang.org/x/crypto/ssh"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/retry"

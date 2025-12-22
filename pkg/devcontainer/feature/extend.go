@@ -10,11 +10,11 @@ import (
 	"strings"
 
 	"github.com/google/go-containerregistry/pkg/name"
-	"github.com/loft-sh/log"
 	"github.com/skevetter/devpod/pkg/copy"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	"github.com/skevetter/devpod/pkg/devcontainer/graph"
 	"github.com/skevetter/devpod/pkg/devcontainer/metadata"
+	"github.com/skevetter/log"
 )
 
 var featureSafeIDRegex1 = regexp.MustCompile(`[^\w_]`)

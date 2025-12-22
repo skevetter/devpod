@@ -8,8 +8,8 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/loft-sh/log"
 	provider2 "github.com/skevetter/devpod/pkg/provider"
+	"github.com/skevetter/log"
 )
 
 var (

@@ -5,9 +5,9 @@ import (
 	"slices"
 	"sync"
 
-	"github.com/loft-sh/log"
 	"github.com/skevetter/devpod/pkg/netstat"
 	devssh "github.com/skevetter/devpod/pkg/ssh"
+	"github.com/skevetter/log"
 	"golang.org/x/crypto/ssh"
 )
 

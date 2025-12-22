@@ -13,12 +13,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/loft-sh/log"
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/command"
 	"github.com/skevetter/devpod/pkg/compress"
 	provider2 "github.com/skevetter/devpod/pkg/provider"
 	"github.com/skevetter/devpod/pkg/version"
+	"github.com/skevetter/log"
 )
 
 const DefaultInactivityTimeout = time.Minute * 20

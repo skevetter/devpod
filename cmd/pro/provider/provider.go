@@ -3,7 +3,6 @@ package provider
 import (
 	"os"
 
-	"github.com/loft-sh/log"
 	"github.com/skevetter/devpod/cmd/agent"
 	"github.com/skevetter/devpod/cmd/pro/flags"
 	"github.com/skevetter/devpod/cmd/pro/provider/create"
@@ -15,6 +14,7 @@ import (
 	"github.com/skevetter/devpod/pkg/platform"
 	"github.com/skevetter/devpod/pkg/platform/client"
 	"github.com/skevetter/devpod/pkg/telemetry"
+	"github.com/skevetter/log"
 
 	"github.com/spf13/cobra"
 )

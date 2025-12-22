@@ -10,8 +10,6 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/loft-sh/log"
-	"github.com/loft-sh/log/scanner"
 	"github.com/skevetter/devpod/pkg/command"
 	"github.com/skevetter/devpod/pkg/config"
 	copy2 "github.com/skevetter/devpod/pkg/copy"
@@ -19,6 +17,8 @@ import (
 	"github.com/skevetter/devpod/pkg/ide"
 	"github.com/skevetter/devpod/pkg/single"
 	"github.com/skevetter/devpod/pkg/util"
+	"github.com/skevetter/log"
+	"github.com/skevetter/log/scanner"
 )
 
 const (

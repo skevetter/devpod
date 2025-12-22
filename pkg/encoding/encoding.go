@@ -9,8 +9,8 @@ import (
 
 	"github.com/denisbrodbeck/machineid"
 	"github.com/google/uuid"
-	"github.com/loft-sh/log"
 	"github.com/skevetter/devpod/pkg/util"
+	"github.com/skevetter/log"
 )
 
 const (

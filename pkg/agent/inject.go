@@ -10,11 +10,11 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/loft-sh/log"
 	devpodhttp "github.com/skevetter/devpod/pkg/http"
 	"github.com/skevetter/devpod/pkg/inject"
 	"github.com/skevetter/devpod/pkg/shell"
 	"github.com/skevetter/devpod/pkg/version"
+	"github.com/skevetter/log"
 )
 
 var waitForInstanceConnectionTimeout = time.Minute * 5

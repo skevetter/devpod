@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/loft-sh/log"
 	"github.com/skevetter/devpod/pkg/shell"
+	"github.com/skevetter/log"
 )
 
 type UserEnvProbe string

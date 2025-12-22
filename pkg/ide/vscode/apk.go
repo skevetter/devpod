@@ -6,8 +6,8 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/loft-sh/log"
 	"github.com/skevetter/devpod/pkg/command"
+	"github.com/skevetter/log"
 )
 
 // InstallAPKRequirements installs the requirements using apk.

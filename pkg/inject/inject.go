@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/loft-sh/log"
 	"github.com/skevetter/devpod/pkg/command"
+	"github.com/skevetter/log"
 )
 
 //go:embed inject.sh

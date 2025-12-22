@@ -8,13 +8,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/loft-sh/log"
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/cmd/flags"
 	"github.com/skevetter/devpod/pkg/agent"
 	"github.com/skevetter/devpod/pkg/client/clientimplementation"
 	"github.com/skevetter/devpod/pkg/driver/custom"
 	provider2 "github.com/skevetter/devpod/pkg/provider"
+	"github.com/skevetter/log"
 	"github.com/spf13/cobra"
 )
 

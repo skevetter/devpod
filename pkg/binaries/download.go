@@ -10,13 +10,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/loft-sh/log"
-	"github.com/loft-sh/log/hash"
 	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/copy"
 	"github.com/skevetter/devpod/pkg/download"
 	"github.com/skevetter/devpod/pkg/extract"
 	provider2 "github.com/skevetter/devpod/pkg/provider"
+	"github.com/skevetter/log"
+	"github.com/skevetter/log/hash"
 )
 
 func ToEnvironmentWithBinaries(context string, workspace *provider2.Workspace, machine *provider2.Machine, options map[string]config.OptionValue, config *provider2.ProviderConfig, extraEnv map[string]string, log log.Logger) ([]string, error) {

@@ -8,7 +8,6 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/loft-sh/log"
 	"github.com/skevetter/devpod/cmd/agent/workspace"
 	"github.com/skevetter/devpod/cmd/flags"
 	"github.com/skevetter/devpod/pkg/agent"
@@ -17,6 +16,7 @@ import (
 	"github.com/skevetter/devpod/pkg/devcontainer/setup"
 	"github.com/skevetter/devpod/pkg/encoding"
 	provider2 "github.com/skevetter/devpod/pkg/provider"
+	"github.com/skevetter/log"
 	"github.com/spf13/cobra"
 )
 

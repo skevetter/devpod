@@ -5,8 +5,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/loft-sh/log/scanner"
 	"github.com/moby/buildkit/frontend/dockerfile/parser"
+	"github.com/skevetter/log/scanner"
 )
 
 var argumentExpression = regexp.MustCompile(`(?m)\$\{?([a-zA-Z0-9_]+)(:(-|\+)([^\}]+))?\}?`)

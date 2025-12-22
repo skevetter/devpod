@@ -13,7 +13,6 @@ import (
 	"time"
 
 	storagev1 "github.com/loft-sh/api/v4/pkg/apis/storage/v1"
-	"github.com/loft-sh/log"
 	clientpkg "github.com/skevetter/devpod/pkg/client"
 	"github.com/skevetter/devpod/pkg/config"
 	daemon "github.com/skevetter/devpod/pkg/daemon/platform"
@@ -23,6 +22,7 @@ import (
 	"github.com/skevetter/devpod/pkg/provider"
 	sshServer "github.com/skevetter/devpod/pkg/ssh/server"
 	"github.com/skevetter/devpod/pkg/ts"
+	"github.com/skevetter/log"
 	"github.com/skratchdot/open-golang/open"
 	"golang.org/x/crypto/ssh"
 	"tailscale.com/client/local"

@@ -6,10 +6,10 @@ import (
 	"net/url"
 	"path/filepath"
 
-	"github.com/loft-sh/log"
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/provider"
 	"github.com/skevetter/devpod/pkg/ts"
+	"github.com/skevetter/log"
 	"tailscale.com/client/local"
 	"tailscale.com/envknob"
 	"tailscale.com/ipn/store"

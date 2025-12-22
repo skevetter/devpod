@@ -9,10 +9,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/loft-sh/log/scanner"
 	"github.com/skevetter/devpod/pkg/command"
 	"github.com/skevetter/devpod/pkg/file"
 	"github.com/skevetter/devpod/pkg/git"
+	"github.com/skevetter/log/scanner"
 )
 
 type GitCredentials struct {

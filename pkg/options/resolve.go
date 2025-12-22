@@ -12,9 +12,9 @@ import (
 	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/options/resolver"
 
-	"github.com/loft-sh/log"
 	provider2 "github.com/skevetter/devpod/pkg/provider"
 	"github.com/skevetter/devpod/pkg/types"
+	"github.com/skevetter/log"
 )
 
 func ResolveAndSaveOptionsMachine(

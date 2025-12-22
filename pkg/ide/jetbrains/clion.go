@@ -1,9 +1,9 @@
 package jetbrains
 
 import (
-	"github.com/loft-sh/log"
 	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/ide"
+	"github.com/skevetter/log"
 )
 
 const (

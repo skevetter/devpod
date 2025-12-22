@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/loft-sh/log"
 	proflags "github.com/skevetter/devpod/cmd/pro/flags"
 	"github.com/skevetter/devpod/cmd/pro/provider/list"
 	"github.com/skevetter/devpod/pkg/config"
@@ -17,6 +16,7 @@ import (
 	provider2 "github.com/skevetter/devpod/pkg/provider"
 	"github.com/skevetter/devpod/pkg/random"
 	"github.com/skevetter/devpod/pkg/workspace"
+	"github.com/skevetter/log"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
 

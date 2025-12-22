@@ -12,7 +12,6 @@ import (
 	"strings"
 
 	"github.com/loft-sh/api/v4/pkg/devpod"
-	"github.com/loft-sh/log"
 	"github.com/moby/patternmatcher/ignorefile"
 	"github.com/skevetter/devpod/pkg/agent/tunnel"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
@@ -26,6 +25,7 @@ import (
 	"github.com/skevetter/devpod/pkg/platform"
 	provider2 "github.com/skevetter/devpod/pkg/provider"
 	"github.com/skevetter/devpod/pkg/stdio"
+	"github.com/skevetter/log"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )

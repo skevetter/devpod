@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"github.com/loft-sh/api/v4/pkg/devpod"
-	"github.com/loft-sh/log"
 	"github.com/moby/patternmatcher/ignorefile"
 	"github.com/skevetter/devpod/pkg/command"
 	"github.com/skevetter/devpod/pkg/config"
@@ -23,6 +22,7 @@ import (
 	"github.com/skevetter/devpod/pkg/gitcredentials"
 	provider2 "github.com/skevetter/devpod/pkg/provider"
 	"github.com/skevetter/devpod/pkg/util"
+	"github.com/skevetter/log"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"

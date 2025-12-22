@@ -7,8 +7,8 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/loft-sh/log"
 	devpodhttp "github.com/skevetter/devpod/pkg/http"
+	"github.com/skevetter/log"
 	"github.com/skratchdot/open-golang/open"
 )
 

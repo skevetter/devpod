@@ -13,7 +13,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/loft-sh/log"
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/compose"
 	config2 "github.com/skevetter/devpod/pkg/config"
@@ -22,6 +21,7 @@ import (
 	"github.com/skevetter/devpod/pkg/driver"
 	"github.com/skevetter/devpod/pkg/ide/jetbrains"
 	provider2 "github.com/skevetter/devpod/pkg/provider"
+	"github.com/skevetter/log"
 )
 
 func makeEnvironment(env map[string]string, log log.Logger) []string {

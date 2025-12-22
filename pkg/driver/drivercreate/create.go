@@ -3,12 +3,12 @@ package drivercreate
 import (
 	"fmt"
 
-	"github.com/loft-sh/log"
 	"github.com/skevetter/devpod/pkg/driver"
 	"github.com/skevetter/devpod/pkg/driver/custom"
 	"github.com/skevetter/devpod/pkg/driver/docker"
 	"github.com/skevetter/devpod/pkg/driver/kubernetes"
 	provider2 "github.com/skevetter/devpod/pkg/provider"
+	"github.com/skevetter/log"
 )
 
 func NewDriver(workspaceInfo *provider2.AgentWorkspaceInfo, log log.Logger) (driver.Driver, error) {

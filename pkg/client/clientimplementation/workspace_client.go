@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/gofrs/flock"
-	"github.com/loft-sh/log"
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/binaries"
 	"github.com/skevetter/devpod/pkg/client"
@@ -26,6 +25,7 @@ import (
 	"github.com/skevetter/devpod/pkg/shell"
 	"github.com/skevetter/devpod/pkg/ssh"
 	"github.com/skevetter/devpod/pkg/types"
+	"github.com/skevetter/log"
 )
 
 func NewWorkspaceClient(devPodConfig *config.Config, prov *provider.ProviderConfig, workspace *provider.Workspace, machine *provider.Machine, log log.Logger) (client.WorkspaceClient, error) {

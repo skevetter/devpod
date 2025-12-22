@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/loft-sh/log"
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/cmd/flags"
 	"github.com/skevetter/devpod/cmd/pro/add"
@@ -16,6 +15,7 @@ import (
 	"github.com/skevetter/devpod/pkg/config"
 	providerpkg "github.com/skevetter/devpod/pkg/provider"
 	"github.com/skevetter/devpod/pkg/workspace"
+	"github.com/skevetter/log"
 	"github.com/spf13/cobra"
 )
 

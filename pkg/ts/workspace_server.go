@@ -15,7 +15,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/loft-sh/log"
+	"github.com/skevetter/log"
 
 	"github.com/skevetter/devpod/pkg/platform/client"
 	sshServer "github.com/skevetter/devpod/pkg/ssh/server"

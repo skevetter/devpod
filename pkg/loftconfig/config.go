@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os/exec"
 
-	"github.com/loft-sh/log"
 	"github.com/skevetter/devpod/pkg/platform/client"
+	"github.com/skevetter/log"
 )
 
 func AuthDevpodCliToPlatform(config *client.Config, logger log.Logger) error {

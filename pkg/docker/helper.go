@@ -11,11 +11,11 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/loft-sh/log"
-	"github.com/loft-sh/log/scanner"
 	"github.com/skevetter/devpod/pkg/command"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	"github.com/skevetter/devpod/pkg/image"
+	"github.com/skevetter/log"
+	"github.com/skevetter/log/scanner"
 )
 
 // DockerBuilder represents the Docker builder types.

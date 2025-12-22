@@ -7,11 +7,11 @@ import (
 	"os"
 	"time"
 
-	"github.com/loft-sh/log"
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/cmd/flags"
 	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/devcontainer"
+	"github.com/skevetter/log"
 	"github.com/spf13/cobra"
 )
 
