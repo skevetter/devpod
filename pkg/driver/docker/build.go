@@ -32,7 +32,9 @@ func (d *dockerDriver) BuildDevContainer(
 		imageDetails, err := d.Docker.InspectImage(ctx, imageName, false)
 		if err == nil && imageDetails != nil {
 			// local image found
-			d.Log.Infof("Found existing local image %s", imageName)
+			d.Log.WithFields(logrus.Fields{
+				"image": imageName,
+			}).Info("found existing local image")
 			return &config.BuildInfo{
 				ImageDetails:  imageDetails,
 				ImageMetadata: extendedBuildInfo.MetadataConfig,
@@ -42,7 +44,10 @@ func (d *dockerDriver) BuildDevContainer(
 				Tags:          options.Tag,
 			}, nil
 		} else if err != nil {
-			d.Log.Debugf("Error trying to find local image %s: %v", imageName, err)
+			d.Log.WithFields(logrus.Fields{
+				"image": imageName,
+				"error": err,
+			}).Debug("error trying to find local image")
 		}
 	}
 
@@ -56,7 +61,9 @@ func (d *dockerDriver) BuildDevContainer(
 	if err != nil {
 		return nil, err
 	}
-	d.Log.Debug("Using registry cache", options.RegistryCache)
+	d.Log.WithFields(logrus.Fields{
+		"registry_cache": options.RegistryCache,
+	}).Debug("using registry cache")
 
 	// build image
 	writer := d.Log.Writer(logrus.InfoLevel, false)
@@ -64,7 +71,9 @@ func (d *dockerDriver) BuildDevContainer(
 
 	// check if docker buildx exists
 	if options.Platform != "" {
-		d.Log.Infof("Build for platform '%s'...", options.Platform)
+		d.Log.WithFields(logrus.Fields{
+			"platform": options.Platform,
+		}).Info("build for platform")
 	}
 
 	builder := d.Docker.Builder
@@ -78,7 +87,7 @@ func (d *dockerDriver) BuildDevContainer(
 	switch builder {
 	case docker.DockerBuilderBuildX:
 		if d.buildxExists(ctx) {
-			d.Log.Info("Build with docker buildx...")
+			d.Log.Info("build with docker buildx")
 			err := d.buildxBuild(ctx, writer, options.Platform, buildOptions)
 			if err != nil {
 				return nil, fmt.Errorf("buildx build %w", err)
@@ -87,7 +96,7 @@ func (d *dockerDriver) BuildDevContainer(
 			return nil, fmt.Errorf("buildx is not available on your host. Use buildkit builder")
 		}
 	case docker.DockerBuilderBuildKit:
-		d.Log.Info("Build with internal buildkit...")
+		d.Log.Info("build with internal buildkit")
 		err := d.internalBuild(ctx, writer, options.Platform, buildOptions)
 		if err != nil {
 			return nil, fmt.Errorf("internal build %w", err)
@@ -193,7 +202,10 @@ func (d *dockerDriver) buildxBuild(ctx context.Context, writer io.Writer, platfo
 	args = append(args, options.Context)
 
 	// run command
-	d.Log.Debugf("Running docker %s: docker %s", d.Docker.DockerCommand, strings.Join(args, " "))
+	d.Log.WithFields(logrus.Fields{
+		"command": d.Docker.DockerCommand,
+		"args":    strings.Join(args, " "),
+	}).Debug("Running docker command")
 	err := d.Docker.Run(ctx, args, nil, writer, writer)
 	if err != nil {
 		return fmt.Errorf("build image %w", err)

@@ -10,6 +10,7 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	devpodhttp "github.com/skevetter/devpod/pkg/http"
 	"github.com/skevetter/devpod/pkg/inject"
 	"github.com/skevetter/devpod/pkg/shell"
@@ -65,11 +66,11 @@ func InjectAgentAndExecute(
 			return nil
 		}
 
-		log.Debugf("Execute command locally")
+		log.Debug("execute command locally")
 		return shell.RunEmulatedShell(ctx, command, stdin, stdout, stderr, nil)
 	}
 
-	defer log.Debugf("Done InjectAgentAndExecute")
+	defer log.Debug("done InjectAgentAndExecute")
 	if remoteAgentPath == "" {
 		remoteAgentPath = RemoteDevPodHelperLocation
 	}
@@ -124,11 +125,14 @@ func InjectAgentAndExecute(
 			}
 
 			if time.Since(lastMessage) > time.Second*5 {
-				log.Infof("Waiting for devpod agent to come up...")
+				log.Info("waiting for devpod agent to come up")
 				lastMessage = time.Now()
 			}
 
-			log.Debugf("Inject Error: %s%v", buf.String(), err)
+			log.WithFields(logrus.Fields{
+				"error":  err,
+				"output": buf.String(),
+			}).Debug("inject error")
 			time.Sleep(time.Second * 3)
 			continue
 		}
@@ -167,6 +171,14 @@ func injectBinary(arm bool, tryDownloadURL string, log log.Logger) (io.ReadClose
 		binaryPath = getRunnerBinary(targetArch)
 	}
 
+	if binaryPath != "" {
+		log.WithFields(logrus.Fields{
+			"path": binaryPath,
+			"arch": targetArch,
+			"url":  tryDownloadURL,
+		}).Debug("found runner binary for agent injection")
+	}
+
 	// download devpod locally
 	if binaryPath == "" {
 		binaryPath, err = downloadAgentLocally(tryDownloadURL, targetArch, log)
@@ -186,10 +198,18 @@ func injectBinary(arm bool, tryDownloadURL string, log log.Logger) (io.ReadClose
 
 func downloadAgentLocally(tryDownloadURL, targetArch string, log log.Logger) (string, error) {
 	agentPath := filepath.Join(os.TempDir(), "devpod-cache", "devpod-linux-"+targetArch)
+	log.WithFields(logrus.Fields{
+		"path": agentPath,
+	}).Debug("checking for devpod agent binary")
+
+	// create path
 	err := os.MkdirAll(filepath.Dir(agentPath), 0755)
 	if err != nil {
 		return "", fmt.Errorf("create agent path %w", err)
 	}
+	log.WithFields(logrus.Fields{
+		"path": filepath.Dir(agentPath),
+	}).Debug("created agent path")
 
 	stat, statErr := os.Stat(agentPath)
 	if version.GetVersion() == version.DevVersion && statErr == nil {
@@ -197,7 +217,9 @@ func downloadAgentLocally(tryDownloadURL, targetArch string, log log.Logger) (st
 	}
 
 	fullDownloadURL := tryDownloadURL + "/devpod-linux-" + targetArch
-	log.Debugf("Attempting to download DevPod agent from: %s", fullDownloadURL)
+	log.WithFields(logrus.Fields{
+		"url": fullDownloadURL,
+	}).Debug("attempting to download devpod agent")
 
 	resp, err := devpodhttp.GetHTTPClient().Get(fullDownloadURL)
 	if err != nil {
@@ -209,16 +231,23 @@ func downloadAgentLocally(tryDownloadURL, targetArch string, log log.Logger) (st
 		return agentPath, nil
 	}
 
-	log.Infof("Download DevPod Agent...")
+	log.Info("download devpod agent binary")
 	file, err := os.Create(agentPath)
 	if err != nil {
 		return "", fmt.Errorf("create agent binary %w", err)
 	}
+	log.WithFields(logrus.Fields{
+		"path": agentPath,
+	}).Debug("created agent binary")
 	defer func() { _ = file.Close() }()
 
 	_, err = io.Copy(file, resp.Body)
 	if err != nil {
 		_ = os.Remove(agentPath)
+		log.WithFields(logrus.Fields{
+			"error": err,
+			"url":   fullDownloadURL,
+		}).Error("failed to download devpod agent")
 		return "", fmt.Errorf("failed to download devpod from URL %s %w", fullDownloadURL, err)
 	}
 

@@ -126,10 +126,20 @@ func (s *workspaceClient) RefreshOptions(ctx context.Context, userOptionsRaw []s
 
 	workspace, err := options.ResolveAndSaveOptionsWorkspace(ctx, s.devPodConfig, s.config, s.workspace, userOptions, s.log)
 	if err != nil {
+		s.log.WithFields(logrus.Fields{
+			"error": err,
+		}).Error("failed to resolve and save options workspace")
 		return err
 	}
 
-	s.workspace = workspace
+	if workspace != nil {
+		s.workspace = workspace
+		s.log.WithFields(logrus.Fields{
+			"workspaceId": s.workspace.ID,
+		}).Debug("refreshed workspace options")
+	} else {
+		s.log.Debug("workspace is nil; not updating workspace options")
+	}
 	return nil
 }
 

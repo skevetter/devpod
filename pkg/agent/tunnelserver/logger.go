@@ -40,7 +40,7 @@ type tunnelLogger struct {
 	level   logrus.Level
 	client  tunnel.TunnelClient
 	logChan chan *tunnel.LogMessage
-	fields  log.Fields
+	fields  logrus.Fields
 }
 
 func (s *tunnelLogger) worker() {
@@ -298,8 +298,8 @@ func (s *tunnelLogger) ErrorStreamOnly() log.Logger {
 	return s
 }
 
-func (s *tunnelLogger) WithFields(fields log.Fields) log.Logger {
-	newFields := make(log.Fields)
+func (s *tunnelLogger) WithFields(fields logrus.Fields) log.Logger {
+	newFields := make(logrus.Fields)
 	maps.Copy(newFields, s.fields)
 	maps.Copy(newFields, fields)
 

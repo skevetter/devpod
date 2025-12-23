@@ -163,7 +163,7 @@ func (c *CombinedLogger) ErrorStreamOnly() logLib.Logger {
 	return nil
 }
 
-func (c *CombinedLogger) WithFields(fields logLib.Fields) logLib.Logger {
+func (c *CombinedLogger) WithFields(fields logrus.Fields) logLib.Logger {
 	c.m.Lock()
 	defer c.m.Unlock()
 
