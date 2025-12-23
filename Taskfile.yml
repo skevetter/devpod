@@ -16,6 +16,11 @@ tasks:
       - task: build:devpod
       - task: build:desktop
 
+  build:
+    desc: Build DevPod binary for current platform
+    cmds:
+      - go build -o test/devpod .
+
   build:devpod:
     desc: Build DevPod binaries for multiple platforms
     cmds:
