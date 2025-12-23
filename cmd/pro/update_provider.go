@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/loft-sh/log"
 	"github.com/skevetter/devpod/cmd/pro/flags"
 	providercmd "github.com/skevetter/devpod/cmd/provider"
 	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/workspace"
+	"github.com/skevetter/log"
 	"github.com/spf13/cobra"
 )
 

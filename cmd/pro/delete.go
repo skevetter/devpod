@@ -7,7 +7,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/loft-sh/log"
 	proflags "github.com/skevetter/devpod/cmd/pro/flags"
 	providercmd "github.com/skevetter/devpod/cmd/provider"
 	"github.com/skevetter/devpod/pkg/client/clientimplementation"
@@ -16,6 +15,7 @@ import (
 	"github.com/skevetter/devpod/pkg/platform"
 	"github.com/skevetter/devpod/pkg/provider"
 	"github.com/skevetter/devpod/pkg/workspace"
+	"github.com/skevetter/log"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/util/wait"
 )

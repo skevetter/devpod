@@ -3,7 +3,7 @@ package throttledlogger
 import (
 	"time"
 
-	"github.com/loft-sh/log"
+	"github.com/skevetter/log"
 )
 
 // ThrottledLogger is a logger that throttles the output,

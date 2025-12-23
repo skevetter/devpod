@@ -8,9 +8,9 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/loft-sh/log"
 	"github.com/skevetter/devpod/pkg/gitcredentials"
 	devpodhttp "github.com/skevetter/devpod/pkg/http"
+	"github.com/skevetter/log"
 )
 
 func Head(rawURL string) (int, error) {

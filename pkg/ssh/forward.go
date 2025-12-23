@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/loft-sh/log"
+	"github.com/skevetter/log"
 	"golang.org/x/crypto/ssh"
 )
 

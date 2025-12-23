@@ -5,7 +5,7 @@ import (
 	"maps"
 	"os"
 
-	"github.com/loft-sh/log"
+	"github.com/skevetter/log"
 )
 
 var location = "/etc/envfile.json"

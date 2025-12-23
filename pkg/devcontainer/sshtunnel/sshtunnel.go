@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/loft-sh/log"
+	"github.com/skevetter/log"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"

@@ -6,9 +6,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/loft-sh/log"
 	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/types"
+	"github.com/skevetter/log"
 )
 
 func printUnusedUserValues(userValues map[string]string, options config.OptionDefinitions, log log.Logger) {

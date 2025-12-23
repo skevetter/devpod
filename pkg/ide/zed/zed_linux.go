@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"os/exec"
 
-	"github.com/loft-sh/log"
+	"github.com/skevetter/log"
 
 	"github.com/skevetter/devpod/pkg/config"
 )

@@ -7,13 +7,13 @@ import (
 	"io"
 	"os"
 
-	"github.com/loft-sh/log"
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/cmd/pro/flags"
 	"github.com/skevetter/devpod/pkg/client/clientimplementation"
 	"github.com/skevetter/devpod/pkg/platform"
 	"github.com/skevetter/devpod/pkg/platform/client"
 	"github.com/skevetter/devpod/pkg/platform/remotecommand"
+	"github.com/skevetter/log"
 	"github.com/spf13/cobra"
 
 	managementv1 "github.com/loft-sh/api/v4/pkg/apis/management/v1"

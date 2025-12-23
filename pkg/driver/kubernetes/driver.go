@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/loft-sh/log"
 	"github.com/skevetter/devpod/pkg/driver"
 	provider2 "github.com/skevetter/devpod/pkg/provider"
+	"github.com/skevetter/log"
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

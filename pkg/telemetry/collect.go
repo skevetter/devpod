@@ -9,11 +9,11 @@ import (
 	"time"
 
 	"github.com/loft-sh/analytics-client/client"
-	"github.com/loft-sh/log"
 	"github.com/moby/term"
 	devpodclient "github.com/skevetter/devpod/pkg/client"
 	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/version"
+	"github.com/skevetter/log"
 	"github.com/spf13/cobra"
 )
 

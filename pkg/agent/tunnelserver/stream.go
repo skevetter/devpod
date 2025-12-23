@@ -5,8 +5,8 @@ import (
 	"io"
 	"time"
 
-	"github.com/loft-sh/log"
 	"github.com/skevetter/devpod/pkg/agent/tunnel"
+	"github.com/skevetter/log"
 )
 
 func NewStreamReader(stream tunnel.Tunnel_StreamWorkspaceClient, log log.Logger) io.Reader {

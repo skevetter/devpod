@@ -3,11 +3,11 @@ package container
 import (
 	"encoding/json"
 
-	"github.com/loft-sh/log"
 	"github.com/skevetter/devpod/cmd/flags"
 	"github.com/skevetter/devpod/pkg/compress"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	"github.com/skevetter/devpod/pkg/ide/openvscode"
+	"github.com/skevetter/log"
 	"github.com/spf13/cobra"
 )
 

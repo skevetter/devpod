@@ -13,7 +13,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/loft-sh/log"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/agent"
@@ -21,6 +20,7 @@ import (
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	"github.com/skevetter/devpod/pkg/platform/client"
 	"github.com/skevetter/devpod/pkg/ts"
+	"github.com/skevetter/log"
 	"github.com/spf13/cobra"
 )
 

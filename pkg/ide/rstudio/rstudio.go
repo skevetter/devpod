@@ -14,13 +14,13 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/loft-sh/log"
 	"github.com/skevetter/devpod/pkg/command"
 	"github.com/skevetter/devpod/pkg/config"
 	copypkg "github.com/skevetter/devpod/pkg/copy"
 	devpodhttp "github.com/skevetter/devpod/pkg/http"
 	"github.com/skevetter/devpod/pkg/ide"
 	"github.com/skevetter/devpod/pkg/single"
+	"github.com/skevetter/log"
 )
 
 const (

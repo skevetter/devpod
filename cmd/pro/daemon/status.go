@@ -7,12 +7,12 @@ import (
 
 	platformdaemon "github.com/skevetter/devpod/pkg/daemon/platform"
 
-	"github.com/loft-sh/log"
 	"github.com/skevetter/devpod/cmd/agent"
 	"github.com/skevetter/devpod/cmd/pro/completion"
 	proflags "github.com/skevetter/devpod/cmd/pro/flags"
 	"github.com/skevetter/devpod/pkg/config"
 	providerpkg "github.com/skevetter/devpod/pkg/provider"
+	"github.com/skevetter/log"
 	"github.com/spf13/cobra"
 )
 

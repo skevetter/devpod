@@ -15,13 +15,13 @@ import (
 	"github.com/blang/semver/v4"
 	"github.com/gofrs/flock"
 	"github.com/loft-sh/api/v4/pkg/devpod"
-	"github.com/loft-sh/log"
 	"github.com/skevetter/devpod/pkg/client"
 	"github.com/skevetter/devpod/pkg/config"
 	devpodlog "github.com/skevetter/devpod/pkg/log"
 	"github.com/skevetter/devpod/pkg/options"
 	platformclient "github.com/skevetter/devpod/pkg/platform/client"
 	"github.com/skevetter/devpod/pkg/provider"
+	"github.com/skevetter/log"
 )
 
 var (

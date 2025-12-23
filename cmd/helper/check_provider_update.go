@@ -8,12 +8,12 @@ import (
 	"strings"
 
 	"github.com/blang/semver"
-	"github.com/loft-sh/log"
 	"github.com/pkg/errors"
 	"github.com/skevetter/devpod/cmd/flags"
 	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/provider"
 	"github.com/skevetter/devpod/pkg/workspace"
+	"github.com/skevetter/log"
 	"github.com/spf13/cobra"
 )
 

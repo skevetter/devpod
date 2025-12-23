@@ -6,9 +6,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/loft-sh/log"
-	"github.com/loft-sh/log/survey"
-	"github.com/loft-sh/log/terminal"
 	"github.com/skevetter/devpod/pkg/client"
 	"github.com/skevetter/devpod/pkg/client/clientimplementation"
 	"github.com/skevetter/devpod/pkg/config"
@@ -16,6 +13,9 @@ import (
 	"github.com/skevetter/devpod/pkg/file"
 	providerpkg "github.com/skevetter/devpod/pkg/provider"
 	"github.com/skevetter/devpod/pkg/types"
+	"github.com/skevetter/log"
+	"github.com/skevetter/log/survey"
+	"github.com/skevetter/log/terminal"
 )
 
 func listMachines(devPodConfig *config.Config, log log.Logger) ([]*providerpkg.Machine, error) {

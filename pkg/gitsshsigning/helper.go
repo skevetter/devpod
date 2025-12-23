@@ -7,10 +7,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/loft-sh/log"
-	"github.com/loft-sh/log/scanner"
 	"github.com/skevetter/devpod/pkg/command"
 	"github.com/skevetter/devpod/pkg/file"
+	"github.com/skevetter/log"
+	"github.com/skevetter/log/scanner"
 )
 
 const (

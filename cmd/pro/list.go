@@ -7,12 +7,12 @@ import (
 	"sort"
 	"time"
 
-	"github.com/loft-sh/log"
-	"github.com/loft-sh/log/table"
 	proflags "github.com/skevetter/devpod/cmd/pro/flags"
 	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/provider"
 	"github.com/skevetter/devpod/pkg/workspace"
+	"github.com/skevetter/log"
+	"github.com/skevetter/log/table"
 	"github.com/spf13/cobra"
 )
 

@@ -7,9 +7,9 @@ import (
 	"io"
 	"os"
 
-	"github.com/loft-sh/log"
 	"github.com/skevetter/devpod/cmd/pro/flags"
 	"github.com/skevetter/devpod/pkg/platform/client"
+	"github.com/skevetter/log"
 	"github.com/spf13/cobra"
 )
 

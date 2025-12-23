@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/loft-sh/log"
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	"github.com/skevetter/devpod/pkg/driver"
@@ -18,6 +17,7 @@ import (
 	"github.com/skevetter/devpod/pkg/encoding"
 	"github.com/skevetter/devpod/pkg/language"
 	provider2 "github.com/skevetter/devpod/pkg/provider"
+	"github.com/skevetter/log"
 )
 
 type Runner interface {

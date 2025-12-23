@@ -16,7 +16,6 @@ import (
 	"syscall"
 
 	"github.com/blang/semver"
-	"github.com/loft-sh/log"
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/cmd/flags"
 	"github.com/skevetter/devpod/pkg/agent"
@@ -45,6 +44,7 @@ import (
 	"github.com/skevetter/devpod/pkg/util"
 	"github.com/skevetter/devpod/pkg/version"
 	workspace2 "github.com/skevetter/devpod/pkg/workspace"
+	"github.com/skevetter/log"
 	"github.com/skratchdot/open-golang/open"
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh"

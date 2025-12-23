@@ -12,8 +12,8 @@ import (
 	"strings"
 
 	"github.com/loft-sh/api/v4/pkg/devpod"
-	"github.com/loft-sh/log"
 	"github.com/moby/patternmatcher/ignorefile"
+	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/agent/tunnel"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	"github.com/skevetter/devpod/pkg/dockercredentials"
@@ -26,6 +26,7 @@ import (
 	"github.com/skevetter/devpod/pkg/platform"
 	provider2 "github.com/skevetter/devpod/pkg/provider"
 	"github.com/skevetter/devpod/pkg/stdio"
+	"github.com/skevetter/log"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
@@ -200,7 +201,10 @@ func (t *tunnelServer) GitUser(ctx context.Context, empty *tunnel.Empty) (*tunne
 }
 
 func (t *tunnelServer) GitCredentials(ctx context.Context, message *tunnel.Message) (*tunnel.Message, error) {
-	t.log.Debugf("GitCredentials called allowGitCredentials=%v, workspace_nil=%v", t.allowGitCredentials, t.workspace == nil)
+	t.log.WithFields(logrus.Fields{
+		"allowGitCredentials": t.allowGitCredentials,
+		"workspaceIsNil":      t.workspace == nil,
+	}).Debug("getting git credentials")
 	if !t.allowGitCredentials {
 		return nil, fmt.Errorf("git credentials forbidden")
 	}
@@ -244,7 +248,7 @@ func (t *tunnelServer) GitCredentials(ctx context.Context, message *tunnel.Messa
 			// This allows downstream credential helpers to figure out which passwords needs to be fetched
 			credentials.Path = path
 		} else {
-			t.log.Warnf("workspace is not available for git credentials")
+			t.log.Warn("workspace is not available for git credentials")
 		}
 
 		response, err := gitcredentials.GetCredentials(credentials)
@@ -346,7 +350,7 @@ func (t *tunnelServer) SendResult(ctx context.Context, result *tunnel.Message) (
 }
 
 func (t *tunnelServer) Ping(context.Context, *tunnel.Empty) (*tunnel.Empty, error) {
-	t.log.Debugf("Received ping from agent")
+	t.log.Debug("Received ping from agent")
 	return &tunnel.Empty{}, nil
 }
 
@@ -381,7 +385,9 @@ func (t *tunnelServer) StreamWorkspace(message *tunnel.Empty, stream tunnel.Tunn
 	if err == nil {
 		excludes, err = ignorefile.ReadAll(f)
 		if err != nil {
-			t.log.Warnf("Error reading .devpodignore file: %v", err)
+			t.log.WithFields(logrus.Fields{
+				"error": err,
+			}).Warn("error reading .devpodignore file")
 		}
 	}
 
@@ -418,7 +424,9 @@ func (t *tunnelServer) StreamMount(message *tunnel.StreamMountRequest, stream tu
 		if err == nil {
 			excludes, err = ignorefile.ReadAll(f)
 			if err != nil {
-				t.log.Warnf("Error reading .devpodignore file: %v", err)
+				t.log.WithFields(logrus.Fields{
+					"error": err,
+				}).Warn("error reading .devpodignore file")
 			}
 		}
 	}

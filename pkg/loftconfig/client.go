@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/loft-sh/log"
 	"github.com/skevetter/devpod/pkg/credentials"
 	"github.com/skevetter/devpod/pkg/platform/client"
+	"github.com/skevetter/log"
 )
 
 func GetLoftConfig(context, provider string, port int, logger log.Logger) (*client.Config, error) {

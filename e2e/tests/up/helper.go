@@ -11,13 +11,13 @@ import (
 	"strings"
 
 	"github.com/docker/docker/api/types/container"
-	"github.com/loft-sh/log"
-	"github.com/loft-sh/log/scanner"
 	"github.com/onsi/ginkgo/v2"
 	"github.com/skevetter/devpod/e2e/framework"
 	"github.com/skevetter/devpod/pkg/compose"
 	docker "github.com/skevetter/devpod/pkg/docker"
 	provider2 "github.com/skevetter/devpod/pkg/provider"
+	"github.com/skevetter/log"
+	"github.com/skevetter/log/scanner"
 )
 
 type baseTestContext struct {

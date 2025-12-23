@@ -1,9 +1,9 @@
 package cmd
 
 import (
-	"github.com/loft-sh/log"
 	"github.com/pkg/errors"
 	"github.com/skevetter/devpod/pkg/upgrade"
+	"github.com/skevetter/log"
 	"github.com/spf13/cobra"
 )
 

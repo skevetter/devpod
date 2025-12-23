@@ -5,8 +5,6 @@ import (
 	"os"
 	"os/exec"
 
-	log2 "github.com/loft-sh/log"
-	"github.com/loft-sh/log/terminal"
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/cmd/agent"
 	"github.com/skevetter/devpod/cmd/completion"
@@ -21,6 +19,8 @@ import (
 	"github.com/skevetter/devpod/pkg/client/clientimplementation"
 	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/telemetry"
+	log2 "github.com/skevetter/log"
+	"github.com/skevetter/log/terminal"
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh"
 )

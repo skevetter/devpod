@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"io"
 
-	"github.com/loft-sh/log"
-	"github.com/loft-sh/log/scanner"
 	"github.com/sirupsen/logrus"
+	"github.com/skevetter/log"
+	"github.com/skevetter/log/scanner"
 )
 
 func PipeJSONStream(logger log.Logger) (io.WriteCloser, chan struct{}) {

@@ -12,12 +12,12 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/loft-sh/log"
 	"github.com/skevetter/devpod/cmd/agent/container"
 	"github.com/skevetter/devpod/cmd/flags"
 	"github.com/skevetter/devpod/pkg/gitcredentials"
 	devpodhttp "github.com/skevetter/devpod/pkg/http"
 	"github.com/skevetter/devpod/pkg/ts"
+	"github.com/skevetter/log"
 	"github.com/spf13/cobra"
 )
 

@@ -8,11 +8,11 @@ import (
 
 	"github.com/docker/cli/cli/config"
 	"github.com/docker/cli/cli/config/types"
-	"github.com/loft-sh/log"
 	"github.com/skevetter/devpod/pkg/command"
 	"github.com/skevetter/devpod/pkg/docker"
 	"github.com/skevetter/devpod/pkg/file"
 	"github.com/skevetter/devpod/pkg/random"
+	"github.com/skevetter/log"
 
 	dockerconfig "github.com/containers/image/v5/pkg/docker/config"
 )

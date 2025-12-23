@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/loft-sh/log"
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/command"
+	"github.com/skevetter/log"
 )
 
 const (

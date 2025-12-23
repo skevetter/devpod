@@ -4,8 +4,8 @@ import (
 	"context"
 
 	dockerclient "github.com/docker/docker/client"
-	"github.com/loft-sh/log"
 	"github.com/pkg/errors"
+	"github.com/skevetter/log"
 )
 
 // Client is a client for docker

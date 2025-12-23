@@ -11,10 +11,10 @@ import (
 	"runtime"
 
 	"github.com/loft-sh/api/v4/pkg/devpod"
-	"github.com/loft-sh/log"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	provider2 "github.com/skevetter/devpod/pkg/provider"
 	"github.com/skevetter/devpod/pkg/single"
+	"github.com/skevetter/log"
 	"github.com/takama/daemon"
 )
 

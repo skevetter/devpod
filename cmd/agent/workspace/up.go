@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/loft-sh/log"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/cmd/flags"
@@ -29,6 +28,7 @@ import (
 	"github.com/skevetter/devpod/pkg/extract"
 	provider2 "github.com/skevetter/devpod/pkg/provider"
 	"github.com/skevetter/devpod/pkg/util"
+	"github.com/skevetter/log"
 	"github.com/spf13/cobra"
 )
 

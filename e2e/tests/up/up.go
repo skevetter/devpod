@@ -10,13 +10,13 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/loft-sh/log"
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	"github.com/skevetter/devpod/e2e/framework"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	docker "github.com/skevetter/devpod/pkg/docker"
 	"github.com/skevetter/devpod/pkg/language"
+	"github.com/skevetter/log"
 )
 
 var _ = DevPodDescribe("devpod up test suite", func() {

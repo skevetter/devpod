@@ -21,7 +21,6 @@ import (
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/skevetter/devpod/cmd/flags"
 
-	"github.com/loft-sh/log"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/agent"
@@ -47,6 +46,7 @@ import (
 	provider2 "github.com/skevetter/devpod/pkg/provider"
 	"github.com/skevetter/devpod/pkg/single"
 	"github.com/skevetter/devpod/pkg/ts"
+	"github.com/skevetter/log"
 	"github.com/spf13/cobra"
 )
 

@@ -9,7 +9,6 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/loft-sh/log"
 	"github.com/skevetter/devpod/cmd/flags"
 	"github.com/skevetter/devpod/pkg/agent/tunnel"
 	"github.com/skevetter/devpod/pkg/agent/tunnelserver"
@@ -19,6 +18,7 @@ import (
 	"github.com/skevetter/devpod/pkg/gitsshsigning"
 	"github.com/skevetter/devpod/pkg/netstat"
 	portpkg "github.com/skevetter/devpod/pkg/port"
+	"github.com/skevetter/log"
 	"github.com/spf13/cobra"
 )
 

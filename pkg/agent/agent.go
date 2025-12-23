@@ -13,12 +13,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/loft-sh/log"
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/command"
 	"github.com/skevetter/devpod/pkg/compress"
 	provider2 "github.com/skevetter/devpod/pkg/provider"
 	"github.com/skevetter/devpod/pkg/version"
+	"github.com/skevetter/log"
 )
 
 const DefaultInactivityTimeout = time.Minute * 20
@@ -108,21 +108,59 @@ func ParseAgentWorkspaceInfo(workspaceConfigFile string) (*provider2.AgentWorksp
 }
 
 func ReadAgentWorkspaceInfo(agentFolder, context, id string, log log.Logger) (bool, *provider2.AgentWorkspaceInfo, error) {
+	log.WithFields(logrus.Fields{
+		"agentFolder": agentFolder,
+		"context":     context,
+		"workspaceId": id,
+	}).Debug("starting to read agent workspace info")
+
 	workspaceInfo, err := readAgentWorkspaceInfo(agentFolder, context, id)
 	if err != nil && !errors.Is(err, ErrFindAgentHomeFolder) && !errors.Is(err, os.ErrPermission) {
+		log.WithFields(logrus.Fields{
+			"error":       err,
+			"agentFolder": agentFolder,
+			"context":     context,
+			"workspaceId": id,
+		}).Error("failed to read agent workspace info")
 		return false, nil, err
 	}
 
+	if errors.Is(err, ErrFindAgentHomeFolder) {
+		log.WithFields(logrus.Fields{
+			"agentFolder": agentFolder,
+			"context":     context,
+			"workspaceId": id,
+		}).Debug("agent home folder not found")
+	}
+
+	if errors.Is(err, os.ErrPermission) {
+		log.WithFields(logrus.Fields{
+			"agentFolder": agentFolder,
+			"context":     context,
+			"workspaceId": id,
+		}).Debug("permission denied reading workspace info")
+	}
+
 	// check if we need to become root
+	log.Debug("checking if root privileges are required")
 	shouldExit, err := rerunAsRoot(workspaceInfo, log)
 	if err != nil {
+		log.WithFields(logrus.Fields{
+			"error": err,
+		}).Error("failed to rerun as root")
 		return false, nil, fmt.Errorf("rerun as root %w", err)
 	} else if shouldExit {
+		log.Debug("rerunning as root, exiting current process")
 		return true, nil, nil
 	} else if workspaceInfo == nil {
+		log.Debug("no workspace info available and not rerunning as root")
 		return false, nil, ErrFindAgentHomeFolder
 	}
 
+	log.WithFields(logrus.Fields{
+		"workspaceId": workspaceInfo.Workspace.ID,
+		"driver":      workspaceInfo.Agent.Driver,
+	}).Debug("successfully read agent workspace info")
 	return false, workspaceInfo, nil
 }
 
@@ -144,41 +182,93 @@ func decodeWorkspaceInfoAndWrite(
 	deleteWorkspace func(workspaceInfo *provider2.AgentWorkspaceInfo, log log.Logger) error,
 	log log.Logger,
 ) (bool, *provider2.AgentWorkspaceInfo, error) {
+	log.WithFields(logrus.Fields{
+		"workspaceEncodedLength": len(workspaceInfoEncoded),
+		"writeInfo":              writeInfo,
+	}).Debug("starting to decode and write workspace info")
+
 	workspaceInfo, _, err := DecodeWorkspaceInfo(workspaceInfoEncoded)
 	if err != nil {
+		log.WithFields(logrus.Fields{
+			"error":                  err,
+			"workspaceEncodedLength": len(workspaceInfoEncoded),
+		}).Error("failed to decode workspace info")
 		return false, nil, err
 	}
 
+	log.WithFields(logrus.Fields{
+		"workspaceId": workspaceInfo.Workspace.ID,
+		"context":     workspaceInfo.Workspace.Context,
+		"driver":      workspaceInfo.Agent.Driver,
+	}).Debug("successfully decoded workspace info")
+
 	// check if we need to become root
+	log.Debug("checking if root privileges are required")
 	shouldExit, err := rerunAsRoot(workspaceInfo, log)
 	if err != nil {
+		log.WithFields(logrus.Fields{
+			"error": err,
+		}).Error("failed to rerun as root")
 		return false, nil, fmt.Errorf("rerun as root %w", err)
 	} else if shouldExit {
+		log.Debug("rerunning as root, exiting current process")
 		return true, nil, nil
 	}
 
 	// write to workspace folder
+	log.WithFields(logrus.Fields{
+		"dataPath":    workspaceInfo.Agent.DataPath,
+		"context":     workspaceInfo.Workspace.Context,
+		"workspaceId": workspaceInfo.Workspace.ID,
+	}).Debug("creating agent workspace directory")
 	workspaceDir, err := CreateAgentWorkspaceDir(workspaceInfo.Agent.DataPath, workspaceInfo.Workspace.Context, workspaceInfo.Workspace.ID)
 	if err != nil {
+		log.WithFields(logrus.Fields{
+			"error":       err,
+			"dataPath":    workspaceInfo.Agent.DataPath,
+			"context":     workspaceInfo.Workspace.Context,
+			"workspaceId": workspaceInfo.Workspace.ID,
+		}).Error("failed to create agent workspace directory")
 		return false, nil, err
 	}
-	log.Debugf("Use %s as workspace dir", workspaceDir)
+
+	log.WithFields(logrus.Fields{
+		"workspaceDir": workspaceDir,
+	}).Debug("using workspace dir")
 
 	// check if workspace config already exists
 	workspaceConfig := filepath.Join(workspaceDir, provider2.WorkspaceConfigFile)
 	if deleteWorkspace != nil {
+		log.WithFields(logrus.Fields{
+			"configFile": workspaceConfig,
+		}).Debug("checking for existing workspace config")
+
 		oldWorkspaceInfo, _ := ParseAgentWorkspaceInfo(workspaceConfig)
 		if oldWorkspaceInfo != nil && oldWorkspaceInfo.Workspace.UID != workspaceInfo.Workspace.UID {
 			// delete the old workspace
-			log.Infof("Delete old workspace '%s'", oldWorkspaceInfo.Workspace.ID)
+			log.WithFields(logrus.Fields{
+				"workspaceId": oldWorkspaceInfo.Workspace.ID,
+				"oldUid":      oldWorkspaceInfo.Workspace.UID,
+				"newUid":      workspaceInfo.Workspace.UID,
+			}).Info("delete old workspace")
+
 			err = deleteWorkspace(oldWorkspaceInfo, log)
 			if err != nil {
+				log.WithFields(logrus.Fields{
+					"error":       err,
+					"workspaceId": oldWorkspaceInfo.Workspace.ID,
+				}).Error("failed to delete old workspace")
 				return false, nil, fmt.Errorf("delete old workspace %w", err)
 			}
 
 			// recreate workspace folder again
+			log.Debug("recreating workspace directory after deletion")
 			workspaceDir, err = CreateAgentWorkspaceDir(workspaceInfo.Agent.DataPath, workspaceInfo.Workspace.Context, workspaceInfo.Workspace.ID)
 			if err != nil {
+				log.WithFields(logrus.Fields{
+					"error":    err,
+					"dataPath": workspaceInfo.Agent.DataPath,
+				}).Error("failed to recreate workspace directory")
 				return false, nil, err
 			}
 		}
@@ -190,26 +280,60 @@ func decodeWorkspaceInfoAndWrite(
 	// if we're running in proxy mode.
 	// We only have write access to /var/lib/loft/* by default causing nearly all local folders to run into permissions issues
 	if workspaceInfo.Workspace.Source.LocalFolder != "" && !workspaceInfo.CLIOptions.Platform.Enabled {
+		log.WithFields(logrus.Fields{
+			"localFolder":     workspaceInfo.Workspace.Source.LocalFolder,
+			"workspaceOrigin": workspaceInfo.WorkspaceOrigin,
+		}).Debug("checking local folder workspace source")
+
 		_, err = os.Stat(workspaceInfo.WorkspaceOrigin)
 		if err == nil {
 			workspaceInfo.ContentFolder = workspaceInfo.Workspace.Source.LocalFolder
+			log.WithFields(logrus.Fields{
+				"contentFolder": workspaceInfo.ContentFolder,
+			}).Debug("set content folder to local folder")
+		} else {
+			log.WithFields(logrus.Fields{
+				"error":           err,
+				"workspaceOrigin": workspaceInfo.WorkspaceOrigin,
+			}).Debug("workspace origin not accessible")
 		}
 	}
 
 	// set content folder
 	if workspaceInfo.ContentFolder == "" {
 		workspaceInfo.ContentFolder = GetAgentWorkspaceContentDir(workspaceDir)
+		log.WithFields(logrus.Fields{
+			"contentFolder": workspaceInfo.ContentFolder,
+		}).Debug("set content folder to default location")
 	}
 
 	// write workspace info
 	if writeInfo {
+		log.WithFields(logrus.Fields{
+			"configFile": workspaceConfig,
+		}).Debug("writing workspace info to file")
+
 		err = writeWorkspaceInfo(workspaceConfig, workspaceInfo)
 		if err != nil {
+			log.WithFields(logrus.Fields{
+				"error":      err,
+				"configFile": workspaceConfig,
+			}).Error("failed to write workspace info")
 			return false, nil, err
 		}
+
+		log.WithFields(logrus.Fields{
+			"configFile": workspaceConfig,
+		}).Debug("wrote workspace info")
 	}
 
 	workspaceInfo.Origin = workspaceDir
+	log.WithFields(logrus.Fields{
+		"workspaceId":   workspaceInfo.Workspace.ID,
+		"origin":        workspaceInfo.Origin,
+		"contentFolder": workspaceInfo.ContentFolder,
+	}).Debug("processed workspace info")
+
 	return false, workspaceInfo, nil
 }
 
@@ -267,7 +391,9 @@ func rerunAsRoot(workspaceInfo *provider2.AgentWorkspaceInfo, log log.Logger) (b
 		var err error
 		dockerRootRequired, err = dockerReachable(workspaceInfo.Agent.Docker.Path, workspaceInfo.Agent.Docker.Env)
 		if err != nil {
-			log.Debugf("Error trying to reach docker daemon: %v", err)
+			log.WithFields(logrus.Fields{
+				"error": err,
+			}).Debug("error trying to reach docker daemon")
 			dockerRootRequired = true
 		}
 	}
@@ -277,7 +403,7 @@ func rerunAsRoot(workspaceInfo *provider2.AgentWorkspaceInfo, log log.Logger) (b
 
 	// check if root required
 	if !dockerRootRequired && !agentRootRequired {
-		log.Debugf("No root required, because neither docker nor agent daemon needs to be installed")
+		log.Debug("no root required, because neither docker nor agent daemon needs to be installed")
 		return false, nil
 	}
 
@@ -290,7 +416,9 @@ func rerunAsRoot(workspaceInfo *provider2.AgentWorkspaceInfo, log log.Logger) (b
 	// call ourself
 	args := []string{"--preserve-env", binary}
 	args = append(args, os.Args[1:]...)
-	log.Debugf("Rerun as root: %s", strings.Join(args, " "))
+	log.WithFields(logrus.Fields{
+		"command": strings.Join(args, " "),
+	}).Debug("re-run as root")
 	cmd := exec.Command("sudo", args...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout

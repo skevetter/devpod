@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/blang/semver"
-	"github.com/loft-sh/log"
 	"github.com/mgutz/ansi"
 	proflags "github.com/skevetter/devpod/cmd/pro/flags"
 	providercmd "github.com/skevetter/devpod/cmd/provider"
@@ -18,6 +17,7 @@ import (
 	"github.com/skevetter/devpod/pkg/types"
 	versionpkg "github.com/skevetter/devpod/pkg/version"
 	"github.com/skevetter/devpod/pkg/workspace"
+	"github.com/skevetter/log"
 	"github.com/spf13/cobra"
 )
 

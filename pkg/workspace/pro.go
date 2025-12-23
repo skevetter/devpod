@@ -3,9 +3,9 @@ package workspace
 import (
 	"os"
 
-	"github.com/loft-sh/log"
 	"github.com/skevetter/devpod/pkg/config"
 	provider2 "github.com/skevetter/devpod/pkg/provider"
+	"github.com/skevetter/log"
 )
 
 func ListProInstances(devPodConfig *config.Config, log log.Logger) ([]*provider2.ProInstance, error) {

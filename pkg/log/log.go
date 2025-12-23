@@ -6,9 +6,9 @@ import (
 	"sync"
 
 	"github.com/go-logr/logr"
-	logLib "github.com/loft-sh/log"
-	"github.com/loft-sh/log/survey"
 	"github.com/sirupsen/logrus"
+	logLib "github.com/skevetter/log"
+	"github.com/skevetter/log/survey"
 )
 
 // CombinedLogger implements the Logger interface and delegates logging to multiple loggers
@@ -161,6 +161,21 @@ func (c *CombinedLogger) Question(params *survey.QuestionOptions) (string, error
 
 func (c *CombinedLogger) ErrorStreamOnly() logLib.Logger {
 	return nil
+}
+
+func (c *CombinedLogger) WithFields(fields logrus.Fields) logLib.Logger {
+	c.m.Lock()
+	defer c.m.Unlock()
+
+	newLoggers := make([]logLib.Logger, len(c.loggers))
+	for i, logger := range c.loggers {
+		newLoggers[i] = logger.WithFields(fields)
+	}
+
+	return &CombinedLogger{
+		loggers: newLoggers,
+		level:   c.level,
+	}
 }
 
 func (c *CombinedLogger) LogrLogSink() logr.LogSink {

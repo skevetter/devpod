@@ -8,12 +8,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/loft-sh/log"
 	buildkit "github.com/moby/buildkit/client"
 	"github.com/moby/buildkit/session"
 	"github.com/moby/buildkit/session/auth/authprovider"
 	"github.com/skevetter/devpod/pkg/devcontainer/build"
 	"github.com/skevetter/devpod/pkg/docker"
+	"github.com/skevetter/log"
 )
 
 func Build(ctx context.Context, client *buildkit.Client, writer io.Writer, platform string, options *build.BuildOptions, log log.Logger) error {

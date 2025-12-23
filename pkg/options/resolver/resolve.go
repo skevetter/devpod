@@ -7,10 +7,10 @@ import (
 	"slices"
 	"time"
 
-	"github.com/loft-sh/log/survey"
-	"github.com/loft-sh/log/terminal"
 	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/types"
+	"github.com/skevetter/log/survey"
+	"github.com/skevetter/log/terminal"
 )
 
 func (r *Resolver) resolveOptions(

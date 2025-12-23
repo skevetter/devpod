@@ -11,13 +11,13 @@ import (
 	"os"
 	"time"
 
-	"github.com/loft-sh/log"
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/agent"
 	"github.com/skevetter/devpod/pkg/client"
 	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/provider"
 	devssh "github.com/skevetter/devpod/pkg/ssh"
+	"github.com/skevetter/log"
 	"golang.org/x/crypto/ssh"
 )
 

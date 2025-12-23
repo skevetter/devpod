@@ -9,8 +9,6 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/huh"
-	"github.com/loft-sh/log"
-	"github.com/loft-sh/log/terminal"
 	"github.com/skevetter/devpod/pkg/client"
 	"github.com/skevetter/devpod/pkg/client/clientimplementation"
 	"github.com/skevetter/devpod/pkg/client/clientimplementation/daemonclient"
@@ -23,6 +21,8 @@ import (
 	"github.com/skevetter/devpod/pkg/platform"
 	providerpkg "github.com/skevetter/devpod/pkg/provider"
 	"github.com/skevetter/devpod/pkg/types"
+	"github.com/skevetter/log"
+	"github.com/skevetter/log/terminal"
 )
 
 // Resolve takes the `devpod up|build` CLI input and either finds an existing workspace or creates a new one

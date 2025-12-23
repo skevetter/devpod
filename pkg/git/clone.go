@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/loft-sh/log"
 	"github.com/sirupsen/logrus"
+	"github.com/skevetter/log"
 	"github.com/spf13/pflag"
 )
 

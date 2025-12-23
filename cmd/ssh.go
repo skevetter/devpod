@@ -11,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/loft-sh/log"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/cmd/completion"
@@ -27,6 +26,7 @@ import (
 	devssh "github.com/skevetter/devpod/pkg/ssh"
 	"github.com/skevetter/devpod/pkg/tunnel"
 	workspace2 "github.com/skevetter/devpod/pkg/workspace"
+	"github.com/skevetter/log"
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh"
 )

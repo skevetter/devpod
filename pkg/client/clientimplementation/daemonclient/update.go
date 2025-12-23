@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/loft-sh/log/terminal"
+	"github.com/skevetter/log/terminal"
 )
 
 func (c *client) updateInstance(ctx context.Context) error {

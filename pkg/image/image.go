@@ -10,7 +10,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
-	"github.com/loft-sh/log"
+	"github.com/skevetter/log"
 )
 
 var (
@@ -106,4 +106,21 @@ func IsValidDockerTag(tag string) bool {
 
 func shouldNotBeSlugged(data string, regexp *regexp.Regexp, maxSize int) bool {
 	return len(data) == 0 || regexp.Match([]byte(data)) && len(data) <= maxSize
+}
+
+func GetImageConfigForArch(ctx context.Context, image, arch string, log log.Logger) (*v1.ConfigFile, v1.Image, error) {
+	log.Debugf("Getting image config for image '%s' with architecture '%s'", image, arch)
+	defer log.Debugf("Done getting image config for image '%s' with architecture '%s'", image, arch)
+
+	img, err := GetImageForArch(ctx, image, arch)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	configFile, err := img.ConfigFile()
+	if err != nil {
+		return nil, nil, fmt.Errorf("config file: %w", err)
+	}
+
+	return configFile, img, nil
 }

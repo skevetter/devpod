@@ -4,8 +4,8 @@ import (
 	"io"
 	"time"
 
-	"github.com/loft-sh/log"
 	"github.com/skevetter/devpod/pkg/config"
+	"github.com/skevetter/log"
 )
 
 type IDE interface {

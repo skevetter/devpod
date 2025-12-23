@@ -13,7 +13,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/loft-sh/log"
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/compose"
 	config2 "github.com/skevetter/devpod/pkg/config"
@@ -22,6 +21,7 @@ import (
 	"github.com/skevetter/devpod/pkg/driver"
 	"github.com/skevetter/devpod/pkg/ide/jetbrains"
 	provider2 "github.com/skevetter/devpod/pkg/provider"
+	"github.com/skevetter/log"
 )
 
 func makeEnvironment(env map[string]string, log log.Logger) []string {
@@ -31,7 +31,9 @@ func makeEnvironment(env map[string]string, log log.Logger) []string {
 
 	ret := config.ObjectToList(env)
 	if len(env) > 0 {
-		log.Debugf("Use docker environment variables: %v", ret)
+		log.WithFields(logrus.Fields{
+			"variables": ret,
+		}).Debug("using docker environment variables")
 	}
 
 	return ret
@@ -50,7 +52,9 @@ func NewDockerDriver(workspaceInfo *provider2.AgentWorkspaceInfo, log log.Logger
 		return nil, err
 	}
 
-	log.Debugf("Using docker command '%s'", dockerCommand)
+	log.WithFields(logrus.Fields{
+		"command": dockerCommand,
+	}).Debug("using docker command")
 	return &dockerDriver{
 		Docker: &docker.DockerHelper{
 			DockerCommand: dockerCommand,
@@ -102,7 +106,10 @@ func (d *dockerDriver) PushDevContainer(ctx context.Context, image string) error
 	}
 
 	// run command
-	d.Log.Debugf("Running docker command: %s %s", d.Docker.DockerCommand, strings.Join(args, " "))
+	d.Log.WithFields(logrus.Fields{
+		"command": d.Docker.DockerCommand,
+		"args":    strings.Join(args, " "),
+	}).Debug("running docker push command")
 	err := d.Docker.Run(ctx, args, nil, writer, writer)
 	if err != nil {
 		return fmt.Errorf("push image %w", err)
@@ -124,7 +131,10 @@ func (d *dockerDriver) TagDevContainer(ctx context.Context, image, tag string) e
 	}
 
 	// run command
-	d.Log.Debugf("Running docker command: %s %s", d.Docker.DockerCommand, strings.Join(args, " "))
+	d.Log.WithFields(logrus.Fields{
+		"command": d.Docker.DockerCommand,
+		"args":    strings.Join(args, " "),
+	}).Debug("running docker tag command")
 	err := d.Docker.Run(ctx, args, nil, writer, writer)
 	if err != nil {
 		return fmt.Errorf("tag image %w", err)
@@ -381,14 +391,20 @@ func (d *dockerDriver) RunDockerDevContainer(
 	args = append(args, options.Cmd...)
 
 	// run the command
-	d.Log.Infof("Running docker command %s %s", d.Docker.DockerCommand, strings.Join(args, " "))
+	d.Log.WithFields(logrus.Fields{
+		"command": d.Docker.DockerCommand,
+		"args":    strings.Join(args, " "),
+	}).Info("running docker command")
 	writer := d.Log.Writer(logrus.InfoLevel, false)
 	defer func() { _ = writer.Close() }()
 
 	err = d.Docker.Run(ctx, args, nil, writer, writer)
 	if err != nil {
-		d.Log.Errorf("Docker container failed to start %v", err)
-		d.Log.Errorf("Docker command that failed %s %s", d.Docker.DockerCommand, strings.Join(args, " "))
+		d.Log.WithFields(logrus.Fields{
+			"error":   err,
+			"command": d.Docker.DockerCommand,
+			"args":    strings.Join(args, " "),
+		}).Error("docker container failed to start")
 		return fmt.Errorf("failed to start dev container %w", err)
 	}
 
@@ -444,14 +460,20 @@ func (d *dockerDriver) RunDockerDevContainer(
 
 		// Copy /etc/passwd and /etc/group from the container to the temporary files
 		args = []string{"cp", fmt.Sprintf("%s:/etc/passwd", container.ID), containerPasswdFileIn.Name()}
-		d.Log.Debugf("Running docker command: %s %s", d.Docker.DockerCommand, strings.Join(args, " "))
+		d.Log.WithFields(logrus.Fields{
+			"command": d.Docker.DockerCommand,
+			"args":    strings.Join(args, " "),
+		}).Debug("running docker command")
 		err = d.Docker.Run(ctx, args, nil, writer, writer)
 		if err != nil {
 			return err
 		}
 
 		args = []string{"cp", fmt.Sprintf("%s:/etc/group", container.ID), containerGroupFileIn.Name()}
-		d.Log.Debugf("Running docker command: %s %s", d.Docker.DockerCommand, strings.Join(args, " "))
+		d.Log.WithFields(logrus.Fields{
+			"command": d.Docker.DockerCommand,
+			"args":    strings.Join(args, " "),
+		}).Debug("Running docker command")
 		err = d.Docker.Run(ctx, args, nil, writer, writer)
 		if err != nil {
 			return err
@@ -537,32 +559,50 @@ func (d *dockerDriver) RunDockerDevContainer(
 			return err
 		}
 
-		d.Log.Debugf("Updating container user uid")
+		d.Log.WithFields(logrus.Fields{
+			"container_user": containerUser,
+			"container_uid":  containerUid,
+			"container_gid":  containerGid,
+			"local_uid":      localUid,
+			"local_gid":      localGid,
+		}).Info("updating container user UID and GID")
 
 		// Copy /etc/passwd and /etc/group back to the container
 		args = []string{"cp", containerPasswdFileOut.Name(), fmt.Sprintf("%s:/etc/passwd", container.ID)}
-		d.Log.Debugf("Running docker command: %s %s", d.Docker.DockerCommand, strings.Join(args, " "))
+		d.Log.WithFields(logrus.Fields{
+			"command": d.Docker.DockerCommand,
+			"args":    strings.Join(args, " "),
+		}).Debug("running docker copy passwd command")
 		err = d.Docker.Run(ctx, args, nil, writer, writer)
 		if err != nil {
 			return err
 		}
 
 		args = []string{"cp", containerGroupFileOut.Name(), fmt.Sprintf("%s:/etc/group", container.ID)}
-		d.Log.Debugf("Running docker command: %s %s", d.Docker.DockerCommand, strings.Join(args, " "))
+		d.Log.WithFields(logrus.Fields{
+			"command": d.Docker.DockerCommand,
+			"args":    strings.Join(args, " "),
+		}).Debug("running docker copy group command")
 		err = d.Docker.Run(ctx, args, nil, writer, writer)
 		if err != nil {
 			return err
 		}
 
 		args = []string{"exec", "-u", "root", container.ID, "chmod", "644", "/etc/passwd", "/etc/group"}
-		d.Log.Debugf("Running docker command: %s %s", d.Docker.DockerCommand, strings.Join(args, " "))
+		d.Log.WithFields(logrus.Fields{
+			"command": d.Docker.DockerCommand,
+			"args":    strings.Join(args, " "),
+		}).Debug("running docker chmod command")
 		err = d.Docker.Run(ctx, args, nil, writer, writer)
 		if err != nil {
 			return err
 		}
 
 		args = []string{"exec", "-u", "root", container.ID, "chown", "-R", fmt.Sprintf("%s:%s", localUid, localGid), containerHome}
-		d.Log.Debugf("Running docker command: %s %s", d.Docker.DockerCommand, strings.Join(args, " "))
+		d.Log.WithFields(logrus.Fields{
+			"command": d.Docker.DockerCommand,
+			"args":    strings.Join(args, " "),
+		}).Debug("running docker chown command")
 		err = d.Docker.Run(ctx, args, nil, writer, writer)
 		if err != nil {
 			return err
@@ -576,11 +616,17 @@ func (d *dockerDriver) EnsureImage(
 	ctx context.Context,
 	options *driver.RunOptions,
 ) error {
-	d.Log.Infof("Inspecting image %s", options.Image)
+	d.Log.WithFields(logrus.Fields{
+		"image": options.Image,
+	}).Info("inspecting image")
 	_, err := d.Docker.InspectImage(ctx, options.Image, false)
 	if err != nil {
-		d.Log.Infof("Image %s not found", options.Image)
-		d.Log.Infof("Pulling image %s", options.Image)
+		d.Log.WithFields(logrus.Fields{
+			"image": options.Image,
+		}).Info("image not found")
+		d.Log.WithFields(logrus.Fields{
+			"image": options.Image,
+		}).Info("pulling image")
 		writer := d.Log.Writer(logrus.DebugLevel, false)
 		defer func() { _ = writer.Close() }()
 

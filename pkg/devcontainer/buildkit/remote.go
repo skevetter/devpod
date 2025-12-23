@@ -19,7 +19,6 @@ import (
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/loft-sh/api/v4/pkg/devpod"
-	"github.com/loft-sh/log"
 	"github.com/moby/buildkit/client"
 	"github.com/moby/buildkit/exporter/containerimage/exptypes"
 	"github.com/moby/buildkit/session"
@@ -30,6 +29,7 @@ import (
 	"github.com/skevetter/devpod/pkg/devcontainer/feature"
 	"github.com/skevetter/devpod/pkg/image"
 	"github.com/skevetter/devpod/pkg/provider"
+	"github.com/skevetter/log"
 	"github.com/tonistiigi/fsutil"
 )
 
