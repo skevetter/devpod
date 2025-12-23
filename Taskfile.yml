@@ -10,85 +10,6 @@ tasks:
     cmds:
       - golangci-lint run
 
-  e2e:setup:
-    desc: Setup e2e test environment
-    env:
-      GOPROXY: direct
-    cmds:
-      - go install github.com/onsi/ginkgo/v2/ginkgo@latest
-      - task: e2e:build
-
-  e2e:build:
-    desc: Build binaries for e2e tests
-    cmds:
-      - mkdir -p test
-      - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "-s -w" -o test/devpod-linux-amd64 .
-      - chmod +x test/devpod-linux-amd64
-      - mkdir -p "${TMPDIR:-/tmp/}devpod-cache"
-      - cp test/devpod-linux-amd64 "${TMPDIR:-/tmp/}devpod-cache/devpod-linux-amd64"
-
-  e2e:kind:setup:
-    desc: Setup kind cluster for Kubernetes tests
-    cmds:
-      - kind create cluster --image kindest/node:v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a
-
-  e2e:kind:cleanup:
-    desc: Delete kind cluster
-    cmds:
-      - kind delete cluster
-
-  e2e:all:
-    desc: Run all e2e tests
-    deps:
-      - e2e:setup
-    dir: e2e
-    env:
-      GOPROXY: direct
-    cmds:
-      - go run github.com/onsi/ginkgo/v2/ginkgo@latest
-
-  e2e:up:
-    desc: Run workspace up tests
-    deps:
-      - e2e:setup
-    dir: e2e
-    env:
-      GOPROXY: direct
-    cmds:
-      - go run github.com/onsi/ginkgo/v2/ginkgo@latest --label-filter="up"
-
-  e2e:docker:
-    desc: Run Docker-specific tests
-    deps:
-      - e2e:setup
-    dir: e2e
-    cmds:
-      - go run github.com/onsi/ginkgo/v2/ginkgo@latest --label-filter="up-docker"
-
-  e2e:features:
-    desc: Run feature dependency tests
-    deps:
-      - e2e:setup
-    dir: e2e
-    cmds:
-      - go run github.com/onsi/ginkgo/v2/ginkgo@latest --label-filter="features"
-
-  e2e:kubernetes:
-    desc: Run Kubernetes tests (requires kind cluster)
-    deps:
-      - e2e:setup
-    dir: e2e
-    cmds:
-      - go run github.com/onsi/ginkgo/v2/ginkgo@latest --label-filter="up-kubernetes || build"
-
-  e2e:quick:
-    desc: Run quick e2e tests (excludes slow tests)
-    deps:
-      - e2e:setup
-    dir: e2e
-    cmds:
-      - go run github.com/onsi/ginkgo/v2/ginkgo@latest --skip-package="build" --label-filter="!up-kubernetes"
-
   setup:development:
     desc: Setup development environment
     cmds:
@@ -173,7 +94,16 @@ tasks:
       - task: desktop:copy-binaries
       - task: desktop:update-tauri-deps
       - task: desktop:generate-types
-      - task: desktop:build-desktop-app
+      - task: build:desktop-dev
+
+  build:desktop-dev:
+    desc: Build desktop app in dev mode
+    dir: desktop
+    env:
+      DEBUG: true
+    cmds:
+      - yarn install
+      - yarn desktop:build:dev
 
   desktop:copy-binaries:
     desc: Copy CLI binaries for desktop
@@ -225,15 +155,6 @@ tasks:
     cmds:
       - yarn tauri dev
 
-  desktop:build-desktop-app:
-    desc: Build desktop app
-    dir: desktop
-    env:
-      DEBUG: true
-    cmds:
-      - yarn install
-      - yarn desktop:build:dev
-
   desktop:generate-tauri-signing-keys:
     desc: Generate Tauri signing keys
     dir: desktop
@@ -261,3 +182,74 @@ tasks:
     internal: true
     cmds:
       - gh release upload v0.0.0-10 test/devpod-linux-amd64 test/devpod-linux-arm64 test/devpod-darwin-amd64 test/devpod-darwin-arm64 --repo skevetter/devpod --clobber
+
+  test:setup:
+    desc: Setup e2e test environment
+    env:
+      GOPROXY: direct
+    cmds:
+      - go install github.com/onsi/ginkgo/v2/ginkgo@latest
+      - task: test:build
+
+  test:build:
+    desc: Build binaries for e2e tests
+    cmds:
+      - mkdir -p test
+      - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "-s -w" -o test/devpod-linux-amd64 .
+      - chmod +x test/devpod-linux-amd64
+      - mkdir -p "${TMPDIR:-/tmp/}devpod-cache"
+      - cp test/devpod-linux-amd64 "${TMPDIR:-/tmp/}devpod-cache/devpod-linux-amd64"
+
+  test:kind:setup:
+    desc: Setup kind cluster for Kubernetes tests
+    cmds:
+      - kind create cluster --image kindest/node:v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a
+
+  test:kind:cleanup:
+    desc: Delete kind cluster
+    cmds:
+      - kind delete cluster
+
+  test:all:
+    desc: Run all e2e tests
+    deps:
+      - e2e:setup
+    dir: e2e
+    env:
+      GOPROXY: direct
+    cmds:
+      - go run github.com/onsi/ginkgo/v2/ginkgo@latest
+
+  test:up:
+    desc: Run workspace up tests
+    deps:
+      - test:setup
+    dir: e2e
+    env:
+      GOPROXY: direct
+    cmds:
+      - go run github.com/onsi/ginkgo/v2/ginkgo@latest --label-filter="up"
+
+  test:docker:
+    desc: Run Docker-specific tests
+    deps:
+      - test:setup
+    dir: e2e
+    cmds:
+      - go run github.com/onsi/ginkgo/v2/ginkgo@latest --label-filter="up-docker"
+
+  test:features:
+    desc: Run feature dependency tests
+    deps:
+      - test:setup
+    dir: e2e
+    cmds:
+      - go run github.com/onsi/ginkgo/v2/ginkgo@latest --label-filter="features"
+
+  test:kubernetes:
+    desc: Run Kubernetes tests (requires kind cluster)
+    deps:
+      - test:setup
+    dir: e2e
+    cmds:
+      - go run github.com/onsi/ginkgo/v2/ginkgo@latest --label-filter="up-kubernetes || build"
