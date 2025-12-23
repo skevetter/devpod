@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/cmd/flags"
 	"github.com/skevetter/devpod/pkg/agent"
 	agentdaemon "github.com/skevetter/devpod/pkg/daemon/agent"
@@ -75,20 +76,22 @@ func (cmd *DeleteCmd) Run(ctx context.Context) error {
 }
 
 func removeContainer(ctx context.Context, workspaceInfo *provider2.AgentWorkspaceInfo, log log.Logger) error {
-	log.Debugf("Removing DevPod container from server...")
+	log.WithFields(logrus.Fields{
+		"workspaceId": workspaceInfo.Workspace.ID,
+	}).Debug("removing DevPod container from server")
 	runner, err := CreateRunner(workspaceInfo, log)
 	if err != nil {
 		return err
 	}
 
 	if workspaceInfo.Workspace.Source.Container != "" {
-		log.Infof("Skipping container deletion, since it was not created by DevPod")
+		log.Info("skipping container deletion, since it was not created by DevPod")
 	} else {
 		err = runner.Delete(ctx)
 		if err != nil {
 			return err
 		}
-		log.Debugf("Successfully removed DevPod container from server")
+		log.Debug("successfully removed DevPod container from server")
 	}
 
 	return nil
@@ -99,12 +102,12 @@ func removeDaemon(workspaceInfo *provider2.AgentWorkspaceInfo, log log.Logger) e
 		return nil
 	}
 
-	log.Debugf("Removing DevPod daemon from server...")
+	log.Debug("removing DevPod daemon from server")
 	err := agentdaemon.RemoveDaemon()
 	if err != nil {
 		return fmt.Errorf("remove daemon %w", err)
 	}
-	log.Debugf("Successfully removed DevPod daemon from server")
+	log.Debug("successfully removed DevPod daemon from server")
 
 	return nil
 }

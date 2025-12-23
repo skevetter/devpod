@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/command"
 	devsshagent "github.com/skevetter/devpod/pkg/ssh/agent"
 	"github.com/skevetter/devpod/pkg/util"
@@ -29,7 +30,9 @@ func AddPrivateKeysToAgent(ctx context.Context, log log.Logger) error {
 
 	for _, privateKey := range privateKeys {
 		timeoutCtx, cancel := context.WithTimeout(ctx, time.Second*2)
-		log.Debugf("Run ssh-add %s", privateKey)
+		log.WithFields(logrus.Fields{
+			"privateKeyPath": privateKey,
+		}).Debug("running ssh-add")
 		out, err := exec.CommandContext(timeoutCtx, "ssh-add", privateKey).CombinedOutput()
 		cancel()
 		if err != nil {

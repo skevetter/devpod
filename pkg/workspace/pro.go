@@ -3,6 +3,7 @@ package workspace
 import (
 	"os"
 
+	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/config"
 	provider2 "github.com/skevetter/devpod/pkg/provider"
 	"github.com/skevetter/log"
@@ -23,7 +24,7 @@ func ListProInstances(devPodConfig *config.Config, log log.Logger) ([]*provider2
 	for _, entry := range entries {
 		proInstanceConfig, err := provider2.LoadProInstanceConfig(devPodConfig.DefaultContext, entry.Name())
 		if err != nil {
-			log.ErrorStreamOnly().Warnf("Couldn't load pro instance %s: %v", entry.Name(), err)
+			log.WithFields(logrus.Fields{"instance": entry.Name(), "error": err}).Warn("could not load pro instance")
 			continue
 		}
 

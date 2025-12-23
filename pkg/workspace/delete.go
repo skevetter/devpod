@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
 	client2 "github.com/skevetter/devpod/pkg/client"
 	"github.com/skevetter/devpod/pkg/client/clientimplementation"
 	"github.com/skevetter/devpod/pkg/config"
@@ -40,7 +41,10 @@ func Delete(ctx context.Context, devPodConfig *config.Config, args []string, ign
 			return "", err
 		}
 
-		log.Donef("Successfully deleted workspace '%s'", workspaceID)
+		log.WithFields(logrus.Fields{
+			"workspace": workspaceID,
+		})
+		log.Donef("deleted workspace")
 		return workspaceID, nil
 	}
 
@@ -139,6 +143,9 @@ func deleteSingleMachine(ctx context.Context, client client2.BaseWorkspaceClient
 		return false, err
 	}
 
-	log.Donef("Successfully deleted workspace '%s'", client.Workspace())
+	log.WithFields(logrus.Fields{
+		"workspace": client.Workspace(),
+	})
+	log.Donef("deleted workspace")
 	return true, nil
 }

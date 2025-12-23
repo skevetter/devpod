@@ -34,6 +34,12 @@ func ExecuteCommand(
 	log log.Logger,
 	tunnelServerFunc TunnelServerFunc,
 ) (*config2.Result, error) {
+	log.WithFields(logrus.Fields{
+		"sshCommand":       sshCommand,
+		"workspaceCommand": command,
+		"addKeys":          addPrivateKeys,
+	}).Debug("starting SSH tunnel execution")
+
 	// create pipes
 	sshTunnelStdoutReader, sshTunnelStdoutWriter, err := os.Pipe()
 	if err != nil {
@@ -52,13 +58,13 @@ func ExecuteCommand(
 
 	errChan := make(chan error, 2)
 	go func() {
-		defer log.Debugf("Done executing ssh server helper command")
+		defer log.Debug("done executing SSH server helper command")
 		defer cancel()
 
 		writer := log.Writer(logrus.InfoLevel, false)
 		defer func() { _ = writer.Close() }()
 
-		log.Debugf("Inject and run command: %s", sshCommand)
+		log.WithFields(logrus.Fields{"command": sshCommand}).Debug("inject and run command")
 		err := agentInject(ctx, sshCommand, sshTunnelStdinReader, sshTunnelStdoutWriter, writer)
 		if err != nil && !errors.Is(err, context.Canceled) && !strings.Contains(err.Error(), "signal: ") {
 			errChan <- fmt.Errorf("executing agent command %w", err)
@@ -68,10 +74,10 @@ func ExecuteCommand(
 	}()
 
 	if addPrivateKeys {
-		log.Debug("Adding ssh keys to agent, disable via 'devpod context set-options -o SSH_ADD_PRIVATE_KEYS=false'")
+		log.Debug("adding SSH keys to agent, disable via 'devpod context set-options -o SSH_ADD_PRIVATE_KEYS=false'")
 		err := devssh.AddPrivateKeysToAgent(ctx, log)
 		if err != nil {
-			log.Debugf("Error adding private keys to ssh-agent: %v", err)
+			log.WithFields(logrus.Fields{"error": err}).Debug("error adding private keys to SSH agent")
 		}
 	}
 
@@ -91,18 +97,18 @@ func ExecuteCommand(
 	go func() {
 		defer cancel()
 
-		log.Debugf("Attempting to create SSH client")
+		log.Debug("attempting to create SSH client")
 		// start ssh client as root / default user
 		sshClient, err := devssh.StdioClient(sshTunnelStdoutReader, sshTunnelStdinWriter, false)
 		if err != nil {
 			errChan <- fmt.Errorf("create ssh client %w", err)
 			return
 		}
-		defer log.Debugf("Connection to SSH Server closed")
+		defer log.Debugf("connection to SSH server closed")
 		defer func() { _ = sshClient.Close() }()
 
 		log.Debugf("SSH client created")
-		log.Debugf("Waiting for SSH server to be ready")
+		log.Debugf("waiting for SSH server to be ready")
 		var sess *ssh.Session
 		timeout := time.After(60 * time.Second)
 		ticker := time.NewTicker(500 * time.Millisecond)
@@ -111,7 +117,7 @@ func ExecuteCommand(
 		for {
 			select {
 			case <-timeout:
-				errChan <- errors.New("SSH server not ready after 60 seconds")
+				errChan <- fmt.Errorf("SSH server timeout after %d seconds", 60)
 				return
 			case <-cancelCtx.Done():
 				errChan <- cancelCtx.Err()
@@ -120,10 +126,10 @@ func ExecuteCommand(
 				var err error
 				sess, err = sshClient.NewSession()
 				if err == nil {
-					log.Debugf("SSH session created")
+					log.Debug("SSH session created")
 					goto sessionReady
 				}
-				log.Debugf("SSH server not ready %v", err)
+				log.WithFields(logrus.Fields{"error": err}).Debug("SSH server not ready")
 			}
 		}
 
@@ -132,7 +138,7 @@ func ExecuteCommand(
 
 		identityAgent := devsshagent.GetSSHAuthSocket()
 		if identityAgent != "" {
-			log.Debugf("Forwarding ssh-agent using %s", identityAgent)
+			log.WithFields(logrus.Fields{"socket": identityAgent}).Debug("forwarding SSH agent")
 			err = devsshagent.ForwardToRemote(sshClient, identityAgent)
 			if err != nil {
 				errChan <- fmt.Errorf("forward agent %w", err)
@@ -166,10 +172,13 @@ func ExecuteCommand(
 		return nil, fmt.Errorf("start tunnel server %w", err)
 	}
 
+	log.Debug("tunnel server started, waiting for command completion")
+
 	// wait until command finished
 	if err := <-errChan; err != nil {
 		return result, err
 	}
 
+	log.Debug("SSH tunnel execution completed")
 	return result, <-errChan
 }

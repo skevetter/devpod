@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/cmd/completion"
 	"github.com/skevetter/devpod/cmd/flags"
 	client2 "github.com/skevetter/devpod/pkg/client"
@@ -67,17 +68,26 @@ func (cmd *DeleteCmd) Run(ctx context.Context, devPodConfig *config.Config, args
 		if err != nil {
 			return err
 		}
-		log.Default.Donef("Successfully deleted workspace '%s'", workspaceName)
+		log.WithFields(logrus.Fields{
+			"workspace": workspaceName,
+		})
+		log.Default.Donef("deleted workspace")
 		return nil
 	}
 
 	for _, arg := range args {
 		workspaceName, err := workspace.Delete(ctx, devPodConfig, []string{arg}, cmd.IgnoreNotFound, cmd.Force, cmd.DeleteOptions, cmd.Owner, log.Default)
 		if err != nil {
-			log.Default.Errorf("Failed to delete workspace '%s': %v", arg, err)
+			log.WithFields(logrus.Fields{
+				"workspace": arg,
+				"err":       err,
+			}).Error("failed to delete workspace")
 			continue
 		}
-		log.Default.Donef("Successfully deleted workspace '%s'", workspaceName)
+		log.WithFields(logrus.Fields{
+			"workspace": workspaceName,
+		})
+		log.Default.Donef("deleted workspace")
 	}
 	return nil
 }

@@ -26,7 +26,7 @@ func RunLifecycleHooks(ctx context.Context, setupInfo *config.Result, log log.Lo
 	remoteUser := config.GetRemoteUser(setupInfo)
 	probedEnv, err := config.ProbeUserEnv(ctx, mergedConfig.UserEnvProbe, remoteUser, log)
 	if err != nil {
-		log.Errorf("failed to probe environment, this might lead to an incomplete setup of your workspace: %w", err)
+		log.WithFields(logrus.Fields{"error": err}).Error("failed to probe environment, this might lead to an incomplete setup of your workspace")
 	}
 	remoteEnv := mergeRemoteEnv(mergedConfig.RemoteEnv, probedEnv, remoteUser)
 
@@ -97,7 +97,7 @@ func run(commands []types.LifecycleHook, remoteUser, dir string, remoteEnv map[s
 		}
 
 		for k, c := range cmd {
-			log.Infof("Run command %s: %s...", k, strings.Join(c, " "))
+			log.WithFields(logrus.Fields{"command": k, "args": strings.Join(c, " ")}).Info("lifecycle hook run command")
 			currentUser, err := user.Current()
 			if err != nil {
 				return err
@@ -148,11 +148,11 @@ func run(commands []types.LifecycleHook, remoteUser, dir string, remoteEnv map[s
 			wg.Wait()
 			err = cmd.Wait()
 			if err != nil {
-				log.Debugf("Failed running postCreateCommand lifecycle script %s: %v", cmd.Args, err)
+				log.WithFields(logrus.Fields{"command": cmd.Args, "error": err}).Debug("failed running postCreateCommand lifecycle script")
 				return fmt.Errorf("failed to run: %s, error %w", strings.Join(c, " "), err)
 			}
 
-			log.Donef("Successfully ran command %s: %s", k, strings.Join(c, " "))
+			log.WithFields(logrus.Fields{"command": k, "args": strings.Join(c, " ")}).Done("successfully ran command")
 		}
 	}
 
@@ -175,7 +175,7 @@ func logPipeOutput(log log.Logger, pipe io.ReadCloser, level logrus.Level) {
 		}
 	}
 	if err := scanner.Err(); err != nil {
-		log.Errorf("Error reading pipe: %v", err)
+		log.WithFields(logrus.Fields{"error": err}).Error("error reading pipe")
 	}
 }
 

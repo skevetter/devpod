@@ -10,6 +10,7 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/agent/tunnel"
 	"github.com/skevetter/log"
 )
@@ -24,7 +25,7 @@ func RunCredentialsServer(
 	log log.Logger,
 ) error {
 	var handler http.Handler = http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		log.Debugf("Incoming client connection at %s", request.URL.Path)
+		log.WithFields(logrus.Fields{"path": request.URL.Path}).Debug("incoming client connection")
 		switch request.URL.Path {
 		case "/git-credentials":
 			err := handleGitCredentialsRequest(ctx, writer, request, client, log)
@@ -62,7 +63,7 @@ func RunCredentialsServer(
 
 	errChan := make(chan error, 1)
 	go func() {
-		log.Debugf("Credentials server started on port %d...", port)
+		log.WithFields(logrus.Fields{"port": port}).Debug("credentials server started")
 
 		// always returns error. ErrServerClosed on graceful close
 		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
@@ -97,7 +98,7 @@ func handleDockerCredentialsRequest(ctx context.Context, writer http.ResponseWri
 		return fmt.Errorf("read request body %w", err)
 	}
 
-	log.Debugf("Received docker credentials post data: %s", string(out))
+	log.WithFields(logrus.Fields{"data": string(out)}).Debug("received docker credentials post data")
 	response, err := client.DockerCredentials(ctx, &tunnel.Message{Message: string(out)})
 	if err != nil {
 		return fmt.Errorf("get docker credentials response %w", err)
@@ -106,7 +107,7 @@ func handleDockerCredentialsRequest(ctx context.Context, writer http.ResponseWri
 	writer.Header().Set("Content-Type", "application/json")
 	writer.WriteHeader(http.StatusOK)
 	_, _ = writer.Write([]byte(response.Message))
-	log.Debugf("Successfully wrote back %d bytes", len(response.Message))
+	log.WithFields(logrus.Fields{"bytes": len(response.Message)}).Debug("wrote docker credentials response")
 	return nil
 }
 
@@ -116,17 +117,17 @@ func handleGitCredentialsRequest(ctx context.Context, writer http.ResponseWriter
 		return fmt.Errorf("read request body %w", err)
 	}
 
-	log.Debugf("Received git credentials post data: %s", string(out))
+	log.WithFields(logrus.Fields{"data": string(out)}).Debug("received git credentials post data")
 	response, err := client.GitCredentials(ctx, &tunnel.Message{Message: string(out)})
 	if err != nil {
-		log.Debugf("Error receiving git credentials: %v", err)
+		log.WithFields(logrus.Fields{"error": err}).Debug("error receiving git credentials")
 		return fmt.Errorf("get git credentials response %w", err)
 	}
 
 	writer.Header().Set("Content-Type", "application/json")
 	writer.WriteHeader(http.StatusOK)
 	_, _ = writer.Write([]byte(response.Message))
-	log.Debugf("Successfully wrote back %d bytes", len(response.Message))
+	log.WithFields(logrus.Fields{"bytes": len(response.Message)}).Debug("wrote git credentials response")
 	return nil
 }
 
@@ -136,17 +137,17 @@ func handleGitSSHSignatureRequest(ctx context.Context, writer http.ResponseWrite
 		return fmt.Errorf("read request body %w", err)
 	}
 
-	log.Debugf("Received git ssh signature post data: %s", string(out))
+	log.WithFields(logrus.Fields{"data": string(out)}).Debug("received git SSH signature post data")
 	response, err := client.GitSSHSignature(ctx, &tunnel.Message{Message: string(out)})
 	if err != nil {
-		log.Errorf("Error receiving git ssh signature: %w", err)
+		log.WithFields(logrus.Fields{"error": err}).Error("error receiving git SSH signature")
 		return fmt.Errorf("get git ssh signature %w", err)
 	}
 
 	writer.Header().Set("Content-Type", "application/json")
 	writer.WriteHeader(http.StatusOK)
 	_, _ = writer.Write([]byte(response.Message))
-	log.Debugf("Successfully wrote back %d bytes", len(response.Message))
+	log.WithFields(logrus.Fields{"bytes": len(response.Message)}).Debug("wrote git SSH signature response")
 	return nil
 }
 
@@ -156,30 +157,30 @@ func handleLoftPlatformCredentialsRequest(ctx context.Context, writer http.Respo
 		return fmt.Errorf("read request body %w", err)
 	}
 
-	log.Debugf("Received loft platform credentials post data: %s", string(out))
+	log.WithFields(logrus.Fields{"data": string(out)}).Debug("received loft platform credentials post data")
 	response, err := client.LoftConfig(ctx, &tunnel.Message{Message: string(out)})
 	if err != nil {
-		log.Errorf("Error receiving platform credentials: %w", err)
+		log.WithFields(logrus.Fields{"error": err}).Error("error receiving platform credentials")
 		return fmt.Errorf("get platform credentials %w", err)
 	}
 
 	writer.Header().Set("Content-Type", "application/json")
 	writer.WriteHeader(http.StatusOK)
 	_, _ = writer.Write([]byte(response.Message))
-	log.Debugf("Successfully wrote back %d bytes", len(response.Message))
+	log.WithFields(logrus.Fields{"bytes": len(response.Message)}).Debug("wrote platform credentials response")
 	return nil
 }
 
 func handleGPGPublicKeysRequest(ctx context.Context, writer http.ResponseWriter, request *http.Request, client tunnel.TunnelClient, log log.Logger) error {
 	response, err := client.GPGPublicKeys(ctx, &tunnel.Message{})
 	if err != nil {
-		log.Errorf("Error receiving gpg public keys: %w", err)
+		log.WithFields(logrus.Fields{"error": err}).Error("error receiving GPG public keys")
 		return fmt.Errorf("get gpg public keys %w", err)
 	}
 
 	writer.Header().Set("Content-Type", "application/json")
 	writer.WriteHeader(http.StatusOK)
 	_, _ = writer.Write([]byte(response.Message))
-	log.Debugf("Successfully wrote back %d bytes", len(response.Message))
+	log.WithFields(logrus.Fields{"bytes": len(response.Message)}).Debug("wrote GPG public keys response")
 	return nil
 }
