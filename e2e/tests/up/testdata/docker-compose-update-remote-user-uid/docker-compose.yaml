@@ -1,0 +1,9 @@
+version: '3'
+
+services:
+  app:
+    image: mcr.microsoft.com/devcontainers/base:ubuntu
+    command: sleep infinity
+    volumes:
+      - .:/workspaces:cached
+    user: testuser
