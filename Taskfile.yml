@@ -39,7 +39,8 @@ tasks:
 
   e2e:all:
     desc: Run all e2e tests
-    deps: [e2e:setup]
+    deps:
+      - e2e:setup
     dir: e2e
     env:
       GOPROXY: direct
@@ -48,7 +49,8 @@ tasks:
 
   e2e:up:
     desc: Run workspace up tests
-    deps: [e2e:setup]
+    deps:
+      - e2e:setup
     dir: e2e
     env:
       GOPROXY: direct
@@ -57,28 +59,32 @@ tasks:
 
   e2e:docker:
     desc: Run Docker-specific tests
-    deps: [e2e:setup]
+    deps:
+      - e2e:setup
     dir: e2e
     cmds:
       - go run github.com/onsi/ginkgo/v2/ginkgo@latest --label-filter="up-docker"
 
   e2e:features:
     desc: Run feature dependency tests
-    deps: [e2e:setup]
+    deps:
+      - e2e:setup
     dir: e2e
     cmds:
       - go run github.com/onsi/ginkgo/v2/ginkgo@latest --label-filter="features"
 
   e2e:kubernetes:
     desc: Run Kubernetes tests (requires kind cluster)
-    deps: [e2e:setup]
+    deps:
+      - e2e:setup
     dir: e2e
     cmds:
       - go run github.com/onsi/ginkgo/v2/ginkgo@latest --label-filter="up-kubernetes || build"
 
   e2e:quick:
     desc: Run quick e2e tests (excludes slow tests)
-    deps: [e2e:setup]
+    deps:
+      - e2e:setup
     dir: e2e
     cmds:
       - go run github.com/onsi/ginkgo/v2/ginkgo@latest --skip-package="build" --label-filter="!up-kubernetes"
