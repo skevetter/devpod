@@ -91,7 +91,12 @@ func (cmd *ImportCmd) Run(ctx context.Context, args []string) error {
 			return fmt.Errorf("workspace %s already exists", cmd.WorkspaceId)
 		}
 
-		cmd.log.Infof("Workspace %s already exists, will use name %s instead", cmd.WorkspaceId, newWorkspaceId)
+		cmd.log.WithFields(logrus.Fields{
+			"existingWorkspaceId":  cmd.WorkspaceId,
+			"existingWorkspaceUid": workspaceConfig.UID,
+			"newWorkspaceId":       newWorkspaceId,
+		}).
+			Infof("workspace ID conflict, will import workspace with new ID")
 		cmd.WorkspaceId = newWorkspaceId
 	}
 

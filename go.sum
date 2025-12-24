@@ -611,8 +611,6 @@ github.com/shibumi/go-pathspec v1.3.0 h1:QUyMZhFo0Md5B8zV8x2tesohbb5kfbpTi9rBnKh
 github.com/shibumi/go-pathspec v1.3.0/go.mod h1:Xutfslp817l2I1cZvgcfeMQJG5QnU2lh5tVaaMCl3jE=
 github.com/sirupsen/logrus v1.9.3 h1:dueUQJ1C2q9oE3F7wvmSGAaVtTmUizReu6fjN8uqzbQ=
 github.com/sirupsen/logrus v1.9.3/go.mod h1:naHLuLoDiP4jHNo9R0sCBMtWGeIprob74mVsIT4qYEQ=
-github.com/skevetter/log v0.0.0-20251223211221-1395485f90a1 h1:SKs8Juyw3LihIvLNfEyQ466KxV5oWvv1s5nsMOCGb9E=
-github.com/skevetter/log v0.0.0-20251223211221-1395485f90a1/go.mod h1:Aqjwx8xRSxBWtTYXK3EzxManSgYZl7FaSh8J5LvTAK0=
 github.com/skevetter/log v0.0.0-20251223215234-58d5d29ce85f h1:BS2EETwPHt6TzaKIeKpNAbbKkgCTASOTCBguPbbfpSQ=
 github.com/skevetter/log v0.0.0-20251223215234-58d5d29ce85f/go.mod h1:Aqjwx8xRSxBWtTYXK3EzxManSgYZl7FaSh8J5LvTAK0=
 github.com/skevetter/tailscale v1.92.2 h1:9P3GFPhZJpnoHzgwk86kK1fNNB8ibOIgkkHqt3ARaRM=
