@@ -86,13 +86,13 @@ func (o *JupyterNotbookServer) installNotebook() error {
 	}
 
 	// install
-	o.log.Infof("Installing jupyter notebook...")
+	o.log.Infof("installing jupyter notebook")
 	out, err := exec.Command(args[0], args[1:]...).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("error installing jupyter notebook %w", command.WrapCommandError(out, err))
 	}
 
-	o.log.Info("Successfully installed jupyter notebook")
+	o.log.Info("installed jupyter notebook")
 	return nil
 }
 

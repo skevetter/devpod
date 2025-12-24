@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	devpodhttp "github.com/skevetter/devpod/pkg/http"
 	"github.com/skevetter/log"
 	"github.com/skratchdot/open-golang/open"
@@ -70,7 +71,9 @@ func tryOpen(ctx context.Context, url string, fn func(string) error, log log.Log
 			case <-time.After(time.Second):
 			}
 			_ = fn(url)
-			log.Donef("Successfully opened %s", url)
+			log.WithFields(logrus.Fields{
+				"url": url,
+			}).Done("opened url")
 			return nil
 		}
 	}

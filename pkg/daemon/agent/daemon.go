@@ -111,14 +111,14 @@ func InstallDaemon(agentDir string, interval string, log log.Logger) error {
 				return nil, err
 			}
 
-			log.Infof("Successfully started DevPod daemon into server")
+			log.Infof("started DevPod daemon into server")
 			return exec.Command(executable, args...), nil
 		})
 		if err != nil {
 			return fmt.Errorf("start daemon %w", err)
 		}
 	} else if err == nil {
-		log.Infof("Successfully installed DevPod daemon into server")
+		log.Infof("installed DevPod daemon into server")
 	}
 
 	return nil

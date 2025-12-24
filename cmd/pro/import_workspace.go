@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/sirupsen/logrus"
 	proflags "github.com/skevetter/devpod/cmd/pro/flags"
 	"github.com/skevetter/devpod/cmd/pro/provider/list"
 	"github.com/skevetter/devpod/pkg/config"
@@ -122,7 +123,9 @@ func (cmd *ImportCmd) Run(ctx context.Context, args []string) error {
 		if err != nil {
 			return fmt.Errorf("prepare workspace to import definition %w", err)
 		}
-		cmd.log.Infof("Successfully imported workspace %s", cmd.WorkspaceId)
+		cmd.log.WithFields(logrus.Fields{
+			"workspaceId": cmd.WorkspaceId,
+		}).Infof("imported workspace")
 		return nil
 	}
 
@@ -131,7 +134,10 @@ func (cmd *ImportCmd) Run(ctx context.Context, args []string) error {
 	if err != nil {
 		return fmt.Errorf("prepare workspace to import definition %w", err)
 	}
-	cmd.log.Infof("Successfully imported workspace %s", cmd.WorkspaceId)
+
+	cmd.log.WithFields(logrus.Fields{
+		"workspaceId": cmd.WorkspaceId,
+	}).Infof("imported workspace")
 
 	return nil
 }

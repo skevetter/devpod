@@ -101,7 +101,7 @@ func (o *RStudioServer) Install() error {
 
 	// Check if local file exists
 	if _, err := os.Stat(debPath); os.IsNotExist(err) {
-		o.log.Info("Rstudio deb not file, downloading ...")
+		o.log.Info("Rstudio deb not file, downloading")
 		codename, err := getDistroCodename(o.log)
 		if err != nil {
 			return err
@@ -132,7 +132,7 @@ func (o *RStudioServer) Install() error {
 	if err != nil {
 		return err
 	}
-	o.log.Done("Successfully installed RStudio")
+	o.log.Done("installed RStudio")
 
 	return o.Start()
 }
@@ -200,7 +200,7 @@ func downloadRStudioDeb(ubuntuCodename string, log log.Logger) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("download %w", err)
 	}
-	log.Done("Successfully downloaded RStudio")
+	log.Done("downloaded RStudio")
 
 	return debPath, nil
 }

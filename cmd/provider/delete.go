@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/cmd/completion"
 	"github.com/skevetter/devpod/cmd/flags"
 	"github.com/skevetter/devpod/pkg/config"
@@ -68,7 +69,9 @@ func (cmd *DeleteCmd) Run(ctx context.Context, args []string) error {
 		return err
 	}
 
-	logpkg.Default.Donef("Successfully deleted provider '%s'", provider)
+	logpkg.WithFields(logrus.Fields{
+		"provider": provider,
+	}).Done("deleted provider")
 	return nil
 }
 

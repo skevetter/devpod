@@ -639,7 +639,7 @@ func startJupyterNotebookInBrowser(
 				logger.WithFields(logrus.Fields{"error": err}).Error("error opening jupyter notebook")
 			}
 
-			logger.Info("successfully started jupyter notebook in browser mode. Please keep this terminal open as long as you use Jupyter Notebook")
+			logger.Info("started jupyter notebook in browser mode. Please keep this terminal open as long as you use Jupyter Notebook")
 		}()
 	}
 
@@ -695,7 +695,7 @@ func startRStudioInBrowser(
 			}
 
 			logger.Infof(
-				"Successfully started RStudio Server in browser mode. Please keep this terminal open as long as you use it",
+				"started RStudio Server in browser mode. Please keep this terminal open as long as you use it",
 			)
 		}()
 	}
@@ -787,7 +787,7 @@ func startVSCodeInBrowser(
 			}
 
 			logger.Infof(
-				"Successfully started vscode in browser mode. Please keep this terminal open as long as you use VSCode browser version",
+				"started vscode in browser mode. Please keep this terminal open as long as you use VSCode browser version",
 			)
 		}()
 	}
@@ -1366,7 +1366,9 @@ func checkProviderUpdate(devPodConfig *config.Config, proInstance *provider2.Pro
 		return fmt.Errorf("update provider %s %w", proInstance.Provider, err)
 	}
 
-	log.Donef("Successfully updated provider %s", proInstance.Provider)
+	log.WithFields(logrus.Fields{
+		"provider": proInstance.Provider,
+	}).Done("updated provider")
 	return nil
 }
 

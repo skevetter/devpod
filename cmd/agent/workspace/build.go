@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/cmd/flags"
 	"github.com/skevetter/devpod/pkg/agent"
 	provider2 "github.com/skevetter/devpod/pkg/provider"
@@ -92,9 +93,15 @@ func (cmd *BuildCmd) Run(ctx context.Context) error {
 		}
 
 		if workspaceInfo.CLIOptions.SkipPush {
-			logger.Donef("Successfully build image %s", imageName)
+			logger.WithFields(logrus.Fields{
+				"imageName": imageName,
+			})
+			logger.Donef("done building image")
 		} else {
-			logger.Donef("Successfully build and pushed image %s", imageName)
+			logger.WithFields(logrus.Fields{
+				"imageName": imageName,
+			})
+			logger.Donef("done building and pushing image")
 		}
 	}
 

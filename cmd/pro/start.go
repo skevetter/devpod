@@ -932,9 +932,9 @@ func (cmd *StartCmd) handleAlreadyExistingInstallation(ctx context.Context) erro
 
 func (cmd *StartCmd) waitForDeployment(ctx context.Context) (*corev1.Pod, error) {
 	// wait for loft pod to start
-	cmd.Log.Info("Waiting for DevPod Pro pod to be running...")
+	cmd.Log.Info("waiting for DevPod Pro pod to be running")
 	loftPod, err := platform.WaitForPodReady(ctx, cmd.KubeClient, cmd.Namespace, cmd.Log)
-	cmd.Log.Donef("Release Pod successfully started")
+	cmd.Log.Donef("release Pod started")
 	if err != nil {
 		return nil, err
 	}
@@ -1114,7 +1114,9 @@ func (cmd *StartCmd) loginViaCLI(url string) error {
 	}
 
 	cmd.Log.WriteString(logrus.InfoLevel, "\n")
-	cmd.Log.Donef("Successfully logged in via CLI into %s", ansi.Color(url, "white+b"))
+	cmd.Log.WithFields(logrus.Fields{
+		"url": url,
+	}).Donef("logged in via CLI")
 
 	return nil
 }
@@ -1216,7 +1218,7 @@ func uninstall(ctx context.Context, kubeClient kubernetes.Interface, restConfig 
 	}
 
 	log.WriteString(logrus.InfoLevel, "\n")
-	log.Done("Successfully uninstalled DevPod Pro")
+	log.Done("uninstalled DevPod Pro")
 	log.WriteString(logrus.InfoLevel, "\n")
 
 	return nil
@@ -1359,7 +1361,7 @@ func ensureIngressController(ctx context.Context, kubeClient kubernetes.Interfac
 			}
 		}
 
-		log.Done("Successfully installed ingress-nginx to your kubernetes cluster!")
+		log.Done("installed ingress-nginx to your kubernetes cluster!")
 	}
 
 	return nil
@@ -1466,7 +1468,7 @@ func ensureAdminPassword(ctx context.Context, kubeClient kubernetes.Interface, r
 		return false, fmt.Errorf("create admin password secret %w", err)
 	}
 
-	log.Info("Successfully recreated admin password secret")
+	log.Info("recreated admin password secret")
 	return false, nil
 }
 

@@ -59,7 +59,7 @@ func (c *client) Up(ctx context.Context, opt clientpkg.UpOptions) (*config.Resul
 		if err != nil {
 			return nil, fmt.Errorf("update instance %w", err)
 		}
-		c.log.Info("Successfully updated template")
+		c.log.Info("updated template")
 	}
 
 	// encode options

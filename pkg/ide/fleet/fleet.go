@@ -115,7 +115,7 @@ func (o *FleetServer) Install(projectDir string) error {
 		}
 	}
 
-	o.log.Infof("Successfully downloaded fleet...")
+	o.log.Infof("downloaded fleet")
 	return o.Start(fleetBinary, location, projectDir)
 }
 
@@ -166,7 +166,7 @@ func (o *FleetServer) Start(binaryPath, location, projectDir string) error {
 	defer func() { _ = readCloser.Close() }()
 
 	// wait for the jet brains url and then exit
-	o.log.Infof("Waiting for fleet to start...")
+	o.log.Infof("waiting for fleet to start")
 	s := scanner.NewScanner(readCloser)
 	stdoutBuffer := &bytes.Buffer{}
 	for s.Scan() {
@@ -178,7 +178,7 @@ func (o *FleetServer) Start(binaryPath, location, projectDir string) error {
 				return err
 			}
 
-			o.log.Infof("Fleet has successfully started")
+			o.log.Infof("fleet started")
 			return o.startMonitor()
 		} else {
 			_, _ = stdoutBuffer.Write([]byte(text + "\n"))
@@ -195,7 +195,7 @@ func (o *FleetServer) startMonitor() error {
 	}
 
 	return single.Single("fleet-monitor.pid", func() (*exec.Cmd, error) {
-		o.log.Infof("Starting fleet monitor in background...")
+		o.log.Infof("starting fleet monitor in background")
 		runCommand := fmt.Sprintf("%s helper fleet-server --workspaceid %s", self, "test")
 		args := []string{}
 		if o.userName != "" {

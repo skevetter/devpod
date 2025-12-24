@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"runtime"
 
+	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/command"
 	"github.com/skevetter/devpod/pkg/config"
 	copy2 "github.com/skevetter/devpod/pkg/copy"
@@ -93,7 +94,10 @@ func (o *GenericJetBrainsServer) getDownloadFolder() string {
 }
 
 func (o *GenericJetBrainsServer) Install() error {
-	o.log.Debugf("Setup %s...", o.options.DisplayName)
+	o.log.WithFields(logrus.Fields{
+		"displayName": o.options.DisplayName,
+		"id":          o.options.ID,
+	}).Info("setup backend")
 	baseFolder, err := getBaseFolder(o.userName)
 	if err != nil {
 		return err
@@ -102,17 +106,26 @@ func (o *GenericJetBrainsServer) Install() error {
 
 	_, err = os.Stat(targetLocation)
 	if err == nil {
-		o.log.Debugf("Goland already installed skip install")
+		o.log.WithFields(logrus.Fields{
+			"displayName": o.options.DisplayName,
+			"id":          o.options.ID,
+		}).Info("already installed skip install")
 		return nil
 	}
 
-	o.log.Debugf("Download %s archive", o.options.DisplayName)
+	o.log.WithFields(logrus.Fields{
+		"displayName": o.options.DisplayName,
+		"id":          o.options.ID,
+	}).Info("downloading archive")
 	archivePath, err := o.download(o.getDownloadFolder(), o.log)
 	if err != nil {
 		return err
 	}
 
-	o.log.Infof("Extract %s...", o.options.DisplayName)
+	o.log.WithFields(logrus.Fields{
+		"displayName": o.options.DisplayName,
+		"id":          o.options.ID,
+	}).Info("extracting archive")
 	err = o.extractArchive(archivePath, targetLocation)
 	if err != nil {
 		return err
@@ -122,7 +135,10 @@ func (o *GenericJetBrainsServer) Install() error {
 	if err != nil {
 		return fmt.Errorf("chown %w", err)
 	}
-	o.log.Infof("Successfully installed %s backend", o.options.DisplayName)
+	o.log.WithFields(logrus.Fields{
+		"displayName": o.options.DisplayName,
+		"id":          o.options.ID,
+	}).Info("installed backend")
 	return nil
 }
 
@@ -169,8 +185,14 @@ func (o *GenericJetBrainsServer) download(targetFolder string, log log.Logger) (
 	targetPath := path.Join(filepath.ToSlash(targetFolder), o.options.ID+".tar.gz")
 
 	// initiate download
-	log.Infof("Download %s from %s", o.options.DisplayName, downloadURL)
-	defer log.Debugf("Successfully downloaded %s", o.options.DisplayName)
+	log.WithFields(logrus.Fields{
+		"displayName": o.options.DisplayName,
+		"id":          o.options.ID,
+	}).Info("downloading archive")
+	defer log.WithFields(logrus.Fields{
+		"displayName": o.options.DisplayName,
+		"id":          o.options.ID,
+	}).Debug("downloaded archive")
 	resp, err := devpodhttp.GetHTTPClient().Get(downloadURL)
 	if err != nil {
 		return "", fmt.Errorf("download binary %w", err)

@@ -257,7 +257,9 @@ func (cmd *ClusterCmd) Run(ctx context.Context, args []string) error {
 		}
 	}
 
-	cmd.Log.Donef("Successfully added cluster %s", clusterName)
+	cmd.Log.WithFields(logrus.Fields{
+		"cluster": clusterName,
+	}).Done("added cluster")
 
 	return nil
 }

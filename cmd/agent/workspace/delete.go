@@ -91,7 +91,7 @@ func removeContainer(ctx context.Context, workspaceInfo *provider2.AgentWorkspac
 		if err != nil {
 			return err
 		}
-		log.Debug("successfully removed DevPod container from server")
+		log.Debug("removed DevPod container from server")
 	}
 
 	return nil
@@ -107,7 +107,7 @@ func removeDaemon(workspaceInfo *provider2.AgentWorkspaceInfo, log log.Logger) e
 	if err != nil {
 		return fmt.Errorf("remove daemon %w", err)
 	}
-	log.Debug("successfully removed DevPod daemon from server")
+	log.Debug("removed DevPod daemon from server")
 
 	return nil
 }

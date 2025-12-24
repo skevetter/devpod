@@ -152,7 +152,7 @@ func run(commands []types.LifecycleHook, remoteUser, dir string, remoteEnv map[s
 				return fmt.Errorf("failed to run: %s, error %w", strings.Join(c, " "), err)
 			}
 
-			log.WithFields(logrus.Fields{"command": k, "args": strings.Join(c, " ")}).Done("successfully ran command")
+			log.WithFields(logrus.Fields{"command": k, "args": strings.Join(c, " ")}).Done("ran command")
 		}
 	}
 
