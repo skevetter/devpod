@@ -8,6 +8,7 @@ import (
 	"os/user"
 	"path/filepath"
 	"strconv"
+	"strings"
 )
 
 func Chown(path string, userName string) error {
@@ -15,14 +16,15 @@ func Chown(path string, userName string) error {
 		return nil
 	}
 
-	userID, err := user.Lookup(userName)
+	uid, _ := parseUserSpec(userName)
+	userID, err := lookupUser(uid)
 	if err != nil {
 		return fmt.Errorf("lookup user %w", err)
 	}
 
-	uid, _ := strconv.Atoi(userID.Uid)
-	gid, _ := strconv.Atoi(userID.Gid)
-	return os.Lchown(path, uid, gid)
+	uidInt, _ := strconv.Atoi(userID.Uid)
+	gidInt, _ := strconv.Atoi(userID.Gid)
+	return os.Lchown(path, uidInt, gidInt)
 }
 
 func ChownR(path string, userName string) error {
@@ -30,13 +32,14 @@ func ChownR(path string, userName string) error {
 		return nil
 	}
 
-	userID, err := user.Lookup(userName)
+	uid, _ := parseUserSpec(userName)
+	userID, err := lookupUser(uid)
 	if err != nil {
 		return fmt.Errorf("lookup user %w", err)
 	}
 
-	uid, _ := strconv.Atoi(userID.Uid)
-	gid, _ := strconv.Atoi(userID.Gid)
+	uidInt, _ := strconv.Atoi(userID.Uid)
+	gidInt, _ := strconv.Atoi(userID.Gid)
 	return filepath.WalkDir(path, func(name string, dirEntry fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -47,14 +50,11 @@ func ChownR(path string, userName string) error {
 			return nil
 		}
 
-		if IsUID(info, uint32(uid)) {
+		if IsUID(info, uint32(uidInt)) {
 			return nil
 		}
 
-		if err == nil {
-			_ = os.Lchown(name, uid, gid)
-		}
-		return err
+		return os.Lchown(name, uidInt, gidInt)
 	})
 }
 
@@ -170,4 +170,22 @@ func Symlink(source, dest string) error {
 		return err
 	}
 	return os.Symlink(link, dest)
+}
+
+func lookupUser(uid string) (*user.User, error) {
+	userID, err := user.Lookup(uid)
+	if err != nil {
+		if _, parseErr := strconv.Atoi(uid); parseErr == nil {
+			userID, err = user.LookupId(uid)
+		}
+	}
+	return userID, err
+}
+
+func parseUserSpec(userSpec string) (string, string) {
+	parts := strings.SplitN(userSpec, ":", 2)
+	if len(parts) == 2 {
+		return parts[0], parts[1]
+	}
+	return parts[0], ""
 }
