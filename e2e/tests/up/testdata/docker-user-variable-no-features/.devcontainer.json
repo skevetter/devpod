@@ -1,0 +1,4 @@
+{
+  "name": "Ubuntu - No Features",
+  "build": { "dockerfile": "Dockerfile" }
+}

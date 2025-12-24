@@ -5,33 +5,33 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/moby/buildkit/frontend/dockerfile/command"
+	"github.com/moby/buildkit/frontend/dockerfile/instructions"
 	"github.com/moby/buildkit/frontend/dockerfile/parser"
+	"github.com/moby/buildkit/frontend/dockerfile/shell"
 	"github.com/skevetter/log/scanner"
 )
 
-var argumentExpression = regexp.MustCompile(`(?m)\$\{?([a-zA-Z0-9_]+)(:(-|\+)([^\}]+))?\}?`)
-
 var dockerfileSyntax = regexp.MustCompile(`(?m)^[\s\t]*#[\s\t]*syntax=.*$`)
 
-func (d *Dockerfile) FindUserStatement(buildArgs map[string]string, baseImageEnv map[string]string, target string) string {
+func (d *Dockerfile) FindUserStatement(buildArgs, baseImageEnv map[string]string, target string) string {
 	stage, ok := d.StagesByTarget[target]
-	if !ok {
+	if !ok && len(d.Stages) > 0 {
 		stage = d.Stages[len(d.Stages)-1]
 	}
 
-	seenStages := map[string]bool{}
-	for {
-		if seenStages[stageID(&stage.BaseStage)] {
+	seenStages := make(map[string]bool, 4)
+	for stage != nil {
+		stageKey := stageID(&stage.BaseStage)
+		if seenStages[stageKey] {
 			return ""
 		}
-		seenStages[stageID(&stage.BaseStage)] = true
+		seenStages[stageKey] = true
 
 		if len(stage.Users) > 0 {
-			lastUser := stage.Users[len(stage.Users)-1]
-			return d.replaceVariables(lastUser.Key, buildArgs, baseImageEnv, &stage.BaseStage, lastUser.Line)
+			return d.replaceVariables(stage.Users[len(stage.Users)-1].Key, buildArgs, baseImageEnv, &stage.BaseStage, 0)
 		}
 
-		// is preamble?
 		if stage.Image == "" {
 			return ""
 		}
@@ -42,6 +42,7 @@ func (d *Dockerfile) FindUserStatement(buildArgs map[string]string, baseImageEnv
 			return ""
 		}
 	}
+	return ""
 }
 
 func stageID(stage *BaseStage) string {
@@ -49,41 +50,25 @@ func stageID(stage *BaseStage) string {
 }
 
 func (d *Dockerfile) FindBaseImage(buildArgs map[string]string, target string) string {
-	stage, ok := d.StagesByTarget[target]
-	if !ok {
+	stage := d.StagesByTarget[target]
+	if stage == nil && len(d.Stages) > 0 {
 		stage = d.Stages[len(d.Stages)-1]
 	}
-
-	visited := map[*Stage]bool{}
-	for stage != nil {
-		if visited[stage] {
-			return ""
-		}
-		visited[stage] = true
-
-		nextTarget := d.replaceVariables(stage.Image, buildArgs, nil, &d.Preamble.BaseStage, d.Stages[0].Instructions[0].StartLine)
-		nextStage := d.StagesByTarget[nextTarget]
-		if nextStage == nil {
-			return nextTarget
-		}
-
-		stage = nextStage
+	if stage == nil {
+		return ""
 	}
-
-	return ""
+	return d.replaceVariables(stage.Image, buildArgs, nil, &stage.BaseStage, 0)
 }
 
-// BuildContextFiles traverses a build stage and returns a list of any file path that would affect the build context
-func (d *Dockerfile) BuildContextFiles() (files []string) {
-	// Iterate over all build stages
+func (d *Dockerfile) BuildContextFiles() []string {
+	files := make([]string, 0, 8) // Pre-allocate for typical dockerfile
 	for _, stage := range d.Stages {
-		// Add the values of any ADD or COPY instructions
 		for _, in := range stage.Instructions {
-			if strings.HasPrefix(in.Value, "ADD") || strings.HasPrefix(in.Value, "COPY") {
-				// Take all parts except the first (ADD/COPY) and the last (destination on remote), e.g. "COPY src files /app", we want src and files
-				parts := strings.Split(in.Original, " ")
-				if len(parts) > 2 {
-					files = append(files, parts[1:len(parts)-1]...)
+			if cmd, err := instructions.ParseCommand(in); err == nil {
+				if addCmd, ok := cmd.(*instructions.AddCommand); ok {
+					files = append(files, addCmd.SourcePaths...)
+				} else if copyCmd, ok := cmd.(*instructions.CopyCommand); ok {
+					files = append(files, copyCmd.SourcePaths...)
 				}
 			}
 		}
@@ -91,171 +76,143 @@ func (d *Dockerfile) BuildContextFiles() (files []string) {
 	return files
 }
 
-func (d *Dockerfile) replaceVariables(val string, buildArgs map[string]string, baseImageEnv map[string]string, stage *BaseStage, untilLine int) string {
-	newVal := argumentExpression.ReplaceAllFunc([]byte(val), func(match []byte) []byte {
-		subMatches := argumentExpression.FindStringSubmatch(string(match))
-		variable := subMatches[1]
-		value := d.findValue(buildArgs, baseImageEnv, variable, stage, untilLine)
+var shellLexer = shell.NewLex('\\')
 
-		// is expression?
-		if subMatches[2] != "" {
-			value = getExpressionValue(subMatches[3], value != "", subMatches[4], value)
-		}
-
-		return []byte(value)
-	})
-
-	return string(newVal)
-}
-
-func getExpressionValue(option string, isSet bool, defaultValue string, value string) string {
-	output := ""
-	switch option {
-	case "-":
-		if isSet {
-			output = value
-		} else {
-			output = defaultValue
-		}
-	case "--":
-		if isSet {
-			output = value
-		}
-	case "+":
-		if isSet {
-			output = defaultValue
-		} else {
-			output = value
-		}
+func (d *Dockerfile) replaceVariables(val string, buildArgs, baseImageEnv map[string]string, stage *BaseStage, _ int) string {
+	result, _, err := shellLexer.ProcessWord(val, &envMap{d, buildArgs, baseImageEnv, stage, 0})
+	if err != nil {
+		return val
 	}
-
-	return strings.Trim(output, "\"'")
+	return result
 }
 
-func (d *Dockerfile) findValue(buildArgs map[string]string, baseImageEnv map[string]string, variable string, stage *BaseStage, untilLine int) string {
-	considerArg := true
+type envMap struct {
+	dockerfile   *Dockerfile
+	buildArgs    map[string]string
+	baseImageEnv map[string]string
+	stage        *BaseStage
+	_            int // unused untilLine field for compatibility
+}
+
+func (e *envMap) Get(key string) (string, bool) {
+	return e.dockerfile.findValueWithFound(e.buildArgs, e.baseImageEnv, key, e.stage, 0)
+}
+
+func (e *envMap) Keys() []string {
+	keys := make([]string, 0, len(e.buildArgs)+len(e.baseImageEnv))
+	for k := range e.buildArgs {
+		keys = append(keys, k)
+	}
+	for k := range e.baseImageEnv {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
+func (d *Dockerfile) findValueWithFound(buildArgs, baseImageEnv map[string]string, variable string, stage *BaseStage, _ int) (string, bool) {
 	if buildArgs == nil {
-		buildArgs = map[string]string{}
+		buildArgs = make(map[string]string)
 	}
 
-	seenStages := map[string]bool{}
+	seenStages := make(map[string]bool, 4) // Pre-allocate for typical multi-stage
 	for {
-		if seenStages[stageID(stage)] {
-			return ""
+		stageKey := stageID(stage)
+		if seenStages[stageKey] {
+			return "", false
 		}
-		seenStages[stageID(stage)] = true
+		seenStages[stageKey] = true
 
-		// search args
-		if considerArg {
-			for i := len(stage.Args) - 1; i >= 0; i-- {
-				if stage.Args[i].Key != variable || stage.Args[i].Line >= untilLine {
-					continue
-				}
-
-				if buildArgs[stage.Args[i].Key] != "" {
-					return strings.Trim(buildArgs[stage.Args[i].Key], "\"'")
-				} else if stage.Args[i].Value != "" {
-					return strings.Trim(d.replaceVariables(stage.Args[i].Value, buildArgs, baseImageEnv, stage, stage.Args[i].Line), "\"'")
-				}
-			}
-		}
-
-		// search env
-		for i := len(stage.Envs) - 1; i >= 0; i-- {
-			if stage.Envs[i].Key != variable || stage.Envs[i].Line >= untilLine {
+		// Search args (reverse order for precedence)
+		for i := len(stage.Args) - 1; i >= 0; i-- {
+			arg := &stage.Args[i]
+			if arg.Key != variable {
 				continue
 			}
-
-			if stage.Envs[i].Value != "" {
-				return d.replaceVariables(stage.Envs[i].Value, buildArgs, baseImageEnv, stage, stage.Envs[i].Line)
+			if val := buildArgs[arg.Key]; val != "" {
+				return strings.Trim(val, "\"'"), true
 			}
+			if arg.Value != nil && *arg.Value != "" {
+				value := d.replaceVariables(*arg.Value, buildArgs, baseImageEnv, stage, 0)
+				return strings.Trim(value, "\"'"), true
+			}
+			return "", true
 		}
 
-		// is preamble?
+		// Search env (reverse order for precedence)
+		for i := len(stage.Envs) - 1; i >= 0; i-- {
+			env := &stage.Envs[i]
+			if env.Key != variable {
+				continue
+			}
+			if env.Value != "" {
+				return d.replaceVariables(env.Value, buildArgs, baseImageEnv, stage, 0), true
+			}
+			return "", true
+		}
+
 		if stage == &d.Preamble.BaseStage {
-			if baseImageEnv != nil && baseImageEnv[variable] != "" {
-				return baseImageEnv[variable]
+			if baseImageEnv != nil {
+				if value, exists := baseImageEnv[variable]; exists {
+					return value, true
+				}
 			}
-
-			return ""
+			return "", false
 		}
 
-		// search in preamble
 		image := d.replaceVariables(stage.Image, buildArgs, baseImageEnv, &d.Preamble.BaseStage, d.Stages[0].Instructions[0].StartLine)
-		foundStage, ok := d.StagesByTarget[image]
-		if !ok {
-			stage = &d.Preamble.BaseStage
-			untilLine = d.Stages[0].Instructions[0].StartLine
-			considerArg = true
-		} else {
+		if foundStage, ok := d.StagesByTarget[image]; ok {
 			stage = &foundStage.BaseStage
-			untilLine = stage.Instructions[len(stage.Instructions)-1].StartLine + 1
-			considerArg = false
+		} else {
+			stage = &d.Preamble.BaseStage
 		}
 	}
 }
 
 func RemoveSyntaxVersion(dockerfileContent string) string {
-	// just add the syntax and we are done
 	return dockerfileSyntax.ReplaceAllString(dockerfileContent, "")
 }
 
-func EnsureDockerfileHasFinalStageName(dockerfileContent string, defaultLastStageName string) (string, string, error) {
+func EnsureDockerfileHasFinalStageName(dockerfileContent, defaultLastStageName string) (string, string, error) {
 	result, err := parser.Parse(strings.NewReader(dockerfileContent))
 	if err != nil {
 		return "", "", err
 	}
 
-	// find last from statement
 	var lastChild *parser.Node
 	for _, child := range result.AST.Children {
-		if strings.ToLower(child.Value) == "from" {
+		if strings.ToLower(child.Value) == command.From {
 			lastChild = child
 		}
 	}
 
-	// check if there is an AS statement
 	if lastChild == nil {
 		return "", "", fmt.Errorf("no FROM statement in dockerfile")
 	}
-
-	// try to get the last stage
 	if lastChild.Next == nil {
 		return "", "", fmt.Errorf("cannot parse FROM statement in dockerfile")
 	}
 
-	// check next FROM statement
-	if lastChild.Next.Next != nil && lastChild.Next.Next.Next != nil && strings.ToLower(lastChild.Next.Next.Value) == "as" {
+	if lastChild.Next.Next != nil && lastChild.Next.Next.Next != nil && strings.EqualFold(lastChild.Next.Next.Value, "as") {
 		return lastChild.Next.Next.Next.Value, "", nil
 	}
 
-	// replace FROM statement
 	lastChild.Next.Next = &parser.Node{
 		Value: "AS",
-		Next: &parser.Node{
-			Value: defaultLastStageName,
-		},
+		Next:  &parser.Node{Value: defaultLastStageName},
 	}
 	return defaultLastStageName, ReplaceInDockerfile(dockerfileContent, lastChild), nil
 }
 
 func ReplaceInDockerfile(dockerfileContent string, node *parser.Node) string {
 	scan := scanner.NewScanner(strings.NewReader(dockerfileContent))
-
-	lines := []string{}
-	lineNumber := 0
-	for scan.Scan() {
-		lineNumber++
-
-		// for now we can only replace
+	var lines []string
+	for lineNumber := 1; scan.Scan(); lineNumber++ {
 		if lineNumber >= node.StartLine && lineNumber <= node.EndLine {
 			lines = append(lines, DumpNode(node))
-			continue
+		} else {
+			lines = append(lines, scan.Text())
 		}
-
-		lines = append(lines, scan.Text())
 	}
-
 	return strings.Join(lines, "\n")
 }
 
@@ -276,192 +233,142 @@ type Preamble struct {
 
 type Stage struct {
 	BaseStage
-	Users []KeyValue
+	Users []instructions.KeyValuePair
 }
 
 type BaseStage struct {
 	Image  string
 	Target string
 
-	Envs         []KeyValue
-	Args         []KeyValue
+	Envs         []instructions.KeyValuePair
+	Args         []instructions.KeyValuePairOptional
 	Instructions []*parser.Node
 }
 
-type KeyValue struct {
-	Key   string
-	Value string
-	Line  int
-}
-
 func (d *Dockerfile) Dump() string {
-	strs := []string{}
-	if d.Preamble != nil {
-		strs = append(strs, DumpAll(d.Preamble.Instructions))
-	}
+	result := make([]string, 0, len(d.Stages))
 	for _, stage := range d.Stages {
-		strs = append(strs, DumpAll(stage.Instructions))
-	}
-
-	// filter empty strings
-	newStrs := []string{}
-	for _, str := range strs {
-		if str == "" {
-			continue
+		if dump := DumpAll(stage.Instructions); dump != "" {
+			result = append(result, dump)
 		}
-
-		newStrs = append(newStrs, str)
 	}
-
-	return strings.Join(newStrs, "\n")
+	return strings.Join(result, "\n")
 }
 
 func Parse(dockerfileContent string) (*Dockerfile, error) {
 	result, err := parser.Parse(strings.NewReader(dockerfileContent))
 	if err != nil {
 		return nil, err
-	} else if len(result.AST.Children) == 0 {
+	}
+	if len(result.AST.Children) == 0 {
 		return nil, fmt.Errorf("received empty Dockerfile")
 	}
 
 	d := &Dockerfile{
 		Raw:            dockerfileContent,
 		Preamble:       &Preamble{},
-		Stages:         nil,
-		StagesByTarget: map[string]*Stage{},
+		StagesByTarget: make(map[string]*Stage),
 	}
-	instructions := result.AST.Children
 
-	// parse directives
 	directiveParser := parser.DirectiveParser{}
-	directives, err := directiveParser.ParseAll([]byte(dockerfileContent))
-	if err != nil {
-		return nil, err
-	}
-	d.Directives = directives
-
-	// parse build syntax
-	for _, directive := range directives {
-		if directive.Name == "syntax" {
-			d.Syntax = directive.Value
-			break
+	if directives, _ := directiveParser.ParseAll([]byte(dockerfileContent)); len(directives) > 0 {
+		d.Directives = directives
+		for _, directive := range directives {
+			if strings.EqualFold(directive.Name, "syntax") {
+				d.Syntax = directive.Value
+				break
+			}
 		}
 	}
 
-	// parse instructions
+	// Parse instructions with single loop
 	isPreamble := true
-	for _, instruction := range instructions {
-		if isPreamble {
-			if strings.ToLower(instruction.Value) == "from" {
-				isPreamble = false
-				d.Stages = append(d.Stages, parseStage(instruction))
-				continue
-			}
+	for _, instruction := range result.AST.Children {
+		cmd := strings.ToLower(instruction.Value)
 
-			d.Preamble.Instructions = append(d.Preamble.Instructions, instruction)
-			if strings.ToLower(instruction.Value) == "env" {
-				d.Preamble.Envs = append(d.Preamble.Envs, parseEnv(instruction)...)
-			} else if strings.ToLower(instruction.Value) == "arg" {
-				d.Preamble.Args = append(d.Preamble.Args, parseArg(instruction))
-			}
-
+		if isPreamble && cmd == command.From {
+			isPreamble = false
+			d.Stages = append(d.Stages, parseStage(instruction))
 			continue
 		}
 
-		// is new stage?
-		if strings.ToLower(instruction.Value) == "from" {
+		if isPreamble {
+			d.Preamble.Instructions = append(d.Preamble.Instructions, instruction)
+			switch cmd {
+			case command.Env:
+				d.Preamble.Envs = append(d.Preamble.Envs, parseEnv(instruction)...)
+			case command.Arg:
+				d.Preamble.Args = append(d.Preamble.Args, parseArg(instruction))
+			}
+			continue
+		}
+
+		if cmd == command.From {
 			d.Stages = append(d.Stages, parseStage(instruction))
 			continue
 		}
 
 		lastStage := d.Stages[len(d.Stages)-1]
 		lastStage.Instructions = append(lastStage.Instructions, instruction)
-		if strings.ToLower(instruction.Value) == "env" {
+		switch cmd {
+		case command.Env:
 			lastStage.Envs = append(lastStage.Envs, parseEnv(instruction)...)
-		} else if strings.ToLower(instruction.Value) == "arg" {
+		case command.Arg:
 			lastStage.Args = append(lastStage.Args, parseArg(instruction))
-		} else if strings.ToLower(instruction.Value) == "user" {
+		case command.User:
 			lastStage.Users = append(lastStage.Users, parseUser(instruction))
 		}
 	}
 
-	// map stages
 	for _, stage := range d.Stages {
-		if stage.Target == "" {
-			continue
+		if stage.Target != "" {
+			d.StagesByTarget[stage.Target] = stage
 		}
-
-		d.StagesByTarget[stage.Target] = stage
 	}
 
 	return d, nil
 }
 
-func parseUser(instruction *parser.Node) KeyValue {
-	// trim group if necessary
-	line := instruction.StartLine
-	instruction = instruction.Next
-	splitted := strings.Split(instruction.Value, ":")
-	return KeyValue{
-		Key:  splitted[0],
-		Line: line,
+func parseUser(instruction *parser.Node) instructions.KeyValuePair {
+	value := instruction.Next.Value
+	if strings.Contains(value, ":") && !strings.HasPrefix(value, "${") {
+		value = strings.Split(value, ":")[0]
 	}
+	return instructions.KeyValuePair{Key: value}
 }
 
-func parseArg(instruction *parser.Node) KeyValue {
-	line := instruction.StartLine
-	instruction = instruction.Next
-	if instruction.Next != nil {
-		return KeyValue{
-			Key:   instruction.Value,
-			Value: instruction.Next.Value,
-			Line:  line,
-		}
-	}
-
-	if strings.Contains(instruction.Value, "=") {
-		splitted := strings.Split(instruction.Value, "=")
-		return KeyValue{
-			Key:   splitted[0],
-			Value: strings.Join(splitted[1:], "="),
-			Line:  line,
-		}
-	}
-
-	return KeyValue{
-		Key:  instruction.Value,
-		Line: line,
-	}
-}
-
-func parseEnv(instruction *parser.Node) []KeyValue {
-	envs := []KeyValue{}
-	line := instruction.StartLine
+func parseArg(instruction *parser.Node) instructions.KeyValuePairOptional {
 	node := instruction.Next
-	for node != nil {
-		if node.Next == nil {
-			return envs
-		}
+	if node.Next != nil {
+		value := node.Next.Value
+		return instructions.KeyValuePairOptional{Key: node.Value, Value: &value}
+	}
+	if strings.Contains(node.Value, "=") {
+		parts := strings.SplitN(node.Value, "=", 2)
+		return instructions.KeyValuePairOptional{Key: parts[0], Value: &parts[1]}
+	}
+	return instructions.KeyValuePairOptional{Key: node.Value}
+}
 
-		envs = append(envs, KeyValue{
+func parseEnv(instruction *parser.Node) []instructions.KeyValuePair {
+	envs := make([]instructions.KeyValuePair, 0, 2) // Most ENV instructions have 1-2 pairs
+	for node := instruction.Next; node != nil && node.Next != nil; node = node.Next.Next {
+		envs = append(envs, instructions.KeyValuePair{
 			Key:   strings.TrimSpace(node.Value),
 			Value: strings.Trim(strings.ReplaceAll(node.Next.Value, "\\", ""), "\"'"),
-			Line:  line,
 		})
-		node = node.Next.Next
 	}
-
 	return envs
 }
 
 func parseStage(instruction *parser.Node) *Stage {
-	image := ""
-	if instruction.Next != nil {
-		image = instruction.Next.Value
-	}
-	target := ""
-	if instruction.Next != nil && instruction.Next.Next != nil && strings.ToLower(instruction.Next.Next.Value) == "as" && instruction.Next.Next.Next != nil && instruction.Next.Next.Next.Value != "" {
-		target = instruction.Next.Next.Next.Value
+	var image, target string
+	if next := instruction.Next; next != nil {
+		image = next.Value
+		if next.Next != nil && strings.EqualFold(next.Next.Value, "as") &&
+			next.Next.Next != nil && next.Next.Next.Value != "" {
+			target = next.Next.Next.Value
+		}
 	}
 	return &Stage{
 		BaseStage: BaseStage{
@@ -472,38 +379,38 @@ func parseStage(instruction *parser.Node) *Stage {
 	}
 }
 
-func DumpAll(result []*parser.Node) string {
-	if len(result) == 0 {
+func DumpAll(nodes []*parser.Node) string {
+	if len(nodes) == 0 {
 		return ""
 	}
-
-	children := []string{}
-	for _, n := range result {
-		children = append(children, DumpNode(n))
+	children := make([]string, len(nodes))
+	for i, n := range nodes {
+		children[i] = DumpNode(n)
 	}
-
 	return strings.Join(children, "\n")
 }
 
 func DumpNode(node *parser.Node) string {
-	out := ""
+	var out strings.Builder
 	if len(node.PrevComment) > 0 {
-		out += "# " + strings.Join(node.PrevComment, "\n# ")
+		out.WriteString("# ")
+		out.WriteString(strings.Join(node.PrevComment, "\n# "))
+		if node.Value != "" {
+			out.WriteByte('\n')
+		}
 	}
 
 	if node.Value != "" {
-		if len(node.PrevComment) > 0 {
-			out += "\n"
-		}
-
-		out += node.Value
+		out.WriteString(node.Value)
 	}
 	for _, child := range node.Flags {
-		out += " " + child
+		out.WriteByte(' ')
+		out.WriteString(child)
 	}
 	if node.Next != nil {
-		out += " " + DumpNode(node.Next)
+		out.WriteByte(' ')
+		out.WriteString(DumpNode(node.Next))
 	}
 
-	return out
+	return out.String()
 }
