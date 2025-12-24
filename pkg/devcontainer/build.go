@@ -111,7 +111,7 @@ func (r *runner) buildAndExtendImage(
 	if parsedConfig.Config.GetTarget() != "" {
 		imageBase = parsedConfig.Config.GetTarget()
 	} else {
-		lastTargetName, modifiedDockerfileContents, err := dockerfile.EnsureDockerfileHasFinalStageName(string(dockerFileContent), config.DockerfileDefaultTarget)
+		lastTargetName, modifiedDockerfileContents, err := dockerfile.EnsureFinalStageName(string(dockerFileContent), config.DockerfileDefaultTarget)
 		if err != nil {
 			return nil, err
 		} else if modifiedDockerfileContents != "" {

@@ -46,7 +46,7 @@ var _ = DevPodDescribe("devpod build test suite", func() {
 			dockerfilePath := tempDir + "/.devcontainer/Dockerfile"
 			dockerfileContent, err := os.ReadFile(dockerfilePath)
 			framework.ExpectNoError(err)
-			_, modifiedDockerfileContents, err := dockerfile.EnsureDockerfileHasFinalStageName(string(dockerfileContent), config.DockerfileDefaultTarget)
+			_, modifiedDockerfileContents, err := dockerfile.EnsureFinalStageName(string(dockerfileContent), config.DockerfileDefaultTarget)
 			framework.ExpectNoError(err)
 
 			prebuildRepo := "test-repo"
@@ -96,7 +96,7 @@ var _ = DevPodDescribe("devpod build test suite", func() {
 			dockerfilePath := tempDir + "/.devcontainer/Dockerfile"
 			dockerfileContent, err := os.ReadFile(dockerfilePath)
 			framework.ExpectNoError(err)
-			_, modifiedDockerfileContents, err := dockerfile.EnsureDockerfileHasFinalStageName(string(dockerfileContent), config.DockerfileDefaultTarget)
+			_, modifiedDockerfileContents, err := dockerfile.EnsureFinalStageName(string(dockerfileContent), config.DockerfileDefaultTarget)
 			framework.ExpectNoError(err)
 
 			// do the build
@@ -159,7 +159,7 @@ var _ = DevPodDescribe("devpod build test suite", func() {
 			dockerfilePath := tempDir + "/.devcontainer/Dockerfile"
 			dockerfileContent, err := os.ReadFile(dockerfilePath)
 			framework.ExpectNoError(err)
-			_, modifiedDockerfileContents, err := dockerfile.EnsureDockerfileHasFinalStageName(string(dockerfileContent), config.DockerfileDefaultTarget)
+			_, modifiedDockerfileContents, err := dockerfile.EnsureFinalStageName(string(dockerfileContent), config.DockerfileDefaultTarget)
 			framework.ExpectNoError(err)
 
 			prebuildRepo := "test-repo"

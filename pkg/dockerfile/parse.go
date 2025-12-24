@@ -12,7 +12,7 @@ import (
 	"github.com/skevetter/log/scanner"
 )
 
-var dockerfileSyntax = regexp.MustCompile(`(?m)^[\s\t]*#[\s\t]*syntax=.*$`)
+var syntaxDirectiveRegex = regexp.MustCompile(`(?m)^[\s\t]*#[\s\t]*syntax=.*$`)
 
 func (d *Dockerfile) FindUserStatement(buildArgs, baseImageEnv map[string]string, target string) string {
 	stage, ok := d.StagesByTarget[target]
@@ -22,21 +22,21 @@ func (d *Dockerfile) FindUserStatement(buildArgs, baseImageEnv map[string]string
 
 	seenStages := make(map[string]bool, 4)
 	for stage != nil {
-		stageKey := stageID(&stage.BaseStage)
+		stageKey := getStageIdentifier(&stage.BaseStage)
 		if seenStages[stageKey] {
 			return ""
 		}
 		seenStages[stageKey] = true
 
 		if len(stage.Users) > 0 {
-			return d.replaceVariables(stage.Users[len(stage.Users)-1].Key, buildArgs, baseImageEnv, &stage.BaseStage, 0)
+			return d.expandVariables(stage.Users[len(stage.Users)-1].Key, buildArgs, baseImageEnv, &stage.BaseStage, 0)
 		}
 
 		if stage.Image == "" {
 			return ""
 		}
 
-		image := d.replaceVariables(stage.Image, buildArgs, baseImageEnv, &d.Preamble.BaseStage, d.Stages[0].Instructions[0].StartLine)
+		image := d.expandVariables(stage.Image, buildArgs, baseImageEnv, &d.Preamble.BaseStage, d.Stages[0].Instructions[0].StartLine)
 		stage, ok = d.StagesByTarget[image]
 		if !ok {
 			return ""
@@ -45,7 +45,7 @@ func (d *Dockerfile) FindUserStatement(buildArgs, baseImageEnv map[string]string
 	return ""
 }
 
-func stageID(stage *BaseStage) string {
+func getStageIdentifier(stage *BaseStage) string {
 	return stage.Image + "-" + stage.Target
 }
 
@@ -57,7 +57,15 @@ func (d *Dockerfile) FindBaseImage(buildArgs map[string]string, target string) s
 	if stage == nil {
 		return ""
 	}
-	return d.replaceVariables(stage.Image, buildArgs, nil, &stage.BaseStage, 0)
+
+	image := d.expandVariables(stage.Image, buildArgs, nil, &stage.BaseStage, 0)
+
+	// If image is a stage reference, resolve it recursively
+	if _, ok := d.StagesByTarget[image]; ok {
+		return d.FindBaseImage(buildArgs, image)
+	}
+
+	return image
 }
 
 func (d *Dockerfile) BuildContextFiles() []string {
@@ -76,17 +84,17 @@ func (d *Dockerfile) BuildContextFiles() []string {
 	return files
 }
 
-var shellLexer = shell.NewLex('\\')
+var defaultShellLexer = shell.NewLex('\\')
 
-func (d *Dockerfile) replaceVariables(val string, buildArgs, baseImageEnv map[string]string, stage *BaseStage, _ int) string {
-	result, _, err := shellLexer.ProcessWord(val, &envMap{d, buildArgs, baseImageEnv, stage, 0})
+func (d *Dockerfile) expandVariables(val string, buildArgs, baseImageEnv map[string]string, stage *BaseStage, _ int) string {
+	result, _, err := defaultShellLexer.ProcessWord(val, &environmentResolver{d, buildArgs, baseImageEnv, stage, 0})
 	if err != nil {
 		return val
 	}
 	return result
 }
 
-type envMap struct {
+type environmentResolver struct {
 	dockerfile   *Dockerfile
 	buildArgs    map[string]string
 	baseImageEnv map[string]string
@@ -94,11 +102,11 @@ type envMap struct {
 	_            int // unused untilLine field for compatibility
 }
 
-func (e *envMap) Get(key string) (string, bool) {
-	return e.dockerfile.findValueWithFound(e.buildArgs, e.baseImageEnv, key, e.stage, 0)
+func (e *environmentResolver) Get(key string) (string, bool) {
+	return e.dockerfile.resolveVariable(e.buildArgs, e.baseImageEnv, key, e.stage, 0)
 }
 
-func (e *envMap) Keys() []string {
+func (e *environmentResolver) Keys() []string {
 	keys := make([]string, 0, len(e.buildArgs)+len(e.baseImageEnv))
 	for k := range e.buildArgs {
 		keys = append(keys, k)
@@ -109,14 +117,14 @@ func (e *envMap) Keys() []string {
 	return keys
 }
 
-func (d *Dockerfile) findValueWithFound(buildArgs, baseImageEnv map[string]string, variable string, stage *BaseStage, _ int) (string, bool) {
+func (d *Dockerfile) resolveVariable(buildArgs, baseImageEnv map[string]string, variable string, stage *BaseStage, _ int) (string, bool) {
 	if buildArgs == nil {
 		buildArgs = make(map[string]string)
 	}
 
 	seenStages := make(map[string]bool, 4) // Pre-allocate for typical multi-stage
 	for {
-		stageKey := stageID(stage)
+		stageKey := getStageIdentifier(stage)
 		if seenStages[stageKey] {
 			return "", false
 		}
@@ -132,7 +140,7 @@ func (d *Dockerfile) findValueWithFound(buildArgs, baseImageEnv map[string]strin
 				return strings.Trim(val, "\"'"), true
 			}
 			if arg.Value != nil && *arg.Value != "" {
-				value := d.replaceVariables(*arg.Value, buildArgs, baseImageEnv, stage, 0)
+				value := d.expandVariables(*arg.Value, buildArgs, baseImageEnv, stage, 0)
 				return strings.Trim(value, "\"'"), true
 			}
 			return "", true
@@ -145,7 +153,7 @@ func (d *Dockerfile) findValueWithFound(buildArgs, baseImageEnv map[string]strin
 				continue
 			}
 			if env.Value != "" {
-				return d.replaceVariables(env.Value, buildArgs, baseImageEnv, stage, 0), true
+				return d.expandVariables(env.Value, buildArgs, baseImageEnv, stage, 0), true
 			}
 			return "", true
 		}
@@ -159,7 +167,7 @@ func (d *Dockerfile) findValueWithFound(buildArgs, baseImageEnv map[string]strin
 			return "", false
 		}
 
-		image := d.replaceVariables(stage.Image, buildArgs, baseImageEnv, &d.Preamble.BaseStage, d.Stages[0].Instructions[0].StartLine)
+		image := d.expandVariables(stage.Image, buildArgs, baseImageEnv, &d.Preamble.BaseStage, d.Stages[0].Instructions[0].StartLine)
 		if foundStage, ok := d.StagesByTarget[image]; ok {
 			stage = &foundStage.BaseStage
 		} else {
@@ -169,19 +177,34 @@ func (d *Dockerfile) findValueWithFound(buildArgs, baseImageEnv map[string]strin
 }
 
 func RemoveSyntaxVersion(dockerfileContent string) string {
-	return dockerfileSyntax.ReplaceAllString(dockerfileContent, "")
+	return syntaxDirectiveRegex.ReplaceAllString(dockerfileContent, "")
 }
 
-func EnsureDockerfileHasFinalStageName(dockerfileContent, defaultLastStageName string) (string, string, error) {
+func EnsureFinalStageName(dockerfileContent, defaultLastStageName string) (string, string, error) {
 	result, err := parser.Parse(strings.NewReader(dockerfileContent))
 	if err != nil {
 		return "", "", err
 	}
 
 	var lastChild *parser.Node
+	stages := make(map[string]string) // stage name -> base image
+
 	for _, child := range result.AST.Children {
 		if strings.ToLower(child.Value) == command.From {
 			lastChild = child
+			if child.Next != nil {
+				image := child.Next.Value
+				// Check if this FROM has an AS clause
+				if child.Next.Next != nil && child.Next.Next.Next != nil && strings.EqualFold(child.Next.Next.Value, "as") {
+					stageName := child.Next.Next.Next.Value
+					// If image is a stage reference, resolve it
+					if baseImage, exists := stages[image]; exists {
+						stages[stageName] = baseImage
+					} else {
+						stages[stageName] = image
+					}
+				}
+			}
 		}
 	}
 
@@ -208,7 +231,7 @@ func ReplaceInDockerfile(dockerfileContent string, node *parser.Node) string {
 	var lines []string
 	for lineNumber := 1; scan.Scan(); lineNumber++ {
 		if lineNumber >= node.StartLine && lineNumber <= node.EndLine {
-			lines = append(lines, DumpNode(node))
+			lines = append(lines, FormatNode(node))
 		} else {
 			lines = append(lines, scan.Text())
 		}
@@ -248,7 +271,7 @@ type BaseStage struct {
 func (d *Dockerfile) Dump() string {
 	result := make([]string, 0, len(d.Stages))
 	for _, stage := range d.Stages {
-		if dump := DumpAll(stage.Instructions); dump != "" {
+		if dump := FormatNodes(stage.Instructions); dump != "" {
 			result = append(result, dump)
 		}
 	}
@@ -379,18 +402,18 @@ func parseStage(instruction *parser.Node) *Stage {
 	}
 }
 
-func DumpAll(nodes []*parser.Node) string {
+func FormatNodes(nodes []*parser.Node) string {
 	if len(nodes) == 0 {
 		return ""
 	}
 	children := make([]string, len(nodes))
 	for i, n := range nodes {
-		children[i] = DumpNode(n)
+		children[i] = FormatNode(n)
 	}
 	return strings.Join(children, "\n")
 }
 
-func DumpNode(node *parser.Node) string {
+func FormatNode(node *parser.Node) string {
 	var out strings.Builder
 	if len(node.PrevComment) > 0 {
 		out.WriteString("# ")
@@ -409,7 +432,7 @@ func DumpNode(node *parser.Node) string {
 	}
 	if node.Next != nil {
 		out.WriteByte(' ')
-		out.WriteString(DumpNode(node.Next))
+		out.WriteString(FormatNode(node.Next))
 	}
 
 	return out.String()
