@@ -40,7 +40,7 @@ tasks:
       - mkdir -p "${TMPDIR:-/tmp/}devpod-cache"
       - cp test/devpod-cli-linux-arm64 "${TMPDIR:-/tmp/}devpod-cache/devpod-linux-arm64"
       - cp test/devpod-cli-linux-amd64 "${TMPDIR:-/tmp/}devpod-cache/devpod-linux-amd64"
-      - ls -la "${TMPDIR:-/tmp/}devpod-cache/devpod-linux-*"
+      - ls -la "${TMPDIR:-/tmp/}devpod-cache"
 
   build:verify-cache:
     desc: Verify cached binaries exist for local injection
@@ -49,7 +49,7 @@ tasks:
         CACHE_DIR="${TMPDIR:-/tmp/}devpod-cache"
         if [ -f "$CACHE_DIR/devpod-linux-amd64" ] && [ -f "$CACHE_DIR/devpod-linux-arm64" ]; then
           echo "Cached binaries found"
-          ls -la "$CACHE_DIR/devpod-linux-*"
+          ls -la "$CACHE_DIR"
         else
           echo "Cached binaries missing"
         fi
@@ -188,22 +188,38 @@ tasks:
     cmds:
       - gh release upload v0.0.0-10 test/devpod-linux-amd64 test/devpod-linux-arm64 test/devpod-darwin-amd64 test/devpod-darwin-arm64 --repo skevetter/devpod --clobber
 
+  test:clean:
+    desc: Clean test binaries and cache
+    cmds:
+      - rm -rf test/devpod-*
+      - rm -rf e2e/bin/devpod-*
+      - rm -rf "${TMPDIR:-/tmp/}devpod-cache"
+
   test:setup:
     desc: Setup e2e test environment
     env:
       GOPROXY: direct
     cmds:
       - go install github.com/onsi/ginkgo/v2/ginkgo@latest
+      - task: test:build-latest
+
+  test:build-latest:
+    desc: Build latest binaries
+    cmds:
+      - task: test:clean
       - task: test:build
 
   test:build:
     desc: Build binaries for e2e tests
     cmds:
       - mkdir -p test
+      - rm -rf "${TMPDIR:-/tmp/}devpod-cache"
+      - mkdir -p "${TMPDIR:-/tmp/}devpod-cache"
       - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "-s -w" -o test/devpod-linux-amd64 .
       - chmod +x test/devpod-linux-amd64
-      - mkdir -p "${TMPDIR:-/tmp/}devpod-cache"
       - cp test/devpod-linux-amd64 "${TMPDIR:-/tmp/}devpod-cache/devpod-linux-amd64"
+      - mkdir -p e2e/bin
+      - cp test/devpod-linux-amd64 e2e/bin/devpod-linux-amd64
 
   test:kind:setup:
     desc: Setup kind cluster for Kubernetes tests
@@ -218,7 +234,7 @@ tasks:
   test:all:
     desc: Run all e2e tests
     deps:
-      - e2e:setup
+      - test:build-latest
     dir: e2e
     env:
       GOPROXY: direct
@@ -228,7 +244,7 @@ tasks:
   test:up:
     desc: Run workspace up tests
     deps:
-      - test:setup
+      - test:build-latest
     dir: e2e
     env:
       GOPROXY: direct
@@ -238,7 +254,7 @@ tasks:
   test:docker:
     desc: Run Docker-specific tests
     deps:
-      - test:setup
+      - test:build-latest
     dir: e2e
     cmds:
       - go run github.com/onsi/ginkgo/v2/ginkgo@latest --label-filter="up-docker"
@@ -246,7 +262,7 @@ tasks:
   test:features:
     desc: Run feature dependency tests
     deps:
-      - test:setup
+      - test:build-latest
     dir: e2e
     cmds:
       - go run github.com/onsi/ginkgo/v2/ginkgo@latest --label-filter="features"
@@ -254,7 +270,7 @@ tasks:
   test:kubernetes:
     desc: Run Kubernetes tests (requires kind cluster)
     deps:
-      - test:setup
+      - test:build-latest
     dir: e2e
     cmds:
       - go run github.com/onsi/ginkgo/v2/ginkgo@latest --label-filter="up-kubernetes || build"
