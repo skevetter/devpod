@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/skevetter/log"
@@ -153,8 +154,8 @@ func ExecuteCommand(
 		defer func() { _ = stdoutWriter.Close() }()
 
 		var stderrBuf bytes.Buffer
-		stderrWriter := io.MultiWriter(&stderrBuf, log.Writer(logrus.ErrorLevel, false))
-
+		stderrWriter := io.MultiWriter(&stderrBuf, &tunnelLogWriter{logger: log})
+		log.WithFields(logrus.Fields{"command": command}).Debug("running agent command in SSH tunnel")
 		err = devssh.Run(ctx, sshClient, command, gRPCConnStdinReader, gRPCConnStdoutWriter, stderrWriter, nil)
 		if err != nil {
 			if stderrBuf.Len() > 0 {
@@ -181,4 +182,65 @@ func ExecuteCommand(
 
 	log.Debug("SSH tunnel execution completed")
 	return result, <-errChan
+}
+
+type tunnelLogWriter struct {
+	logger log.Logger
+	buffer bytes.Buffer
+	mu     sync.Mutex
+}
+
+func (w *tunnelLogWriter) Write(p []byte) (int, error) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	w.buffer.Write(p)
+
+	for {
+		line, err := w.buffer.ReadString('\n')
+		if err != nil {
+			w.buffer.WriteString(line) // Put back incomplete line
+			break
+		}
+
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+
+		if matched, level := w.extractLogLevel(line); matched {
+			w.logger.Print(level, line)
+		} else {
+			// Default messages to debug
+			w.logger.Debug(line)
+		}
+	}
+
+	return len(p), nil
+}
+
+func (w *tunnelLogWriter) extractLogLevel(line string) (bool, logrus.Level) {
+	parts := strings.SplitN(line, " ", 3)
+	if len(parts) < 2 {
+		return false, logrus.DebugLevel
+	}
+
+	if !strings.Contains(parts[0], ":") {
+		return false, logrus.DebugLevel
+	}
+
+	switch parts[1] {
+	case "debug":
+		return true, logrus.DebugLevel
+	case "info":
+		return true, logrus.InfoLevel
+	case "warn":
+		return true, logrus.WarnLevel
+	case "error":
+		return true, logrus.ErrorLevel
+	case "fatal":
+		return true, logrus.FatalLevel
+	}
+
+	return false, logrus.DebugLevel
 }
