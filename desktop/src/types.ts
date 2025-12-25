@@ -220,6 +220,11 @@ export type TContextOptionName =
   | "TELEMETRY"
   | "SSH_INJECT_DOCKER_CREDENTIALS"
   | "SSH_INJECT_GIT_CREDENTIALS"
+  | "GIT_SSH_SIGNATURE_FORWARDING"
+  | "GPG_AGENT_FORWARDING"
+  | "SSH_STRICT_HOST_KEY_CHECKING"
+  | "SSH_ADD_PRIVATE_KEYS"
+  | "SSH_AGENT_FORWARDING"
 export type TContextOption = Readonly<{
   name: TContextOptionName
   description: string | null | undefined

@@ -148,3 +148,126 @@ export function useGitCredentialsForwardingOption() {
 
   return { input, helpText }
 }
+
+export function useGitSSHSignatureForwardingOption() {
+  const { options, updateOption } = useContextOptions()
+
+  const input = useMemo(
+    () => (
+      <Switch
+        isChecked={options?.GIT_SSH_SIGNATURE_FORWARDING.value === "true"}
+        onChange={(e) =>
+          updateOption({
+            option: "GIT_SSH_SIGNATURE_FORWARDING",
+            value: e.target.checked.toString(),
+          })
+        }
+      />
+    ),
+    [options?.GIT_SSH_SIGNATURE_FORWARDING.value, updateOption]
+  )
+
+  const helpText = useMemo(
+    () => (
+      <>Enable to automatically detect SSH signature Git settings and inject SSH signature helper</>
+    ),
+    []
+  )
+
+  return { input, helpText }
+}
+
+export function useSSHStrictHostKeyCheckingOption() {
+  const { options, updateOption } = useContextOptions()
+
+  const input = useMemo(
+    () => (
+      <Switch
+        isChecked={options?.SSH_STRICT_HOST_KEY_CHECKING.value === "true"}
+        onChange={(e) =>
+          updateOption({
+            option: "SSH_STRICT_HOST_KEY_CHECKING",
+            value: e.target.checked.toString(),
+          })
+        }
+      />
+    ),
+    [options?.SSH_STRICT_HOST_KEY_CHECKING.value, updateOption]
+  )
+
+  const helpText = useMemo(() => <>Enable strict SSH host key checking for all operations</>, [])
+
+  return { input, helpText }
+}
+
+export function useSSHAddPrivateKeysOption() {
+  const { options, updateOption } = useContextOptions()
+
+  const input = useMemo(
+    () => (
+      <Switch
+        isChecked={options?.SSH_ADD_PRIVATE_KEYS.value === "true"}
+        onChange={(e) =>
+          updateOption({
+            option: "SSH_ADD_PRIVATE_KEYS",
+            value: e.target.checked.toString(),
+          })
+        }
+      />
+    ),
+    [options?.SSH_ADD_PRIVATE_KEYS.value, updateOption]
+  )
+
+  const helpText = useMemo(() => <>Enable to automatically add SSH keys to the SSH agent</>, [])
+
+  return { input, helpText }
+}
+
+export function useSSHAgentForwardingOption() {
+  const { options, updateOption } = useContextOptions()
+
+  const input = useMemo(
+    () => (
+      <Switch
+        isChecked={options?.SSH_AGENT_FORWARDING.value === "true"}
+        onChange={(e) =>
+          updateOption({
+            option: "SSH_AGENT_FORWARDING",
+            value: e.target.checked.toString(),
+          })
+        }
+      />
+    ),
+    [options?.SSH_AGENT_FORWARDING.value, updateOption]
+  )
+
+  const helpText = useMemo(() => <>Enable SSH agent forwarding by default into workspaces</>, [])
+
+  return { input, helpText }
+}
+
+export function useGPGAgentForwardingOption() {
+  const { options, updateOption } = useContextOptions()
+
+  const input = useMemo(
+    () => (
+      <Switch
+        isChecked={options?.GPG_AGENT_FORWARDING.value === "true"}
+        onChange={(e) =>
+          updateOption({
+            option: "GPG_AGENT_FORWARDING",
+            value: e.target.checked.toString(),
+          })
+        }
+      />
+    ),
+    [options?.GPG_AGENT_FORWARDING.value, updateOption]
+  )
+
+  const helpText = useMemo(
+    () => <>Enable GPG agent forwarding by default for SSH connections</>,
+    []
+  )
+
+  return { input, helpText }
+}
