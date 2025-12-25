@@ -301,40 +301,22 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 				framework.ExpectNoError(err)
 			}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
-			ginkgo.It("user variable with features (issue #146)", func(ctx context.Context) {
-				tempDir, err := dtc.setupAndUp(ctx, "tests/up/testdata/docker-user-variable-with-features")
+			ginkgo.It("resolves user variable in dockerfile", func(ctx context.Context) {
+				tempDir, err := dtc.setupAndUp(ctx, "tests/up/testdata/docker-user-variable-in-dockerfile")
+				framework.ExpectNoError(err)
+
+				out, err := dtc.execSSH(ctx, tempDir, "whoami")
+				framework.ExpectNoError(err)
+				framework.ExpectEqual(strings.TrimSpace(out), "testuser")
+			}, ginkgo.SpecTimeout(framework.GetTimeout()))
+
+			ginkgo.It("preserves user when feature is present with variable", func(ctx context.Context) {
+				tempDir, err := dtc.setupAndUp(ctx, "tests/up/testdata/docker-user-variable-with-feature")
 				framework.ExpectNoError(err)
 
 				out, err := dtc.execSSH(ctx, tempDir, "whoami")
 				framework.ExpectNoError(err)
 				framework.ExpectEqual(strings.TrimSpace(out), "ubuntu")
-			}, ginkgo.SpecTimeout(framework.GetTimeout()))
-
-			ginkgo.It("user variable without features (control)", func(ctx context.Context) {
-				tempDir, err := dtc.setupAndUp(ctx, "tests/up/testdata/docker-user-variable-no-features")
-				framework.ExpectNoError(err)
-
-				out, err := dtc.execSSH(ctx, tempDir, "whoami")
-				framework.ExpectNoError(err)
-				framework.ExpectEqual(strings.TrimSpace(out), "ubuntu")
-			}, ginkgo.SpecTimeout(framework.GetTimeout()))
-
-			ginkgo.It("static user with features", func(ctx context.Context) {
-				tempDir, err := dtc.setupAndUp(ctx, "tests/up/testdata/docker-user-static-with-features")
-				framework.ExpectNoError(err)
-
-				out, err := dtc.execSSH(ctx, tempDir, "whoami")
-				framework.ExpectNoError(err)
-				framework.ExpectEqual(strings.TrimSpace(out), "ubuntu")
-			}, ginkgo.SpecTimeout(framework.GetTimeout()))
-
-			ginkgo.It("numeric user with features", func(ctx context.Context) {
-				tempDir, err := dtc.setupAndUp(ctx, "tests/up/testdata/docker-user-numeric-with-features")
-				framework.ExpectNoError(err)
-
-				out, err := dtc.execSSH(ctx, tempDir, "id -u")
-				framework.ExpectNoError(err)
-				framework.ExpectEqual(strings.TrimSpace(out), "1001")
 			}, ginkgo.SpecTimeout(framework.GetTimeout()))
 		})
 

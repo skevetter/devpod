@@ -1,6 +1,6 @@
 {
-  "name": "Ubuntu - Static User with Features",
-  "build": { "dockerfile": "Dockerfile" },
+  "name": "Ubuntu",
+  "build": { "dockerfile": "Dockerfile", "args": { "USERNAME": "testuser" } },
   "features": {
     "ghcr.io/devcontainers/feature-starter/hello:1": {
       "greeting": "Hello"
