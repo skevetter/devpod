@@ -253,7 +253,6 @@ function CustomizationSettings() {
       </SettingSection>
 
       <SettingSection
-        showDivider={false}
         title="SSH strict host key checking"
         description={sshStrictHostKeyCheckingHelpText}>
         {sshStrictHostKeyCheckingInput}
