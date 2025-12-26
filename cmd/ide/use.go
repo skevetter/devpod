@@ -15,7 +15,7 @@ import (
 
 // UseCmd holds the use cmd flags
 type UseCmd struct {
-	flags.GlobalFlags
+ 	*flags.GlobalFlags
 
 	Options []string
 }
@@ -23,7 +23,7 @@ type UseCmd struct {
 // NewUseCmd creates a new command
 func NewUseCmd(flags *flags.GlobalFlags) *cobra.Command {
 	cmd := &UseCmd{
-		GlobalFlags: *flags,
+		GlobalFlags: flags,
 	}
 	useCmd := &cobra.Command{
 		Use:   "use",
