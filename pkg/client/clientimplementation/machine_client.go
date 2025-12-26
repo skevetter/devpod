@@ -110,7 +110,10 @@ func (s *machineClient) Create(ctx context.Context, options client.CreateOptions
 		return err
 	}
 
-	s.log.Donef("Successfully created machine '%s' with provider '%s'", s.machine.ID, s.config.Name)
+	s.log.WithFields(logrus.Fields{
+		"machineId": s.machine.ID,
+		"provider":  s.config.Name,
+	}).Done("created machine")
 	return nil
 }
 
@@ -121,7 +124,9 @@ func (s *machineClient) Start(ctx context.Context, options client.StartOptions) 
 	writer := s.log.Writer(logrus.InfoLevel, false)
 	defer func() { _ = writer.Close() }()
 
-	s.log.Infof("Starting machine '%s'...", s.machine.ID)
+	s.log.WithFields(logrus.Fields{
+		"machineId": s.machine.ID,
+	}).Infof("starting machine")
 	err := RunCommandWithBinaries(
 		ctx,
 		"start",
@@ -140,7 +145,9 @@ func (s *machineClient) Start(ctx context.Context, options client.StartOptions) 
 	if err != nil {
 		return err
 	}
-	s.log.Donef("Successfully started '%s'", s.machine.ID)
+	s.log.WithFields(logrus.Fields{
+		"machineId": s.machine.ID,
+	}).Done("started machine")
 
 	return nil
 }
@@ -152,7 +159,9 @@ func (s *machineClient) Stop(ctx context.Context, options client.StopOptions) er
 	writer := s.log.Writer(logrus.InfoLevel, false)
 	defer func() { _ = writer.Close() }()
 
-	s.log.Infof("Stopping machine '%s'...", s.machine.ID)
+	s.log.WithFields(logrus.Fields{
+		"machineId": s.machine.ID,
+	}).Infof("stopping machine")
 	err := RunCommandWithBinaries(
 		ctx,
 		"stop",
@@ -171,7 +180,9 @@ func (s *machineClient) Stop(ctx context.Context, options client.StopOptions) er
 	if err != nil {
 		return err
 	}
-	s.log.Donef("Successfully stopped '%s'", s.machine.ID)
+	s.log.WithFields(logrus.Fields{
+		"machineId": s.machine.ID,
+	}).Donef("stopped machine")
 
 	return nil
 }
@@ -249,7 +260,9 @@ func (s *machineClient) Delete(ctx context.Context, options client.DeleteOptions
 	writer := s.log.Writer(logrus.InfoLevel, false)
 	defer func() { _ = writer.Close() }()
 
-	s.log.Infof("Deleting '%s' machine '%s'...", s.config.Name, s.machine.ID)
+	s.log.WithFields(logrus.Fields{
+		"machineId": s.machine.ID,
+	}).Infof("deleting machine")
 	err := RunCommandWithBinaries(
 		ctx,
 		"delete",
@@ -270,9 +283,14 @@ func (s *machineClient) Delete(ctx context.Context, options client.DeleteOptions
 			return err
 		}
 
-		s.log.Errorf("Error deleting machine '%s': %v", s.machine.ID, err)
+		s.log.WithFields(logrus.Fields{
+			"machineId": s.machine.ID,
+			"err":       err,
+		}).Errorf("failed to delete machine")
 	}
-	s.log.Donef("Successfully deleted machine '%s'", s.machine.ID)
+	s.log.WithFields(logrus.Fields{
+		"machineId": s.machine.ID,
+	}).Done("deleted machine")
 
 	// delete machine folder
 	err = DeleteMachineFolder(s.machine.Context, s.machine.ID)
@@ -289,7 +307,10 @@ func runCommand(ctx context.Context, name string, command types.StrArray, enviro
 	}
 
 	// log
-	log.Debugf("Run %s provider command: %s", name, strings.Join(command, " "))
+	log.WithFields(logrus.Fields{
+		"name":    name,
+		"command": strings.Join(command, " "),
+	}).Debug("run provider command")
 
 	// set debug level
 	if log.GetLevel() == logrus.DebugLevel {
@@ -301,7 +322,7 @@ func runCommand(ctx context.Context, name string, command types.StrArray, enviro
 }
 
 func printStillRunningLogMessagePeriodically(log log.Logger) chan struct{} {
-	return printLogMessagePeriodically("Please hang on, DevPod is still running, this might take a while...", log)
+	return printLogMessagePeriodically("Please wait. DevPod is still running, this might take a while", log)
 }
 
 func printLogMessagePeriodically(message string, log log.Logger) chan struct{} {

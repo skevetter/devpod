@@ -161,7 +161,9 @@ func forwardDevContainerPorts(ctx context.Context, containerClient *ssh.Client, 
 	if err != nil {
 		return nil, fmt.Errorf("error parsing container result %s %w", stdout.String(), err)
 	}
-	log.Debugf("Successfully parsed result at %s", setup.ResultLocation)
+	log.WithFields(logrus.Fields{
+		"location": setup.ResultLocation,
+	}).Debug("parsed container result")
 
 	// return forwarded ports
 	forwardedPorts := []string{}

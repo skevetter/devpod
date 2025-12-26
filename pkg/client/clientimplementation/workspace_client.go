@@ -188,7 +188,7 @@ func (s *workspaceClient) agentInfo(cliOptions provider.CLIOptions) *provider.Ag
 	if s.workspace != nil {
 		result, err := provider.LoadWorkspaceResult(s.workspace.Context, s.workspace.ID)
 		if err != nil {
-			s.log.Debugf("Error loading workspace result: %v", err)
+			s.log.WithFields(logrus.Fields{"error": err}).Debug("error loading workspace result")
 		} else if result != nil {
 			lastDevContainerConfig = result.DevContainerConfigWithPath
 		}
@@ -261,21 +261,21 @@ func (s *workspaceClient) Lock(ctx context.Context) error {
 	s.initLock()
 
 	// try to lock workspace
-	s.log.Debugf("Acquire workspace lock...")
+	s.log.Debug("acquire workspace lock")
 	err := tryLock(ctx, s.workspaceLock, "workspace", s.log)
 	if err != nil {
 		return fmt.Errorf("error locking workspace %w", err)
 	}
-	s.log.Debugf("Acquired workspace lock...")
+	s.log.Debug("acquired workspace lock")
 
 	// try to lock machine
 	if s.machineLock != nil {
-		s.log.Debugf("Acquire machine lock...")
+		s.log.Debug("acquire machine lock")
 		err := tryLock(ctx, s.machineLock, "machine", s.log)
 		if err != nil {
 			return fmt.Errorf("error locking machine %w", err)
 		}
-		s.log.Debugf("Acquired machine lock...")
+		s.log.Debug("acquired machine lock")
 	}
 
 	return nil
@@ -288,14 +288,14 @@ func (s *workspaceClient) Unlock() {
 	if s.machineLock != nil {
 		err := s.machineLock.Unlock()
 		if err != nil {
-			s.log.Warnf("Error unlocking machine: %v", err)
+			s.log.WithFields(logrus.Fields{"error": err}).Warn("error unlocking machine")
 		}
 	}
 
 	// try to unlock workspace
 	err := s.workspaceLock.Unlock()
 	if err != nil {
-		s.log.Warnf("Error unlocking workspace: %v", err)
+		s.log.WithFields(logrus.Fields{"error": err}).Warn("error unlocking workspace")
 	}
 }
 
@@ -362,7 +362,7 @@ func (s *workspaceClient) Delete(ctx context.Context, opt client.DeleteOptions) 
 			writer := s.log.Writer(logrus.InfoLevel, false)
 			defer func() { _ = writer.Close() }()
 
-			s.log.Infof("Deleting container...")
+			s.log.Info("deleting container")
 			compressed, info, err := s.compressedAgentInfo(provider.CLIOptions{})
 			if err != nil {
 				return fmt.Errorf("agent info")
@@ -391,7 +391,7 @@ func (s *workspaceClient) Delete(ctx context.Context, opt client.DeleteOptions) 
 				}
 
 				if !errors.Is(err, context.DeadlineExceeded) {
-					s.log.Errorf("Error deleting container: %v", err)
+					s.log.WithFields(logrus.Fields{"error": err}).Error("error deleting container")
 				}
 			}
 		}
@@ -459,7 +459,7 @@ func (s *workspaceClient) Stop(ctx context.Context, opt client.StopOptions) erro
 		writer := s.log.Writer(logrus.InfoLevel, false)
 		defer func() { _ = writer.Close() }()
 
-		s.log.Infof("Stopping container...")
+		s.log.Info("stopping container")
 		compressed, info, err := s.compressedAgentInfo(provider.CLIOptions{})
 		if err != nil {
 			return fmt.Errorf("agent info")
@@ -485,7 +485,7 @@ func (s *workspaceClient) Stop(ctx context.Context, opt client.StopOptions) erro
 		if err != nil {
 			return err
 		}
-		s.log.Infof("Successfully stopped container...")
+		s.log.Info("stopped container")
 
 		return nil
 	}
@@ -583,7 +583,11 @@ func (s *workspaceClient) getContainerStatus(ctx context.Context) (client.Status
 		return client.StatusNotFound, fmt.Errorf("error parsing container status: %s%w", buf.String(), err)
 	}
 
-	s.log.Debugf("Container status command output (stdout & stderr): %s %s (%s)", buf.String(), stdout.String(), parsed)
+	s.log.WithFields(logrus.Fields{
+		"stdout": buf.String(),
+		"stderr": stdout.String(),
+		"parsed": parsed,
+	}).Debug("container status command output")
 	return parsed, nil
 }
 

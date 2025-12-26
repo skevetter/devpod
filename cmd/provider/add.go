@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/cmd/flags"
 	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/provider"
@@ -90,7 +91,9 @@ func (cmd *AddCmd) Run(ctx context.Context, devPodConfig *config.Config, args []
 		options = cmd.Options
 	}
 
-	log.Default.Donef("Successfully installed provider %s", providerConfig.Name)
+	log.WithFields(logrus.Fields{
+		"providerName": providerConfig.Name,
+	}).Done("installed provider")
 	if cmd.Use {
 		configureErr := ConfigureProvider(ctx, providerConfig, devPodConfig.DefaultContext, options, true, false, false, &cmd.SingleMachine, log.Default)
 		if configureErr != nil {

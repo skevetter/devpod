@@ -160,7 +160,7 @@ func ReadAgentWorkspaceInfo(agentFolder, context, id string, log log.Logger) (bo
 	log.WithFields(logrus.Fields{
 		"workspaceId": workspaceInfo.Workspace.ID,
 		"driver":      workspaceInfo.Agent.Driver,
-	}).Debug("successfully read agent workspace info")
+	}).Debug("read agent workspace info")
 	return false, workspaceInfo, nil
 }
 
@@ -200,7 +200,7 @@ func decodeWorkspaceInfoAndWrite(
 		"workspaceId": workspaceInfo.Workspace.ID,
 		"context":     workspaceInfo.Workspace.Context,
 		"driver":      workspaceInfo.Agent.Driver,
-	}).Debug("successfully decoded workspace info")
+	}).Debug("decoded workspace info")
 
 	// check if we need to become root
 	log.Debug("checking if root privileges are required")

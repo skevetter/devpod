@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	storagev1 "github.com/loft-sh/api/v4/pkg/apis/storage/v1"
+	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/cmd/pro/flags"
 	"github.com/skevetter/devpod/pkg/platform/kube"
 	"github.com/skevetter/devpod/pkg/random"
@@ -173,6 +174,9 @@ func (cmd *PasswordCmd) Run() error {
 		}
 	}
 
-	cmd.Log.Donef("Successfully reset password of user %s", cmd.User)
+	cmd.Log.WithFields(logrus.Fields{
+		"user": cmd.User,
+	})
+	cmd.Log.Done("reset user password")
 	return nil
 }

@@ -15,6 +15,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
+	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	"github.com/skevetter/devpod/pkg/extract"
 	devpodhttp "github.com/skevetter/devpod/pkg/http"
@@ -93,19 +94,21 @@ func escapeQuotesForShell(str string) string {
 
 func ProcessFeatureID(id string, devContainerConfig *config.DevContainerConfig, log log.Logger, forceBuild bool) (string, error) {
 	if strings.HasPrefix(id, "https://") || strings.HasPrefix(id, "http://") {
-		log.Debugf("Process url feature")
+		log.WithFields(logrus.Fields{"type": "url", "id": id}).Debug("process feature")
 		return processDirectTarFeature(id, config.GetDevPodCustomizations(devContainerConfig).FeatureDownloadHTTPHeaders, log, forceBuild)
 	} else if strings.HasPrefix(id, "./") || strings.HasPrefix(id, "../") {
-		log.Debugf("Process local feature")
+		log.WithFields(logrus.Fields{"type": "local", "id": id}).Debug("process feature")
 		return filepath.Abs(path.Join(filepath.ToSlash(filepath.Dir(devContainerConfig.Origin)), id))
 	}
 
 	// get oci feature
-	log.Debugf("Process OCI feature")
+	log.WithFields(logrus.Fields{"type": "oci", "id": id}).Debug("process feature")
 	return processOCIFeature(id, log)
 }
 
 func processOCIFeature(id string, log log.Logger) (string, error) {
+	log.WithFields(logrus.Fields{"featureId": id}).Debug("processing OCI feature")
+
 	// feature already exists?
 	featureFolder := getFeaturesTempFolder(id)
 	featureExtractedFolder := filepath.Join(featureFolder, "extracted")
@@ -114,42 +117,50 @@ func processOCIFeature(id string, log log.Logger) (string, error) {
 		// make sure feature.json is there as well
 		_, err = os.Stat(filepath.Join(featureExtractedFolder, config.DEVCONTAINER_FEATURE_FILE_NAME))
 		if err == nil {
+			log.WithFields(logrus.Fields{"folder": featureExtractedFolder}).Debug("feature already cached")
 			return featureExtractedFolder, nil
 		} else {
-			log.Debugf("Feature folder already exists but seems to be empty")
+			log.WithFields(logrus.Fields{"folder": featureExtractedFolder}).Debug("feature folder exists but seems empty")
 			_ = os.RemoveAll(featureFolder)
 		}
 	}
 
 	ref, err := name.ParseReference(id)
 	if err != nil {
+		log.WithFields(logrus.Fields{"error": err, "featureId": id}).Error("failed to parse OCI reference")
 		return "", err
 	}
 
+	log.WithFields(logrus.Fields{"reference": ref.String()}).Debug("fetching OCI image")
 	img, err := remote.Image(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain))
 	if err != nil {
+		log.WithFields(logrus.Fields{"error": err, "reference": ref.String()}).Error("failed to fetch OCI image")
 		return "", err
 	}
 
 	destFile := filepath.Join(featureFolder, "feature.tgz")
 	err = downloadLayer(img, id, destFile, log)
 	if err != nil {
+		log.WithFields(logrus.Fields{"error": err, "featureId": id}).Error("failed to download feature layer")
 		return "", err
 	}
 
 	file, err := os.Open(destFile)
 	if err != nil {
+		log.WithFields(logrus.Fields{"error": err, "file": destFile}).Error("failed to open downloaded feature file")
 		return "", err
 	}
 	defer func() { _ = file.Close() }()
 
-	log.Debugf("Extract feature into %s", featureExtractedFolder)
+	log.WithFields(logrus.Fields{"destination": featureExtractedFolder}).Debug("extract feature")
 	err = extract.Extract(file, featureExtractedFolder)
 	if err != nil {
+		log.WithFields(logrus.Fields{"error": err, "destination": featureExtractedFolder}).Error("failed to extract feature")
 		_ = os.RemoveAll(featureExtractedFolder)
 		return "", err
 	}
 
+	log.WithFields(logrus.Fields{"featureId": id, "path": featureExtractedFolder}).Info("OCI feature processed successfully")
 	return featureExtractedFolder, nil
 }
 
@@ -164,7 +175,11 @@ func downloadLayer(img v1.Image, id, destFile string, log log.Logger) error {
 	}
 
 	// download layer
-	log.Debugf("Download feature %s layer %s into %s...", id, manifest.Layers[0].Digest, destFile)
+	log.WithFields(logrus.Fields{
+		"featureId": id,
+		"digest":    manifest.Layers[0].Digest.String(),
+		"destFile":  destFile,
+	}).Debug("download feature layer")
 	layer, err := img.LayerByDigest(manifest.Layers[0].Digest)
 	if err != nil {
 		return fmt.Errorf("retrieve layer %w", err)
@@ -196,8 +211,11 @@ func downloadLayer(img v1.Image, id, destFile string, log log.Logger) error {
 }
 
 func processDirectTarFeature(id string, httpHeaders map[string]string, log log.Logger, forceDownload bool) (string, error) {
+	log.WithFields(logrus.Fields{"featureId": id, "forceDownload": forceDownload}).Debug("processing direct tar feature")
+
 	downloadBase := id[strings.LastIndex(id, "/"):]
 	if !directTarballRegEx.MatchString(downloadBase) {
+		log.WithFields(logrus.Fields{"filename": downloadBase}).Error("invalid tarball filename format")
 		return "", fmt.Errorf("expected tarball name to follow 'devcontainer-feature-<feature-id>.tgz' format.  Received '%s' ", downloadBase)
 	}
 
@@ -206,6 +224,7 @@ func processDirectTarFeature(id string, httpHeaders map[string]string, log log.L
 	featureExtractedFolder := filepath.Join(featureFolder, "extracted")
 	_, err := os.Stat(featureExtractedFolder)
 	if err == nil && !forceDownload {
+		log.WithFields(logrus.Fields{"folder": featureExtractedFolder}).Debug("direct tar feature already cached")
 		return featureExtractedFolder, nil
 	}
 
@@ -213,12 +232,14 @@ func processDirectTarFeature(id string, httpHeaders map[string]string, log log.L
 	downloadFile := filepath.Join(featureFolder, "feature.tgz")
 	err = downloadFeatureFromURL(id, downloadFile, httpHeaders, log)
 	if err != nil {
+		log.WithFields(logrus.Fields{"error": err, "url": id}).Error("failed to download feature tarball")
 		return "", err
 	}
 
 	// extract file
 	file, err := os.Open(downloadFile)
 	if err != nil {
+		log.WithFields(logrus.Fields{"error": err, "file": downloadFile}).Error("failed to open downloaded tarball")
 		return "", err
 	}
 	defer func() { _ = file.Close() }()
@@ -226,16 +247,21 @@ func processDirectTarFeature(id string, httpHeaders map[string]string, log log.L
 	// extract tar.gz
 	err = extract.Extract(file, featureExtractedFolder)
 	if err != nil {
+		log.WithFields(logrus.Fields{"error": err, "destination": featureExtractedFolder}).Error("failed to extract tarball")
 		_ = os.RemoveAll(featureExtractedFolder)
 		return "", fmt.Errorf("extract folder %w", err)
 	}
 
+	log.WithFields(logrus.Fields{"featureId": id, "path": featureExtractedFolder}).Info("Direct tar feature processed successfully")
 	return featureExtractedFolder, nil
 }
 
 func downloadFeatureFromURL(url string, destFile string, httpHeaders map[string]string, log log.Logger) error {
+	log.WithFields(logrus.Fields{"url": url, "destFile": destFile}).Debug("starting feature download")
+
 	err := os.MkdirAll(filepath.Dir(destFile), 0755)
 	if err != nil {
+		log.WithFields(logrus.Fields{"error": err, "dir": filepath.Dir(destFile)}).Error("failed to create feature folder")
 		return fmt.Errorf("create feature folder %w", err)
 	}
 
@@ -243,19 +269,21 @@ func downloadFeatureFromURL(url string, destFile string, httpHeaders map[string]
 	for range 3 {
 		if attempt > 0 {
 			delay := time.Duration(1<<uint(attempt-1)) * time.Second
-			log.Debugf("retrying download in %v", delay)
+			log.WithFields(logrus.Fields{"delay": delay, "attempt": attempt}).Debug("retrying download")
 			time.Sleep(delay)
 		}
 
-		log.Debugf("download feature from %s", url)
+		log.WithFields(logrus.Fields{"url": url}).Debug("download feature")
 		if err := tryDownload(url, destFile, httpHeaders); err != nil {
 			if attempt == 2 {
+				log.WithFields(logrus.Fields{"error": err, "url": url}).Error("all download attempts failed")
 				return err
 			}
-			log.Debugf("download attempt failed %v", err)
+			log.WithFields(logrus.Fields{"error": err, "attempt": attempt}).Debug("download attempt failed")
 			attempt++
 			continue
 		}
+		log.WithFields(logrus.Fields{"url": url, "destFile": destFile}).Info("Feature download completed successfully")
 		return nil
 	}
 

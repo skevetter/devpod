@@ -42,6 +42,11 @@ import {
   useAgentURLOption,
   useDockerCredentialsForwardingOption,
   useGitCredentialsForwardingOption,
+  useGitSSHSignatureForwardingOption,
+  useGPGAgentForwardingOption,
+  useSSHAddPrivateKeysOption,
+  useSSHAgentForwardingOption,
+  useSSHStrictHostKeyCheckingOption,
   useTelemetryOption,
 } from "./useContextOptions"
 import { useIDESettings } from "./useIDESettings"
@@ -173,6 +178,16 @@ function CustomizationSettings() {
     useDockerCredentialsForwardingOption()
   const { input: gitCredentialForwardingInput, helpText: gitCredentialForwardingHelpText } =
     useGitCredentialsForwardingOption()
+  const { input: gitSSHSignatureForwardingInput, helpText: gitSSHSignatureForwardingHelpText } =
+    useGitSSHSignatureForwardingOption()
+  const { input: sshAddPrivateKeysInput, helpText: sshAddPrivateKeysHelpText } =
+    useSSHAddPrivateKeysOption()
+  const { input: sshAgentForwardingInput, helpText: sshAgentForwardingHelpText } =
+    useSSHAgentForwardingOption()
+  const { input: sshStrictHostKeyCheckingInput, helpText: sshStrictHostKeyCheckingHelpText } =
+    useSSHStrictHostKeyCheckingOption()
+  const { input: gpgAgentForwardingInput, helpText: gpgAgentForwardingHelpText } =
+    useGPGAgentForwardingOption()
 
   return (
     <>
@@ -218,10 +233,33 @@ function CustomizationSettings() {
       </SettingSection>
 
       <SettingSection
-        showDivider={false}
         title="Git credentials forwarding"
         description={gitCredentialForwardingHelpText}>
         {gitCredentialForwardingInput}
+      </SettingSection>
+
+      <SettingSection
+        title="Git SSH signature forwarding"
+        description={gitSSHSignatureForwardingHelpText}>
+        {gitSSHSignatureForwardingInput}
+      </SettingSection>
+
+      <SettingSection title="SSH agent forwarding" description={sshAgentForwardingHelpText}>
+        {sshAgentForwardingInput}
+      </SettingSection>
+
+      <SettingSection title="SSH add private keys" description={sshAddPrivateKeysHelpText}>
+        {sshAddPrivateKeysInput}
+      </SettingSection>
+
+      <SettingSection
+        title="SSH strict host key checking"
+        description={sshStrictHostKeyCheckingHelpText}>
+        {sshStrictHostKeyCheckingInput}
+      </SettingSection>
+
+      <SettingSection title="GPG agent forwarding" description={gpgAgentForwardingHelpText}>
+        {gpgAgentForwardingInput}
       </SettingSection>
     </>
   )

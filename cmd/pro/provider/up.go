@@ -96,7 +96,7 @@ func (cmd *UpCmd) Run(ctx context.Context) error {
 		if err != nil {
 			return fmt.Errorf("update instance %w", err)
 		}
-		cmd.Log.Info("Successfully updated template")
+		cmd.Log.Info("updated template")
 	}
 
 	return cmd.up(ctx, instance, baseClient)

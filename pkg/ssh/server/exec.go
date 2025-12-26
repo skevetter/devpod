@@ -9,11 +9,14 @@ import (
 	"time"
 
 	"github.com/loft-sh/ssh"
+	"github.com/sirupsen/logrus"
 	"github.com/skevetter/log"
 )
 
 func execNonPTY(sess ssh.Session, cmd *exec.Cmd, log log.Logger) (err error) {
-	log.Debugf("Execute SSH server command: %s", strings.Join(cmd.Args, " "))
+	log.WithFields(logrus.Fields{
+		"command": strings.Join(cmd.Args, " "),
+	}).Debug("execute SSH server command")
 	// init pipes
 	stdin, err := cmd.StdinPipe()
 	if err != nil {

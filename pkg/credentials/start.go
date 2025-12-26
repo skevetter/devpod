@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/agent/tunnel"
 	devpodhttp "github.com/skevetter/devpod/pkg/http"
 	portpkg "github.com/skevetter/devpod/pkg/port"
@@ -25,7 +26,7 @@ func StartCredentialsServer(ctx context.Context, cancel context.CancelFunc, clie
 
 		err := RunCredentialsServer(ctx, port, client, log)
 		if err != nil {
-			log.Errorf("Error running git credentials server: %v", err)
+			log.WithFields(logrus.Fields{"error": err}).Error("error running git credentials server")
 		}
 	}()
 
@@ -42,12 +43,12 @@ Outer:
 			case <-time.After(time.Second):
 			}
 		} else {
-			log.Debugf("Credentials server started...")
+			log.Debug("credentials server started")
 			break
 		}
 
 		if time.Since(now) > maxWait {
-			log.Debugf("Credentials server didn't start in time...")
+			log.Debug("credentials server did not start in time")
 			break
 		}
 	}

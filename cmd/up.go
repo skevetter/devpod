@@ -215,7 +215,7 @@ func (cmd *UpCmd) Run(
 			return err
 		}
 
-		log.Infof("Run 'ssh %s.devpod' to ssh into the devcontainer", client.Workspace())
+		log.WithFields(logrus.Fields{"workspace": client.Workspace()}).Info("SSH command available: ssh " + client.Workspace() + ".devpod")
 	}
 
 	// setup git ssh signature
@@ -436,7 +436,7 @@ func (cmd *UpCmd) devPodUpProxy(
 	// create up command
 	errChan := make(chan error, 1)
 	go func() {
-		defer log.Debugf("Done executing up command")
+		defer log.Debug("done executing up command")
 		defer cancel()
 
 		// build devpod up options
@@ -533,8 +533,8 @@ func (cmd *UpCmd) devPodUpMachine(
 	}
 
 	// create container etc.
-	log.Infof("Creating devcontainer...")
-	defer log.Debugf("Done creating devcontainer")
+	log.Info("creating devcontainer")
+	defer log.Debug("done creating devcontainer")
 
 	// if we run on a platform, we need to pass the platform options
 	if cmd.Platform.Enabled {
@@ -636,12 +636,10 @@ func startJupyterNotebookInBrowser(
 		go func() {
 			err = open2.Open(ctx, targetURL, logger)
 			if err != nil {
-				logger.Errorf("error opening jupyter notebook: %v", err)
+				logger.WithFields(logrus.Fields{"error": err}).Error("error opening jupyter notebook")
 			}
 
-			logger.Infof(
-				"Successfully started jupyter notebook in browser mode. Please keep this terminal open as long as you use Jupyter Notebook",
-			)
+			logger.Info("started jupyter notebook in browser mode. Please keep this terminal open as long as you use Jupyter Notebook")
 		}()
 	}
 
@@ -697,7 +695,7 @@ func startRStudioInBrowser(
 			}
 
 			logger.Infof(
-				"Successfully started RStudio Server in browser mode. Please keep this terminal open as long as you use it",
+				"started RStudio Server in browser mode. Please keep this terminal open as long as you use it",
 			)
 		}()
 	}
@@ -789,7 +787,7 @@ func startVSCodeInBrowser(
 			}
 
 			logger.Infof(
-				"Successfully started vscode in browser mode. Please keep this terminal open as long as you use VSCode browser version",
+				"started vscode in browser mode. Please keep this terminal open as long as you use VSCode browser version",
 			)
 		}()
 	}
@@ -1314,11 +1312,11 @@ func performGpgForwarding(
 // Potentially auto-upgrade other providers in the future.
 func checkProviderUpdate(devPodConfig *config.Config, proInstance *provider2.ProInstance, log log.Logger) error {
 	if version.GetVersion() == version.DevVersion {
-		log.Debugf("Skipping provider upgrade check during development")
+		log.Debugf("skipping provider upgrade check during development")
 		return nil
 	}
 	if proInstance == nil {
-		log.Debugf("No pro instance available, skipping provider upgrade check")
+		log.Debug("no pro instance available, skipping provider upgrade check")
 		return nil
 	}
 
@@ -1368,7 +1366,9 @@ func checkProviderUpdate(devPodConfig *config.Config, proInstance *provider2.Pro
 		return fmt.Errorf("update provider %s %w", proInstance.Provider, err)
 	}
 
-	log.Donef("Successfully updated provider %s", proInstance.Provider)
+	log.WithFields(logrus.Fields{
+		"provider": proInstance.Provider,
+	}).Done("updated provider")
 	return nil
 }
 

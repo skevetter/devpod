@@ -389,7 +389,7 @@ func CloneRepositoryForWorkspace(
 		}
 	}
 
-	log.Done("Successfully cloned repository")
+	log.Done("cloned repository")
 
 	// Get .devpodignore files to exclude
 	f, err := os.Open(filepath.Join(workspaceDir, ".devpodignore"))

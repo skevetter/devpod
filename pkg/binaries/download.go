@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/copy"
 	"github.com/skevetter/devpod/pkg/download"
@@ -312,8 +313,13 @@ func downloadFile(binaryName string, binary *provider2.ProviderBinary, targetFol
 	}
 
 	// initiate download
-	log.Infof("Download binary %s from %s", binaryName, binary.Path)
-	defer log.Debugf("Successfully downloaded binary %s", binary.Path)
+	log.WithFields(logrus.Fields{
+		"binary": binaryName,
+		"url":    binary.Path,
+	}).Info("downloading binary")
+	defer log.WithFields(logrus.Fields{
+		"binary": binaryName,
+	}).Debug("downloaded binary")
 	body, err := download.File(binary.Path, log)
 	if err != nil {
 		return "", fmt.Errorf("download binary %w", err)
@@ -343,7 +349,9 @@ func downloadArchive(binaryName string, binary *provider2.ProviderBinary, target
 
 	// initiate download
 	log.Infof("Download binary %s from %s", binaryName, binary.Path)
-	defer log.Debugf("Successfully extracted & downloaded archive")
+	defer log.WithFields(logrus.Fields{
+		"binary": binaryName,
+	}).Debug("extracted and downloaded archive")
 	body, err := download.File(binary.Path, log)
 	if err != nil {
 		return "", err

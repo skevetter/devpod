@@ -9,6 +9,7 @@ import (
 	"github.com/moby/patternmatcher"
 	"github.com/moby/patternmatcher/ignorefile"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	util "github.com/skevetter/devpod/pkg/util/hash"
 
 	"github.com/skevetter/log"
@@ -20,6 +21,14 @@ func CalculatePrebuildHash(
 	platform, architecture, contextPath, dockerfilePath, dockerfileContent string,
 	buildInfo *ImageBuildInfo,
 	log log.Logger) (string, error) {
+
+	log.WithFields(logrus.Fields{
+		"platform":       platform,
+		"architecture":   architecture,
+		"contextPath":    contextPath,
+		"dockerfilePath": dockerfilePath,
+	}).Debug("starting prebuild hash calculation")
+
 	parsedConfig := CloneDevContainerConfig(originalConfig)
 
 	if platform != "" {
@@ -57,9 +66,15 @@ func CalculatePrebuildHash(
 	// find out excludes from dockerignore
 	excludes, err := readDockerignore(contextPath, dockerfilePath)
 	if err != nil {
+		log.WithFields(logrus.Fields{"error": err}).Error("failed to read .dockerignore")
 		return "", errors.Errorf("Error reading .dockerignore: %v", err)
 	}
 	excludes = append(excludes, DevPodContextFeatureFolder+"/")
+
+	log.WithFields(logrus.Fields{
+		"excludes":    excludes,
+		"contextPath": contextPath,
+	}).Debug("docker ignore patterns loaded")
 
 	// find exact files to hash
 	// todo pass down target or search all
@@ -68,20 +83,28 @@ func CalculatePrebuildHash(
 	if buildInfo.Dockerfile != nil {
 		includes = buildInfo.Dockerfile.BuildContextFiles()
 	}
-	log.Debug("Build context files to use for hash are ", includes)
+	log.WithFields(logrus.Fields{
+		"files": includes,
+	}).Debug("build context files to use for hash")
 
 	// get hash of the context directory
 	contextHash, err := util.DirectoryHash(contextPath, excludes, includes)
 	if err != nil {
+		log.WithFields(logrus.Fields{"error": err, "contextPath": contextPath}).Error("failed to calculate context hash")
 		return "", err
 	}
 
-	log.Debugf("Prebuild hash from:")
-	log.Debugf("    Arch: %s", architecture)
-	log.Debugf("    Config: %s", string(configStr))
-	log.Debugf("    DockerfileContent: %s", dockerfileContent)
-	log.Debugf("    ContextHash: %s", contextHash)
-	return "devpod-" + hash.String(architecture + string(configStr) + dockerfileContent + contextHash)[:32], nil
+	finalHash := "devpod-" + hash.String(architecture + string(configStr) + dockerfileContent + contextHash)[:32]
+
+	log.WithFields(logrus.Fields{
+		"arch":              architecture,
+		"config":            string(configStr),
+		"dockerfileContent": dockerfileContent,
+		"contextHash":       contextHash,
+		"finalHash":         finalHash,
+	}).Debug("prebuild hash components")
+
+	return finalHash, nil
 }
 
 // readDockerignore reads the .dockerignore file in the context directory and

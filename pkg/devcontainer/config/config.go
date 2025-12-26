@@ -362,14 +362,25 @@ func (m *Mount) String() string {
 }
 
 func GetContextPath(parsedConfig *DevContainerConfig) string {
-	context := parsedConfig.GetContext()
-	dockerfilePath := parsedConfig.GetDockerfile()
-
 	configDir := path.Dir(filepath.ToSlash(parsedConfig.Origin))
-	if context != "" {
-		return filepath.FromSlash(path.Join(configDir, context))
-	} else if dockerfilePath != "" {
-		return filepath.FromSlash(path.Join(configDir, path.Dir(dockerfilePath)))
+
+	// Resolve path relative to config directory
+	resolvePath := func(p string) string {
+		if filepath.IsAbs(p) {
+			return p
+		}
+		return filepath.FromSlash(path.Join(configDir, p))
+	}
+
+	if context := parsedConfig.GetContext(); context != "" {
+		return resolvePath(context)
+	}
+
+	if dockerfilePath := parsedConfig.GetDockerfile(); dockerfilePath != "" {
+		if filepath.IsAbs(dockerfilePath) {
+			return filepath.Dir(dockerfilePath)
+		}
+		return resolvePath(path.Dir(dockerfilePath))
 	}
 
 	return configDir

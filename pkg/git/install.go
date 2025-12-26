@@ -60,7 +60,7 @@ func InstallBinary(log log.Logger) error {
 		return fmt.Errorf("couldn't install git")
 	}
 
-	log.Donef("Successfully installed git")
+	log.Donef("installed git")
 
 	return nil
 }

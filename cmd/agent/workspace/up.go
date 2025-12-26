@@ -147,12 +147,12 @@ func InitContentFolder(workspaceInfo *provider2.AgentWorkspaceInfo, log log.Logg
 	// check if workspace content folder exists
 	_, err := os.Stat(workspaceInfo.ContentFolder)
 	if err == nil {
-		log.Debugf("Workspace Folder already exists %s", workspaceInfo.ContentFolder)
+		log.WithFields(logrus.Fields{"path": workspaceInfo.ContentFolder}).Debug("workspace folder already exists")
 		return true, nil
 	}
 
 	// make content dir
-	log.Debugf("Create content folder %s", workspaceInfo.ContentFolder)
+	log.WithFields(logrus.Fields{"path": workspaceInfo.ContentFolder}).Debug("create content folder")
 	err = os.MkdirAll(workspaceInfo.ContentFolder, 0o777)
 	if err != nil {
 		return false, fmt.Errorf("make workspace folder %w", err)
@@ -195,7 +195,7 @@ func initWorkspace(ctx context.Context, cancel context.CancelFunc, workspaceInfo
 
 	// create debug logger
 	logger := tunnelserver.NewTunnelLogger(ctx, tunnelClient, debug)
-	logger.Debugf("Created logger")
+	logger.Debugf("created logger")
 
 	// this message serves as a ping to the client
 	_, err = tunnelClient.Ping(ctx, &tunnel.Empty{})
@@ -314,7 +314,7 @@ func prepareWorkspace(ctx context.Context, workspaceInfo *provider2.AgentWorkspa
 	if err != nil {
 		return err
 	} else if exists && !workspaceInfo.CLIOptions.Recreate {
-		log.Debugf("Workspace exists, skip downloading")
+		log.Debugf("workspace exists, skip downloading")
 		return nil
 	}
 

@@ -259,7 +259,7 @@ func (f *Framework) DevPodWorkspaceDelete(ctx context.Context, workspace string,
 	baseArgs := []string{"delete", workspace, "--ignore-not-found"}
 	baseArgs = append(baseArgs, extraArgs...)
 
-	return f.ExecCommand(ctx, false, true, fmt.Sprintf("Successfully deleted workspace '%s'", workspace), baseArgs)
+	return f.ExecCommand(ctx, false, true, fmt.Sprintf("deleted workspace %s", workspace), baseArgs)
 }
 
 func (f *Framework) SetupGPG(tmpDir string) error {

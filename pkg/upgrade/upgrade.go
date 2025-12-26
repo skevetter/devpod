@@ -6,6 +6,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/sirupsen/logrus"
 	versionpkg "github.com/skevetter/devpod/pkg/version"
 	"github.com/skevetter/log"
 
@@ -101,13 +102,17 @@ func Upgrade(flagVersion string, log log.Logger) error {
 			return err
 		}
 
-		log.Infof("Downloading version %s...", flagVersion)
+		log.WithFields(logrus.Fields{
+			"version": flagVersion,
+		}).Info("downloading version")
 		err = updater.UpdateTo(release, cmdPath)
 		if err != nil {
 			return err
 		}
 
-		log.Donef("Successfully updated devpod to version %s", flagVersion)
+		log.WithFields(logrus.Fields{
+			"version": flagVersion,
+		}).Done("updated devpod to version")
 		return nil
 	}
 
@@ -122,7 +127,7 @@ func Upgrade(flagVersion string, log log.Logger) error {
 
 	v := semver.MustParse(version)
 
-	log.Info("Downloading newest version...")
+	log.Info("downloading newest version")
 	latest, err := updater.UpdateSelf(v, githubSlug)
 	if err != nil {
 		return err
@@ -130,10 +135,16 @@ func Upgrade(flagVersion string, log log.Logger) error {
 
 	if latest.Version.Equals(v) {
 		// latest version is the same as current version. It means current binary is up to date.
-		log.Infof("Current binary is the latest version: %s", version)
+		log.WithFields(logrus.Fields{
+			"version": version,
+		}).Info("current binary is the latest version")
 	} else {
-		log.Donef("Successfully updated to version %s", latest.Version)
-		log.Infof("Release note: \n\n%s", latest.ReleaseNotes)
+		log.WithFields(logrus.Fields{
+			"version": latest.Version,
+		}).Done("updated to version")
+		log.WithFields(logrus.Fields{
+			"releaseNotes": latest.ReleaseNotes,
+		}).Info("release note")
 	}
 
 	return nil

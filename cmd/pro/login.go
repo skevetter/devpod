@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/blang/semver"
-	"github.com/mgutz/ansi"
+	"github.com/sirupsen/logrus"
 	proflags "github.com/skevetter/devpod/cmd/pro/flags"
 	providercmd "github.com/skevetter/devpod/cmd/provider"
 	"github.com/skevetter/devpod/pkg/config"
@@ -190,7 +190,9 @@ func (cmd *LoginCmd) Run(ctx context.Context, fullURL string, log log.Logger) er
 		if err != nil {
 			return err
 		}
-		log.Donef("Successfully logged into DevPod Pro instance %s", ansi.Color(fullURL, "white+b"))
+		log.WithFields(logrus.Fields{
+			"url": fullURL,
+		}).Done("logged into DevPod Pro instance")
 	}
 
 	// 3. Configure provider
@@ -201,7 +203,7 @@ func (cmd *LoginCmd) Run(ctx context.Context, fullURL string, log log.Logger) er
 		}
 	}
 
-	log.Donef("Successfully configured DevPod Pro")
+	log.Done("configured DevPod Pro")
 	return nil
 }
 

@@ -452,7 +452,7 @@ func (r *runner) prepareComposeBuildInfo(ctx context.Context, subCtx *config.Sub
 		if originalTarget != "" {
 			buildTarget = originalTarget
 		} else {
-			lastStageName, modifiedDockerfile, err := dockerfile.EnsureDockerfileHasFinalStageName(string(originalDockerfile), config.DockerfileDefaultTarget)
+			lastStageName, modifiedDockerfile, err := dockerfile.EnsureFinalStageName(string(originalDockerfile), config.DockerfileDefaultTarget)
 			if err != nil {
 				return nil, "", "", err
 			}

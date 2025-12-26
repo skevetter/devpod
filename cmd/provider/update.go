@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/cmd/flags"
 	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/workspace"
@@ -58,7 +59,9 @@ func (cmd *UpdateCmd) Run(ctx context.Context, devPodConfig *config.Config, args
 		return err
 	}
 
-	log.Default.Donef("Successfully updated provider %s", providerConfig.Name)
+	log.WithFields(logrus.Fields{
+		"providerName": providerConfig.Name,
+	}).Done("updated provider")
 	if cmd.Use {
 		err = ConfigureProvider(ctx, providerConfig, devPodConfig.DefaultContext, cmd.Options, false, false, false, nil, log.Default)
 		if err != nil {

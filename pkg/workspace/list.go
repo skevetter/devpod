@@ -112,7 +112,7 @@ func ListLocalWorkspaces(contextName string, skipPro bool, log log.Logger) ([]*p
 
 		workspaceConfig, err := providerpkg.LoadWorkspaceConfig(contextName, entry.Name())
 		if err != nil {
-			log.ErrorStreamOnly().Warnf("Couldn't load workspace %s: %v", entry.Name(), err)
+			log.WithFields(logrus.Fields{"workspace": entry.Name(), "error": err}).Warn("could not load workspace")
 			continue
 		}
 
@@ -143,10 +143,9 @@ func listProWorkspaces(ctx context.Context, devPodConfig *config.Config, owner p
 			continue
 		}
 
-		l := log.ErrorStreamOnly()
 		providerConfig, err := providerpkg.LoadProviderConfig(devPodConfig.DefaultContext, provider)
 		if err != nil {
-			l.Warnf("load provider config for provider \"%s\": %v", provider, err)
+			log.WithFields(logrus.Fields{"provider": provider, "error": err}).Warn("load provider config for provider")
 			continue
 		}
 
@@ -220,7 +219,7 @@ func listProWorkspacesForProvider(ctx context.Context, devPodConfig *config.Conf
 			rawSource := instance.Annotations[storagev1.DevPodWorkspaceSourceAnnotation]
 			s := providerpkg.ParseWorkspaceSource(rawSource)
 			if s == nil {
-				log.ErrorStreamOnly().Warnf("unable to parse workspace source \"%s\": %v", rawSource)
+				log.WithFields(logrus.Fields{"source": rawSource}).Warn("unable to parse workspace source")
 			} else {
 				source = *s
 			}

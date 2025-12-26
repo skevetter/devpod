@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	proflags "github.com/skevetter/devpod/cmd/pro/flags"
 	providercmd "github.com/skevetter/devpod/cmd/provider"
 	"github.com/skevetter/devpod/pkg/client/clientimplementation"
@@ -109,7 +110,10 @@ func (cmd *DeleteCmd) Run(ctx context.Context, args []string) error {
 		return fmt.Errorf("delete pro instance dir %w", err)
 	}
 
-	log.Default.Donef("Successfully deleted pro instance '%s'", proInstanceName)
+	log.WithFields(logrus.Fields{
+		"proInstanceName": proInstanceName,
+	})
+	log.Default.Done("deleted pro instance")
 	return nil
 }
 
@@ -131,20 +135,34 @@ func cleanupLocalWorkspaces(ctx context.Context, devPodConfig *config.Config, wo
 				defer wg.Done()
 				client, err := workspace.Get(ctx, devPodConfig, []string{w.ID}, true, owner, true, log)
 				if err != nil {
-					log.Errorf("Failed to get workspace %s: %v", w.ID, err)
+					log.WithFields(logrus.Fields{
+						"workspaceId": w.ID,
+						"err":         err,
+					})
+					log.Error("failed to get workspace")
 					return
 				}
 				// delete workspace folder
 				err = clientimplementation.DeleteWorkspaceFolder(devPodConfig.DefaultContext, client.Workspace(), client.WorkspaceConfig().SSHConfigPath, log)
 				if err != nil {
-					log.Errorf("Failed to remove workspace %s: %v", w.ID, err)
+					log.WithFields(logrus.Fields{
+						"workspaceId": w.ID,
+						"err":         err,
+					})
+					log.Error("failed to remove workspace")
 					return
 				}
-				log.Donef("Successfully removed workspace %s", w.ID)
+				log.WithFields(logrus.Fields{
+					"workspaceId": w.ID,
+				})
+				log.Done("removed workspace")
 			}(*w)
 		}
 
-		log.Infof("Waiting for %d workspace(s) to be removed locally", len(usedWorkspaces))
+		log.WithFields(logrus.Fields{
+			"count": len(usedWorkspaces),
+		})
+		log.Info("cleaning up local workspaces")
 		wg.Wait()
 	}
 }

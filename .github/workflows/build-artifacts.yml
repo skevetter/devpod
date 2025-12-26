@@ -4,22 +4,20 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
-    inputs:
-      platform:
-        description: platform to build artifacts
-        required: true
-        type: choice
-        options:
-          - all
-          - linux
-          - macos
-          - windows
-  pull_request:
+  pull_request_target:
+    paths:
+      - "cmd/**"
+      - "pkg/**"
+      - "desktop/**"
+      - "e2e/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "go.mod"
+      - "go.sum"
 
 jobs:
   build-linux:
     name: Build Linux Artifacts ${{ matrix.target }}
-    if: github.event_name == 'pull_request' || inputs.platform == 'all' || inputs.platform == 'linux'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -82,7 +80,6 @@ jobs:
   build-macos:
     name: Build MacOS Artifacts ${{ matrix.target }}
     needs: [build-linux]
-    if: github.event_name == 'pull_request'|| (github.event_name == 'push' && github.ref == 'refs/heads/main') || inputs.platform == 'all' || inputs.platform == 'macos'
     runs-on: macos-latest
     strategy:
       fail-fast: false
@@ -137,7 +134,6 @@ jobs:
   build-windows:
     name: Build Windows Artifacts
     needs: [build-linux]
-    if: github.event_name == 'pull_request'|| (github.event_name == 'push' && github.ref == 'refs/heads/main') || inputs.platform == 'all' || inputs.platform == 'windows'
     runs-on: windows-latest
 
     steps:

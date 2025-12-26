@@ -62,6 +62,8 @@ github.com/PaesslerAG/jsonpath v0.1.1 h1:c1/AToHQMVsduPAa4Vh6xp2U0evy4t8SWp8imEs
 github.com/PaesslerAG/jsonpath v0.1.1/go.mod h1:lVboNxFGal/VwW6d9JzIy56bUsYAP6tH/x80vjnCseY=
 github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d h1:licZJFw2RwpHMqeKTCYkitsPqHNxTmd4SNR5r94FGM8=
 github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d/go.mod h1:asat636LX7Bqt5lYEZ27JNDcqxfjdBQuJ/MM4CN/Lzo=
+github.com/agext/levenshtein v1.2.3 h1:YB2fHEn0UJagG8T1rrWknE3ZQzWM06O8AMAatNn7lmo=
+github.com/agext/levenshtein v1.2.3/go.mod h1:JEDfjyjHDjOF/1e4FlBE/PkbqA9OfWu2ki2W0IB5558=
 github.com/akutz/memconn v0.1.0 h1:NawI0TORU4hcOMsMr11g7vwlCdkYeLKXBcxWu2W/P8A=
 github.com/akutz/memconn v0.1.0/go.mod h1:Jo8rI7m0NieZyLI5e2CDlRdRqRRB4S7Xp77ukDjH+Fw=
 github.com/alexbrainman/sspi v0.0.0-20231016080023-1a75b4708caa h1:LHTHcTQiSGT7VVbI0o4wBRNQIgn917usHWOd6VAffYI=
@@ -611,10 +613,8 @@ github.com/shibumi/go-pathspec v1.3.0 h1:QUyMZhFo0Md5B8zV8x2tesohbb5kfbpTi9rBnKh
 github.com/shibumi/go-pathspec v1.3.0/go.mod h1:Xutfslp817l2I1cZvgcfeMQJG5QnU2lh5tVaaMCl3jE=
 github.com/sirupsen/logrus v1.9.3 h1:dueUQJ1C2q9oE3F7wvmSGAaVtTmUizReu6fjN8uqzbQ=
 github.com/sirupsen/logrus v1.9.3/go.mod h1:naHLuLoDiP4jHNo9R0sCBMtWGeIprob74mVsIT4qYEQ=
-github.com/skevetter/log v0.0.0-20251222080127-889c6376e435 h1:MozG6nSXGe/WsqrLEJegj2lSwnodDronIjq/MNF9WcA=
-github.com/skevetter/log v0.0.0-20251222080127-889c6376e435/go.mod h1:Aqjwx8xRSxBWtTYXK3EzxManSgYZl7FaSh8J5LvTAK0=
-github.com/skevetter/log v0.0.0-20251222215138-bea4685528b5 h1:1hoq93NiZfffXEg5FQoD35tr0gbpEM+jRgrQnKcxKvU=
-github.com/skevetter/log v0.0.0-20251222215138-bea4685528b5/go.mod h1:Aqjwx8xRSxBWtTYXK3EzxManSgYZl7FaSh8J5LvTAK0=
+github.com/skevetter/log v0.0.0-20251225081445-b5dfd11ce781 h1:TgxwN+W2c19aqSUvYGgJo6Sou+NKEzWfvHk54XR0SvY=
+github.com/skevetter/log v0.0.0-20251225081445-b5dfd11ce781/go.mod h1:Aqjwx8xRSxBWtTYXK3EzxManSgYZl7FaSh8J5LvTAK0=
 github.com/skevetter/tailscale v1.92.2 h1:9P3GFPhZJpnoHzgwk86kK1fNNB8ibOIgkkHqt3ARaRM=
 github.com/skevetter/tailscale v1.92.2/go.mod h1:dYlHLLo1QUXtOCpXiIe8fdkZVAcQZFnjfwTdXI25fDc=
 github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966 h1:JIAuq3EEf9cgbU6AtGPK4CTG3Zf6CKMNqf0MHTggAUA=

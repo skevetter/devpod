@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/command"
 	"github.com/skevetter/log"
 )
@@ -43,12 +44,12 @@ func InjectAndExecute(
 		return true, err
 	}
 
-	log.Debugf("execute inject script")
+	log.Debug("execute inject script")
 	if scriptParams.PreferAgentDownload {
-		log.Debugf("download agent from %s", scriptParams.DownloadURLs.Base)
+		log.WithFields(logrus.Fields{"url": scriptParams.DownloadURLs.Base}).Debug("download agent")
 	}
 
-	defer log.Debugf("done injecting")
+	defer log.Debug("done injecting")
 
 	// start script
 	stdinReader, stdinWriter, err := os.Pipe()
@@ -80,7 +81,7 @@ func InjectAndExecute(
 	execErrChan := make(chan error, 1)
 	go func() {
 		defer func() { _ = stdoutWriter.Close() }()
-		defer log.Debugf("done exec")
+		defer log.Debug("done exec")
 
 		err := exec(cancelCtx, scriptRawCode, stdinReader, stdoutWriter, delayedStderr)
 		if err != nil && !errors.Is(err, context.Canceled) && !strings.Contains(err.Error(), "signal: ") {
@@ -94,7 +95,7 @@ func InjectAndExecute(
 	injectChan := make(chan injectResult, 1)
 	go func() {
 		defer func() { _ = stdinWriter.Close() }()
-		defer log.Debugf("done inject")
+		defer log.Debug("done inject")
 
 		wasExecuted, err := inject(localFile, stdinWriter, stdin, stdoutReader, stdout, delayedStderr, timeout, log)
 		injectChan <- injectResult{
@@ -161,12 +162,12 @@ func inject(
 	if err != nil {
 		return false, err
 	}
-	log.Debugf("Received line after pong: %v", line)
+	log.WithFields(logrus.Fields{"line": line}).Debug("received line after pong")
 
 	lineStr := strings.TrimSpace(line)
 	if isInjectingOfBinaryNeeded(lineStr) {
-		log.Debugf("Inject binary")
-		defer log.Debugf("Done injecting binary")
+		log.Debugf("inject binary")
+		defer log.Debugf("done injecting binary")
 
 		fileReader, err := getFileReader(localFile, lineStr)
 		if err != nil {
@@ -181,7 +182,7 @@ func inject(
 		// start exec with command
 		return false, nil
 	} else if lineStr != "done" {
-		return false, fmt.Errorf("unexpected message during inject: %s", lineStr)
+		return false, fmt.Errorf("unexpected message during inject %s", lineStr)
 	}
 
 	if stdoutOut == nil {
@@ -211,7 +212,7 @@ func getFileReader(localFile LocalFile, lineStr string) (io.ReadCloser, error) {
 func performMutualHandshake(line string, stdin io.WriteCloser) error {
 	// check for string
 	if strings.TrimSpace(line) != "ping" {
-		return fmt.Errorf("unexpected start line: %v", line)
+		return fmt.Errorf("unexpected start line %v", line)
 	}
 
 	// send our response
@@ -243,7 +244,7 @@ func injectBinary(
 	if err != nil {
 		return err
 	} else if strings.TrimSpace(line) != "done" {
-		return fmt.Errorf("unexpected line during inject: %s", line)
+		return fmt.Errorf("unexpected line during inject %s", line)
 	}
 	return nil
 }

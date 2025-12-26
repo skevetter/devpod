@@ -1,0 +1,4 @@
+{
+  "name": "Node.js",
+  "image": "docker.io/library/node:lts-alpine"
+}

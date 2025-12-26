@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/compose"
 	"github.com/skevetter/devpod/pkg/devcontainer/build"
 	"github.com/skevetter/devpod/pkg/devcontainer/buildkit"
@@ -110,7 +111,7 @@ func (r *runner) buildAndExtendImage(
 	if parsedConfig.Config.GetTarget() != "" {
 		imageBase = parsedConfig.Config.GetTarget()
 	} else {
-		lastTargetName, modifiedDockerfileContents, err := dockerfile.EnsureDockerfileHasFinalStageName(string(dockerFileContent), config.DockerfileDefaultTarget)
+		lastTargetName, modifiedDockerfileContents, err := dockerfile.EnsureFinalStageName(string(dockerFileContent), config.DockerfileDefaultTarget)
 		if err != nil {
 			return nil, err
 		} else if modifiedDockerfileContents != "" {
@@ -138,15 +139,34 @@ func (r *runner) buildAndExtendImage(
 
 func (r *runner) getDockerfilePath(parsedConfig *config.DevContainerConfig) (string, error) {
 	if parsedConfig.Origin == "" {
-		return "", fmt.Errorf("couldn't find path where config was loaded from")
+		return "", fmt.Errorf("config origin path is empty, cannot resolve dockerfile location without knowing where devcontainer config was loaded from")
 	}
 
-	configFileDir := filepath.Dir(parsedConfig.Origin)
+	dockerfilePathFromConfig := parsedConfig.GetDockerfile()
+	var dockerfilePath string
+	if filepath.IsAbs(dockerfilePathFromConfig) {
+		r.Log.WithFields(logrus.Fields{
+			"dockerfilePath": dockerfilePathFromConfig,
+			"pathType":       "absolute",
+		}).Debug("using absolute dockerfile path")
+		dockerfilePath = dockerfilePathFromConfig
+	} else {
+		configFileDir := filepath.Dir(parsedConfig.Origin)
+		dockerfilePath = filepath.Join(configFileDir, dockerfilePathFromConfig)
+		r.Log.WithFields(logrus.Fields{
+			"dockerfilePath": dockerfilePathFromConfig,
+			"configDir":      configFileDir,
+			"pathType":       "relative",
+		}).Debug("using relative dockerfile path")
+	}
 
-	dockerfilePath := filepath.Join(configFileDir, parsedConfig.GetDockerfile())
+	r.Log.WithFields(logrus.Fields{
+		"finalPath": dockerfilePath,
+	}).Debug("resolved dockerfile path")
+
 	_, err := os.Stat(dockerfilePath)
 	if err != nil {
-		return "", fmt.Errorf("couldn't find Dockerfile at %s", dockerfilePath)
+		return "", fmt.Errorf("dockerfile not found at %s %w", dockerfilePath, err)
 	}
 
 	return dockerfilePath, nil

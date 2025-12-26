@@ -350,7 +350,7 @@ func (t *tunnelServer) SendResult(ctx context.Context, result *tunnel.Message) (
 }
 
 func (t *tunnelServer) Ping(context.Context, *tunnel.Empty) (*tunnel.Empty, error) {
-	t.log.Debug("Received ping from agent")
+	t.log.Debug("received ping from agent")
 	return &tunnel.Empty{}, nil
 }
 

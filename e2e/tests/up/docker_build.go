@@ -36,6 +36,13 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 				tempDir, err := setupWorkspace("tests/up/testdata/docker-with-multi-stage-build", initialDir, f)
 				framework.ExpectNoError(err)
 
+				err = f.DevPodUp(ctx, tempDir, "--debug")
+				framework.ExpectNoError(err)
+			}, ginkgo.SpecTimeout(framework.GetTimeout()*3))
+			ginkgo.It("should resolve localWorkspaceFolder variable in dockerfile path", func(ctx context.Context) {
+				tempDir, err := setupWorkspace("tests/up/testdata/docker-localworkspacefolder", initialDir, f)
+				framework.ExpectNoError(err)
+
 				// Wait for devpod workspace to come online (deadline: 30s)
 				err = f.DevPodUp(ctx, tempDir, "--debug")
 				framework.ExpectNoError(err)

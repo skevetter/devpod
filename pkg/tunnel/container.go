@@ -112,8 +112,8 @@ func (c *ContainerTunnel) Run(ctx context.Context, handler Handler, cfg *config.
 
 		defer func() { _ = sshClient.Close() }()
 		defer cancel()
-		defer c.log.Debugf("Connection to container closed")
-		c.log.Debugf("Successfully connected to host")
+		defer c.log.Debugf("connection to container closed")
+		c.log.Debugf("connected to host")
 
 		// update workspace remotely
 		if c.updateConfigInterval > 0 {
@@ -237,7 +237,7 @@ func (c *ContainerTunnel) runInContainer(ctx context.Context, sshClient *ssh.Cli
 		return err
 	}
 	defer func() { _ = containerClient.Close() }()
-	c.log.Debugf("Successfully connected to container")
+	c.log.Debugf("connected to container")
 
 	// start handler
 	return handler(cancelCtx, containerClient)

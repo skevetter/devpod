@@ -93,7 +93,9 @@ func (cmd *UseCmd) Run(ctx context.Context, providerName string) error {
 	}
 
 	// print success message
-	log.Default.Donef("Successfully switched default provider to '%s'", providerWithOptions.Config.Name)
+	log.WithFields(logrus.Fields{
+		"providerName": providerWithOptions.Config.Name,
+	}).Done("switched default provider")
 	return nil
 }
 
@@ -114,7 +116,9 @@ func ConfigureProvider(ctx context.Context, provider *provider2.ProviderConfig, 
 		return fmt.Errorf("save config %w", err)
 	}
 
-	log.Donef("Successfully configured provider '%s'", provider.Name)
+	log.WithFields(logrus.Fields{
+		"providerName": provider.Name,
+	}).Done("configured provider")
 	return nil
 }
 
