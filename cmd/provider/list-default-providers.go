@@ -19,7 +19,7 @@ type ListAvailableCmd struct {
 }
 
 func getDevpodProviderList() error {
-	req, err := http.NewRequest("GET", "https://api.github.com/users/loft-sh/repos", nil)
+	req, err := http.NewRequest("GET", "https://api.github.com/users/loft-sh/repos?per_page=100", nil)
 	if err != nil {
 		return err
 	}
