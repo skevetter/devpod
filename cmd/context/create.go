@@ -43,7 +43,7 @@ func NewCreateCmd(flags *flags.GlobalFlags) *cobra.Command {
 
 // Run runs the command logic
 func (cmd *CreateCmd) Run(ctx context.Context, context string) error {
-	devPodConfig, err := config.LoadConfig("", cmd.Provider)
+	devPodConfig, err := config.LoadConfig(cmd.Context, cmd.Provider)
 	if err != nil {
 		return err
 	} else if devPodConfig.Contexts[context] != nil {
