@@ -300,6 +300,24 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 				err = dtc.f.DevPodUp(ctx, tempDir)
 				framework.ExpectNoError(err)
 			}, ginkgo.SpecTimeout(framework.GetTimeout()))
+
+			ginkgo.It("resolves user variable in dockerfile", func(ctx context.Context) {
+				tempDir, err := dtc.setupAndUp(ctx, "tests/up/testdata/docker-user-variable-in-dockerfile")
+				framework.ExpectNoError(err)
+
+				out, err := dtc.execSSH(ctx, tempDir, "whoami")
+				framework.ExpectNoError(err)
+				framework.ExpectEqual(strings.TrimSpace(out), "testuser")
+			}, ginkgo.SpecTimeout(framework.GetTimeout()))
+
+			ginkgo.It("preserves user when feature is present with variable", func(ctx context.Context) {
+				tempDir, err := dtc.setupAndUp(ctx, "tests/up/testdata/docker-user-variable-with-feature")
+				framework.ExpectNoError(err)
+
+				out, err := dtc.execSSH(ctx, tempDir, "whoami")
+				framework.ExpectNoError(err)
+				framework.ExpectEqual(strings.TrimSpace(out), "ubuntu")
+			}, ginkgo.SpecTimeout(framework.GetTimeout()))
 		})
 
 		ginkgo.Context("dotfiles", func() {
