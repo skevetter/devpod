@@ -362,3 +362,17 @@ func (f *Framework) DevPodContextDelete(ctx context.Context, name string, extraA
 	}
 	return nil
 }
+
+func (f *Framework) DevPodIDEUse(ctx context.Context, ide string, extraArgs ...string) error {
+	baseArgs := []string{"ide", "use", ide}
+	err := f.ExecCommand(ctx, false, true, "", append(baseArgs, extraArgs...))
+	if err != nil {
+		return fmt.Errorf("devpod ide use failed %s", err.Error())
+	}
+	return nil
+}
+
+func (f *Framework) DevPodIDEList(ctx context.Context, extraArgs ...string) (string, error) {
+	baseArgs := []string{"ide", "list"}
+	return f.ExecCommandOutput(ctx, append(baseArgs, extraArgs...))
+}
