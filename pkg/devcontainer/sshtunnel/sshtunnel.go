@@ -105,15 +105,16 @@ func ExecuteCommand(
 			errChan <- fmt.Errorf("create ssh client %w", err)
 			return
 		}
+		log.Debugf("SSH client created")
 		defer func() {
 			_ = sshClient.Close()
 			log.Debug("SSH client closed")
 		}()
-		log.Debugf("SSH client created")
 		var sess *ssh.Session
 		timeout := time.After(60 * time.Second)
 		ticker := time.NewTicker(500 * time.Millisecond)
 		defer ticker.Stop()
+
 		for {
 			select {
 			case <-timeout:
