@@ -164,11 +164,11 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 			f, err := setupDockerProvider(initialDir+"/bin", "docker")
 			framework.ExpectNoError(err)
 
-			name := "pr3"
+			name := "pr100"
 			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), name)
 
 			// Wait for devpod workspace to come online (deadline: 30s)
-			err = f.DevPodUp(ctx, "github.com/skevetter/devpod@pull/3/head")
+			err = f.DevPodUp(ctx, "github.com/skevetter/devpod@pull/100/head")
 			framework.ExpectNoError(err)
 		})
 
