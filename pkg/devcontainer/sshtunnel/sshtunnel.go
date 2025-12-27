@@ -87,11 +87,11 @@ func ExecuteCommand(
 	if err != nil {
 		return nil, err
 	}
+	defer func() { _ = gRPCConnStdoutWriter.Close() }()
 	gRPCConnStdinReader, gRPCConnStdinWriter, err := os.Pipe()
 	if err != nil {
 		return nil, err
 	}
-	defer func() { _ = gRPCConnStdoutWriter.Close() }()
 	defer func() { _ = gRPCConnStdinWriter.Close() }()
 
 	// connect to container
@@ -105,16 +105,15 @@ func ExecuteCommand(
 			errChan <- fmt.Errorf("create ssh client %w", err)
 			return
 		}
-		defer log.Debugf("connection to SSH server closed")
-		defer func() { _ = sshClient.Close() }()
-
+		defer func() {
+			_ = sshClient.Close()
+			log.Debug("SSH client closed")
+		}()
 		log.Debugf("SSH client created")
-		log.Debugf("waiting for SSH server to be ready")
 		var sess *ssh.Session
 		timeout := time.After(60 * time.Second)
 		ticker := time.NewTicker(500 * time.Millisecond)
 		defer ticker.Stop()
-
 		for {
 			select {
 			case <-timeout:
@@ -126,17 +125,20 @@ func ExecuteCommand(
 			case <-ticker.C:
 				var err error
 				sess, err = sshClient.NewSession()
-				if err == nil {
-					log.Debug("SSH session created")
-					goto sessionReady
+				if err != nil {
+					log.WithFields(logrus.Fields{"error": err}).Debug("SSH server not ready")
+					continue
 				}
-				log.WithFields(logrus.Fields{"error": err}).Debug("SSH server not ready")
+				goto sessionReady
 			}
 		}
 
 	sessionReady:
-		defer func() { _ = sess.Close() }()
-
+		log.Debug("SSH session created")
+		defer func() {
+			_ = sess.Close()
+			log.Debug("SSH session closed")
+		}()
 		identityAgent := devsshagent.GetSSHAuthSocket()
 		if identityAgent != "" {
 			log.WithFields(logrus.Fields{"socket": identityAgent}).Debug("forwarding SSH agent")
@@ -149,20 +151,11 @@ func ExecuteCommand(
 				errChan <- fmt.Errorf("request agent forwarding failed %w", err)
 			}
 		}
-
-		stdoutWriter := log.Writer(logrus.InfoLevel, false)
-		defer func() { _ = stdoutWriter.Close() }()
-
-		var stderrBuf bytes.Buffer
-		stderrWriter := io.MultiWriter(&stderrBuf, &tunnelLogWriter{logger: log})
+		tunnelLogWriter := &tunnelLogWriter{logger: log}
 		log.WithFields(logrus.Fields{"command": command}).Debug("running agent command in SSH tunnel")
-		err = devssh.Run(ctx, sshClient, command, gRPCConnStdinReader, gRPCConnStdoutWriter, stderrWriter, nil)
+		err = devssh.Run(ctx, sshClient, command, gRPCConnStdinReader, gRPCConnStdoutWriter, tunnelLogWriter, nil)
 		if err != nil {
-			if stderrBuf.Len() > 0 {
-				errChan <- fmt.Errorf("run agent command %w\n%s", err, stderrBuf.String())
-			} else {
-				errChan <- fmt.Errorf("run agent command %w", err)
-			}
+			errChan <- fmt.Errorf("run agent command %w", err)
 		} else {
 			errChan <- nil
 		}
