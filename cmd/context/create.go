@@ -15,7 +15,7 @@ import (
 
 // CreateCmd holds the create cmd flags
 type CreateCmd struct {
-	flags.GlobalFlags
+	*flags.GlobalFlags
 
 	Options []string
 }
@@ -23,7 +23,7 @@ type CreateCmd struct {
 // NewCreateCmd creates a new command
 func NewCreateCmd(flags *flags.GlobalFlags) *cobra.Command {
 	cmd := &CreateCmd{
-		GlobalFlags: *flags,
+		GlobalFlags: flags,
 	}
 	createCmd := &cobra.Command{
 		Use:   "create",

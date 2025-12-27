@@ -16,7 +16,7 @@ import (
 
 // ListCmd holds the list cmd flags
 type ListCmd struct {
-	flags.GlobalFlags
+	*flags.GlobalFlags
 
 	Output string
 }
@@ -24,7 +24,7 @@ type ListCmd struct {
 // NewListCmd creates a new command
 func NewListCmd(flags *flags.GlobalFlags) *cobra.Command {
 	cmd := &ListCmd{
-		GlobalFlags: *flags,
+		GlobalFlags: flags,
 	}
 	listCmd := &cobra.Command{
 		Use:     "list",

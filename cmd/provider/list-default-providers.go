@@ -15,7 +15,7 @@ import (
 
 // ListAvailableCmd holds the list cmd flags
 type ListAvailableCmd struct {
-	flags.GlobalFlags
+	*flags.GlobalFlags
 }
 
 func getDevpodProviderList() error {
@@ -54,7 +54,7 @@ func getDevpodProviderList() error {
 // NewListAvailableCmd creates a new command
 func NewListAvailableCmd(flags *flags.GlobalFlags) *cobra.Command {
 	cmd := &ListAvailableCmd{
-		GlobalFlags: *flags,
+		GlobalFlags: flags,
 	}
 	listAvailableCmd := &cobra.Command{
 		Use:   "list-available",
