@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -89,7 +90,7 @@ func (cmd *InstallDotfilesCmd) Run(ctx context.Context) error {
 	return setupDotfiles(logger)
 }
 
-var scriptLocations = []string{
+var installScriptPaths = []string{
 	"./install.sh",
 	"./install",
 	"./bootstrap.sh",
@@ -101,29 +102,40 @@ var scriptLocations = []string{
 }
 
 func setupDotfiles(logger log.Logger) error {
-	for _, command := range scriptLocations {
-		logger.Debugf("Trying executing %s", command)
-		writer := logger.Writer(logrus.InfoLevel, false)
+	installScriptPaths = slices.DeleteFunc(installScriptPaths, func(path string) bool {
+		if _, err := os.Stat(path); os.IsNotExist(err) {
+			return true
+		}
 
-		err := ensureExecutable(command)
+		return false
+	})
+
+	for _, installScriptPath := range installScriptPaths {
+		writer := logger.Writer(logrus.InfoLevel, false)
+		err := ensureExecutable(installScriptPath)
 		if err != nil {
-			logger.Infof("Failed to make install script %s executable: %v", command, err)
-			logger.Debug("Trying next location")
+			logger.WithFields(logrus.Fields{
+				"scriptPath": installScriptPath,
+				"error":      err,
+			}).Debug("install script not found")
 			continue
 		}
 
-		scriptCmd := exec.Command(command)
+		logger.WithFields(logrus.Fields{
+			"scriptPath": installScriptPath,
+		}).Debug("executing dotfile install script")
+		scriptCmd := exec.Command(installScriptPath)
 		scriptCmd.Stdout = writer
 		scriptCmd.Stderr = writer
-		err = scriptCmd.Run()
-		if err != nil {
-			logger.Infof("Execution of %s was unsuccessful: %v", command, err)
-			logger.Debug("Trying next location")
-
+		if err := scriptCmd.Run(); err != nil {
+			logger.WithFields(logrus.Fields{
+				"error": err,
+			}).Debug("script execution failed")
 			continue
 		}
 
-		// we successfully executed one of the commands, let's exit
+		// exit after first successful script
+		logger.Debug("install script executed")
 		return nil
 	}
 
