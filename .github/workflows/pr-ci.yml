@@ -1,0 +1,38 @@
+name: Pull Request CI Checks
+
+on:
+  pull_request:
+
+jobs:
+  pre-commit:
+    name: Pre-commit Checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: biomejs/setup-biome@v2
+
+      - uses: actions/setup-python@v6
+        with:
+          cache: pip
+          python-version: 3.x
+
+      - run: pip install -r requirements.txt
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - uses: golangci/golangci-lint-action@v9
+        with:
+          version: latest
+          install-only: true
+
+      - run: go install golang.org/x/tools/cmd/goimports@latest
+
+      - uses: actions/cache@v5
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
+
+      - run: pre-commit run --all-files
