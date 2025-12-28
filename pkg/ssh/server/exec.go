@@ -8,9 +8,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/loft-sh/ssh"
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/log"
+	"github.com/skevetter/ssh"
 )
 
 func execNonPTY(sess ssh.Session, cmd *exec.Cmd, log log.Logger) (err error) {

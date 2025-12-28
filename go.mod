@@ -33,7 +33,6 @@ require (
 	github.com/loft-sh/api/v4 v4.3.0-devpod.alpha.31
 	github.com/loft-sh/apiserver v0.0.0-20250910060242-4b9f3ffe0646
 	github.com/loft-sh/programming-language-detection v0.0.5
-	github.com/loft-sh/ssh v0.0.5
 	github.com/mattn/go-isatty v0.0.20
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d
 	github.com/moby/buildkit v0.26.3
@@ -47,6 +46,7 @@ require (
 	github.com/rhysd/go-github-selfupdate v1.2.3
 	github.com/sirupsen/logrus v1.9.3
 	github.com/skevetter/log v0.0.0-20251225081445-b5dfd11ce781
+	github.com/skevetter/ssh v0.0.6
 	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
