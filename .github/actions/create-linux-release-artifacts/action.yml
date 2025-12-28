@@ -33,6 +33,18 @@ inputs:
 runs:
   using: composite
   steps:
+    # https://github.com/lotsgon/fm-skin-builder/commit/1f74644e2c604fc82886e48ce7f24173a4898c9f#diff-f02595ea0afb5cadd78ae828debf4e83e76ddc68642a1a4c7d9e1f8e61ab2192
+    - name: install required packages
+      shell: bash
+      run: |
+        sudo apt-get update
+        # libfuse2 required for AppImage bundling (linuxdeploy needs it)
+        # file package needed by linuxdeploy for file type detection
+        # Update ca-certificates to ensure linuxdeploy can be downloaded
+        sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf libfuse2 file
+        sudo apt-get install --reinstall -y ca-certificates
+        sudo update-ca-certificates -f
+
     - name: build tauri app
       uses: tauri-apps/tauri-action@v0.6
       with:
