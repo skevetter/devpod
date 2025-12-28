@@ -11,3 +11,4 @@
 /package-lock.json
 /tagsvendor/
 node_modules/
+desktop/src-tauri/gen/schemas
