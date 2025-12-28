@@ -157,10 +157,18 @@ func ExecuteCommand(
 			_ = tunnelLogWriter.Close()
 			log.Debug("tunnel log writer closed")
 		}()
+
+		var stderrBuf bytes.Buffer
+		tunnelWriter := io.MultiWriter(&stderrBuf, tunnelLogWriter)
+
 		log.WithFields(logrus.Fields{"command": command}).Debug("running agent command in SSH tunnel")
-		err = devssh.Run(ctx, sshClient, command, gRPCConnStdinReader, gRPCConnStdoutWriter, tunnelLogWriter, nil)
+		err = devssh.Run(ctx, sshClient, command, gRPCConnStdinReader, gRPCConnStdoutWriter, tunnelWriter, nil)
 		if err != nil {
-			errChan <- fmt.Errorf("run agent command %w", err)
+			if stderrBuf.Len() > 0 {
+				errChan <- fmt.Errorf("run agent command failed %s", stderrBuf.String())
+			} else {
+				errChan <- fmt.Errorf("run agent command failed %w", err)
+			}
 		} else {
 			errChan <- nil
 		}
