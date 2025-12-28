@@ -152,13 +152,9 @@ func ExecuteCommand(
 				errChan <- fmt.Errorf("request agent forwarding failed %w", err)
 			}
 		}
-		tunnelLogWriter := &tunnelLogWriter{logger: log}
-		defer func() {
-			_ = tunnelLogWriter.Close()
-			log.Debug("tunnel log writer closed")
-		}()
 
 		var stderrBuf bytes.Buffer
+		tunnelLogWriter := &tunnelLogWriter{logger: log}
 		tunnelWriter := io.MultiWriter(&stderrBuf, tunnelLogWriter)
 
 		log.WithFields(logrus.Fields{"command": command}).Debug("running agent command in SSH tunnel")
@@ -223,31 +219,6 @@ func (w *tunnelLogWriter) Write(p []byte) (int, error) {
 	}
 
 	return len(p), nil
-}
-
-func (w *tunnelLogWriter) Close() error {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-
-	// Flush remaining data in the buffer
-	remaining := strings.TrimSpace(w.buffer.String())
-	if remaining == "" {
-		return nil
-	}
-	lines := strings.SplitSeq(remaining, "\n")
-	for line := range lines {
-		line = strings.TrimSpace(line)
-		if line == "" {
-			continue
-		}
-		if matched, level := w.extractLogLevel(line); matched {
-			w.logger.Print(level, line)
-		} else {
-			w.logger.Debug(line)
-		}
-	}
-
-	return nil
 }
 
 func (w *tunnelLogWriter) extractLogLevel(line string) (bool, logrus.Level) {
