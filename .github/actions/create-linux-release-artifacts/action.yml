@@ -33,36 +33,6 @@ inputs:
 runs:
   using: composite
   steps:
-    # https://github.com/lotsgon/fm-skin-builder/commit/1f74644e2c604fc82886e48ce7f24173a4898c9f#diff-f02595ea0afb5cadd78ae828debf4e83e76ddc68642a1a4c7d9e1f8e61ab2192
-    - name: install required packages
-      shell: bash
-      run: |
-        sudo apt-get update
-        # libfuse2 required for AppImage bundling (linuxdeploy needs it)
-        # file package needed by linuxdeploy for file type detection
-        # Update ca-certificates to ensure linuxdeploy can be downloaded
-        sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf libfuse2 file
-        sudo apt-get install --reinstall -y ca-certificates
-        sudo update-ca-certificates -f
-
-    - name: build tauri app
-      uses: tauri-apps/tauri-action@v0.6
-      with:
-        releaseId: ${{ inputs.release_id }}
-        projectPath: "./desktop"
-        args: "--target ${{ inputs.target }} --config src-tauri/tauri-flatpak.conf.json --bundles appimage,deb,updater"
-        includeUpdaterJson: true
-      env:
-        GITHUB_TOKEN: ${{ inputs.github_token }}
-        TAURI_SIGNING_PRIVATE_KEY: ${{ inputs.tauri_private_key }}
-        TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ inputs.tauri_key_password }}
-        SIGN: ${{ inputs.app_image_sign }}
-        SIGN_KEY: ${{ inputs.app_image_sign_key }}
-        APPIMAGETOOL_SIGN_PASSPHRASE: ${{ inputs.app_image_sign_passphrase }}
-        # resolves linuxdeploy build failure issue
-        # https://github.com/tauri-apps/tauri/issues/8929
-        NO_STRIP: true
-
     - name: build linux tar.gz
       shell: bash
       run: |

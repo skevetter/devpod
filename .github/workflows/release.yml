@@ -129,6 +129,17 @@ jobs:
           output_path: release
           sidecar_path: desktop/src-tauri/bin
 
+      - name: build desktop app
+        if: matrix.settings.target == 'x86_64-unknown-linux-gnu'
+        uses: tauri-apps/tauri-action@v0.6
+        with:
+          projectPath: ./desktop
+          args: --target ${{ matrix.settings.target }} --config src-tauri/tauri-flatpak.conf.json --bundles appimage,deb,updater
+          includeUpdaterJson: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+
       - name: create linux release artifacts
         if: matrix.settings.cli_only == false
         uses: ./.github/actions/create-linux-release-artifacts
