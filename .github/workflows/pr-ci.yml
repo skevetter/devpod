@@ -49,3 +49,21 @@ jobs:
       - uses: 1Password/check-signed-commits-action@v1
 
       - uses: wagoid/commitlint-github-action@v6
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: jlumbroso/free-disk-space@v1.3.1
+
+      - uses: actions/checkout@v6
+
+      - name: setup Go
+        uses: magnetikonline/action-golang-cache@v5
+        with:
+          go-version-file: go.mod
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v9
+        with:
+          version: latest
