@@ -154,8 +154,7 @@ func ExecuteCommand(
 		}
 
 		var stderrBuf bytes.Buffer
-		tunnelLogWriter := &tunnelLogWriter{logger: log}
-		tunnelWriter := io.MultiWriter(&stderrBuf, tunnelLogWriter)
+		tunnelWriter := io.MultiWriter(&stderrBuf, &tunnelLogWriter{logger: log})
 
 		log.WithFields(logrus.Fields{"command": command}).Debug("running agent command in SSH tunnel")
 		err = devssh.Run(ctx, sshClient, command, gRPCConnStdinReader, gRPCConnStdoutWriter, tunnelWriter, nil)
