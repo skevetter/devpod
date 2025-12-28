@@ -47,6 +47,9 @@ runs:
         SIGN: ${{ inputs.app_image_sign }}
         SIGN_KEY: ${{ inputs.app_image_sign_key }}
         APPIMAGETOOL_SIGN_PASSPHRASE: ${{ inputs.app_image_sign_passphrase }}
+        # resolves linuxdeploy build failure issue
+        # https://github.com/tauri-apps/tauri/issues/8929
+        NO_STRIP: true
 
     - name: build linux tar.gz
       shell: bash

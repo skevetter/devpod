@@ -61,6 +61,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          # resolves linuxdeploy build failure issue
+          # https://github.com/tauri-apps/tauri/issues/8929
+          NO_STRIP: true
           # TAURI_SIGNING_PRIVATE_KEY_PASSWORD:
 
       - name: upload CLI artifacts
