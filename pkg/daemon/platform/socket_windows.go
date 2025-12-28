@@ -7,7 +7,7 @@ import (
 	"net"
 	"time"
 
-	"gopkg.in/natefinch/npipe.v2"
+	"github.com/Microsoft/go-winio"
 )
 
 func GetSocketAddr(providerName string) string {
@@ -15,9 +15,10 @@ func GetSocketAddr(providerName string) string {
 }
 
 func Dial(addr string) (net.Conn, error) {
-	return npipe.DialTimeout(addr, 2*time.Second)
+	timeout := 2 * time.Second
+	return winio.DialPipe(addr, &timeout)
 }
 
 func listen(addr string) (net.Listener, error) {
-	return npipe.Listen(addr)
+	return winio.ListenPipe(addr, nil)
 }
