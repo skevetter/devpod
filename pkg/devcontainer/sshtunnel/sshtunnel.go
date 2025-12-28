@@ -153,6 +153,10 @@ func ExecuteCommand(
 			}
 		}
 		tunnelLogWriter := &tunnelLogWriter{logger: log}
+		defer func() {
+			_ = tunnelLogWriter.Close()
+			log.Debug("tunnel log writer closed")
+		}()
 		log.WithFields(logrus.Fields{"command": command}).Debug("running agent command in SSH tunnel")
 		err = devssh.Run(ctx, sshClient, command, gRPCConnStdinReader, gRPCConnStdoutWriter, tunnelLogWriter, nil)
 		if err != nil {
@@ -211,6 +215,31 @@ func (w *tunnelLogWriter) Write(p []byte) (int, error) {
 	}
 
 	return len(p), nil
+}
+
+func (w *tunnelLogWriter) Close() error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	// Flush remaining data in the buffer
+	remaining := strings.TrimSpace(w.buffer.String())
+	if remaining == "" {
+		return nil
+	}
+	lines := strings.SplitSeq(remaining, "\n")
+	for line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		if matched, level := w.extractLogLevel(line); matched {
+			w.logger.Print(level, line)
+		} else {
+			w.logger.Debug(line)
+		}
+	}
+
+	return nil
 }
 
 func (w *tunnelLogWriter) extractLogLevel(line string) (bool, logrus.Level) {
