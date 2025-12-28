@@ -22,7 +22,7 @@ import {
   useSortProWorkspaces,
   useStopWorkspaceModal,
 } from "@/lib"
-import { Routes } from "@/routes"
+import { Routes } from "@/routes.constants"
 import {
   Button,
   Container,

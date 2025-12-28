@@ -5,7 +5,7 @@ import { TViewTitle } from "../../components"
 import { getAction, useWorkspaceStore } from "../../contexts"
 import { ArrowLeft } from "../../icons"
 import { exists, getActionDisplayName } from "../../lib"
-import { Routes } from "../../routes"
+import { Routes } from "../../routes.constants"
 
 export function useActionTitle(): TViewTitle | null {
   const { store } = useWorkspaceStore()

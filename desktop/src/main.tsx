@@ -9,7 +9,7 @@ import "@xterm/xterm/css/xterm.css"
 import "./assets/fonts.css"
 import { ThemeProvider } from "./Theme"
 import { SettingsProvider } from "./contexts"
-import { router } from "./routes"
+import { router } from "./routes.constants"
 import { client } from "./client"
 import { ColorModeScript } from "@chakra-ui/react"
 

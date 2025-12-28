@@ -28,7 +28,7 @@ import {
   useWorkspaceStore,
 } from "../contexts"
 import { exists, hasCapability, useLoginProModal } from "../lib"
-import { Routes } from "../routes"
+import { Routes } from "../routes.constants"
 import { useChangelogModal } from "./useChangelogModal"
 
 export function useAppReady() {

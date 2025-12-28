@@ -1,5 +1,5 @@
 import { RECOMMENDED_PROVIDER_SOURCES } from "../../../constants"
-import { Routes } from "../../../routes"
+import { Routes } from "../../../routes.constants"
 import { TNamedProvider, TProviderID, TWorkspaceID } from "../../../types"
 
 export const FieldName = {

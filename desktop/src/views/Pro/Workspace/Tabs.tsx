@@ -5,7 +5,7 @@ import { Logs } from "./Logs"
 import { Configuration } from "./Configuration"
 import { Tab, TabList, TabPanel, TabPanels, Tabs, useColorModeValue } from "@chakra-ui/react"
 import { useSearchParams } from "react-router-dom"
-import { Routes } from "@/routes"
+import { Routes } from "@/routes.constants"
 
 const DETAILS_TABS: Readonly<{
   key: TProInstanceDetail

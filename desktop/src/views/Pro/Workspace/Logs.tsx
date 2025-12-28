@@ -6,7 +6,7 @@ import { CheckCircle, ExclamationCircle, ExclamationTriangle } from "@/icons"
 import EmptyImage from "@/images/empty_default.svg"
 import EmptyDarkImage from "@/images/empty_default_dark.svg"
 import { exists, useDownloadLogs } from "@/lib"
-import { Routes } from "@/routes"
+import { Routes } from "@/routes.constants"
 import { DownloadIcon } from "@chakra-ui/icons"
 import {
   Accordion,

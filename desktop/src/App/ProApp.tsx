@@ -3,7 +3,7 @@ import { ProviderProvider } from "@/contexts/DevPodContext/DevPodProvider"
 import { BellDuotone, CogDuotone, LockDuotone } from "@/icons"
 import { TConnectionStatus, useConnectionStatus } from "@/lib"
 import { QueryKeys } from "@/queryKeys"
-import { Routes } from "@/routes"
+import { Routes } from "@/routes.constants"
 import { TPlatformVersionInfo } from "@/types"
 import {
   Avatar,

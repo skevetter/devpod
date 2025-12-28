@@ -6,7 +6,7 @@ import { removeWorkspaceAction, stopWorkspaceAction } from "@/contexts/DevPodCon
 import { Stack3D } from "@/icons"
 import { exists, useSelection, useSortWorkspaces } from "@/lib"
 import { DEFAULT_SORT_WORKSPACE_MODE } from "@/lib/sortWorkspaceConstants"
-import { Routes } from "@/routes"
+import { Routes } from "@/routes.constants"
 import { TProvider, TProviderID, TWorkspace } from "@/types"
 import {
   Box,

@@ -17,7 +17,7 @@ import {
   safeMaxName,
   Source,
 } from "@/lib"
-import { Routes } from "@/routes"
+import { Routes } from "@/routes.constants"
 import { Box, Heading, HStack, VStack } from "@chakra-ui/react"
 import { getProjectNamespace, NewResource, Resources } from "@loft-enterprise/client"
 import { ManagementV1DevPodWorkspaceInstance } from "@loft-enterprise/client/gen/models/managementV1DevPodWorkspaceInstance"

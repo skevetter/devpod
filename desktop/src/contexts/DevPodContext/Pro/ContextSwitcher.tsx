@@ -1,6 +1,6 @@
 import { Close, Connect, DevpodWordmark, Ellipsis, Folder } from "@/icons"
 import { Result, getDisplayName, useLoginProModal } from "@/lib"
-import { Routes } from "@/routes"
+import { Routes } from "@/routes.constants"
 import { TProInstance } from "@/types"
 import { useDeleteProviderModal } from "@/views/Providers"
 import { ArrowUpDownIcon, CheckIcon } from "@chakra-ui/icons"

@@ -38,7 +38,7 @@ import { useProvider, useProviders, useWorkspace, useWorkspaces } from "../../..
 import { Plus } from "../../../icons"
 import { CommunitySvg, ProviderPlaceholderSvg } from "../../../images"
 import { canHealthCheck, exists, getKeys, isEmpty, useFormErrors } from "../../../lib"
-import { Routes } from "../../../routes"
+import { Routes } from "../../../routes.constants"
 import { TIDE, TWorkspace, TWorkspaceSourceType } from "../../../types"
 import { useIDEs } from "../../../useIDEs"
 import { useSetupProviderModal } from "../../Providers"

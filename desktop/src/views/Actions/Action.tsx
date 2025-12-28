@@ -7,7 +7,7 @@ import { useNavigate } from "react-router"
 import { useParams, useSearchParams } from "react-router-dom"
 import { TerminalSearchBar, ToolbarActions, useStreamingTerminal } from "@/components"
 import { useAction } from "@/contexts"
-import { Routes } from "@/routes"
+import { Routes } from "@/routes.constants"
 import { TSearchOptions } from "@/components/Terminal/useTerminalSearch"
 
 export function Action() {

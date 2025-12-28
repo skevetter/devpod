@@ -12,7 +12,7 @@ import {
   useStopWorkspaceModal,
 } from "@/lib"
 import { useStoreTroubleshoot } from "@/lib/useStoreTroubleshoot"
-import { Routes } from "@/routes"
+import { Routes } from "@/routes.constants"
 import { Card, CardBody, CardHeader, useColorModeValue } from "@chakra-ui/react"
 import { useCallback, useMemo } from "react"
 import { useNavigate } from "react-router"

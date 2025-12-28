@@ -5,7 +5,7 @@ import { HiClock, HiOutlineCode } from "react-icons/hi"
 import { useNavigate } from "react-router"
 import { IconTag } from "@/components"
 import { Stack3D } from "@/icons"
-import { Routes } from "@/routes"
+import { Routes } from "@/routes.constants"
 
 type TWorkspaceCardHeaderProps = Readonly<{
   id: string

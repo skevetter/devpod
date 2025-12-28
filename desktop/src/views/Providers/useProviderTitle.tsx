@@ -4,7 +4,7 @@ import { useMatch, useNavigate } from "react-router"
 import { TViewTitle } from "../../components"
 import { ArrowLeft, Plus } from "../../icons"
 import { exists } from "../../lib"
-import { Routes } from "../../routes"
+import { Routes } from "../../routes.constants"
 import { useSetupProviderModal } from "./useSetupProviderModal"
 
 export function useProviderTitle(): TViewTitle | null {

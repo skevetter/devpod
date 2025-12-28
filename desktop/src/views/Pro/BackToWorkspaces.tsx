@@ -1,5 +1,5 @@
 import { useProContext } from "@/contexts"
-import { Routes } from "@/routes"
+import { Routes } from "@/routes.constants"
 import { ChevronLeftIcon } from "@chakra-ui/icons"
 import { Link } from "@chakra-ui/react"
 import { Link as RouterLink } from "react-router-dom"

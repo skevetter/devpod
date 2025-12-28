@@ -7,7 +7,7 @@ import {
   useLoginProModal,
   useReLoginProModal,
 } from "@/lib"
-import { Routes } from "@/routes"
+import { Routes } from "@/routes.constants"
 import { TProID, TProInstance, TProInstances, TProviderConfig } from "@/types"
 import { useDeleteProviderModal } from "@/views/Providers/useDeleteProviderModal"
 import { ChevronDownIcon, CloseIcon } from "@chakra-ui/icons"

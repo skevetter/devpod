@@ -15,7 +15,7 @@ import {
   useStopWorkspaceModal,
 } from "@/lib"
 import { useStoreTroubleshoot } from "@/lib/useStoreTroubleshoot"
-import { Routes } from "@/routes"
+import { Routes } from "@/routes.constants"
 import { Box, Center, Image, Spinner, Text, VStack, useColorMode } from "@chakra-ui/react"
 import { useMutation } from "@tanstack/react-query"
 import { useCallback, useEffect, useMemo } from "react"

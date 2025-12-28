@@ -8,7 +8,7 @@ import {
   WorkspaceStoreProvider,
   useChangeSettings,
 } from "../contexts"
-import { Routes } from "../routes"
+import { Routes } from "../routes.constants"
 import { OSSApp } from "./OSSApp"
 import { ProApp } from "./ProApp"
 import { usePreserveLocation } from "./usePreserveLocation"

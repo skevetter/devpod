@@ -18,7 +18,7 @@ import { useNavigate } from "react-router"
 import { client } from "./client"
 import { LoftOSSBadge, Step, Steps, useInstallCLI } from "./components"
 import { Briefcase, CommandLine, DevpodWordmark } from "./icons"
-import { Routes } from "./routes"
+import { Routes } from "./routes.constants"
 
 const IS_FIRST_VISIT_KEY = "devpod-is-first-visit"
 

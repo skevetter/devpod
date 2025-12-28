@@ -1,7 +1,7 @@
 import { BottomActionBar, BottomActionBarError, Form, useStreamingTerminal } from "@/components"
 import { useProInstanceManager, useProInstances, useProviders } from "@/contexts"
 import { canHealthCheck, exists, useFormErrors } from "@/lib"
-import { Routes } from "@/routes"
+import { Routes } from "@/routes.constants"
 import {
   Box,
   Button,

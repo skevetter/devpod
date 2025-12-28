@@ -28,7 +28,7 @@ import { useWorkspaces } from "../../contexts"
 import { ProviderPlaceholder, Stack3D, Trash } from "../../icons"
 import { exists } from "../../lib"
 import { QueryKeys } from "../../queryKeys"
-import { Routes } from "../../routes"
+import { Routes } from "../../routes.constants"
 import {
   TProvider,
   TProviderID,

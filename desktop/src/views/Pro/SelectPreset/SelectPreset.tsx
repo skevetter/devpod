@@ -1,6 +1,6 @@
 import { useBorderColor } from "@/Theme"
 import { useProContext, useTemplates } from "@/contexts"
-import { Routes } from "@/routes"
+import { Routes } from "@/routes.constants"
 import { BackToWorkspaces } from "@/views/Pro/BackToWorkspaces"
 import { presetDisplayName } from "@/views/Pro/helpers"
 import { SearchIcon } from "@chakra-ui/icons"

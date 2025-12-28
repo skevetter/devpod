@@ -35,7 +35,7 @@ import {
   useResetWorkspaceModal,
   useStopWorkspaceModal,
 } from "../../lib"
-import { Routes } from "../../routes"
+import { Routes } from "../../routes.constants"
 import { TProvider, TWorkspace, TWorkspaceID } from "../../types"
 import { useIDEs } from "../../useIDEs"
 import { ConfigureProviderOptionsForm } from "../Providers"
