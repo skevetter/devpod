@@ -46,7 +46,7 @@ require (
 	github.com/rhysd/go-github-selfupdate v1.2.3
 	github.com/sirupsen/logrus v1.9.3
 	github.com/skevetter/log v0.0.0-20251225081445-b5dfd11ce781
-	github.com/skevetter/ssh v0.0.6
+	github.com/skevetter/ssh v0.0.7
 	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
