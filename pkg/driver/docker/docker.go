@@ -561,7 +561,7 @@ func (d *dockerDriver) UpdateContainerUserUID(ctx context.Context, workspaceId s
 		return err
 	}
 
-	if localUid == "0" || (localUid == containerUid && localGid == containerGid) {
+	if localUid == containerUid && localGid == containerGid {
 		d.Log.WithFields(logrus.Fields{
 			"localUid":     localUid,
 			"containerUid": containerUid,
