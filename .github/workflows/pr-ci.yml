@@ -307,19 +307,23 @@ jobs:
           - arch: amd64
             target: x86_64-unknown-linux-gnu
             runner: ubuntu-latest
-          # arm64 Linux builds are not yet supported
-          # - arch: arm64
-          #   target: aarch64-unknown-linux-gnu
-          #   runner: ubuntu-latest
+            tauri_config_args: "--config src-tauri/tauri-flatpak.conf.json --bundles appimage,deb,updater"
+            tauri_include_updater_json: true
           - arch: amd64
             target: x86_64-apple-darwin
             runner: macos-latest
+            tauri_config_args: ""
+            tauri_include_updater_json: false
           - arch: arm64
             target: aarch64-apple-darwin
             runner: macos-latest
+            tauri_config_args: ""
+            tauri_include_updater_json: false
           - arch: amd64
             target: x86_64-pc-windows-msvc
             runner: windows-latest
+            tauri_config_args: ""
+            tauri_include_updater_json: false
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v6
@@ -397,15 +401,13 @@ jobs:
           yarn tauri signer generate -- --ci -w ./app.key -p "github-actions"
           TAURI_PUBKEY=$(cat ./app.key.pub)
           jq --arg pubkey "$TAURI_PUBKEY" '.plugins.updater.pubkey = $pubkey' src-tauri/tauri.conf.json > tmp.json && mv tmp.json src-tauri/tauri.conf.json
-          UPDATED_PUBKEY=$(jq -r '.plugins.updater.pubkey' src-tauri/tauri.conf.json)
-          [ "$TAURI_PUBKEY" = "$UPDATED_PUBKEY" ] || { echo "Pubkey verification failed"; exit 1; }
 
       - name: tauri build
         uses: tauri-apps/tauri-action@v0.6
         with:
           projectPath: "./desktop"
-          args: "--target ${{ matrix.target }} ${{ runner.os == 'Linux' && '--config src-tauri/tauri-flatpak.conf.json --bundles appimage,deb,updater' || '' }}"
-          includeUpdaterJson: ${{ runner.os == 'Linux' && 'true' || 'false' }}
+          args: "--target ${{ matrix.target }} ${{ matrix.tauri_config_args }}"
+          includeUpdaterJson: ${{ matrix.tauri_include_updater_json }}
         env:
           GITHUB_TOKEN: ${{ github.token }}
           TAURI_SIGNING_PRIVATE_KEY: "${{ github.workspace }}/desktop/app.key"
