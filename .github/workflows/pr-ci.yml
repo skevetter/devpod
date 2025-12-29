@@ -347,11 +347,17 @@ jobs:
       - name: setup executable
         shell: bash
         run: |
-          if [ "${{ runner.os }}" == "Windows" ]; then
-            find ./desktop/src-tauri/bin/ -name "devpod-${{ steps.os.outputs.runner_os }}-${{ matrix.arch }}.exe" -exec cp {} ./desktop/src-tauri/bin/devpod-cli-${{ steps.os.outputs.runner_os }}-${{ matrix.arch }}.exe \;
+          if [ "${{ matrix.arch }}" == "arm64" ]; then
+            BINARY_ARCH="arm64"
           else
-            find ./desktop/src-tauri/bin/ -name "devpod-${{ steps.os.outputs.runner_os }}-${{ matrix.arch }}" -exec cp {} ./desktop/src-tauri/bin/devpod-cli-${{ steps.os.outputs.runner_os }}-${{ matrix.arch }} \;
-            chmod +x "./desktop/src-tauri/bin/devpod-cli-${{ steps.os.outputs.runner_os }}-${{ matrix.arch }}"
+            BINARY_ARCH="${{ matrix.arch }}"
+          fi
+
+          if [ "${{ runner.os }}" == "Windows" ]; then
+            find ./desktop/src-tauri/bin/ -name "devpod-${{ steps.os.outputs.runner_os }}-${BINARY_ARCH}.exe" -exec cp {} ./desktop/src-tauri/bin/devpod-cli-${{ steps.os.outputs.runner_os }}-${BINARY_ARCH}.exe \;
+          else
+            find ./desktop/src-tauri/bin/ -name "devpod-${{ steps.os.outputs.runner_os }}-${BINARY_ARCH}" -exec cp {} ./desktop/src-tauri/bin/devpod-cli-${{ steps.os.outputs.runner_os }}-${BINARY_ARCH} \;
+            chmod +x "./desktop/src-tauri/bin/devpod-cli-${{ steps.os.outputs.runner_os }}-${BINARY_ARCH}"
           fi
 
       - name: install linux dependencies
