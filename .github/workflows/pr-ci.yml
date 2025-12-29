@@ -239,6 +239,10 @@ jobs:
           else
             find ./e2e/bin/ -name "devpod-${{ steps.os.outputs.runner_os }}-amd64" -exec mv {} ./e2e/bin/devpod-${{ steps.os.outputs.runner_os }}-amd64 \;
             chmod +x "./e2e/bin/devpod-${{ steps.os.outputs.runner_os }}-amd64"
+
+            # Copy to cache location for agent injection
+            mkdir -p "${TMPDIR:-/tmp/}devpod-cache"
+            cp "./e2e/bin/devpod-${{ steps.os.outputs.runner_os }}-amd64" "${TMPDIR:-/tmp/}devpod-cache/devpod-${{ steps.os.outputs.runner_os }}-amd64"
           fi
 
       # NOTE: engineerd/setup-kind does not work on Windows runners
