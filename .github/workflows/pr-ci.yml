@@ -103,11 +103,11 @@ jobs:
     strategy:
       matrix:
         include:
-          - id: devpod-linux
+          - os: linux
             runner: ubuntu-latest
-          - id: devpod-darwin
+          - os: darwin
             runner: macos-latest
-          - id: devpod-windows
+          - os: windows
             runner: windows-latest
     runs-on: ${{ matrix.runner }}
     steps:
@@ -121,9 +121,124 @@ jobs:
         with:
           distribution: goreleaser
           version: "~> v2"
-          args: build --id ${{ matrix.id }} --snapshot
+          args: build --id devpod-${{ matrix.os }} --snapshot
 
       - uses: actions/upload-artifact@v6
         with:
-          name: devpod-binaries-${{ matrix.id }}
+          name: devpod-${{ matrix.os }}
           path: dist/
+
+  integration-tests:
+    name: Integration Tests
+    needs: build-cli
+    strategy:
+      matrix:
+        include:
+          - os: linux
+            runner: ubuntu-latest
+            free-disk-space: false
+            install-kind: false
+            needs-github-token: false
+            label: context
+          - os: linux
+            runner: ubuntu-latest
+            free-disk-space: false
+            install-kind: false
+            needs-github-token: false
+            label: ide
+          - os: linux
+            runner: ubuntu-latest
+            free-disk-space: false
+            install-kind: false
+            needs-github-token: false
+            label: integration
+          - os: linux
+            runner: ubuntu-latest
+            free-disk-space: false
+            install-kind: false
+            needs-github-token: false
+            label: machine
+          - os: linux
+            runner: ubuntu-latest
+            free-disk-space: false
+            install-kind: false
+            needs-github-token: false
+            label: machineprovider
+          - os: linux
+            runner: ubuntu-latest
+            free-disk-space: false
+            install-kind: false
+            needs-github-token: false
+            label: provider
+          - os: linux
+            runner: ubuntu-latest
+            free-disk-space: false
+            install-kind: false
+            needs-github-token: false
+            label: ssh
+          - os: linux
+            runner: ubuntu-latest
+            free-disk-space: true
+            install-kind: true
+            needs-github-token: false
+            label: build
+          - os: linux
+            runner: ubuntu-latest
+            free-disk-space: true
+            install-kind: true
+            needs-github-token: false
+            label: up
+          - os: windows
+            runner: windows-latest
+            free-disk-space: false
+            install-kind: false
+            needs-github-token: false
+            label: context
+          - os: windows
+            runner: windows-latest
+            free-disk-space: false
+            install-kind: false
+            needs-github-token: false
+            label: provider
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: jlumbroso/free-disk-space@v1.3.1
+        if: matrix.free-disk-space == true && runner.os == 'Linux'
+
+      - uses: actions/checkout@v6
+
+      - name: setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: download CLI artifacts
+        uses: actions/download-artifact@v7
+        with:
+          pattern: devpod-${{ matrix.os }}
+          path: dist/
+          merge-multiple: true
+
+      # NOTE: engineerd/setup-kind does not work on Windows runners
+      - name: setup kind
+        if: matrix.install-kind == true && runner.os != 'Windows'
+        uses: engineerd/setup-kind@v0.6.2
+        with:
+          version: v0.24.0
+          image: kindest/node:v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a
+
+      - name: run test
+        shell: bash
+        working-directory: ./e2e
+        env:
+          # NOTE: Github credentials are required for tests using private repos
+          GH_USERNAME: ${{ github.repository_owner }}
+          GH_ACCESS_TOKEN: ${{ matrix.needs-github-token == false && '' || secrets.GITHUB_TOKEN }}
+        run: |
+          sudo \
+            GH_USERNAME="${GH_USERNAME}" \
+            GH_ACCESS_TOKEN="${GH_ACCESS_TOKEN}" \
+            KUBECONFIG="${KUBECONFIG:-$HOME/.kube/config}" \
+            PATH="${PATH}" \
+            GOROOT="${GOROOT}" \
+            go test -v -ginkgo.v -timeout 3600s --ginkgo.label-filter=${{ matrix.label }}
