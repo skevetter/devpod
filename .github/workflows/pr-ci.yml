@@ -397,6 +397,8 @@ jobs:
           yarn tauri signer generate -- --ci -w ./app.key -p ""
           TAURI_PUBKEY=$(cat ./app.key.pub)
           jq --arg pubkey "$TAURI_PUBKEY" '.plugins.updater.pubkey = $pubkey' src-tauri/tauri.conf.json > tmp.json && mv tmp.json src-tauri/tauri.conf.json
+          UPDATED_PUBKEY=$(jq -r '.plugins.updater.pubkey' src-tauri/tauri.conf.json)
+          [ "$TAURI_PUBKEY" = "$UPDATED_PUBKEY" ] || { echo "Pubkey verification failed"; exit 1; }
 
       - name: tauri build
         uses: tauri-apps/tauri-action@v0.6
@@ -406,3 +408,4 @@ jobs:
           includeUpdaterJson: ${{ runner.os == 'Linux' && 'true' || 'false' }}
         env:
           TAURI_SIGNING_PRIVATE_KEY: "${{ github.workspace }}/desktop/app.key"
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ""
