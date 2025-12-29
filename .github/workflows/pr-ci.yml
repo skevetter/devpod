@@ -353,11 +353,13 @@ jobs:
             BINARY_ARCH="${{ matrix.arch }}"
           fi
 
+          TARGET_NAME="${{ matrix.target }}"
+
           if [ "${{ runner.os }}" == "Windows" ]; then
-            find ./desktop/src-tauri/bin/ -name "devpod-${{ steps.os.outputs.runner_os }}-${BINARY_ARCH}.exe" -exec cp {} ./desktop/src-tauri/bin/devpod-cli-${{ steps.os.outputs.runner_os }}-${BINARY_ARCH}.exe \;
+            find ./desktop/src-tauri/bin/ -name "devpod-${{ steps.os.outputs.runner_os }}-${BINARY_ARCH}.exe" -exec cp {} ./desktop/src-tauri/bin/devpod-cli-${TARGET_NAME}.exe \;
           else
-            find ./desktop/src-tauri/bin/ -name "devpod-${{ steps.os.outputs.runner_os }}-${BINARY_ARCH}" -exec cp {} ./desktop/src-tauri/bin/devpod-cli-${{ steps.os.outputs.runner_os }}-${BINARY_ARCH} \;
-            chmod +x "./desktop/src-tauri/bin/devpod-cli-${{ steps.os.outputs.runner_os }}-${BINARY_ARCH}"
+            find ./desktop/src-tauri/bin/ -name "devpod-${{ steps.os.outputs.runner_os }}-${BINARY_ARCH}" -exec cp {} ./desktop/src-tauri/bin/devpod-cli-${TARGET_NAME} \;
+            chmod +x "./desktop/src-tauri/bin/devpod-cli-${TARGET_NAME}"
           fi
 
       - name: install linux dependencies
