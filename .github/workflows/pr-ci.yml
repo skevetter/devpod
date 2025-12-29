@@ -367,7 +367,7 @@ jobs:
           yarn tauri signer generate -- --ci -w ./app.key
           echo "tauri_privatekey=$(cat ./app.key)" >> "$GITHUB_ENV"
           TAURI_PUBKEY=$(cat ./app.key.pub)
-          jq --arg pubkey "$TAURI_PUBKEY" '.plugins.updater.pubkey = $pubkey' desktop/src-tauri/tauri.conf.json > tmp.json && mv tmp.json desktop/src-tauri/tauri.conf.json
+          jq --arg pubkey "$TAURI_PUBKEY" '.plugins.updater.pubkey = $pubkey' src-tauri/tauri.conf.json > tmp.json && mv tmp.json src-tauri/tauri.conf.json
 
       - name: tauri build
         uses: tauri-apps/tauri-action@v0.6
