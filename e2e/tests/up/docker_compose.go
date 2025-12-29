@@ -199,13 +199,46 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 				ginkgo.It("implements updateRemoteUserUID by mapping the user's UID/GID to match the local user's UID/GID to avoid permission problems with bind mounts", func(ctx context.Context) {
 					currentUser, err := user.Current()
 					framework.ExpectNoError(err)
-					hostUID, err := strconv.Atoi(currentUser.Uid)
-					framework.ExpectNoError(err)
-					hostGID, err := strconv.Atoi(currentUser.Gid)
+
+					var runAsUser string
+					var testUID, testGID int
+
+					if currentUser.Uid == "0" && os.Getenv("CI") == "true" {
+						testUID = 1337
+						testGID = 117
+						runAsUser = "testuser"
+
+						userExists := exec.Command("id", runAsUser).Run() == nil
+						if !userExists {
+							groupExists := exec.Command("getent", "group", strconv.Itoa(testGID)).Run() == nil
+							if !groupExists {
+								cmd := exec.Command("groupadd", "-g", strconv.Itoa(testGID), runAsUser)
+								err := cmd.Run()
+								framework.ExpectNoError(err, "failed to create group")
+							}
+
+							cmd := exec.Command("useradd", "-u", strconv.Itoa(testUID), "-g", strconv.Itoa(testGID), "-m", runAsUser)
+							err := cmd.Run()
+							framework.ExpectNoError(err, "failed to create user")
+						}
+					} else if currentUser.Uid == "0" {
+						ginkgo.Skip("Skipping UID mapping test when running as root in non-CI environment. Run as non-root user or in CI environment")
+					} else {
+						// Running as non-root user
+						runAsUser = currentUser.Username
+						testUID, err = strconv.Atoi(currentUser.Uid)
+						framework.ExpectNoError(err)
+						testGID, err = strconv.Atoi(currentUser.Gid)
+						framework.ExpectNoError(err)
+					}
+
+					tempDir, err := setupWorkspace("tests/up/testdata/docker-compose-uid-mapping", tc.initialDir, tc.f)
 					framework.ExpectNoError(err)
 
-					tempDir, _, err := tc.setupAndStartWorkspace(ctx, "tests/up/testdata/docker-compose-uid-mapping")
-					framework.ExpectNoError(err)
+					// Run devpod up as test user
+					upCmd := exec.CommandContext(ctx, "sudo", "-u", runAsUser, filepath.Join(tc.f.DevpodBinDir, tc.f.DevpodBinName), "up", tempDir, "--ide", "none")
+					output, err := upCmd.CombinedOutput()
+					framework.ExpectNoError(err, "failed to setup workspace as test user %s", string(output))
 
 					// Verify remote user is www-data
 					out, err := tc.f.DevPodSSH(ctx, tempDir, "whoami")
@@ -217,13 +250,13 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 					framework.ExpectNoError(err)
 					containerUID, err := strconv.Atoi(strings.TrimSpace(out))
 					framework.ExpectNoError(err)
-					gomega.Expect(containerUID).To(gomega.Equal(hostUID), "www-data user UID should match host user UID")
+					gomega.Expect(containerUID).To(gomega.Equal(testUID), "www-data user UID should match host user UID")
 
 					out, err = tc.f.DevPodSSH(ctx, tempDir, "id -g www-data")
 					framework.ExpectNoError(err)
 					containerGID, err := strconv.Atoi(strings.TrimSpace(out))
 					framework.ExpectNoError(err)
-					gomega.Expect(containerGID).To(gomega.Equal(hostGID), "www-data user GID should match host user GID")
+					gomega.Expect(containerGID).To(gomega.Equal(testGID), "www-data user GID should match host user GID")
 
 					// Verify host files
 					hostFile := filepath.Join(tempDir, "var", "www", "html", "index.html")
@@ -234,8 +267,8 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 					info, err := os.Stat(hostFile)
 					framework.ExpectNoError(err)
 					stat := info.Sys().(*syscall.Stat_t)
-					gomega.Expect(int(stat.Uid)).To(gomega.Equal(hostUID), "host file UID should match host user UID")
-					gomega.Expect(int(stat.Gid)).To(gomega.Equal(hostGID), "host file GID should match host user GID")
+					gomega.Expect(int(stat.Uid)).To(gomega.Equal(testUID), "host file UID should match host user UID")
+					gomega.Expect(int(stat.Gid)).To(gomega.Equal(testGID), "host file GID should match host user GID")
 
 				}, ginkgo.SpecTimeout(framework.GetTimeout()))
 			})
