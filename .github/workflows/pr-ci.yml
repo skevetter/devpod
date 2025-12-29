@@ -103,12 +103,9 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: linux
-            runner: ubuntu-latest
-          - os: darwin
-            runner: macos-latest
-          - os: windows
-            runner: windows-latest
+          - runner: ubuntu-latest
+          - runner: macos-latest
+          - runner: windows-latest
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v6
@@ -121,11 +118,11 @@ jobs:
         with:
           distribution: goreleaser
           version: "~> v2"
-          args: build --id devpod-${{ matrix.os }} --snapshot
+          args: build --id devpod-${{ runner.os }} --snapshot
 
       - uses: actions/upload-artifact@v6
         with:
-          name: devpod-${{ matrix.os }}
+          name: devpod-${{ runner.os }}
           path: dist/
 
   integration-tests:
@@ -134,72 +131,66 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: linux
-            runner: ubuntu-latest
+          - runner: ubuntu-latest
             free-disk-space: false
             install-kind: false
             needs-github-token: false
             label: context
-          - os: linux
-            runner: ubuntu-latest
+          - runner: ubuntu-latest
             free-disk-space: false
             install-kind: false
             needs-github-token: false
             label: ide
-          - os: linux
-            runner: ubuntu-latest
+          - runner: ubuntu-latest
             free-disk-space: false
             install-kind: false
             needs-github-token: false
             label: integration
-          - os: linux
-            runner: ubuntu-latest
+          - runner: ubuntu-latest
             free-disk-space: false
             install-kind: false
             needs-github-token: false
             label: machine
-          - os: linux
-            runner: ubuntu-latest
+          - runner: ubuntu-latest
             free-disk-space: false
             install-kind: false
             needs-github-token: false
             label: machineprovider
-          - os: linux
-            runner: ubuntu-latest
+          - runner: ubuntu-latest
             free-disk-space: false
             install-kind: false
             needs-github-token: false
             label: provider
-          - os: linux
-            runner: ubuntu-latest
+          - runner: ubuntu-latest
             free-disk-space: false
             install-kind: false
             needs-github-token: false
             label: ssh
-          - os: linux
-            runner: ubuntu-latest
+          - runner: ubuntu-latest
             free-disk-space: true
             install-kind: true
             needs-github-token: false
             label: build
-          - os: linux
-            runner: ubuntu-latest
+          - runner: ubuntu-latest
             free-disk-space: true
             install-kind: true
             needs-github-token: false
             label: up
-          - os: windows
-            runner: windows-latest
+          - runner: windows-latest
             free-disk-space: false
             install-kind: false
             needs-github-token: false
             label: context
-          - os: windows
-            runner: windows-latest
+          - runner: windows-latest
             free-disk-space: false
             install-kind: false
             needs-github-token: false
             label: provider
+          - runner: ubuntu-latest
+            free-disk-space: false
+            install-kind: false
+            needs-github-token: false
+            label: docker-install
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: jlumbroso/free-disk-space@v1.3.1
@@ -215,16 +206,30 @@ jobs:
       - name: download CLI artifacts
         uses: actions/download-artifact@v7
         with:
-          pattern: devpod-${{ matrix.os }}
+          pattern: devpod-${{ runner.os }}
           path: dist/
           merge-multiple: true
 
       - name: copy binary to e2e directory
-        run: |
-          mkdir -p ./e2e/bin
-          cp dist/devpod_${{ matrix.os }}_amd64_* ./e2e/bin/devpod-${{ matrix.os == 'windows' && 'windows-' || 'linux-' }}amd64${{ matrix.os == 'windows' && '.exe' || '' }}
-          if [ "${{ matrix.os }}" != "windows" ]; then chmod +x ./e2e/bin/devpod-linux-amd64; fi
-          if [ "${{ matrix.os }}" == "windows" ]; then chmod +x ./e2e/bin/devpod-windows-amd64.exe; fi
+        uses: actions/script@v8
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            const runnerOs = process.env['RUNNER_OS'].toLowerCase();
+            const arch = 'amd64';
+            const sourcePath = path.join('dist', `devpod_${runnerOs}_${arch}_*`);
+            const destDir = path.join('e2e', 'bin');
+            const destPath = path.join(destDir, `devpod-${runnerOs}-${arch}${runnerOs === 'windows' ? '.exe' : ''}`);
+            if (!fs.existsSync(destDir)) {
+              fs.mkdirSync(destDir, { recursive: true });
+            }
+            fs.copyFileSync(sourcePath, destPath);
+            if (runnerOs !== 'windows') {
+              fs.chmodSync(destPath, 0o755);
+            }
+        env:
+          RUNNER_OS: ${{ runner.os }}
 
       # NOTE: engineerd/setup-kind does not work on Windows runners
       - name: setup kind
@@ -234,6 +239,13 @@ jobs:
           version: v0.24.0
           image: kindest/node:v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a
 
+      - name: remove docker
+        if: matrix.label == 'docker-install'
+        run: |
+          sudo systemctl stop docker.socket docker.service
+          sudo apt-get remove -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+          sudo rm -rf /var/lib/docker /var/lib/containerd /usr/bin/docker /usr/bin/dockerd
+
       - name: run test
         shell: bash
         working-directory: ./e2e
@@ -242,10 +254,16 @@ jobs:
           GH_USERNAME: ${{ github.repository_owner }}
           GH_ACCESS_TOKEN: ${{ matrix.needs-github-token == false && '' || secrets.GITHUB_TOKEN }}
         run: |
-          sudo \
-            GH_USERNAME="${GH_USERNAME}" \
-            GH_ACCESS_TOKEN="${GH_ACCESS_TOKEN}" \
-            KUBECONFIG="${KUBECONFIG:-$HOME/.kube/config}" \
-            PATH="${PATH}" \
-            GOROOT="${GOROOT}" \
+          export GH_USERNAME="${GH_USERNAME}"
+          export GH_ACCESS_TOKEN="${GH_ACCESS_TOKEN}"
+          export KUBECONFIG="${KUBECONFIG:-$HOME/.kube/config}"
+
+          if [ "${{ runner.os }}" == "Linux" ]; then
+            sudo -E go test -v -ginkgo.v -timeout 3600s --ginkgo.label-filter=${{ matrix.label }}
+          else
             go test -v -ginkgo.v -timeout 3600s --ginkgo.label-filter=${{ matrix.label }}
+          fi
+
+      - name: verify docker is installed
+        if: matrix.label == 'docker-install'
+        run: docker --version && docker ps
