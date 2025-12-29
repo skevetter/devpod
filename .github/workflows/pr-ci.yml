@@ -232,10 +232,13 @@ jobs:
 
       # e2e expects executable to have name defined in e2e/framework/framework.go
       - name: setup executable
-        shell: bash
         run: |
-          find ./e2e/bin/ -name "devpod-${{ steps.os.outputs.runner_os }}-amd64" -exec mv {} ./e2e/bin/devpod-${{ steps.os.outputs.runner_os }}-amd64 \;
-          chmod +x "./e2e/bin/devpod-${{ steps.os.outputs.runner_os }}-amd64"
+          if [ "${{ runner.os }}" == "Windows" ]; then
+            find ./e2e/bin/ -name "devpod-${{ steps.os.outputs.runner_os }}-amd64.exe" -exec mv {} ./e2e/bin/devpod-${{ steps.os.outputs.runner_os }}-amd64.exe \;
+          else
+            find ./e2e/bin/ -name "devpod-${{ steps.os.outputs.runner_os }}-amd64" -exec mv {} ./e2e/bin/devpod-${{ steps.os.outputs.runner_os }}-amd64 \;
+            chmod +x "./e2e/bin/devpod-${{ steps.os.outputs.runner_os }}-amd64"
+          fi
 
       # NOTE: engineerd/setup-kind does not work on Windows runners
       - name: setup kind
