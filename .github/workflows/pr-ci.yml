@@ -138,6 +138,9 @@ jobs:
   integration-tests:
     name: Integration Tests
     needs: build-cli
+    permissions:
+      contents: read
+      packages: read
     strategy:
       matrix:
         include:
@@ -274,7 +277,7 @@ jobs:
         env:
           # NOTE: Github credentials are required for tests using private repos
           GH_USERNAME: ${{ github.repository_owner }}
-          GH_ACCESS_TOKEN: ${{ matrix.needs-github-token == false && github.token || secrets.GH_PRIVATE_REPO_TOKEN_TEST }}
+          GH_ACCESS_TOKEN: ${{ github.token }}
           GOTOOLCHAIN: auto
         run: |
           if [ "${{ runner.os }}" == "Linux" ]; then
