@@ -114,11 +114,15 @@ jobs:
         with:
           go-version-file: go.mod
 
+      - name: get operating system lowercase
+        id: os
+        run: echo "RUNNER_OS=$(echo ${{ runner.os }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
       - uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser
           version: "~> v2"
-          args: build --id devpod-${{ runner.os }} --snapshot
+          args: build --id devpod-${{ steps.os.outputs.RUNNER_OS }} --snapshot
 
       - uses: actions/upload-artifact@v6
         with:
@@ -267,3 +271,87 @@ jobs:
       - name: verify docker is installed
         if: matrix.label == 'docker-install'
         run: docker --version && docker ps
+
+  build-desktop:
+    name: Build Desktop Application
+    needs: build-cli
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            target: x86_64-unknown-linux-gnu
+            runner: ubuntu-latest
+          # arm64 Linux builds are not yet supported
+          # - arch: arm64
+          #   target: aarch64-unknown-linux-gnu
+          #   runner: ubuntu-latest
+          - arch: amd64
+            target: x86_64-apple-darwin
+            runner: macos-latest
+          - arch: arm64
+            target: aarch64-apple-darwin
+            runner: macos-latest
+          - arch: amd64
+            target: x86_64-pc-windows-msvc
+            runner: windows-latest
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "latest"
+
+      - name: setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./desktop/src-tauri -> target"
+
+      - name: download CLI artifacts
+        uses: actions/download-artifact@v7
+        with:
+          pattern: devpod-${{ runner.os }}
+          path: dist/
+          merge-multiple: true
+
+      - name: install linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update && sudo apt-get install -y \
+            libayatana-appindicator3-dev \
+            libgtk-3-dev \
+            librsvg2-dev \
+            libwebkit2gtk-4.1-dev \
+            patchelf
+
+      - name: install desktop dependencies
+        working-directory: ./desktop
+        run: yarn install --frozen-lockfile
+
+      - name: copy binary to tauri bin folder
+        run: |
+          mkdir -p desktop/src-tauri/bin
+          RUNNER_OS=$(echo "${{ runner.os }}" | tr '[:upper:]' '[:lower:]')
+          cp dist/devpod_${RUNNER_OS}_${{ matrix.arch }}_* desktop/src-tauri/bin/devpod-cli-${{ matrix.target }}${{ runner.os == 'windows' && '.exe' || '' }}
+
+      - name: generate signing key and update config
+        run: |
+          yarn tauri signer generate -- --ci -w ../app.key
+          TAURI_PRIVATEKEY=$(cat ../app.key)
+          TAURI_PUBKEY=$(cat ../app.key.pub)
+          jq --arg pubkey "$TAURI_PUBKEY" '.plugins.updater.pubkey = $pubkey' desktop/src-tauri/tauri.conf.json > tmp.json && mv tmp.json desktop/src-tauri/tauri.conf.json
+
+      - name: tauri build
+        uses: tauri-apps/tauri-action@v0.6
+        with:
+          projectPath: "./desktop"
+          args: "--target ${{ matrix.target }} ${{ runner.os == 'Linux' && '--config src-tauri/tauri-flatpak.conf.json --bundles appimage,deb,updater' || '' }}"
+          includeUpdaterJson: ${{ runner.os == 'Linux' && 'true' || 'false' }}
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: "${TAURI_PRIVATEKEY}"
