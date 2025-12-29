@@ -341,10 +341,10 @@ jobs:
           merge-multiple: true
 
       - name: setup executable
-        if: runner.os != 'Windows'
+        shell: bash
         run: |
-          find ./desktop/src-tauri/bin/ -name "devpod-${{ steps.os.outputs.runner_os }}-${{ matrix.arch }}" -exec mv {} ./desktop/src-tauri/bin/devpod-${{ steps.os.outputs.runner_os }}-${{ matrix.arch }} \;
-          chmod +x "./desktop/src-tauri/bin/devpod-${{ steps.os.outputs.runner_os }}-${{ matrix.arch }}"
+          find ./desktop/src-tauri/bin/ -name "devpod-${{ steps.os.outputs.runner_os }}-${{ matrix.arch }}" -exec cp {} ./desktop/src-tauri/bin/devpod-cli-${{ steps.os.outputs.runner_os }}-${{ matrix.arch }} \;
+          chmod +x "./desktop/src-tauri/bin/devpod-cli-${{ steps.os.outputs.runner_os }}-${{ matrix.arch }}"
 
       - name: install linux dependencies
         if: runner.os == 'Linux'
