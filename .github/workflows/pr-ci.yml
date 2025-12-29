@@ -117,7 +117,12 @@ jobs:
       - name: get operating system lowercase
         id: os
         shell: bash
-        run: echo "runner_os=$(echo "${{ runner.os }}" | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+        run: |
+          OS=$(echo "${{ runner.os }}" | tr '[:upper:]' '[:lower:]')
+          if [ "$OS" == "macos" ]; then
+            OS="darwin"
+          fi
+          echo "runner_os=$OS" >> "$GITHUB_OUTPUT"
 
       - uses: goreleaser/goreleaser-action@v6
         with:
@@ -127,7 +132,7 @@ jobs:
 
       - uses: actions/upload-artifact@v6
         with:
-          name: devpod-${{ runner.os }}
+          name: devpod-${{ steps.os.outputs.runner_os }}-*
           path: dist/
 
   integration-tests:
@@ -208,33 +213,27 @@ jobs:
         with:
           go-version-file: go.mod
 
+      - name: get operating system lowercase
+        id: os
+        shell: bash
+        run: |
+          OS=$(echo "${{ runner.os }}" | tr '[:upper:]' '[:lower:]')
+          if [ "$OS" == "macos" ]; then
+            OS="darwin"
+          fi
+          echo "runner_os=$OS" >> "$GITHUB_OUTPUT"
+
       - name: download CLI artifacts
         uses: actions/download-artifact@v7
         with:
-          pattern: devpod-${{ runner.os }}
-          path: dist/
+          pattern: devpod-${{ steps.os.outputs.runner_os }}-*
+          path: e2e/bin/
           merge-multiple: true
 
-      - name: copy binary to e2e directory
-        uses: actions/script@v8
-        with:
-          script: |
-            const fs = require('fs');
-            const path = require('path');
-            const runnerOs = process.env['RUNNER_OS'].toLowerCase();
-            const arch = 'amd64';
-            const sourcePath = path.join('dist', `devpod_${runnerOs}_${arch}_*`);
-            const destDir = path.join('e2e', 'bin');
-            const destPath = path.join(destDir, `devpod-${runnerOs}-${arch}${runnerOs === 'windows' ? '.exe' : ''}`);
-            if (!fs.existsSync(destDir)) {
-              fs.mkdirSync(destDir, { recursive: true });
-            }
-            fs.copyFileSync(sourcePath, destPath);
-            if (runnerOs !== 'windows') {
-              fs.chmodSync(destPath, 0o755);
-            }
-        env:
-          RUNNER_OS: ${{ runner.os }}
+      # e2e expects executable to have name defined in e2e/framework/framework.go
+      - name: setup executable
+        if: runner.os != 'Windows'
+        run: chmod +x "./e2e/bin/devpod-${{ steps.os.outputs.runner_os }}-amd64"
 
       # NOTE: engineerd/setup-kind does not work on Windows runners
       - name: setup kind
@@ -314,12 +313,26 @@ jobs:
         with:
           workspaces: "./desktop/src-tauri -> target"
 
+      - name: get operating system lowercase
+        id: os
+        shell: bash
+        run: |
+          OS=$(echo "${{ runner.os }}" | tr '[:upper:]' '[:lower:]')
+          if [ "$OS" == "macos" ]; then
+            OS="darwin"
+          fi
+          echo "runner_os=$OS" >> "$GITHUB_OUTPUT"
+
       - name: download CLI artifacts
         uses: actions/download-artifact@v7
         with:
-          pattern: devpod-${{ runner.os }}
-          path: dist/
+          pattern: devpod-${{ steps.os.outputs.runner_os }}-*
+          path: desktop/src-tauri/bin/
           merge-multiple: true
+
+      - name: setup executable
+        if: runner.os != 'Windows'
+        run: chmod +x "./desktop/src-tauri/bin/devpod-${{ steps.os.outputs.runner_os }}-${{ matrix.arch }}"
 
       - name: install linux dependencies
         if: runner.os == 'Linux'
@@ -334,12 +347,6 @@ jobs:
       - name: install desktop dependencies
         working-directory: ./desktop
         run: yarn install --frozen-lockfile
-
-      - name: copy binary to tauri bin folder
-        run: |
-          mkdir -p desktop/src-tauri/bin
-          RUNNER_OS=$(echo "${{ runner.os }}" | tr '[:upper:]' '[:lower:]')
-          cp "dist/devpod_${RUNNER_OS}_${{ matrix.arch }}_"* "desktop/src-tauri/bin/devpod-cli-${{ matrix.target }}${{ runner.os == 'windows' && '.exe' || '' }}"
 
       - name: generate signing key and update config
         id: generate
