@@ -199,6 +199,15 @@ func (r *runner) runDockerCompose(
 		return nil, fmt.Errorf("get image metadata from container %w", err)
 	}
 
+	if dockerDriver, ok := r.Driver.(driver.DockerDriver); ok {
+		err = dockerDriver.UpdateContainerUserUID(ctx, r.ID, parsedConfig.Config)
+		if err != nil {
+			r.Log.WithFields(logrus.Fields{
+				"error": err,
+			}).Warn("failed to update container user UID/GID")
+		}
+	}
+
 	if options.ExtraDevContainerPath != "" {
 		if imageMetadataConfig == nil {
 			imageMetadataConfig = &config.ImageMetadataConfig{}

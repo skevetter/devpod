@@ -1,3 +1,5 @@
+//go:build !windows
+
 package up
 
 import (
@@ -7,9 +9,11 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"os/user"
 	"path/filepath"
-	"runtime"
+	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/docker/docker/api/types/container"
@@ -191,6 +195,49 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 					gomega.Expect(detail.Config.Entrypoint).NotTo(gomega.ContainElement("bash"), "overrides container entry point")
 					gomega.Expect(detail.Config.Cmd).To(gomega.BeEmpty(), "overrides container command")
 				}, ginkgo.SpecTimeout(framework.GetTimeout()))
+
+				ginkgo.It("implements updateRemoteUserUID by mapping the user's UID/GID to match the local user's UID/GID to avoid permission problems with bind mounts", func(ctx context.Context) {
+					currentUser, err := user.Current()
+					framework.ExpectNoError(err)
+					hostUID, err := strconv.Atoi(currentUser.Uid)
+					framework.ExpectNoError(err)
+					hostGID, err := strconv.Atoi(currentUser.Gid)
+					framework.ExpectNoError(err)
+
+					tempDir, _, err := tc.setupAndStartWorkspace(ctx, "tests/up/testdata/docker-compose-uid-mapping")
+					framework.ExpectNoError(err)
+
+					// Verify remote user is www-data
+					out, err := tc.f.DevPodSSH(ctx, tempDir, "whoami")
+					framework.ExpectNoError(err)
+					gomega.Expect(strings.TrimSpace(out)).To(gomega.Equal("www-data"), "remote container user should be www-data")
+
+					// Verify UID/GID mapping
+					out, err = tc.f.DevPodSSH(ctx, tempDir, "id -u www-data")
+					framework.ExpectNoError(err)
+					containerUID, err := strconv.Atoi(strings.TrimSpace(out))
+					framework.ExpectNoError(err)
+					gomega.Expect(containerUID).To(gomega.Equal(hostUID), "www-data user UID should match host user UID")
+
+					out, err = tc.f.DevPodSSH(ctx, tempDir, "id -g www-data")
+					framework.ExpectNoError(err)
+					containerGID, err := strconv.Atoi(strings.TrimSpace(out))
+					framework.ExpectNoError(err)
+					gomega.Expect(containerGID).To(gomega.Equal(hostGID), "www-data user GID should match host user GID")
+
+					// Verify host files
+					hostFile := filepath.Join(tempDir, "var", "www", "html", "index.html")
+					content, err := os.ReadFile(hostFile)
+					framework.ExpectNoError(err)
+					gomega.Expect(string(content)).To(gomega.ContainSubstring("Hello World!"), "host file should be accessible to host user")
+
+					info, err := os.Stat(hostFile)
+					framework.ExpectNoError(err)
+					stat := info.Sys().(*syscall.Stat_t)
+					gomega.Expect(int(stat.Uid)).To(gomega.Equal(hostUID), "host file UID should match host user UID")
+					gomega.Expect(int(stat.Gid)).To(gomega.Equal(hostGID), "host file GID should match host user GID")
+
+				}, ginkgo.SpecTimeout(framework.GetTimeout()))
 			})
 
 			ginkgo.Context("security", func() {
@@ -315,9 +362,6 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 				}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
 				ginkgo.It("port forwarding", func(ctx context.Context) {
-					if runtime.GOOS == "windows" {
-						ginkgo.Skip("skipping on windows")
-					}
 					_, workspace, err := tc.setupAndStartWorkspace(ctx, "tests/up/testdata/docker-compose-forward-ports", "--debug")
 					framework.ExpectNoError(err)
 
@@ -359,19 +403,13 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 					sshCancel()
 					err = <-done
 
-					if runtime.GOOS != "windows" {
-						gomega.Expect(err).To(gomega.Or(
-							gomega.MatchError("signal: killed"),
-							gomega.MatchError(context.Canceled),
-						))
-					}
+					gomega.Expect(err).To(gomega.Or(
+						gomega.MatchError("signal: killed"),
+						gomega.MatchError(context.Canceled),
+					))
 				}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
 				ginkgo.It("features", func(ctx context.Context) {
-					if runtime.GOOS == "windows" {
-						ginkgo.Skip("skipping on windows")
-					}
-
 					_, workspace, err := tc.setupAndStartWorkspace(ctx, "tests/up/testdata/docker-compose-features", "--debug")
 					framework.ExpectNoError(err)
 
