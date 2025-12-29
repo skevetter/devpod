@@ -132,8 +132,8 @@ jobs:
 
       - uses: actions/upload-artifact@v6
         with:
-          name: devpod-${{ steps.os.outputs.runner_os }}-*
-          path: dist/
+          name: devpod-${{ steps.os.outputs.runner_os }}
+          path: dist/devpod-${{ steps.os.outputs.runner_os }}-*
 
   integration-tests:
     name: Integration Tests
@@ -228,7 +228,6 @@ jobs:
         with:
           pattern: devpod-${{ steps.os.outputs.runner_os }}-*
           path: e2e/bin/
-          merge-multiple: true
 
       # e2e expects executable to have name defined in e2e/framework/framework.go
       - name: setup executable
@@ -328,7 +327,6 @@ jobs:
         with:
           pattern: devpod-${{ steps.os.outputs.runner_os }}-*
           path: desktop/src-tauri/bin/
-          merge-multiple: true
 
       - name: setup executable
         if: runner.os != 'Windows'
