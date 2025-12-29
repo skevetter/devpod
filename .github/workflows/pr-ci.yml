@@ -232,6 +232,7 @@ jobs:
 
       # e2e expects executable to have name defined in e2e/framework/framework.go
       - name: setup executable
+        shell: bash
         run: |
           if [ "${{ runner.os }}" == "Windows" ]; then
             find ./e2e/bin/ -name "devpod-${{ steps.os.outputs.runner_os }}-amd64.exe" -exec mv {} ./e2e/bin/devpod-${{ steps.os.outputs.runner_os }}-amd64.exe \;
@@ -346,8 +347,12 @@ jobs:
       - name: setup executable
         shell: bash
         run: |
-          find ./desktop/src-tauri/bin/ -name "devpod-${{ steps.os.outputs.runner_os }}-${{ matrix.arch }}" -exec cp {} ./desktop/src-tauri/bin/devpod-cli-${{ steps.os.outputs.runner_os }}-${{ matrix.arch }} \;
-          chmod +x "./desktop/src-tauri/bin/devpod-cli-${{ steps.os.outputs.runner_os }}-${{ matrix.arch }}"
+          if [ "${{ runner.os }}" == "Windows" ]; then
+            find ./desktop/src-tauri/bin/ -name "devpod-${{ steps.os.outputs.runner_os }}-${{ matrix.arch }}.exe" -exec cp {} ./desktop/src-tauri/bin/devpod-cli-${{ steps.os.outputs.runner_os }}-${{ matrix.arch }}.exe \;
+          else
+            find ./desktop/src-tauri/bin/ -name "devpod-${{ steps.os.outputs.runner_os }}-${{ matrix.arch }}" -exec cp {} ./desktop/src-tauri/bin/devpod-cli-${{ steps.os.outputs.runner_os }}-${{ matrix.arch }} \;
+            chmod +x "./desktop/src-tauri/bin/devpod-cli-${{ steps.os.outputs.runner_os }}-${{ matrix.arch }}"
+          fi
 
       - name: install linux dependencies
         if: runner.os == 'Linux'
