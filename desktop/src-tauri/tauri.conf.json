@@ -57,7 +57,7 @@
         "depends": []
       }
     },
-    "createUpdaterArtifacts": "v1Compatible"
+    "createUpdaterArtifacts": "true"
   },
   "productName": "DevPod",
   "mainBinaryName": "DevPod Desktop",

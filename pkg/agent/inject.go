@@ -164,6 +164,11 @@ func injectBinary(arm bool, tryDownloadURL string, log log.Logger) (io.ReadClose
 		if err != nil {
 			binaryPath = ""
 		}
+
+		log.WithFields(logrus.Fields{
+			"path": binaryPath,
+			"arch": targetArch,
+		}).Debug("using current binary for agent injection")
 	}
 
 	// try to look up runner binaries
@@ -260,5 +265,8 @@ func getRunnerBinary(targetArch string) string {
 	if err != nil {
 		return ""
 	}
+	log.WithFields(logrus.Fields{
+		"path": binaryPath,
+	}).Debug("found runner binary in devpod-cache")
 	return binaryPath
 }

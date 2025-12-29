@@ -26,7 +26,7 @@ const (
 
 	DefaultEntrypoint = `
 while ! command -v /usr/local/bin/devpod >/dev/null 2>&1; do
-  echo "Waiting for devpod tool..."
+  echo "waiting for devpod agent to be available"
   sleep 1
 done
 exec /usr/local/bin/devpod agent container daemon
