@@ -259,6 +259,7 @@ jobs:
           # NOTE: Github credentials are required for tests using private repos
           GH_USERNAME: ${{ github.repository_owner }}
           GH_ACCESS_TOKEN: ${{ matrix.needs-github-token == false && '' || secrets.GITHUB_TOKEN }}
+          GOTOOLCHAIN: auto
         run: |
           export GH_USERNAME="${GH_USERNAME}"
           export GH_ACCESS_TOKEN="${GH_ACCESS_TOKEN}"
@@ -354,10 +355,11 @@ jobs:
 
       - name: generate signing key and update config
         id: generate
+        working-directory: ./desktop
         run: |
-          yarn tauri signer generate -- --ci -w ../app.key
-          echo "tauri_privatekey=$(cat ../app.key)" >> "$GITHUB_ENV"
-          TAURI_PUBKEY=$(cat ../app.key.pub)
+          npx tauri signer generate -- --ci -w ./app.key
+          echo "tauri_privatekey=$(cat ./app.key)" >> "$GITHUB_ENV"
+          TAURI_PUBKEY=$(cat ./app.key.pub)
           jq --arg pubkey "$TAURI_PUBKEY" '.plugins.updater.pubkey = $pubkey' desktop/src-tauri/tauri.conf.json > tmp.json && mv tmp.json desktop/src-tauri/tauri.conf.json
 
       - name: tauri build
