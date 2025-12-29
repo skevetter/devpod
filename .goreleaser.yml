@@ -13,6 +13,30 @@ builds:
     goarch: [amd64, arm64]
     binary: devpod-cli
 
+  - id: devpod-linux
+    hooks:
+      pre:
+        - sh -c 'go test $(go list ./... | grep -v -e /test -e /e2e) -race -coverprofile=dist/profile.out -covermode=atomic'
+    goos: [linux]
+    goarch: [amd64, arm64]
+    binary: devpod-cli
+
+  - id: devpod-darwin
+    hooks:
+      pre:
+        - sh -c 'go test $(go list ./... | grep -v -e /test -e /e2e) -race -coverprofile=dist/profile.out -covermode=atomic'
+    goos: [darwin]
+    goarch: [amd64, arm64]
+    binary: devpod-cli
+
+  - id: devpod-windows
+    hooks:
+      pre:
+        - sh -c 'go test $(go list ./... | grep -v -e /test -e /e2e) -race -coverprofile=dist/profile.out -covermode=atomic'
+    goos: [windows]
+    goarch: [amd64, arm64]
+    binary: devpod-cli
+
   - id: devpod-dev
     goos: [linux, darwin, windows]
     goarch: [amd64, arm64]

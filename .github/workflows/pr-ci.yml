@@ -67,9 +67,49 @@ jobs:
         with:
           version: latest
 
-  build:
-    name: Build
+  build-ui:
+    name: User Interface Build
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "latest"
+
+      - name: install dependencies
+        working-directory: ./desktop
+        run: yarn install --frozen-lockfile
+
+      - name: lint
+        working-directory: ./desktop
+        run: yarn lint:ci
+
+      - name: format
+        working-directory: ./desktop
+        run: yarn format:check
+
+      - name: type check
+        working-directory: ./desktop
+        run: yarn types:check
+
+      - name: build
+        working-directory: ./desktop
+        run: yarn build
+
+  build-cli:
+    name: Build CLI Binaries
+    strategy:
+      matrix:
+        include:
+          - id: devpod-linux
+            runner: ubuntu-latest
+          - id: devpod-darwin
+            runner: macos-latest
+          - id: devpod-windows
+            runner: windows-latest
+    runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v6
 
@@ -81,9 +121,9 @@ jobs:
         with:
           distribution: goreleaser
           version: "~> v2"
-          args: build --id devpod --snapshot
+          args: build --id ${{ matrix.id }} --snapshot
 
       - uses: actions/upload-artifact@v6
         with:
-          name: devpod-binaries
+          name: devpod-binaries-${{ matrix.id }}
           path: dist/
