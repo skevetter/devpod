@@ -234,6 +234,7 @@ jobs:
       - name: setup executable
         shell: bash
         run: |
+          ls -R ./e2e/bin/
           if [ "${{ runner.os }}" == "Windows" ]; then
             find ./e2e/bin/ -name "devpod-${{ steps.os.outputs.runner_os }}-amd64.exe" -exec mv {} ./e2e/bin/devpod-${{ steps.os.outputs.runner_os }}-amd64.exe \;
           else
@@ -243,6 +244,11 @@ jobs:
             # Copy to cache location for agent injection
             mkdir -p "${TMPDIR:-/tmp/}devpod-cache"
             cp "./e2e/bin/devpod-${{ steps.os.outputs.runner_os }}-amd64" "${TMPDIR:-/tmp/}devpod-cache/devpod-linux-amd64"
+
+            # Replace the current binary with the built one for injection
+            sudo cp "./e2e/bin/devpod-${{ steps.os.outputs.runner_os }}-amd64" /usr/local/bin/devpod
+            sudo chmod +x /usr/local/bin/devpod
+
             ls -la "${TMPDIR:-/tmp/}devpod-cache/"
             echo "Cache location: ${TMPDIR:-/tmp/}devpod-cache/devpod-linux-amd64"
           fi
@@ -399,5 +405,4 @@ jobs:
           args: "--target ${{ matrix.target }} ${{ runner.os == 'Linux' && '--config src-tauri/tauri-flatpak.conf.json --bundles appimage,deb,updater' || '' }}"
           includeUpdaterJson: ${{ runner.os == 'Linux' && 'true' || 'false' }}
         env:
-          TAURI_PRIVATE_KEY: "${{ github.workspace }}/desktop/app.key"
-          TAURI_KEY_PASSWORD: ""
+          TAURI_SIGNING_PRIVATE_KEY: "${{ github.workspace }}/desktop/app.key"
