@@ -226,8 +226,9 @@ jobs:
       - name: download CLI artifacts
         uses: actions/download-artifact@v7
         with:
-          pattern: devpod-${{ steps.os.outputs.runner_os }}-*
+          pattern: devpod-${{ steps.os.outputs.runner_os }}
           path: e2e/bin/
+          merge-multiple: true
 
       # e2e expects executable to have name defined in e2e/framework/framework.go
       - name: setup executable
@@ -325,8 +326,9 @@ jobs:
       - name: download CLI artifacts
         uses: actions/download-artifact@v7
         with:
-          pattern: devpod-${{ steps.os.outputs.runner_os }}-*
+          pattern: devpod-${{ steps.os.outputs.runner_os }}
           path: desktop/src-tauri/bin/
+          merge-multiple: true
 
       - name: setup executable
         if: runner.os != 'Windows'
