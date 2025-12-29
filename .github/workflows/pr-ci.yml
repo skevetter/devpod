@@ -219,6 +219,13 @@ jobs:
           path: dist/
           merge-multiple: true
 
+      - name: copy binary to e2e directory
+        run: |
+          mkdir -p ./e2e/bin
+          cp dist/devpod_${{ matrix.os }}_amd64_* ./e2e/bin/devpod-${{ matrix.os == 'windows' && 'windows-' || 'linux-' }}amd64${{ matrix.os == 'windows' && '.exe' || '' }}
+          if [ "${{ matrix.os }}" != "windows" ]; then chmod +x ./e2e/bin/devpod-linux-amd64; fi
+          if [ "${{ matrix.os }}" == "windows" ]; then chmod +x ./e2e/bin/devpod-windows-amd64.exe; fi
+
       # NOTE: engineerd/setup-kind does not work on Windows runners
       - name: setup kind
         if: matrix.install-kind == true && runner.os != 'Windows'
