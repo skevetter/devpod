@@ -369,6 +369,7 @@ jobs:
       - name: generate signing key and update config
         id: generate
         working-directory: ./desktop
+        shell: bash
         run: |
           yarn tauri signer generate -- --ci -w ./app.key
           echo "tauri_privatekey=$(cat ./app.key)" >> "$GITHUB_ENV"
