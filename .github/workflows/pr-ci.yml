@@ -117,7 +117,7 @@ jobs:
       - name: get operating system lowercase
         id: os
         shell: bash
-        run: echo "runner_os=$(echo ${{ runner.os }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+        run: echo "runner_os=$(echo "${{ runner.os }}" | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
 
       - uses: goreleaser/goreleaser-action@v6
         with:
@@ -339,13 +339,13 @@ jobs:
         run: |
           mkdir -p desktop/src-tauri/bin
           RUNNER_OS=$(echo "${{ runner.os }}" | tr '[:upper:]' '[:lower:]')
-          cp dist/devpod_${RUNNER_OS}_${{ matrix.arch }}_* desktop/src-tauri/bin/devpod-cli-${{ matrix.target }}${{ runner.os == 'windows' && '.exe' || '' }}
+          cp "dist/devpod_${RUNNER_OS}_${{ matrix.arch }}_"* "desktop/src-tauri/bin/devpod-cli-${{ matrix.target }}${{ runner.os == 'windows' && '.exe' || '' }}"
 
       - name: generate signing key and update config
         id: generate
         run: |
           yarn tauri signer generate -- --ci -w ../app.key
-          echo "tauri_privatekey=$(cat ../app.key)" >> $GITHUB_ENV
+          echo "tauri_privatekey=$(cat ../app.key)" >> "$GITHUB_ENV"
           TAURI_PUBKEY=$(cat ../app.key.pub)
           jq --arg pubkey "$TAURI_PUBKEY" '.plugins.updater.pubkey = $pubkey' desktop/src-tauri/tauri.conf.json > tmp.json && mv tmp.json desktop/src-tauri/tauri.conf.json
 
