@@ -243,6 +243,8 @@ jobs:
             # Copy to cache location for agent injection
             mkdir -p "${TMPDIR:-/tmp/}devpod-cache"
             cp "./e2e/bin/devpod-${{ steps.os.outputs.runner_os }}-amd64" "${TMPDIR:-/tmp/}devpod-cache/devpod-${{ steps.os.outputs.runner_os }}-amd64"
+            ls -la "${TMPDIR:-/tmp/}devpod-cache/"
+            echo "Cache location: ${TMPDIR:-/tmp/}devpod-cache/devpod-${{ steps.os.outputs.runner_os }}-amd64"
           fi
 
       # NOTE: engineerd/setup-kind does not work on Windows runners
@@ -386,7 +388,6 @@ jobs:
         shell: bash
         run: |
           yarn tauri signer generate -- --ci -w ./app.key
-          echo "tauri_privatekey=$(cat ./app.key)" >> "$GITHUB_ENV"
           TAURI_PUBKEY=$(cat ./app.key.pub)
           jq --arg pubkey "$TAURI_PUBKEY" '.plugins.updater.pubkey = $pubkey' src-tauri/tauri.conf.json > tmp.json && mv tmp.json src-tauri/tauri.conf.json
 
@@ -397,4 +398,4 @@ jobs:
           args: "--target ${{ matrix.target }} ${{ runner.os == 'Linux' && '--config src-tauri/tauri-flatpak.conf.json --bundles appimage,deb,updater' || '' }}"
           includeUpdaterJson: ${{ runner.os == 'Linux' && 'true' || 'false' }}
         env:
-          TAURI_SIGNING_PRIVATE_KEY: "${{ steps.generate.outputs.tauri_privatekey }}"
+          TAURI_SIGNING_PRIVATE_KEY: "${{ github.workspace }}/desktop/app.key"
