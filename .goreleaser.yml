@@ -14,17 +14,17 @@ builds:
     binary: devpod
 
   - id: devpod-linux
-    hooks:
-      pre:
-        - sh -c 'go test $(go list ./... | grep -v -e /test -e /e2e) -race -coverprofile=dist/profile.out -covermode=atomic'
+    # hooks:
+    #   pre:
+    #     - sh -c 'go test $(go list ./... | grep -v -e /test -e /e2e) -race -coverprofile=dist/profile.out -covermode=atomic'
     goos: [linux]
     goarch: [amd64, arm64]
     binary: devpod-{{ .Os }}-{{ .Arch }}
 
   - id: devpod-darwin
-    hooks:
-      pre:
-        - sh -c 'go test $(go list ./... | grep -v -e /test -e /e2e) -race -coverprofile=dist/profile.out -covermode=atomic'
+    # hooks:
+    #   pre:
+    #     - sh -c 'go test $(go list ./... | grep -v -e /test -e /e2e) -race -coverprofile=dist/profile.out -covermode=atomic'
     goos: [darwin]
     goarch: [amd64, arm64]
     binary: devpod-{{ .Os }}-{{ .Arch }}

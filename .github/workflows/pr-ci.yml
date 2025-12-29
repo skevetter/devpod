@@ -133,7 +133,7 @@ jobs:
       - uses: actions/upload-artifact@v6
         with:
           name: devpod-${{ steps.os.outputs.runner_os }}
-          path: dist/devpod-${{ steps.os.outputs.runner_os }}-*
+          path: dist/*devpod-${{ steps.os.outputs.runner_os }}-*
 
   integration-tests:
     name: Integration Tests
