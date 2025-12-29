@@ -237,6 +237,12 @@ jobs:
           find ./e2e/bin/ -name "devpod-${{ steps.os.outputs.runner_os }}-amd64" -exec mv {} ./e2e/bin/devpod-${{ steps.os.outputs.runner_os }}-amd64 \;
           chmod +x "./e2e/bin/devpod-${{ steps.os.outputs.runner_os }}-amd64"
 
+      - name: setup executable (Windows)
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: |
+          Get-ChildItem -Path "./e2e/bin/" -Name "devpod-${{ steps.os.outputs.runner_os }}-amd64.exe" -Recurse | ForEach-Object { Move-Item -Path $_.FullName -Destination "./e2e/bin/devpod-${{ steps.os.outputs.runner_os }}-amd64.exe" }
+
       # NOTE: engineerd/setup-kind does not work on Windows runners
       - name: setup kind
         if: matrix.install-kind == true && runner.os != 'Windows'
