@@ -242,9 +242,9 @@ jobs:
 
             # Copy to cache location for agent injection
             mkdir -p "${TMPDIR:-/tmp/}devpod-cache"
-            cp "./e2e/bin/devpod-${{ steps.os.outputs.runner_os }}-amd64" "${TMPDIR:-/tmp/}devpod-cache/devpod-${{ steps.os.outputs.runner_os }}-amd64"
+            cp "./e2e/bin/devpod-${{ steps.os.outputs.runner_os }}-amd64" "${TMPDIR:-/tmp/}devpod-cache/devpod-linux-amd64"
             ls -la "${TMPDIR:-/tmp/}devpod-cache/"
-            echo "Cache location: ${TMPDIR:-/tmp/}devpod-cache/devpod-${{ steps.os.outputs.runner_os }}-amd64"
+            echo "Cache location: ${TMPDIR:-/tmp/}devpod-cache/devpod-linux-amd64"
           fi
 
       # NOTE: engineerd/setup-kind does not work on Windows runners
@@ -268,7 +268,7 @@ jobs:
         env:
           # NOTE: Github credentials are required for tests using private repos
           GH_USERNAME: ${{ github.repository_owner }}
-          GH_ACCESS_TOKEN: ${{ matrix.needs-github-token == false && '' || secrets.GH_PRIVATE_REPO_TOKEN_TEST }}
+          GH_ACCESS_TOKEN: ${{ matrix.needs-github-token == false && github.token || secrets.GH_PRIVATE_REPO_TOKEN_TEST }}
           GOTOOLCHAIN: auto
         run: |
           if [ "${{ runner.os }}" == "Linux" ]; then
@@ -353,6 +353,7 @@ jobs:
       - name: setup executable
         shell: bash
         run: |
+          ls -R ./desktop/src-tauri/bin/
           if [ "${{ matrix.arch }}" == "arm64" ]; then
             BINARY_ARCH="arm64"
           else
@@ -387,7 +388,7 @@ jobs:
         working-directory: ./desktop
         shell: bash
         run: |
-          yarn tauri signer generate -- --ci -w ./app.key
+          yarn tauri signer generate -- --ci -w ./app.key -p ""
           TAURI_PUBKEY=$(cat ./app.key.pub)
           jq --arg pubkey "$TAURI_PUBKEY" '.plugins.updater.pubkey = $pubkey' src-tauri/tauri.conf.json > tmp.json && mv tmp.json src-tauri/tauri.conf.json
 
@@ -398,4 +399,5 @@ jobs:
           args: "--target ${{ matrix.target }} ${{ runner.os == 'Linux' && '--config src-tauri/tauri-flatpak.conf.json --bundles appimage,deb,updater' || '' }}"
           includeUpdaterJson: ${{ runner.os == 'Linux' && 'true' || 'false' }}
         env:
-          TAURI_SIGNING_PRIVATE_KEY: "${{ github.workspace }}/desktop/app.key"
+          TAURI_PRIVATE_KEY: "${{ github.workspace }}/desktop/app.key"
+          TAURI_KEY_PASSWORD: ""
