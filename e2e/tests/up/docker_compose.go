@@ -203,7 +203,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 					var runAsUser string
 					var testUID, testGID int
 
-					if currentUser.Uid == "0" && os.Getenv("CI") == "true" {
+					if currentUser.Uid == "0" {
 						testUID = 1337
 						testGID = 117
 						runAsUser = "testuser"
@@ -221,8 +221,6 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 							err := cmd.Run()
 							framework.ExpectNoError(err, "failed to create user")
 						}
-					} else if currentUser.Uid == "0" {
-						ginkgo.Skip("Skipping UID mapping test when running as root in non-CI environment. Run as non-root user or in CI environment")
 					} else {
 						// Running as non-root user
 						runAsUser = currentUser.Username
