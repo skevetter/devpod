@@ -116,7 +116,7 @@ jobs:
 
       - name: get operating system lowercase
         id: os
-        run: echo "RUNNER_OS=$(echo ${{ runner.os }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+        run: echo "RUNNER_OS=\"$(echo ${{ runner.os }} | tr '[:upper:]' '[:lower:]')\"" >> $GITHUB_OUTPUT
 
       - uses: goreleaser/goreleaser-action@v6
         with:
@@ -343,7 +343,7 @@ jobs:
       - name: generate signing key and update config
         run: |
           yarn tauri signer generate -- --ci -w ../app.key
-          TAURI_PRIVATEKEY=$(cat ../app.key)
+          TAURI_PRIVATEKEY=$(cat ../app.key) >> $GITHUB_ENV
           TAURI_PUBKEY=$(cat ../app.key.pub)
           jq --arg pubkey "$TAURI_PUBKEY" '.plugins.updater.pubkey = $pubkey' desktop/src-tauri/tauri.conf.json > tmp.json && mv tmp.json desktop/src-tauri/tauri.conf.json
 
