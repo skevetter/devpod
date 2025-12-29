@@ -221,12 +221,12 @@ func (d *dockerDriver) FindDevContainer(ctx context.Context, workspaceId string)
 		return nil, nil
 	}
 
-	if containerDetails.Config.LegacyUser != "" {
+	if containerDetails.Config.User != "" {
 		if containerDetails.Config.Labels == nil {
 			containerDetails.Config.Labels = map[string]string{}
 		}
 		if containerDetails.Config.Labels[config.UserLabel] == "" {
-			containerDetails.Config.Labels[config.UserLabel] = containerDetails.Config.LegacyUser
+			containerDetails.Config.Labels[config.UserLabel] = containerDetails.Config.User
 		}
 	}
 
@@ -419,10 +419,13 @@ func (d *dockerDriver) UpdateContainerUserUID(ctx context.Context, workspaceId s
 		"updateRemoteUserUID": parsedConfig.UpdateRemoteUserUID,
 	}).Info("updating container UID/GID")
 
-	isContainerOrRemoteUserSet := (parsedConfig.ContainerUser != "" || parsedConfig.RemoteUser != "")
+	if runtime.GOOS != "linux" {
+		d.Log.Info("os is not linux; skipping UID/GID mapping")
+		return nil
+	}
 	isUpdateRemoteUserUIDDisabled := parsedConfig.UpdateRemoteUserUID != nil && !*parsedConfig.UpdateRemoteUserUID
-	if runtime.GOOS != "linux" || !isContainerOrRemoteUserSet || isUpdateRemoteUserUIDDisabled {
-		d.Log.Info("skipping UID/GID mapping")
+	if isUpdateRemoteUserUIDDisabled {
+		d.Log.Info("updateRemoteUserUID is disabled; skipping UID/GID mapping")
 		return nil
 	}
 
@@ -432,14 +435,6 @@ func (d *dockerDriver) UpdateContainerUserUID(ctx context.Context, workspaceId s
 	}
 	localUid := localUser.Uid
 	localGid := localUser.Gid
-
-	containerUser := parsedConfig.RemoteUser
-	if containerUser == "" {
-		containerUser = parsedConfig.ContainerUser
-	}
-	if containerUser == "" {
-		return nil
-	}
 
 	container, err := d.FindDevContainer(ctx, workspaceId)
 	if err != nil {
@@ -458,6 +453,21 @@ func (d *dockerDriver) UpdateContainerUserUID(ctx context.Context, workspaceId s
 	d.Log.WithFields(logrus.Fields{
 		"containerId": container.ID,
 	}).Debug("found container")
+
+	containerDetails, err := d.Docker.InspectContainers(ctx, []string{container.ID})
+	if err != nil {
+		d.Log.WithFields(logrus.Fields{
+			"error":       err,
+			"containerId": container.ID,
+		}).Error("failed to inspect container")
+		return err
+	}
+
+	containerUser := d.getContainerUser(parsedConfig, containerDetails)
+	if containerUser == "" {
+		d.Log.Debug("no container user found, skipping UID/GID mapping")
+		return nil
+	}
 
 	containerPasswdFileIn, err := os.CreateTemp("", "devpod_container_passwd_in")
 	if err != nil {
@@ -733,4 +743,49 @@ func (d *dockerDriver) GetDevContainerLogs(ctx context.Context, workspaceId stri
 	}
 
 	return d.Docker.GetContainerLogs(ctx, container.ID, stdout, stderr)
+}
+
+// getContainerUser determines the container user using order resolution per DevContainer specification.
+// Priority order:
+// 1. remoteUser from configuration
+// 2. devpod.user label from container
+// 3. User field from Docker inspect
+// 4. containerUser from configuration
+func (d *dockerDriver) getContainerUser(parsedConfig *config.DevContainerConfig, containerDetails []config.ContainerDetails) string {
+	if parsedConfig.RemoteUser != "" {
+		d.Log.WithFields(logrus.Fields{
+			"containerUser": parsedConfig.RemoteUser,
+		}).Debug("using remoteUser from configuration")
+		return parsedConfig.RemoteUser
+	}
+
+	// rely on the first container details only; this may be an issue if multiple containers are
+	// used having different users
+	details := containerDetails[0]
+	containerConfig := details.Config
+	if len(containerDetails) > 0 && containerConfig.Labels != nil && containerConfig.Labels[config.UserLabel] != "" {
+		d.Log.WithFields(logrus.Fields{
+			"containerUser": containerConfig.Labels[config.UserLabel],
+		}).Debug("using devpod.user label from container")
+		return containerConfig.Labels[config.UserLabel]
+	}
+
+	if len(containerDetails) > 0 && containerConfig.User != "" {
+		userParts := strings.Split(containerConfig.User, ":")
+		containerUser := userParts[0]
+		d.Log.WithFields(logrus.Fields{
+			"inspectedUser": containerConfig.User,
+			"containerUser": containerUser,
+		}).Debug("using User field from Docker inspect")
+		return containerUser
+	}
+
+	if parsedConfig.ContainerUser != "" {
+		d.Log.WithFields(logrus.Fields{
+			"containerUser": parsedConfig.ContainerUser,
+		}).Debug("using containerUser from configuration")
+		return parsedConfig.ContainerUser
+	}
+
+	return ""
 }
