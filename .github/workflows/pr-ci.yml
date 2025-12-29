@@ -233,7 +233,9 @@ jobs:
       # e2e expects executable to have name defined in e2e/framework/framework.go
       - name: setup executable
         if: runner.os != 'Windows'
-        run: chmod +x "./e2e/bin/devpod-${{ steps.os.outputs.runner_os }}-amd64"
+        run: |
+          find ./e2e/bin/ -name "devpod-${{ steps.os.outputs.runner_os }}-amd64" -exec mv {} ./e2e/bin/devpod-${{ steps.os.outputs.runner_os }}-amd64 \;
+          chmod +x "./e2e/bin/devpod-${{ steps.os.outputs.runner_os }}-amd64"
 
       # NOTE: engineerd/setup-kind does not work on Windows runners
       - name: setup kind
@@ -332,7 +334,9 @@ jobs:
 
       - name: setup executable
         if: runner.os != 'Windows'
-        run: chmod +x "./desktop/src-tauri/bin/devpod-${{ steps.os.outputs.runner_os }}-${{ matrix.arch }}"
+        run: |
+          find ./desktop/src-tauri/bin/ -name "devpod-${{ steps.os.outputs.runner_os }}-${{ matrix.arch }}" -exec mv {} ./desktop/src-tauri/bin/devpod-${{ steps.os.outputs.runner_os }}-${{ matrix.arch }} \;
+          chmod +x "./desktop/src-tauri/bin/devpod-${{ steps.os.outputs.runner_os }}-${{ matrix.arch }}"
 
       - name: install linux dependencies
         if: runner.os == 'Linux'
