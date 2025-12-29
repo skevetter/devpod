@@ -154,7 +154,7 @@ jobs:
           - runner: ubuntu-latest
             free-disk-space: false
             install-kind: false
-            needs-github-token: false
+            needs-github-token: true
             label: integration
           - runner: ubuntu-latest
             free-disk-space: false
@@ -258,17 +258,24 @@ jobs:
         env:
           # NOTE: Github credentials are required for tests using private repos
           GH_USERNAME: ${{ github.repository_owner }}
-          GH_ACCESS_TOKEN: ${{ matrix.needs-github-token == false && '' || secrets.GITHUB_TOKEN }}
+          GH_ACCESS_TOKEN: ${{ matrix.needs-github-token == false && '' || secrets.GH_PRIVATE_REPO_TOKEN_TEST }}
           GOTOOLCHAIN: auto
         run: |
-          export GH_USERNAME="${GH_USERNAME}"
-          export GH_ACCESS_TOKEN="${GH_ACCESS_TOKEN}"
-          export KUBECONFIG="${KUBECONFIG:-$HOME/.kube/config}"
-
           if [ "${{ runner.os }}" == "Linux" ]; then
-            sudo -E go test -v -ginkgo.v -timeout 3600s --ginkgo.label-filter=${{ matrix.label }}
+            sudo \
+              GH_USERNAME="${GH_USERNAME}" \
+              GH_ACCESS_TOKEN="${GH_ACCESS_TOKEN}" \
+              KUBECONFIG="${KUBECONFIG:-$HOME/.kube/config}" \
+              PATH="${PATH}" \
+              GOROOT="${GOROOT}" \
+              go test -v -ginkgo.v -timeout 3600s --ginkgo.label-filter=${{ matrix.label }}
           else
-            go test -v -ginkgo.v -timeout 3600s --ginkgo.label-filter=${{ matrix.label }}
+            GH_USERNAME="${GH_USERNAME}" \
+              GH_ACCESS_TOKEN="${GH_ACCESS_TOKEN}" \
+              KUBECONFIG="${KUBECONFIG:-$HOME/.kube/config}" \
+              PATH="${PATH}" \
+              GOROOT="${GOROOT}" \
+              go test -v -ginkgo.v -timeout 3600s --ginkgo.label-filter=${{ matrix.label }}
           fi
 
       - name: verify docker is installed
