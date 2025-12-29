@@ -357,7 +357,7 @@ jobs:
         id: generate
         working-directory: ./desktop
         run: |
-          npx tauri signer generate -- --ci -w ./app.key
+          yarn tauri signer generate -- --ci -w ./app.key
           echo "tauri_privatekey=$(cat ./app.key)" >> "$GITHUB_ENV"
           TAURI_PUBKEY=$(cat ./app.key.pub)
           jq --arg pubkey "$TAURI_PUBKEY" '.plugins.updater.pubkey = $pubkey' desktop/src-tauri/tauri.conf.json > tmp.json && mv tmp.json desktop/src-tauri/tauri.conf.json
