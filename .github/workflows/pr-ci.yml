@@ -4,6 +4,51 @@ on:
   pull_request:
 
 jobs:
+  debug-wsl-kind:
+    name: Debug WSL Kind Setup
+    runs-on: windows-latest
+    steps:
+      - name: WSL Version
+        shell: bash
+        run: wsl --version
+
+      - name: WSL Switch to version 2
+        shell: bash
+        run: wsl --set-default-version 2
+
+      - name: Show WSL Version
+        shell: bash
+        run: wsl --version
+
+      - name: List WSL Distros
+        shell: bash
+        run: wsl --list --verbose
+
+      - name: Show Docker Info
+        shell: bash
+        run: docker info
+
+      - name: Show Docker Version
+        shell: bash
+        run: docker --version
+
+      - name: Install kind
+        shell: bash
+        run: |
+          curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.24.0/kind-windows-amd64
+          chmod +x ./kind
+          mv ./kind /usr/local/bin/kind
+          kind version
+
+      - name: Create kind cluster
+        shell: bash
+        run: |
+          kind create cluster --name debug-wsl-kind --image kindest/node:v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a
+
+      - name: List kind clusters
+        shell: bash
+        run: kind get clusters
+
   pre-commit:
     name: Pre-commit Checks
     runs-on: ubuntu-latest
@@ -333,13 +378,12 @@ jobs:
 
       - name: setup kind (Windows)
         if: matrix.install-kind == true && runner.os == 'Windows'
-        shell: powershell
+        shell: bash
         run: |
-          # Switch Docker to Linux containers
-          & "C:\Program Files\Docker\Docker\DockerCli.exe" -SwitchLinuxEngine
-          Start-Sleep -Seconds 30
-          choco install kind
-          kind create cluster --name ${{ steps.uuid.outputs.result || 'kind' }} --image kindest/node:v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a
+          curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.24.0/kind-linux-amd64
+          chmod +x ./kind
+          sudo mv ./kind /usr/local/bin/kind
+          kind create cluster --name ${{ steps.uuid.outputs.result }} --image kindest/node:v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a
 
       # NOTE: engineerd/setup-kind does not work on Windows runners
       - name: setup kind
