@@ -19,6 +19,12 @@ jobs:
       - name: Debug Docker startup
         shell: powershell
         run: |
+          Write-Host "Listing WSL distros..."
+          docker desktop engine ls
+
+          Write-Host "Switching to Linux engine..."
+          docker desktop engine linux
+
           Write-Host "Starting Docker Desktop..."
           docker desktop start
 
