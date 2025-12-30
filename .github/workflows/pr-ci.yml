@@ -230,31 +230,22 @@ jobs:
         uses: actions/download-artifact@v7
         with:
           pattern: devpod-${{ steps.os.outputs.runner_os }}
-          path: e2e/bin/
+          path: /tmp/devpod-bin/
           merge-multiple: true
 
       # e2e expects executable to have name defined in e2e/framework/framework.go
       - name: setup executable
         shell: bash
+        working-directory: ./e2e
         run: |
-          ls -R ./e2e/bin/
+          ls -R /tmp/devpod-bin/
           if [ "${{ runner.os }}" == "Windows" ]; then
-            find ./e2e/bin/ -name "devpod-${{ steps.os.outputs.runner_os }}-amd64.exe" -exec mv {} ./e2e/bin/devpod-${{ steps.os.outputs.runner_os }}-amd64.exe \;
+            find /tmp/devpod-bin/ -name "devpod-${{ steps.os.outputs.runner_os }}-amd64.exe" -exec mv {} ./bin/devpod-${{ steps.os.outputs.runner_os }}-amd64.exe \;
           else
-            find ./e2e/bin/ -name "devpod-${{ steps.os.outputs.runner_os }}-amd64" -exec mv {} ./e2e/bin/devpod-${{ steps.os.outputs.runner_os }}-amd64 \;
-            chmod +x "./e2e/bin/devpod-${{ steps.os.outputs.runner_os }}-amd64"
-
-            # Copy to cache location for agent injection
-            mkdir -p "${TMPDIR:-/tmp/}devpod-cache"
-            cp "./e2e/bin/devpod-${{ steps.os.outputs.runner_os }}-amd64" "${TMPDIR:-/tmp/}devpod-cache/devpod-linux-amd64"
-
-            # Replace the current binary with the built one for injection
-            sudo cp "./e2e/bin/devpod-${{ steps.os.outputs.runner_os }}-amd64" /usr/local/bin/devpod
-            sudo chmod +x /usr/local/bin/devpod
-
-            ls -la "${TMPDIR:-/tmp/}devpod-cache/"
-            echo "Cache location: ${TMPDIR:-/tmp/}devpod-cache/devpod-linux-amd64"
+            find /tmp/devpod-bin/ -name "devpod-${{ steps.os.outputs.runner_os }}-amd64" -exec mv {} ./bin/devpod-${{ steps.os.outputs.runner_os }}-amd64 \;
+            chmod +x "./bin/devpod-${{ steps.os.outputs.runner_os }}-amd64"
           fi
+          ls -R ./bin/
 
       # NOTE: engineerd/setup-kind does not work on Windows runners
       - name: setup kind
