@@ -167,7 +167,7 @@ jobs:
           - runner: ubuntu-latest
             free-disk-space: false
             install-kind: false
-            needs-github-token: false
+            needs-github-token: true
             label: machineprovider
           - runner: ubuntu-latest
             free-disk-space: false
