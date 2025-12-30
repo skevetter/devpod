@@ -190,7 +190,7 @@ jobs:
 
           - label: up-devpod
             runner: ubuntu-latest
-            free-disk-space: false
+            free-disk-space: true
             install-kind: true
             needs-github-token: false
 
