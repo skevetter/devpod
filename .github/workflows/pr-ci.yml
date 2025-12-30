@@ -238,12 +238,15 @@ jobs:
         shell: bash
         working-directory: ./e2e
         run: |
-          ls -R ${{ runner.temp }}/devpod-bin/
+          TEMP_DIR="${{ runner.temp }}"
+          # Convert Windows path to Unix-style for bash
+          TEMP_DIR="${TEMP_DIR//\\//}"
+          ls -R "$TEMP_DIR/devpod-bin/"
           mkdir -p ./bin/
           if [ "${{ runner.os }}" == "Windows" ]; then
-            find ${{ runner.temp }}/devpod-bin/ -name "devpod-${{ steps.os.outputs.runner_os }}-amd64.exe" -exec mv {} ./bin/devpod-${{ steps.os.outputs.runner_os }}-amd64.exe \;
+            find "$TEMP_DIR/devpod-bin/" -name "devpod-${{ steps.os.outputs.runner_os }}-amd64.exe" -exec mv {} ./bin/devpod-${{ steps.os.outputs.runner_os }}-amd64.exe \;
           else
-            find ${{ runner.temp }}/devpod-bin/ -name "devpod-${{ steps.os.outputs.runner_os }}-amd64" -exec mv {} ./bin/devpod-${{ steps.os.outputs.runner_os }}-amd64 \;
+            find "$TEMP_DIR/devpod-bin/" -name "devpod-${{ steps.os.outputs.runner_os }}-amd64" -exec mv {} ./bin/devpod-${{ steps.os.outputs.runner_os }}-amd64 \;
             chmod +x "./bin/devpod-${{ steps.os.outputs.runner_os }}-amd64"
           fi
           ls -R ./bin/
