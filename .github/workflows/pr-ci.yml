@@ -190,19 +190,19 @@ jobs:
 
           - label: up && workspace
             runner: ubuntu-latest
-            free-disk-space: false
+            free-disk-space: true
             install-kind: true
             needs-github-token: false
 
           - label: up && git
             runner: ubuntu-latest
-            free-disk-space: false
+            free-disk-space: true
             install-kind: true
             needs-github-token: true
 
           - label: up && provider
             runner: ubuntu-latest
-            free-disk-space: false
+            free-disk-space: true
             install-kind: true
             needs-github-token: false
 
@@ -214,13 +214,13 @@ jobs:
 
           - label: up && error
             runner: ubuntu-latest
-            free-disk-space: false
+            free-disk-space: true
             install-kind: true
             needs-github-token: false
 
           - label: up-podman
             runner: ubuntu-latest
-            free-disk-space: false
+            free-disk-space: true
             install-kind: true
             needs-github-token: false
 
