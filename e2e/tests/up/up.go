@@ -20,7 +20,7 @@ import (
 )
 
 var _ = DevPodDescribe("devpod up test suite", func() {
-	ginkgo.Context("testing up command", ginkgo.Label("up", "up-devpod"), func() {
+	ginkgo.Context("testing up command", ginkgo.Label("up"), func() {
 		var dockerHelper *docker.DockerHelper
 		var initialDir string
 
@@ -33,7 +33,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 			framework.ExpectNoError(err)
 		})
 
-		ginkgo.It("with env vars", ginkgo.Label("up-env-vars"), func() {
+		ginkgo.It("with env vars", ginkgo.Label("workspace", "env"), func() {
 			ctx := context.Background()
 			f, err := setupDockerProvider(initialDir+"/bin", "docker")
 			framework.ExpectNoError(err)
@@ -146,7 +146,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 			framework.ExpectEqual(out, value, "should be set now")
 		})
 
-		ginkgo.It("should allow checkout of a GitRepo from a commit hash", ginkgo.Label("up-git-commit"), func() {
+		ginkgo.It("should allow checkout of a GitRepo from a commit hash", ginkgo.Label("git", "commit"), func() {
 			ctx := context.Background()
 			f, err := setupDockerProvider(initialDir+"/bin", "docker")
 			framework.ExpectNoError(err)
@@ -159,7 +159,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 			framework.ExpectNoError(err)
 		})
 
-		ginkgo.It("should allow checkout of a GitRepo from a pull request reference", ginkgo.Label("up-git-pr"), func() {
+		ginkgo.It("should allow checkout of a GitRepo from a pull request reference", ginkgo.Label("git", "pr"), func() {
 			ctx := context.Background()
 			f, err := setupDockerProvider(initialDir+"/bin", "docker")
 			framework.ExpectNoError(err)
@@ -172,7 +172,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 			framework.ExpectNoError(err)
 		})
 
-		ginkgo.It("should allow checkout of a private GitRepo", ginkgo.Label("up-git-private"), func() {
+		ginkgo.It("should allow checkout of a private GitRepo", ginkgo.Label("git", "private"), func() {
 			// need to debug
 			if runtime.GOOS == "windows" {
 				ginkgo.Skip("skipping on windows")
@@ -210,7 +210,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 			fmt.Println(out)
 		})
 
-		ginkgo.It("run devpod in Kubernetes", ginkgo.Label("up-kubernetes"), func() {
+		ginkgo.It("run devpod in Kubernetes", ginkgo.Label("provider", "kubernetes"), func() {
 			ctx := context.Background()
 			f := framework.NewDefaultFramework(initialDir + "/bin")
 			tempDir, err := framework.CopyToTempDir("tests/up/testdata/kubernetes")
@@ -285,7 +285,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 			framework.ExpectNoError(err)
 		})
 
-		ginkgo.It("create workspace without devcontainer.json", ginkgo.Label("up-no-devcontainer"), func() {
+		ginkgo.It("create workspace without devcontainer.json", ginkgo.Label("workspace", "no-devcontainer"), func() {
 			const providerName = "test-docker"
 			ctx := context.Background()
 
@@ -330,7 +330,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 			framework.ExpectNoError(err)
 		})
 
-		ginkgo.It("recreate a local workspace", ginkgo.Label("up-recreate-local"), func() {
+		ginkgo.It("recreate a local workspace", ginkgo.Label("workspace", "recreate"), func() {
 			const providerName = "test-docker"
 			ctx := context.Background()
 
@@ -360,7 +360,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 			framework.ExpectNoError(err)
 		})
 
-		ginkgo.It("create workspace in a subpath", ginkgo.Label("up-subpath"), func() {
+		ginkgo.It("create workspace in a subpath", ginkgo.Label("git", "subpath"), func() {
 			const providerName = "test-docker"
 			ctx := context.Background()
 
@@ -388,7 +388,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 			framework.ExpectNoError(err)
 		})
 
-		ginkgo.It("recreate a remote workspace", ginkgo.Label("up-recreate-remote"), func() {
+		ginkgo.It("recreate a remote workspace", ginkgo.Label("workspace", "recreate"), func() {
 			const providerName = "test-docker"
 			ctx := context.Background()
 
@@ -422,7 +422,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 			framework.ExpectNoError(err)
 		})
 
-		ginkgo.It("reset a remote workspace", ginkgo.Label("up-reset-remote"), func() {
+		ginkgo.It("reset a remote workspace", ginkgo.Label("workspace", "reset"), func() {
 			const providerName = "test-docker"
 			ctx := context.Background()
 
@@ -466,7 +466,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 		})
 
 		ginkgo.Context("print error message correctly", func() {
-			ginkgo.It("make sure devpod output is correct and log-output works correctly", ginkgo.Label("up-error-output"), func(ctx context.Context) {
+			ginkgo.It("make sure devpod output is correct and log-output works correctly", ginkgo.Label("error", "output"), func(ctx context.Context) {
 				f := framework.NewDefaultFramework(initialDir + "/bin")
 				tempDir, err := framework.CopyToTempDir("tests/up/testdata/docker")
 				framework.ExpectNoError(err)
@@ -494,7 +494,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 		})
 
 		ginkgo.Context("cleanup up on failure", func() {
-			ginkgo.It("ensure workspace cleanup when failing to create a workspace", ginkgo.Label("up-cleanup-fail"), func(ctx context.Context) {
+			ginkgo.It("ensure workspace cleanup when failing to create a workspace", ginkgo.Label("error", "cleanup"), func(ctx context.Context) {
 				f, err := setupDockerProvider(initialDir+"/bin", "docker")
 				framework.ExpectNoError(err)
 
@@ -509,7 +509,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 				framework.ExpectEqual(out, initialList)
 			}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
-			ginkgo.It("should fail with error when bind mount source does not exist", ginkgo.Label("bind-mount-validation"), func(ctx context.Context) {
+			ginkgo.It("should fail with error when bind mount source does not exist", ginkgo.Label("error", "bind-mount"), func(ctx context.Context) {
 				f, err := setupDockerProvider(initialDir+"/bin", "docker")
 				framework.ExpectNoError(err)
 
@@ -524,7 +524,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 				gomega.Expect(err.Error()).To(gomega.ContainSubstring("exit status 1"))
 			}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
-			ginkgo.It("ensure workspace cleanup when not a git or folder", ginkgo.Label("up-cleanup-invalid"), func(ctx context.Context) {
+			ginkgo.It("ensure workspace cleanup when not a git or folder", ginkgo.Label("error", "cleanup"), func(ctx context.Context) {
 				f, err := setupDockerProvider(initialDir+"/bin", "docker")
 				framework.ExpectNoError(err)
 
@@ -541,7 +541,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 		})
 
 		ginkgo.Context("devcontainer features dependsOn", func() {
-			ginkgo.It("should automatically install dependsOn features", ginkgo.Label("features-depends-on"), func(ctx context.Context) {
+			ginkgo.It("should automatically install dependsOn features", ginkgo.Label("features", "depends-on"), func(ctx context.Context) {
 				f, err := setupDockerProvider(initialDir+"/bin", "docker")
 				framework.ExpectNoError(err)
 
@@ -564,7 +564,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 				gomega.Expect(out).To(gomega.ContainSubstring("hey, vscode"))
 			}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
-			ginkgo.It("should handle nested dependencies", ginkgo.Label("features-nested-depends-on"), func(ctx context.Context) {
+			ginkgo.It("should handle nested dependencies", ginkgo.Label("features", "depends-on"), func(ctx context.Context) {
 				f, err := setupDockerProvider(initialDir+"/bin", "docker")
 				framework.ExpectNoError(err)
 
@@ -584,7 +584,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 				gomega.Expect(out).To(gomega.ContainSubstring("All dependencies available"))
 			}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
-			ginkgo.It("should detect circular dependencies", ginkgo.Label("features-circular-depends-on"), func(ctx context.Context) {
+			ginkgo.It("should detect circular dependencies", ginkgo.Label("features", "depends-on"), func(ctx context.Context) {
 				f, err := setupDockerProvider(initialDir+"/bin", "docker")
 				framework.ExpectNoError(err)
 
@@ -601,7 +601,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 				framework.ExpectError(err)
 			}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
-			ginkgo.It("should handle dependsOn with options", ginkgo.Label("features-depends-on-options"), func(ctx context.Context) {
+			ginkgo.It("should handle dependsOn with options", ginkgo.Label("features", "depends-on"), func(ctx context.Context) {
 				f, err := setupDockerProvider(initialDir+"/bin", "docker")
 				framework.ExpectNoError(err)
 
@@ -621,7 +621,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 				gomega.Expect(out).To(gomega.ContainSubstring("custom greeting"))
 			}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
-			ginkgo.It("should handle mixed dependsOn and installsAfter", ginkgo.Label("features-mixed-dependencies"), func(ctx context.Context) {
+			ginkgo.It("should handle mixed dependsOn and installsAfter", ginkgo.Label("features", "mixed"), func(ctx context.Context) {
 				f, err := setupDockerProvider(initialDir+"/bin", "docker")
 				framework.ExpectNoError(err)
 
@@ -640,7 +640,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 				framework.ExpectNoError(err)
 				gomega.Expect(out).To(gomega.ContainSubstring("Correct order"))
 			}, ginkgo.SpecTimeout(framework.GetTimeout()))
-			ginkgo.It("should detect self-dependency", ginkgo.Label("features-self-dependency"), func(ctx context.Context) {
+			ginkgo.It("should detect self-dependency", ginkgo.Label("features", "depends-on"), func(ctx context.Context) {
 				f, err := setupDockerProvider(initialDir+"/bin", "docker")
 				framework.ExpectNoError(err)
 
@@ -656,7 +656,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 				framework.ExpectError(err)
 			}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
-			ginkgo.It("should handle non-existent dependency gracefully", ginkgo.Label("features-nonexistent-dependency"), func(ctx context.Context) {
+			ginkgo.It("should handle non-existent dependency gracefully", ginkgo.Label("features", "depends-on"), func(ctx context.Context) {
 				f, err := setupDockerProvider(initialDir+"/bin", "docker")
 				framework.ExpectNoError(err)
 
@@ -672,7 +672,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 				framework.ExpectError(err)
 			}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
-			ginkgo.It("should handle shared dependencies correctly", ginkgo.Label("features-shared-dependency"), func(ctx context.Context) {
+			ginkgo.It("should handle shared dependencies correctly", ginkgo.Label("features", "depends-on"), func(ctx context.Context) {
 				f, err := setupDockerProvider(initialDir+"/bin", "docker")
 				framework.ExpectNoError(err)
 
@@ -694,7 +694,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 			}, ginkgo.SpecTimeout(framework.GetTimeout()))
 		})
 
-		ginkgo.It("should handle forward reference dependencies", ginkgo.Label("features-forward-reference"), func(ctx context.Context) {
+		ginkgo.It("should handle forward reference dependencies", ginkgo.Label("features", "depends-on"), func(ctx context.Context) {
 			f, err := setupDockerProvider(initialDir+"/bin", "docker")
 			framework.ExpectNoError(err)
 

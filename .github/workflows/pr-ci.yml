@@ -188,9 +188,33 @@ jobs:
             install-kind: true
             needs-github-token: false
 
-          - label: up-devpod
+          - label: up && workspace
+            runner: ubuntu-latest
+            free-disk-space: false
+            install-kind: true
+            needs-github-token: false
+
+          - label: up && git
+            runner: ubuntu-latest
+            free-disk-space: false
+            install-kind: true
+            needs-github-token: true
+
+          - label: up && provider
+            runner: ubuntu-latest
+            free-disk-space: false
+            install-kind: true
+            needs-github-token: false
+
+          - label: up && features
             runner: ubuntu-latest
             free-disk-space: true
+            install-kind: true
+            needs-github-token: false
+
+          - label: up && error
+            runner: ubuntu-latest
+            free-disk-space: false
             install-kind: true
             needs-github-token: false
 
