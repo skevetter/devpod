@@ -363,14 +363,14 @@ jobs:
               KUBECONFIG="${KUBECONFIG:-$HOME/.kube/config}" \
               PATH="${PATH}" \
               GOROOT="${GOROOT}" \
-              go test -v -ginkgo.v -timeout 3600s --ginkgo.label-filter=${{ matrix.label }}
+              go test -v -ginkgo.v -timeout 3600s --ginkgo.label-filter="${{ matrix.label }}"
           else
             GH_USERNAME="${GH_USERNAME}" \
               GH_ACCESS_TOKEN="${GH_ACCESS_TOKEN}" \
               KUBECONFIG="${KUBECONFIG:-$HOME/.kube/config}" \
               PATH="${PATH}" \
               GOROOT="${GOROOT}" \
-              go test -v -ginkgo.v -timeout 3600s --ginkgo.label-filter=${{ matrix.label }}
+              go test -v -ginkgo.v -timeout 3600s --ginkgo.label-filter="${{ matrix.label }}"
           fi
 
       - name: verify docker is installed
