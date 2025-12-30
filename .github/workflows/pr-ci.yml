@@ -467,3 +467,19 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: "${{ github.workspace }}/desktop/app.key"
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: "github-actions"
           CI: ${{ matrix.tauri_ci }}
+
+  pass-check:
+    name: Pass Check
+    needs:
+      [
+        pre-commit,
+        commit,
+        lint,
+        build-ui,
+        build-cli,
+        integration-tests,
+        build-desktop,
+      ]
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "All checks passed!"
