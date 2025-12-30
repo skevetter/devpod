@@ -21,7 +21,7 @@ builds:
     goarch: [amd64, arm64]
     binary: devpod-{{ .Os }}-{{ .Arch }}
     ldflags:
-      - -s -W
+      - -s -w
     env:
       - CGO_ENABLED=0
 
@@ -38,7 +38,7 @@ builds:
     goarch: [amd64, arm64]
     binary: devpod-{{ .Os }}-{{ .Arch }}
     ldflags:
-      - -s -W
+      - -s -w
     env:
       - CGO_ENABLED=0
 
