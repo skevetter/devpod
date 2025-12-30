@@ -1,7 +1,23 @@
 name: Pull Request CI Checks
 
 on:
+  push:
+    branches: [main]
   pull_request:
+  pull_request_target:
+    paths:
+      - cmd/**
+      - pkg/**
+      - desktop/**
+      - e2e/**
+      - Cargo.toml
+      - Cargo.lock
+      - go.mod
+      - go.sum
+
+concurrency:
+  group: ci-${{ github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request_target' }}
 
 jobs:
   debug-wsl-kind:
@@ -14,7 +30,8 @@ jobs:
           # Set WSL to version 2
           wsl --set-default-version 2
           # Install Podman and Kind
-          choco install podman-desktop kind -y
+          # choco install podman-desktop kind -y
+          choco install -y kind
 
           # Start Podman machine
           podman machine init
@@ -98,8 +115,14 @@ jobs:
   pre-commit:
     name: Pre-commit Checks
     runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'push' ||
+      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) ||
+      (github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name != github.repository)
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.sha }}
 
       - uses: biomejs/setup-biome@v2
 
@@ -131,11 +154,17 @@ jobs:
   commit:
     name: Check Commits
     runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'push' ||
+      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) ||
+      (github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name != github.repository)
     permissions:
       contents: read
       pull-requests: write
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.sha }}
 
       - uses: 1Password/check-signed-commits-action@v1
 
@@ -144,10 +173,16 @@ jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'push' ||
+      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) ||
+      (github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name != github.repository)
     steps:
       - uses: jlumbroso/free-disk-space@v1.3.1
 
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.sha }}
 
       - uses: actions/setup-go@v6
         with:
@@ -161,8 +196,14 @@ jobs:
   build-ui:
     name: User Interface Build
     runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'push' ||
+      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) ||
+      (github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name != github.repository)
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.sha }}
 
       - name: setup Node
         uses: actions/setup-node@v6
@@ -191,6 +232,10 @@ jobs:
 
   build-cli:
     name: Build CLI Binaries
+    if: |
+      github.event_name == 'push' ||
+      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) ||
+      (github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name != github.repository)
     strategy:
       matrix:
         include:
@@ -200,6 +245,8 @@ jobs:
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.sha }}
 
       - uses: actions/setup-go@v6
         with:
@@ -228,6 +275,10 @@ jobs:
 
   integration-tests:
     needs: build-cli
+    if: |
+      github.event_name == 'push' ||
+      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) ||
+      (github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name != github.repository)
     strategy:
       matrix:
         include:
@@ -370,6 +421,8 @@ jobs:
         if: matrix.free-disk-space == true && runner.os == 'Linux'
 
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.sha }}
 
       - name: setup Go
         uses: actions/setup-go@v6
@@ -477,6 +530,10 @@ jobs:
 
   build-desktop:
     needs: build-cli
+    if: |
+      github.event_name == 'push' ||
+      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) ||
+      (github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name != github.repository)
     strategy:
       matrix:
         include:
@@ -511,6 +568,8 @@ jobs:
     name: Build Desktop App (${{ matrix.runner }} - ${{ matrix.target }})
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.sha }}
 
       - name: setup Node
         uses: actions/setup-node@v6
