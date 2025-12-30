@@ -136,7 +136,7 @@ jobs:
           path: dist/devpod-${{ steps.os.outputs.runner_os }}_*/devpod-${{ steps.os.outputs.runner_os }}-*
 
   integration-tests:
-    # needs: build-cli
+    needs: build-cli
     permissions:
       contents: read
       packages: read
@@ -226,38 +226,32 @@ jobs:
           fi
           echo "runner_os=$OS" >> "$GITHUB_OUTPUT"
 
-      # - name: download CLI artifacts
-      #   uses: actions/download-artifact@v7
-      #   with:
-      #     pattern: devpod-${{ steps.os.outputs.runner_os }}
-      #     path: ${{ runner.temp }}/devpod-bin/
-      #     merge-multiple: true
+      - name: download CLI artifacts
+        uses: actions/download-artifact@v7
+        with:
+          pattern: devpod-${{ steps.os.outputs.runner_os }}
+          path: ${{ runner.temp }}/devpod-bin/
+          merge-multiple: true
 
       # e2e expects executable to have name defined in e2e/framework/framework.go
       - name: setup executable
         shell: bash
         working-directory: ./e2e
         run: |
-          GOOS=linux GOARCH=amd64 go build -ldflags "-s -w" -o ./bin/devpod-linux-amd64 .. && chmod +x ./bin/devpod-linux-amd64
-          GOOS=linux GOARCH=arm64 go build -ldflags "-s -w" -o ./bin/devpod-linux-arm64 .. && chmod +x ./bin/devpod-linux-arm64
-          if [ "${{ runner.os }}" == "windows" ]; then
-            GOOS=windows GOARCH=amd64 go build -ldflags "-s -w" -o ./bin/devpod-windows-amd64.exe ..
+          if [ "${{ runner.os }}" == "Windows" ]; then
+            TEMP_DIR="${{ runner.temp }}"
+            TEMP_DIR="${TEMP_DIR//\\//}"
+            ls -R "$TEMP_DIR/devpod-bin/"
+            mkdir -p ./bin/
+            find "$TEMP_DIR/devpod-bin/" -name "devpod-${{ steps.os.outputs.runner_os }}-amd64.exe" -exec mv {} ./bin/devpod-${{ steps.os.outputs.runner_os }}-amd64.exe \;
+            ls -R ./bin/
+          else
+            ls -R "${{ runner.temp }}/devpod-bin/"
+            mkdir -p ./bin/
+            find "${{ runner.temp }}/devpod-bin/" -name "devpod-${{ steps.os.outputs.runner_os }}-amd64" -exec mv {} ./bin/devpod-${{ steps.os.outputs.runner_os }}-amd64 \;
+            chmod +x "./bin/devpod-${{ steps.os.outputs.runner_os }}-amd64"
+            ls -R ./bin/
           fi
-          go clean -modcache
-          # if [ "${{ runner.os }}" == "Windows" ]; then
-          #   TEMP_DIR="${{ runner.temp }}"
-          #   TEMP_DIR="${TEMP_DIR//\\//}"
-          #   ls -R "$TEMP_DIR/devpod-bin/"
-          #   mkdir -p ./bin/
-          #   find "$TEMP_DIR/devpod-bin/" -name "devpod-${{ steps.os.outputs.runner_os }}-amd64.exe" -exec mv {} ./bin/devpod-${{ steps.os.outputs.runner_os }}-amd64.exe \;
-          #   ls -R ./bin/
-          # else
-          #   ls -R "${{ runner.temp }}/devpod-bin/"
-          #   mkdir -p ./bin/
-          #   find "${{ runner.temp }}/devpod-bin/" -name "devpod-${{ steps.os.outputs.runner_os }}-amd64" -exec mv {} ./bin/devpod-${{ steps.os.outputs.runner_os }}-amd64 \;
-          #   chmod +x "./bin/devpod-${{ steps.os.outputs.runner_os }}-amd64"
-          #   ls -R ./bin/
-          # fi
 
       # NOTE: engineerd/setup-kind does not work on Windows runners
       - name: setup kind
