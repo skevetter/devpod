@@ -8,7 +8,7 @@ builds:
   - id: devpod
     hooks:
       pre:
-        - sh -c 'go test $(go list ./... | grep -v -e /test -e /e2e) -race -coverprofile=dist/profile.out -covermode=atomic'
+        - sh -c 'CGO_ENABLED=1 go test $(go list ./... | grep -v -e /test -e /e2e) -race -coverprofile=dist/profile.out -covermode=atomic'
     goos: [linux, darwin, windows]
     goarch: [amd64, arm64]
     binary: devpod
@@ -16,7 +16,7 @@ builds:
   - id: devpod-linux
     hooks:
       pre:
-        - sh -c 'go test $(go list ./... | grep -v -e /test -e /e2e) -race -coverprofile=dist/profile.out -covermode=atomic'
+        - sh -c 'CGO_ENABLED=1 go test $(go list ./... | grep -v -e /test -e /e2e) -race -coverprofile=dist/profile.out -covermode=atomic'
     goos: [linux]
     goarch: [amd64, arm64]
     binary: devpod-{{ .Os }}-{{ .Arch }}
