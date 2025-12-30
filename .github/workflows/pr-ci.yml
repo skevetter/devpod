@@ -337,7 +337,7 @@ jobs:
         with:
           script: |
             const { v4: uuidv4 } = require('uuid');
-            return uuidv4();
+            return uuidv4().toLowerCase().replace(/-/g, '');
 
       # NOTE: engineerd/setup-kind does not work on Windows runners
       - name: setup kind
