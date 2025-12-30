@@ -25,27 +25,23 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Install Podman and Kind
-        shell: powershell
+        shell: bash
+        env:
+          KIND_EXPERIMENTAL_PROVIDER: podman
         run: |
           # Set WSL to version 2
           wsl --set-default-version 2
+
           # Install Podman and Kind
-          # choco install podman-desktop kind -y
-          choco install -y podman-cli kind
+          choco install podman-cli kind -y
 
           # Start Podman machine
           podman machine init
+          podman machine set --rootful
           podman machine start
 
-          # Verify Podman is working
-          podman version
-
-          # Set KIND_EXPERIMENTAL_PROVIDER to use podman
-          $env:KIND_EXPERIMENTAL_PROVIDER = "podman"
-          echo "KIND_EXPERIMENTAL_PROVIDER=podman" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-
           # Create Kind cluster with Podman
-          kind create cluster --name "debug-wsl-kind" --image kindest/node:v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a
+          kind create cluster --name "test-cluster-podman" --image kindest/node:v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a
 
       - name: Debug Docker startup
         shell: powershell
@@ -478,9 +474,21 @@ jobs:
       - name: setup kind (Windows)
         if: matrix.install-kind == true && runner.os == 'Windows'
         shell: bash
+        env:
+          KIND_EXPERIMENTAL_PROVIDER: podman
         run: |
+          # Set WSL to version 2
           wsl --set-default-version 2
-          choco install kind && kind create cluster --name "${{ steps.uuid.outputs.result }}" --image kindest/node:v1.35.0@sha256:452d707d4862f52530247495d180205e029056831160e22870e37e3f6c1ac31f
+
+          # Install Podman and Kind
+          choco install podman-cli kind -y
+
+          # Start Podman machine
+          podman machine init
+          podman machine start
+
+          # Create Kind cluster with Podman
+          kind create cluster --name "${{ steps.uuid.outputs.result }}" --image kindest/node:v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a
 
       # NOTE: engineerd/setup-kind does not work on Windows runners
       - name: setup kind
