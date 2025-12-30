@@ -20,10 +20,6 @@ jobs:
         shell: bash
         run: wsl --version
 
-      - name: List WSL Distros
-        shell: bash
-        run: wsl --list --verbose
-
       - name: Install Ubuntu
         shell: powershell
         run: wsl --install Ubuntu-24.04
