@@ -9,10 +9,34 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Choco install kind
-        shell: bash
+        shell: powershell
         run: |
+          # Set WSL to version 2
           wsl --set-default-version 2
-          choco install kind && kind create cluster --name "debug-wsl-kind" --image kindest/node:v1.35.0@sha256:452d707d4862f52530247495d180205e029056831160e22870e37e3f6c1ac31f
+          # Install Docker Desktop and Kind
+          choco install docker-desktop kind -y
+          # Start Docker Desktop
+          Start-Process "C:\Program Files\Docker\Docker\Docker Desktop.exe" -WindowStyle Hidden
+          # Wait for Docker to be ready
+          $timeout = 300
+          $timer = 0
+          do {
+            Start-Sleep -Seconds 10
+            $timer += 10
+            Write-Host "Waiting for Docker... ($timer/$timeout seconds)"
+            $dockerReady = docker version 2>$null
+          } while (-not $dockerReady -and $timer -lt $timeout)
+
+          Write-Host "Current Docker OS type:"
+          docker info --format '{{.OSType}}'
+          Write-Host "Switching to Linux containers..."
+          & "C:\Program Files\Docker\Docker\DockerCli.exe" -SwitchLinuxEngine
+          Start-Sleep -Seconds 60
+          Write-Host "New Docker OS type:"
+          docker info --format '{{.OSType}}'
+
+          # Create Kind cluster
+          kind create cluster --name "debug-wsl-kind" --image kindest/node:v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a
 
       - name: WSL Version
         shell: bash
