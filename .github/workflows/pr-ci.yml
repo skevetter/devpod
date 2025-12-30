@@ -383,11 +383,7 @@ jobs:
       - name: setup kind (Windows)
         if: matrix.install-kind == true && runner.os == 'Windows'
         shell: bash
-        run: |
-          curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.24.0/kind-linux-amd64
-          chmod +x ./kind
-          sudo mv ./kind /usr/local/bin/kind
-          kind create cluster --name ${{ steps.uuid.outputs.result }} --image kindest/node:v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a
+        run: choco install kind && kind create cluster --name "${{ steps.uuid.outputs.result }}" --image kindest/node
 
       # NOTE: engineerd/setup-kind does not work on Windows runners
       - name: setup kind
