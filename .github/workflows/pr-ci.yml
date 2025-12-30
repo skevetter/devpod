@@ -263,7 +263,7 @@ jobs:
           - label: provider
             runner: windows-latest
             free-disk-space: false
-            install-kind: false
+            install-kind: true
             needs-github-token: false
 
           - label: docker-install
