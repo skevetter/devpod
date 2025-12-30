@@ -238,24 +238,14 @@ jobs:
         shell: bash
         working-directory: ./e2e
         run: |
-          GOOS=linux GOARCH=amd64 go build -ldflags "-s -w" -o ./bin/devpod-linux-amd64 .. && chmod +x ./bin/devpod-linux-amd64
-          GOOS=linux GOARCH=arm64 go build -ldflags "-s -w" -o ./bin/devpod-linux-arm64 .. && chmod +x ./bin/devpod-linux-arm64
-          GOOS=darwin GOARCH=amd64 go build -ldflags "-s -w" -o ./bin/devpod-darwin-amd64 .. && chmod +x ./bin/devpod-darwin-amd64
-          GOOS=darwin GOARCH=arm64 go build -ldflags "-s -w" -o ./bin/devpod-darwin-arm64 .. && chmod +x ./bin/devpod-darwin-arm64
-          # if [ "${{ runner.os }}" == "Windows" ]; then
-          #   TEMP_DIR="${{ runner.temp }}"
-          #   TEMP_DIR="${TEMP_DIR//\\//}"
-          #   ls -R "$TEMP_DIR/devpod-bin/"
-          #   mkdir -p ./bin/
-          #   find "$TEMP_DIR/devpod-bin/" -name "devpod-${{ steps.os.outputs.runner_os }}-amd64.exe" -exec mv {} ./bin/devpod-${{ steps.os.outputs.runner_os }}-amd64.exe \;
-          #   ls -R ./bin/
-          # else
-          #   ls -R "${{ runner.temp }}/devpod-bin/"
-          #   mkdir -p ./bin/
-          #   find "${{ runner.temp }}/devpod-bin/" -name "devpod-${{ steps.os.outputs.runner_os }}-amd64" -exec mv {} ./bin/devpod-${{ steps.os.outputs.runner_os }}-amd64 \;
-          #   chmod +x "./bin/devpod-${{ steps.os.outputs.runner_os }}-amd64"
-          #   ls -R ./bin/
-          # fi
+          mkdir -p ./bin/
+          GOOS=linux GOARCH=amd64 go build -ldflags "-s -w" -o ./bin/devpod-linux-amd64 .. &
+          GOOS=linux GOARCH=arm64 go build -ldflags "-s -w" -o ./bin/devpod-linux-arm64 .. &
+          GOOS=darwin GOARCH=amd64 go build -ldflags "-s -w" -o ./bin/devpod-darwin-amd64 .. &
+          GOOS=darwin GOARCH=arm64 go build -ldflags "-s -w" -o ./bin/devpod-darwin-arm64 .. &
+          wait
+          chmod +x ./bin/devpod-linux-amd64 ./bin/devpod-linux-arm64 ./bin/devpod-darwin-amd64 ./bin/devpod-darwin-arm64
+          go clean -modcache
 
       # NOTE: engineerd/setup-kind does not work on Windows runners
       - name: setup kind
