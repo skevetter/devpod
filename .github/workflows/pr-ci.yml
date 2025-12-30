@@ -20,30 +20,6 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request_target' }}
 
 jobs:
-  debug-wsl-kind:
-    name: Debug WSL Kind Setup
-    runs-on: windows-latest
-    steps:
-      - name: Install Podman and Kind
-        shell: bash
-        env:
-          KIND_EXPERIMENTAL_PROVIDER: podman
-          DOCKER_HOST: npipe:////./pipe/podman-machine-default
-        run: |
-          # Set WSL to version 2
-          wsl --set-default-version 2
-
-          # Install Podman and Kind
-          choco install podman-cli kind -y
-
-          # Start Podman machine
-          podman machine init
-          podman machine set --rootful
-          podman machine start
-
-          # Create Kind cluster with Podman
-          kind create cluster --name "test-cluster-podman" --image kindest/node:v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a
-
   pre-commit:
     name: Pre-commit Checks
     runs-on: ubuntu-latest
