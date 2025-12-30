@@ -322,7 +322,7 @@ jobs:
         working-directory: ./e2e
         env:
           # NOTE: Github credentials are required for tests using private repos
-          GH_USERNAME: ${{ secrets.GH_PRIVATE_REPO_USER_TEST }}
+          GH_USERNAME: ${{ github.repository_owner }}
           GH_ACCESS_TOKEN: ${{ secrets.GH_PRIVATE_REPO_TOKEN_TEST }}
         run: |
           if [ "${{ runner.os }}" == "Linux" ]; then
@@ -452,6 +452,7 @@ jobs:
         working-directory: ./desktop
         shell: bash
         run: |
+          # throwaway signing key for test CI builds
           yarn tauri signer generate --ci -w ./app.key -p "github-actions"
           TAURI_PUBKEY=$(cat ./app.key.pub)
           jq --arg pubkey "$TAURI_PUBKEY" '.plugins.updater.pubkey = $pubkey' src-tauri/tauri.conf.json > tmp.json && mv tmp.json src-tauri/tauri.conf.json
