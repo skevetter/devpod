@@ -331,6 +331,13 @@ jobs:
           UUID=$(python -c "import uuid; print(uuid.uuid4().hex)")
           echo "result=$UUID" >> "$GITHUB_OUTPUT"
 
+      - name: setup kind (Windows)
+        if: matrix.install-kind == true && runner.os == 'Windows'
+        shell: powershell
+        run: |
+          choco install kind
+          kind create cluster --name ${{ steps.uuid.outputs.result || 'kind' }} --image kindest/node:v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a
+
       # NOTE: engineerd/setup-kind does not work on Windows runners
       - name: setup kind
         if: matrix.install-kind == true && runner.os != 'Windows'

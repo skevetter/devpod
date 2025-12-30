@@ -211,10 +211,6 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 		})
 
 		ginkgo.It("run devpod in Kubernetes", ginkgo.Label("provider", "kubernetes"), func() {
-			if runtime.GOOS == "windows" {
-				ginkgo.Skip("Skipping Kubernetes test on Windows due to kubeconfig path issues")
-			}
-
 			ctx := context.Background()
 			f := framework.NewDefaultFramework(initialDir + "/bin")
 			tempDir, err := framework.CopyToTempDir("tests/up/testdata/kubernetes")
