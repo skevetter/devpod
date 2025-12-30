@@ -323,6 +323,14 @@ jobs:
             ls -R ./bin/
           fi
 
+      - name: setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "latest"
+
+      - name: install uuid package
+        run: npm install uuid
+
       - name: generate uuid
         id: uuid
         uses: actions/github-script@v8
