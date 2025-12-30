@@ -24,30 +24,38 @@ jobs:
         shell: bash
         run: wsl --list --verbose
 
+      - name: Install Ubuntu
+        shell: powershell
+        run: wsl --install Ubuntu-24.04
+
+      - name: List WSL Distros After Install
+        shell: bash
+        run: wsl --list --verbose
+
+      - name: Install Docker CLI in WSL
+        shell: bash
+        run: |
+          wsl -d Ubuntu-24.04 -- bash -c "sudo apt-get update && sudo apt-get install -y docker.io"
+
       - name: Show Docker Info
         shell: bash
-        run: docker info
+        run: wsl -d Ubuntu-24.04 -- docker info
 
       - name: Show Docker Version
         shell: bash
-        run: docker --version
+        run: wsl -d Ubuntu-24.04 -- docker --version
 
       - name: Install kind
         shell: bash
-        run: |
-          curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.24.0/kind-windows-amd64
-          chmod +x ./kind
-          mv ./kind /usr/local/bin/kind
-          kind version
+        run: wsl -d Ubuntu-24.04 -- bash -c "curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.24.0/kind-linux-amd64 && chmod +x ./kind && sudo mv ./kind /usr/local/bin/kind"
 
       - name: Create kind cluster
         shell: bash
-        run: |
-          kind create cluster --name debug-wsl-kind --image kindest/node:v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a
+        run: wsl -d Ubuntu-24.04 -- bash -c "kind create cluster --name debug-wsl-kind --image kindest/node:v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a"
 
       - name: List kind clusters
         shell: bash
-        run: kind get clusters
+        run: wsl -d Ubuntu-24.04 -- bash -c "kind get clusters"
 
   pre-commit:
     name: Pre-commit Checks
