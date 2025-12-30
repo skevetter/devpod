@@ -14,35 +14,18 @@ jobs:
           # Set WSL to version 2
           wsl --set-default-version 2
           # Install Docker Desktop and Kind
-          choco install docker-desktop kind -y
-          # Start Docker Desktop
-          Start-Process "C:\Program Files\Docker\Docker\Docker Desktop.exe" -WindowStyle Hidden
-          Start-Sleep -Seconds 30
+          choco install docker-desktop -y
 
       - name: Debug Docker startup
         shell: powershell
         run: |
-          Write-Host "Checking Docker installation..."
-          Get-ChildItem "C:\Program Files\Docker\Docker\" -ErrorAction SilentlyContinue
+          Write-Host "Starting Docker Desktop..."
+          docker desktop start
 
-          Write-Host "Checking Docker processes..."
-          Get-Process | Where-Object {$_.Name -like "*docker*"} | Format-Table
+          Write-Host "Switching to Linux engine..."
+          docker desktop engine linux
 
-          Write-Host "Checking Docker services..."
-          Get-Service | Where-Object {$_.Name -like "*docker*"} | Format-Table
-
-          Write-Host "Trying to start Docker service..."
-          Start-Service -Name "com.docker.service" -ErrorAction SilentlyContinue
-
-          Write-Host "Waiting and checking again..."
-          Start-Sleep -Seconds 30
-          docker version
-          docker info --format '{{.OSType}}'
-          Write-Host "Switching to Linux containers..."
-          & "C:\Program Files\Docker\Docker\DockerCli.exe" -SwitchLinuxEngine
-          Start-Sleep -Seconds 60
-          Write-Host "New Docker OS type:"
-          docker info --format '{{.OSType}}'
+          choco install kind -y
 
           # Create Kind cluster
           kind create cluster --name "debug-wsl-kind" --image kindest/node:v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a
