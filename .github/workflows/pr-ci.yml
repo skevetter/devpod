@@ -143,66 +143,78 @@ jobs:
     strategy:
       matrix:
         include:
-          - runner: ubuntu-latest
-            free-disk-space: true
+          - label: context
+            runner: ubuntu-latest
+            free-disk-space: false
             install-kind: false
             needs-github-token: false
-            label: context
-          - runner: ubuntu-latest
-            free-disk-space: true
+
+          - label: ide
+            runner: ubuntu-latest
+            free-disk-space: false
             install-kind: false
             needs-github-token: false
-            label: ide
-          - runner: ubuntu-latest
-            free-disk-space: true
+
+          - label: integration
+            runner: ubuntu-latest
+            free-disk-space: false
             install-kind: false
             needs-github-token: true
-            label: integration
-          - runner: ubuntu-latest
-            free-disk-space: true
+
+          - label: machine
+            runner: ubuntu-latest
+            free-disk-space: false
             install-kind: false
             needs-github-token: false
-            label: machine
-          - runner: ubuntu-latest
-            free-disk-space: true
+
+          - label: machineprovider
+            runner: ubuntu-latest
+            free-disk-space: false
             install-kind: false
             needs-github-token: true
-            label: machineprovider
-          - runner: ubuntu-latest
-            free-disk-space: true
+
+          - label: provider
+            runner: ubuntu-latest
+            free-disk-space: false
             install-kind: false
             needs-github-token: false
-            label: provider
-          - runner: ubuntu-latest
-            free-disk-space: true
+
+          - label: ssh
+            runner: ubuntu-latest
+            free-disk-space: false
             install-kind: false
             needs-github-token: false
-            label: ssh
-          - runner: ubuntu-latest
+
+          - label: build
+            runner: ubuntu-latest
             free-disk-space: true
             install-kind: true
             needs-github-token: false
-            label: build
-          - runner: ubuntu-latest
+
+          - label: up
+            runner: ubuntu-latest
             free-disk-space: true
             install-kind: true
             needs-github-token: false
-            label: up
-          - runner: windows-latest
-            free-disk-space: true
+
+          - label: context
+            runner: windows-latest
+            free-disk-space: false
             install-kind: false
             needs-github-token: false
-            label: context
-          - runner: windows-latest
-            free-disk-space: true
+
+          - label: provider
+            runner: windows-latest
+            free-disk-space: false
             install-kind: false
             needs-github-token: false
-            label: provider
-          - runner: ubuntu-latest
-            free-disk-space: true
+
+          - label: docker-install
+            runner: ubuntu-latest
+            free-disk-space: false
             install-kind: false
             needs-github-token: false
-            label: docker-install
+
     runs-on: ${{ matrix.runner }}
     name: Integration Test (${{ matrix.runner }} - ${{ matrix.label }})
     steps:
@@ -309,18 +321,21 @@ jobs:
             tauri_config_args: "--config src-tauri/tauri-flatpak.conf.json --bundles appimage,deb,updater"
             tauri_include_updater_json: true
             tauri_ci: true
+
           - arch: amd64
             target: x86_64-apple-darwin
             runner: macos-latest
             tauri_config_args: ""
             tauri_include_updater_json: false
             tauri_ci: true
+
           - arch: arm64
             target: aarch64-apple-darwin
             runner: macos-latest
             tauri_config_args: ""
             tauri_include_updater_json: false
             tauri_ci: false # https://github.com/tauri-apps/tauri/issues/3055
+
           - arch: amd64
             target: x86_64-pc-windows-msvc
             runner: windows-latest
@@ -414,5 +429,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
           TAURI_SIGNING_PRIVATE_KEY: "${{ github.workspace }}/desktop/app.key"
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: "github-actions"
+          # TAURI_SIGNING_PRIVATE_KEY_PASSWORD: "github-actions"
           CI: ${{ matrix.tauri_ci }}
