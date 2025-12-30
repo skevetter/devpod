@@ -8,13 +8,27 @@ jobs:
     name: Debug WSL Kind Setup
     runs-on: windows-latest
     steps:
-      - name: Choco install kind
+      - name: Install Podman and Kind
         shell: powershell
         run: |
           # Set WSL to version 2
           wsl --set-default-version 2
-          # Install Docker Desktop and Kind
-          choco install docker-desktop -y
+          # Install Podman and Kind
+          choco install podman-desktop kind -y
+
+          # Start Podman machine
+          podman machine init
+          podman machine start
+
+          # Verify Podman is working
+          podman version
+
+          # Set KIND_EXPERIMENTAL_PROVIDER to use podman
+          $env:KIND_EXPERIMENTAL_PROVIDER = "podman"
+          echo "KIND_EXPERIMENTAL_PROVIDER=podman" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+          # Create Kind cluster with Podman
+          kind create cluster --name "debug-wsl-kind" --image kindest/node:v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a
 
       - name: Debug Docker startup
         shell: powershell
