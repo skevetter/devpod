@@ -31,7 +31,7 @@ jobs:
           wsl --set-default-version 2
           # Install Podman and Kind
           # choco install podman-desktop kind -y
-          choco install -y kind
+          choco install -y podman-cli kind
 
           # Start Podman machine
           podman machine init
