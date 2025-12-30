@@ -137,9 +137,6 @@ jobs:
 
   integration-tests:
     needs: build-cli
-    permissions:
-      contents: read
-      packages: read
     strategy:
       matrix:
         include:
