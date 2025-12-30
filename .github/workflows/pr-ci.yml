@@ -136,7 +136,6 @@ jobs:
           path: dist/devpod-${{ steps.os.outputs.runner_os }}_*/devpod-${{ steps.os.outputs.runner_os }}-*
 
   integration-tests:
-    name: Integration Tests
     # needs: build-cli
     permissions:
       contents: read
@@ -205,6 +204,7 @@ jobs:
             needs-github-token: false
             label: docker-install
     runs-on: ${{ matrix.runner }}
+    name: Integration Test (${{ matrix.runner }} - ${{ matrix.label }})
     steps:
       - uses: jlumbroso/free-disk-space@v1.3.1
         if: matrix.free-disk-space == true && runner.os == 'Linux'
@@ -286,9 +286,8 @@ jobs:
         working-directory: ./e2e
         env:
           # NOTE: Github credentials are required for tests using private repos
-          GH_USERNAME: ${{ github.repository_owner }}
-          GH_ACCESS_TOKEN: ${{ github.token }}
-          GOTOOLCHAIN: auto
+          GH_USERNAME: ${{ secrets.GH_PRIVATE_REPO_USER_TEST }}
+          GH_ACCESS_TOKEN: ${{ secrets.GH_PRIVATE_REPO_TOKEN_TEST }}
         run: |
           if [ "${{ runner.os }}" == "Linux" ]; then
             sudo \
@@ -312,7 +311,6 @@ jobs:
         run: docker --version && docker ps
 
   build-desktop:
-    name: Build Desktop Application
     needs: build-cli
     strategy:
       matrix:
@@ -342,6 +340,7 @@ jobs:
             tauri_include_updater_json: false
             tauri_ci: true
     runs-on: ${{ matrix.runner }}
+    name: Build Desktop App (${{ matrix.runner }} - ${{ matrix.target }})
     steps:
       - uses: actions/checkout@v6
 

@@ -20,6 +20,10 @@ builds:
     goos: [linux]
     goarch: [amd64, arm64]
     binary: devpod-{{ .Os }}-{{ .Arch }}
+    ldflags:
+      - -s -W
+    env:
+      - CGO_ENABLED=0
 
   - id: devpod-darwin
     # hooks:
@@ -33,6 +37,10 @@ builds:
     goos: [windows]
     goarch: [amd64, arm64]
     binary: devpod-{{ .Os }}-{{ .Arch }}
+    ldflags:
+      - -s -W
+    env:
+      - CGO_ENABLED=0
 
   - id: devpod-dev
     goos: [linux]
