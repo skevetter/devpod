@@ -416,7 +416,7 @@ jobs:
         working-directory: ./desktop
         shell: bash
         run: |
-          yarn tauri signer generate -- --ci -w ./app.key -p "github-actions"
+          yarn tauri signer generate --ci -w ./app.key -p "github-actions"
           TAURI_PUBKEY=$(cat ./app.key.pub)
           jq --arg pubkey "$TAURI_PUBKEY" '.plugins.updater.pubkey = $pubkey' src-tauri/tauri.conf.json > tmp.json && mv tmp.json src-tauri/tauri.conf.json
 
@@ -429,5 +429,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
           TAURI_SIGNING_PRIVATE_KEY: "${{ github.workspace }}/desktop/app.key"
-          # TAURI_SIGNING_PRIVATE_KEY_PASSWORD: "github-actions"
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: "github-actions"
           CI: ${{ matrix.tauri_ci }}
