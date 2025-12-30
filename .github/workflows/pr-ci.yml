@@ -8,6 +8,12 @@ jobs:
     name: Debug WSL Kind Setup
     runs-on: windows-latest
     steps:
+      - name: Choco install kind
+        shell: bash
+        run: |
+          wsl --set-default-version 2
+          choco install kind && kind create cluster --name "debug-wsl-kind" --image kindest/node
+
       - name: WSL Version
         shell: bash
         run: wsl --version
