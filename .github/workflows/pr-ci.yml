@@ -264,19 +264,19 @@ jobs:
           version: v0.24.0
           image: kindest/node:v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a
 
-      - name: remove docker
-        if: matrix.label == 'docker-install'
-        run: |
-          sudo systemctl stop docker.socket docker.service
-          sudo apt-get remove -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-          sudo rm -rf /var/lib/docker /var/lib/containerd /usr/bin/docker /usr/bin/dockerd
-
       - name: log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ github.token }}
+
+      - name: remove docker
+        if: matrix.label == 'docker-install'
+        run: |
+          sudo systemctl stop docker.socket docker.service
+          sudo apt-get remove -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+          sudo rm -rf /var/lib/docker /var/lib/containerd /usr/bin/docker /usr/bin/dockerd
 
       - name: run test
         shell: bash
