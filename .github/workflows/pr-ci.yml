@@ -17,25 +17,26 @@ jobs:
           choco install docker-desktop kind -y
           # Start Docker Desktop
           Start-Process "C:\Program Files\Docker\Docker\Docker Desktop.exe" -WindowStyle Hidden
-          # Wait for Docker to be ready
-          $timeout = 300
-          $timer = 0
-          do {
-            Start-Sleep -Seconds 10
-            $timer += 10
-            Write-Host "Waiting for Docker... ($timer/$timeout seconds)"
-            try {
-              $dockerReady = (docker version 2>$null) -and $?
-            } catch {
-              $dockerReady = $false
-            }
-          } while (-not $dockerReady -and $timer -lt $timeout)
+          Start-Sleep -Seconds 30
 
-          if (-not $dockerReady) {
-            throw "Docker failed to start within $timeout seconds"
-          }
+      - name: Debug Docker startup
+        shell: powershell
+        run: |
+          Write-Host "Checking Docker installation..."
+          Get-ChildItem "C:\Program Files\Docker\Docker\" -ErrorAction SilentlyContinue
 
-          Write-Host "Current Docker OS type:"
+          Write-Host "Checking Docker processes..."
+          Get-Process | Where-Object {$_.Name -like "*docker*"} | Format-Table
+
+          Write-Host "Checking Docker services..."
+          Get-Service | Where-Object {$_.Name -like "*docker*"} | Format-Table
+
+          Write-Host "Trying to start Docker service..."
+          Start-Service -Name "com.docker.service" -ErrorAction SilentlyContinue
+
+          Write-Host "Waiting and checking again..."
+          Start-Sleep -Seconds 30
+          docker version
           docker info --format '{{.OSType}}'
           Write-Host "Switching to Linux containers..."
           & "C:\Program Files\Docker\Docker\DockerCli.exe" -SwitchLinuxEngine
