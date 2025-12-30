@@ -191,9 +191,45 @@ jobs:
             install-kind: true
             needs-github-token: false
 
-          - label: up
+          - label: up-devpod
             runner: ubuntu-latest
-            free-disk-space: true
+            free-disk-space: false
+            install-kind: true
+            needs-github-token: false
+
+          - label: up-podman
+            runner: ubuntu-latest
+            free-disk-space: false
+            install-kind: true
+            needs-github-token: false
+
+          - label: up-docker
+            runner: ubuntu-latest
+            free-disk-space: false
+            install-kind: true
+            needs-github-token: false
+
+          - label: up-docker-wsl
+            runner: ubuntu-latest
+            free-disk-space: false
+            install-kind: true
+            needs-github-token: false
+
+          - label: up-docker-compose
+            runner: ubuntu-latest
+            free-disk-space: false
+            install-kind: true
+            needs-github-token: false
+
+          - label: up-docker-compose-build
+            runner: ubuntu-latest
+            free-disk-space: false
+            install-kind: true
+            needs-github-token: false
+
+          - label: up-docker-build
+            runner: ubuntu-latest
+            free-disk-space: false
             install-kind: true
             needs-github-token: false
 

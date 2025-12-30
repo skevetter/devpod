@@ -20,7 +20,7 @@ import (
 )
 
 var _ = DevPodDescribe("devpod up test suite", func() {
-	ginkgo.Context("testing up command", ginkgo.Label("up"), func() {
+	ginkgo.Context("testing up command", ginkgo.Label("up", "up-devpod"), func() {
 		var dockerHelper *docker.DockerHelper
 		var initialDir string
 
