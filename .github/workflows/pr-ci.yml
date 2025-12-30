@@ -28,6 +28,7 @@ jobs:
         shell: bash
         env:
           KIND_EXPERIMENTAL_PROVIDER: podman
+          DOCKER_HOST: npipe:////./pipe/podman-machine-default
         run: |
           # Set WSL to version 2
           wsl --set-default-version 2
@@ -411,6 +412,7 @@ jobs:
         shell: bash
         env:
           KIND_EXPERIMENTAL_PROVIDER: podman
+          DOCKER_HOST: npipe:////./pipe/podman-machine-default
         run: |
           wsl --set-default-version 2
           choco install podman-cli kind -y
