@@ -323,21 +323,12 @@ jobs:
             ls -R ./bin/
           fi
 
-      - name: setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: "latest"
-
-      - name: install uuid package
-        run: npm install uuid
-
       - name: generate uuid
         id: uuid
-        uses: actions/github-script@v8
-        with:
-          script: |
-            const { v4: uuidv4 } = require('uuid');
-            return uuidv4().toLowerCase().replace(/-/g, '');
+        shell: bash
+        run: |
+          UUID=$(python -c "import uuid; print(uuid.uuid4().hex)")
+          echo "result=$UUID" >> "$GITHUB_OUTPUT"
 
       # NOTE: engineerd/setup-kind does not work on Windows runners
       - name: setup kind
