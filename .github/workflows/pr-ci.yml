@@ -24,8 +24,16 @@ jobs:
             Start-Sleep -Seconds 10
             $timer += 10
             Write-Host "Waiting for Docker... ($timer/$timeout seconds)"
-            $dockerReady = docker version 2>$null
+            try {
+              $dockerReady = (docker version 2>$null) -and $?
+            } catch {
+              $dockerReady = $false
+            }
           } while (-not $dockerReady -and $timer -lt $timeout)
+
+          if (-not $dockerReady) {
+            throw "Docker failed to start within $timeout seconds"
+          }
 
           Write-Host "Current Docker OS type:"
           docker info --format '{{.OSType}}'
