@@ -335,6 +335,9 @@ jobs:
         if: matrix.install-kind == true && runner.os == 'Windows'
         shell: powershell
         run: |
+          # Switch Docker to Linux containers
+          & "C:\Program Files\Docker\Docker\DockerCli.exe" -SwitchLinuxEngine
+          Start-Sleep -Seconds 30
           choco install kind
           kind create cluster --name ${{ steps.uuid.outputs.result || 'kind' }} --image kindest/node:v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a
 
