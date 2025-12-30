@@ -230,7 +230,7 @@ jobs:
         uses: actions/download-artifact@v7
         with:
           pattern: devpod-${{ steps.os.outputs.runner_os }}
-          path: /tmp/devpod-bin/
+          path: ${{ runner.temp }}/devpod-bin/
           merge-multiple: true
 
       # e2e expects executable to have name defined in e2e/framework/framework.go
@@ -238,12 +238,12 @@ jobs:
         shell: bash
         working-directory: ./e2e
         run: |
-          ls -R /tmp/devpod-bin/
+          ls -R ${{ runner.temp }}/devpod-bin/
           mkdir -p ./bin/
           if [ "${{ runner.os }}" == "Windows" ]; then
-            find /tmp/devpod-bin/ -name "devpod-${{ steps.os.outputs.runner_os }}-amd64.exe" -exec mv {} ./bin/devpod-${{ steps.os.outputs.runner_os }}-amd64.exe \;
+            find ${{ runner.temp }}/devpod-bin/ -name "devpod-${{ steps.os.outputs.runner_os }}-amd64.exe" -exec mv {} ./bin/devpod-${{ steps.os.outputs.runner_os }}-amd64.exe \;
           else
-            find /tmp/devpod-bin/ -name "devpod-${{ steps.os.outputs.runner_os }}-amd64" -exec mv {} ./bin/devpod-${{ steps.os.outputs.runner_os }}-amd64 \;
+            find ${{ runner.temp }}/devpod-bin/ -name "devpod-${{ steps.os.outputs.runner_os }}-amd64" -exec mv {} ./bin/devpod-${{ steps.os.outputs.runner_os }}-amd64 \;
             chmod +x "./bin/devpod-${{ steps.os.outputs.runner_os }}-amd64"
           fi
           ls -R ./bin/
