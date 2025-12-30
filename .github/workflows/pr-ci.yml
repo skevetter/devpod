@@ -368,26 +368,25 @@ jobs:
         uses: actions/download-artifact@v7
         with:
           pattern: devpod-${{ steps.os.outputs.runner_os }}
-          path: desktop/src-tauri/bin/
+          path: ${{ runner.temp }}/devpod-bin/
           merge-multiple: true
 
       - name: setup executable
         shell: bash
+        working-directory: ./desktop/src-tauri
         run: |
-          ls -R ./desktop/src-tauri/bin/
-          if [ "${{ matrix.arch }}" == "arm64" ]; then
-            BINARY_ARCH="arm64"
-          else
-            BINARY_ARCH="${{ matrix.arch }}"
-          fi
-
-          TARGET_NAME="${{ matrix.target }}"
-
           if [ "${{ runner.os }}" == "Windows" ]; then
-            find ./desktop/src-tauri/bin/ -name "devpod-${{ steps.os.outputs.runner_os }}-${BINARY_ARCH}.exe" -exec cp {} ./desktop/src-tauri/bin/devpod-cli-${TARGET_NAME}.exe \;
+            TEMP_DIR="${{ runner.temp }}"
+            TEMP_DIR="${TEMP_DIR//\\//}"
+            ls -R "$TEMP_DIR/devpod-bin/"
+            mkdir -p ./bin/
+            find "$TEMP_DIR/devpod-bin/" -name "devpod-${{ steps.os.outputs.runner_os }}-${{ matrix.arch }}.exe" -exec cp {} ./bin/devpod-cli-${{ matrix.target }}.exe \;
           else
-            find ./desktop/src-tauri/bin/ -name "devpod-${{ steps.os.outputs.runner_os }}-${BINARY_ARCH}" -exec cp {} ./desktop/src-tauri/bin/devpod-cli-${TARGET_NAME} \;
-            chmod +x "./desktop/src-tauri/bin/devpod-cli-${TARGET_NAME}"
+            ls -R "${{ runner.temp }}/devpod-bin/"
+            mkdir -p ./bin/
+            find "${{ runner.temp }}/devpod-bin/" -name "devpod-${{ steps.os.outputs.runner_os }}-${{ matrix.arch }}" -exec cp {} ./bin/devpod-cli-${{ matrix.target }} \;
+            chmod +x "./bin/devpod-cli-${{ matrix.target }}"
+            ls -R ./bin/
           fi
 
       - name: install linux dependencies
