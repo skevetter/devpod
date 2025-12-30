@@ -12,7 +12,7 @@ jobs:
         shell: bash
         run: |
           wsl --set-default-version 2
-          choco install kind && kind create cluster --name "debug-wsl-kind" --image kindest/node
+          choco install kind && kind create cluster --name "debug-wsl-kind" --image kindest/node:v1.35.0@sha256:452d707d4862f52530247495d180205e029056831160e22870e37e3f6c1ac31f
 
       - name: WSL Version
         shell: bash
@@ -391,7 +391,7 @@ jobs:
         shell: bash
         run: |
           wsl --set-default-version 2
-          choco install kind && kind create cluster --name "${{ steps.uuid.outputs.result }}" --image kindest/node
+          choco install kind && kind create cluster --name "${{ steps.uuid.outputs.result }}" --image kindest/node:v1.35.0@sha256:452d707d4862f52530247495d180205e029056831160e22870e37e3f6c1ac31f
 
       # NOTE: engineerd/setup-kind does not work on Windows runners
       - name: setup kind
