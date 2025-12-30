@@ -145,37 +145,37 @@ jobs:
       matrix:
         include:
           - runner: ubuntu-latest
-            free-disk-space: false
+            free-disk-space: true
             install-kind: false
             needs-github-token: false
             label: context
           - runner: ubuntu-latest
-            free-disk-space: false
+            free-disk-space: true
             install-kind: false
             needs-github-token: false
             label: ide
           - runner: ubuntu-latest
-            free-disk-space: false
+            free-disk-space: true
             install-kind: false
             needs-github-token: true
             label: integration
           - runner: ubuntu-latest
-            free-disk-space: false
+            free-disk-space: true
             install-kind: false
             needs-github-token: false
             label: machine
           - runner: ubuntu-latest
-            free-disk-space: false
+            free-disk-space: true
             install-kind: false
             needs-github-token: true
             label: machineprovider
           - runner: ubuntu-latest
-            free-disk-space: false
+            free-disk-space: true
             install-kind: false
             needs-github-token: false
             label: provider
           - runner: ubuntu-latest
-            free-disk-space: false
+            free-disk-space: true
             install-kind: false
             needs-github-token: false
             label: ssh
@@ -190,17 +190,17 @@ jobs:
             needs-github-token: false
             label: up
           - runner: windows-latest
-            free-disk-space: false
+            free-disk-space: true
             install-kind: false
             needs-github-token: false
             label: context
           - runner: windows-latest
-            free-disk-space: false
+            free-disk-space: true
             install-kind: false
             needs-github-token: false
             label: provider
           - runner: ubuntu-latest
-            free-disk-space: false
+            free-disk-space: true
             install-kind: false
             needs-github-token: false
             label: docker-install
@@ -238,14 +238,26 @@ jobs:
         shell: bash
         working-directory: ./e2e
         run: |
-          mkdir -p ./bin/
-          GOOS=linux GOARCH=amd64 go build -ldflags "-s -w" -o ./bin/devpod-linux-amd64 .. &
-          GOOS=linux GOARCH=arm64 go build -ldflags "-s -w" -o ./bin/devpod-linux-arm64 .. &
-          GOOS=darwin GOARCH=amd64 go build -ldflags "-s -w" -o ./bin/devpod-darwin-amd64 .. &
-          GOOS=darwin GOARCH=arm64 go build -ldflags "-s -w" -o ./bin/devpod-darwin-arm64 .. &
-          wait
-          chmod +x ./bin/devpod-linux-amd64 ./bin/devpod-linux-arm64 ./bin/devpod-darwin-amd64 ./bin/devpod-darwin-arm64
+          GOOS=linux GOARCH=amd64 go build -ldflags "-s -w" -o ./bin/devpod-linux-amd64 .. && chmod +x ./bin/devpod-linux-amd64
+          GOOS=linux GOARCH=arm64 go build -ldflags "-s -w" -o ./bin/devpod-linux-arm64 .. && chmod +x ./bin/devpod-linux-arm64
+          if [ "${{ runner.os }}" == "windows" ]; then
+            GOOS=windows GOARCH=amd64 go build -ldflags "-s -w" -o ./bin/devpod-windows-amd64.exe ..
+          fi
           go clean -modcache
+          # if [ "${{ runner.os }}" == "Windows" ]; then
+          #   TEMP_DIR="${{ runner.temp }}"
+          #   TEMP_DIR="${TEMP_DIR//\\//}"
+          #   ls -R "$TEMP_DIR/devpod-bin/"
+          #   mkdir -p ./bin/
+          #   find "$TEMP_DIR/devpod-bin/" -name "devpod-${{ steps.os.outputs.runner_os }}-amd64.exe" -exec mv {} ./bin/devpod-${{ steps.os.outputs.runner_os }}-amd64.exe \;
+          #   ls -R ./bin/
+          # else
+          #   ls -R "${{ runner.temp }}/devpod-bin/"
+          #   mkdir -p ./bin/
+          #   find "${{ runner.temp }}/devpod-bin/" -name "devpod-${{ steps.os.outputs.runner_os }}-amd64" -exec mv {} ./bin/devpod-${{ steps.os.outputs.runner_os }}-amd64 \;
+          #   chmod +x "./bin/devpod-${{ steps.os.outputs.runner_os }}-amd64"
+          #   ls -R ./bin/
+          # fi
 
       # NOTE: engineerd/setup-kind does not work on Windows runners
       - name: setup kind
