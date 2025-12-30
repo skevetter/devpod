@@ -239,6 +239,7 @@ jobs:
         working-directory: ./e2e
         run: |
           ls -R /tmp/devpod-bin/
+          mkdir -p ./bin/
           if [ "${{ runner.os }}" == "Windows" ]; then
             find /tmp/devpod-bin/ -name "devpod-${{ steps.os.outputs.runner_os }}-amd64.exe" -exec mv {} ./bin/devpod-${{ steps.os.outputs.runner_os }}-amd64.exe \;
           else
