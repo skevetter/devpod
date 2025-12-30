@@ -173,7 +173,7 @@ jobs:
           - label: provider
             runner: ubuntu-latest
             free-disk-space: false
-            install-kind: false
+            install-kind: true
             needs-github-token: false
 
           - label: ssh
@@ -324,6 +324,7 @@ jobs:
           fi
 
       - name: generate uuid
+        if: matrix.install-kind == true && runner.os != 'Windows'
         id: uuid
         shell: bash
         run: |
