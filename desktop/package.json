@@ -21,8 +21,8 @@
     "lint:ci": "eslint . --ext '.ts,.tsx'"
   },
   "dependencies": {
-    "@chakra-ui/icons": "2.1.1",
-    "@chakra-ui/react": "2.8.1",
+    "@chakra-ui/icons": "2.2.4",
+    "@chakra-ui/react": "2.10.9",
     "@emotion/react": "11.11.1",
     "@emotion/styled": "11.11.0",
     "@headlessui/react": "1.7.19",
