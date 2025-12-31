@@ -136,7 +136,7 @@ func NewUpCmd(f *flags.GlobalFlags) *cobra.Command {
 	upCmd.Flags().StringArrayVar(&cmd.InitEnv, "init-env", []string{}, "Extra env variables to inject during the initialization of the workspace. E.g. MY_ENV_VAR=MY_VALUE")
 	upCmd.Flags().StringVar(&cmd.ID, "id", "", "The id to use for the workspace")
 	upCmd.Flags().StringVar(&cmd.Machine, "machine", "", "The machine to use for this workspace. The machine needs to exist beforehand or the command will fail. If the workspace already exists, this option has no effect")
-	flags.StringVarE(upCmd.Flags(), &cmd.IDE, "ide", "IDE", "", "The IDE to open the workspace in. If empty will use vscode locally or in browser")
+	flags.StringVarE(upCmd.Flags(), &cmd.IDE, "ide", flags.DevpodEnvPrefix+"IDE", "", "The IDE to open the workspace in. If empty will use vscode locally or in browser")
 	upCmd.Flags().BoolVar(&cmd.OpenIDE, "open-ide", true, "If this is false and an IDE is configured, DevPod will only install the IDE server backend, but not open it")
 	upCmd.Flags().Var(&cmd.GitCloneStrategy, "git-clone-strategy", "The git clone strategy DevPod uses to checkout git based workspaces. Can be full (default), blobless, treeless or shallow")
 	upCmd.Flags().BoolVar(&cmd.GitCloneRecursiveSubmodules, "git-clone-recursive-submodules", false, "If true will clone git submodule repositories recursively")
