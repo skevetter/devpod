@@ -15,10 +15,6 @@ on:
       - go.mod
       - go.sum
 
-concurrency:
-  group: ci-${{ github.sha }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request_target' }}
-
 jobs:
   pre-commit:
     name: Pre-commit Checks

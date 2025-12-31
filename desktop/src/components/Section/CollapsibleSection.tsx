@@ -63,7 +63,7 @@ export const CollapsibleSection = forwardRef<HTMLDivElement, TCollapsibleSection
 
     return (
       <Box width="full">
-        <Button ref={ref} variant="ghost" width="full" {...headerProps} {...buttonProps}>
+        <Button ref={ref} variant="ghost" width="full" {...buttonProps} {...headerProps}>
           <Box as="span" flex="1" textAlign="left" display="flex" alignItems="center">
             {showIcon && (
               <Icon
