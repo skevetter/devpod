@@ -1,9 +1,5 @@
 version: "3"
 
-vars:
-  BUILD_PLATFORMS: '{{default "darwin linux" .BUILD_PLATFORMS}}'
-  BUILD_ARCHS: '{{default "amd64 arm64" .BUILD_ARCHS}}'
-
 tasks:
   cli:
     desc: manage devpod CLI tasks
