@@ -571,30 +571,50 @@ func (cmd *SSHCmd) setupGPGAgent(
 	containerClient *ssh.Client,
 	log log.Logger,
 ) error {
-	log.Debugf("[GPG] exporting gpg owner trust from host")
+	log.Debug("exporting gpg owner trust from host")
 	ownerTrustExport, err := gpg.GetHostOwnerTrust()
 	if err != nil {
-		return fmt.Errorf("export local ownertrust from GPG %w", err)
+		log.WithFields(logrus.Fields{
+			"error": err,
+		}).Error("failed to export GPG owner trust, skipping GPG forwarding")
+		return fmt.Errorf("could not export GPG owner trust")
 	}
 	ownerTrustArgument := base64.StdEncoding.EncodeToString(ownerTrustExport)
 
-	log.Debugf("[GPG] detecting gpg-agent socket path on host")
+	log.Debug("detecting gpg-agent socket path on host")
 	// Detect local agent extra socket, this will be forwarded to the remote and
 	// symlinked in multiple paths
+	start := time.Now()
 	gpgExtraSocketBytes, err := exec.Command("gpgconf", []string{"--list-dir", "agent-extra-socket"}...).
 		Output()
+	duration := time.Since(start)
 	if err != nil {
-		return err
+		log.WithFields(logrus.Fields{
+			"error":    err,
+			"duration": duration,
+		}).Error("failed to detect GPG socket path, skipping GPG forwarding")
+		return fmt.Errorf("could not detect GPG socket path")
 	}
 
 	gpgExtraSocketPath := strings.TrimSpace(string(gpgExtraSocketBytes))
-	log.Debugf("[GPG] detected gpg-agent socket path %s", gpgExtraSocketPath)
+	log.WithFields(logrus.Fields{
+		"gpgSocketPath": gpgExtraSocketPath,
+		"duration":      duration,
+	}).Debug("detected gpg-agent socket path")
 
+	start = time.Now()
 	gitGpgKey, err := exec.Command("git", []string{"config", "user.signingKey"}...).Output()
+	duration = time.Since(start)
 	if err != nil {
-		log.Debugf("[GPG] no git signkey detected, skipping")
+		log.WithFields(logrus.Fields{
+			"error":    err,
+			"duration": duration,
+		}).Debug("no git signkey detected, skipping")
 	} else {
-		log.Debugf("[GPG] detected git sign key %s", gitGpgKey)
+		log.WithFields(logrus.Fields{
+			"gitGpgKey": gitGpgKey,
+			"duration":  duration,
+		}).Debug("detected git sign key")
 	}
 
 	cmd.ReverseForwardPorts = append(cmd.ReverseForwardPorts, gpgExtraSocketPath)
@@ -621,26 +641,44 @@ func (cmd *SSHCmd) setupGPGAgent(
 		forwardAgent = append(forwardAgent, fmt.Sprintf("'%s'", gitKey))
 	}
 
+	log.WithFields(logrus.Fields{
+		"gpgSocketPath": gpgExtraSocketPath,
+	}).Debug("start reverse forward of gpg-agent socket")
+
+	go func() {
+		if err := cmd.reverseForwardPorts(ctx, containerClient, log); err != nil {
+			log.WithFields(logrus.Fields{
+				"error": err,
+			}).Warn("gpg-agent socket reverse forwarding failed")
+		} else {
+			log.Debug("gpg-agent socket reverse forwarding ended")
+		}
+	}()
+
+	writer := log.ErrorStreamOnly().Writer(logrus.InfoLevel, false)
+	defer func() { _ = writer.Close() }()
+
 	command := strings.Join(forwardAgent, " ")
 	if cmd.User != "" && cmd.User != "root" {
 		command = fmt.Sprintf("su -c \"%s\" '%s'", command, cmd.User)
 	}
 
-	log.Debugf(
-		"[GPG] start reverse forward of gpg-agent socket %s, keeping connection open",
-		gpgExtraSocketPath,
-	)
-
-	go func() {
-		log.Error(cmd.reverseForwardPorts(ctx, containerClient, log))
-	}()
-
-	writer := log.ErrorStreamOnly().Writer(logrus.InfoLevel, false)
-	defer func() { _ = writer.Close() }()
-	err = devssh.Run(ctx, containerClient, command, nil, writer, writer, nil)
+	// track the amount of time it takes to setup gpg agent forwarding
+	// to determine whether the timeout duration is appropriate
+	start = time.Now()
+	err = devssh.RunWithTimeout(ctx, containerClient, command, nil, writer, writer, nil, 15*time.Second)
+	duration = time.Since(start)
 	if err != nil {
-		return fmt.Errorf("run gpg agent setup command %w", err)
+		log.WithFields(logrus.Fields{
+			"error":    err,
+			"duration": duration,
+		}).Warn("failed to setup gpg agent forwarding")
+		return fmt.Errorf("GPG agent setup failed")
 	}
+
+	log.WithFields(logrus.Fields{
+		"duration": duration,
+	}).Debug("gpg agent setup completed")
 
 	return nil
 }

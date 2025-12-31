@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/skevetter/log"
 
@@ -46,11 +47,45 @@ func IsGpgTunnelRunning(
 }
 
 func GetHostPubKey() ([]byte, error) {
-	return exec.Command("gpg", "--armor", "--export").Output()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	start := time.Now()
+	result, err := exec.CommandContext(ctx, "gpg", "--armor", "--export").Output()
+	duration := time.Since(start)
+
+	if err != nil {
+		log.WithFields(logrus.Fields{
+			"error":    err,
+			"duration": duration,
+		}).Debug("gpg public key export failed")
+	} else {
+		log.WithFields(logrus.Fields{
+			"duration": duration,
+		}).Debug("gpg public key export completed")
+	}
+
+	return result, err
 }
 
 func GetHostOwnerTrust() ([]byte, error) {
-	return exec.Command("gpg", "--export-ownertrust").Output()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	start := time.Now()
+	result, err := exec.CommandContext(ctx, "gpg", "--export-ownertrust").Output()
+	duration := time.Since(start)
+
+	if err != nil {
+		log.WithFields(logrus.Fields{
+			"error":    err,
+			"duration": duration,
+		}).Debug("gpg owner trust export failed")
+	} else {
+		log.WithFields(logrus.Fields{
+			"duration": duration,
+		}).Debug("gpg owner trust export completed")
+	}
+
+	return result, err
 }
 
 func (g *GPGConf) StopGpgAgent() error {
