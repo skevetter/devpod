@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - .github/**
+      - Taskfile.yml
   pull_request_target:
     paths:
       - cmd/**
