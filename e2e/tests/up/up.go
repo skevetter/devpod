@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 
 	"github.com/onsi/ginkgo/v2"
@@ -173,11 +172,6 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 		})
 
 		ginkgo.It("should allow checkout of a private GitRepo", ginkgo.Label("git", "private"), func() {
-			// need to debug
-			if runtime.GOOS == "windows" {
-				ginkgo.Skip("skipping on windows")
-			}
-
 			username := os.Getenv("GH_USERNAME")
 			token := os.Getenv("GH_ACCESS_TOKEN")
 
@@ -210,11 +204,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 			fmt.Println(out)
 		})
 
-		ginkgo.It("run devpod in Kubernetes", ginkgo.Label("provider", "kubernetes"), func() {
-			if runtime.GOOS == "windows" {
-				ginkgo.Skip("Kubernetes provider not supported on Windows")
-			}
-
+		ginkgo.It("run devpod in Kubernetes", ginkgo.Label("provider-kubernetes"), func() {
 			ctx := context.Background()
 			f := framework.NewDefaultFramework(initialDir + "/bin")
 			tempDir, err := framework.CopyToTempDir("tests/up/testdata/kubernetes")
@@ -644,6 +634,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 				framework.ExpectNoError(err)
 				gomega.Expect(out).To(gomega.ContainSubstring("Correct order"))
 			}, ginkgo.SpecTimeout(framework.GetTimeout()))
+
 			ginkgo.It("should detect self-dependency", ginkgo.Label("features", "depends-on"), func(ctx context.Context) {
 				f, err := setupDockerProvider(initialDir+"/bin", "docker")
 				framework.ExpectNoError(err)

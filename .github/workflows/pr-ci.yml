@@ -250,7 +250,7 @@ jobs:
             install-kind: true
             needs-github-token: true
 
-          - label: up && provider
+          - label: up && provider-kubernetes
             runner: ubuntu-latest
             free-disk-space: true
             install-kind: true
