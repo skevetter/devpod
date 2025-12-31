@@ -467,15 +467,15 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: "github-actions"
           CI: ${{ matrix.tauri_ci }}
 
+      - name: upload artifacts
+        uses: actions/upload-artifact@v6
+        with:
+          name: desktop-${{ matrix.runner }}-${{ matrix.arch }}
+          path: desktop/src-tauri/target/${{ matrix.target }}/release/bundle/**/*
+
   pass-check:
     name: Pass Check
-    needs:
-      [
-        build-ui,
-        build-cli,
-        integration-tests,
-        build-desktop,
-      ]
+    needs: [build-ui, build-cli, integration-tests, build-desktop]
     runs-on: ubuntu-latest
     steps:
       - run: echo "All checks passed!"
