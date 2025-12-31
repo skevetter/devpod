@@ -7,11 +7,11 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/loft-sh/ssh"
 	copypkg "github.com/skevetter/devpod/pkg/copy"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	shellpkg "github.com/skevetter/devpod/pkg/shell"
 	"github.com/skevetter/log"
+	"github.com/skevetter/ssh"
 )
 
 func NewContainerServer(addr string, workdir string, log log.Logger) (Server, error) {

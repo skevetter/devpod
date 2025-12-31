@@ -33,7 +33,6 @@ require (
 	github.com/loft-sh/api/v4 v4.3.0-devpod.alpha.31
 	github.com/loft-sh/apiserver v0.0.0-20250910060242-4b9f3ffe0646
 	github.com/loft-sh/programming-language-detection v0.0.5
-	github.com/loft-sh/ssh v0.0.5
 	github.com/mattn/go-isatty v0.0.20
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d
 	github.com/moby/buildkit v0.26.3
@@ -47,6 +46,7 @@ require (
 	github.com/rhysd/go-github-selfupdate v1.2.3
 	github.com/sirupsen/logrus v1.9.3
 	github.com/skevetter/log v0.0.0-20251225081445-b5dfd11ce781
+	github.com/skevetter/ssh v0.0.8
 	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
@@ -58,7 +58,6 @@ require (
 	golang.org/x/term v0.38.0
 	google.golang.org/grpc v1.78.0
 	google.golang.org/protobuf v1.36.11
-	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce
 	gopkg.in/square/go-jose.v2 v2.6.0
 	gopkg.in/yaml.v2 v2.4.0
 	gotest.tools v2.2.0+incompatible
@@ -287,7 +286,7 @@ require (
 
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20250102033503-faa5f7b0171c // indirect
-	github.com/Microsoft/go-winio v0.6.2 // indirect
+	github.com/Microsoft/go-winio v0.6.2
 	github.com/PaesslerAG/gval v1.0.0 // indirect
 	github.com/anmitsu/go-shlex v0.0.0-20200514113438-38f4b401e2be // indirect
 	github.com/containerd/console v1.0.5 // indirect

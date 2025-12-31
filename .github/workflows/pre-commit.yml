@@ -4,12 +4,25 @@ on:
   push:
     branches: [main]
   pull_request:
+    paths:
+      - .github/**
+  pull_request_target:
+    paths:
+      - cmd/**
+      - pkg/**
+      - desktop/**
+      - e2e/**
+      - Cargo.toml
+      - Cargo.lock
+      - go.mod
+      - go.sum
 
 permissions:
   contents: read
 
 jobs:
   check:
+    name: Pre-commit Checks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6

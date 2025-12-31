@@ -133,6 +133,7 @@ jobs:
         if: matrix.settings.target == 'x86_64-unknown-linux-gnu'
         uses: tauri-apps/tauri-action@v0.6
         with:
+          releaseId: ${{ needs.create-release.outputs.release_id }}
           projectPath: ./desktop
           args: --target ${{ matrix.settings.target }} --config src-tauri/tauri-flatpak.conf.json --bundles appimage,deb,updater
           includeUpdaterJson: true

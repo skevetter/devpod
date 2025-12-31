@@ -31,7 +31,7 @@ var _ = DevPodDescribe("devpod machine delete", func() {
 			err = f.DevPodProviderAdd(ctx, tempDir+"/mock-provider.yaml")
 			framework.ExpectNoError(err)
 
-			ginkgo.By("Use mock provier")
+			ginkgo.By("Use mock provider")
 			err = f.DevPodProviderUse(context.Background(), "mock-provider")
 			framework.ExpectNoError(err)
 

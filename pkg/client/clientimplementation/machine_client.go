@@ -19,9 +19,12 @@ import (
 
 func NewMachineClient(devPodConfig *config.Config, provider *provider.ProviderConfig, machine *provider.Machine, log log.Logger) (client.MachineClient, error) {
 	if !provider.IsMachineProvider() {
-		return nil, fmt.Errorf("provider '%s' is not a machine provider. Please use another provider", provider.Name)
+		log.WithFields(logrus.Fields{
+			"provider": provider.Name,
+		}).Error("provider is not a machine provider")
+		return nil, fmt.Errorf("Provider is not a machine provider. Use another provider")
 	} else if machine == nil {
-		return nil, fmt.Errorf("machine doesn't exist. Seems like it was deleted without the workspace being deleted")
+		return nil, fmt.Errorf("Machine does not exist. Perhaps it was deleted without the workspace being deleted")
 	}
 
 	return &machineClient{
@@ -90,7 +93,10 @@ func (s *machineClient) Create(ctx context.Context, options client.CreateOptions
 	defer func() { _ = writer.Close() }()
 
 	// create a machine
-	s.log.Infof("Create machine '%s' with provider '%s'...", s.machine.ID, s.config.Name)
+	s.log.WithFields(logrus.Fields{
+		"machineId": s.machine.ID,
+		"provider":  s.config.Name,
+	}).Infof("creating machine")
 	err := RunCommandWithBinaries(
 		ctx,
 		"create",

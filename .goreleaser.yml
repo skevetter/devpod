@@ -1,0 +1,56 @@
+version: 2
+project_name: devpod
+release:
+  github:
+    owner: "{{ .Env.GITHUB_REPOSITORY_OWNER }}"
+    name: "{{ .ProjectName }}"
+builds:
+  - id: devpod
+    hooks:
+      pre:
+        - sh -c 'CGO_ENABLED=1 go test $(go list ./... | grep -v -e /test -e /e2e) -race -coverprofile=dist/profile.out -covermode=atomic'
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+    binary: devpod
+
+  - id: devpod-linux
+    hooks:
+      pre:
+        - sh -c 'CGO_ENABLED=1 go test $(go list ./... | grep -v -e /test -e /e2e) -race -coverprofile=dist/profile.out -covermode=atomic'
+    goos: [linux]
+    goarch: [amd64, arm64]
+    binary: devpod-{{ .Os }}-{{ .Arch }}
+    ldflags:
+      - -s -w
+    env:
+      - CGO_ENABLED=0
+
+  - id: devpod-darwin
+    hooks:
+      pre:
+        - sh -c 'go test $(go list ./... | grep -v -e /test -e /e2e) -race -coverprofile=dist/profile.out -covermode=atomic'
+    goos: [darwin]
+    goarch: [amd64, arm64]
+    binary: devpod-{{ .Os }}-{{ .Arch }}
+
+  - id: devpod-windows
+    goos: [windows]
+    goarch: [amd64, arm64]
+    binary: devpod-{{ .Os }}-{{ .Arch }}
+    ldflags:
+      - -s -w
+    env:
+      - CGO_ENABLED=0
+
+  - id: devpod-dev
+    goos: [linux]
+    goarch: [amd64]
+    binary: devpod-{{ .Os }}-{{ .Arch }}-dev
+archives:
+  - formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+checksum:
+  name_template: checksums.txt
+report_sizes: true

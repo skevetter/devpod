@@ -5,6 +5,7 @@
 /devpod
 /devpod.exe
 /devpod-cli
+/dist
 # Unit test targets
 /main
 /profile.out

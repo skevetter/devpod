@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/loft-sh/ssh"
+	"github.com/skevetter/ssh"
 )
 
 func setupAgentListener(sess ssh.Session, reuseSock string) (net.Listener, string, error) {

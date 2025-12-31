@@ -11,7 +11,7 @@ import (
 
 // SetOptionsCmd holds the setOptions cmd flags
 type SetOptionsCmd struct {
-	flags.GlobalFlags
+	*flags.GlobalFlags
 
 	Options []string
 }
@@ -19,7 +19,7 @@ type SetOptionsCmd struct {
 // NewSetOptionsCmd setOptionss a new command
 func NewSetOptionsCmd(flags *flags.GlobalFlags) *cobra.Command {
 	cmd := &SetOptionsCmd{
-		GlobalFlags: *flags,
+		GlobalFlags: flags,
 	}
 	setOptionsCmd := &cobra.Command{
 		Use:   "set-options",

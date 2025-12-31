@@ -11,13 +11,13 @@ import (
 
 // DeleteCmd holds the delete cmd flags
 type DeleteCmd struct {
-	flags.GlobalFlags
+	*flags.GlobalFlags
 }
 
 // NewDeleteCmd deletes a new command
 func NewDeleteCmd(flags *flags.GlobalFlags) *cobra.Command {
 	cmd := &DeleteCmd{
-		GlobalFlags: *flags,
+		GlobalFlags: flags,
 	}
 	deleteCmd := &cobra.Command{
 		Use:   "delete",

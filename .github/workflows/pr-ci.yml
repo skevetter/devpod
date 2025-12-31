@@ -1,69 +1,481 @@
-name: Pull Request CI Checks
+name: Pull Request
 
 on:
+  push:
+    branches: [main]
   pull_request:
+    paths:
+      - .github/**
+  pull_request_target:
+    paths:
+      - cmd/**
+      - pkg/**
+      - desktop/**
+      - e2e/**
+      - Cargo.toml
+      - Cargo.lock
+      - go.mod
+      - go.sum
 
 jobs:
-  pre-commit:
-    name: Pre-commit Checks
+  build-ui:
+    name: User Interface Build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
 
-      - uses: biomejs/setup-biome@v2
-
-      - uses: actions/setup-python@v6
+      - name: setup Node
+        uses: actions/setup-node@v6
         with:
-          cache: pip
-          python-version: 3.x
+          node-version: "latest"
 
-      - run: pip install -r requirements.txt
+      - name: install dependencies
+        working-directory: ./desktop
+        run: yarn install --frozen-lockfile
+
+      - name: lint
+        working-directory: ./desktop
+        run: yarn lint:ci
+
+      - name: format
+        working-directory: ./desktop
+        run: yarn format:check
+
+      - name: type check
+        working-directory: ./desktop
+        run: yarn types:check
+
+      - name: build
+        working-directory: ./desktop
+        run: yarn build
+
+  build-cli:
+    name: Build CLI Binaries
+    strategy:
+      matrix:
+        include:
+          - runner: ubuntu-latest
+          - runner: macos-latest
+          - runner: windows-latest
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
 
-      - uses: golangci/golangci-lint-action@v9
+      - name: get operating system lowercase
+        id: os
+        shell: bash
+        run: |
+          OS=$(echo "${{ runner.os }}" | tr '[:upper:]' '[:lower:]')
+          if [ "$OS" == "macos" ]; then
+            OS="darwin"
+          fi
+          echo "runner_os=$OS" >> "$GITHUB_OUTPUT"
+
+      - uses: goreleaser/goreleaser-action@v6
         with:
-          version: latest
-          install-only: true
+          distribution: goreleaser
+          version: "~> v2"
+          args: build --id devpod-${{ steps.os.outputs.runner_os }} --snapshot
 
-      - run: go install golang.org/x/tools/cmd/goimports@latest
-
-      - uses: actions/cache@v5
+      - uses: actions/upload-artifact@v6
         with:
-          path: ~/.cache/pre-commit
-          key: pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
+          name: devpod-${{ steps.os.outputs.runner_os }}
+          path: dist/devpod-${{ steps.os.outputs.runner_os }}_*/devpod-${{ steps.os.outputs.runner_os }}-*
 
-      - run: pre-commit run --all-files
+  integration-tests:
+    needs: build-cli
+    strategy:
+      matrix:
+        include:
+          - label: context
+            runner: ubuntu-latest
+            free-disk-space: false
+            install-kind: false
+            needs-github-token: false
 
-  commit:
-    name: Check Commits
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write
-    steps:
-      - uses: actions/checkout@v6
+          - label: ide
+            runner: ubuntu-latest
+            free-disk-space: false
+            install-kind: false
+            needs-github-token: false
 
-      - uses: 1Password/check-signed-commits-action@v1
+          - label: integration
+            runner: ubuntu-latest
+            free-disk-space: false
+            install-kind: false
+            needs-github-token: true
 
-      - uses: wagoid/commitlint-github-action@v6
+          - label: machine
+            runner: ubuntu-latest
+            free-disk-space: false
+            install-kind: false
+            needs-github-token: false
 
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
+          - label: machineprovider
+            runner: ubuntu-latest
+            free-disk-space: false
+            install-kind: false
+            needs-github-token: true
+
+          - label: provider
+            runner: ubuntu-latest
+            free-disk-space: false
+            install-kind: true
+            needs-github-token: false
+
+          - label: ssh
+            runner: ubuntu-latest
+            free-disk-space: false
+            install-kind: false
+            needs-github-token: false
+
+          - label: build
+            runner: ubuntu-latest
+            free-disk-space: true
+            install-kind: true
+            needs-github-token: false
+
+          - label: up && workspace
+            runner: ubuntu-latest
+            free-disk-space: true
+            install-kind: true
+            needs-github-token: false
+
+          - label: up && git
+            runner: ubuntu-latest
+            free-disk-space: true
+            install-kind: true
+            needs-github-token: true
+
+          - label: up && provider-kubernetes
+            runner: ubuntu-latest
+            free-disk-space: true
+            install-kind: true
+            needs-github-token: false
+
+          - label: up && features
+            runner: ubuntu-latest
+            free-disk-space: true
+            install-kind: true
+            needs-github-token: false
+
+          - label: up && error
+            runner: ubuntu-latest
+            free-disk-space: true
+            install-kind: true
+            needs-github-token: false
+
+          - label: up-podman
+            runner: ubuntu-latest
+            free-disk-space: true
+            install-kind: true
+            needs-github-token: false
+
+          - label: up-docker
+            runner: ubuntu-latest
+            free-disk-space: false
+            install-kind: true
+            needs-github-token: false
+
+          - label: up-docker-wsl
+            runner: ubuntu-latest
+            free-disk-space: false
+            install-kind: true
+            needs-github-token: false
+
+          - label: up-docker-compose
+            runner: ubuntu-latest
+            free-disk-space: false
+            install-kind: true
+            needs-github-token: false
+
+          - label: up-docker-compose-build
+            runner: ubuntu-latest
+            free-disk-space: false
+            install-kind: true
+            needs-github-token: false
+
+          - label: up-docker-build
+            runner: ubuntu-latest
+            free-disk-space: false
+            install-kind: true
+            needs-github-token: false
+
+          - label: context
+            runner: windows-latest
+            free-disk-space: false
+            install-kind: false
+            needs-github-token: false
+
+          - label: provider
+            runner: windows-latest
+            free-disk-space: false
+            install-kind: true
+            needs-github-token: false
+
+          - label: docker-install
+            runner: ubuntu-latest
+            free-disk-space: false
+            install-kind: false
+            needs-github-token: false
+
+    runs-on: ${{ matrix.runner }}
+    name: Test (${{ matrix.runner }} - ${{ matrix.label }})
     steps:
       - uses: jlumbroso/free-disk-space@v1.3.1
+        if: matrix.free-disk-space == true && runner.os == 'Linux'
 
       - uses: actions/checkout@v6
 
       - name: setup Go
-        uses: magnetikonline/action-golang-cache@v5
+        uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
 
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v9
+      - name: get operating system lowercase
+        id: os
+        shell: bash
+        run: |
+          OS=$(echo "${{ runner.os }}" | tr '[:upper:]' '[:lower:]')
+          if [ "$OS" == "macos" ]; then
+            OS="darwin"
+          fi
+          echo "runner_os=$OS" >> "$GITHUB_OUTPUT"
+
+      - name: download CLI artifacts
+        uses: actions/download-artifact@v7
         with:
-          version: latest
+          pattern: devpod-${{ steps.os.outputs.runner_os }}
+          path: ${{ runner.temp }}/devpod-bin/
+          merge-multiple: true
+
+      # e2e expects executable to have name defined in e2e/framework/framework.go
+      - name: setup executable
+        shell: bash
+        working-directory: ./e2e
+        run: |
+          if [ "${{ runner.os }}" == "Windows" ]; then
+            TEMP_DIR="${{ runner.temp }}"
+            TEMP_DIR="${TEMP_DIR//\\//}"
+            ls -R "$TEMP_DIR/devpod-bin/"
+            mkdir -p ./bin/
+            find "$TEMP_DIR/devpod-bin/" -name "devpod-${{ steps.os.outputs.runner_os }}-amd64.exe" -exec mv {} ./bin/devpod-${{ steps.os.outputs.runner_os }}-amd64.exe \;
+            ls -R ./bin/
+          else
+            ls -R "${{ runner.temp }}/devpod-bin/"
+            mkdir -p ./bin/
+            find "${{ runner.temp }}/devpod-bin/" -name "devpod-${{ steps.os.outputs.runner_os }}-amd64" -exec mv {} ./bin/devpod-${{ steps.os.outputs.runner_os }}-amd64 \;
+            find "${{ runner.temp }}/devpod-bin/" -name "devpod-${{ steps.os.outputs.runner_os }}-arm64" -exec mv {} ./bin/devpod-${{ steps.os.outputs.runner_os }}-arm64 \;
+            chmod +x "./bin/devpod-${{ steps.os.outputs.runner_os }}-amd64"
+            ls -R ./bin/
+          fi
+
+      - name: generate uuid
+        if: matrix.install-kind == true && runner.os != 'Windows'
+        id: uuid
+        shell: bash
+        run: |
+          UUID=$(python -c "import uuid; print(uuid.uuid4().hex)")
+          echo "result=$UUID" >> "$GITHUB_OUTPUT"
+
+      - name: setup kind (Windows)
+        if: matrix.install-kind == true && runner.os == 'Windows'
+        shell: bash
+        env:
+          KIND_EXPERIMENTAL_PROVIDER: podman
+          DOCKER_HOST: npipe:////./pipe/podman-machine-default
+        run: |
+          wsl --set-default-version 2
+          choco install podman-cli kind -y
+
+          podman machine init
+          podman machine set --rootful
+          podman machine start
+
+          kind create cluster --name "${{ steps.uuid.outputs.result }}" --image kindest/node:v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a
+
+      # NOTE: engineerd/setup-kind does not work on Windows runners
+      - name: setup kind
+        if: matrix.install-kind == true && runner.os != 'Windows'
+        uses: engineerd/setup-kind@v0.6.2
+        with:
+          name: ${{ steps.uuid.outputs.result }}
+          version: v0.24.0
+          image: kindest/node:v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a
+          skipClusterLogsExport: true
+
+      - name: remove docker
+        if: matrix.label == 'docker-install'
+        run: |
+          sudo systemctl stop docker.socket docker.service
+          sudo apt-get remove -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+          sudo rm -rf /var/lib/docker /var/lib/containerd /usr/bin/docker /usr/bin/dockerd
+
+      - name: run test
+        shell: bash
+        working-directory: ./e2e
+        env:
+          # NOTE: Github credentials are required for tests using private repos
+          GH_USERNAME: ${{ github.repository_owner }}
+          GH_ACCESS_TOKEN: ${{ secrets.GH_PRIVATE_REPO_TOKEN_TEST }}
+        run: |
+          if [ "${{ runner.os }}" == "Linux" ]; then
+            sudo \
+              GH_USERNAME="${GH_USERNAME}" \
+              GH_ACCESS_TOKEN="${GH_ACCESS_TOKEN}" \
+              KUBECONFIG="${KUBECONFIG:-$HOME/.kube/config}" \
+              PATH="${PATH}" \
+              GOROOT="${GOROOT}" \
+              go test -v -ginkgo.v -timeout 3600s --ginkgo.label-filter="${{ matrix.label }}"
+          else
+            GH_USERNAME="${GH_USERNAME}" \
+              GH_ACCESS_TOKEN="${GH_ACCESS_TOKEN}" \
+              KUBECONFIG="${KUBECONFIG:-$HOME/.kube/config}" \
+              PATH="${PATH}" \
+              GOROOT="${GOROOT}" \
+              go test -v -ginkgo.v -timeout 3600s --ginkgo.label-filter="${{ matrix.label }}"
+          fi
+
+      - name: verify docker is installed
+        if: matrix.label == 'docker-install'
+        run: docker --version && docker ps
+
+  build-desktop:
+    needs: build-cli
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            target: x86_64-unknown-linux-gnu
+            runner: ubuntu-latest
+            tauri_config_args: "--config src-tauri/tauri-flatpak.conf.json --bundles appimage,deb,updater"
+            tauri_include_updater_json: true
+            tauri_ci: true
+
+          - arch: amd64
+            target: x86_64-apple-darwin
+            runner: macos-latest
+            tauri_config_args: ""
+            tauri_include_updater_json: false
+            tauri_ci: true
+
+          - arch: arm64
+            target: aarch64-apple-darwin
+            runner: macos-latest
+            tauri_config_args: ""
+            tauri_include_updater_json: false
+            tauri_ci: false # https://github.com/tauri-apps/tauri/issues/3055
+
+          - arch: amd64
+            target: x86_64-pc-windows-msvc
+            runner: windows-latest
+            tauri_config_args: ""
+            tauri_include_updater_json: false
+            tauri_ci: true
+    runs-on: ${{ matrix.runner }}
+    name: Build App (${{ matrix.runner }} - ${{ matrix.target }})
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "latest"
+
+      - name: setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./desktop/src-tauri -> target"
+
+      - name: get operating system lowercase
+        id: os
+        shell: bash
+        run: |
+          OS=$(echo "${{ runner.os }}" | tr '[:upper:]' '[:lower:]')
+          if [ "$OS" == "macos" ]; then
+            OS="darwin"
+          fi
+          echo "runner_os=$OS" >> "$GITHUB_OUTPUT"
+
+      - name: download CLI artifacts
+        uses: actions/download-artifact@v7
+        with:
+          pattern: devpod-${{ steps.os.outputs.runner_os }}
+          path: ${{ runner.temp }}/devpod-bin/
+          merge-multiple: true
+
+      - name: setup executable
+        shell: bash
+        working-directory: ./desktop/src-tauri
+        run: |
+          if [ "${{ runner.os }}" == "Windows" ]; then
+            TEMP_DIR="${{ runner.temp }}"
+            TEMP_DIR="${TEMP_DIR//\\//}"
+            ls -R "$TEMP_DIR/devpod-bin/"
+            mkdir -p ./bin/
+            find "$TEMP_DIR/devpod-bin/" -name "devpod-${{ steps.os.outputs.runner_os }}-${{ matrix.arch }}.exe" -exec cp {} ./bin/devpod-cli-${{ matrix.target }}.exe \;
+          else
+            ls -R "${{ runner.temp }}/devpod-bin/"
+            mkdir -p ./bin/
+            find "${{ runner.temp }}/devpod-bin/" -name "devpod-${{ steps.os.outputs.runner_os }}-${{ matrix.arch }}" -exec cp {} ./bin/devpod-cli-${{ matrix.target }} \;
+            chmod +x "./bin/devpod-cli-${{ matrix.target }}"
+            ls -R ./bin/
+          fi
+
+      - name: install linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update && sudo apt-get install -y \
+            libayatana-appindicator3-dev \
+            libgtk-3-dev \
+            librsvg2-dev \
+            libwebkit2gtk-4.1-dev \
+            patchelf
+
+      - name: install desktop dependencies
+        working-directory: ./desktop
+        run: yarn install --frozen-lockfile
+
+      - name: generate signing key and update config
+        id: generate
+        working-directory: ./desktop
+        shell: bash
+        run: |
+          # throwaway signing key for test CI builds
+          yarn tauri signer generate --ci -w ./app.key -p "github-actions"
+          TAURI_PUBKEY=$(cat ./app.key.pub)
+          jq --arg pubkey "$TAURI_PUBKEY" '.plugins.updater.pubkey = $pubkey' src-tauri/tauri.conf.json > tmp.json && mv tmp.json src-tauri/tauri.conf.json
+
+      - name: tauri build
+        uses: tauri-apps/tauri-action@v0.6
+        with:
+          projectPath: "./desktop"
+          args: "--target ${{ matrix.target }} ${{ matrix.tauri_config_args }}"
+          includeUpdaterJson: ${{ matrix.tauri_include_updater_json }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          TAURI_SIGNING_PRIVATE_KEY: "${{ github.workspace }}/desktop/app.key"
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: "github-actions"
+          CI: ${{ matrix.tauri_ci }}
+
+  pass-check:
+    name: Pass Check
+    needs:
+      [
+        build-ui,
+        build-cli,
+        integration-tests,
+        build-desktop,
+      ]
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "All checks passed!"

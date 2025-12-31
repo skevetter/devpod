@@ -6,10 +6,10 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/Microsoft/go-winio"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 	gosshagent "golang.org/x/crypto/ssh/agent"
-	"gopkg.in/natefinch/npipe.v2"
 )
 
 const (
@@ -41,7 +41,7 @@ func ForwardToRemote(client *ssh.Client, addr string) error {
 		if channels == nil {
 			return errors.New("agent: already have handler for " + channelType)
 		}
-		conn, err := npipe.Dial(addr)
+		conn, err := winio.DialPipe(addr, nil)
 		if err != nil {
 			return err
 		}
@@ -67,7 +67,7 @@ func RequestAgentForwarding(session *ssh.Session) error {
 }
 
 func forwardNamedPipe(channel ssh.Channel, addr string) {
-	conn, err := npipe.Dial(addr)
+	conn, err := winio.DialPipe(addr, nil)
 	if err != nil {
 		return
 	}
