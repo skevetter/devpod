@@ -3,6 +3,9 @@ name: Pull Request
 on:
   push:
     branches: [main]
+  pull_request:
+    paths:
+      - .github/**
   pull_request_target:
     paths:
       - cmd/**
