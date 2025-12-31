@@ -50,7 +50,7 @@ export const CollapsibleSection = forwardRef<HTMLDivElement, TCollapsibleSection
   ) {
     const motionRef = useRef<HTMLDivElement>(null)
     const { isOpen, onOpen, onClose, getDisclosureProps, getButtonProps } = useDisclosure()
-    const buttonProps = getButtonProps({ isDisabled })
+    const buttonProps = getButtonProps()
     const disclosureProps = getDisclosureProps()
 
     useLayoutEffect(() => {
@@ -63,7 +63,13 @@ export const CollapsibleSection = forwardRef<HTMLDivElement, TCollapsibleSection
 
     return (
       <Box width="full">
-        <Button ref={ref} variant="ghost" width="full" {...buttonProps} {...headerProps}>
+        <Button
+          ref={ref}
+          variant="ghost"
+          width="full"
+          isDisabled={isDisabled}
+          {...buttonProps}
+          {...headerProps}>
           <Box as="span" flex="1" textAlign="left" display="flex" alignItems="center">
             {showIcon && (
               <Icon
