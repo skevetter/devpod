@@ -93,10 +93,12 @@ async function run(): Promise<void> {
       },
       {
         target: "windows-x86_64",
-        sigFile: ".msi.zip.sig",
+        sigFile: ".msi.sig",
         packageType: ".zip",
         originalAssetName: `DevPod_${version}_x64_en-US.msi`,
         desiredAssetName: "DevPod_windows_x64_en-US.msi",
+        originalUpdaterAssetName: `DevPod_${version}_x64_en-US.msi.zip`,
+        desiredUpdaterAssetName: "DevPod_windows_x64_en-US.msi.zip",
       },
       {
         originalAssetName: `DevPod-${version}.tar.gz`,
