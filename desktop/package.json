@@ -30,7 +30,7 @@
     "@loft-enterprise/client": "https://github.com/loft-sh/loft-javascript-client#v4.3.0-devpod.alpha.11",
     "@tanstack/react-query": "4.36.1",
     "@tanstack/react-query-devtools": "4.36.1",
-    "@tanstack/react-table": "8.10.7",
+    "@tanstack/react-table": "8.21.3",
     "@tauri-apps/api": "2.9.1",
     "@tauri-apps/plugin-clipboard-manager": "2.3.2",
     "@tauri-apps/plugin-dialog": "2.4.2",
