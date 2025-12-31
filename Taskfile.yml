@@ -1,9 +1,6 @@
 version: "3"
 
 tasks:
-  cli:
-    desc: manage devpod CLI tasks
-
   cli:tidy:
     desc: tidy go.mod and go.sum
     cmd: go mod tidy
@@ -43,7 +40,7 @@ tasks:
     cmds:
       - task: cli:build
       - mkdir -p e2e/bin
-      - cp dist/devpod-dev_linux_amd64_v1/devpod-linux-amd64-dev e2e/bin/devpod-linux-amd64
+      - cp dist/devpod-dev_linux_amd64_v1/devpod-linux-amd64 e2e/bin/devpod-linux-amd64
 
   cli:test:e2e:
     desc: run e2e tests
@@ -83,9 +80,6 @@ tasks:
       GOPROXY: direct
     status: [command -v ginkgo >/dev/null 2>&1]
     cmd: go install github.com/onsi/ginkgo/v2/ginkgo@latest
-
-  desktop:
-    desc: manage devpod desktop tasks
 
   desktop:build:
     desc: build devpod Desktop application
@@ -147,14 +141,11 @@ tasks:
     dir: desktop/src-tauri
     cmd: cargo update
 
-  github:
-    desc: manage GitHub related tasks
-
   github:dev-release:upload:
     desc: upload dev binaries to GitHub release tag v0.0.0-10 for testing
     cmds:
       - cmd: |
           TMP_DIR="$(mktemp -d)"
-          cp dist/devpod-dev_linux_amd64_v1/devpod-linux-amd64-dev "$TMP_DIR/devpod-linux-amd64"
-          gh release upload v0.0.0-10 dist/devpod-dev_linux_amd64_v1/devpod-linux-amd64-dev --repo skevetter/devpod --clobber
+          cp dist/devpod-dev_linux_amd64_v1/devpod-linux-amd64 "$TMP_DIR/devpod-linux-amd64"
+          gh release upload v0.0.0-10 dist/devpod-dev_linux_amd64_v1/devpod-linux-amd64 --repo skevetter/devpod --clobber
           rm -rf "$TMP_DIR"
