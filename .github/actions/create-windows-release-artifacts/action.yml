@@ -67,6 +67,7 @@ runs:
             { name: `devpod-windows-${arch}.exe`, path: `desktop/src-tauri/bin/devpod-cli-${target}.exe` },
             { name: msiFile, path: `${bundlePath}/msi/${msiFile}` },
             { name: `${msiFile}.zip`, path: `${bundlePath}/msi/${msiFile}.zip` },
+            { name: `${msiFile}.sig`, path: `${bundlePath}/msi/${msiFile}.sig` },
             { name: nsisFile, path: `${bundlePath}/nsis/${nsisFile}` }
           ]
 
