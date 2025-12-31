@@ -97,7 +97,7 @@ var _ = DevPodDescribe("devpod context test suite", func() {
 			err = json.Unmarshal([]byte(output), &ides)
 			framework.ExpectNoError(err)
 
-			intellijFound := false
+			intellijFound = false
 			for _, ide := range ides {
 				if ide["name"] == "intellij" {
 					if defaultVal, exists := ide["default"]; exists && defaultVal == true {

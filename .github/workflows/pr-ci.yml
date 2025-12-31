@@ -24,6 +24,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: setup Node
         uses: actions/setup-node@v6
@@ -61,6 +63,8 @@ jobs:
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - uses: actions/setup-go@v6
         with:
@@ -231,6 +235,8 @@ jobs:
         if: matrix.free-disk-space == true && runner.os == 'Linux'
 
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: setup Go
         uses: actions/setup-go@v6
@@ -381,6 +387,8 @@ jobs:
     name: Build App (${{ matrix.runner }} - ${{ matrix.target }})
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: setup Node
         uses: actions/setup-node@v6
@@ -473,10 +481,3 @@ jobs:
         with:
           name: desktop-${{ matrix.runner }}-${{ matrix.arch }}
           path: desktop/src-tauri/target/${{ matrix.target }}/release/bundle/**/*
-
-  pass-check:
-    name: Pass Check
-    needs: [build-ui, build-cli, integration-tests, build-desktop]
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "All checks passed!"

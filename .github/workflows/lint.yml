@@ -7,16 +7,6 @@ on:
     paths:
       - .github/**
       - Taskfile.yml
-  pull_request_target:
-    paths:
-      - cmd/**
-      - pkg/**
-      - desktop/**
-      - e2e/**
-      - Cargo.toml
-      - Cargo.lock
-      - go.mod
-      - go.sum
 
 jobs:
   lint:
