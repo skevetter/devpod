@@ -1,6 +1,11 @@
 package config
 
-import "github.com/skevetter/devpod/pkg/types"
+import (
+	"encoding/json"
+	"fmt"
+
+	"github.com/skevetter/devpod/pkg/types"
+)
 
 type FeatureSet struct {
 	ConfigID string
@@ -59,7 +64,7 @@ type FeatureConfig struct {
 	InstallsAfter []string `json:"installsAfter,omitempty"`
 
 	// The optional dependsOn property indicates a set of required, “hard” dependencies for a given Feature. Hard dependencies must be satisfied before this Feature is installed.
-	DependsOn map[string]any `json:"dependsOn,omitempty"`
+	DependsOn DependsOnField `json:"dependsOn,omitempty"`
 
 	// Container environment variables.
 	ContainerEnv map[string]string `json:"containerEnv,omitempty"`
@@ -69,6 +74,21 @@ type FeatureConfig struct {
 
 	// Origin is the path where the feature was loaded from
 	Origin string `json:"-"`
+}
+
+type DependsOnField map[string]any
+
+func (d *DependsOnField) UnmarshalJSON(data []byte) error {
+	var obj map[string]any
+	if err := json.Unmarshal(data, &obj); err != nil {
+		var arr []string
+		if json.Unmarshal(data, &arr) == nil {
+			return fmt.Errorf("dependsOn must be an object mapping feature IDs to options")
+		}
+		return err
+	}
+	*d = DependsOnField(obj)
+	return nil
 }
 
 type FeatureConfigOption struct {
