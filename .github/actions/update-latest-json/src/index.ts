@@ -68,8 +68,8 @@ async function run(): Promise<void> {
     const infos: AssetInfo[] = [
       {
         target: "linux-x86_64",
-        sigFile: ".AppImage.tar.gz.sig",
-        packageType: ".tar.gz",
+        sigFile: ".AppImage.sig",
+        packageType: "",
         originalAssetName: `DevPod_${version}_amd64.AppImage`,
         desiredAssetName: "DevPod_linux_amd64.AppImage",
       },
