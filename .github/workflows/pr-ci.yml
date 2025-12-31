@@ -1,9 +1,8 @@
-name: Pull Request CI Checks
+name: Pull Request
 
 on:
   push:
     branches: [main]
-  pull_request:
   pull_request_target:
     paths:
       - cmd/**
@@ -16,69 +15,6 @@ on:
       - go.sum
 
 jobs:
-  pre-commit:
-    name: Pre-commit Checks
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-
-      - uses: biomejs/setup-biome@v2
-
-      - uses: actions/setup-python@v6
-        with:
-          cache: pip
-          python-version: 3.x
-
-      - run: pip install -r requirements.txt
-
-      - uses: actions/setup-go@v6
-        with:
-          go-version-file: go.mod
-
-      - uses: golangci/golangci-lint-action@v9
-        with:
-          version: latest
-          install-only: true
-
-      - run: go install golang.org/x/tools/cmd/goimports@latest
-
-      - uses: actions/cache@v5
-        with:
-          path: ~/.cache/pre-commit
-          key: pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
-
-      - run: pre-commit run --all-files
-
-  commit:
-    name: Check Commits
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write
-    steps:
-      - uses: actions/checkout@v6
-
-      - uses: 1Password/check-signed-commits-action@v1
-
-      - uses: wagoid/commitlint-github-action@v6
-
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
-    steps:
-      - uses: jlumbroso/free-disk-space@v1.3.1
-
-      - uses: actions/checkout@v6
-
-      - uses: actions/setup-go@v6
-        with:
-          go-version-file: go.mod
-
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v9
-        with:
-          version: latest
-
   build-ui:
     name: User Interface Build
     runs-on: ubuntu-latest
@@ -285,7 +221,7 @@ jobs:
             needs-github-token: false
 
     runs-on: ${{ matrix.runner }}
-    name: Integration Test (${{ matrix.runner }} - ${{ matrix.label }})
+    name: Test (${{ matrix.runner }} - ${{ matrix.label }})
     steps:
       - uses: jlumbroso/free-disk-space@v1.3.1
         if: matrix.free-disk-space == true && runner.os == 'Linux'
@@ -438,7 +374,7 @@ jobs:
             tauri_include_updater_json: false
             tauri_ci: true
     runs-on: ${{ matrix.runner }}
-    name: Build Desktop App (${{ matrix.runner }} - ${{ matrix.target }})
+    name: Build App (${{ matrix.runner }} - ${{ matrix.target }})
     steps:
       - uses: actions/checkout@v6
 
@@ -532,9 +468,6 @@ jobs:
     name: Pass Check
     needs:
       [
-        pre-commit,
-        commit,
-        lint,
         build-ui,
         build-cli,
         integration-tests,
