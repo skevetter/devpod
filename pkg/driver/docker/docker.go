@@ -446,8 +446,8 @@ func (d *dockerDriver) UpdateContainerUserUID(ctx context.Context, workspaceId s
 	} else if container == nil {
 		d.Log.WithFields(logrus.Fields{
 			"workspaceId": workspaceId,
-		}).Error("no container found for workspace")
-		return nil
+		}).Info("no container found for workspace")
+		return fmt.Errorf("no container found for workspace %s", workspaceId)
 	}
 
 	d.Log.WithFields(logrus.Fields{
@@ -561,6 +561,10 @@ func (d *dockerDriver) UpdateContainerUserUID(ctx context.Context, workspaceId s
 		return err
 	}
 
+	if containerUid == "" || containerGid == "" || containerHome == "" {
+		return fmt.Errorf("user %q not found in container /etc/passwd", containerUser)
+	}
+
 	if localUid == containerUid && localGid == containerGid {
 		d.Log.WithFields(logrus.Fields{
 			"localUid":     localUid,
@@ -644,6 +648,10 @@ func (d *dockerDriver) UpdateContainerUserUID(ctx context.Context, workspaceId s
 		return err
 	}
 
+	if containerHome == "" || containerHome == "/" || strings.Contains(containerHome, "..") {
+		return fmt.Errorf("invalid container home directory %s", containerHome)
+	}
+
 	args = []string{"exec", "-u", "root", container.ID, "chown", "-R", fmt.Sprintf("%s:%s", localUid, localGid), containerHome}
 	d.Log.WithFields(logrus.Fields{
 		"command": d.Docker.DockerCommand,
@@ -663,9 +671,16 @@ func (d *dockerDriver) UpdateContainerUserUID(ctx context.Context, workspaceId s
 		return err
 	}
 
-	if parsedConfig.WorkspaceFolder == "" || parsedConfig.WorkspaceFolder == containerHome {
+	normalizedWorkspaceFolder := strings.TrimRight(parsedConfig.WorkspaceFolder, "/")
+	normalizedContainerHome := strings.TrimRight(containerHome, "/")
+	if normalizedWorkspaceFolder == "" || normalizedWorkspaceFolder == normalizedContainerHome {
 		d.Log.Debug("skipping workspace chown")
 		return nil
+	}
+
+	// Validate workspace folder path for security
+	if strings.Contains(parsedConfig.WorkspaceFolder, "..") || !strings.HasPrefix(parsedConfig.WorkspaceFolder, "/") {
+		return fmt.Errorf("invalid workspace folder path %s", parsedConfig.WorkspaceFolder)
 	}
 
 	args = []string{"exec", "-u", "root", container.ID, "chown", "-R", fmt.Sprintf("%s:%s", localUid, localGid), parsedConfig.WorkspaceFolder}
@@ -761,23 +776,36 @@ func (d *dockerDriver) getContainerUser(parsedConfig *config.DevContainerConfig,
 
 	// rely on the first container details only; this may be an issue if multiple containers are
 	// used having different users
+	if len(containerDetails) == 0 {
+		return ""
+	}
 	details := containerDetails[0]
 	containerConfig := details.Config
-	if len(containerDetails) > 0 && containerConfig.Labels != nil && containerConfig.Labels[config.UserLabel] != "" {
+	if containerConfig.Labels != nil && containerConfig.Labels[config.UserLabel] != "" {
 		d.Log.WithFields(logrus.Fields{
 			"containerUser": containerConfig.Labels[config.UserLabel],
 		}).Debug("using devpod.user label from container")
 		return containerConfig.Labels[config.UserLabel]
 	}
 
-	if len(containerDetails) > 0 && containerConfig.User != "" {
+	if containerConfig.User != "" {
 		userParts := strings.Split(containerConfig.User, ":")
-		containerUser := userParts[0]
-		d.Log.WithFields(logrus.Fields{
-			"inspectedUser": containerConfig.User,
-			"containerUser": containerUser,
-		}).Debug("using User field from Docker inspect")
-		return containerUser
+		if len(userParts) > 0 && userParts[0] != "" {
+			containerUser := userParts[0]
+
+			if _, err := strconv.Atoi(containerUser); err == nil {
+				d.Log.WithFields(logrus.Fields{
+					"inspectedUser": containerConfig.User,
+					"containerUser": containerUser,
+				}).Debug("using numeric UID from Docker inspect")
+			} else {
+				d.Log.WithFields(logrus.Fields{
+					"inspectedUser": containerConfig.User,
+					"containerUser": containerUser,
+				}).Debug("using User field from Docker inspect")
+			}
+			return containerUser
+		}
 	}
 
 	if parsedConfig.ContainerUser != "" {
