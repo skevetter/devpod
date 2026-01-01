@@ -3,21 +3,25 @@ name: Pull Request
 on:
   push:
     branches: [main]
+  workflow_dispatch:
   pull_request:
-    paths:
-      - .github/**
-  pull_request_target:
-    paths:
-      - cmd/**
-      - pkg/**
-      - desktop/**
-      - e2e/**
-      - Cargo.toml
-      - Cargo.lock
-      - go.mod
-      - go.sum
 
 jobs:
+  can-read-secret:
+    name: Can Read Secret
+    runs-on: ubuntu-latest
+    outputs:
+      secret-set: ${{ steps.check-secret.outputs.secret-set }}
+    steps:
+      - name: Check secret
+        id: check-secret
+        run: |
+          if [ -z "${{ secrets.TEST_ACCESS_TOKEN }}" ]; then
+            echo "secret-set=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "secret-set=true" >> "$GITHUB_OUTPUT"
+          fi
+
   build-ui:
     name: User Interface Build
     runs-on: ubuntu-latest
@@ -50,7 +54,7 @@ jobs:
         run: yarn build
 
   build-cli:
-    name: Build CLI Binaries
+    name: Build CLI Binary on ${{ matrix.runner }}
     strategy:
       matrix:
         include:
@@ -87,7 +91,8 @@ jobs:
           path: dist/devpod-${{ steps.os.outputs.runner_os }}_*/devpod-${{ steps.os.outputs.runner_os }}-*
 
   integration-tests:
-    needs: build-cli
+    name: Test ${{ matrix.label }} on ${{ matrix.runner }}
+    needs: [can-read-secret, build-cli]
     strategy:
       matrix:
         include:
@@ -95,136 +100,118 @@ jobs:
             runner: ubuntu-latest
             free-disk-space: false
             install-kind: false
-            needs-github-token: false
 
           - label: ide
             runner: ubuntu-latest
             free-disk-space: false
             install-kind: false
-            needs-github-token: false
 
           - label: integration
             runner: ubuntu-latest
             free-disk-space: false
             install-kind: false
-            needs-github-token: true
 
           - label: machine
             runner: ubuntu-latest
             free-disk-space: false
             install-kind: false
-            needs-github-token: false
 
           - label: machineprovider
             runner: ubuntu-latest
             free-disk-space: false
             install-kind: false
-            needs-github-token: true
 
           - label: provider
             runner: ubuntu-latest
             free-disk-space: false
             install-kind: true
-            needs-github-token: false
 
           - label: ssh
             runner: ubuntu-latest
             free-disk-space: false
             install-kind: false
-            needs-github-token: false
 
           - label: build
             runner: ubuntu-latest
             free-disk-space: true
             install-kind: true
-            needs-github-token: false
 
           - label: up && workspace
             runner: ubuntu-latest
             free-disk-space: true
             install-kind: true
-            needs-github-token: false
 
           - label: up && git
             runner: ubuntu-latest
             free-disk-space: true
             install-kind: true
-            needs-github-token: true
 
           - label: up && provider-kubernetes
             runner: ubuntu-latest
             free-disk-space: true
             install-kind: true
-            needs-github-token: false
 
           - label: up && features
             runner: ubuntu-latest
             free-disk-space: true
             install-kind: true
-            needs-github-token: false
 
           - label: up && error
             runner: ubuntu-latest
             free-disk-space: true
             install-kind: true
-            needs-github-token: false
+
+          - label: up-private-token
+            runner: ubuntu-latest
+            free-disk-space: false
+            install-kind: false
 
           - label: up-podman
             runner: ubuntu-latest
             free-disk-space: true
             install-kind: true
-            needs-github-token: false
 
           - label: up-docker
             runner: ubuntu-latest
             free-disk-space: false
             install-kind: true
-            needs-github-token: false
 
           - label: up-docker-wsl
             runner: ubuntu-latest
             free-disk-space: false
             install-kind: true
-            needs-github-token: false
 
           - label: up-docker-compose
             runner: ubuntu-latest
             free-disk-space: false
             install-kind: true
-            needs-github-token: false
 
           - label: up-docker-compose-build
             runner: ubuntu-latest
             free-disk-space: false
             install-kind: true
-            needs-github-token: false
 
           - label: up-docker-build
             runner: ubuntu-latest
             free-disk-space: false
             install-kind: true
-            needs-github-token: false
 
           - label: context
             runner: windows-latest
             free-disk-space: false
             install-kind: false
-            needs-github-token: false
 
           - label: provider
             runner: windows-latest
             free-disk-space: false
             install-kind: true
-            needs-github-token: false
 
           - label: docker-install
             runner: ubuntu-latest
             free-disk-space: false
             install-kind: false
-            needs-github-token: false
-
     runs-on: ${{ matrix.runner }}
-    name: Test (${{ matrix.runner }} - ${{ matrix.label }})
+    if: ${{ needs.can-read-secret.outputs.secret-set == 'true' }}
     steps:
       - uses: jlumbroso/free-disk-space@v1.3.1
         if: matrix.free-disk-space == true && runner.os == 'Linux'
@@ -321,7 +308,7 @@ jobs:
         env:
           # NOTE: Github credentials are required for tests using private repos
           GH_USERNAME: ${{ github.repository_owner }}
-          GH_ACCESS_TOKEN: ${{ secrets.GH_PRIVATE_REPO_TOKEN_TEST }}
+          GH_ACCESS_TOKEN: ${{ secrets.GH_PRIVATE_REPO_TOKEN_TEST || github.token }}
         run: |
           if [ "${{ runner.os }}" == "Linux" ]; then
             sudo \
@@ -345,6 +332,7 @@ jobs:
         run: docker --version && docker ps
 
   build-desktop:
+    name: Build Desktop App for ${{ matrix.arch }} on ${{ matrix.runner }}
     needs: build-cli
     strategy:
       matrix:
@@ -377,7 +365,6 @@ jobs:
             tauri_include_updater_json: false
             tauri_ci: true
     runs-on: ${{ matrix.runner }}
-    name: Build App (${{ matrix.runner }} - ${{ matrix.target }})
     steps:
       - uses: actions/checkout@v6
 
@@ -467,15 +454,8 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: "github-actions"
           CI: ${{ matrix.tauri_ci }}
 
-  pass-check:
-    name: Pass Check
-    needs:
-      [
-        build-ui,
-        build-cli,
-        integration-tests,
-        build-desktop,
-      ]
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "All checks passed!"
+      - name: upload artifacts
+        uses: actions/upload-artifact@v6
+        with:
+          name: desktop-${{ matrix.runner }}-${{ matrix.arch }}
+          path: desktop/src-tauri/target/${{ matrix.target }}/release/bundle/**/*

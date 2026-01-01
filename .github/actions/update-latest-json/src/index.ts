@@ -68,8 +68,8 @@ async function run(): Promise<void> {
     const infos: AssetInfo[] = [
       {
         target: "linux-x86_64",
-        sigFile: ".AppImage.tar.gz.sig",
-        packageType: ".tar.gz",
+        sigFile: ".AppImage.sig",
+        packageType: "",
         originalAssetName: `DevPod_${version}_amd64.AppImage`,
         desiredAssetName: "DevPod_linux_amd64.AppImage",
       },
@@ -93,10 +93,12 @@ async function run(): Promise<void> {
       },
       {
         target: "windows-x86_64",
-        sigFile: ".msi.zip.sig",
+        sigFile: ".msi.sig",
         packageType: ".zip",
         originalAssetName: `DevPod_${version}_x64_en-US.msi`,
         desiredAssetName: "DevPod_windows_x64_en-US.msi",
+        originalUpdaterAssetName: `DevPod_${version}_x64_en-US.msi.zip`,
+        desiredUpdaterAssetName: "DevPod_windows_x64_en-US.msi.zip",
       },
       {
         originalAssetName: `DevPod-${version}.tar.gz`,

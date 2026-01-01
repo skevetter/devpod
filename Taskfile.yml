@@ -1,276 +1,151 @@
 version: "3"
 
-vars:
-  BUILD_PLATFORMS: '{{default "darwin linux" .BUILD_PLATFORMS}}'
-  BUILD_ARCHS: '{{default "amd64 arm64" .BUILD_ARCHS}}'
-
 tasks:
-  lint:
-    desc: Run golangci-lint
-    cmds:
-      - golangci-lint run
+  cli:tidy:
+    desc: tidy go.mod and go.sum
+    cmd: go mod tidy
 
-  setup:development:
-    desc: Setup development environment
-    cmds:
-      - task: build:devpod
-      - task: build:desktop
+  cli:lint:
+    desc: run devpod linters
+    cmd: golangci-lint run
 
-  build:
-    desc: Build DevPod binary for current platform
-    cmds:
-      - go build -o test/devpod .
-
-  build:devpod:
-    desc: Build DevPod binaries for multiple platforms
-    cmds:
-      - for: { var: BUILD_PLATFORMS, split: " " }
-        task: build:platform
-        vars:
-          PLATFORM: "{{.ITEM}}"
-      - task: build:cache-binaries
-      - task: build:verify-cache
-
-  build:cache-binaries:
-    desc: Copy Linux binaries to cache for injection
-    status:
-      - test ! -f test/devpod-cli-linux-amd64
-    cmds:
-      - rm -rf "${TMPDIR:-/tmp/}devpod-cache" 2>/dev/null || true
-      - mkdir -p "${TMPDIR:-/tmp/}devpod-cache"
-      - cp test/devpod-cli-linux-arm64 "${TMPDIR:-/tmp/}devpod-cache/devpod-linux-arm64"
-      - cp test/devpod-cli-linux-amd64 "${TMPDIR:-/tmp/}devpod-cache/devpod-linux-amd64"
-      - ls -la "${TMPDIR:-/tmp/}devpod-cache"
-
-  build:verify-cache:
-    desc: Verify cached binaries exist for local injection
-    cmds:
-      - |
-        CACHE_DIR="${TMPDIR:-/tmp/}devpod-cache"
-        if [ -f "$CACHE_DIR/devpod-linux-amd64" ] && [ -f "$CACHE_DIR/devpod-linux-arm64" ]; then
-          echo "Cached binaries found"
-          ls -la "$CACHE_DIR"
-        else
-          echo "Cached binaries missing"
-        fi
-
-  build:platform:
-    desc: Build DevPod binaries for a specific platform
-    internal: true
-    cmds:
-      - for: { var: BUILD_ARCHS, split: " " }
-        task: build:binary
-        vars:
-          PLATFORM: "{{.PLATFORM}}"
-          ARCH: "{{.ITEM}}"
-
-  build:binary:
-    desc: Build DevPod binary for a specific platform and architecture
-    internal: true
-    silent: false
-    status:
-      - '{{if and (eq .PLATFORM "windows") (eq .ARCH "arm64")}}exit 0{{else}}exit 1{{end}}'
-    cmds:
-      - |
-        {{if eq .RACE "yes"}}
-        CGO_ENABLED=1 GOOS={{.PLATFORM}} GOARCH={{.ARCH}} go build -race -ldflags "-s -w" -o "test/devpod-cli-{{.PLATFORM}}-{{.ARCH}}{{if eq .PLATFORM "windows"}}.exe{{end}}"
-        {{else}}
-        CGO_ENABLED=0 GOOS={{.PLATFORM}} GOARCH={{.ARCH}} go build -ldflags "-s -w" -o "test/devpod-cli-{{.PLATFORM}}-{{.ARCH}}{{if eq .PLATFORM "windows"}}.exe{{end}}"
-        {{end}}
-
-  install:
-    desc: Install DevPod binary
-    status:
-      - '{{if eq .SKIP_INSTALL "true"}}exit 0{{else}}exit 1{{end}}'
-    silent: false
-    cmds:
-      - |
-        if command -v sudo >/dev/null 2>&1; then
-          go build -o test/devpod && sudo mv test/devpod /usr/local/bin/
-        else
-          go install .
-        fi
-
-  build:desktop:
-    desc: Build desktop application
-    status:
-      - test ! -d desktop
-    cmds:
-      - task: desktop:copy-binaries
-      - task: desktop:update-tauri-deps
-      - task: desktop:generate-types
-      - task: build:desktop-dev
-
-  build:desktop-dev:
-    desc: Build desktop app in dev mode
-    dir: desktop
+  cli:build:
+    desc: build devpod CLI
     env:
-      DEBUG: true
-    cmds:
-      - yarn install
-      - yarn desktop:build:dev
+      GITHUB_REPOSITORY_OWNER: skevetter
+    cmd: goreleaser build --id devpod-dev --snapshot --clean
 
-  desktop:copy-binaries:
-    desc: Copy CLI binaries for desktop
-    internal: true
+  cli:build:setup-cache:
+    desc: setup cache for CLI builds
+    deps:
+      - cli:build
+    cmds:
+      - task: cli:build:teardown-cache
+      - mkdir -p "${TMPDIR:-/tmp/}devpod-cache"
+      - cp dist/devpod-dev_linux_amd64_v1/devpod-linux-amd64 "${TMPDIR:-/tmp/}devpod-cache/devpod-linux-amd64"
+
+  cli:build:teardown-cache:
+    desc: teardown cache for CLI builds
+    cmds:
+      - rm -rf "${TMPDIR:-/tmp/}devpod-cache"
+
+  cli:test:
+    desc: run devpod unit tests
+    cmd: go test $(go list ./... | grep -v -e /test -e /e2e) -race -coverprofile=dist/profile.out -covermode=atomic
+
+  cli:test:e2e:build:
+    desc: build devpod for e2e tests
     status:
-      - test ! -d desktop/src-tauri/bin
+      - test -f e2e/bin/devpod-linux-amd64
     cmds:
-      - |
-        if [ -f "test/devpod-cli-linux-amd64" ]; then
-          cp test/devpod-cli-linux-amd64 desktop/src-tauri/bin/devpod-cli-x86_64-unknown-linux-gnu
-          cp test/devpod-cli-linux-arm64 desktop/src-tauri/bin/devpod-cli-aarch64-unknown-linux-gnu
-        fi
-        if [ -f "test/devpod-cli-windows-amd64.exe" ]; then
-          cp test/devpod-cli-windows-amd64.exe desktop/src-tauri/bin/devpod-cli-x86_64-pc-windows-msvc.exe
-        fi
-        if [ -f "test/devpod-cli-darwin-amd64" ]; then
-          cp test/devpod-cli-darwin-amd64 desktop/src-tauri/bin/devpod-cli-x86_64-apple-darwin
-          cp test/devpod-cli-darwin-arm64 desktop/src-tauri/bin/devpod-cli-aarch64-apple-darwin
-        fi
+      - task: cli:build
+      - mkdir -p e2e/bin
+      - cp dist/devpod-dev_linux_amd64_v1/devpod-linux-amd64 e2e/bin/devpod-linux-amd64
 
-  desktop:generate-types:
-    desc: Generate desktop types
+  cli:test:e2e:
+    desc: run e2e tests
+    deps:
+      - cli:test:e2e:build
+      - cli:test:e2e:ginkgo:install
+    dir: e2e
+    cmd: go run github.com/onsi/ginkgo/v2/ginkgo@latest
+
+  cli:test:e2e:suite:
+    # usage: task cli:test:e2e:suite -- "test suite name"
+    desc: run e2e tests suite
+    deps:
+      - cli:test:e2e:ginkgo:install
+    dir: e2e
+    cmd: go run github.com/onsi/ginkgo/v2/ginkgo@latest --label-filter "{{ .CLI_ARGS }}"
+
+  cli:test:e2e:focus:
+    # usage: task cli:test:e2e:focus -- "test suite pattern"
+    desc: run focused e2e tests
+    deps:
+      - cli:test:e2e:ginkgo:install
+    dir: e2e
+    cmd: go run github.com/onsi/ginkgo/v2/ginkgo@latest --focus "{{ .CLI_ARGS }}"
+
+  cli:test:e2e:kind:setup:
+    desc: setup kind cluster for e2e tests
+    cmd: kind create cluster --image kindest/node:v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a
+
+  cli:test:e2e:kind:teardown:
+    desc: teardown kind cluster for e2e tests
+    cmd: kind delete cluster
+
+  cli:test:e2e:ginkgo:install:
+    desc: install ginkgo for e2e tests
+    env:
+      GOPROXY: direct
+    status: [command -v ginkgo >/dev/null 2>&1]
+    cmd: go install github.com/onsi/ginkgo/v2/ginkgo@latest
+
+  desktop:build:
+    desc: build devpod Desktop application
+    dir: desktop
     cmds:
-      - rm -rf desktop/src/gen
-      - mkdir -p desktop/dist
-      - touch desktop/dist/index.html
-      - cd desktop/src-tauri && cargo test
-      - mkdir -p desktop/src/gen
-      - cp -r desktop/src-tauri/bindings/* desktop/src/gen/
-      - rm -rf desktop/src-tauri/bindings
-      - |
-        touch desktop/src/gen/index.ts
-        for f in desktop/src/gen/*.ts; do
-          echo "export * from './$(basename "$f" .ts)'" >> desktop/src/gen/index.ts
-        done
-      - cd desktop && yarn prettier --write src/gen
+      - cmd: yarn install --frozen-lockfile
+      - cmd: yarn lint:ci
+      - cmd: yarn format:check
+      - cmd: yarn types:check
+      - cmd: yarn build
 
-  desktop:update-tauri-deps:
-    desc: Update desktop dependencies
+  desktop:update-deps:
+    desc: update yarn dependencies
+    dir: desktop
+    cmd: yarn upgrade --latest
+
+  desktop:tauri:setup:
+    desc: setup tauri desktop application
+    dir: desktop
+    cmds:
+      - task: cli:build
+      - cmd: cp ../dist/devpod-dev_linux_amd64_v1/devpod-linux-amd64 ./src-tauri/bin/devpod-cli-x86_64-unknown-linux-gnu
+      - cmd: yarn install --frozen-lockfile
+
+  desktop:tauri:generate-types:
+    desc: generate desktop types
     dir: desktop/src-tauri
     cmds:
-      - cargo update
+      - rm -rf ../src/gen && mkdir -p ../dist
+      - touch ../dist/index.html
+      - cargo test
+      - mkdir -p ../src/gen
+      - cp -r bindings/* ../src/gen/
+      - rm -rf bindings
+      - |
+        touch ../src/gen/index.ts
+        for f in ../src/gen/*.ts; do
+          echo "export * from './$(basename "$f" .ts)'" >> ../src/gen/index.ts
+        done
+      - cd ../ && yarn prettier --write src/gen
 
-  desktop:tauri-dev:
-    desc: Run desktop app in dev mode
-    dir: desktop
-    env:
-      DEBUG: true
-    cmds:
-      - yarn tauri dev
-
-  desktop:generate-tauri-signing-keys:
+  desktop:tauri:generate-signing-keys:
     desc: Generate Tauri signing keys
     dir: desktop
-    cmds:
-      - |
-        yarn tauri signer generate -- --ci -w ../app.key
+    cmd: yarn tauri signer generate --ci -w ../app.key
 
-  release:upload-binaries:
-    desc: "Copy binaries to release names and upload to GitHub"
-    cmds:
-      - task: release:copy
-      - task: release:upload
+  desktop:tauri:dev:
+    desc: run tauri application in dev mode
+    dir: desktop
+    cmd: yarn desktop:dev
 
-  release:copy:
-    desc: "Copy binaries to expected release names"
-    internal: true
-    cmds:
-      - cp test/devpod-cli-linux-amd64 test/devpod-linux-amd64
-      - cp test/devpod-cli-linux-arm64 test/devpod-linux-arm64
-      - cp test/devpod-cli-darwin-amd64 test/devpod-darwin-amd64
-      - cp test/devpod-cli-darwin-arm64 test/devpod-darwin-arm64
+  desktop:tauri:build-app:
+    desc: build tauri application
+    dir: desktop
+    cmd: yarn desktop:build:dev
 
-  release:upload:
-    desc: "Upload binaries to GitHub release"
-    internal: true
-    cmds:
-      - gh release upload v0.0.0-10 test/devpod-linux-amd64 test/devpod-linux-arm64 test/devpod-darwin-amd64 test/devpod-darwin-arm64 --repo skevetter/devpod --clobber
+  desktop:tauri:update-deps:
+    desc: update tauri dependencies
+    dir: desktop/src-tauri
+    cmd: cargo update
 
-  test:clean:
-    desc: Clean test binaries and cache
+  github:dev-release:upload:
+    desc: upload dev binaries to GitHub release tag v0.0.0-10 for testing
     cmds:
-      - rm -rf test/devpod-*
-      - rm -rf e2e/bin/devpod-*
-      - rm -rf "${TMPDIR:-/tmp/}devpod-cache"
-
-  test:setup:
-    desc: Setup e2e test environment
-    env:
-      GOPROXY: direct
-    cmds:
-      - go install github.com/onsi/ginkgo/v2/ginkgo@latest
-      - task: test:build-latest
-
-  test:build-latest:
-    desc: Build latest binaries
-    cmds:
-      - task: test:clean
-      - task: test:build
-
-  test:build:
-    desc: Build binaries for e2e tests
-    cmds:
-      - mkdir -p test
-      - rm -rf "${TMPDIR:-/tmp/}devpod-cache"
-      - mkdir -p "${TMPDIR:-/tmp/}devpod-cache"
-      - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "-s -w" -o test/devpod-linux-amd64 .
-      - chmod +x test/devpod-linux-amd64
-      - cp test/devpod-linux-amd64 "${TMPDIR:-/tmp/}devpod-cache/devpod-linux-amd64"
-      - mkdir -p e2e/bin
-      - cp test/devpod-linux-amd64 e2e/bin/devpod-linux-amd64
-
-  test:kind:setup:
-    desc: Setup kind cluster for Kubernetes tests
-    cmds:
-      - kind create cluster --image kindest/node:v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a
-
-  test:kind:cleanup:
-    desc: Delete kind cluster
-    cmds:
-      - kind delete cluster
-
-  test:all:
-    desc: Run all e2e tests
-    deps:
-      - test:build-latest
-    dir: e2e
-    env:
-      GOPROXY: direct
-    cmds:
-      - go run github.com/onsi/ginkgo/v2/ginkgo@latest
-
-  test:up:
-    desc: Run workspace up tests
-    deps:
-      - test:build-latest
-    dir: e2e
-    env:
-      GOPROXY: direct
-    cmds:
-      - go run github.com/onsi/ginkgo/v2/ginkgo@latest --label-filter="up"
-
-  test:docker:
-    desc: Run Docker-specific tests
-    deps:
-      - test:build-latest
-    dir: e2e
-    cmds:
-      - go run github.com/onsi/ginkgo/v2/ginkgo@latest --label-filter="up-docker"
-
-  test:features:
-    desc: Run feature dependency tests
-    deps:
-      - test:build-latest
-    dir: e2e
-    cmds:
-      - go run github.com/onsi/ginkgo/v2/ginkgo@latest --label-filter="features"
-
-  test:kubernetes:
-    desc: Run Kubernetes tests (requires kind cluster)
-    deps:
-      - test:build-latest
-    dir: e2e
-    cmds:
-      - go run github.com/onsi/ginkgo/v2/ginkgo@latest --label-filter="up-kubernetes || build"
+      - cmd: |
+          TMP_DIR="$(mktemp -d)"
+          cp dist/devpod-dev_linux_amd64_v1/devpod-linux-amd64 "$TMP_DIR/devpod-linux-amd64"
+          gh release upload v0.0.0-10 dist/devpod-dev_linux_amd64_v1/devpod-linux-amd64 --repo skevetter/devpod --clobber
+          rm -rf "$TMP_DIR"

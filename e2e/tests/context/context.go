@@ -87,6 +87,28 @@ var _ = DevPodDescribe("devpod context test suite", func() {
 			if !intellijFound {
 				ginkgo.Fail("IDE was not set in context-b as expected")
 			}
+
+			err = os.Setenv("DEVPOD_CONTEXT", contextB)
+			framework.ExpectNoError(err)
+
+			output, err = f.DevPodIDEList(ctx, "--output", "json")
+			framework.ExpectNoError(err)
+
+			err = json.Unmarshal([]byte(output), &ides)
+			framework.ExpectNoError(err)
+
+			intellijFound = false
+			for _, ide := range ides {
+				if ide["name"] == "intellij" {
+					if defaultVal, exists := ide["default"]; exists && defaultVal == true {
+						intellijFound = true
+						break
+					}
+				}
+			}
+			if !intellijFound {
+				ginkgo.Fail("Selecting context-b using environment variable DEVPOD_CONTEXT does not work as expected")
+			}
 		})
 
 	})

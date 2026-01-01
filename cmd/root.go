@@ -40,7 +40,7 @@ func NewRootCmd() *cobra.Command {
 			} else if globalFlags.LogOutput == "raw" {
 				log2.Default.SetFormat(log2.RawFormat)
 			} else if globalFlags.LogOutput != "plain" {
-				return fmt.Errorf("unrecognized log format %s, needs to be either plain or json", globalFlags.LogOutput)
+				return fmt.Errorf("unrecognized log format %s, needs to be either plain, raw or json", globalFlags.LogOutput)
 			}
 
 			if globalFlags.Silent {

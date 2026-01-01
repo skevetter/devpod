@@ -45,7 +45,7 @@ builds:
   - id: devpod-dev
     goos: [linux]
     goarch: [amd64]
-    binary: devpod-{{ .Os }}-{{ .Arch }}-dev
+    binary: devpod-{{ .Os }}-{{ .Arch }}
 archives:
   - formats: [tar.gz]
     format_overrides:

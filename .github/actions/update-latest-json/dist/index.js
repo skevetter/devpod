@@ -29961,9 +29961,9 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+const fs = __importStar(__nccwpck_require__(3024));
 const core = __importStar(__nccwpck_require__(7484));
 const github = __importStar(__nccwpck_require__(3228));
-const fs = __importStar(__nccwpck_require__(3024));
 async function fetchAsset(octokit, owner, repo, assetId) {
     const releaseAsset = await octokit.rest.repos.getReleaseAsset({
         owner,
@@ -29985,7 +29985,7 @@ async function run() {
         const githubToken = core.getInput("github_token", { required: true });
         const octokit = github.getOctokit(githubToken);
         const { owner, repo } = github.context.repo;
-        const releaseArgs = { owner, repo, release_id: parseInt(releaseId) };
+        const releaseArgs = { owner, repo, release_id: parseInt(releaseId, 10) };
         const release = await octokit.rest.repos.getRelease(releaseArgs);
         // Download and parse latest.json
         const latestAsset = release.data.assets.find((a) => a.name === "latest.json");
@@ -29994,13 +29994,13 @@ async function run() {
         }
         core.info(`Downloading ${latestAsset.name} (ID: ${latestAsset.id})`);
         const latestRes = await fetchAsset(octokit, owner, repo, latestAsset.id);
-        const latest = await latestRes.json();
+        const latest = (await latestRes.json());
         const version = latest.version;
         const infos = [
             {
                 target: "linux-x86_64",
-                sigFile: ".AppImage.tar.gz.sig",
-                packageType: ".tar.gz",
+                sigFile: ".AppImage.sig",
+                packageType: "",
                 originalAssetName: `DevPod_${version}_amd64.AppImage`,
                 desiredAssetName: "DevPod_linux_amd64.AppImage",
             },
@@ -30024,10 +30024,12 @@ async function run() {
             },
             {
                 target: "windows-x86_64",
-                sigFile: ".msi.zip.sig",
+                sigFile: ".msi.sig",
                 packageType: ".zip",
                 originalAssetName: `DevPod_${version}_x64_en-US.msi`,
                 desiredAssetName: "DevPod_windows_x64_en-US.msi",
+                originalUpdaterAssetName: `DevPod_${version}_x64_en-US.msi.zip`,
+                desiredUpdaterAssetName: "DevPod_windows_x64_en-US.msi.zip",
             },
             {
                 originalAssetName: `DevPod-${version}.tar.gz`,
@@ -30052,7 +30054,7 @@ async function run() {
                 }
                 latest.platforms[info.target] = {
                     signature: await sig.text(),
-                    url: `https://github.com/skevetter/devpod/releases/download/${process.env.GITHUB_REF_NAME || 'latest'}/${assetName}`,
+                    url: `https://github.com/skevetter/devpod/releases/download/${process.env.GITHUB_REF_NAME || "latest"}/${assetName}`,
                 };
                 // Delete sig file
                 await octokit.rest.repos.deleteReleaseAsset({
@@ -30113,7 +30115,7 @@ async function run() {
                 "content-length": fs.statSync(latestDestPath).size.toString(),
             },
             name: "latest.json",
-            data: fs.readFileSync(latestDestPath),
+            data: fs.readFileSync(latestDestPath, "utf8"),
         });
         core.info("Successfully updated latest.json");
     }
