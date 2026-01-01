@@ -91,6 +91,7 @@ jobs:
           path: dist/devpod-${{ steps.os.outputs.runner_os }}_*/devpod-${{ steps.os.outputs.runner_os }}-*
 
   integration-tests:
+    name: Integration Tests
     needs: [can-read-secret, build-cli]
     strategy:
       matrix:
@@ -209,9 +210,7 @@ jobs:
             runner: ubuntu-latest
             free-disk-space: false
             install-kind: false
-
     runs-on: ${{ matrix.runner }}
-    name: Test (${{ matrix.runner }} - ${{ matrix.label }})
     if: ${{ needs.can-read-secret.outputs.secret-set == 'true' }}
     steps:
       - uses: jlumbroso/free-disk-space@v1.3.1
@@ -333,6 +332,7 @@ jobs:
         run: docker --version && docker ps
 
   build-desktop:
+    name: Build Desktop App
     needs: build-cli
     strategy:
       matrix:
@@ -365,7 +365,6 @@ jobs:
             tauri_include_updater_json: false
             tauri_ci: true
     runs-on: ${{ matrix.runner }}
-    name: Build App (${{ matrix.runner }} - ${{ matrix.target }})
     steps:
       - uses: actions/checkout@v6
 
