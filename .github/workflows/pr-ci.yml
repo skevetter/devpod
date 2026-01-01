@@ -54,7 +54,7 @@ jobs:
         run: yarn build
 
   build-cli:
-    name: Build CLI Binaries
+    name: Build CLI Binary on ${{ matrix.runner }}
     strategy:
       matrix:
         include:
@@ -91,7 +91,7 @@ jobs:
           path: dist/devpod-${{ steps.os.outputs.runner_os }}_*/devpod-${{ steps.os.outputs.runner_os }}-*
 
   integration-tests:
-    name: Integration Tests
+    name: Test ${{ matrix.label }} on ${{ matrix.runner }}
     needs: [can-read-secret, build-cli]
     strategy:
       matrix:
@@ -332,7 +332,7 @@ jobs:
         run: docker --version && docker ps
 
   build-desktop:
-    name: Build Desktop App
+    name: Build Desktop App for ${{ matrix.arch }} on ${{ matrix.runner }}
     needs: build-cli
     strategy:
       matrix:
