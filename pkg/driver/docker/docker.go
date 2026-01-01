@@ -562,6 +562,12 @@ func (d *dockerDriver) UpdateContainerUserUID(ctx context.Context, workspaceId s
 	}
 
 	if containerUid == "" || containerGid == "" || containerHome == "" {
+		d.Log.WithFields(logrus.Fields{
+			"containerUser": containerUser,
+			"containerUid":  containerUid,
+			"containerGid":  containerGid,
+			"containerHome": containerHome,
+		}).Error("user lookup validation failed")
 		return fmt.Errorf("user %q not found in container /etc/passwd", containerUser)
 	}
 
@@ -680,7 +686,12 @@ func (d *dockerDriver) UpdateContainerUserUID(ctx context.Context, workspaceId s
 
 	// Validate workspace folder path for security
 	if strings.Contains(parsedConfig.WorkspaceFolder, "..") || !strings.HasPrefix(parsedConfig.WorkspaceFolder, "/") {
-		return fmt.Errorf("invalid workspace folder path %s", parsedConfig.WorkspaceFolder)
+		d.Log.WithFields(logrus.Fields{
+			"workspaceFolder": parsedConfig.WorkspaceFolder,
+			"hasDoubleDot":    strings.Contains(parsedConfig.WorkspaceFolder, ".."),
+			"hasAbsolutePath": strings.HasPrefix(parsedConfig.WorkspaceFolder, "/"),
+		}).Error("workspace folder path validation failed")
+		return fmt.Errorf("invalid workspace folder path: %s", parsedConfig.WorkspaceFolder)
 	}
 
 	args = []string{"exec", "-u", "root", container.ID, "chown", "-R", fmt.Sprintf("%s:%s", localUid, localGid), parsedConfig.WorkspaceFolder}
