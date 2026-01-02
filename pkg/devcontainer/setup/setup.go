@@ -15,6 +15,7 @@ import (
 
 	"github.com/loft-sh/api/v4/pkg/devpod"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/agent/tunnel"
 	"github.com/skevetter/devpod/pkg/command"
 	copy2 "github.com/skevetter/devpod/pkg/copy"
@@ -149,6 +150,28 @@ func LinkRootHome(setupInfo *config.Result) error {
 	return nil
 }
 
+func isBindMount(path string, log log.Logger) bool {
+	if strings.HasPrefix(path, "/workspaces") {
+		if _, err := os.Stat("/.dockerenv"); err == nil {
+			log.WithFields(logrus.Fields{
+				"path": path,
+				"type": "docker",
+			}).Debug("detected Docker container with /workspaces path, assuming bind mount")
+			return true
+		}
+
+		if os.Getenv("container") != "" || os.Getenv("DEVCONTAINER") != "" {
+			log.WithFields(logrus.Fields{
+				"path": path,
+				"type": "container",
+			}).Debug("detected container environment with /workspaces path, assuming bind mount")
+			return true
+		}
+	}
+
+	return false
+}
+
 func ChownWorkspace(setupInfo *config.Result, recursive bool, log log.Logger) error {
 	user := config.GetRemoteUser(setupInfo)
 	exists, err := markerFileExists("chownWorkspace", "")
@@ -161,19 +184,35 @@ func ChownWorkspace(setupInfo *config.Result, recursive bool, log log.Logger) er
 	workspaceRoot := filepath.Dir(setupInfo.SubstitutionContext.ContainerWorkspaceFolder)
 
 	if workspaceRoot != "/" {
-		log.Infof("Chown workspace...")
-		err = copy2.Chown(workspaceRoot, user)
-		if err != nil {
-			log.Warn(err)
+		if isBindMount(workspaceRoot, log) {
+			log.WithFields(logrus.Fields{
+				"path": workspaceRoot,
+			}).Debug("Skipping chown for bind-mounted directory")
+		} else {
+			log.Infof("chown workspace")
+			err = copy2.Chown(workspaceRoot, user)
+			if err != nil {
+				log.Warn(err)
+			}
 		}
 	}
 
 	if recursive {
-		log.Infof("Chown projects...")
-		err = copy2.ChownR(setupInfo.SubstitutionContext.ContainerWorkspaceFolder, user)
-		// do not exit on error, we can have non-fatal errors
-		if err != nil {
-			log.Warn(err)
+		if isBindMount(setupInfo.SubstitutionContext.ContainerWorkspaceFolder, log) {
+			log.WithFields(logrus.Fields{
+				"path": setupInfo.SubstitutionContext.ContainerWorkspaceFolder,
+			}).Debug("skipping recursive chown for bind-mounted directory")
+		} else {
+			log.WithFields(logrus.Fields{
+				"path": setupInfo.SubstitutionContext.ContainerWorkspaceFolder,
+			}).Info("chown projects")
+			err = copy2.ChownR(setupInfo.SubstitutionContext.ContainerWorkspaceFolder, user)
+			if err != nil {
+				log.WithFields(logrus.Fields{
+					"path":  setupInfo.SubstitutionContext.ContainerWorkspaceFolder,
+					"error": err.Error(),
+				}).Warn("failed to chown projects directory")
+			}
 		}
 	}
 
