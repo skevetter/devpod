@@ -15,13 +15,19 @@ builds:
     overrides:
       - goos: linux
         goarch: amd64
-        ldflags:
-          - -s -w -extldflags "-static"
+        ldflags: -s -w -extldflags "-static"
+        tags:
+          - netgo
+          - osusergo
+      - goos: linux
+        goarch: arm64
+        ldflags: -s -w -extldflags "-static"
+        tags:
+          - netgo
+          - osusergo
+    ldflags: -s -w
     env:
       - CGO_ENABLED=0
-    tags:
-      - netgo
-      - osusergo
 
   - id: devpod-linux
     hooks:
@@ -30,11 +36,7 @@ builds:
     goos: [linux]
     goarch: [amd64, arm64]
     binary: devpod-{{ .Os }}-{{ .Arch }}
-    overrides:
-      - goos: linux
-        goarch: amd64
-        ldflags:
-          - -s -w -extldflags "-static"
+    ldflags: -s -w -extldflags "-static"
     env:
       - CGO_ENABLED=0
     tags:
@@ -53,8 +55,7 @@ builds:
     goos: [windows]
     goarch: [amd64, arm64]
     binary: devpod-{{ .Os }}-{{ .Arch }}
-    ldflags:
-      - -s -w
+    ldflags: -s -w
     env:
       - CGO_ENABLED=0
 
@@ -62,8 +63,7 @@ builds:
     goos: [linux]
     goarch: [amd64]
     binary: devpod-{{ .Os }}-{{ .Arch }}
-    ldflags:
-      - -s -w -extldflags "-static"
+    ldflags: -s -w -extldflags "-static"
     env:
       - CGO_ENABLED=0
     tags:
