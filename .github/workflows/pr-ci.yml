@@ -11,6 +11,18 @@ jobs:
     name: Debug Info
     runs-on: ubuntu-latest
     steps:
+      - uses: go-task/setup-task@v1
+
+      - uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: "~> v2"
+          install-only: true
+
+      - run: task cli:test:e2e:build
+
+      - run: task cli:test:e2e:focus -- "implements updateRemoteUserUID"
+
       - name: Print Environment Info
         run: printenv
 

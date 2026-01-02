@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"os/user"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -197,27 +196,22 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 				}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
 				ginkgo.It("implements updateRemoteUserUID by mapping the user's UID/GID to match the local user's UID/GID to avoid permission problems with bind mounts", func(ctx context.Context) {
-					if os.Geteuid() == 0 {
-						// Switch to github runner:x:1001:1001:,,,:/home/runner:/bin/bash
-						// so that all future commands run as non-root user
-						exec.Command("sudo", "su", "-", "runner").Run()
-					}
-					currentUser, err := user.Current()
-					framework.ExpectNoError(err)
+					testUID := 1001 // Use runner UID in CI
+					testGID := 1001 // Use runner GID in CI
 
-					userName := currentUser.Username
-					userUID, err := strconv.Atoi(currentUser.Uid)
-					framework.ExpectNoError(err)
-					userGID, err := strconv.Atoi(currentUser.Gid)
-					framework.ExpectNoError(err)
-
-					ginkgo.By(fmt.Sprintf("Test user configuration: user=%s, uid=%d, gid=%d, isRoot=%t", userName, userUID, userGID, currentUser.Uid == "0"))
+					ginkgo.By(fmt.Sprintf("Test user configuration: uid=%d, gid=%d", testUID, testGID))
 
 					tempDir, err := setupWorkspace("tests/up/testdata/docker-compose-uid-mapping", tc.initialDir, tc.f)
 					framework.ExpectNoError(err)
 
-					ws, err := devPodUpAndFindWorkspace(ctx, tc.f, tempDir)
-					framework.ExpectNoError(err, "failed to setup workspace as test user")
+					// Run devpod up as runner user
+					ginkgo.By("Running devpod up as runner user")
+					upCmd := exec.CommandContext(ctx, "sudo", "-u", "runner", "-E", filepath.Join(tc.f.DevpodBinDir, tc.f.DevpodBinName), "up", "--debug", "--ide", "none", tempDir)
+					devPodUpOutput, err := upCmd.CombinedOutput()
+					framework.ExpectNoError(err, "failed to setup workspace: %s", string(devPodUpOutput))
+
+					ws, err := tc.f.FindWorkspace(ctx, tempDir)
+					framework.ExpectNoError(err, "failed to find workspace")
 
 					ids, err := findComposeContainer(ctx, tc.dockerHelper, tc.composeHelper, ws.UID, "webserver")
 					framework.ExpectNoError(err)
@@ -234,16 +228,16 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 					framework.ExpectNoError(err)
 					containerUID, err := strconv.Atoi(strings.TrimSpace(out))
 					framework.ExpectNoError(err)
-					ginkgo.By(fmt.Sprintf("Container UID mapping: www-data=%d, expected=%d", containerUID, userUID))
-					gomega.Expect(containerUID).To(gomega.Equal(userUID), "www-data user UID should match host user UID")
+					ginkgo.By(fmt.Sprintf("Container UID mapping: www-data=%d, expected=%d", containerUID, testUID))
+					gomega.Expect(containerUID).To(gomega.Equal(testUID), "www-data user UID should match host user UID")
 
 					out, err = tc.f.DevPodSSH(ctx, tempDir, "id -g www-data")
 					framework.ExpectNoError(err)
 					containerGID, err := strconv.Atoi(strings.TrimSpace(out))
 					framework.ExpectNoError(err)
-					ginkgo.By(fmt.Sprintf("Container GID mapping: www-data=%d, expected=%d", containerGID, userGID))
+					ginkgo.By(fmt.Sprintf("Container GID mapping: www-data=%d, expected=%d", containerGID, testGID))
 					framework.ExpectNoError(err)
-					gomega.Expect(containerGID).To(gomega.Equal(userGID), "www-data user GID should match host user GID")
+					gomega.Expect(containerGID).To(gomega.Equal(testGID), "www-data user GID should match host user GID")
 
 					// Verify host files
 					hostFile := filepath.Join(tempDir, "var", "www", "html", "index.html")
@@ -254,8 +248,8 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 					info, err := os.Stat(hostFile)
 					framework.ExpectNoError(err)
 					stat := info.Sys().(*syscall.Stat_t)
-					gomega.Expect(int(stat.Uid)).To(gomega.Equal(userUID), "host file UID should match host user UID")
-					gomega.Expect(int(stat.Gid)).To(gomega.Equal(userGID), "host file GID should match host user GID")
+					gomega.Expect(int(stat.Uid)).To(gomega.Equal(testUID), "host file UID should match host user UID")
+					gomega.Expect(int(stat.Gid)).To(gomega.Equal(testGID), "host file GID should match host user GID")
 
 				}, ginkgo.SpecTimeout(framework.GetTimeout()))
 			})
