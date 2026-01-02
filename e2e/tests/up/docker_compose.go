@@ -196,32 +196,25 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 				}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
 				ginkgo.It("implements updateRemoteUserUID by mapping the user's UID/GID to match the local user's UID/GID to avoid permission problems with bind mounts", func(ctx context.Context) {
-					testUID := 1001 // Use runner UID in CI
-					testGID := 1001 // Use runner GID in CI
+					// Switch to runner user for entire test
+					if os.Geteuid() == 0 {
+						ginkgo.By("Switching to runner user")
+						err := syscall.Setuid(1001)
+						framework.ExpectNoError(err, "failed to switch to runner user")
+						err = syscall.Setgid(1001)
+						framework.ExpectNoError(err, "failed to switch to runner group")
+					}
+
+					testUID := 1001
+					testGID := 1001
 
 					ginkgo.By(fmt.Sprintf("Test user configuration: uid=%d, gid=%d", testUID, testGID))
 
 					tempDir, err := setupWorkspace("tests/up/testdata/docker-compose-uid-mapping", tc.initialDir, tc.f)
 					framework.ExpectNoError(err)
 
-					// Copy DevPod config from root to runner user
-					ginkgo.By("Copying DevPod config to runner user")
-					copyCmd := exec.CommandContext(ctx, "sudo", "cp", "-r", "/root/.devpod", "/home/runner/")
-					_, err = copyCmd.CombinedOutput()
-					framework.ExpectNoError(err, "failed to copy DevPod config to runner user")
-
-					chownCmd := exec.CommandContext(ctx, "sudo", "chown", "-R", "runner:runner", "/home/runner/.devpod")
-					_, err = chownCmd.CombinedOutput()
-					framework.ExpectNoError(err, "failed to change ownership of DevPod config")
-
-					// Run devpod up as runner user
-					ginkgo.By("Running devpod up as runner user")
-					upCmd := exec.CommandContext(ctx, "sudo", "-u", "runner", "-E", filepath.Join(tc.f.DevpodBinDir, tc.f.DevpodBinName), "up", "--debug", "--ide", "none", tempDir)
-					devPodUpOutput, err := upCmd.CombinedOutput()
-					framework.ExpectNoError(err, "failed to setup workspace: %s", string(devPodUpOutput))
-
-					ws, err := tc.f.FindWorkspace(ctx, tempDir)
-					framework.ExpectNoError(err, "failed to find workspace")
+					ws, err := devPodUpAndFindWorkspace(ctx, tc.f, tempDir)
+					framework.ExpectNoError(err, "failed to setup workspace")
 
 					ids, err := findComposeContainer(ctx, tc.dockerHelper, tc.composeHelper, ws.UID, "webserver")
 					framework.ExpectNoError(err)
