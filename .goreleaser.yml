@@ -52,6 +52,14 @@ builds:
     goos: [linux]
     goarch: [amd64]
     binary: devpod-{{ .Os }}-{{ .Arch }}
+    ldflags:
+      - -s -w -extldflags "-static"
+    env:
+      - CGO_ENABLED=0
+    tags:
+      - netgo
+      - osusergo
+
 archives:
   - formats: [tar.gz]
     format_overrides:
