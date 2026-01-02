@@ -7,6 +7,16 @@ on:
   pull_request:
 
 jobs:
+  debug:
+    name: Debug Info
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print Environment Info
+        run: printenv
+
+      - name: Print users
+        run: cat /etc/passwd
+
   can-read-secret:
     name: Can Read Secret
     runs-on: ubuntu-latest
