@@ -187,7 +187,7 @@ func ChownWorkspace(setupInfo *config.Result, recursive bool, log log.Logger) er
 		if isBindMount(workspaceRoot, log) {
 			log.WithFields(logrus.Fields{
 				"path": workspaceRoot,
-			}).Debug("Skipping chown for bind-mounted directory")
+			}).Debug("skipping chown for bind-mounted directory")
 		} else {
 			log.Infof("chown workspace")
 			err = copy2.Chown(workspaceRoot, user)
