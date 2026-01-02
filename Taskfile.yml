@@ -13,12 +13,18 @@ tasks:
     desc: build devpod CLI
     env:
       GITHUB_REPOSITORY_OWNER: skevetter
+    cmd: goreleaser build --id devpod --snapshot --clean
+
+  cli:build:dev:
+    desc: build devpod CLI for development
+    env:
+      GITHUB_REPOSITORY_OWNER: skevetter
     cmd: goreleaser build --id devpod-dev --snapshot --clean
 
   cli:build:setup-cache:
     desc: setup cache for CLI builds
     deps:
-      - cli:build
+      - cli:build:dev
     cmds:
       - task: cli:build:teardown-cache
       - mkdir -p "${TMPDIR:-/tmp/}devpod-cache"
@@ -38,7 +44,7 @@ tasks:
     status:
       - test -f e2e/bin/devpod-linux-amd64
     cmds:
-      - task: cli:build
+      - task: cli:build:dev
       - mkdir -p e2e/bin
       - cp dist/devpod-dev_linux_amd64_v1/devpod-linux-amd64 e2e/bin/devpod-linux-amd64
 
@@ -100,7 +106,7 @@ tasks:
     desc: setup tauri desktop application
     dir: desktop
     cmds:
-      - task: cli:build
+      - task: cli:build:dev
       - cmd: cp ../dist/devpod-dev_linux_amd64_v1/devpod-linux-amd64 ./src-tauri/bin/devpod-cli-x86_64-unknown-linux-gnu
       - cmd: yarn install --frozen-lockfile
 
