@@ -448,6 +448,12 @@ func (d *dockerDriver) UpdateContainerUserUID(ctx context.Context, workspaceId s
 		return nil
 	}
 
+	if containerUser == "root" {
+		// root user needs UID 0 for system operations like agent injection
+		d.Log.Debug("skipping UID/GID mapping for root user to preserve system permissions")
+		return nil
+	}
+
 	return d.updateContainerUserFiles(ctx, container, containerUser, localUser, parsedConfig)
 }
 

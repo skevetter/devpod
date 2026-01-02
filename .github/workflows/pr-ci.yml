@@ -23,12 +23,29 @@ jobs:
           version: "~> v2"
           install-only: true
 
+      - name: setup kind
+        uses: engineerd/setup-kind@v0.6.2
+        with:
+          name: "debug-cluster"
+          version: v0.24.0
+          image: kindest/node:v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a
+          skipClusterLogsExport: true
+
       - name: Switch to runner user for all future commands
         run: sudo su - runner
 
       - run: task cli:test:e2e:build
 
-      - run: task cli:test:e2e
+      - run: |
+          GH_USERNAME="${GH_USERNAME}" \
+            GH_ACCESS_TOKEN="${GH_ACCESS_TOKEN}" \
+            KUBECONFIG="${KUBECONFIG:-$HOME/.kube/config}" \
+            PATH="${PATH}" \
+            GOROOT="${GOROOT}" \
+            task cli:test:e2e
+        env:
+          GH_USERNAME: ${{ github.repository_owner }}
+          GH_ACCESS_TOKEN: ${{ secrets.GH_PRIVATE_REPO_TOKEN_TEST || github.token }}
 
       - name: Print Environment Info
         run: printenv
