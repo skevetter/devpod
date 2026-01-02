@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -169,6 +171,14 @@ func injectBinary(arm bool, tryDownloadURL string, log log.Logger) (io.ReadClose
 			"path": binaryPath,
 			"arch": targetArch,
 		}).Debug("using current binary for agent injection")
+
+		// Validate binary compatibility
+		if err := validateBinaryCompatibility(binaryPath, log); err != nil {
+			log.WithFields(logrus.Fields{
+				"path":  binaryPath,
+				"error": err,
+			}).Warn("current binary compatibility check failed")
+		}
 	}
 
 	// try to look up runner binaries
@@ -182,6 +192,14 @@ func injectBinary(arm bool, tryDownloadURL string, log log.Logger) (io.ReadClose
 			"arch": targetArch,
 			"url":  tryDownloadURL,
 		}).Debug("found runner binary for agent injection")
+
+		// Validate binary compatibility in CI
+		if err := validateBinaryCompatibility(binaryPath, log); err != nil {
+			log.WithFields(logrus.Fields{
+				"path":  binaryPath,
+				"error": err,
+			}).Warn("binary compatibility check failed")
+		}
 	}
 
 	// download devpod locally
@@ -199,6 +217,46 @@ func injectBinary(arm bool, tryDownloadURL string, log log.Logger) (io.ReadClose
 	}
 
 	return file, nil
+}
+
+func validateBinaryCompatibility(binaryPath string, log log.Logger) error {
+	// Check if binary is static (no dynamic dependencies)
+	cmd := exec.Command("ldd", binaryPath)
+	output, err := cmd.Output()
+
+	if err != nil {
+		// ldd failed, might be static or not available
+		log.WithFields(logrus.Fields{
+			"path":  binaryPath,
+			"error": err,
+		}).Debug("ldd command failed, assuming binary is compatible")
+		return nil
+	}
+
+	outputStr := string(output)
+	if strings.Contains(outputStr, "not a dynamic executable") || strings.Contains(outputStr, "statically linked") {
+		log.WithFields(logrus.Fields{
+			"path": binaryPath,
+		}).Debug("binary is statically linked")
+		return nil
+	}
+
+	// Check for problematic GLIBC versions
+	if strings.Contains(outputStr, "GLIBC_2.3") && (strings.Contains(outputStr, "2.38") || strings.Contains(outputStr, "2.39")) {
+		log.WithFields(logrus.Fields{
+			"path":         binaryPath,
+			"dependencies": strings.TrimSpace(outputStr),
+		}).Error("binary requires newer GLIBC version, will cause compatibility issues")
+		return fmt.Errorf("binary requires GLIBC 2.38+ which may not be available in target containers")
+	}
+
+	// Binary has dynamic dependencies, log them for debugging
+	log.WithFields(logrus.Fields{
+		"path":         binaryPath,
+		"dependencies": strings.TrimSpace(outputStr),
+	}).Warn("binary has dynamic dependencies, may cause compatibility issues")
+
+	return nil
 }
 
 func downloadAgentLocally(tryDownloadURL, targetArch string, log log.Logger) (string, error) {

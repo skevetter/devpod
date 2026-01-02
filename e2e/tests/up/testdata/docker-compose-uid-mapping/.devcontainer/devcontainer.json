@@ -1,0 +1,9 @@
+{
+  "name": "Test",
+  "dockerComposeFile": ["./docker-compose.yml"],
+  "service": "webserver",
+  "overrideCommand": false,
+  "containerUser": "root",
+  "remoteUser": "www-data",
+  "workspaceFolder": "/var/www/html"
+}

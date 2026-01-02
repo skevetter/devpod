@@ -18,6 +18,7 @@ import (
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	"github.com/skevetter/devpod/pkg/devcontainer/crane"
 	"github.com/skevetter/devpod/pkg/devcontainer/sshtunnel"
+	"github.com/skevetter/devpod/pkg/docker"
 	"github.com/skevetter/devpod/pkg/driver"
 	"github.com/skevetter/devpod/pkg/ide"
 	provider2 "github.com/skevetter/devpod/pkg/provider"
@@ -82,6 +83,14 @@ func (r *runner) setupContainer(
 	if crane.ShouldUse(&r.WorkspaceConfig.CLIOptions) && r.WorkspaceConfig.Workspace.Source.GitRepository != "" {
 		workspaceConfig.PullFromInsideContainer = "true"
 	}
+
+	// populate mount information for docker driver
+	if _, isDockerDriver := r.Driver.(driver.DockerDriver); isDockerDriver {
+		if mounts, err := r.getContainerMounts(); err == nil {
+			workspaceConfig.Mounts = mounts
+		}
+	}
+
 	// compress container workspace info
 	workspaceConfigRaw, err := json.Marshal(workspaceConfig)
 	if err != nil {
@@ -178,4 +187,35 @@ func filterWorkspaceMounts(mounts []*config.Mount, baseFolder string, log log.Lo
 	}
 
 	return retMounts
+}
+
+func (r *runner) getContainerMounts() ([]provider2.MountInfo, error) {
+	containerName := r.ID
+	if containerName == "" {
+		return nil, nil
+	}
+
+	ctx := context.Background()
+	dockerClient, err := docker.NewClient(ctx, r.Log)
+	if err != nil {
+		return nil, err
+	}
+	defer dockerClient.Close()
+
+	containerJSON, err := dockerClient.ContainerInspect(ctx, containerName)
+	if err != nil {
+		return nil, err
+	}
+
+	var mounts []provider2.MountInfo
+	for _, mount := range containerJSON.Mounts {
+		mounts = append(mounts, provider2.MountInfo{
+			Type:        string(mount.Type),
+			Source:      mount.Source,
+			Destination: mount.Destination,
+			RW:          mount.RW,
+		})
+	}
+
+	return mounts, nil
 }

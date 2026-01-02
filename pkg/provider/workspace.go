@@ -134,6 +134,13 @@ type WorkspaceSource struct {
 	Container string `json:"container,omitempty"`
 }
 
+type MountInfo struct {
+	Type        string `json:"type"`
+	Source      string `json:"source"`
+	Destination string `json:"destination"`
+	RW          bool   `json:"rw"`
+}
+
 type ContainerWorkspaceInfo struct {
 	// IDE holds the ide config options
 	IDE WorkspaceIDEConfig `json:"ide"`
@@ -156,6 +163,9 @@ type ContainerWorkspaceInfo struct {
 
 	// PullFromInsideContainer determines if project should be pulled from Source when container starts
 	PullFromInsideContainer types.StrBool `json:"pullFromInsideContainer,omitempty"`
+
+	// Mounts holds the container mount information
+	Mounts []MountInfo `json:"mounts,omitempty"`
 
 	// Agent holds the agent info
 	Agent ProviderAgentConfig `json:"agent"`
