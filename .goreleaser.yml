@@ -21,9 +21,12 @@ builds:
     goarch: [amd64, arm64]
     binary: devpod-{{ .Os }}-{{ .Arch }}
     ldflags:
-      - -s -w
+      - -s -w -extldflags "-static"
     env:
       - CGO_ENABLED=0
+    tags:
+      - netgo
+      - osusergo
 
   - id: devpod-darwin
     hooks:
@@ -38,9 +41,12 @@ builds:
     goarch: [amd64, arm64]
     binary: devpod-{{ .Os }}-{{ .Arch }}
     ldflags:
-      - -s -w
+      - -s -w -extldflags "-static"
     env:
       - CGO_ENABLED=0
+    tags:
+      - netgo
+      - osusergo
 
   - id: devpod-dev
     goos: [linux]
