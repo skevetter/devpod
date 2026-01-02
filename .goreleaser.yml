@@ -12,6 +12,13 @@ builds:
     goos: [linux, darwin, windows]
     goarch: [amd64, arm64]
     binary: devpod
+    ldflags:
+      - -s -w -extldflags "-static"
+    env:
+      - CGO_ENABLED=0
+    tags:
+      - netgo
+      - osusergo
 
   - id: devpod-linux
     hooks:
@@ -21,9 +28,12 @@ builds:
     goarch: [amd64, arm64]
     binary: devpod-{{ .Os }}-{{ .Arch }}
     ldflags:
-      - -s -w
+      - -s -w -extldflags "-static"
     env:
       - CGO_ENABLED=0
+    tags:
+      - netgo
+      - osusergo
 
   - id: devpod-darwin
     hooks:
@@ -32,20 +42,38 @@ builds:
     goos: [darwin]
     goarch: [amd64, arm64]
     binary: devpod-{{ .Os }}-{{ .Arch }}
+    ldflags:
+      - -s -w -extldflags "-static"
+    env:
+      - CGO_ENABLED=0
+    tags:
+      - netgo
+      - osusergo
 
   - id: devpod-windows
     goos: [windows]
     goarch: [amd64, arm64]
     binary: devpod-{{ .Os }}-{{ .Arch }}
     ldflags:
-      - -s -w
+      - -s -w -extldflags "-static"
     env:
       - CGO_ENABLED=0
+    tags:
+      - netgo
+      - osusergo
 
   - id: devpod-dev
     goos: [linux]
     goarch: [amd64]
     binary: devpod-{{ .Os }}-{{ .Arch }}
+    ldflags:
+      - -s -w -extldflags "-static"
+    env:
+      - CGO_ENABLED=0
+    tags:
+      - netgo
+      - osusergo
+
 archives:
   - formats: [tar.gz]
     format_overrides:
