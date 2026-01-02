@@ -23,7 +23,7 @@ jobs:
 
       - run: task cli:test:e2e:build
 
-      - run: task cli:test:e2e:focus -- "implements updateRemoteUserUID"
+      - run: task cli:test:e2e:focus -- implements updateRemoteUserUID
 
       - name: Print Environment Info
         run: printenv
