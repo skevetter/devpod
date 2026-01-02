@@ -331,7 +331,12 @@ jobs:
           GH_ACCESS_TOKEN: ${{ secrets.GH_PRIVATE_REPO_TOKEN_TEST || github.token }}
         run: |
           if [ "${{ runner.os }}" == "Linux" ]; then
-            sudo -u runner -E \
+            sudo -u runner \
+              GH_USERNAME="${GH_USERNAME}" \
+              GH_ACCESS_TOKEN="${GH_ACCESS_TOKEN}" \
+              KUBECONFIG="${KUBECONFIG:-$HOME/.kube/config}" \
+              PATH="${PATH}" \
+              GOROOT="${GOROOT}" \
               go test -v -ginkgo.v -ginkgo.show-node-events -timeout 3600s --ginkgo.label-filter="${{ matrix.label }}"
           else
             GH_USERNAME="${GH_USERNAME}" \
