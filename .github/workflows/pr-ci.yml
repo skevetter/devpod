@@ -17,6 +17,14 @@ jobs:
       - name: Print users
         run: cat /etc/passwd
 
+      - name: Switch to runner:x:1001:1001:,,,:/home/runner:/bin/bash and print user info
+        run: |
+          sudo su - runner -c 'whoami; id; printenv'
+
+      - name: See if user can run docker commands
+        run: |
+          sudo su - runner -c 'docker version; docker ps -a'
+
   can-read-secret:
     name: Can Read Secret
     runs-on: ubuntu-latest
