@@ -61,7 +61,7 @@ func GetRemoteUser(result *Result) string {
 
 	if result.ContainerDetails != nil && result.ContainerDetails.Config.User != "" {
 		userParts := strings.Split(result.ContainerDetails.Config.User, ":")
-		if len(userParts) > 0 && userParts[0] != "" {
+		if userParts[0] != "" {
 			return userParts[0]
 		}
 	}
