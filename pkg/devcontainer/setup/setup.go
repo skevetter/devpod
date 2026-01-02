@@ -168,12 +168,12 @@ func isBindMount(path string, workspaceInfo *provider.ContainerWorkspaceInfo, lo
 		return false
 	}
 
-	// if mount info not provided, use heuristic for /workspaces
+	// if no mount info provided, use heuristic for common bind mount paths in containers
 	if _, err := os.Stat("/.dockerenv"); err == nil || os.Getenv("container") != "" || os.Getenv("DEVCONTAINER") != "" {
-		if strings.HasPrefix(path, "/workspaces") {
+		if strings.HasPrefix(path, "/workspaces") || strings.HasPrefix(path, "/tmp/temp-") {
 			log.WithFields(logrus.Fields{
 				"path": path,
-			}).Debug("no mount info available, using /workspaces heuristic")
+			}).Debug("no mount info available, using path heuristic")
 			return true
 		}
 	}
