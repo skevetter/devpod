@@ -197,6 +197,11 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 				}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
 				ginkgo.It("implements updateRemoteUserUID by mapping the user's UID/GID to match the local user's UID/GID to avoid permission problems with bind mounts", func(ctx context.Context) {
+					if os.Geteuid() == 0 {
+						// Switch to github runner:x:1001:1001:,,,:/home/runner:/bin/bash
+						// so that all future commands run as non-root user
+						exec.Command("sudo", "su", "-", "runner").Run()
+					}
 					currentUser, err := user.Current()
 					framework.ExpectNoError(err)
 
