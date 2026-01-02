@@ -3,6 +3,7 @@ package config
 import (
 	"maps"
 	"slices"
+	"strings"
 )
 
 const UserLabel = "devpod.user"
@@ -34,17 +35,42 @@ func GetMounts(result *Result) []*Mount {
 	return mounts
 }
 
+// GetRemoteUser determines the remote user using DevContainer specification priority order:
+// 1. remoteUser from configuration
+// 2. devpod.user label from container
+// 3. User field from Docker inspect
+// 4. containerUser from configuration
+//
+// Per DevContainer specification (https://containers.dev/implementors/json_reference/):
+// "remoteUser: Overrides the user that devcontainer.json supporting services tools / runs as in the container...
+// Defaults to the user the container as a whole is running as (often root)."
 func GetRemoteUser(result *Result) string {
-	user := "root"
-	if result != nil {
-		if result.MergedConfig != nil && result.MergedConfig.RemoteUser != "" {
-			user = result.MergedConfig.RemoteUser
-		} else if result.ContainerDetails != nil && result.ContainerDetails.Config.Labels != nil && result.ContainerDetails.Config.Labels[UserLabel] != "" {
-			user = result.ContainerDetails.Config.Labels[UserLabel]
+	if result == nil {
+		return "root"
+	}
+
+	if result.MergedConfig != nil && result.MergedConfig.RemoteUser != "" {
+		return result.MergedConfig.RemoteUser
+	}
+
+	if result.ContainerDetails != nil && result.ContainerDetails.Config.Labels != nil {
+		if userLabel := result.ContainerDetails.Config.Labels[UserLabel]; userLabel != "" {
+			return userLabel
 		}
 	}
 
-	return user
+	if result.ContainerDetails != nil && result.ContainerDetails.Config.User != "" {
+		userParts := strings.Split(result.ContainerDetails.Config.User, ":")
+		if len(userParts) > 0 && userParts[0] != "" {
+			return userParts[0]
+		}
+	}
+
+	if result.MergedConfig != nil && result.MergedConfig.ContainerUser != "" {
+		return result.MergedConfig.ContainerUser
+	}
+
+	return "root"
 }
 
 func GetDevPodCustomizations(parsedConfig *DevContainerConfig) *DevPodCustomizations {

@@ -15,6 +15,7 @@ import (
 
 	"github.com/loft-sh/api/v4/pkg/devpod"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/agent/tunnel"
 	"github.com/skevetter/devpod/pkg/command"
 	copy2 "github.com/skevetter/devpod/pkg/copy"
@@ -37,7 +38,7 @@ func SetupContainer(ctx context.Context, setupInfo *config.Result, extraWorkspac
 	// chown user dir
 	err := ChownWorkspace(setupInfo, chownProjects, log)
 	if err != nil {
-		return fmt.Errorf("chown workspace %w", err)
+		return fmt.Errorf("failed to chown workspace %w", err)
 	}
 
 	// patch remote env
@@ -161,7 +162,10 @@ func ChownWorkspace(setupInfo *config.Result, recursive bool, log log.Logger) er
 	workspaceRoot := filepath.Dir(setupInfo.SubstitutionContext.ContainerWorkspaceFolder)
 
 	if workspaceRoot != "/" {
-		log.Infof("Chown workspace...")
+		log.WithFields(logrus.Fields{
+			"user":          user,
+			"workspaceRoot": workspaceRoot,
+		}).Info("chown workspace")
 		err = copy2.Chown(workspaceRoot, user)
 		if err != nil {
 			log.Warn(err)
@@ -169,7 +173,10 @@ func ChownWorkspace(setupInfo *config.Result, recursive bool, log log.Logger) er
 	}
 
 	if recursive {
-		log.Infof("Chown projects...")
+		log.WithFields(logrus.Fields{
+			"user":            user,
+			"workspaceFolder": setupInfo.SubstitutionContext.ContainerWorkspaceFolder,
+		}).Info("chown workspace recursively")
 		err = copy2.ChownR(setupInfo.SubstitutionContext.ContainerWorkspaceFolder, user)
 		// do not exit on error, we can have non-fatal errors
 		if err != nil {
