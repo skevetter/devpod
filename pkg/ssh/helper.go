@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/skevetter/devpod/pkg/stdio"
 	"golang.org/x/crypto/ssh"
@@ -118,9 +119,45 @@ func Run(ctx context.Context, client *ssh.Client, command string, stdin io.Reade
 	sess.Stdout = stdout
 	sess.Stderr = stderr
 	err = sess.Run(command)
+	return err
+}
+
+func RunWithTimeout(ctx context.Context, client *ssh.Client, command string, stdin io.Reader, stdout io.Writer, stderr io.Writer, envVars map[string]string, timeout time.Duration) error {
+	timeoutCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	sess, err := client.NewSession()
 	if err != nil {
 		return err
 	}
+	defer func() { _ = sess.Close() }()
 
-	return nil
+	for k, v := range envVars {
+		err = sess.Setenv(k, v)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Use SIGKILL for timeout to ensure child processes are terminated
+	exit := make(chan struct{})
+	defer close(exit)
+	go func() {
+		select {
+		case <-timeoutCtx.Done():
+			if timeoutCtx.Err() == context.DeadlineExceeded {
+				_ = sess.Signal(ssh.SIGKILL)
+			} else {
+				_ = sess.Signal(ssh.SIGINT)
+			}
+			_ = sess.Close()
+		case <-exit:
+		}
+	}()
+
+	sess.Stdin = stdin
+	sess.Stdout = stdout
+	sess.Stderr = stderr
+	err = sess.Run(command)
+	return err
 }
