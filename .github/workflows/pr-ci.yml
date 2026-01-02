@@ -311,8 +311,7 @@ jobs:
           GH_ACCESS_TOKEN: ${{ secrets.GH_PRIVATE_REPO_TOKEN_TEST || github.token }}
         run: |
           if [ "${{ runner.os }}" == "Linux" ]; then
-            sudo \
-              GH_USERNAME="${GH_USERNAME}" \
+            GH_USERNAME="${GH_USERNAME}" \
               GH_ACCESS_TOKEN="${GH_ACCESS_TOKEN}" \
               KUBECONFIG="${KUBECONFIG:-$HOME/.kube/config}" \
               PATH="${PATH}" \
