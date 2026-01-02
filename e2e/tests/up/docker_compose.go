@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"os/user"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -196,17 +197,13 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 				}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
 				ginkgo.It("implements updateRemoteUserUID by mapping the user's UID/GID to match the local user's UID/GID to avoid permission problems with bind mounts", func(ctx context.Context) {
-					// Switch to runner user for entire test
-					if os.Geteuid() == 0 {
-						ginkgo.By("Switching to runner user")
-						err := syscall.Setuid(1001)
-						framework.ExpectNoError(err, "failed to switch to runner user")
-						err = syscall.Setgid(1001)
-						framework.ExpectNoError(err, "failed to switch to runner group")
-					}
+					currentUser, err := user.Current()
+					framework.ExpectNoError(err)
 
-					testUID := 1001
-					testGID := 1001
+					testUID, err := strconv.Atoi(currentUser.Uid)
+					framework.ExpectNoError(err)
+					testGID, err := strconv.Atoi(currentUser.Gid)
+					framework.ExpectNoError(err)
 
 					ginkgo.By(fmt.Sprintf("Test user configuration: uid=%d, gid=%d", testUID, testGID))
 
