@@ -204,6 +204,16 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 					tempDir, err := setupWorkspace("tests/up/testdata/docker-compose-uid-mapping", tc.initialDir, tc.f)
 					framework.ExpectNoError(err)
 
+					// Copy DevPod config from root to runner user
+					ginkgo.By("Copying DevPod config to runner user")
+					copyCmd := exec.CommandContext(ctx, "sudo", "cp", "-r", "/root/.devpod", "/home/runner/")
+					_, err = copyCmd.CombinedOutput()
+					framework.ExpectNoError(err, "failed to copy DevPod config to runner user")
+
+					chownCmd := exec.CommandContext(ctx, "sudo", "chown", "-R", "runner:runner", "/home/runner/.devpod")
+					_, err = chownCmd.CombinedOutput()
+					framework.ExpectNoError(err, "failed to change ownership of DevPod config")
+
 					// Run devpod up as runner user
 					ginkgo.By("Running devpod up as runner user")
 					upCmd := exec.CommandContext(ctx, "sudo", "-u", "runner", "-E", filepath.Join(tc.f.DevpodBinDir, tc.f.DevpodBinName), "up", "--debug", "--ide", "none", tempDir)
