@@ -1,6 +1,7 @@
 package setup
 
 import (
+	"bufio"
 	"context"
 	"encoding/base64"
 	"encoding/json"
@@ -151,21 +152,36 @@ func LinkRootHome(setupInfo *config.Result) error {
 }
 
 func isBindMount(path string, log log.Logger) bool {
-	if strings.HasPrefix(path, "/workspaces") {
-		if _, err := os.Stat("/.dockerenv"); err == nil {
-			log.WithFields(logrus.Fields{
-				"path": path,
-				"type": "docker",
-			}).Debug("detected Docker container with /workspaces path, assuming bind mount")
-			return true
-		}
+	if _, err := os.Stat("/.dockerenv"); err != nil && os.Getenv("container") == "" && os.Getenv("DEVCONTAINER") == "" {
+		return false
+	}
 
-		if os.Getenv("container") != "" || os.Getenv("DEVCONTAINER") != "" {
-			log.WithFields(logrus.Fields{
-				"path": path,
-				"type": "container",
-			}).Debug("detected container environment with /workspaces path, assuming bind mount")
-			return true
+	file, err := os.Open("/proc/mounts")
+	if err != nil {
+		log.WithFields(logrus.Fields{
+			"error": err.Error(),
+			"path":  path,
+		}).Debug("could not read /proc/mounts, falling back to heuristic")
+		return strings.HasPrefix(path, "/workspaces")
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		fields := strings.Fields(scanner.Text())
+		if len(fields) >= 4 {
+			mountPoint := fields[1]
+			options := fields[3]
+
+			if (path == mountPoint || strings.HasPrefix(path+"/", mountPoint+"/")) &&
+				strings.Contains(options, "bind") {
+				log.WithFields(logrus.Fields{
+					"path":        path,
+					"mount_point": mountPoint,
+					"options":     options,
+				}).Debug("detected bind mount")
+				return true
+			}
 		}
 	}
 
