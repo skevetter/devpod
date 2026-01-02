@@ -221,12 +221,12 @@ func (d *dockerDriver) FindDevContainer(ctx context.Context, workspaceId string)
 		return nil, nil
 	}
 
-	if containerDetails.Config.LegacyUser != "" {
+	if containerDetails.Config.User != "" {
 		if containerDetails.Config.Labels == nil {
 			containerDetails.Config.Labels = map[string]string{}
 		}
 		if containerDetails.Config.Labels[config.UserLabel] == "" {
-			containerDetails.Config.Labels[config.UserLabel] = containerDetails.Config.LegacyUser
+			containerDetails.Config.Labels[config.UserLabel] = containerDetails.Config.User
 		}
 	}
 
