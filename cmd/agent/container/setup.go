@@ -195,7 +195,7 @@ func (cmd *SetupContainerCmd) Run(ctx context.Context) error {
 	}
 
 	// setup container
-	err = setup.SetupContainer(ctx, setupInfo, workspaceInfo.CLIOptions.WorkspaceEnv, cmd.ChownWorkspace, &workspaceInfo.CLIOptions.Platform, tunnelClient, logger)
+	err = setup.SetupContainer(ctx, setupInfo, workspaceInfo.CLIOptions.WorkspaceEnv, cmd.ChownWorkspace, &workspaceInfo.CLIOptions.Platform, workspaceInfo, tunnelClient, logger)
 	if err != nil {
 		return err
 	}
