@@ -112,6 +112,7 @@ jobs:
     name: Test ${{ matrix.label }} on ${{ matrix.runner }}
     needs: [can-read-secret, build-cli]
     strategy:
+      fail-fast: false
       matrix:
         include:
           - label: context
@@ -275,7 +276,8 @@ jobs:
             mkdir -p ./bin/
             find "${{ runner.temp }}/devpod-bin/" -name "devpod-${{ steps.os.outputs.runner_os }}-amd64" -exec mv {} ./bin/devpod-${{ steps.os.outputs.runner_os }}-amd64 \;
             find "${{ runner.temp }}/devpod-bin/" -name "devpod-${{ steps.os.outputs.runner_os }}-arm64" -exec mv {} ./bin/devpod-${{ steps.os.outputs.runner_os }}-arm64 \;
-            chmod +x "./bin/devpod-${{ steps.os.outputs.runner_os }}-amd64"
+            chmod 755 "./bin/devpod-${{ steps.os.outputs.runner_os }}-amd64"
+            chmod 755 "./bin/devpod-${{ steps.os.outputs.runner_os }}-arm64"
             ls -R ./bin/
           fi
 
@@ -329,12 +331,7 @@ jobs:
           GH_ACCESS_TOKEN: ${{ secrets.GH_PRIVATE_REPO_TOKEN_TEST || github.token }}
         run: |
           if [ "${{ runner.os }}" == "Linux" ]; then
-            sudo \
-              GH_USERNAME="${GH_USERNAME}" \
-              GH_ACCESS_TOKEN="${GH_ACCESS_TOKEN}" \
-              KUBECONFIG="${KUBECONFIG:-$HOME/.kube/config}" \
-              PATH="${PATH}" \
-              GOROOT="${GOROOT}" \
+            sudo -u runner -E \
               go test -v -ginkgo.v -ginkgo.show-node-events -timeout 3600s --ginkgo.label-filter="${{ matrix.label }}"
           else
             GH_USERNAME="${GH_USERNAME}" \

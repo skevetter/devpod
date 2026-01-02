@@ -200,52 +200,23 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 					currentUser, err := user.Current()
 					framework.ExpectNoError(err)
 
-					var runAsUser string
-					var testUID, testGID int
+					userName := currentUser.Username
+					userUID, err := strconv.Atoi(currentUser.Uid)
+					framework.ExpectNoError(err)
+					userGID, err := strconv.Atoi(currentUser.Gid)
+					framework.ExpectNoError(err)
 
-					if currentUser.Uid == "0" {
-						testUID = 1337
-						testGID = 117
-						runAsUser = "testuser"
-
-						userExists := exec.Command("id", runAsUser).Run() == nil
-						if !userExists {
-							groupExists := exec.Command("getent", "group", strconv.Itoa(testGID)).Run() == nil
-							if !groupExists {
-								cmd := exec.Command("groupadd", "-g", strconv.Itoa(testGID), runAsUser)
-								err := cmd.Run()
-								framework.ExpectNoError(err, "failed to create group")
-							}
-
-							cmd := exec.Command("useradd", "-u", strconv.Itoa(testUID), "-g", strconv.Itoa(testGID), "-m", runAsUser)
-							err := cmd.Run()
-							framework.ExpectNoError(err, "failed to create user")
-						}
-					} else {
-						// Running as non-root user
-						runAsUser = currentUser.Username
-						testUID, err = strconv.Atoi(currentUser.Uid)
-						framework.ExpectNoError(err)
-						testGID, err = strconv.Atoi(currentUser.Gid)
-						framework.ExpectNoError(err)
-					}
-
-					ginkgo.By(fmt.Sprintf("Test user configuration: user=%s, uid=%d, gid=%d, isRoot=%t", runAsUser, testUID, testGID, currentUser.Uid == "0"))
+					ginkgo.By(fmt.Sprintf("Test user configuration: user=%s, uid=%d, gid=%d, isRoot=%t", userName, userUID, userGID, currentUser.Uid == "0"))
 
 					tempDir, err := setupWorkspace("tests/up/testdata/docker-compose-uid-mapping", tc.initialDir, tc.f)
 					framework.ExpectNoError(err)
 
-					// Run devpod up as test user
-					var upCmd *exec.Cmd
-					if currentUser.Uid == "0" {
-						ginkgo.By(fmt.Sprintf("Running devpod up with sudo as user %s", runAsUser))
-						upCmd = exec.CommandContext(ctx, "sudo", "-u", runAsUser, filepath.Join(tc.f.DevpodBinDir, tc.f.DevpodBinName), "up", tempDir, "--ide", "none")
-					} else {
-						ginkgo.By(fmt.Sprintf("Running devpod up directly as current user %s", runAsUser))
-						upCmd = exec.CommandContext(ctx, filepath.Join(tc.f.DevpodBinDir, tc.f.DevpodBinName), "up", tempDir, "--ide", "none")
-					}
-					output, err := upCmd.CombinedOutput()
-					framework.ExpectNoError(err, "failed to setup workspace as test user %s", string(output))
+					ws, err := devPodUpAndFindWorkspace(ctx, tc.f, tempDir)
+					framework.ExpectNoError(err, "failed to setup workspace as test user")
+
+					ids, err := findComposeContainer(ctx, tc.dockerHelper, tc.composeHelper, ws.UID, "webserver")
+					framework.ExpectNoError(err)
+					gomega.Expect(ids).To(gomega.HaveLen(1), "1 compose container to be created")
 
 					// Verify remote user is www-data
 					out, err := tc.f.DevPodSSH(ctx, tempDir, "whoami")
@@ -258,16 +229,16 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 					framework.ExpectNoError(err)
 					containerUID, err := strconv.Atoi(strings.TrimSpace(out))
 					framework.ExpectNoError(err)
-					ginkgo.By(fmt.Sprintf("Container UID mapping: www-data=%d, expected=%d", containerUID, testUID))
-					gomega.Expect(containerUID).To(gomega.Equal(testUID), "www-data user UID should match host user UID")
+					ginkgo.By(fmt.Sprintf("Container UID mapping: www-data=%d, expected=%d", containerUID, userUID))
+					gomega.Expect(containerUID).To(gomega.Equal(userUID), "www-data user UID should match host user UID")
 
 					out, err = tc.f.DevPodSSH(ctx, tempDir, "id -g www-data")
 					framework.ExpectNoError(err)
 					containerGID, err := strconv.Atoi(strings.TrimSpace(out))
 					framework.ExpectNoError(err)
-					ginkgo.By(fmt.Sprintf("Container GID mapping: www-data=%d, expected=%d", containerGID, testGID))
+					ginkgo.By(fmt.Sprintf("Container GID mapping: www-data=%d, expected=%d", containerGID, userGID))
 					framework.ExpectNoError(err)
-					gomega.Expect(containerGID).To(gomega.Equal(testGID), "www-data user GID should match host user GID")
+					gomega.Expect(containerGID).To(gomega.Equal(userGID), "www-data user GID should match host user GID")
 
 					// Verify host files
 					hostFile := filepath.Join(tempDir, "var", "www", "html", "index.html")
@@ -278,8 +249,8 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 					info, err := os.Stat(hostFile)
 					framework.ExpectNoError(err)
 					stat := info.Sys().(*syscall.Stat_t)
-					gomega.Expect(int(stat.Uid)).To(gomega.Equal(testUID), "host file UID should match host user UID")
-					gomega.Expect(int(stat.Gid)).To(gomega.Equal(testGID), "host file GID should match host user GID")
+					gomega.Expect(int(stat.Uid)).To(gomega.Equal(userUID), "host file UID should match host user UID")
+					gomega.Expect(int(stat.Gid)).To(gomega.Equal(userGID), "host file GID should match host user GID")
 
 				}, ginkgo.SpecTimeout(framework.GetTimeout()))
 			})
