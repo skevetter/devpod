@@ -21,9 +21,12 @@ jobs:
           version: "~> v2"
           install-only: true
 
+      - name: Switch to runner user for all future commands
+        run: sudo su - runner
+
       - run: task cli:test:e2e:build
 
-      - run: task cli:test:e2e:focus -- implements updateRemoteUserUID
+      - run: task cli:test:e2e
 
       - name: Print Environment Info
         run: printenv
@@ -38,9 +41,6 @@ jobs:
       - name: See if user can run docker commands
         run: |
           sudo su - runner -c 'docker version; docker ps -a'
-
-      - name: Switch to runner user for all future commands
-        run: sudo su - runner
 
       - name: Print current user
         run: whoami
