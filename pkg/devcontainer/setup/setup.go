@@ -165,7 +165,19 @@ func isBindMount(path string, workspaceInfo *provider.ContainerWorkspaceInfo, lo
 				return true
 			}
 		}
+		return false
 	}
+
+	// if mount info not provided, use heuristic for /workspaces
+	if _, err := os.Stat("/.dockerenv"); err == nil || os.Getenv("container") != "" || os.Getenv("DEVCONTAINER") != "" {
+		if strings.HasPrefix(path, "/workspaces") {
+			log.WithFields(logrus.Fields{
+				"path": path,
+			}).Debug("no mount info available, using /workspaces heuristic")
+			return true
+		}
+	}
+
 	return false
 }
 
