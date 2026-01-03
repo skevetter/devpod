@@ -481,7 +481,10 @@ func (d *dockerDriver) shouldUpdateUID(parsedConfig *config.DevContainerConfig) 
 	// updateRemoteUserUID defaults to true when containerUser or remoteUser is specified
 	hasUserSpecified := parsedConfig.ContainerUser != "" || parsedConfig.RemoteUser != ""
 	if !hasUserSpecified {
-		d.Log.Debug("no containerUser or remoteUser specified; skipping UID/GID mapping")
+		d.Log.WithFields(logrus.Fields{
+			"containerUser": parsedConfig.ContainerUser,
+			"remoteUser":    parsedConfig.RemoteUser,
+		}).Info("no containerUser or remoteUser specified; skipping UID/GID mapping")
 		return false
 	}
 
@@ -799,8 +802,16 @@ func (d *dockerDriver) updateHomeDirectoryOwnership(ctx context.Context, contain
 func (d *dockerDriver) updateWorkspaceOwnership(ctx context.Context, container *config.ContainerDetails, containerHome string, localUser *user.User, parsedConfig *config.DevContainerConfig, writer io.Writer) error {
 	normalizedWorkspaceFolder := strings.TrimRight(parsedConfig.WorkspaceFolder, "/")
 	normalizedContainerHome := strings.TrimRight(containerHome, "/")
+	d.Log.WithFields(logrus.Fields{
+		"workspaceFolder":           parsedConfig.WorkspaceFolder,
+		"normalizedWorkspaceFolder": normalizedWorkspaceFolder,
+		"containerHome":             containerHome,
+		"normalizedContainerHome":   normalizedContainerHome,
+	}).Debug("updating workspace ownership")
 
-	if normalizedWorkspaceFolder == "" || normalizedWorkspaceFolder == normalizedContainerHome {
+	skippedRootHome := normalizedContainerHome == "/root" && os.Geteuid() != 0
+	isRootHomeSkipped := normalizedWorkspaceFolder == normalizedContainerHome && !skippedRootHome
+	if normalizedWorkspaceFolder == "" || isRootHomeSkipped {
 		d.Log.Debug("skipping workspace chown")
 		return nil
 	}
