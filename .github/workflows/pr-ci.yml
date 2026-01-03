@@ -13,6 +13,8 @@ jobs:
     outputs:
       secret-set: ${{ steps.check-secret.outputs.secret-set }}
     steps:
+      - run: printenv
+
       - name: Check secret
         id: check-secret
         run: |

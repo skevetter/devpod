@@ -42,8 +42,22 @@ func CreateTempDir() (string, error) {
 }
 
 func CopyToTempDirWithoutChdir(relativePath string) (string, error) {
-	// Create temporary directory
-	dir, err := os.MkdirTemp("", "temp-*")
+	var dir string
+	var err error
+
+	if os.Getenv("GITHUB_ACTIONS") == "true" {
+		runnerTemp := os.Getenv("RUNNER_TEMP")
+		if runnerTemp != "" {
+			dir, err = os.MkdirTemp(runnerTemp, "temp-*")
+		} else {
+			dir, err = os.MkdirTemp("", "temp-*")
+		}
+	} else if os.Getenv("ACT") == "true" {
+		dir, err = os.MkdirTemp("/tmp", "temp-*")
+	} else {
+		dir, err = os.MkdirTemp("", "temp-*")
+	}
+
 	if err != nil {
 		return "", err
 	}
@@ -69,7 +83,21 @@ func CopyToTempDirInDir(baseDir, relativePath string) (string, error) {
 		return "", err
 	}
 
-	dir, err := os.MkdirTemp(baseDir, "temp-*")
+	var dir string
+
+	if os.Getenv("GITHUB_ACTIONS") == "true" {
+		runnerTemp := os.Getenv("RUNNER_TEMP")
+		if runnerTemp != "" {
+			dir, err = os.MkdirTemp(runnerTemp, "temp-*")
+		} else {
+			dir, err = os.MkdirTemp("", "temp-*")
+		}
+	} else if os.Getenv("ACT") == "true" {
+		dir, err = os.MkdirTemp("/tmp", "temp-*")
+	} else {
+		dir, err = os.MkdirTemp(baseDir, "temp-*")
+	}
+
 	if err != nil {
 		return "", err
 	}
@@ -101,19 +129,19 @@ func CopyToTempDirInDir(baseDir, relativePath string) (string, error) {
 func displayDirectoryInfo(dir string) {
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 	if stat, err := os.Stat(dir); err == nil {
-		fmt.Fprintf(w, "Directory:\t%s\n", dir)
-		fmt.Fprintf(w, "Mode:\t%v\n", stat.Mode())
-		fmt.Fprintf(w, "Size:\t%d bytes\n", stat.Size())
+		func() { _, _ = fmt.Fprintf(w, "Directory:\t%s\n", dir) }()
+		func() { _, _ = fmt.Fprintf(w, "Mode:\t%v\n", stat.Mode()) }()
+		func() { _, _ = fmt.Fprintf(w, "Size:\t%d bytes\n", stat.Size()) }()
 	}
 	if files, err := os.ReadDir(dir); err == nil {
-		fmt.Fprintf(w, "Files:\t%d total\n", len(files))
+		func() { _, _ = fmt.Fprintf(w, "Files:\t%d total\n", len(files)) }()
 		fmt.Fprintln(w, "\t")
 		if runtime.GOOS == "windows" {
-			fmt.Fprintln(w, "Name\tType\tMode\tSize")
-			fmt.Fprintln(w, "----\t----\t----\t----")
+			func() { _, _ = fmt.Fprintf(w, "Name\tType\tMode\tSize\n") }()
+			func() { _, _ = fmt.Fprintf(w, "----\t----\t----\t----\n") }()
 		} else {
-			fmt.Fprintln(w, "Name\tType\tMode\tSize\tUID\tGID")
-			fmt.Fprintln(w, "----\t----\t----\t----\t---\t---")
+			func() { _, _ = fmt.Fprintf(w, "Name\tType\tMode\tSize\tUID\tGID\n") }()
+			func() { _, _ = fmt.Fprintf(w, "----\t----\t----\t----\t---\t---\n") }()
 		}
 		for _, file := range files {
 			if info, err := file.Info(); err == nil {
@@ -122,19 +150,23 @@ func displayDirectoryInfo(dir string) {
 					fileType = "dir"
 				}
 				if runtime.GOOS == "windows" {
-					fmt.Fprintf(w, "%s\t%s\t%v\t%d bytes\n", file.Name(), fileType, info.Mode(), info.Size())
+					func() {
+						_, _ = fmt.Fprintf(w, "%s\t%s\t%v\t%d bytes\n", file.Name(), fileType, info.Mode(), info.Size())
+					}()
 				} else {
 					uid, gid := "?", "?"
 					if stat, ok := info.Sys().(*syscall.Stat_t); ok {
 						uid = fmt.Sprintf("%d", stat.Uid)
 						gid = fmt.Sprintf("%d", stat.Gid)
 					}
-					fmt.Fprintf(w, "%s\t%s\t%v\t%d bytes\t%s\t%s\n", file.Name(), fileType, info.Mode(), info.Size(), uid, gid)
+					func() {
+						_, _ = fmt.Fprintf(w, "%s\t%s\t%v\t%d bytes\t%s\t%s\n", file.Name(), fileType, info.Mode(), info.Size(), uid, gid)
+					}()
 				}
 			}
 		}
 	}
-	w.Flush()
+	defer func() { _ = w.Flush() }()
 }
 
 func copyDir(src, dst string) error {
@@ -162,7 +194,7 @@ func copyFile(src, dst string) error {
 	if err != nil {
 		return err
 	}
-	defer srcFile.Close()
+	defer func() { _ = srcFile.Close() }()
 
 	if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
 		return err
@@ -172,7 +204,7 @@ func copyFile(src, dst string) error {
 	if err != nil {
 		return err
 	}
-	defer dstFile.Close()
+	defer func() { _ = dstFile.Close() }()
 
 	if _, err := io.Copy(dstFile, srcFile); err != nil {
 		return err
