@@ -62,6 +62,14 @@ func CopyToTempDirWithoutChdir(relativePath string) (string, error) {
 		return "", err
 	}
 
+	if os.Getenv("GITHUB_ACTIONS") == "true" {
+		err = os.Chmod(dir, 0755)
+		if err != nil {
+			_ = os.RemoveAll(dir)
+			return "", err
+		}
+	}
+
 	// Make sure temp dir path is an absolute path
 	dir, err = filepath.EvalSymlinks(dir)
 	if err != nil {
@@ -100,6 +108,14 @@ func CopyToTempDirInDir(baseDir, relativePath string) (string, error) {
 
 	if err != nil {
 		return "", err
+	}
+
+	if os.Getenv("GITHUB_ACTIONS") == "true" {
+		err = os.Chmod(dir, 0755)
+		if err != nil {
+			_ = os.RemoveAll(dir)
+			return "", err
+		}
 	}
 
 	// Make sure temp dir path is an absolute path
