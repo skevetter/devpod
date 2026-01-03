@@ -1,0 +1,7 @@
+name: dev
+
+services:
+  webserver:
+    build: .
+    volumes:
+      - ./var/www/html:/var/www/html:rw
