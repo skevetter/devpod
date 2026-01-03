@@ -5,9 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"maps"
+	"os/user"
+	"runtime"
 	"strings"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/command"
 	"github.com/skevetter/devpod/pkg/daemon/agent"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
@@ -174,6 +177,16 @@ func (r *runner) runSingleContainer(
 		containerDetails, err = r.Driver.FindDevContainer(ctx, r.ID)
 		if err != nil {
 			return nil, fmt.Errorf("find dev container %w", err)
+		}
+	}
+
+	// Verify container user has correct UID/GID before setup
+	if runtime.GOOS == "linux" {
+		if dockerDriver, ok := r.Driver.(driver.DockerDriver); ok {
+			err = r.verifyContainerUserUID(ctx, dockerDriver, mergedConfig)
+			if err != nil {
+				r.Log.Warnf("container user UID/GID verification failed: %v", err)
+			}
 		}
 	}
 
@@ -373,6 +386,72 @@ func GetStartScript(mergedConfig *config.MergedDevContainerConfig) string {
 trap "exit 0" 15
 exec "$@"
 ` + strings.Join(customEntrypoints, "\n") + DefaultEntrypoint
+}
+
+func (r *runner) verifyContainerUserUID(ctx context.Context, dockerDriver driver.DockerDriver, mergedConfig *config.MergedDevContainerConfig) error {
+	// Skip if updateRemoteUserUID is disabled
+	if mergedConfig.UpdateRemoteUserUID != nil && !*mergedConfig.UpdateRemoteUserUID {
+		return nil
+	}
+
+	// Get expected host UID/GID
+	localUser, err := user.Current()
+	if err != nil {
+		return err
+	}
+	expectedUid := localUser.Uid
+	expectedGid := localUser.Gid
+
+	// Get container user
+	containerUser := config.GetRemoteUser(&config.Result{MergedConfig: mergedConfig})
+	if containerUser == "" {
+		return nil
+	}
+
+	// Skip if root
+	if expectedUid == "0" {
+		return nil
+	}
+
+	// Check container user UID/GID
+	container, err := dockerDriver.FindDevContainer(ctx, r.ID)
+	if err != nil {
+		return err
+	}
+	if container == nil {
+		return fmt.Errorf("container not found")
+	}
+
+	// Get current container user info
+	cmd := fmt.Sprintf("id -u %s && id -g %s", containerUser, containerUser)
+	output := &strings.Builder{}
+	err = dockerDriver.CommandDevContainer(ctx, r.ID, "root", cmd, nil, output, output)
+	if err != nil {
+		return fmt.Errorf("failed to get container user info: %w", err)
+	}
+
+	lines := strings.Split(strings.TrimSpace(output.String()), "\n")
+	if len(lines) < 2 {
+		return fmt.Errorf("unexpected output from id command: %s", output.String())
+	}
+
+	actualUid := strings.TrimSpace(lines[0])
+	actualGid := strings.TrimSpace(lines[1])
+
+	r.Log.WithFields(logrus.Fields{
+		"container_user": containerUser,
+		"expected_uid":   expectedUid,
+		"expected_gid":   expectedGid,
+		"actual_uid":     actualUid,
+		"actual_gid":     actualGid,
+	}).Info("verifying container user UID/GID")
+
+	if actualUid != expectedUid || actualGid != expectedGid {
+		return fmt.Errorf("container user %s has UID/GID %s/%s, expected %s/%s", containerUser, actualUid, actualGid, expectedUid, expectedGid)
+	}
+
+	r.Log.Info("container user UID/GID verification successful")
+	return nil
 }
 
 func GetContainerEntrypointAndArgs(mergedConfig *config.MergedDevContainerConfig, imageDetails *config.ImageDetails) (string, []string) {
