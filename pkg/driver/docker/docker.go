@@ -416,8 +416,7 @@ func (d *dockerDriver) RunDockerDevContainer(
 		return fmt.Errorf("failed to start dev container %w", err)
 	}
 
-	if runtime.GOOS == "linux" && ((parsedConfig.ContainerUser != "" || parsedConfig.RemoteUser != "") &&
-		(parsedConfig.UpdateRemoteUserUID == nil || *parsedConfig.UpdateRemoteUserUID)) {
+	if runtime.GOOS == "linux" && (parsedConfig.UpdateRemoteUserUID == nil || *parsedConfig.UpdateRemoteUserUID) {
 		// Retrieve local user UID and GID
 		localUser, err := user.Current()
 		if err != nil {

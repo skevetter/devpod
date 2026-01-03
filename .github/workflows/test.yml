@@ -18,6 +18,9 @@ jobs:
       - run: printenv
         if: env.ACT
 
+      - run: cat /etc/passwd
+        if: env.ACT
+
       - uses: jlumbroso/free-disk-space@v1.3.1
         if: env.ACT == 'false'
 
@@ -41,11 +44,16 @@ jobs:
       - uses: go-task/setup-task@v1
 
       - name: setup goreleaser
+        if: env.ACT == 'false'
         uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser
           version: "~> v2"
           install-only: true
+
+      - name: install goreleaser for ACT
+        if: env.ACT
+        run: sudo /opt/hostedtoolcache/node/25.2.1/x64/bin/npm i -g @goreleaser/goreleaser
 
       - name: setup kind
         uses: engineerd/setup-kind@v0.6.2
