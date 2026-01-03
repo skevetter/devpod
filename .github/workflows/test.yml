@@ -21,6 +21,12 @@ jobs:
       - run: cat /etc/passwd
         if: env.ACT
 
+      - name: check docker access
+        if: env.ACT
+        run: |
+          sudo chown runner:runner /var/run/docker.sock
+          docker version && docker ps -a
+
       - uses: jlumbroso/free-disk-space@v1.3.1
         if: env.ACT == 'false'
 

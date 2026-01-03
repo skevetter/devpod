@@ -1,5 +1,5 @@
 --action-offline-mode
 --container-architecture=linux/amd64
---platform ubuntu-latest=ghcr.io/catthehacker/ubuntu:act-latest
+--platform ubuntu-latest=ghcr.io/catthehacker/ubuntu:runner-latest
 --artifact-server-path $PWD/.artifacts
---container-options --volume /tmp:/tmp
+--container-options --volume /tmp:/tmp --user root
