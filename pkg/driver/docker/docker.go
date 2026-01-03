@@ -433,34 +433,9 @@ func (d *dockerDriver) UpdateContainerUserUID(ctx context.Context, workspaceId s
 		return err
 	}
 
-	containerDetails, err := d.Docker.InspectContainers(ctx, []string{container.ID})
-	if err != nil {
-		d.Log.WithFields(logrus.Fields{
-			"error":       err,
-			"containerId": container.ID,
-		}).Error("failed to inspect container")
-		return err
-	}
-
-	var containerDetail *config.ContainerDetails
-	if len(containerDetails) > 0 {
-		containerDetail = &containerDetails[0]
-	}
-
-	result := &config.Result{
-		MergedConfig:     &config.MergedDevContainerConfig{},
-		ContainerDetails: containerDetail,
-	}
-	if parsedConfig.ContainerUser != "" {
-		result.MergedConfig.ContainerUser = parsedConfig.ContainerUser
-	}
-	if parsedConfig.RemoteUser != "" {
-		result.MergedConfig.RemoteUser = parsedConfig.RemoteUser
-	}
-	containerUser := config.GetRemoteUser(result)
+	containerUser := parsedConfig.RemoteUser
 	if containerUser == "" {
-		d.Log.Debug("no container user found, skipping UID/GID mapping")
-		return nil
+		containerUser = parsedConfig.ContainerUser
 	}
 
 	return d.updateContainerUserFiles(ctx, container, containerUser, localUser, parsedConfig)
@@ -516,6 +491,11 @@ func (d *dockerDriver) findAndValidateContainer(ctx context.Context, workspaceId
 }
 
 func (d *dockerDriver) updateContainerUserFiles(ctx context.Context, container *config.ContainerDetails, containerUser string, localUser *user.User, parsedConfig *config.DevContainerConfig) error {
+	d.Log.WithFields(logrus.Fields{
+		"containerUser": containerUser,
+		"localUser":     localUser.Username,
+	}).Info("updating container user files")
+
 	tempFiles, err := d.createTempFiles()
 	if err != nil {
 		return err
@@ -535,7 +515,13 @@ func (d *dockerDriver) updateContainerUserFiles(ctx context.Context, container *
 		return err
 	}
 
-	if localUser.Uid == "0" || userInfo.containerUid == "0" || (localUser.Uid == userInfo.containerUid && localUser.Gid == userInfo.containerGid) {
+	shouldUpdate := func() bool {
+		if localUser.Uid == "0" || userInfo.containerUid == "0" {
+			return false
+		}
+		return localUser.Uid != userInfo.containerUid || localUser.Gid != userInfo.containerGid
+	}
+	if !shouldUpdate() {
 		d.Log.WithFields(logrus.Fields{
 			"localUid":     localUser.Uid,
 			"containerUid": userInfo.containerUid,
@@ -603,10 +589,18 @@ func (d *dockerDriver) createTempFiles() (*tempFiles, error) {
 
 func (d *dockerDriver) cleanupTempFiles(files *tempFiles) {
 	if files != nil {
-		os.Remove(files.passwdIn.Name())
-		os.Remove(files.groupIn.Name())
-		os.Remove(files.passwdOut.Name())
-		os.Remove(files.groupOut.Name())
+		if files.passwdIn != nil {
+			os.Remove(files.passwdIn.Name())
+		}
+		if files.groupIn != nil {
+			os.Remove(files.groupIn.Name())
+		}
+		if files.passwdOut != nil {
+			os.Remove(files.passwdOut.Name())
+		}
+		if files.groupOut != nil {
+			os.Remove(files.groupOut.Name())
+		}
 	}
 }
 

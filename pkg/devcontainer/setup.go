@@ -104,7 +104,22 @@ func (r *runner) setupContainer(
 		compressed,
 		workspaceConfigCompressed,
 	)
-	if runtime.GOOS == "linux" || !isDockerDriver {
+	shouldChown := func() bool {
+		if runtime.GOOS != "linux" {
+			return false
+		}
+		if !isDockerDriver {
+			return false
+		}
+		if mergedConfig == nil {
+			return false
+		}
+		if mergedConfig.RemoteUser != "" || mergedConfig.ContainerUser != "" {
+			return true
+		}
+		return false
+	}
+	if shouldChown() {
 		setupCommand += " --chown-workspace"
 	}
 	if !isDockerDriver {
