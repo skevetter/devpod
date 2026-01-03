@@ -250,6 +250,14 @@ func (d *dockerDriver) RunDockerDevContainer(
 	ide string,
 	ideOptions map[string]config2.OptionValue,
 ) error {
+	d.Log.WithFields(logrus.Fields{
+		"workspaceId":  workspaceId,
+		"options":      fmt.Sprintf("%+v", options),
+		"parsedConfig": fmt.Sprintf("%+v", parsedConfig),
+		"init":         init,
+		"ide":          ide,
+		"ideOptions":   ideOptions,
+	}).Debug("running docker dev container")
 	err := d.EnsureImage(ctx, options)
 	if err != nil {
 		return err

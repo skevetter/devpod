@@ -56,7 +56,6 @@ jobs:
   build-cli:
     name: Build CLI Binary on ${{ matrix.runner }}
     strategy:
-      fail-fast: false
       matrix:
         include:
           - runner: ubuntu-latest
@@ -95,6 +94,7 @@ jobs:
     name: Test ${{ matrix.label }} on ${{ matrix.runner }}
     needs: [can-read-secret, build-cli]
     strategy:
+      fail-fast: false
       matrix:
         include:
           - label: context

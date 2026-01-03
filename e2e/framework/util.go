@@ -2,13 +2,14 @@ package framework
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
+	"syscall"
+	"text/tabwriter"
 	"time"
-
-	"github.com/otiai10/copy"
 )
 
 func GetTimeout() time.Duration {
@@ -53,8 +54,7 @@ func CopyToTempDirWithoutChdir(relativePath string) (string, error) {
 		return "", err
 	}
 
-	// Copy the file files from relativePath to the temp dir
-	err = copy.Copy(relativePath, dir)
+	err = copyDir(relativePath, dir)
 	if err != nil {
 		_ = os.RemoveAll(dir)
 		return "", err
@@ -64,7 +64,11 @@ func CopyToTempDirWithoutChdir(relativePath string) (string, error) {
 }
 
 func CopyToTempDirInDir(baseDir, relativePath string) (string, error) {
-	// Create temporary directory
+	absPath, err := filepath.Abs(relativePath)
+	if err != nil {
+		return "", err
+	}
+
 	dir, err := os.MkdirTemp(baseDir, "temp-*")
 	if err != nil {
 		return "", err
@@ -76,21 +80,105 @@ func CopyToTempDirInDir(baseDir, relativePath string) (string, error) {
 		return "", err
 	}
 
-	// Copy the file files from relativePath to the temp dir
-	err = copy.Copy(relativePath, dir)
-	if err != nil {
-		_ = os.RemoveAll(dir)
-		return "", err
-	}
-
-	// Set the temp director as the current directory
 	err = os.Chdir(dir)
 	if err != nil {
+		return "", err
+	}
+
+	err = copyDir(absPath, dir)
+	if err != nil {
 		_ = os.RemoveAll(dir)
 		return "", err
 	}
 
+	fmt.Printf("=== DEBUG: After Copy ===\n")
+	displayDirectoryInfo(dir)
+	fmt.Printf("========================\n")
+
 	return dir, nil
+}
+
+func displayDirectoryInfo(dir string) {
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+	if stat, err := os.Stat(dir); err == nil {
+		fmt.Fprintf(w, "Directory:\t%s\n", dir)
+		fmt.Fprintf(w, "Mode:\t%v\n", stat.Mode())
+		fmt.Fprintf(w, "Size:\t%d bytes\n", stat.Size())
+	}
+	if files, err := os.ReadDir(dir); err == nil {
+		fmt.Fprintf(w, "Files:\t%d total\n", len(files))
+		fmt.Fprintln(w, "\t")
+		if runtime.GOOS == "windows" {
+			fmt.Fprintln(w, "Name\tType\tMode\tSize")
+			fmt.Fprintln(w, "----\t----\t----\t----")
+		} else {
+			fmt.Fprintln(w, "Name\tType\tMode\tSize\tUID\tGID")
+			fmt.Fprintln(w, "----\t----\t----\t----\t---\t---")
+		}
+		for _, file := range files {
+			if info, err := file.Info(); err == nil {
+				fileType := "file"
+				if file.IsDir() {
+					fileType = "dir"
+				}
+				if runtime.GOOS == "windows" {
+					fmt.Fprintf(w, "%s\t%s\t%v\t%d bytes\n", file.Name(), fileType, info.Mode(), info.Size())
+				} else {
+					uid, gid := "?", "?"
+					if stat, ok := info.Sys().(*syscall.Stat_t); ok {
+						uid = fmt.Sprintf("%d", stat.Uid)
+						gid = fmt.Sprintf("%d", stat.Gid)
+					}
+					fmt.Fprintf(w, "%s\t%s\t%v\t%d bytes\t%s\t%s\n", file.Name(), fileType, info.Mode(), info.Size(), uid, gid)
+				}
+			}
+		}
+	}
+	w.Flush()
+}
+
+func copyDir(src, dst string) error {
+	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		relPath, err := filepath.Rel(src, path)
+		if err != nil {
+			return err
+		}
+		dstPath := filepath.Join(dst, relPath)
+
+		if info.IsDir() {
+			return os.MkdirAll(dstPath, 0755)
+		}
+
+		return copyFile(path, dstPath)
+	})
+}
+
+func copyFile(src, dst string) error {
+	srcFile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer srcFile.Close()
+
+	if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
+		return err
+	}
+
+	dstFile, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer dstFile.Close()
+
+	if _, err := io.Copy(dstFile, srcFile); err != nil {
+		return err
+	}
+
+	return os.Chmod(dst, 0644)
 }
 
 func CopyToTempDir(relativePath string) (string, error) {
@@ -98,6 +186,10 @@ func CopyToTempDir(relativePath string) (string, error) {
 }
 
 func CleanupTempDir(initialDir, tempDir string) {
+	fmt.Printf("=== DEBUG: Before Cleanup ===\n")
+	displayDirectoryInfo(tempDir)
+	fmt.Printf("========================\n")
+
 	err := os.Chdir(initialDir)
 	ExpectNoError(err)
 
