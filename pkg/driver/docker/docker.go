@@ -408,208 +408,419 @@ func (d *dockerDriver) RunDockerDevContainer(
 		return fmt.Errorf("failed to start dev container %w", err)
 	}
 
-	if runtime.GOOS == "linux" && ((parsedConfig.ContainerUser != "" || parsedConfig.RemoteUser != "") &&
-		(parsedConfig.UpdateRemoteUserUID == nil || *parsedConfig.UpdateRemoteUserUID)) {
-		// Retrieve local user UID and GID
-		localUser, err := user.Current()
-		if err != nil {
-			return err
-		}
-		localUid := localUser.Uid
-		localGid := localUser.Gid
+	return d.UpdateContainerUserUID(ctx, workspaceId, parsedConfig)
+}
 
-		// Retrieve user to update
-		containerUser := parsedConfig.RemoteUser
-		if containerUser == "" {
-			containerUser = parsedConfig.ContainerUser
-		}
-		if containerUser == "" {
-			return nil
-		}
-		container, err := d.FindDevContainer(ctx, workspaceId)
-		if err != nil {
-			return err
-		} else if container == nil {
-			return nil
-		}
+func (d *dockerDriver) UpdateContainerUserUID(ctx context.Context, workspaceId string, parsedConfig *config.DevContainerConfig) error {
+	d.Log.WithFields(logrus.Fields{
+		"runtimeGOOS":         runtime.GOOS,
+		"containerUser":       parsedConfig.ContainerUser,
+		"remoteUser":          parsedConfig.RemoteUser,
+		"updateRemoteUserUID": parsedConfig.UpdateRemoteUserUID,
+	}).Info("updating container UID/GID")
 
-		// Create temporary files to store /etc/passwd and /etc/group
-		containerPasswdFileIn, err := os.CreateTemp("", "devpod_container_passwd_in")
-		if err != nil {
-			return err
-		}
-		defer func() { _ = os.Remove(containerPasswdFileIn.Name()) }()
+	if !d.shouldUpdateUID(parsedConfig) {
+		return nil
+	}
 
-		containerGroupFileIn, err := os.CreateTemp("", "devpod_container_group_in")
-		if err != nil {
-			return err
-		}
-		defer func() { _ = os.Remove(containerGroupFileIn.Name()) }()
+	localUser, err := user.Current()
+	if err != nil {
+		return err
+	}
 
-		containerPasswdFileOut, err := os.CreateTemp("", "devpod_container_passwd_out")
-		if err != nil {
-			return err
-		}
-		defer func() { _ = os.Remove(containerPasswdFileOut.Name()) }()
+	container, err := d.findAndValidateContainer(ctx, workspaceId)
+	if err != nil {
+		return err
+	}
 
-		containerGroupFileOut, err := os.CreateTemp("", "devpod_container_group_out")
-		if err != nil {
-			return err
-		}
-		defer func() { _ = os.Remove(containerGroupFileOut.Name()) }()
-
-		// Copy /etc/passwd and /etc/group from the container to the temporary files
-		args = []string{"cp", fmt.Sprintf("%s:/etc/passwd", container.ID), containerPasswdFileIn.Name()}
+	containerDetails, err := d.Docker.InspectContainers(ctx, []string{container.ID})
+	if err != nil {
 		d.Log.WithFields(logrus.Fields{
-			"command": d.Docker.DockerCommand,
-			"args":    strings.Join(args, " "),
-		}).Debug("running docker command")
-		err = d.Docker.Run(ctx, args, nil, writer, writer)
-		if err != nil {
-			return err
-		}
+			"error":       err,
+			"containerId": container.ID,
+		}).Error("failed to inspect container")
+		return err
+	}
 
-		args = []string{"cp", fmt.Sprintf("%s:/etc/group", container.ID), containerGroupFileIn.Name()}
+	var containerDetail *config.ContainerDetails
+	if len(containerDetails) > 0 {
+		containerDetail = &containerDetails[0]
+	}
+
+	result := &config.Result{
+		MergedConfig:     &config.MergedDevContainerConfig{},
+		ContainerDetails: containerDetail,
+	}
+	if parsedConfig.ContainerUser != "" {
+		result.MergedConfig.ContainerUser = parsedConfig.ContainerUser
+	}
+	if parsedConfig.RemoteUser != "" {
+		result.MergedConfig.RemoteUser = parsedConfig.RemoteUser
+	}
+	containerUser := config.GetRemoteUser(result)
+	if containerUser == "" {
+		d.Log.Debug("no container user found, skipping UID/GID mapping")
+		return nil
+	}
+
+	if containerUser == "root" {
+		// root user needs UID 0 for system operations like agent injection
+		d.Log.Debug("skipping UID/GID mapping for root user to preserve system permissions")
+		return nil
+	}
+
+	return d.updateContainerUserFiles(ctx, container, containerUser, localUser, parsedConfig)
+}
+
+func (d *dockerDriver) shouldUpdateUID(parsedConfig *config.DevContainerConfig) bool {
+	if runtime.GOOS != "linux" {
+		d.Log.Info("os is not linux; skipping UID/GID mapping")
+		return false
+	}
+
+	isUpdateRemoteUserUIDDisabled := parsedConfig.UpdateRemoteUserUID != nil && !*parsedConfig.UpdateRemoteUserUID
+	if isUpdateRemoteUserUIDDisabled {
+		d.Log.Info("updateRemoteUserUID is disabled; skipping UID/GID mapping")
+		return false
+	}
+
+	return true
+}
+
+func (d *dockerDriver) findAndValidateContainer(ctx context.Context, workspaceId string) (*config.ContainerDetails, error) {
+	container, err := d.FindDevContainer(ctx, workspaceId)
+	if err != nil {
 		d.Log.WithFields(logrus.Fields{
-			"command": d.Docker.DockerCommand,
-			"args":    strings.Join(args, " "),
-		}).Debug("Running docker command")
-		err = d.Docker.Run(ctx, args, nil, writer, writer)
-		if err != nil {
-			return err
+			"error":       err,
+			"workspaceId": workspaceId,
+		}).Error("failed to find container")
+		return nil, err
+	}
+
+	if container == nil {
+		d.Log.WithFields(logrus.Fields{
+			"workspaceId": workspaceId,
+		}).Info("no container found for workspace")
+		return nil, fmt.Errorf("no container found for workspace %s", workspaceId)
+	}
+
+	d.Log.WithFields(logrus.Fields{
+		"containerId": container.ID,
+	}).Debug("found container")
+
+	return container, nil
+}
+
+func (d *dockerDriver) updateContainerUserFiles(ctx context.Context, container *config.ContainerDetails, containerUser string, localUser *user.User, parsedConfig *config.DevContainerConfig) error {
+	tempFiles, err := d.createTempFiles()
+	if err != nil {
+		return err
+	}
+	defer d.cleanupTempFiles(tempFiles)
+
+	writer := d.Log.Writer(logrus.InfoLevel, false)
+	defer func() { _ = writer.Close() }()
+
+	err = d.copyContainerFiles(ctx, container, tempFiles, writer)
+	if err != nil {
+		return err
+	}
+
+	userInfo, err := d.processPasswdFile(tempFiles, containerUser, localUser)
+	if err != nil {
+		return err
+	}
+
+	if localUser.Uid == userInfo.containerUid && localUser.Gid == userInfo.containerGid {
+		d.Log.WithFields(logrus.Fields{
+			"localUid":     localUser.Uid,
+			"containerUid": userInfo.containerUid,
+			"localGid":     localUser.Gid,
+			"containerGid": userInfo.containerGid,
+		}).Info("no UID/GID mapping needed")
+		return nil
+	}
+
+	err = d.processGroupFile(tempFiles, userInfo.containerGid, localUser.Gid)
+	if err != nil {
+		return err
+	}
+
+	return d.updateContainerFilesAndPermissions(ctx, container, tempFiles, userInfo, localUser, parsedConfig, writer)
+}
+
+type containerUserInfo struct {
+	containerUid  string
+	containerGid  string
+	containerHome string
+}
+
+type tempFiles struct {
+	passwdIn  *os.File
+	groupIn   *os.File
+	passwdOut *os.File
+	groupOut  *os.File
+}
+
+func (d *dockerDriver) createTempFiles() (*tempFiles, error) {
+	passwdIn, err := os.CreateTemp("", "devpod_container_passwd_in")
+	if err != nil {
+		return nil, err
+	}
+
+	groupIn, err := os.CreateTemp("", "devpod_container_group_in")
+	if err != nil {
+		os.Remove(passwdIn.Name())
+		return nil, err
+	}
+
+	passwdOut, err := os.CreateTemp("", "devpod_container_passwd_out")
+	if err != nil {
+		os.Remove(passwdIn.Name())
+		os.Remove(groupIn.Name())
+		return nil, err
+	}
+
+	groupOut, err := os.CreateTemp("", "devpod_container_group_out")
+	if err != nil {
+		os.Remove(passwdIn.Name())
+		os.Remove(groupIn.Name())
+		os.Remove(passwdOut.Name())
+		return nil, err
+	}
+
+	return &tempFiles{
+		passwdIn:  passwdIn,
+		groupIn:   groupIn,
+		passwdOut: passwdOut,
+		groupOut:  groupOut,
+	}, nil
+}
+
+func (d *dockerDriver) cleanupTempFiles(files *tempFiles) {
+	if files != nil {
+		os.Remove(files.passwdIn.Name())
+		os.Remove(files.groupIn.Name())
+		os.Remove(files.passwdOut.Name())
+		os.Remove(files.groupOut.Name())
+	}
+}
+
+func (d *dockerDriver) copyContainerFiles(ctx context.Context, container *config.ContainerDetails, files *tempFiles, writer io.Writer) error {
+	args := []string{"cp", fmt.Sprintf("%s:/etc/passwd", container.ID), files.passwdIn.Name()}
+	d.Log.WithFields(logrus.Fields{
+		"command": d.Docker.DockerCommand,
+		"args":    strings.Join(args, " "),
+	}).Debug("copying container passwd file")
+	err := d.Docker.Run(ctx, args, nil, writer, writer)
+	if err != nil {
+		return err
+	}
+
+	args = []string{"cp", fmt.Sprintf("%s:/etc/group", container.ID), files.groupIn.Name()}
+	d.Log.WithFields(logrus.Fields{
+		"command": d.Docker.DockerCommand,
+		"args":    strings.Join(args, " "),
+	}).Debug("copying container group file")
+	return d.Docker.Run(ctx, args, nil, writer, writer)
+}
+
+func (d *dockerDriver) processPasswdFile(files *tempFiles, containerUser string, localUser *user.User) (*containerUserInfo, error) {
+	passwdFile, err := os.Open(files.passwdIn.Name())
+	if err != nil {
+		return nil, err
+	}
+	defer passwdFile.Close()
+
+	scanner := bufio.NewScanner(passwdFile)
+	userInfo := &containerUserInfo{}
+
+	re := regexp.MustCompile(fmt.Sprintf(`^%s:(?P<password>x?):(?P<uid>.*):(?P<gid>.*):(?P<gcos>.*):(?P<home>.*):(?P<shell>.*)$`, containerUser))
+	d.Log.WithFields(logrus.Fields{
+		"containerUser": containerUser,
+	}).Debug("scanning container passwd file for user")
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		match := re.FindStringSubmatch(line)
+		if match == nil {
+			_, err := fmt.Fprintf(files.passwdOut, "%s\n", line)
+			if err != nil {
+				return nil, err
+			}
+			continue
 		}
 
-		containerPasswdFileIn, err = os.Open(containerPasswdFileIn.Name())
-		if err != nil {
-			return err
+		d.Log.Debug("found user in passwd file")
+		result := make(map[string]string)
+		for i, name := range re.SubexpNames() {
+			if i != 0 && name != "" {
+				result[name] = match[i]
+			}
 		}
-		defer func() { _ = containerPasswdFileIn.Close() }()
-		// Update /etc/passwd and /etc/group with the new user UID and GID
-		scanner := bufio.NewScanner(containerPasswdFileIn)
-		containerUid := ""
-		containerGid := ""
-		containerHome := ""
 
-		re := regexp.MustCompile(fmt.Sprintf(`^%s:(?P<password>x?):(?P<uid>.*):(?P<gid>.*):(?P<gcos>.*):(?P<home>.*):(?P<shell>.*)$`, containerUser))
-		for scanner.Scan() {
-			match := re.FindStringSubmatch(scanner.Text())
-			if match == nil {
-				_, err := fmt.Fprintf(containerPasswdFileOut, "%s\n", scanner.Text())
-				if err != nil {
-					return err
-				}
-				continue
-			}
-			result := make(map[string]string)
-			for i, name := range re.SubexpNames() {
-				if i != 0 && name != "" {
-					result[name] = match[i]
-				}
-			}
-			containerUid = result["uid"]
-			containerGid = result["gid"]
-			containerHome = result["home"]
+		userInfo.containerUid = result["uid"]
+		userInfo.containerGid = result["gid"]
+		userInfo.containerHome = result["home"]
 
-			_, err := fmt.Fprintf(containerPasswdFileOut, "%s:%s:%s:%s:%s:%s:%s\n", containerUser, result["password"], localUid, localGid, result["gcos"], result["home"], result["shell"])
+		_, err := fmt.Fprintf(files.passwdOut, "%s:%s:%s:%s:%s:%s:%s\n",
+			containerUser, result["password"], localUser.Uid, localUser.Gid,
+			result["gcos"], result["home"], result["shell"])
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+
+	if userInfo.containerUid == "" || userInfo.containerGid == "" || userInfo.containerHome == "" {
+		d.Log.WithFields(logrus.Fields{
+			"containerUser": containerUser,
+			"containerUid":  userInfo.containerUid,
+			"containerGid":  userInfo.containerGid,
+			"containerHome": userInfo.containerHome,
+		}).Error("user lookup validation failed")
+		return nil, fmt.Errorf("user %q not found in container /etc/passwd", containerUser)
+	}
+
+	return userInfo, nil
+}
+
+func (d *dockerDriver) processGroupFile(files *tempFiles, containerGid, localGid string) error {
+	groupFile, err := os.Open(files.groupIn.Name())
+	if err != nil {
+		return err
+	}
+	defer groupFile.Close()
+
+	scanner := bufio.NewScanner(groupFile)
+	re := regexp.MustCompile(fmt.Sprintf(`^(?P<group>.*):(?P<password>x?):%s:(?P<group_list>.*)$`, containerGid))
+
+	for scanner.Scan() {
+		match := re.FindStringSubmatch(scanner.Text())
+		if match == nil {
+			_, err := fmt.Fprintf(files.groupOut, "%s\n", scanner.Text())
 			if err != nil {
 				return err
 			}
+			continue
 		}
 
-		if err := scanner.Err(); err != nil {
-			return err
-		}
-
-		if localUid == "0" || containerUid == "0" || (localUid == containerUid && localGid == containerGid) {
-			return nil
-		}
-
-		containerGroupFileIn, err = os.Open(containerGroupFileIn.Name())
-		if err != nil {
-			return err
-		}
-		defer func() { _ = containerGroupFileIn.Close() }()
-
-		scanner = bufio.NewScanner(containerGroupFileIn)
-
-		re = regexp.MustCompile(fmt.Sprintf(`^(?P<group>.*):(?P<password>x?):%s:(?P<group_list>.*)$`, containerGid))
-		for scanner.Scan() {
-			match := re.FindStringSubmatch(scanner.Text())
-			if match == nil {
-				_, err := fmt.Fprintf(containerGroupFileOut, "%s\n", scanner.Text())
-				if err != nil {
-					return err
-				}
-				continue
-			}
-			result := make(map[string]string)
-			for i, name := range re.SubexpNames() {
-				if i != 0 && name != "" {
-					result[name] = match[i]
-				}
-			}
-
-			_, err := fmt.Fprintf(containerGroupFileOut, "%s:%s:%s:%s\n", result["group"], result["password"], localGid, result["group_list"])
-			if err != nil {
-				return err
+		result := make(map[string]string)
+		for i, name := range re.SubexpNames() {
+			if i != 0 && name != "" {
+				result[name] = match[i]
 			}
 		}
 
-		if err := scanner.Err(); err != nil {
-			return err
-		}
-
-		d.Log.WithFields(logrus.Fields{
-			"container_user": containerUser,
-			"container_uid":  containerUid,
-			"container_gid":  containerGid,
-			"local_uid":      localUid,
-			"local_gid":      localGid,
-		}).Info("updating container user UID and GID")
-
-		// Copy /etc/passwd and /etc/group back to the container
-		args = []string{"cp", containerPasswdFileOut.Name(), fmt.Sprintf("%s:/etc/passwd", container.ID)}
-		d.Log.WithFields(logrus.Fields{
-			"command": d.Docker.DockerCommand,
-			"args":    strings.Join(args, " "),
-		}).Debug("running docker copy passwd command")
-		err = d.Docker.Run(ctx, args, nil, writer, writer)
-		if err != nil {
-			return err
-		}
-
-		args = []string{"cp", containerGroupFileOut.Name(), fmt.Sprintf("%s:/etc/group", container.ID)}
-		d.Log.WithFields(logrus.Fields{
-			"command": d.Docker.DockerCommand,
-			"args":    strings.Join(args, " "),
-		}).Debug("running docker copy group command")
-		err = d.Docker.Run(ctx, args, nil, writer, writer)
-		if err != nil {
-			return err
-		}
-
-		args = []string{"exec", "-u", "root", container.ID, "chmod", "644", "/etc/passwd", "/etc/group"}
-		d.Log.WithFields(logrus.Fields{
-			"command": d.Docker.DockerCommand,
-			"args":    strings.Join(args, " "),
-		}).Debug("running docker chmod command")
-		err = d.Docker.Run(ctx, args, nil, writer, writer)
-		if err != nil {
-			return err
-		}
-
-		args = []string{"exec", "-u", "root", container.ID, "chown", "-R", fmt.Sprintf("%s:%s", localUid, localGid), containerHome}
-		d.Log.WithFields(logrus.Fields{
-			"command": d.Docker.DockerCommand,
-			"args":    strings.Join(args, " "),
-		}).Debug("running docker chown command")
-		err = d.Docker.Run(ctx, args, nil, writer, writer)
+		_, err := fmt.Fprintf(files.groupOut, "%s:%s:%s:%s\n",
+			result["group"], result["password"], localGid, result["group_list"])
 		if err != nil {
 			return err
 		}
 	}
 
-	return nil
+	return scanner.Err()
+}
+
+func (d *dockerDriver) updateContainerFilesAndPermissions(ctx context.Context, container *config.ContainerDetails, files *tempFiles, userInfo *containerUserInfo, localUser *user.User, parsedConfig *config.DevContainerConfig, writer io.Writer) error {
+	d.Log.WithFields(logrus.Fields{
+		"containerUser": parsedConfig.ContainerUser,
+		"containerUid":  userInfo.containerUid,
+		"containerGid":  userInfo.containerGid,
+		"localUid":      localUser.Uid,
+		"localGid":      localUser.Gid,
+	}).Info("updating container user UID and GID")
+
+	args := []string{"cp", files.passwdOut.Name(), fmt.Sprintf("%s:/etc/passwd", container.ID)}
+	d.Log.WithFields(logrus.Fields{
+		"command": d.Docker.DockerCommand,
+		"args":    strings.Join(args, " "),
+	}).Debug("copying container passwd file")
+	err := d.Docker.Run(ctx, args, nil, writer, writer)
+	if err != nil {
+		return err
+	}
+
+	args = []string{"cp", files.groupOut.Name(), fmt.Sprintf("%s:/etc/group", container.ID)}
+	d.Log.WithFields(logrus.Fields{
+		"command": d.Docker.DockerCommand,
+		"args":    strings.Join(args, " "),
+	}).Debug("copying container group file")
+	err = d.Docker.Run(ctx, args, nil, writer, writer)
+	if err != nil {
+		return err
+	}
+
+	args = []string{"exec", "-u", "root", container.ID, "chmod", "644", "/etc/passwd", "/etc/group"}
+	d.Log.WithFields(logrus.Fields{
+		"command": d.Docker.DockerCommand,
+		"args":    strings.Join(args, " "),
+	}).Debug("modifying container passwd and group files permissions")
+	err = d.Docker.Run(ctx, args, nil, writer, writer)
+	if err != nil {
+		return err
+	}
+
+	err = d.updateHomeDirectoryOwnership(ctx, container, userInfo.containerHome, localUser, writer)
+	if err != nil {
+		return err
+	}
+
+	return d.updateWorkspaceOwnership(ctx, container, userInfo.containerHome, localUser, parsedConfig, writer)
+}
+
+func (d *dockerDriver) updateHomeDirectoryOwnership(ctx context.Context, container *config.ContainerDetails, containerHome string, localUser *user.User, writer io.Writer) error {
+	if containerHome == "" || containerHome == "/" || strings.Contains(containerHome, "..") {
+		return fmt.Errorf("invalid container home directory %s", containerHome)
+	}
+
+	if containerHome == "/root" && os.Geteuid() != 0 {
+		d.Log.WithFields(logrus.Fields{
+			"containerHome": containerHome,
+			"localUid":      localUser.Uid,
+			"localGid":      localUser.Gid,
+		}).Debug("skipping chown of /root directory when running as non-root user")
+		return nil
+	}
+
+	args := []string{"exec", "-u", "root", container.ID, "chown", "-R", fmt.Sprintf("%s:%s", localUser.Uid, localUser.Gid), containerHome}
+	d.Log.WithFields(logrus.Fields{
+		"command": d.Docker.DockerCommand,
+		"args":    strings.Join(args, " "),
+	}).Debug("changing ownership of container home directory")
+
+	return d.Docker.Run(ctx, args, nil, writer, writer)
+}
+
+func (d *dockerDriver) updateWorkspaceOwnership(ctx context.Context, container *config.ContainerDetails, containerHome string, localUser *user.User, parsedConfig *config.DevContainerConfig, writer io.Writer) error {
+	normalizedWorkspaceFolder := strings.TrimRight(parsedConfig.WorkspaceFolder, "/")
+	normalizedContainerHome := strings.TrimRight(containerHome, "/")
+
+	if normalizedWorkspaceFolder == "" || normalizedWorkspaceFolder == normalizedContainerHome {
+		d.Log.Debug("skipping workspace chown")
+		return nil
+	}
+
+	// Validate workspace folder path for security
+	if strings.Contains(parsedConfig.WorkspaceFolder, "..") || !strings.HasPrefix(parsedConfig.WorkspaceFolder, "/") {
+		d.Log.WithFields(logrus.Fields{
+			"workspaceFolder": parsedConfig.WorkspaceFolder,
+			"hasDoubleDot":    strings.Contains(parsedConfig.WorkspaceFolder, ".."),
+			"hasAbsolutePath": strings.HasPrefix(parsedConfig.WorkspaceFolder, "/"),
+		}).Error("workspace folder path validation failed")
+		return fmt.Errorf("invalid workspace folder path: %s", parsedConfig.WorkspaceFolder)
+	}
+
+	args := []string{"exec", "-u", "root", container.ID, "chown", "-R", fmt.Sprintf("%s:%s", localUser.Uid, localUser.Gid), parsedConfig.WorkspaceFolder}
+	d.Log.WithFields(logrus.Fields{
+		"command": d.Docker.DockerCommand,
+		"args":    strings.Join(args, " "),
+	}).Debug("changing ownership of workspace folder")
+
+	return d.Docker.Run(ctx, args, nil, writer, writer)
 }
 
 func (d *dockerDriver) EnsureImage(
