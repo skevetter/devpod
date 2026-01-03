@@ -80,4 +80,13 @@ type RunOptions struct {
 	// Bind mounts are expected to get copied from local to remote once. Volume mounts are expected
 	// to be persisted for the lifetime of the container.
 	Mounts []*config.Mount `json:"mounts,omitempty"`
+
+	// Userns is the user namespace to use for the container
+	Userns string `json:"userns,omitempty"`
+
+	// UidMap are UID mappings for user namespace
+	UidMap []string `json:"uidMap,omitempty"`
+
+	// GidMap are GID mappings for user namespace
+	GidMap []string `json:"gidMap,omitempty"`
 }

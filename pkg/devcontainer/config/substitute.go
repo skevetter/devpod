@@ -27,6 +27,12 @@ type SubstitutionContext struct {
 	Env                      map[string]string `json:"Env,omitempty"`
 
 	WorkspaceMount string `json:"WorkspaceMount,omitempty"`
+
+	// TODO: Create a RuntimeOptions struct/dedicated context for RuntimeCLIOptions
+	// CLI options for container runtime
+	Userns string   `json:"Userns,omitempty"`
+	UidMap []string `json:"UidMap,omitempty"`
+	GidMap []string `json:"GidMap,omitempty"`
 }
 
 func Substitute(substitutionCtx *SubstitutionContext, config any, out any) error {
