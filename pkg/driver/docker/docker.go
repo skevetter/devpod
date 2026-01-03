@@ -532,7 +532,7 @@ func (d *dockerDriver) updateContainerUserFiles(ctx context.Context, container *
 		return err
 	}
 
-	if localUser.Uid == userInfo.containerUid && localUser.Gid == userInfo.containerGid {
+	if localUser.Uid == "0" || userInfo.containerUid == "0" || (localUser.Uid == userInfo.containerUid && localUser.Gid == userInfo.containerGid) {
 		d.Log.WithFields(logrus.Fields{
 			"localUid":     localUser.Uid,
 			"containerUid": userInfo.containerUid,
