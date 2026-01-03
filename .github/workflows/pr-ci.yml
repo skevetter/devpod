@@ -56,6 +56,7 @@ jobs:
   build-cli:
     name: Build CLI Binary on ${{ matrix.runner }}
     strategy:
+      fail-fast: false
       matrix:
         include:
           - runner: ubuntu-latest
@@ -310,22 +311,12 @@ jobs:
           GH_USERNAME: ${{ github.repository_owner }}
           GH_ACCESS_TOKEN: ${{ secrets.GH_PRIVATE_REPO_TOKEN_TEST || github.token }}
         run: |
-          if [ "${{ runner.os }}" == "Linux" ]; then
-            sudo \
-              GH_USERNAME="${GH_USERNAME}" \
-              GH_ACCESS_TOKEN="${GH_ACCESS_TOKEN}" \
-              KUBECONFIG="${KUBECONFIG:-$HOME/.kube/config}" \
-              PATH="${PATH}" \
-              GOROOT="${GOROOT}" \
-              go test -v -ginkgo.v -timeout 3600s --ginkgo.label-filter="${{ matrix.label }}"
-          else
-            GH_USERNAME="${GH_USERNAME}" \
-              GH_ACCESS_TOKEN="${GH_ACCESS_TOKEN}" \
-              KUBECONFIG="${KUBECONFIG:-$HOME/.kube/config}" \
-              PATH="${PATH}" \
-              GOROOT="${GOROOT}" \
-              go test -v -ginkgo.v -timeout 3600s --ginkgo.label-filter="${{ matrix.label }}"
-          fi
+          GH_USERNAME="${GH_USERNAME}" \
+            GH_ACCESS_TOKEN="${GH_ACCESS_TOKEN}" \
+            KUBECONFIG="${KUBECONFIG:-$HOME/.kube/config}" \
+            PATH="${PATH}" \
+            GOROOT="${GOROOT}" \
+            go test -v -ginkgo.v -timeout 3600s --ginkgo.label-filter="${{ matrix.label }}"
 
       - name: verify docker is installed
         if: matrix.label == 'docker-install'
