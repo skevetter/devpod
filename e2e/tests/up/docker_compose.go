@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"time"
 
@@ -315,9 +314,6 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 				}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
 				ginkgo.It("port forwarding", func(ctx context.Context) {
-					if runtime.GOOS == "windows" {
-						ginkgo.Skip("skipping on windows")
-					}
 					_, workspace, err := tc.setupAndStartWorkspace(ctx, "tests/up/testdata/docker-compose-forward-ports", "--debug")
 					framework.ExpectNoError(err)
 
@@ -359,19 +355,13 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 					sshCancel()
 					err = <-done
 
-					if runtime.GOOS != "windows" {
-						gomega.Expect(err).To(gomega.Or(
-							gomega.MatchError("signal: killed"),
-							gomega.MatchError(context.Canceled),
-						))
-					}
+					gomega.Expect(err).To(gomega.Or(
+						gomega.MatchError("signal: killed"),
+						gomega.MatchError(context.Canceled),
+					))
 				}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
 				ginkgo.It("features", func(ctx context.Context) {
-					if runtime.GOOS == "windows" {
-						ginkgo.Skip("skipping on windows")
-					}
-
 					_, workspace, err := tc.setupAndStartWorkspace(ctx, "tests/up/testdata/docker-compose-features", "--debug")
 					framework.ExpectNoError(err)
 
