@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
-	"syscall"
 	"text/tabwriter"
 	"time"
 )
@@ -168,11 +167,7 @@ func displayDirectoryInfo(dir string) {
 				if runtime.GOOS == "windows" {
 					_, _ = fmt.Fprintf(w, "%s\t%s\t%v\t%d bytes\n", file.Name(), fileType, info.Mode(), info.Size())
 				} else {
-					uid, gid := "?", "?"
-					if stat, ok := info.Sys().(*syscall.Stat_t); ok {
-						uid = fmt.Sprintf("%d", stat.Uid)
-						gid = fmt.Sprintf("%d", stat.Gid)
-					}
+					uid, gid := getFileOwnership(info)
 					_, _ = fmt.Fprintf(w, "%s\t%s\t%v\t%d bytes\t%s\t%s\n", file.Name(), fileType, info.Mode(), info.Size(), uid, gid)
 				}
 			}
