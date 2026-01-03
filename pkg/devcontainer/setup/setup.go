@@ -152,6 +152,13 @@ func LinkRootHome(setupInfo *config.Result) error {
 
 func ChownWorkspace(setupInfo *config.Result, recursive bool, log log.Logger) error {
 	user := config.GetRemoteUser(setupInfo)
+
+	// Skip chown if no user specified or user is root
+	if user == "" || user == "root" {
+		log.WithFields(logrus.Fields{"user": user}).Info("skipping workspace chown - container runs as root")
+		return nil
+	}
+
 	exists, err := markerFileExists("chownWorkspace", "")
 	if err != nil {
 		return err
