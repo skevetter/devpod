@@ -7,7 +7,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"time"
 
@@ -104,9 +103,6 @@ func (r *runner) setupContainer(
 		compressed,
 		workspaceConfigCompressed,
 	)
-	if (runtime.GOOS == "linux" || !isDockerDriver) && (mergedConfig.UpdateRemoteUserUID == nil || *mergedConfig.UpdateRemoteUserUID) {
-		setupCommand += " --chown-workspace"
-	}
 	if !isDockerDriver {
 		setupCommand += " --stream-mounts"
 	}

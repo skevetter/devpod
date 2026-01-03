@@ -56,7 +56,6 @@ var DockerlessImageConfigOutput = "/.dockerless/image.json"
 type SetupContainerCmd struct {
 	*flags.GlobalFlags
 
-	ChownWorkspace         bool
 	StreamMounts           bool
 	InjectGitCredentials   bool
 	ContainerWorkspaceInfo string
@@ -80,7 +79,6 @@ func NewSetupContainerCmd(flags *flags.GlobalFlags) *cobra.Command {
 		},
 	}
 	setupContainerCmd.Flags().BoolVar(&cmd.StreamMounts, "stream-mounts", false, "If true, will try to stream the bind mounts from the host")
-	setupContainerCmd.Flags().BoolVar(&cmd.ChownWorkspace, "chown-workspace", false, "If DevPod should chown the workspace to the remote user")
 	setupContainerCmd.Flags().BoolVar(&cmd.InjectGitCredentials, "inject-git-credentials", false, "If DevPod should inject git credentials during setup")
 	setupContainerCmd.Flags().StringVar(&cmd.ContainerWorkspaceInfo, "container-workspace-info", "", "The container workspace info")
 	setupContainerCmd.Flags().StringVar(&cmd.SetupInfo, "setup-info", "", "The container setup info")
@@ -204,7 +202,7 @@ func (cmd *SetupContainerCmd) Run(ctx context.Context) error {
 	}
 
 	// setup container
-	err = setup.SetupContainer(ctx, setupInfo, workspaceInfo.CLIOptions.WorkspaceEnv, cmd.ChownWorkspace, &workspaceInfo.CLIOptions.Platform, tunnelClient, logger)
+	err = setup.SetupContainer(ctx, setupInfo, workspaceInfo.CLIOptions.WorkspaceEnv, &workspaceInfo.CLIOptions.Platform, tunnelClient, logger)
 	if err != nil {
 		return err
 	}
