@@ -105,12 +105,19 @@ func (r *runner) setupContainer(
 		workspaceConfigCompressed,
 	)
 	shouldChown := func() bool {
-		if runtime.GOOS != "linux" && isDockerDriver {
-			r.Log.Debug("skipping --chown-workspace on non-linux OS with docker driver")
+		shouldChownByPlatform := runtime.GOOS == "linux" || !isDockerDriver
+		if !shouldChownByPlatform {
+			r.Log.WithFields(logrus.Fields{
+				"os":             runtime.GOOS,
+				"isDockerDriver": isDockerDriver,
+			}).Debug("skipping --chown-workspace")
 			return false
 		}
 		if mergedConfig != nil && (mergedConfig.RemoteUser != "" || mergedConfig.ContainerUser != "") {
-			r.Log.Debug("enabling --chown-workspace because remoteUser or containerUser is set")
+			r.Log.WithFields(logrus.Fields{
+				"remoteUser":    mergedConfig.RemoteUser,
+				"containerUser": mergedConfig.ContainerUser,
+			}).Debug("enabling --chown-workspace because remoteUser or containerUser is set")
 			return true
 		}
 		r.Log.Debug("not enabling --chown-workspace")
