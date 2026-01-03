@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"os/user"
+	"path/filepath"
 	"regexp"
 	"runtime"
 	"slices"
@@ -677,6 +678,19 @@ func (d *dockerDriver) updateContainerUserUID(ctx context.Context, workspaceId s
 	err = d.Docker.Run(ctx, args, nil, writer, writer)
 	if err != nil {
 		return err
+	}
+
+	if parsedConfig.WorkspaceFolder != "" {
+		workspaceParent := filepath.Dir(parsedConfig.WorkspaceFolder)
+		args = []string{"exec", "-u", "root", container.ID, "chown", fmt.Sprintf("%s:%s", localUid, localGid), workspaceParent}
+		d.Log.WithFields(logrus.Fields{
+			"command": d.Docker.DockerCommand,
+			"args":    strings.Join(args, " "),
+		}).Debug("running docker chown workspace parent command")
+		err = d.Docker.Run(ctx, args, nil, writer, writer)
+		if err != nil {
+			d.Log.Warnf("failed to chown workspace parent directory %s: %v", workspaceParent, err)
+		}
 	}
 
 	return nil
