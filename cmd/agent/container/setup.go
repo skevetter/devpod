@@ -103,6 +103,15 @@ func (cmd *SetupContainerCmd) Run(ctx context.Context) error {
 	logger := tunnelserver.NewTunnelLogger(ctx, tunnelClient, cmd.Debug)
 	logger.Debugf("Created logger")
 
+	if cwd, err := os.Getwd(); err == nil {
+		logger.Debugf("container setup starting working directory: %s", cwd)
+		if stat, err := os.Stat(cwd); err == nil {
+			logger.Debugf("container setup directory permissions: %s mode=%v uid=%d gid=%d", cwd, stat.Mode(), os.Getuid(), os.Getgid())
+		} else {
+			logger.Debugf("container setup failed to stat starting directory: %s error=%v", cwd, err)
+		}
+	}
+
 	// this message serves as a ping to the client
 	_, err = tunnelClient.Ping(ctx, &tunnel.Empty{})
 	if err != nil {

@@ -161,6 +161,21 @@ func ChownWorkspace(setupInfo *config.Result, recursive bool, log log.Logger) er
 
 	workspaceRoot := filepath.Dir(setupInfo.SubstitutionContext.ContainerWorkspaceFolder)
 
+	if cwd, err := os.Getwd(); err == nil {
+		log.WithFields(logrus.Fields{"cwd": cwd}).Debug("chown workspace current directory")
+		if stat, err := os.Stat(cwd); err == nil {
+			log.WithFields(logrus.Fields{"cwd": cwd, "mode": stat.Mode(), "uid": os.Getuid(), "gid": os.Getgid()}).Debug("chown workspace directory permissions")
+		} else {
+			log.WithFields(logrus.Fields{"cwd": cwd, "error": err}).Debug("chown workspace failed to stat current directory")
+		}
+	}
+
+	if stat, err := os.Stat(workspaceRoot); err == nil {
+		log.WithFields(logrus.Fields{"path": workspaceRoot, "mode": stat.Mode()}).Debug("workspace root permissions before chown")
+	} else {
+		log.WithFields(logrus.Fields{"path": workspaceRoot, "error": err}).Debug("failed to stat workspace root before chown")
+	}
+
 	if workspaceRoot != "/" {
 		log.WithFields(logrus.Fields{
 			"user":          user,
@@ -173,6 +188,12 @@ func ChownWorkspace(setupInfo *config.Result, recursive bool, log log.Logger) er
 	}
 
 	if recursive {
+		if stat, err := os.Stat(setupInfo.SubstitutionContext.ContainerWorkspaceFolder); err == nil {
+			log.WithFields(logrus.Fields{"path": setupInfo.SubstitutionContext.ContainerWorkspaceFolder, "mode": stat.Mode()}).Debug("workspace folder permissions before recursive chown")
+		} else {
+			log.WithFields(logrus.Fields{"path": setupInfo.SubstitutionContext.ContainerWorkspaceFolder, "error": err}).Debug("failed to stat workspace folder before recursive chown")
+		}
+
 		log.WithFields(logrus.Fields{
 			"user":            user,
 			"workspaceFolder": setupInfo.SubstitutionContext.ContainerWorkspaceFolder,
@@ -181,6 +202,12 @@ func ChownWorkspace(setupInfo *config.Result, recursive bool, log log.Logger) er
 		// do not exit on error, we can have non-fatal errors
 		if err != nil {
 			log.Warn(err)
+		}
+
+		if stat, err := os.Stat(setupInfo.SubstitutionContext.ContainerWorkspaceFolder); err == nil {
+			log.WithFields(logrus.Fields{"path": setupInfo.SubstitutionContext.ContainerWorkspaceFolder, "mode": stat.Mode()}).Debug("workspace folder permissions after recursive chown")
+		} else {
+			log.WithFields(logrus.Fields{"path": setupInfo.SubstitutionContext.ContainerWorkspaceFolder, "error": err}).Debug("failed to stat workspace folder after recursive chown")
 		}
 	}
 

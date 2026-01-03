@@ -129,19 +129,19 @@ func CopyToTempDirInDir(baseDir, relativePath string) (string, error) {
 func displayDirectoryInfo(dir string) {
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 	if stat, err := os.Stat(dir); err == nil {
-		func() { _, _ = fmt.Fprintf(w, "Directory:\t%s\n", dir) }()
-		func() { _, _ = fmt.Fprintf(w, "Mode:\t%v\n", stat.Mode()) }()
-		func() { _, _ = fmt.Fprintf(w, "Size:\t%d bytes\n", stat.Size()) }()
+		_, _ = fmt.Fprintf(w, "Directory:\t%s\n", dir)
+		_, _ = fmt.Fprintf(w, "Mode:\t%v\n", stat.Mode())
+		_, _ = fmt.Fprintf(w, "Size:\t%d bytes\n", stat.Size())
 	}
 	if files, err := os.ReadDir(dir); err == nil {
-		func() { _, _ = fmt.Fprintf(w, "Files:\t%d total\n", len(files)) }()
-		fmt.Fprintln(w, "\t")
+		_, _ = fmt.Fprintf(w, "Files:\t%d total\n", len(files))
+		_, _ = fmt.Fprintln(w, "\t")
 		if runtime.GOOS == "windows" {
-			func() { _, _ = fmt.Fprintf(w, "Name\tType\tMode\tSize\n") }()
-			func() { _, _ = fmt.Fprintf(w, "----\t----\t----\t----\n") }()
+			_, _ = fmt.Fprintf(w, "Name\tType\tMode\tSize\n")
+			_, _ = fmt.Fprintf(w, "----\t----\t----\t----\n")
 		} else {
-			func() { _, _ = fmt.Fprintf(w, "Name\tType\tMode\tSize\tUID\tGID\n") }()
-			func() { _, _ = fmt.Fprintf(w, "----\t----\t----\t----\t---\t---\n") }()
+			_, _ = fmt.Fprintf(w, "Name\tType\tMode\tSize\tUID\tGID\n")
+			_, _ = fmt.Fprintf(w, "----\t----\t----\t----\t---\t---\n")
 		}
 		for _, file := range files {
 			if info, err := file.Info(); err == nil {
@@ -150,23 +150,19 @@ func displayDirectoryInfo(dir string) {
 					fileType = "dir"
 				}
 				if runtime.GOOS == "windows" {
-					func() {
-						_, _ = fmt.Fprintf(w, "%s\t%s\t%v\t%d bytes\n", file.Name(), fileType, info.Mode(), info.Size())
-					}()
+					_, _ = fmt.Fprintf(w, "%s\t%s\t%v\t%d bytes\n", file.Name(), fileType, info.Mode(), info.Size())
 				} else {
 					uid, gid := "?", "?"
 					if stat, ok := info.Sys().(*syscall.Stat_t); ok {
 						uid = fmt.Sprintf("%d", stat.Uid)
 						gid = fmt.Sprintf("%d", stat.Gid)
 					}
-					func() {
-						_, _ = fmt.Fprintf(w, "%s\t%s\t%v\t%d bytes\t%s\t%s\n", file.Name(), fileType, info.Mode(), info.Size(), uid, gid)
-					}()
+					_, _ = fmt.Fprintf(w, "%s\t%s\t%v\t%d bytes\t%s\t%s\n", file.Name(), fileType, info.Mode(), info.Size(), uid, gid)
 				}
 			}
 		}
 	}
-	defer func() { _ = w.Flush() }()
+	_ = w.Flush()
 }
 
 func copyDir(src, dst string) error {

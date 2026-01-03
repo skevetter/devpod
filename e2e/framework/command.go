@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -72,8 +73,19 @@ func (f *Framework) DevPodUpWithIDE(ctx context.Context, additionalArgs ...strin
 	upArgs := []string{"up", "--debug"}
 	upArgs = append(upArgs, additionalArgs...)
 
-	_, _, err := f.ExecCommandCapture(ctx, upArgs)
+	if cwd, err := os.Getwd(); err == nil {
+		fmt.Printf("DEBUG: DevPodUpWithIDE working directory: %s\n", cwd)
+		if stat, err := os.Stat(cwd); err == nil {
+			fmt.Printf("DEBUG: DevPodUpWithIDE directory permissions: %s mode=%v\n", cwd, stat.Mode())
+		}
+	}
+
+	stdout, stderr, err := f.ExecCommandCapture(ctx, upArgs)
 	if err != nil {
+		fmt.Printf("DEBUG: DevPodUpWithIDE failed\n")
+		fmt.Printf("DEBUG: stdout: %s\n", stdout)
+		fmt.Printf("DEBUG: stderr: %s\n", stderr)
+		fmt.Printf("DEBUG: error: %v\n", err)
 		return fmt.Errorf("devpod up failed: %s", err.Error())
 	}
 	return nil
