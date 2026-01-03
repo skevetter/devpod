@@ -463,12 +463,6 @@ func (d *dockerDriver) UpdateContainerUserUID(ctx context.Context, workspaceId s
 		return nil
 	}
 
-	if containerUser == "root" {
-		// root user needs UID 0 for system operations like agent injection
-		d.Log.Debug("skipping UID/GID mapping for root user to preserve system permissions")
-		return nil
-	}
-
 	return d.updateContainerUserFiles(ctx, container, containerUser, localUser, parsedConfig)
 }
 
@@ -481,6 +475,13 @@ func (d *dockerDriver) shouldUpdateUID(parsedConfig *config.DevContainerConfig) 
 	isUpdateRemoteUserUIDDisabled := parsedConfig.UpdateRemoteUserUID != nil && !*parsedConfig.UpdateRemoteUserUID
 	if isUpdateRemoteUserUIDDisabled {
 		d.Log.Info("updateRemoteUserUID is disabled; skipping UID/GID mapping")
+		return false
+	}
+
+	// updateRemoteUserUID defaults to true when containerUser or remoteUser is specified
+	hasUserSpecified := parsedConfig.ContainerUser != "" || parsedConfig.RemoteUser != ""
+	if !hasUserSpecified {
+		d.Log.Debug("no containerUser or remoteUser specified; skipping UID/GID mapping")
 		return false
 	}
 
