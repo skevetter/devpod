@@ -415,7 +415,7 @@ func (d *dockerDriver) RunDockerDevContainer(
 	}
 
 	if runtime.GOOS == "linux" && (parsedConfig.UpdateRemoteUserUID == nil || *parsedConfig.UpdateRemoteUserUID) {
-		err = d.updateContainerUserUID(ctx, workspaceId, parsedConfig, writer)
+		err = d.updateContainerUserUID(ctx, workspaceId, parsedConfig, options.WorkspaceMount, writer)
 		if err != nil {
 			d.Log.Warnf("failed to update container user UID/GID: %v", err)
 		}
@@ -479,7 +479,7 @@ func (d *dockerDriver) GetDevContainerLogs(ctx context.Context, workspaceId stri
 	return d.Docker.GetContainerLogs(ctx, container.ID, stdout, stderr)
 }
 
-func (d *dockerDriver) updateContainerUserUID(ctx context.Context, workspaceId string, parsedConfig *config.DevContainerConfig, writer io.Writer) error {
+func (d *dockerDriver) updateContainerUserUID(ctx context.Context, workspaceId string, parsedConfig *config.DevContainerConfig, workspaceMount *config.Mount, writer io.Writer) error {
 	// Retrieve local user UID and GID
 	localUser, err := user.Current()
 	if err != nil {
@@ -680,8 +680,8 @@ func (d *dockerDriver) updateContainerUserUID(ctx context.Context, workspaceId s
 		return err
 	}
 
-	if parsedConfig.WorkspaceFolder != "" {
-		workspaceParent := filepath.Dir(parsedConfig.WorkspaceFolder)
+	if workspaceMount != nil && workspaceMount.Target != "" {
+		workspaceParent := filepath.Dir(workspaceMount.Target)
 		args = []string{"exec", "-u", "root", container.ID, "chown", fmt.Sprintf("%s:%s", localUid, localGid), workspaceParent}
 		d.Log.WithFields(logrus.Fields{
 			"command": d.Docker.DockerCommand,
