@@ -90,7 +90,7 @@ tasks:
   cli:test:e2e:act:focus:
     # usage: task cli:test:e2e:act:focus -- "test focus pattern"
     desc: run e2e tests using act with focus
-    cmd: act workflow_dispatch -W .github/workflows/test.yml --input test_focus={{ .CLI_ARGS }}
+    cmd: act workflow_dispatch -W .github/workflows/act.yml --input test_focus={{ .CLI_ARGS }}
 
   desktop:build:
     desc: build devpod Desktop application
