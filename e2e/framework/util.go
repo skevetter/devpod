@@ -2,13 +2,12 @@ package framework
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
-
-	"github.com/otiai10/copy"
 )
 
 func GetTimeout() time.Duration {
@@ -25,36 +24,21 @@ func GetTimeout() time.Duration {
 }
 
 func CreateTempDir() (string, error) {
-	// Create temporary directory
-	dir, err := os.MkdirTemp("", "temp-*")
-	if err != nil {
-		return "", err
-	}
-
-	// Make sure temp dir path is an absolute path
-	dir, err = filepath.EvalSymlinks(dir)
-	if err != nil {
-		return "", err
-	}
-
-	return dir, nil
+	return createTempDir("")
 }
 
 func CopyToTempDirWithoutChdir(relativePath string) (string, error) {
-	// Create temporary directory
-	dir, err := os.MkdirTemp("", "temp-*")
+	dir, err := createTempDir("")
 	if err != nil {
 		return "", err
 	}
 
-	// Make sure temp dir path is an absolute path
-	dir, err = filepath.EvalSymlinks(dir)
+	absPath, err := filepath.Abs(relativePath)
 	if err != nil {
 		return "", err
 	}
 
-	// Copy the file files from relativePath to the temp dir
-	err = copy.Copy(relativePath, dir)
+	err = copyDir(absPath, dir)
 	if err != nil {
 		_ = os.RemoveAll(dir)
 		return "", err
@@ -64,27 +48,22 @@ func CopyToTempDirWithoutChdir(relativePath string) (string, error) {
 }
 
 func CopyToTempDirInDir(baseDir, relativePath string) (string, error) {
-	// Create temporary directory
-	dir, err := os.MkdirTemp(baseDir, "temp-*")
+	absPath, err := filepath.Abs(relativePath)
 	if err != nil {
 		return "", err
 	}
 
-	// Make sure temp dir path is an absolute path
-	dir, err = filepath.EvalSymlinks(dir)
+	dir, err := createTempDir(baseDir)
 	if err != nil {
 		return "", err
 	}
 
-	// Copy the file files from relativePath to the temp dir
-	err = copy.Copy(relativePath, dir)
-	if err != nil {
-		_ = os.RemoveAll(dir)
-		return "", err
-	}
-
-	// Set the temp director as the current directory
 	err = os.Chdir(dir)
+	if err != nil {
+		return "", err
+	}
+
+	err = copyDir(absPath, dir)
 	if err != nil {
 		_ = os.RemoveAll(dir)
 		return "", err
@@ -110,4 +89,78 @@ func CleanupTempDir(initialDir, tempDir string) {
 func CleanString(input string) string {
 	input = strings.ReplaceAll(input, "\\", "")
 	return strings.ReplaceAll(input, "/", "")
+}
+
+// createTempDir creates a temporary directory based on environment and base directory
+func createTempDir(baseDir string) (string, error) {
+	var dir string
+	var err error
+
+	if os.Getenv("GITHUB_ACTIONS") == "true" {
+		runnerTemp := os.Getenv("RUNNER_TEMP")
+		if runnerTemp != "" {
+			dir, err = os.MkdirTemp(runnerTemp, "temp-*")
+		} else {
+			dir, err = os.MkdirTemp("", "temp-*")
+		}
+	} else if os.Getenv("ACT") == "true" {
+		dir, err = os.MkdirTemp("/tmp", "temp-*")
+	} else {
+		if baseDir == "" {
+			dir, err = os.MkdirTemp("", "temp-*")
+		} else {
+			dir, err = os.MkdirTemp(baseDir, "temp-*")
+		}
+	}
+
+	if err != nil {
+		return "", err
+	}
+
+	// ensure temp dir path is an absolute path
+	return filepath.EvalSymlinks(dir)
+}
+
+func copyDir(src, dst string) error {
+	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		relPath, err := filepath.Rel(src, path)
+		if err != nil {
+			return err
+		}
+		dstPath := filepath.Join(dst, relPath)
+
+		if info.IsDir() {
+			return os.MkdirAll(dstPath, 0755)
+		}
+
+		return copyFile(path, dstPath)
+	})
+}
+
+func copyFile(src, dst string) error {
+	srcFile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = srcFile.Close() }()
+
+	if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
+		return err
+	}
+
+	dstFile, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = dstFile.Close() }()
+
+	if _, err := io.Copy(dstFile, srcFile); err != nil {
+		return err
+	}
+
+	return os.Chmod(dst, 0644)
 }
