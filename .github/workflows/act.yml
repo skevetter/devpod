@@ -1,0 +1,84 @@
+name: Test E2E With Act
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_focus:
+        description: focus for E2E tests
+        required: false
+        default: ""
+
+jobs:
+  test:
+    name: Act E2E Tests
+    runs-on: ubuntu-latest
+    steps:
+      - run: printenv
+        if: env.ACT
+
+      - run: cat /etc/passwd
+        if: env.ACT
+
+      - name: check docker access
+        if: env.ACT
+        run: |
+          sudo chown runner:runner /var/run/docker.sock
+          docker version && docker ps -a
+
+      - uses: jlumbroso/free-disk-space@v1.3.1
+        if: env.ACT == 'false'
+
+      - uses: actions/checkout@v6
+
+      - name: setup Go
+        if: env.ACT
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - run: sudo apt update && sudo apt install -y nodejs
+        if: env.ACT
+
+      - name: setup Node
+        uses: actions/setup-node@v6
+        if: env.ACT
+        with:
+          node-version: "latest"
+
+      - uses: go-task/setup-task@v1
+
+      - name: setup goreleaser
+        if: env.ACT == 'false'
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: "~> v2"
+          install-only: true
+
+      - name: install goreleaser for ACT
+        if: env.ACT
+        run: sudo /opt/hostedtoolcache/node/25.2.1/x64/bin/npm i -g @goreleaser/goreleaser
+
+      - name: setup kind
+        uses: engineerd/setup-kind@v0.6.2
+        if: env.ACT == 'false'
+        with:
+          name: "debug-cluster"
+          version: v0.24.0
+          image: kindest/node:v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a
+          skipClusterLogsExport: true
+
+      - name: build E2E test binary
+        run: task cli:test:e2e:build
+
+      - name: run E2E tests
+        env:
+          GH_USERNAME: ${{ github.repository_owner }}
+          GH_ACCESS_TOKEN: ${{ secrets.GH_PRIVATE_REPO_TOKEN_TEST || github.token }}
+        run: |
+          GH_USERNAME="${GH_USERNAME}" \
+            GH_ACCESS_TOKEN="${GH_ACCESS_TOKEN}" \
+            KUBECONFIG="${KUBECONFIG:-$HOME/.kube/config}" \
+            PATH="${PATH}" \
+            GOROOT="${GOROOT}" \
+            ${{ github.event.inputs.test_focus == '' && 'task cli:test:e2e' || format('task cli:test:e2e:focus -- "{0}"', github.event.inputs.test_focus) }} || true
