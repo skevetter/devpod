@@ -40,6 +40,7 @@ func makeEnvironment(env map[string]string, log log.Logger) []string {
 }
 
 func NewDockerDriver(workspaceInfo *provider2.AgentWorkspaceInfo, log log.Logger) (driver.DockerDriver, error) {
+	log.Debugf("NewDockerDriver: creating Docker driver for workspace %s", workspaceInfo.Workspace.ID)
 	dockerCommand := "docker"
 	if workspaceInfo.Agent.Docker.Path != "" {
 		dockerCommand = workspaceInfo.Agent.Docker.Path
@@ -238,6 +239,7 @@ func (d *dockerDriver) RunDevContainer(
 	workspaceId string,
 	options *driver.RunOptions,
 ) error {
+	d.Log.Debugf("RunDevContainer called for workspace %s", workspaceId)
 	return fmt.Errorf("unsupported")
 }
 

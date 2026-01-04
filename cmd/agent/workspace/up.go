@@ -122,6 +122,7 @@ func (cmd *UpCmd) up(ctx context.Context, workspaceInfo *provider2.AgentWorkspac
 }
 
 func (cmd *UpCmd) devPodUp(ctx context.Context, workspaceInfo *provider2.AgentWorkspaceInfo, log log.Logger) (*config2.Result, error) {
+	log.Debugf("devPodUp: starting devcontainer up for workspace %s", workspaceInfo.Workspace.ID)
 	runner, err := CreateRunner(workspaceInfo, log)
 	if err != nil {
 		return nil, err
@@ -140,6 +141,7 @@ func (cmd *UpCmd) devPodUp(ctx context.Context, workspaceInfo *provider2.AgentWo
 }
 
 func CreateRunner(workspaceInfo *provider2.AgentWorkspaceInfo, log log.Logger) (devcontainer.Runner, error) {
+	log.Debugf("CreateRunner: creating devcontainer runner for workspace %s", workspaceInfo.Workspace.ID)
 	return devcontainer.NewRunner(agent.ContainerDevPodHelperLocation, agent.DefaultAgentDownloadURL(), workspaceInfo, log)
 }
 

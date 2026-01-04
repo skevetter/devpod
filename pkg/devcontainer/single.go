@@ -113,8 +113,10 @@ func (r *runner) runSingleContainer(
 
 		// If driver can reprovision, rerun the devcontainer and let the driver handle follow-up steps
 		if d, ok := r.Driver.(driver.ReprovisioningDriver); ok && d.CanReprovision() {
+			r.Log.Debugf("single.go: driver can reprovision, calling RunDevContainer for workspace %s", r.ID)
 			err = r.Driver.RunDevContainer(ctx, r.ID, nil)
 			if err != nil {
+				r.Log.Errorf("single.go: RunDevContainer failed: %v", err)
 				return nil, fmt.Errorf("runner driver run dev container %w", err)
 			}
 
@@ -244,6 +246,7 @@ func (r *runner) runContainer(
 	}
 
 	// build run options for regular driver
+	r.Log.Debugf("single.go: calling RunDevContainer for regular driver, workspace %s", r.ID)
 	return r.Driver.RunDevContainer(ctx, r.ID, runOptions)
 }
 

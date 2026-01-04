@@ -13,6 +13,7 @@ import (
 
 func NewDriver(workspaceInfo *provider2.AgentWorkspaceInfo, log log.Logger) (driver.Driver, error) {
 	driver := workspaceInfo.Agent.Driver
+	log.Debugf("NewDriver: creating driver type '%s' for workspace %s", driver, workspaceInfo.Workspace.ID)
 	switch driver {
 	case "", provider2.DockerDriver:
 		return docker.NewDockerDriver(workspaceInfo, log)
