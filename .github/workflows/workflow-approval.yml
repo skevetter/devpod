@@ -8,8 +8,7 @@ jobs:
     name: Automatic Approve Workflow
     runs-on: ubuntu-latest
     steps:
-      - name: Automatic Approve
-        uses: mheap/automatic-approve-action@v1
+      - uses: mheap/automatic-approve-action@v1
         with:
           token: ${{ secrets.GH_ACCESS_TOKEN }}
           workflows: "commit.yml,lint.yml,pr-ci.yml,pre-commit.yml"
