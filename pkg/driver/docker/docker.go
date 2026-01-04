@@ -7,7 +7,6 @@ import (
 	"io"
 	"os"
 	"os/user"
-	"path/filepath"
 	"regexp"
 	"runtime"
 	"slices"
@@ -414,10 +413,16 @@ func (d *dockerDriver) RunDockerDevContainer(
 		return fmt.Errorf("failed to start dev container %w", err)
 	}
 
-	if runtime.GOOS == "linux" && (parsedConfig.UpdateRemoteUserUID == nil || *parsedConfig.UpdateRemoteUserUID) {
-		err = d.updateContainerUserUID(ctx, workspaceId, parsedConfig, options.WorkspaceMount, writer)
-		if err != nil {
-			d.Log.Warnf("failed to update container user UID/GID: %v", err)
+	if runtime.GOOS == "linux" {
+		updateUID := parsedConfig.UpdateRemoteUserUID == nil || *parsedConfig.UpdateRemoteUserUID
+		d.Log.Debugf("UID update check: GOOS=linux, UpdateRemoteUserUID=%v, will update=%v", parsedConfig.UpdateRemoteUserUID, updateUID)
+		if updateUID {
+			d.Log.Debugf("attempting to update container user UID/GID for workspace %s", workspaceId)
+			err = d.updateContainerUserUID(ctx, workspaceId, parsedConfig, options.WorkspaceMount, writer)
+			if err != nil {
+				d.Log.Errorf("failed to update container user UID/GID: %v", err)
+				return fmt.Errorf("failed to update container user UID/GID: %w", err)
+			}
 		}
 	}
 
@@ -494,8 +499,11 @@ func (d *dockerDriver) updateContainerUserUID(ctx context.Context, workspaceId s
 		containerUser = parsedConfig.ContainerUser
 	}
 	if containerUser == "" {
+		d.Log.Debug("no container user specified, skipping UID/GID update")
 		return nil
 	}
+
+	d.Log.Debugf("updating UID/GID for container user: %s", containerUser)
 
 	container, err := d.FindDevContainer(ctx, workspaceId)
 	if err != nil {
@@ -582,6 +590,8 @@ func (d *dockerDriver) updateContainerUserUID(ctx context.Context, workspaceId s
 		containerGid = result["gid"]
 		containerHome = result["home"]
 
+		d.Log.Debugf("found container user %s with UID=%s, GID=%s, home=%s", containerUser, containerUid, containerGid, containerHome)
+
 		_, err := fmt.Fprintf(containerPasswdFileOut, "%s:%s:%s:%s:%s:%s:%s\n", containerUser, result["password"], localUid, localGid, result["gcos"], result["home"], result["shell"])
 		if err != nil {
 			return err
@@ -592,7 +602,13 @@ func (d *dockerDriver) updateContainerUserUID(ctx context.Context, workspaceId s
 		return err
 	}
 
+	if containerUid == "" {
+		d.Log.Warnf("container user %s not found in /etc/passwd, cannot update UID/GID", containerUser)
+		return nil
+	}
+
 	if localUid == "0" || containerUid == "0" || (localUid == containerUid && localGid == containerGid) {
+		d.Log.Debugf("skipping UID/GID update: localUid=%s, containerUid=%s, localGid=%s, containerGid=%s", localUid, containerUid, localGid, containerGid)
 		return nil
 	}
 
@@ -681,15 +697,14 @@ func (d *dockerDriver) updateContainerUserUID(ctx context.Context, workspaceId s
 	}
 
 	if workspaceMount != nil && workspaceMount.Target != "" {
-		workspaceParent := filepath.Dir(workspaceMount.Target)
-		args = []string{"exec", "-u", "root", container.ID, "chown", fmt.Sprintf("%s:%s", localUid, localGid), workspaceParent}
+		args = []string{"exec", "-u", "root", container.ID, "chown", fmt.Sprintf("%s:%s", localUid, localGid), workspaceMount.Target}
 		d.Log.WithFields(logrus.Fields{
 			"command": d.Docker.DockerCommand,
 			"args":    strings.Join(args, " "),
 		}).Debug("running docker chown workspace parent command")
 		err = d.Docker.Run(ctx, args, nil, writer, writer)
 		if err != nil {
-			d.Log.Warnf("failed to chown workspace parent directory %s: %v", workspaceParent, err)
+			d.Log.Warnf("failed to chown workspace parent directory %s: %v", workspaceMount.Target, err)
 		}
 	}
 
