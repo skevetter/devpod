@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"maps"
+	"os"
 	"strings"
 	"time"
 
@@ -317,14 +318,28 @@ func (r *runner) getRunOptions(
 
 	// build labels & entrypoint
 	entrypoint, cmd := GetContainerEntrypointAndArgs(mergedConfig, buildInfo.ImageDetails)
-	labels := []string{
-		metadata.ImageMetadataLabel + "=" + string(marshalled),
-		config.UserLabel + "=" + buildInfo.ImageDetails.Config.User,
-	}
 
 	user := buildInfo.ImageDetails.Config.User
 	if mergedConfig.ContainerUser != "" {
 		user = mergedConfig.ContainerUser
+	}
+
+	containerUser := user
+	if r.LocalWorkspaceFolder != "" && user != "" && user != "root" {
+		if strings.Contains(buildInfo.ImageName, "uid-update") {
+			containerUser = user
+		} else {
+			hostUID := os.Getuid()
+			hostGID := os.Getgid()
+			if hostUID != 0 {
+				containerUser = fmt.Sprintf("%d:%d", hostUID, hostGID)
+			}
+		}
+	}
+
+	labels := []string{
+		metadata.ImageMetadataLabel + "=" + string(marshalled),
+		config.UserLabel + "=" + user,
 	}
 
 	uid := ""
@@ -335,7 +350,7 @@ func (r *runner) getRunOptions(
 	return &driver.RunOptions{
 		UID:            uid,
 		Image:          buildInfo.ImageName,
-		User:           user,
+		User:           containerUser,
 		Entrypoint:     entrypoint,
 		Cmd:            cmd,
 		Env:            mergedConfig.ContainerEnv,
@@ -348,8 +363,6 @@ func (r *runner) getRunOptions(
 	}, nil
 }
 
-// add environment variables that signals that we are in a remote container
-// (vscode compatibility) and specifically that we are using devpod.
 func (r *runner) addExtraEnvVars(env map[string]string) map[string]string {
 	if env == nil {
 		env = make(map[string]string)
@@ -372,7 +385,7 @@ func GetStartScript(mergedConfig *config.MergedDevContainerConfig) string {
 	return `echo Container started
 trap "exit 0" 15
 exec "$@"
-` + strings.Join(customEntrypoints, "\n") + DefaultEntrypoint
+` + strings.Join(customEntrypoints, "\\n") + DefaultEntrypoint
 }
 
 func GetContainerEntrypointAndArgs(mergedConfig *config.MergedDevContainerConfig, imageDetails *config.ImageDetails) (string, []string) {

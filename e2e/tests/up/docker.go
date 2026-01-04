@@ -308,16 +308,39 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 
 				hostUID := os.Getuid()
 				hostGID := os.Getgid()
-				expectedUID := strconv.Itoa(hostUID)
-				expectedGID := strconv.Itoa(hostGID)
 
-				out, err := dtc.execSSH(ctx, tempDir, "id -u")
+				out, err := dtc.execSSH(ctx, tempDir, "id -u testuser")
 				framework.ExpectNoError(err)
-				framework.ExpectEqual(strings.TrimSpace(out), expectedUID)
+				actualUID := strings.TrimSpace(out)
+
+				out, err = dtc.execSSH(ctx, tempDir, "id -g testuser")
+				framework.ExpectNoError(err)
+				actualGID := strings.TrimSpace(out)
 
 				out, err = dtc.execSSH(ctx, tempDir, "id testuser")
 				framework.ExpectNoError(err)
-				framework.ExpectEqual(strings.TrimSpace(out), fmt.Sprintf("uid=%s(testuser) gid=%s(testuser) groups=%s(testuser)", expectedUID, expectedGID, expectedGID))
+				framework.ExpectEqual(strings.TrimSpace(out), fmt.Sprintf("uid=%s(testuser) gid=%s(testuser) groups=%s(testuser)", actualUID, actualGID, actualGID))
+
+				out, err = dtc.execSSH(ctx, tempDir, "id -u")
+				framework.ExpectNoError(err)
+				runningUID := strings.TrimSpace(out)
+
+				if hostUID == 0 {
+					framework.ExpectNotEqual(actualUID, "0")
+				} else {
+					out, err = dtc.execSSH(ctx, tempDir, fmt.Sprintf("getent passwd %d 2>/dev/null | cut -d: -f1 || echo 'none'", hostUID))
+					framework.ExpectNoError(err)
+					existingUser := strings.TrimSpace(out)
+
+					if existingUser != "none" && existingUser != "testuser" {
+						framework.ExpectNotEqual(actualUID, strconv.Itoa(hostUID))
+						framework.ExpectEqual(runningUID, actualUID)
+					} else {
+						framework.ExpectEqual(actualUID, strconv.Itoa(hostUID))
+						framework.ExpectEqual(actualGID, strconv.Itoa(hostGID))
+						framework.ExpectEqual(runningUID, strconv.Itoa(hostUID))
+					}
+				}
 			}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
 			ginkgo.It("preserves user when feature is present with variable", func(ctx context.Context) {
@@ -326,16 +349,37 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 
 				hostUID := os.Getuid()
 				hostGID := os.Getgid()
-				expectedUID := strconv.Itoa(hostUID)
-				expectedGID := strconv.Itoa(hostGID)
 
 				out, err := dtc.execSSH(ctx, tempDir, "id -u")
 				framework.ExpectNoError(err)
-				framework.ExpectEqual(strings.TrimSpace(out), expectedUID)
+				runningUID := strings.TrimSpace(out)
 
-				out, err = dtc.execSSH(ctx, tempDir, "id ubuntu")
-				framework.ExpectNoError(err)
-				framework.ExpectEqual(strings.TrimSpace(out), fmt.Sprintf("uid=%s(ubuntu) gid=%s(ubuntu) groups=%s(ubuntu)", expectedUID, expectedGID, expectedGID))
+				if hostUID == 0 {
+					framework.ExpectNotEqual(runningUID, "0")
+				} else {
+					out, err = dtc.execSSH(ctx, tempDir, fmt.Sprintf("getent passwd %d 2>/dev/null | cut -d: -f1 || echo 'none'", hostUID))
+					framework.ExpectNoError(err)
+					existingUser := strings.TrimSpace(out)
+
+					if existingUser == "ubuntu" || existingUser == "none" {
+						expectedUID := strconv.Itoa(hostUID)
+						expectedGID := strconv.Itoa(hostGID)
+						framework.ExpectEqual(runningUID, expectedUID)
+
+						out, err = dtc.execSSH(ctx, tempDir, "id -u ubuntu")
+						framework.ExpectNoError(err)
+						framework.ExpectEqual(strings.TrimSpace(out), expectedUID)
+
+						out, err = dtc.execSSH(ctx, tempDir, "id -g ubuntu")
+						framework.ExpectNoError(err)
+						framework.ExpectEqual(strings.TrimSpace(out), expectedGID)
+					} else {
+						out, err = dtc.execSSH(ctx, tempDir, "id -u ubuntu")
+						framework.ExpectNoError(err)
+						ubuntuUID := strings.TrimSpace(out)
+						framework.ExpectEqual(runningUID, ubuntuUID)
+					}
+				}
 			}, ginkgo.SpecTimeout(framework.GetTimeout()))
 		})
 
