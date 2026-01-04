@@ -58,12 +58,13 @@ func CopyToTempDirInDir(baseDir, relativePath string) (string, error) {
 		return "", err
 	}
 
-	err = os.Chdir(dir)
+	err = copyDir(absPath, dir)
 	if err != nil {
+		_ = os.RemoveAll(dir)
 		return "", err
 	}
 
-	err = copyDir(absPath, dir)
+	err = os.Chdir(dir)
 	if err != nil {
 		_ = os.RemoveAll(dir)
 		return "", err
@@ -122,6 +123,15 @@ func createTempDir(baseDir string) (string, error) {
 }
 
 func copyDir(src, dst string) error {
+	srcInfo, err := os.Stat(src)
+	if err != nil {
+		return err
+	}
+
+	if !srcInfo.IsDir() {
+		return copyFile(src, filepath.Join(dst, filepath.Base(src)))
+	}
+
 	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -133,8 +143,16 @@ func copyDir(src, dst string) error {
 		}
 		dstPath := filepath.Join(dst, relPath)
 
+		if info.Mode()&os.ModeSymlink != 0 {
+			linkTarget, err := os.Readlink(path)
+			if err != nil {
+				return err
+			}
+			return os.Symlink(linkTarget, dstPath)
+		}
+
 		if info.IsDir() {
-			return os.MkdirAll(dstPath, 0755)
+			return os.MkdirAll(dstPath, info.Mode().Perm())
 		}
 
 		return copyFile(path, dstPath)
@@ -148,11 +166,17 @@ func copyFile(src, dst string) error {
 	}
 	defer func() { _ = srcFile.Close() }()
 
+	info, err := srcFile.Stat()
+	if err != nil {
+		return err
+	}
+	mode := info.Mode().Perm()
+
 	if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
 		return err
 	}
 
-	dstFile, err := os.Create(dst)
+	dstFile, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, mode)
 	if err != nil {
 		return err
 	}
@@ -162,5 +186,5 @@ func copyFile(src, dst string) error {
 		return err
 	}
 
-	return os.Chmod(dst, 0644)
+	return os.Chmod(dst, mode)
 }
