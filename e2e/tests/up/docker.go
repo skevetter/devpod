@@ -8,6 +8,7 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 
 	"github.com/docker/docker/api/types/container"
@@ -305,22 +306,36 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 				tempDir, err := dtc.setupAndUp(ctx, "tests/up/testdata/docker-user-variable-in-dockerfile")
 				framework.ExpectNoError(err)
 
+				hostUID := os.Getuid()
+				hostGID := os.Getgid()
+				expectedUID := strconv.Itoa(hostUID)
+				expectedGID := strconv.Itoa(hostGID)
+
 				out, err := dtc.execSSH(ctx, tempDir, "id -u")
 				framework.ExpectNoError(err)
-				framework.ExpectEqual(strings.TrimSpace(out), "0")
+				framework.ExpectEqual(strings.TrimSpace(out), expectedUID)
 
 				out, err = dtc.execSSH(ctx, tempDir, "id testuser")
 				framework.ExpectNoError(err)
-				framework.ExpectEqual(strings.TrimSpace(out), "uid=0(testuser) gid=0(testuser) groups=0(testuser)")
+				framework.ExpectEqual(strings.TrimSpace(out), fmt.Sprintf("uid=%s(testuser) gid=%s(testuser) groups=%s(testuser)", expectedUID, expectedGID, expectedGID))
 			}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
 			ginkgo.It("preserves user when feature is present with variable", func(ctx context.Context) {
 				tempDir, err := dtc.setupAndUp(ctx, "tests/up/testdata/docker-user-variable-with-feature")
 				framework.ExpectNoError(err)
 
-				out, err := dtc.execSSH(ctx, tempDir, "whoami")
+				hostUID := os.Getuid()
+				hostGID := os.Getgid()
+				expectedUID := strconv.Itoa(hostUID)
+				expectedGID := strconv.Itoa(hostGID)
+
+				out, err := dtc.execSSH(ctx, tempDir, "id -u")
 				framework.ExpectNoError(err)
-				framework.ExpectEqual(strings.TrimSpace(out), "ubuntu")
+				framework.ExpectEqual(strings.TrimSpace(out), expectedUID)
+
+				out, err = dtc.execSSH(ctx, tempDir, "id ubuntu")
+				framework.ExpectNoError(err)
+				framework.ExpectEqual(strings.TrimSpace(out), fmt.Sprintf("uid=%s(ubuntu) gid=%s(ubuntu) groups=%s(ubuntu)", expectedUID, expectedGID, expectedGID))
 			}, ginkgo.SpecTimeout(framework.GetTimeout()))
 		})
 
