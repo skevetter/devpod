@@ -1,0 +1,52 @@
+name: Test E2E
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      test_focus:
+        description: focus for E2E tests
+        required: false
+        default: ''
+
+jobs:
+  debug:
+    name: Test E2E
+    runs-on: ubuntu-latest
+    steps:
+      - uses: jlumbroso/free-disk-space@v1.3.1
+
+      - uses: actions/checkout@v6
+
+      - uses: go-task/setup-task@v1
+
+      - name: setup goreleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: "~> v2"
+          install-only: true
+
+      - name: setup kind
+        uses: engineerd/setup-kind@v0.6.2
+        with:
+          name: "debug-cluster"
+          version: v0.24.0
+          image: kindest/node:v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a
+          skipClusterLogsExport: true
+
+      - name: build E2E test binary
+        run: task cli:test:e2e:build
+
+      - name: run E2E tests
+        env:
+          GH_USERNAME: ${{ github.repository_owner }}
+          GH_ACCESS_TOKEN: ${{ secrets.GH_PRIVATE_REPO_TOKEN_TEST || github.token }}
+        run: |
+          GH_USERNAME="${GH_USERNAME}" \
+            GH_ACCESS_TOKEN="${GH_ACCESS_TOKEN}" \
+            KUBECONFIG="${KUBECONFIG:-$HOME/.kube/config}" \
+            PATH="${PATH}" \
+            GOROOT="${GOROOT}" \
+            ${{ github.event.inputs.test_focus == '' && 'task cli:test:e2e' || format('task cli:test:e2e:focus -- {0}', github.event.inputs.test_focus) }} || true
