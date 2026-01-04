@@ -15,7 +15,6 @@ import (
 
 	"github.com/loft-sh/api/v4/pkg/devpod"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/agent/tunnel"
 	"github.com/skevetter/devpod/pkg/command"
 	copy2 "github.com/skevetter/devpod/pkg/copy"
@@ -31,19 +30,13 @@ const (
 	ResultLocation = "/var/run/devpod/result.json"
 )
 
-func SetupContainer(ctx context.Context, setupInfo *config.Result, extraWorkspaceEnv []string, chownProjects bool, platformOptions *devpod.PlatformOptions, tunnelClient tunnel.TunnelClient, log log.Logger) error {
+func SetupContainer(ctx context.Context, setupInfo *config.Result, extraWorkspaceEnv []string, platformOptions *devpod.PlatformOptions, tunnelClient tunnel.TunnelClient, log log.Logger) error {
 	// write result to ResultLocation
 	WriteResult(setupInfo, log)
 
-	// chown user dir
-	err := ChownWorkspace(setupInfo, chownProjects, log)
-	if err != nil {
-		return fmt.Errorf("failed to chown workspace %w", err)
-	}
-
 	// patch remote env
 	log.Debugf("Patch etc environment & profile...")
-	err = PatchEtcEnvironment(setupInfo.MergedConfig, log)
+	err := PatchEtcEnvironment(setupInfo.MergedConfig, log)
 	if err != nil {
 		return fmt.Errorf("patch etc environment %w", err)
 	}
@@ -145,43 +138,6 @@ func LinkRootHome(setupInfo *config.Result) error {
 	err = os.Symlink(home, "/home/root")
 	if err != nil {
 		return fmt.Errorf("create symlink %w", err)
-	}
-
-	return nil
-}
-
-func ChownWorkspace(setupInfo *config.Result, recursive bool, log log.Logger) error {
-	user := config.GetRemoteUser(setupInfo)
-	exists, err := markerFileExists("chownWorkspace", "")
-	if err != nil {
-		return err
-	} else if exists {
-		return nil
-	}
-
-	workspaceRoot := filepath.Dir(setupInfo.SubstitutionContext.ContainerWorkspaceFolder)
-
-	if workspaceRoot != "/" {
-		log.WithFields(logrus.Fields{
-			"user":          user,
-			"workspaceRoot": workspaceRoot,
-		}).Info("chown workspace")
-		err = copy2.Chown(workspaceRoot, user)
-		if err != nil {
-			log.Warn(err)
-		}
-	}
-
-	if recursive {
-		log.WithFields(logrus.Fields{
-			"user":            user,
-			"workspaceFolder": setupInfo.SubstitutionContext.ContainerWorkspaceFolder,
-		}).Info("chown workspace recursively")
-		err = copy2.ChownR(setupInfo.SubstitutionContext.ContainerWorkspaceFolder, user)
-		// do not exit on error, we can have non-fatal errors
-		if err != nil {
-			log.Warn(err)
-		}
 	}
 
 	return nil

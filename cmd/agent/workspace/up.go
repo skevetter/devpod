@@ -144,6 +144,15 @@ func CreateRunner(workspaceInfo *provider2.AgentWorkspaceInfo, log log.Logger) (
 }
 
 func InitContentFolder(workspaceInfo *provider2.AgentWorkspaceInfo, log log.Logger) (bool, error) {
+	if cwd, err := os.Getwd(); err == nil {
+		log.WithFields(logrus.Fields{"cwd": cwd}).Debug("current working directory")
+		if stat, err := os.Stat(cwd); err == nil {
+			log.WithFields(logrus.Fields{"cwd": cwd, "mode": stat.Mode(), "uid": os.Getuid(), "gid": os.Getgid()}).Debug("current directory permissions")
+		} else {
+			log.WithFields(logrus.Fields{"cwd": cwd, "error": err}).Debug("failed to stat current directory")
+		}
+	}
+
 	// check if workspace content folder exists
 	_, err := os.Stat(workspaceInfo.ContentFolder)
 	if err == nil {

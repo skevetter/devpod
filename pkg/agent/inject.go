@@ -67,6 +67,12 @@ func InjectAgentAndExecute(
 		}
 
 		log.Debug("execute command locally")
+		if cwd, err := os.Getwd(); err == nil {
+			log.WithFields(logrus.Fields{"cwd": cwd}).Debug("local execution working directory")
+			if stat, err := os.Stat(cwd); err == nil {
+				log.WithFields(logrus.Fields{"cwd": cwd, "mode": stat.Mode()}).Debug("local execution directory permissions")
+			}
+		}
 		return shell.RunEmulatedShell(ctx, command, stdin, stdout, stderr, nil)
 	}
 
@@ -118,6 +124,15 @@ func InjectAgentAndExecute(
 			log,
 		)
 		if err != nil {
+			if cwd, cwdErr := os.Getwd(); cwdErr == nil {
+				log.WithFields(logrus.Fields{"cwd": cwd, "error": err}).Debug("inject error with working directory")
+				if stat, statErr := os.Stat(cwd); statErr == nil {
+					log.WithFields(logrus.Fields{"cwd": cwd, "mode": stat.Mode(), "uid": os.Getuid(), "gid": os.Getgid()}).Debug("working directory permissions on error")
+				} else {
+					log.WithFields(logrus.Fields{"cwd": cwd, "stat_error": statErr}).Debug("failed to stat working directory on error")
+				}
+			}
+
 			if time.Since(now) > waitForInstanceConnectionTimeout {
 				return fmt.Errorf("timeout waiting for instance connection %w", err)
 			} else if wasExecuted {

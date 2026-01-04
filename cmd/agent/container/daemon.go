@@ -55,6 +55,15 @@ func (cmd *DaemonCmd) Run(c *cobra.Command, args []string) error {
 	errChan := make(chan error, 4)
 	var wg sync.WaitGroup
 
+	if cwd, err := os.Getwd(); err == nil {
+		cmd.Log.WithFields(logrus.Fields{"cwd": cwd}).Debug("daemon starting working directory")
+		if stat, err := os.Stat(cwd); err == nil {
+			cmd.Log.WithFields(logrus.Fields{"cwd": cwd, "mode": stat.Mode(), "uid": os.Getuid(), "gid": os.Getgid()}).Debug("daemon starting directory permissions")
+		} else {
+			cmd.Log.WithFields(logrus.Fields{"cwd": cwd, "error": err}).Debug("daemon failed to stat starting directory")
+		}
+	}
+
 	if err := cmd.loadConfig(); err != nil {
 		return err
 	}
@@ -178,6 +187,13 @@ func (cmd *DaemonCmd) shouldRunSsh() bool {
 
 // setupActivityFile creates and sets permissions on the container activity file.
 func setupActivityFile() error {
+	if cwd, err := os.Getwd(); err == nil {
+		fmt.Printf("DEBUG: setupActivityFile working directory: %s\n", cwd)
+		if stat, err := os.Stat(cwd); err == nil {
+			fmt.Printf("DEBUG: setupActivityFile directory permissions: %s mode=%v\n", cwd, stat.Mode())
+		}
+	}
+
 	if err := os.WriteFile(agent.ContainerActivityFile, nil, 0777); err != nil {
 		return err
 	}
