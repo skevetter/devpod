@@ -330,11 +330,11 @@ jobs:
           sudo rm -rf /var/lib/docker /var/lib/containerd /usr/bin/docker /usr/bin/dockerd
 
       - name: run test
-        if: ${{ matrix.requires-secret == false || needs.can-read-secret.outputs.secret-set == 'true' }}
+        if: matrix.requires-secret == false || needs.can-read-secret.outputs.secret-set == 'true'
         shell: bash
         working-directory: ./e2e
         env:
-          # NOTE: Github credentials are required for tests using private repos
+          # NOTE: GitHub credentials are required for tests using private repos
           GH_USERNAME: ${{ github.repository_owner }}
           GH_ACCESS_TOKEN: ${{ matrix.requires-secret == true && secrets.GH_PRIVATE_REPO_TOKEN_TEST || github.token }}
         run: |
