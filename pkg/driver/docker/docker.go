@@ -495,24 +495,47 @@ func (d *dockerDriver) updateContainerUserUID(ctx context.Context, workspaceId s
 	localUid := localUser.Uid
 	localGid := localUser.Gid
 
-	// Retrieve user to update
-	containerUser := parsedConfig.RemoteUser
-	if containerUser == "" {
-		containerUser = parsedConfig.ContainerUser
-	}
-	if containerUser == "" {
-		d.Log.Debug("no container user specified, skipping UID/GID update")
-		return nil
-	}
-
-	d.Log.Debugf("updating UID/GID for container user: %s", containerUser)
-
+	// Retrieve user to update using same logic as GetRemoteUser
 	container, err := d.FindDevContainer(ctx, workspaceId)
 	if err != nil {
 		return err
 	} else if container == nil {
 		return nil
 	}
+
+	// Use same logic as GetRemoteUser to determine container user
+	containerUser := parsedConfig.RemoteUser
+	if containerUser == "" {
+		// Check devpod user label first (takes priority)
+		if container.Config.Labels != nil {
+			if userLabel := container.Config.Labels[config.UserLabel]; userLabel != "" {
+				containerUser = userLabel
+				d.Log.Debugf("detected container user from devpod label: %s", containerUser)
+			}
+		}
+	}
+	if containerUser == "" && container.Config.User != "" {
+		// Check docker metadata user as fallback
+		userParts := strings.Split(container.Config.User, ":")
+		if userParts[0] != "" {
+			containerUser = userParts[0]
+			d.Log.Debugf("detected container user from docker Config.User: %s", containerUser)
+		}
+	}
+	if containerUser == "" {
+		containerUser = parsedConfig.ContainerUser
+	}
+
+	d.Log.Debugf("container user resolution: RemoteUser=%s, ContainerUser=%s, UserLabel=%s, Config.User=%s, final=%s",
+		parsedConfig.RemoteUser, parsedConfig.ContainerUser,
+		container.Config.Labels[config.UserLabel], container.Config.User, containerUser)
+
+	if containerUser == "" {
+		d.Log.Debug("no container user specified, skipping UID/GID update")
+		return nil
+	}
+
+	d.Log.Debugf("updating UID/GID for container user: %s", containerUser)
 
 	// Create temporary files to store /etc/passwd and /etc/group
 	containerPasswdFileIn, err := os.CreateTemp("", "devpod_container_passwd_in")
