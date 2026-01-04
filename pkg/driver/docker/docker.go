@@ -512,7 +512,7 @@ func (d *dockerDriver) extractRemoteUserFromMetadata(metadata string) string {
 // permission issues where UID update detects one user but SSH runs as another.
 func (d *dockerDriver) resolveContainerUser(parsedConfig *config.DevContainerConfig, container *config.ContainerDetails) string {
 	if parsedConfig.RemoteUser != "" {
-		d.Log.Debugf("detected container user from RemoteUser config: %s", parsedConfig.RemoteUser)
+		d.Log.WithFields(logrus.Fields{"remoteUser": parsedConfig.RemoteUser}).Debug("detected container user from RemoteUser config")
 		return parsedConfig.RemoteUser
 	}
 
@@ -527,7 +527,7 @@ func (d *dockerDriver) resolveContainerUser(parsedConfig *config.DevContainerCon
 
 	if container.Config.Labels != nil {
 		if userLabel := container.Config.Labels[config.UserLabel]; userLabel != "" {
-			d.Log.Debugf("detected container user from devpod label: %s", userLabel)
+			d.Log.WithFields(logrus.Fields{"userLabel": userLabel}).Debug("detected container user from devpod label")
 			return userLabel
 		}
 	}
@@ -535,13 +535,13 @@ func (d *dockerDriver) resolveContainerUser(parsedConfig *config.DevContainerCon
 	if container.Config.User != "" {
 		userParts := strings.Split(container.Config.User, ":")
 		if userParts[0] != "" {
-			d.Log.Debugf("detected container user from docker Config.User: %s", userParts[0])
+			d.Log.WithFields(logrus.Fields{"user": userParts[0]}).Debug("detected container user from docker Config.User")
 			return userParts[0]
 		}
 	}
 
 	if parsedConfig.ContainerUser != "" {
-		d.Log.Debugf("detected container user from ContainerUser config: %s", parsedConfig.ContainerUser)
+		d.Log.WithFields(logrus.Fields{"containerUser": parsedConfig.ContainerUser}).Debug("detected container user from ContainerUser config")
 		return parsedConfig.ContainerUser
 	}
 
