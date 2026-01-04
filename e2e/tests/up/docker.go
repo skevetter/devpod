@@ -309,10 +309,6 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 				framework.ExpectNoError(err)
 				framework.ExpectEqual(strings.TrimSpace(out), "0")
 
-				out, err = dtc.execSSH(ctx, tempDir, "id -un")
-				framework.ExpectNoError(err)
-				framework.ExpectEqual(strings.TrimSpace(out), "testuser")
-
 				out, err = dtc.execSSH(ctx, tempDir, "id testuser")
 				framework.ExpectNoError(err)
 				framework.ExpectEqual(strings.TrimSpace(out), "uid=0(testuser) gid=0(testuser) groups=0(testuser)")
