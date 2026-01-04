@@ -122,6 +122,7 @@ func (cmd *UpCmd) up(ctx context.Context, workspaceInfo *provider2.AgentWorkspac
 }
 
 func (cmd *UpCmd) devPodUp(ctx context.Context, workspaceInfo *provider2.AgentWorkspaceInfo, log log.Logger) (*config2.Result, error) {
+	log.Debugf("devPodUp: starting devcontainer up for workspace %s", workspaceInfo.Workspace.ID)
 	runner, err := CreateRunner(workspaceInfo, log)
 	if err != nil {
 		return nil, err
@@ -140,10 +141,20 @@ func (cmd *UpCmd) devPodUp(ctx context.Context, workspaceInfo *provider2.AgentWo
 }
 
 func CreateRunner(workspaceInfo *provider2.AgentWorkspaceInfo, log log.Logger) (devcontainer.Runner, error) {
+	log.Debugf("CreateRunner: creating devcontainer runner for workspace %s", workspaceInfo.Workspace.ID)
 	return devcontainer.NewRunner(agent.ContainerDevPodHelperLocation, agent.DefaultAgentDownloadURL(), workspaceInfo, log)
 }
 
 func InitContentFolder(workspaceInfo *provider2.AgentWorkspaceInfo, log log.Logger) (bool, error) {
+	if cwd, err := os.Getwd(); err == nil {
+		log.WithFields(logrus.Fields{"cwd": cwd}).Debug("current working directory")
+		if stat, err := os.Stat(cwd); err == nil {
+			log.WithFields(logrus.Fields{"cwd": cwd, "mode": stat.Mode(), "uid": os.Getuid(), "gid": os.Getgid()}).Debug("current directory permissions")
+		} else {
+			log.WithFields(logrus.Fields{"cwd": cwd, "error": err}).Debug("failed to stat current directory")
+		}
+	}
+
 	// check if workspace content folder exists
 	_, err := os.Stat(workspaceInfo.ContentFolder)
 	if err == nil {

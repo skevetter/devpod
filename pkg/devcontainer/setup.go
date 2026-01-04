@@ -7,7 +7,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"time"
 
@@ -104,9 +103,6 @@ func (r *runner) setupContainer(
 		compressed,
 		workspaceConfigCompressed,
 	)
-	if runtime.GOOS == "linux" || !isDockerDriver {
-		setupCommand += " --chown-workspace"
-	}
 	if !isDockerDriver {
 		setupCommand += " --stream-mounts"
 	}

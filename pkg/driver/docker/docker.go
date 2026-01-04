@@ -40,6 +40,7 @@ func makeEnvironment(env map[string]string, log log.Logger) []string {
 }
 
 func NewDockerDriver(workspaceInfo *provider2.AgentWorkspaceInfo, log log.Logger) (driver.DockerDriver, error) {
+	log.Debugf("NewDockerDriver: creating Docker driver for workspace %s", workspaceInfo.Workspace.ID)
 	dockerCommand := "docker"
 	if workspaceInfo.Agent.Docker.Path != "" {
 		dockerCommand = workspaceInfo.Agent.Docker.Path
@@ -238,6 +239,7 @@ func (d *dockerDriver) RunDevContainer(
 	workspaceId string,
 	options *driver.RunOptions,
 ) error {
+	d.Log.Debugf("RunDevContainer called for workspace %s", workspaceId)
 	return fmt.Errorf("unsupported")
 }
 
@@ -250,6 +252,14 @@ func (d *dockerDriver) RunDockerDevContainer(
 	ide string,
 	ideOptions map[string]config2.OptionValue,
 ) error {
+	d.Log.WithFields(logrus.Fields{
+		"workspaceId":  workspaceId,
+		"options":      fmt.Sprintf("%+v", options),
+		"parsedConfig": fmt.Sprintf("%+v", parsedConfig),
+		"init":         init,
+		"ide":          ide,
+		"ideOptions":   ideOptions,
+	}).Debug("running docker dev container")
 	err := d.EnsureImage(ctx, options)
 	if err != nil {
 		return err
@@ -299,14 +309,11 @@ func (d *dockerDriver) RunDockerDevContainer(
 		args = append(args, "--privileged")
 	}
 
-	// In case we're using podman, let's use userns to keep
-	// the ID of the user (vscode) inside the container as
-	// the same of the external user.
-	// This will avoid problems of mismatching chowns on the
-	// project files.
-	if d.Docker.IsPodman() && os.Getuid() != 0 {
-		args = append(args, "--userns", "keep-id")
+	podmanArgs, err := d.getPodmanArgs(options, parsedConfig)
+	if err != nil {
+		return err
 	}
+	args = append(args, podmanArgs...)
 
 	for _, capAdd := range options.CapAdd {
 		args = append(args, "--cap-add", capAdd)
@@ -408,204 +415,16 @@ func (d *dockerDriver) RunDockerDevContainer(
 		return fmt.Errorf("failed to start dev container %w", err)
 	}
 
-	if runtime.GOOS == "linux" && ((parsedConfig.ContainerUser != "" || parsedConfig.RemoteUser != "") &&
-		(parsedConfig.UpdateRemoteUserUID == nil || *parsedConfig.UpdateRemoteUserUID)) {
-		// Retrieve local user UID and GID
-		localUser, err := user.Current()
-		if err != nil {
-			return err
-		}
-		localUid := localUser.Uid
-		localGid := localUser.Gid
-
-		// Retrieve user to update
-		containerUser := parsedConfig.RemoteUser
-		if containerUser == "" {
-			containerUser = parsedConfig.ContainerUser
-		}
-		if containerUser == "" {
-			return nil
-		}
-		container, err := d.FindDevContainer(ctx, workspaceId)
-		if err != nil {
-			return err
-		} else if container == nil {
-			return nil
-		}
-
-		// Create temporary files to store /etc/passwd and /etc/group
-		containerPasswdFileIn, err := os.CreateTemp("", "devpod_container_passwd_in")
-		if err != nil {
-			return err
-		}
-		defer func() { _ = os.Remove(containerPasswdFileIn.Name()) }()
-
-		containerGroupFileIn, err := os.CreateTemp("", "devpod_container_group_in")
-		if err != nil {
-			return err
-		}
-		defer func() { _ = os.Remove(containerGroupFileIn.Name()) }()
-
-		containerPasswdFileOut, err := os.CreateTemp("", "devpod_container_passwd_out")
-		if err != nil {
-			return err
-		}
-		defer func() { _ = os.Remove(containerPasswdFileOut.Name()) }()
-
-		containerGroupFileOut, err := os.CreateTemp("", "devpod_container_group_out")
-		if err != nil {
-			return err
-		}
-		defer func() { _ = os.Remove(containerGroupFileOut.Name()) }()
-
-		// Copy /etc/passwd and /etc/group from the container to the temporary files
-		args = []string{"cp", fmt.Sprintf("%s:/etc/passwd", container.ID), containerPasswdFileIn.Name()}
-		d.Log.WithFields(logrus.Fields{
-			"command": d.Docker.DockerCommand,
-			"args":    strings.Join(args, " "),
-		}).Debug("running docker command")
-		err = d.Docker.Run(ctx, args, nil, writer, writer)
-		if err != nil {
-			return err
-		}
-
-		args = []string{"cp", fmt.Sprintf("%s:/etc/group", container.ID), containerGroupFileIn.Name()}
-		d.Log.WithFields(logrus.Fields{
-			"command": d.Docker.DockerCommand,
-			"args":    strings.Join(args, " "),
-		}).Debug("Running docker command")
-		err = d.Docker.Run(ctx, args, nil, writer, writer)
-		if err != nil {
-			return err
-		}
-
-		containerPasswdFileIn, err = os.Open(containerPasswdFileIn.Name())
-		if err != nil {
-			return err
-		}
-		defer func() { _ = containerPasswdFileIn.Close() }()
-		// Update /etc/passwd and /etc/group with the new user UID and GID
-		scanner := bufio.NewScanner(containerPasswdFileIn)
-		containerUid := ""
-		containerGid := ""
-		containerHome := ""
-
-		re := regexp.MustCompile(fmt.Sprintf(`^%s:(?P<password>x?):(?P<uid>.*):(?P<gid>.*):(?P<gcos>.*):(?P<home>.*):(?P<shell>.*)$`, containerUser))
-		for scanner.Scan() {
-			match := re.FindStringSubmatch(scanner.Text())
-			if match == nil {
-				_, err := fmt.Fprintf(containerPasswdFileOut, "%s\n", scanner.Text())
-				if err != nil {
-					return err
-				}
-				continue
-			}
-			result := make(map[string]string)
-			for i, name := range re.SubexpNames() {
-				if i != 0 && name != "" {
-					result[name] = match[i]
-				}
-			}
-			containerUid = result["uid"]
-			containerGid = result["gid"]
-			containerHome = result["home"]
-
-			_, err := fmt.Fprintf(containerPasswdFileOut, "%s:%s:%s:%s:%s:%s:%s\n", containerUser, result["password"], localUid, localGid, result["gcos"], result["home"], result["shell"])
+	if runtime.GOOS == "linux" {
+		updateUID := parsedConfig.UpdateRemoteUserUID == nil || *parsedConfig.UpdateRemoteUserUID
+		d.Log.Debugf("UID update check: GOOS=linux, UpdateRemoteUserUID=%v, will update=%v", parsedConfig.UpdateRemoteUserUID, updateUID)
+		if updateUID {
+			d.Log.Debugf("attempting to update container user UID/GID for workspace %s", workspaceId)
+			err = d.updateContainerUserUID(ctx, workspaceId, parsedConfig, options.WorkspaceMount, writer)
 			if err != nil {
-				return err
+				d.Log.Errorf("failed to update container user UID/GID: %v", err)
+				return fmt.Errorf("failed to update container user UID/GID: %w", err)
 			}
-		}
-
-		if err := scanner.Err(); err != nil {
-			return err
-		}
-
-		if localUid == "0" || containerUid == "0" || (localUid == containerUid && localGid == containerGid) {
-			return nil
-		}
-
-		containerGroupFileIn, err = os.Open(containerGroupFileIn.Name())
-		if err != nil {
-			return err
-		}
-		defer func() { _ = containerGroupFileIn.Close() }()
-
-		scanner = bufio.NewScanner(containerGroupFileIn)
-
-		re = regexp.MustCompile(fmt.Sprintf(`^(?P<group>.*):(?P<password>x?):%s:(?P<group_list>.*)$`, containerGid))
-		for scanner.Scan() {
-			match := re.FindStringSubmatch(scanner.Text())
-			if match == nil {
-				_, err := fmt.Fprintf(containerGroupFileOut, "%s\n", scanner.Text())
-				if err != nil {
-					return err
-				}
-				continue
-			}
-			result := make(map[string]string)
-			for i, name := range re.SubexpNames() {
-				if i != 0 && name != "" {
-					result[name] = match[i]
-				}
-			}
-
-			_, err := fmt.Fprintf(containerGroupFileOut, "%s:%s:%s:%s\n", result["group"], result["password"], localGid, result["group_list"])
-			if err != nil {
-				return err
-			}
-		}
-
-		if err := scanner.Err(); err != nil {
-			return err
-		}
-
-		d.Log.WithFields(logrus.Fields{
-			"container_user": containerUser,
-			"container_uid":  containerUid,
-			"container_gid":  containerGid,
-			"local_uid":      localUid,
-			"local_gid":      localGid,
-		}).Info("updating container user UID and GID")
-
-		// Copy /etc/passwd and /etc/group back to the container
-		args = []string{"cp", containerPasswdFileOut.Name(), fmt.Sprintf("%s:/etc/passwd", container.ID)}
-		d.Log.WithFields(logrus.Fields{
-			"command": d.Docker.DockerCommand,
-			"args":    strings.Join(args, " "),
-		}).Debug("running docker copy passwd command")
-		err = d.Docker.Run(ctx, args, nil, writer, writer)
-		if err != nil {
-			return err
-		}
-
-		args = []string{"cp", containerGroupFileOut.Name(), fmt.Sprintf("%s:/etc/group", container.ID)}
-		d.Log.WithFields(logrus.Fields{
-			"command": d.Docker.DockerCommand,
-			"args":    strings.Join(args, " "),
-		}).Debug("running docker copy group command")
-		err = d.Docker.Run(ctx, args, nil, writer, writer)
-		if err != nil {
-			return err
-		}
-
-		args = []string{"exec", "-u", "root", container.ID, "chmod", "644", "/etc/passwd", "/etc/group"}
-		d.Log.WithFields(logrus.Fields{
-			"command": d.Docker.DockerCommand,
-			"args":    strings.Join(args, " "),
-		}).Debug("running docker chmod command")
-		err = d.Docker.Run(ctx, args, nil, writer, writer)
-		if err != nil {
-			return err
-		}
-
-		args = []string{"exec", "-u", "root", container.ID, "chown", "-R", fmt.Sprintf("%s:%s", localUid, localGid), containerHome}
-		d.Log.WithFields(logrus.Fields{
-			"command": d.Docker.DockerCommand,
-			"args":    strings.Join(args, " "),
-		}).Debug("running docker chown command")
-		err = d.Docker.Run(ctx, args, nil, writer, writer)
-		if err != nil {
-			return err
 		}
 	}
 
@@ -665,4 +484,424 @@ func (d *dockerDriver) GetDevContainerLogs(ctx context.Context, workspaceId stri
 	}
 
 	return d.Docker.GetContainerLogs(ctx, container.ID, stdout, stderr)
+}
+
+func (d *dockerDriver) extractRemoteUserFromMetadata(metadata string) string {
+	if !strings.Contains(metadata, `"remoteUser":"`) {
+		return ""
+	}
+
+	start := strings.Index(metadata, `"remoteUser":"`) + len(`"remoteUser":"`)
+	if start <= len(`"remoteUser":"`) {
+		return ""
+	}
+
+	end := strings.Index(metadata[start:], `"`)
+	if end <= 0 {
+		return ""
+	}
+
+	return metadata[start : start+end]
+}
+
+// resolveContainerUser determines the user that should be used for UID/GID updates
+// by following the same priority order as GetRemoteUser to ensure consistency
+// between container creation and SSH session user resolution.
+//
+// Priority order:
+// 1. parsedConfig.RemoteUser - Explicit devcontainer.json remoteUser config
+// 2. devcontainer metadata remoteUser - Parsed from container labels (e.g., "remoteUser":"vscode")
+// 3. devpod.user label - DevPod's internal tracking label (fallback)
+// 4. container.Config.User - Docker image default user (fallback)
+// 5. parsedConfig.ContainerUser - Explicit devcontainer.json containerUser config (final fallback)
+//
+// This ensures that both UID updates and SSH sessions use the same user, preventing
+// permission issues where UID update detects one user but SSH runs as another.
+func (d *dockerDriver) resolveContainerUser(parsedConfig *config.DevContainerConfig, container *config.ContainerDetails) string {
+	// Check explicit RemoteUser config first
+	if parsedConfig.RemoteUser != "" {
+		d.Log.Debugf("detected container user from RemoteUser config: %s", parsedConfig.RemoteUser)
+		return parsedConfig.RemoteUser
+	}
+
+	// Check devcontainer metadata for remoteUser
+	if container.Config.Labels != nil {
+		if metadata := container.Config.Labels["devcontainer.metadata"]; metadata != "" {
+			if user := d.extractRemoteUserFromMetadata(metadata); user != "" {
+				d.Log.Debugf("detected container user from devcontainer metadata: %s", user)
+				return user
+			}
+		}
+	}
+
+	// Check devpod user label as fallback
+	if container.Config.Labels != nil {
+		if userLabel := container.Config.Labels[config.UserLabel]; userLabel != "" {
+			d.Log.Debugf("detected container user from devpod label: %s", userLabel)
+			return userLabel
+		}
+	}
+
+	// Check docker metadata user as fallback
+	if container.Config.User != "" {
+		userParts := strings.Split(container.Config.User, ":")
+		if userParts[0] != "" {
+			d.Log.Debugf("detected container user from docker Config.User: %s", userParts[0])
+			return userParts[0]
+		}
+	}
+
+	// Check explicit ContainerUser config as final fallback
+	if parsedConfig.ContainerUser != "" {
+		d.Log.Debugf("detected container user from ContainerUser config: %s", parsedConfig.ContainerUser)
+		return parsedConfig.ContainerUser
+	}
+
+	return ""
+}
+
+func (d *dockerDriver) updateContainerUserUID(ctx context.Context, workspaceId string, parsedConfig *config.DevContainerConfig, workspaceMount *config.Mount, writer io.Writer) error {
+	// Retrieve local user UID and GID
+	localUser, err := user.Current()
+	if err != nil {
+		return err
+	}
+	localUid := localUser.Uid
+	localGid := localUser.Gid
+
+	// Retrieve user to update using same logic as GetRemoteUser
+	container, err := d.FindDevContainer(ctx, workspaceId)
+	if err != nil {
+		return err
+	} else if container == nil {
+		return nil
+	}
+
+	containerUser := d.resolveContainerUser(parsedConfig, container)
+
+	d.Log.Debugf("container user resolution: RemoteUser=%s, ContainerUser=%s, UserLabel=%s, Config.User=%s, final=%s",
+		parsedConfig.RemoteUser, parsedConfig.ContainerUser,
+		container.Config.Labels[config.UserLabel], container.Config.User, containerUser)
+
+	if containerUser == "" {
+		d.Log.Debug("no container user specified, skipping UID/GID update")
+		return nil
+	}
+
+	d.Log.Debugf("updating UID/GID for container user: %s", containerUser)
+
+	// Create temporary files to store /etc/passwd and /etc/group
+	containerPasswdFileIn, err := os.CreateTemp("", "devpod_container_passwd_in")
+	if err != nil {
+		return err
+	}
+	defer func() { _ = os.Remove(containerPasswdFileIn.Name()) }()
+
+	containerGroupFileIn, err := os.CreateTemp("", "devpod_container_group_in")
+	if err != nil {
+		return err
+	}
+	defer func() { _ = os.Remove(containerGroupFileIn.Name()) }()
+
+	containerPasswdFileOut, err := os.CreateTemp("", "devpod_container_passwd_out")
+	if err != nil {
+		return err
+	}
+	defer func() { _ = os.Remove(containerPasswdFileOut.Name()) }()
+
+	containerGroupFileOut, err := os.CreateTemp("", "devpod_container_group_out")
+	if err != nil {
+		return err
+	}
+	defer func() { _ = os.Remove(containerGroupFileOut.Name()) }()
+
+	// Copy /etc/passwd and /etc/group from the container to the temporary files
+	args := []string{"cp", fmt.Sprintf("%s:/etc/passwd", container.ID), containerPasswdFileIn.Name()}
+	d.Log.WithFields(logrus.Fields{
+		"command": d.Docker.DockerCommand,
+		"args":    strings.Join(args, " "),
+	}).Debug("running docker command")
+	err = d.Docker.Run(ctx, args, nil, writer, writer)
+	if err != nil {
+		return err
+	}
+
+	args = []string{"cp", fmt.Sprintf("%s:/etc/group", container.ID), containerGroupFileIn.Name()}
+	d.Log.WithFields(logrus.Fields{
+		"command": d.Docker.DockerCommand,
+		"args":    strings.Join(args, " "),
+	}).Debug("Running docker command")
+	err = d.Docker.Run(ctx, args, nil, writer, writer)
+	if err != nil {
+		return err
+	}
+
+	containerPasswdFileIn, err = os.Open(containerPasswdFileIn.Name())
+	if err != nil {
+		return err
+	}
+	defer func() { _ = containerPasswdFileIn.Close() }()
+
+	// Update /etc/passwd and /etc/group with the new user UID and GID
+	scanner := bufio.NewScanner(containerPasswdFileIn)
+	containerUid := ""
+	containerGid := ""
+	containerHome := ""
+
+	re := regexp.MustCompile(fmt.Sprintf(`^%s:(?P<password>x?):(?P<uid>.*):(?P<gid>.*):(?P<gcos>.*):(?P<home>.*):(?P<shell>.*)$`, containerUser))
+	for scanner.Scan() {
+		match := re.FindStringSubmatch(scanner.Text())
+		if match == nil {
+			_, err := fmt.Fprintf(containerPasswdFileOut, "%s\n", scanner.Text())
+			if err != nil {
+				return err
+			}
+			continue
+		}
+		result := make(map[string]string)
+		for i, name := range re.SubexpNames() {
+			if i != 0 && name != "" {
+				result[name] = match[i]
+			}
+		}
+		containerUid = result["uid"]
+		containerGid = result["gid"]
+		containerHome = result["home"]
+
+		d.Log.Debugf("found container user %s with UID=%s, GID=%s, home=%s", containerUser, containerUid, containerGid, containerHome)
+
+		_, err := fmt.Fprintf(containerPasswdFileOut, "%s:%s:%s:%s:%s:%s:%s\n", containerUser, result["password"], localUid, localGid, result["gcos"], result["home"], result["shell"])
+		if err != nil {
+			return err
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return err
+	}
+
+	if containerUid == "" {
+		d.Log.Warnf("container user %s not found in /etc/passwd, cannot update UID/GID", containerUser)
+		return nil
+	}
+
+	if localUid == "0" || containerUid == "0" || (localUid == containerUid && localGid == containerGid) {
+		d.Log.Debugf("skipping UID/GID update: localUid=%s, containerUid=%s, localGid=%s, containerGid=%s", localUid, containerUid, localGid, containerGid)
+		return nil
+	}
+
+	containerGroupFileIn, err = os.Open(containerGroupFileIn.Name())
+	if err != nil {
+		return err
+	}
+	defer func() { _ = containerGroupFileIn.Close() }()
+
+	scanner = bufio.NewScanner(containerGroupFileIn)
+
+	re = regexp.MustCompile(fmt.Sprintf(`^(?P<group>.*):(?P<password>x?):%s:(?P<group_list>.*)$`, containerGid))
+	for scanner.Scan() {
+		match := re.FindStringSubmatch(scanner.Text())
+		if match == nil {
+			_, err := fmt.Fprintf(containerGroupFileOut, "%s\n", scanner.Text())
+			if err != nil {
+				return err
+			}
+			continue
+		}
+		result := make(map[string]string)
+		for i, name := range re.SubexpNames() {
+			if i != 0 && name != "" {
+				result[name] = match[i]
+			}
+		}
+
+		_, err := fmt.Fprintf(containerGroupFileOut, "%s:%s:%s:%s\n", result["group"], result["password"], localGid, result["group_list"])
+		if err != nil {
+			return err
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return err
+	}
+
+	d.Log.WithFields(logrus.Fields{
+		"container_user": containerUser,
+		"container_uid":  containerUid,
+		"container_gid":  containerGid,
+		"local_uid":      localUid,
+		"local_gid":      localGid,
+	}).Info("updating container user UID and GID")
+
+	// Copy /etc/passwd and /etc/group back to the container
+	args = []string{"cp", containerPasswdFileOut.Name(), fmt.Sprintf("%s:/etc/passwd", container.ID)}
+	d.Log.WithFields(logrus.Fields{
+		"command": d.Docker.DockerCommand,
+		"args":    strings.Join(args, " "),
+	}).Debug("running docker copy passwd command")
+	err = d.Docker.Run(ctx, args, nil, writer, writer)
+	if err != nil {
+		return err
+	}
+
+	args = []string{"cp", containerGroupFileOut.Name(), fmt.Sprintf("%s:/etc/group", container.ID)}
+	d.Log.WithFields(logrus.Fields{
+		"command": d.Docker.DockerCommand,
+		"args":    strings.Join(args, " "),
+	}).Debug("running docker copy group command")
+	err = d.Docker.Run(ctx, args, nil, writer, writer)
+	if err != nil {
+		return err
+	}
+
+	args = []string{"exec", "-u", "root", container.ID, "chmod", "644", "/etc/passwd", "/etc/group"}
+	d.Log.WithFields(logrus.Fields{
+		"command": d.Docker.DockerCommand,
+		"args":    strings.Join(args, " "),
+	}).Debug("running docker chmod command")
+	err = d.Docker.Run(ctx, args, nil, writer, writer)
+	if err != nil {
+		return err
+	}
+
+	args = []string{"exec", "-u", "root", container.ID, "chown", "-R", fmt.Sprintf("%s:%s", localUid, localGid), containerHome}
+	d.Log.WithFields(logrus.Fields{
+		"command": d.Docker.DockerCommand,
+		"args":    strings.Join(args, " "),
+	}).Debug("running docker chown command")
+	err = d.Docker.Run(ctx, args, nil, writer, writer)
+	if err != nil {
+		return err
+	}
+
+	if workspaceMount != nil && workspaceMount.Target != "" {
+		args = []string{"exec", "-u", "root", container.ID, "chown", fmt.Sprintf("%s:%s", localUid, localGid), workspaceMount.Target}
+		d.Log.WithFields(logrus.Fields{
+			"command": d.Docker.DockerCommand,
+			"args":    strings.Join(args, " "),
+		}).Debug("running docker chown workspace parent command")
+		err = d.Docker.Run(ctx, args, nil, writer, writer)
+		if err != nil {
+			d.Log.Warnf("failed to chown workspace parent directory %s: %v", workspaceMount.Target, err)
+		}
+	}
+
+	return nil
+}
+
+func (d *dockerDriver) getPodmanArgs(options *driver.RunOptions, parsedConfig *config.DevContainerConfig) ([]string, error) {
+	if !d.Docker.IsPodman() || runtime.GOOS != "linux" {
+		return []string{}, nil
+	}
+
+	args := []string{"--security-opt", "label=disable"}
+
+	if err := validatePodmanOptions(options); err != nil {
+		return nil, err
+	}
+
+	if options.Userns != "" {
+		args = append(args, "--userns", options.Userns)
+	}
+
+	for _, uidMap := range options.UidMap {
+		args = append(args, "--uidmap", uidMap)
+	}
+	for _, gidMap := range options.GidMap {
+		args = append(args, "--gidmap", gidMap)
+	}
+
+	hasIdMapping := len(options.UidMap) > 0 || len(options.GidMap) > 0
+	if !hasIdMapping {
+		for _, arg := range parsedConfig.RunArgs {
+			if strings.Contains(arg, "--uidmap") || strings.Contains(arg, "--gidmap") {
+				hasIdMapping = true
+				break
+			}
+		}
+	}
+
+	if !hasIdMapping && options.Userns == "" {
+		remoteUser := parsedConfig.RemoteUser
+		if remoteUser == "" {
+			remoteUser = parsedConfig.ContainerUser
+		}
+		if remoteUser == "" {
+			remoteUser = options.User
+		}
+		if remoteUser == "" {
+			remoteUser = "root"
+		}
+
+		// only add --userns=keep-id if not running as root
+		if remoteUser != "root" && remoteUser != "0" && os.Getuid() != 0 {
+			args = append(args, "--userns=keep-id")
+		}
+	}
+
+	return args, nil
+}
+
+func validatePodmanOptions(options *driver.RunOptions) error {
+	if err := validateUserns(options.Userns); err != nil {
+		return err
+	}
+
+	if err := validateMappings(options.UidMap, "uidmap"); err != nil {
+		return err
+	}
+
+	if err := validateMappings(options.GidMap, "gidmap"); err != nil {
+		return err
+	}
+
+	return validateOptionConflicts(options)
+}
+
+func validateUserns(userns string) error {
+	if userns == "" {
+		return nil
+	}
+
+	validValues := []string{"keep-id", "host"}
+	if slices.Contains(validValues, userns) {
+		return nil
+	}
+
+	if strings.HasPrefix(userns, "container:") || strings.HasPrefix(userns, "ns:") {
+		return nil
+	}
+
+	return fmt.Errorf("invalid userns value: %s", userns)
+}
+
+func validateMappings(mappings []string, mapType string) error {
+	for _, mapping := range mappings {
+		if !isValidMapping(mapping) {
+			return fmt.Errorf("invalid %s format: %s (expected format: container_id:host_id:amount)", mapType, mapping)
+		}
+	}
+	return nil
+}
+
+func validateOptionConflicts(options *driver.RunOptions) error {
+	if options.Userns != "" && (len(options.UidMap) > 0 || len(options.GidMap) > 0) {
+		if options.Userns != "keep-id" {
+			return fmt.Errorf("cannot combine --userns=%s with --uidmap/--gidmap", options.Userns)
+		}
+	}
+	return nil
+}
+
+func isValidMapping(mapping string) bool {
+	parts := strings.Split(mapping, ":")
+	if len(parts) != 3 {
+		return false
+	}
+	for _, part := range parts {
+		if _, err := strconv.Atoi(part); err != nil {
+			return false
+		}
+	}
+	return true
 }

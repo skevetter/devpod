@@ -48,10 +48,12 @@ func NewRunner(
 	workspaceConfig *provider2.AgentWorkspaceInfo,
 	log log.Logger,
 ) (Runner, error) {
+	log.Debugf("NewRunner: creating runner for workspace %s", workspaceConfig.Workspace.ID)
 	driver, err := drivercreate.NewDriver(workspaceConfig, log)
 	if err != nil {
 		return nil, err
 	}
+	log.Debugf("NewRunner: created driver type %T for workspace %s", driver, workspaceConfig.Workspace.ID)
 
 	// we use the workspace uid as id to avoid conflicts between container names
 	return &runner{
