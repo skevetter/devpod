@@ -483,15 +483,13 @@ func (d *dockerDriver) GetDevContainerLogs(ctx context.Context, workspaceId stri
 }
 
 func (d *dockerDriver) extractRemoteUserFromMetadata(metadata string) string {
-	if !strings.Contains(metadata, `"remoteUser":"`) {
+	prefix := `"remoteUser":"`
+	idx := strings.Index(metadata, prefix)
+	if idx < 0 {
 		return ""
 	}
 
-	start := strings.Index(metadata, `"remoteUser":"`) + len(`"remoteUser":"`)
-	if start <= len(`"remoteUser":"`) {
-		return ""
-	}
-
+	start := idx + len(prefix)
 	end := strings.Index(metadata[start:], `"`)
 	if end <= 0 {
 		return ""
@@ -521,7 +519,7 @@ func (d *dockerDriver) resolveContainerUser(parsedConfig *config.DevContainerCon
 	if container.Config.Labels != nil {
 		if metadata := container.Config.Labels["devcontainer.metadata"]; metadata != "" {
 			if user := d.extractRemoteUserFromMetadata(metadata); user != "" {
-				d.Log.Debugf("detected container user from devcontainer metadata: %s", user)
+				d.Log.WithFields(logrus.Fields{"metadata": metadata, "user": user}).Debug("detected container user from devcontainer metadata label")
 				return user
 			}
 		}
@@ -667,13 +665,13 @@ func (d *dockerDriver) updateContainerUserUID(ctx context.Context, workspaceId s
 		return nil
 	}
 
-	if localUid == "0" || containerUid == "0" || (localUid == containerUid && localGid == containerGid) {
+	if containerUid == "0" || (localUid == containerUid && localGid == containerGid) {
 		d.Log.WithFields(logrus.Fields{
 			"localUid":     localUid,
 			"containerUid": containerUid,
 			"localGid":     localGid,
 			"containerGid": containerGid,
-		}).Debug("no UID/GID update needed because user is root or uid/gid sources and targets are the same")
+		}).Debug("no UID/GID update needed because container user is root or uid/gid already match")
 		return nil
 	}
 
@@ -742,7 +740,7 @@ func (d *dockerDriver) updateContainerUserUID(ctx context.Context, workspaceId s
 		return err
 	}
 
-	args = []string{"exec", "-u", "root", container.ID, "chown", "-R", fmt.Sprintf("%s:%s", localUid, localGid), containerHome}
+	args = []string{"exec", "-u", "root", container.ID, "chown", fmt.Sprintf("%s:%s", localUid, localGid), containerHome}
 	d.Log.WithFields(logrus.Fields{"command": d.Docker.DockerCommand, "args": strings.Join(args, " ")}).Debug("running docker chown command")
 	err = d.Docker.Run(ctx, args, nil, writer, writer)
 	if err != nil {
