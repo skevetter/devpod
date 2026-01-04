@@ -117,6 +117,36 @@ func GetVSCodeConfiguration(mergedConfig *MergedDevContainerConfig) *VSCodeCusto
 	return retVSCodeCustomizations
 }
 
+func GetJetBrainsConfiguration(mergedConfig *MergedDevContainerConfig) *JetBrainsCustomizations {
+	if mergedConfig.Customizations == nil || mergedConfig.Customizations["jetbrains"] == nil {
+		return &JetBrainsCustomizations{}
+	}
+
+	retJetBrainsCustomizations := &JetBrainsCustomizations{
+		Plugins: nil,
+	}
+	for _, customization := range mergedConfig.Customizations["jetbrains"] {
+		jetBrains := &JetBrainsCustomizations{}
+		err := Convert(customization, jetBrains)
+		if err != nil {
+			continue
+		}
+
+		// We ignore "backend" because IDE choice is made locally.
+		// We ignore "settings" because there is no way to apply them (at least not via `remote-dev-server.sh`).
+
+		for _, plugin := range jetBrains.Plugins {
+			if contains(retJetBrainsCustomizations.Plugins, plugin) {
+				continue
+			}
+
+			retJetBrainsCustomizations.Plugins = append(retJetBrainsCustomizations.Plugins, plugin)
+		}
+	}
+
+	return retJetBrainsCustomizations
+}
+
 func contains(stack []string, k string) bool {
 	return slices.Contains(stack, k)
 }

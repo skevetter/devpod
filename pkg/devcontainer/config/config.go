@@ -335,6 +335,10 @@ type VSCodeCustomizations struct {
 	DevPort    int            `json:"devPort,omitempty"`
 }
 
+type JetBrainsCustomizations struct {
+	Plugins []string `json:"plugins,omitempty"`
+}
+
 type Mount struct {
 	Type     string   `json:"type,omitempty"`
 	Source   string   `json:"source,omitempty"`
