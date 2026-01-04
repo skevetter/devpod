@@ -486,6 +486,80 @@ func (d *dockerDriver) GetDevContainerLogs(ctx context.Context, workspaceId stri
 	return d.Docker.GetContainerLogs(ctx, container.ID, stdout, stderr)
 }
 
+func (d *dockerDriver) extractRemoteUserFromMetadata(metadata string) string {
+	if !strings.Contains(metadata, `"remoteUser":"`) {
+		return ""
+	}
+
+	start := strings.Index(metadata, `"remoteUser":"`) + len(`"remoteUser":"`)
+	if start <= len(`"remoteUser":"`) {
+		return ""
+	}
+
+	end := strings.Index(metadata[start:], `"`)
+	if end <= 0 {
+		return ""
+	}
+
+	return metadata[start : start+end]
+}
+
+// resolveContainerUser determines the user that should be used for UID/GID updates
+// by following the same priority order as GetRemoteUser to ensure consistency
+// between container creation and SSH session user resolution.
+//
+// Priority order:
+// 1. parsedConfig.RemoteUser - Explicit devcontainer.json remoteUser config
+// 2. devcontainer metadata remoteUser - Parsed from container labels (e.g., "remoteUser":"vscode")
+// 3. devpod.user label - DevPod's internal tracking label (fallback)
+// 4. container.Config.User - Docker image default user (fallback)
+// 5. parsedConfig.ContainerUser - Explicit devcontainer.json containerUser config (final fallback)
+//
+// This ensures that both UID updates and SSH sessions use the same user, preventing
+// permission issues where UID update detects one user but SSH runs as another.
+func (d *dockerDriver) resolveContainerUser(parsedConfig *config.DevContainerConfig, container *config.ContainerDetails) string {
+	// Check explicit RemoteUser config first
+	if parsedConfig.RemoteUser != "" {
+		d.Log.Debugf("detected container user from RemoteUser config: %s", parsedConfig.RemoteUser)
+		return parsedConfig.RemoteUser
+	}
+
+	// Check devcontainer metadata for remoteUser
+	if container.Config.Labels != nil {
+		if metadata := container.Config.Labels["devcontainer.metadata"]; metadata != "" {
+			if user := d.extractRemoteUserFromMetadata(metadata); user != "" {
+				d.Log.Debugf("detected container user from devcontainer metadata: %s", user)
+				return user
+			}
+		}
+	}
+
+	// Check devpod user label as fallback
+	if container.Config.Labels != nil {
+		if userLabel := container.Config.Labels[config.UserLabel]; userLabel != "" {
+			d.Log.Debugf("detected container user from devpod label: %s", userLabel)
+			return userLabel
+		}
+	}
+
+	// Check docker metadata user as fallback
+	if container.Config.User != "" {
+		userParts := strings.Split(container.Config.User, ":")
+		if userParts[0] != "" {
+			d.Log.Debugf("detected container user from docker Config.User: %s", userParts[0])
+			return userParts[0]
+		}
+	}
+
+	// Check explicit ContainerUser config as final fallback
+	if parsedConfig.ContainerUser != "" {
+		d.Log.Debugf("detected container user from ContainerUser config: %s", parsedConfig.ContainerUser)
+		return parsedConfig.ContainerUser
+	}
+
+	return ""
+}
+
 func (d *dockerDriver) updateContainerUserUID(ctx context.Context, workspaceId string, parsedConfig *config.DevContainerConfig, workspaceMount *config.Mount, writer io.Writer) error {
 	// Retrieve local user UID and GID
 	localUser, err := user.Current()
@@ -503,28 +577,7 @@ func (d *dockerDriver) updateContainerUserUID(ctx context.Context, workspaceId s
 		return nil
 	}
 
-	// Use same logic as GetRemoteUser to determine container user
-	containerUser := parsedConfig.RemoteUser
-	if containerUser == "" {
-		// Check devpod user label first (takes priority)
-		if container.Config.Labels != nil {
-			if userLabel := container.Config.Labels[config.UserLabel]; userLabel != "" {
-				containerUser = userLabel
-				d.Log.Debugf("detected container user from devpod label: %s", containerUser)
-			}
-		}
-	}
-	if containerUser == "" && container.Config.User != "" {
-		// Check docker metadata user as fallback
-		userParts := strings.Split(container.Config.User, ":")
-		if userParts[0] != "" {
-			containerUser = userParts[0]
-			d.Log.Debugf("detected container user from docker Config.User: %s", containerUser)
-		}
-	}
-	if containerUser == "" {
-		containerUser = parsedConfig.ContainerUser
-	}
+	containerUser := d.resolveContainerUser(parsedConfig, container)
 
 	d.Log.Debugf("container user resolution: RemoteUser=%s, ContainerUser=%s, UserLabel=%s, Config.User=%s, final=%s",
 		parsedConfig.RemoteUser, parsedConfig.ContainerUser,
