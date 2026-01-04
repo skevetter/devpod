@@ -100,130 +100,155 @@ jobs:
             runner: ubuntu-latest
             free-disk-space: false
             install-kind: false
+            requires-secret: false
 
           - label: ide
             runner: ubuntu-latest
             free-disk-space: false
             install-kind: false
+            requires-secret: false
 
           - label: integration
             runner: ubuntu-latest
             free-disk-space: false
             install-kind: false
+            requires-secret: false
 
           - label: machine
             runner: ubuntu-latest
             free-disk-space: false
             install-kind: false
+            requires-secret: false
 
           - label: machineprovider
             runner: ubuntu-latest
             free-disk-space: false
             install-kind: false
+            requires-secret: false
 
           - label: provider
             runner: ubuntu-latest
             free-disk-space: false
             install-kind: true
+            requires-secret: false
 
           - label: ssh
             runner: ubuntu-latest
             free-disk-space: false
             install-kind: false
+            requires-secret: false
 
           - label: build
             runner: ubuntu-latest
             free-disk-space: true
             install-kind: true
+            requires-secret: false
 
           - label: up && workspace
             runner: ubuntu-latest
             free-disk-space: true
             install-kind: true
+            requires-secret: false
 
           - label: up && git
             runner: ubuntu-latest
             free-disk-space: true
             install-kind: true
+            requires-secret: false
 
           - label: up && provider-kubernetes
             runner: ubuntu-latest
             free-disk-space: true
             install-kind: true
+            requires-secret: false
 
           - label: up && features
             runner: ubuntu-latest
             free-disk-space: true
             install-kind: true
+            requires-secret: false
 
           - label: up && error
             runner: ubuntu-latest
             free-disk-space: true
             install-kind: true
+            requires-secret: false
 
           - label: up-private-token
             runner: ubuntu-latest
             free-disk-space: false
             install-kind: false
+            requires-secret: true
 
           - label: up-podman
             runner: ubuntu-latest
             free-disk-space: true
             install-kind: true
+            requires-secret: false
 
           - label: up-docker
             runner: ubuntu-latest
             free-disk-space: false
             install-kind: true
+            requires-secret: false
 
           - label: up-docker-wsl
             runner: ubuntu-latest
             free-disk-space: false
             install-kind: true
+            requires-secret: false
 
           - label: up-docker-compose
             runner: ubuntu-latest
             free-disk-space: false
             install-kind: true
+            requires-secret: false
 
           - label: up-docker-compose-build
             runner: ubuntu-latest
             free-disk-space: false
             install-kind: true
+            requires-secret: false
 
           - label: up-docker-build
             runner: ubuntu-latest
             free-disk-space: false
             install-kind: true
+            requires-secret: false
 
           - label: context
             runner: windows-latest
             free-disk-space: false
             install-kind: false
+            requires-secret: false
 
           - label: provider
             runner: windows-latest
             free-disk-space: false
             install-kind: true
+            requires-secret: false
 
           - label: docker-install
             runner: ubuntu-latest
             free-disk-space: false
             install-kind: false
+            requires-secret: false
     runs-on: ${{ matrix.runner }}
-    if: ${{ needs.can-read-secret.outputs.secret-set == 'true' }}
     steps:
       - uses: jlumbroso/free-disk-space@v1.3.1
-        if: matrix.free-disk-space == true && runner.os == 'Linux'
+        if: matrix.free-disk-space == true && runner.os == 'Linux' && (matrix.requires-secret == false || needs.can-read-secret.outputs.secret-set == 'true')
 
       - uses: actions/checkout@v6
+        if: matrix.requires-secret == false || needs.can-read-secret.outputs.secret-set == 'true'
 
       - name: setup Go
+        if: matrix.requires-secret == false || needs.can-read-secret.outputs.secret-set == 'true'
         uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
 
       - name: get operating system lowercase
+        if: matrix.requires-secret == false || needs.can-read-secret.outputs.secret-set == 'true'
         id: os
         shell: bash
         run: |
@@ -234,6 +259,7 @@ jobs:
           echo "runner_os=$OS" >> "$GITHUB_OUTPUT"
 
       - name: download CLI artifacts
+        if: matrix.requires-secret == false || needs.can-read-secret.outputs.secret-set == 'true'
         uses: actions/download-artifact@v7
         with:
           pattern: devpod-${{ steps.os.outputs.runner_os }}
@@ -242,6 +268,7 @@ jobs:
 
       # e2e expects executable to have name defined in e2e/framework/framework.go
       - name: setup executable
+        if: matrix.requires-secret == false || needs.can-read-secret.outputs.secret-set == 'true'
         shell: bash
         working-directory: ./e2e
         run: |
@@ -262,7 +289,7 @@ jobs:
           fi
 
       - name: generate uuid
-        if: matrix.install-kind == true && runner.os != 'Windows'
+        if: matrix.install-kind == true && runner.os != 'Windows' && (matrix.requires-secret == false || needs.can-read-secret.outputs.secret-set == 'true')
         id: uuid
         shell: bash
         run: |
@@ -270,7 +297,7 @@ jobs:
           echo "result=$UUID" >> "$GITHUB_OUTPUT"
 
       - name: setup kind (Windows)
-        if: matrix.install-kind == true && runner.os == 'Windows'
+        if: matrix.install-kind == true && runner.os == 'Windows' && (matrix.requires-secret == false || needs.can-read-secret.outputs.secret-set == 'true')
         shell: bash
         env:
           KIND_EXPERIMENTAL_PROVIDER: podman
@@ -287,7 +314,7 @@ jobs:
 
       # NOTE: engineerd/setup-kind does not work on Windows runners
       - name: setup kind
-        if: matrix.install-kind == true && runner.os != 'Windows'
+        if: matrix.install-kind == true && runner.os != 'Windows' && (matrix.requires-secret == false || needs.can-read-secret.outputs.secret-set == 'true')
         uses: engineerd/setup-kind@v0.6.2
         with:
           name: ${{ steps.uuid.outputs.result }}
@@ -296,19 +323,20 @@ jobs:
           skipClusterLogsExport: true
 
       - name: remove docker
-        if: matrix.label == 'docker-install'
+        if: matrix.label == 'docker-install' && (matrix.requires-secret == false || needs.can-read-secret.outputs.secret-set == 'true')
         run: |
           sudo systemctl stop docker.socket docker.service
           sudo apt-get remove -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
           sudo rm -rf /var/lib/docker /var/lib/containerd /usr/bin/docker /usr/bin/dockerd
 
       - name: run test
+        if: ${{ matrix.requires-secret == false || needs.can-read-secret.outputs.secret-set == 'true' }}
         shell: bash
         working-directory: ./e2e
         env:
           # NOTE: Github credentials are required for tests using private repos
           GH_USERNAME: ${{ github.repository_owner }}
-          GH_ACCESS_TOKEN: ${{ secrets.GH_PRIVATE_REPO_TOKEN_TEST || github.token }}
+          GH_ACCESS_TOKEN: ${{ matrix.requires-secret == true && secrets.GH_PRIVATE_REPO_TOKEN_TEST || github.token }}
         run: |
           if [ "${{ runner.os }}" == "Linux" ]; then
             sudo \
@@ -328,7 +356,7 @@ jobs:
           fi
 
       - name: verify docker is installed
-        if: matrix.label == 'docker-install'
+        if: matrix.label == 'docker-install' && (matrix.requires-secret == false || needs.can-read-secret.outputs.secret-set == 'true')
         run: docker --version && docker ps
 
   build-desktop:
