@@ -2,17 +2,20 @@ package image
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	ecr "github.com/awslabs/amazon-ecr-credential-helper/ecr-login"
 	"github.com/chrismellard/docker-credential-acr-env/pkg/credhelper"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/go-containerregistry/pkg/authn"
 	kubernetesauth "github.com/google/go-containerregistry/pkg/authn/kubernetes"
 	"github.com/google/go-containerregistry/pkg/v1/google"
-	"gopkg.in/square/go-jose.v2/jwt"
 )
 
 var (
@@ -90,21 +93,24 @@ type podMetadata struct {
 }
 
 func getPodMetadata(token []byte) (podMetadata, error) {
-	t, err := jwt.ParseSigned(string(token))
-	if err != nil {
-		return podMetadata{}, fmt.Errorf("failed to parse kubernetes service account token %w", err)
+	parts := strings.Split(string(token), ".")
+	if len(parts) != 3 {
+		return podMetadata{}, fmt.Errorf("invalid JWT format")
 	}
 
-	privateClaims := privateClaims{}
-	err = t.UnsafeClaimsWithoutVerification(&privateClaims)
+	payload, err := base64.RawURLEncoding.DecodeString(parts[1])
 	if err != nil {
-		return podMetadata{}, fmt.Errorf("failed to get claims from kubernetes service account token %w", err)
+		return podMetadata{}, fmt.Errorf("failed to decode JWT payload %w", err)
 	}
 
-	kubeClaim := privateClaims.Kubernetes
-	// get serviceaccount name and imagepullsecret
+	var claims privateClaims
+	if err := json.Unmarshal(payload, &claims); err != nil {
+		return podMetadata{}, fmt.Errorf("failed to unmarshal JWT claims %w", err)
+	}
+
+	kubeClaim := claims.Kubernetes
 	if kubeClaim.Namespace == "" || kubeClaim.Svcacct.Name == "" {
-		return podMetadata{}, fmt.Errorf("failed to retrieve pod metadata from kubernetes service account token %w", err)
+		return podMetadata{}, fmt.Errorf("failed to retrieve pod metadata from kubernetes service account token")
 	}
 
 	return podMetadata{
