@@ -9,7 +9,7 @@ on:
         default: ""
 
 jobs:
-  test:
+  e2e-test:
     name: Act E2E Tests
     runs-on: ubuntu-latest
     steps:
@@ -82,3 +82,29 @@ jobs:
             PATH="${PATH}" \
             GOROOT="${GOROOT}" \
             ${{ github.event.inputs.test_focus == '' && 'task cli:test:e2e' || format('task cli:test:e2e:focus -- "{0}"', github.event.inputs.test_focus) }} || true
+
+  build-ui:
+    name: User Interface Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: install dependencies
+        working-directory: ./desktop
+        run: yarn install --frozen-lockfile
+
+      - name: lint
+        working-directory: ./desktop
+        run: yarn lint:ci
+
+      - name: format
+        working-directory: ./desktop
+        run: yarn format:check
+
+      - name: type check
+        working-directory: ./desktop
+        run: yarn types:check
+
+      - name: build
+        working-directory: ./desktop
+        run: yarn build

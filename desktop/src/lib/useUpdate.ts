@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { useCallback, useState } from "react"
+import { useCallback, useState, useEffect } from "react"
 import { client } from "../client"
 import { QueryKeys } from "../queryKeys"
 
@@ -10,14 +10,19 @@ export function useUpdate() {
     refetch,
     // Need to use `isFetching` as a workaround for interaction with `enabled: false`
     isFetching: isChecking,
+    isSuccess: checkSuccess,
+    isError: checkError,
   } = useQuery({
     queryKey: QueryKeys.UPDATE_RELEASE,
     queryFn: async () => (await client.checkUpdates()).unwrap(),
     enabled: false,
-    onSettled: () => {
-      queryClient.resetQueries(QueryKeys.PENDING_UPDATE)
-    },
   })
+
+  useEffect(() => {
+    if (checkSuccess || checkError) {
+      queryClient.resetQueries(QueryKeys.PENDING_UPDATE)
+    }
+  }, [checkSuccess, checkError, queryClient])
 
   const { data: pendingUpdate } = useQuery({
     queryKey: QueryKeys.PENDING_UPDATE,

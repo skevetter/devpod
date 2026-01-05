@@ -90,17 +90,23 @@ tasks:
   cli:test:e2e:act:focus:
     # usage: task cli:test:e2e:act:focus -- "test focus pattern"
     desc: run e2e tests using act with focus
-    cmd: act workflow_dispatch -W .github/workflows/act.yml --input test_focus={{ .CLI_ARGS }}
+    cmd: act workflow_dispatch -W .github/workflows/act.yml -j e2e-test --input test_focus={{ .CLI_ARGS }}
 
   desktop:build:
     desc: build devpod Desktop application
     dir: desktop
     cmds:
       - cmd: yarn install --frozen-lockfile
+      - task: desktop:check
+      - cmd: yarn build
+
+  desktop:check:
+    desc: check desktop application
+    dir: desktop
+    cmds:
       - cmd: yarn lint:ci
       - cmd: yarn format:check
       - cmd: yarn types:check
-      - cmd: yarn build
 
   desktop:update-deps:
     desc: update yarn dependencies
@@ -151,6 +157,14 @@ tasks:
     desc: update tauri dependencies
     dir: desktop/src-tauri
     cmd: cargo update
+
+  desktop:act:build:
+    desc: build desktop application using act
+    cmd: |
+      act workflow_dispatch \
+        -W .github/workflows/act.yml \
+        -j build-ui \
+        --platform ubuntu-latest=ghcr.io/catthehacker/ubuntu:js-latest
 
   github:dev-release:upload:
     desc: upload dev binaries to GitHub release tag v0.0.0-10 for testing
