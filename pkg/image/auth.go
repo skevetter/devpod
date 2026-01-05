@@ -2,8 +2,6 @@ package image
 
 import (
 	"context"
-	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -27,6 +25,7 @@ const tokenFileLocation = "/var/run/secrets/kubernetes.io/serviceaccount/token"
 
 // See https://github.com/kubernetes/kubernetes/blob/30ae12d018697d3c5f04e225b11f242f5310e097/pkg/serviceaccount/claims.go#L55
 type privateClaims struct {
+	jwt.RegisteredClaims
 	Kubernetes kubernetesClaim `json:"kubernetes.io"`
 }
 
@@ -93,19 +92,15 @@ type podMetadata struct {
 }
 
 func getPodMetadata(token []byte) (podMetadata, error) {
-	parts := strings.Split(string(token), ".")
-	if len(parts) != 3 {
-		return podMetadata{}, fmt.Errorf("invalid JWT format")
-	}
+	tokenStr := strings.TrimSpace(string(token))
+	parser := jwt.NewParser(jwt.WithoutClaimsValidation())
+	claims := &privateClaims{}
 
-	payload, err := base64.RawURLEncoding.DecodeString(parts[1])
+	_, err := parser.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (any, error) {
+		return nil, nil
+	})
 	if err != nil {
-		return podMetadata{}, fmt.Errorf("failed to decode JWT payload %w", err)
-	}
-
-	var claims privateClaims
-	if err := json.Unmarshal(payload, &claims); err != nil {
-		return podMetadata{}, fmt.Errorf("failed to unmarshal JWT claims %w", err)
+		return podMetadata{}, fmt.Errorf("failed to parse kubernetes service account token: %w", err)
 	}
 
 	kubeClaim := claims.Kubernetes
