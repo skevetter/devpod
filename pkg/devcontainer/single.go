@@ -43,11 +43,8 @@ func (r *runner) runSingleContainer(
 ) (*config.Result, error) {
 	r.Log.WithFields(logrus.Fields{
 		"workspaceID": r.ID,
-		"config":      fmt.Sprintf("%+v", parsedConfig.Config),
-		"options":     fmt.Sprintf("%+v", options),
-		"context":     fmt.Sprintf("%+v", substitutionContext),
 		"platform":    fmt.Sprintf("%+v", options.Platform),
-	}).Debug("start container in single mode with options")
+	}).Debug("start container in single mode")
 
 	substitutionContext.Userns = options.Userns
 	substitutionContext.UidMap = options.UidMap

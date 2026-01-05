@@ -144,9 +144,9 @@ func NewUpCmd(f *flags.GlobalFlags) *cobra.Command {
 	upCmd.Flags().StringVar(&cmd.FallbackImage, "fallback-image", "", "The fallback image to use if no devcontainer configuration has been detected")
 	upCmd.Flags().BoolVar(&cmd.DisableDaemon, "disable-daemon", false, "If enabled, will not install a daemon into the target machine to track activity")
 	upCmd.Flags().StringVar(&cmd.Source, "source", "", "Optional source for the workspace. E.g. git:https://github.com/my-org/my-repo")
-	upCmd.Flags().StringVar(&cmd.Userns, "userns", "", "User namespace to use for the container (e.g. keep-id for Podman)")
-	upCmd.Flags().StringSliceVar(&cmd.UidMap, "uidmap", []string{}, "UID mapping for user namespace (e.g. 0:1000:1)")
-	upCmd.Flags().StringSliceVar(&cmd.GidMap, "gidmap", []string{}, "GID mapping for user namespace (e.g. 0:1000:1)")
+	upCmd.Flags().StringVar(&cmd.Userns, "userns", "", "User namespace to use for the container (Podman only; e.g. \"keep-id\", \"host\", or \"auto\")")
+	upCmd.Flags().StringSliceVar(&cmd.UidMap, "uidmap", []string{}, "UID mapping for Podman user namespace (Podman only; format: container_id:host_id:amount, e.g. \"0:1000:1\")")
+	upCmd.Flags().StringSliceVar(&cmd.GidMap, "gidmap", []string{}, "GID mapping for Podman user namespace (Podman only; format: container_id:host_id:amount, e.g. \"0:1000:1\")")
 
 	// testing
 	upCmd.Flags().StringVar(&cmd.DaemonInterval, "daemon-interval", "", "TESTING ONLY")

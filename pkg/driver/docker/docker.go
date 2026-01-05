@@ -669,7 +669,7 @@ func (d *dockerDriver) getPodmanArgs(options *driver.RunOptions, parsedConfig *c
 		return []string{}, nil
 	}
 
-	args := []string{"--security-opt", "label=disable"}
+	var args []string
 
 	if err := validatePodmanOptions(options); err != nil {
 		return nil, err
@@ -687,7 +687,7 @@ func (d *dockerDriver) getPodmanArgs(options *driver.RunOptions, parsedConfig *c
 	}
 
 	hasIdMapping := len(options.UidMap) > 0 || len(options.GidMap) > 0
-	if !hasIdMapping {
+	if !hasIdMapping && parsedConfig != nil {
 		for _, arg := range parsedConfig.RunArgs {
 			if strings.Contains(arg, "--uidmap") || strings.Contains(arg, "--gidmap") {
 				hasIdMapping = true
@@ -697,9 +697,12 @@ func (d *dockerDriver) getPodmanArgs(options *driver.RunOptions, parsedConfig *c
 	}
 
 	if !hasIdMapping && options.Userns == "" {
-		remoteUser := parsedConfig.RemoteUser
-		if remoteUser == "" {
-			remoteUser = parsedConfig.ContainerUser
+		remoteUser := ""
+		if parsedConfig != nil {
+			remoteUser = parsedConfig.RemoteUser
+			if remoteUser == "" {
+				remoteUser = parsedConfig.ContainerUser
+			}
 		}
 		if remoteUser == "" {
 			remoteUser = options.User
@@ -738,12 +741,12 @@ func validateUserns(userns string) error {
 		return nil
 	}
 
-	validValues := []string{"keep-id", "host"}
+	validValues := []string{"keep-id", "host", "auto"}
 	if slices.Contains(validValues, userns) {
 		return nil
 	}
 
-	if strings.HasPrefix(userns, "container:") || strings.HasPrefix(userns, "ns:") {
+	if strings.HasPrefix(userns, "keep-id:") || strings.HasPrefix(userns, "container:") || strings.HasPrefix(userns, "ns:") {
 		return nil
 	}
 
@@ -761,7 +764,7 @@ func validateMappings(mappings []string, mapType string) error {
 
 func validateOptionConflicts(options *driver.RunOptions) error {
 	if options.Userns != "" && (len(options.UidMap) > 0 || len(options.GidMap) > 0) {
-		if options.Userns != "keep-id" {
+		if !strings.HasPrefix(options.Userns, "keep-id") {
 			return fmt.Errorf("cannot combine --userns=%s with --uidmap/--gidmap", options.Userns)
 		}
 	}
