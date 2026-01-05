@@ -33,7 +33,7 @@ repos:
       - id: actionlint
         files: '^\.github/workflows/'
   - repo: https://github.com/biomejs/pre-commit
-    rev: v2.3.10
+    rev: v2.3.11
     hooks:
       - id: biome-format
         exclude: '^(\.github/actions/|\.vscode/|desktop/|docs/|examples/)'
