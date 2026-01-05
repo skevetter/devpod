@@ -6,6 +6,8 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -20,6 +22,42 @@ import (
 	"github.com/skevetter/devpod/pkg/image"
 	"github.com/skevetter/devpod/pkg/provider"
 )
+
+// UpdateUIDDockerfile is based on the official DevContainer CLI implementation
+const UpdateUIDDockerfile = `ARG BASE_IMAGE
+FROM $BASE_IMAGE
+
+USER root
+
+ARG REMOTE_USER
+ARG NEW_UID
+ARG NEW_GID
+SHELL ["/bin/sh", "-c"]
+RUN eval $(sed -n "s/${REMOTE_USER}:[^:]*:\([^:]*\):\([^:]*\):[^:]*:\([^:]*\).*/OLD_UID=\1;OLD_GID=\2;HOME_FOLDER=\3/p" /etc/passwd); \
+	eval $(sed -n "s/\([^:]*\):[^:]*:${NEW_UID}:.*/EXISTING_USER=\1/p" /etc/passwd); \
+	eval $(sed -n "s/\([^:]*\):[^:]*:${NEW_GID}:.*/EXISTING_GROUP=\1/p" /etc/group); \
+	if [ -z "$OLD_UID" ]; then \
+		echo "Remote user not found in /etc/passwd ($REMOTE_USER)."; \
+	elif [ "$OLD_UID" = "$NEW_UID" -a "$OLD_GID" = "$NEW_GID" ]; then \
+		echo "UIDs and GIDs are the same ($NEW_UID:$NEW_GID)."; \
+	elif [ "$OLD_UID" != "$NEW_UID" -a -n "$EXISTING_USER" ]; then \
+		echo "User with UID exists ($EXISTING_USER=$NEW_UID)."; \
+	else \
+		if [ "$OLD_GID" != "$NEW_GID" -a -n "$EXISTING_GROUP" ]; then \
+			echo "Group with GID exists ($EXISTING_GROUP=$NEW_GID)."; \
+			NEW_GID="$OLD_GID"; \
+		fi; \
+		echo "Updating UID:GID from $OLD_UID:$OLD_GID to $NEW_UID:$NEW_GID."; \
+		sed -i -e "s/\(${REMOTE_USER}:[^:]*:\)[^:]*:[^:]*/\1${NEW_UID}:${NEW_GID}/" /etc/passwd; \
+		if [ "$OLD_GID" != "$NEW_GID" ]; then \
+			sed -i -e "s/\([^:]*:[^:]*:\)${OLD_GID}:/\1${NEW_GID}:/" /etc/group; \
+		fi; \
+		chown -R $NEW_UID:$NEW_GID $HOME_FOLDER; \
+	fi;
+
+ARG IMAGE_USER
+USER $IMAGE_USER
+`
 
 func (r *runner) build(
 	ctx context.Context,
@@ -317,7 +355,109 @@ func (r *runner) buildImage(
 		return dockerlessFallback(r.LocalWorkspaceFolder, substitutionContext.ContainerWorkspaceFolder, parsedConfig, buildInfo, extendedBuildInfo, dockerfileContent, options)
 	}
 
-	return dockerDriver.BuildDevContainer(ctx, prebuildHash, parsedConfig, extendedBuildInfo, dockerfilePath, dockerfileContent, r.LocalWorkspaceFolder, options)
+	result, err := dockerDriver.BuildDevContainer(ctx, prebuildHash, parsedConfig, extendedBuildInfo, dockerfilePath, dockerfileContent, r.LocalWorkspaceFolder, options)
+	if err != nil {
+		return nil, err
+	}
+
+	// Update user UID/GID if needed
+	if r.LocalWorkspaceFolder != "" && (parsedConfig.Config.UpdateRemoteUserUID == nil || *parsedConfig.Config.UpdateRemoteUserUID) {
+		updatedImageName, err := r.updateRemoteUserUID(ctx, result.ImageName, result)
+		if err != nil {
+			r.Log.Warnf("Failed to update user UID: %v", err)
+		} else if updatedImageName != "" {
+			result.ImageName = updatedImageName
+		}
+	}
+
+	return result, nil
+}
+
+// updateRemoteUserUID builds a new image with updated user UID/GID following DevContainer CLI approach
+func (r *runner) updateRemoteUserUID(ctx context.Context, imageName string, buildInfo *config.BuildInfo) (string, error) {
+	result := &config.Result{
+		MergedConfig:     nil,
+		ContainerDetails: &config.ContainerDetails{Config: config.ContainerDetailsConfig{User: buildInfo.ImageDetails.Config.User}},
+	}
+	remoteUser := config.GetRemoteUser(result)
+
+	r.Log.Debugf("UID update check: remoteUser=%s, hostUID=%d, hostGID=%d", remoteUser, os.Getuid(), os.Getgid())
+
+	// Skip UID updates for root user or numeric UIDs (matches official CLI behavior)
+	if remoteUser == "" || remoteUser == "root" {
+		r.Log.Debug("skipping UID/GID mapping for root user to preserve system permissions")
+		return "", nil
+	}
+
+	// Skip numeric UIDs (matches official CLI behavior)
+	if matched, _ := regexp.MatchString(`^\d+$`, remoteUser); matched {
+		r.Log.Debug("skipping UID/GID mapping for numeric user ID to preserve system permissions")
+		return "", nil
+	}
+
+	// Skip if running as root host user
+	hostUID := os.Getuid()
+	hostGID := os.Getgid()
+	if hostUID == 0 {
+		r.Log.Debug("skipping UID/GID mapping when running as root host user")
+		return "", nil
+	}
+
+	tmpDir, err := os.MkdirTemp("", "devpod-uid-update")
+	if err != nil {
+		return "", err
+	}
+	defer os.RemoveAll(tmpDir)
+
+	dockerfilePath := filepath.Join(tmpDir, "updateUID.Dockerfile")
+	err = os.WriteFile(dockerfilePath, []byte(UpdateUIDDockerfile), 0600)
+	if err != nil {
+		return "", err
+	}
+
+	dockerDriver, ok := r.Driver.(driver.DockerDriver)
+	if !ok {
+		return "", fmt.Errorf("driver is not a docker driver")
+	}
+
+	buildConfig := &config.SubstitutedConfig{
+		Config: &config.DevContainerConfig{
+			DockerfileContainer: config.DockerfileContainer{
+				Build: &config.ConfigBuildOptions{
+					Args: map[string]string{
+						"BASE_IMAGE":  imageName,
+						"REMOTE_USER": remoteUser,
+						"NEW_UID":     strconv.Itoa(hostUID),
+						"NEW_GID":     strconv.Itoa(hostGID),
+						"IMAGE_USER":  buildInfo.ImageDetails.Config.User,
+					},
+				},
+			},
+		},
+	}
+
+	r.Log.Debugf("Updating user UID/GID: %s (%d:%d)", remoteUser, hostUID, hostGID)
+
+	extendedBuildInfo := &feature.ExtendedBuildInfo{
+		MetadataConfig: &config.ImageMetadataConfig{},
+	}
+
+	buildOptions := provider.BuildOptions{}
+	buildResult, err := dockerDriver.BuildDevContainer(
+		ctx,
+		"uid-update",
+		buildConfig,
+		extendedBuildInfo,
+		dockerfilePath,
+		UpdateUIDDockerfile,
+		tmpDir,
+		buildOptions,
+	)
+	if err != nil {
+		return "", fmt.Errorf("failed to update user UID: %w", err)
+	}
+
+	return buildResult.ImageName, nil
 }
 
 func (r *runner) buildDevImageCompose(

@@ -94,6 +94,7 @@ jobs:
     name: Test ${{ matrix.label }} on ${{ matrix.runner }}
     needs: [can-read-secret, build-cli]
     strategy:
+      fail-fast: false
       matrix:
         include:
           - label: context

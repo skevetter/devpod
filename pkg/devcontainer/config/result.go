@@ -3,6 +3,7 @@ package config
 import (
 	"maps"
 	"slices"
+	"strconv"
 	"strings"
 )
 
@@ -53,6 +54,17 @@ func GetRemoteUser(result *Result) string {
 		return result.MergedConfig.RemoteUser
 	}
 
+	if result.ContainerDetails != nil && result.ContainerDetails.Config.User != "" {
+		containerUser := result.ContainerDetails.Config.User
+		if isNumericUID(containerUser) {
+			if result.ContainerDetails.Config.Labels != nil {
+				if userLabel := result.ContainerDetails.Config.Labels[UserLabel]; userLabel != "" {
+					return userLabel
+				}
+			}
+		}
+	}
+
 	if result.ContainerDetails != nil && result.ContainerDetails.Config.Labels != nil {
 		if userLabel := result.ContainerDetails.Config.Labels[UserLabel]; userLabel != "" {
 			return userLabel
@@ -71,6 +83,17 @@ func GetRemoteUser(result *Result) string {
 	}
 
 	return "root"
+}
+
+// isNumericUID checks if the user string is a numeric UID
+func isNumericUID(user string) bool {
+	parts := strings.Split(user, ":")
+	if len(parts) > 0 {
+		if _, err := strconv.Atoi(parts[0]); err == nil {
+			return true
+		}
+	}
+	return false
 }
 
 func GetDevPodCustomizations(parsedConfig *DevContainerConfig) *DevPodCustomizations {

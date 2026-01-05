@@ -70,20 +70,17 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 						return len(ids)
 					}).Should(gomega.Equal(1), "1 compose container to be created")
 
-					ginkgo.By("Modifying .devcontainer.json with failing changes")
+					ginkgo.By("Replacing devcontainer.json with failing config")
 					origPath := filepath.Join(tempDir, ".devcontainer.json")
-					err = os.Chown(origPath, os.Getuid(), os.Getgid())
-					framework.ExpectNoError(err)
-					err = os.Chmod(origPath, 0666)
-					framework.ExpectNoError(err)
-					err = os.Remove(origPath)
-					framework.ExpectNoError(err)
+					failPath := filepath.Join(tempDir, "fail.devcontainer.json")
 
-					failingConfig, err := os.Open(filepath.Join(tempDir, "fail.devcontainer.json"))
+					failingConfig, err := os.Open(failPath)
 					framework.ExpectNoError(err)
+					defer func() { _ = failingConfig.Close() }()
 
 					newConfig, err := os.Create(origPath)
 					framework.ExpectNoError(err)
+					defer func() { _ = newConfig.Close() }()
 
 					_, err = io.Copy(newConfig, failingConfig)
 					framework.ExpectNoError(err)

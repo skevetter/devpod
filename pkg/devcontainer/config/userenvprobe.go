@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/shell"
 	"github.com/skevetter/log"
 )
@@ -63,17 +64,23 @@ func ProbeUserEnv(ctx context.Context, probe string, userName string, log log.Lo
 		return nil, fmt.Errorf("find shell for user %s %w", userName, err)
 	}
 
-	log.Debugf("running user env probe with shell \"%s\", probe \"%s\", user \"%s\" and command \"%s\"",
-		strings.Join(preferredShell, " "), string(userEnvProbe), userName, "cat /proc/self/environ")
+	log.WithFields(logrus.Fields{
+		"userEnvProbe":   string(userEnvProbe),
+		"preferredShell": strings.Join(preferredShell, " "),
+		"userName":       userName,
+	}).Debug("probing user environment variables")
 
 	probedEnv, err := doProbe(ctx, userEnvProbe, preferredShell, userName, "cat /proc/self/environ", '\x00', log)
 	if err != nil {
-		log.Debugf("running user env probe with shell \"%s\", probe \"%s\", user \"%s\" and command \"%s\"",
-			strings.Join(preferredShell, " "), string(userEnvProbe), userName, "printenv")
+		log.WithFields(logrus.Fields{
+			"error": err,
+		}).Debug("failed to probe user environment variables with command \"cat /proc/self/environ\"")
 
 		newProbedEnv, newErr := doProbe(ctx, userEnvProbe, preferredShell, userName, "printenv", '\n', log)
 		if newErr != nil {
-			log.Warnf("failed to probe user environment variables: %v, %v", err, newErr)
+			log.WithFields(logrus.Fields{
+				"error": newErr,
+			}).Warnf("failed to probe user environment variables with command \"printenv\"")
 		} else {
 			probedEnv = newProbedEnv
 		}

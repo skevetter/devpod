@@ -31,19 +31,11 @@ const (
 	ResultLocation = "/var/run/devpod/result.json"
 )
 
-func SetupContainer(ctx context.Context, setupInfo *config.Result, extraWorkspaceEnv []string, chownProjects bool, platformOptions *devpod.PlatformOptions, tunnelClient tunnel.TunnelClient, log log.Logger) error {
-	// write result to ResultLocation
+func SetupContainer(ctx context.Context, setupInfo *config.Result, extraWorkspaceEnv []string, platformOptions *devpod.PlatformOptions, tunnelClient tunnel.TunnelClient, log log.Logger) error {
 	WriteResult(setupInfo, log)
 
-	// chown user dir
-	err := ChownWorkspace(setupInfo, chownProjects, log)
-	if err != nil {
-		return fmt.Errorf("failed to chown workspace %w", err)
-	}
-
-	// patch remote env
-	log.Debugf("Patch etc environment & profile...")
-	err = PatchEtcEnvironment(setupInfo.MergedConfig, log)
+	log.Debug("patch /etc/environment")
+	err := PatchEtcEnvironment(setupInfo.MergedConfig, log)
 	if err != nil {
 		return fmt.Errorf("patch etc environment %w", err)
 	}
@@ -52,7 +44,7 @@ func SetupContainer(ctx context.Context, setupInfo *config.Result, extraWorkspac
 		return fmt.Errorf("patch etc environment from flags %w", err)
 	}
 
-	// patch etc profile
+	log.Debug("patch /etc/profile")
 	err = PatchEtcProfile()
 	if err != nil {
 		return fmt.Errorf("patch etc profile %w", err)
@@ -111,6 +103,7 @@ func WriteResult(setupInfo *config.Result, log log.Logger) {
 		return
 	}
 
+	log.WithFields(logrus.Fields{"location": ResultLocation}).Debug("writing setup result")
 	err = os.WriteFile(ResultLocation, rawBytes, 0600)
 	if err != nil {
 		log.Warnf("Error write result to %s: %v", ResultLocation, err)
@@ -145,43 +138,6 @@ func LinkRootHome(setupInfo *config.Result) error {
 	err = os.Symlink(home, "/home/root")
 	if err != nil {
 		return fmt.Errorf("create symlink %w", err)
-	}
-
-	return nil
-}
-
-func ChownWorkspace(setupInfo *config.Result, recursive bool, log log.Logger) error {
-	user := config.GetRemoteUser(setupInfo)
-	exists, err := markerFileExists("chownWorkspace", "")
-	if err != nil {
-		return err
-	} else if exists {
-		return nil
-	}
-
-	workspaceRoot := filepath.Dir(setupInfo.SubstitutionContext.ContainerWorkspaceFolder)
-
-	if workspaceRoot != "/" {
-		log.WithFields(logrus.Fields{
-			"user":          user,
-			"workspaceRoot": workspaceRoot,
-		}).Info("chown workspace")
-		err = copy2.Chown(workspaceRoot, user)
-		if err != nil {
-			log.Warn(err)
-		}
-	}
-
-	if recursive {
-		log.WithFields(logrus.Fields{
-			"user":            user,
-			"workspaceFolder": setupInfo.SubstitutionContext.ContainerWorkspaceFolder,
-		}).Info("chown workspace recursively")
-		err = copy2.ChownR(setupInfo.SubstitutionContext.ContainerWorkspaceFolder, user)
-		// do not exit on error, we can have non-fatal errors
-		if err != nil {
-			log.Warn(err)
-		}
 	}
 
 	return nil
