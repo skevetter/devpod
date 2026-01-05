@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -380,13 +381,25 @@ func (r *runner) updateRemoteUserUID(ctx context.Context, imageName string, buil
 	}
 	remoteUser := config.GetRemoteUser(result)
 
+	r.Log.Debugf("UID update check: remoteUser=%s, hostUID=%d, hostGID=%d", remoteUser, os.Getuid(), os.Getgid())
+
+	// Skip UID updates for root user or numeric UIDs (matches official CLI behavior)
 	if remoteUser == "" || remoteUser == "root" {
+		r.Log.Debug("skipping UID/GID mapping for root user to preserve system permissions")
 		return "", nil
 	}
 
+	// Skip numeric UIDs (matches official CLI behavior)
+	if matched, _ := regexp.MatchString(`^\d+$`, remoteUser); matched {
+		r.Log.Debug("skipping UID/GID mapping for numeric user ID to preserve system permissions")
+		return "", nil
+	}
+
+	// Skip if running as root host user
 	hostUID := os.Getuid()
 	hostGID := os.Getgid()
 	if hostUID == 0 {
+		r.Log.Debug("skipping UID/GID mapping when running as root host user")
 		return "", nil
 	}
 

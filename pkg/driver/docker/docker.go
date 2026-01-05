@@ -405,14 +405,6 @@ func (d *dockerDriver) RunDockerDevContainer(
 		return fmt.Errorf("failed to start dev container %w", err)
 	}
 
-	if runtime.GOOS == "linux" {
-		updateUID := parsedConfig.UpdateRemoteUserUID == nil || *parsedConfig.UpdateRemoteUserUID
-		d.Log.WithFields(logrus.Fields{
-			"updateRemoteUserUID": parsedConfig.UpdateRemoteUserUID,
-			"willUpdateUID":       updateUID,
-		}).Debug("UID update check")
-	}
-
 	return nil
 }
 

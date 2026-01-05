@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
-	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
@@ -99,27 +98,34 @@ func (devNull) Close() error {
 func GetShell(userName string) ([]string, error) {
 	// try to get a shell
 	if runtime.GOOS != "windows" {
-		// infere login shell from getent
-		shell, err := getUserShell(userName)
-		if err == nil {
-			return []string{shell}, nil
+		// Try shells in order of preference, validating each one
+		shellCandidates := []string{}
+
+		// First try to get login shell from getent
+		if shell, err := getUserShell(userName); err == nil {
+			shellCandidates = append(shellCandidates, shell)
 		}
 
-		// fallback to $SHELL env var
-		shell, ok := os.LookupEnv("SHELL")
-		if ok {
-			return []string{shell}, nil
+		// Add $SHELL env var
+		if shell, ok := os.LookupEnv("SHELL"); ok {
+			shellCandidates = append(shellCandidates, shell)
 		}
 
-		// fallback to path discovery
-		_, err = exec.LookPath("bash")
-		if err == nil {
-			return []string{"bash"}, nil
+		// Add common shell locations
+		shellCandidates = append(shellCandidates, "/bin/bash", "/usr/bin/bash", "/bin/sh", "/usr/bin/sh")
+
+		// Test each candidate
+		for _, shell := range shellCandidates {
+			if isExecutableShell(shell) {
+				return []string{shell}, nil
+			}
 		}
 
-		_, err = exec.LookPath("sh")
-		if err == nil {
-			return []string{"sh"}, nil
+		// Try PATH-based discovery
+		for _, shellName := range []string{"bash", "sh"} {
+			if shellPath, err := exec.LookPath(shellName); err == nil && isExecutableShell(shellPath) {
+				return []string{shellPath}, nil
+			}
 		}
 	}
 
@@ -130,6 +136,21 @@ func GetShell(userName string) ([]string, error) {
 	}
 
 	return []string{executable, "helper", "sh"}, nil
+}
+
+// isExecutableShell checks if a shell path exists and is executable
+func isExecutableShell(shellPath string) bool {
+	if shellPath == "" {
+		return false
+	}
+
+	info, err := os.Stat(shellPath)
+	if err != nil {
+		return false
+	}
+
+	// Check if it's a regular file and executable
+	return info.Mode().IsRegular() && (info.Mode().Perm()&0111) != 0
 }
 
 func getUserShell(userName string) (string, error) {
@@ -147,11 +168,12 @@ func getUserShell(userName string) (string, error) {
 		return "", fmt.Errorf("unexpected getent format: %s", string(output))
 	}
 
-	loginShell := strings.TrimSpace(filepath.Base(shell[6]))
-	if loginShell == "nologin" {
+	loginShell := strings.TrimSpace(shell[6])
+	if loginShell == "nologin" || loginShell == "/usr/sbin/nologin" || loginShell == "/sbin/nologin" {
 		return "", fmt.Errorf("no login shell configured")
 	}
 
+	// Return the full path, not just the basename
 	return loginShell, nil
 }
 
