@@ -588,8 +588,11 @@ func isValidMapping(mapping string) bool {
 	return true
 }
 func (d *dockerDriver) updateContainerUserUID(ctx context.Context, workspaceId string, parsedConfig *config.DevContainerConfig, writer io.Writer) error {
-	if runtime.GOOS != "linux" || !((parsedConfig.ContainerUser != "" || parsedConfig.RemoteUser != "") &&
-		(parsedConfig.UpdateRemoteUserUID == nil || *parsedConfig.UpdateRemoteUserUID)) {
+	isLinux := runtime.GOOS == "linux"
+	hasUser := parsedConfig.ContainerUser != "" || parsedConfig.RemoteUser != ""
+	shouldUpdate := parsedConfig.UpdateRemoteUserUID == nil || *parsedConfig.UpdateRemoteUserUID
+
+	if !isLinux || !hasUser || !shouldUpdate {
 		return nil
 	}
 
@@ -653,7 +656,7 @@ func (d *dockerDriver) updateContainerUserUID(ctx context.Context, workspaceId s
 	d.Log.WithFields(logrus.Fields{
 		"command": d.Docker.DockerCommand,
 		"args":    strings.Join(args, " "),
-	}).Debug("Running docker command")
+	}).Debug("running docker command")
 	err = d.Docker.Run(ctx, args, nil, writer, writer)
 	if err != nil {
 		return err
