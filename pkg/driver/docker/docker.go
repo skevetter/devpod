@@ -299,14 +299,11 @@ func (d *dockerDriver) RunDockerDevContainer(
 		args = append(args, "--privileged")
 	}
 
-	// In case we're using podman, let's use userns to keep
-	// the ID of the user (vscode) inside the container as
-	// the same of the external user.
-	// This will avoid problems of mismatching chowns on the
-	// project files.
-	if d.Docker.IsPodman() && os.Getuid() != 0 {
-		args = append(args, "--userns", "keep-id")
+	podmanArgs, err := d.getPodmanArgs(options, parsedConfig)
+	if err != nil {
+		return err
 	}
+	args = append(args, podmanArgs...)
 
 	for _, capAdd := range options.CapAdd {
 		args = append(args, "--cap-add", capAdd)
@@ -665,4 +662,121 @@ func (d *dockerDriver) GetDevContainerLogs(ctx context.Context, workspaceId stri
 	}
 
 	return d.Docker.GetContainerLogs(ctx, container.ID, stdout, stderr)
+}
+
+func (d *dockerDriver) getPodmanArgs(options *driver.RunOptions, parsedConfig *config.DevContainerConfig) ([]string, error) {
+	if !d.Docker.IsPodman() || runtime.GOOS != "linux" {
+		return []string{}, nil
+	}
+
+	args := []string{"--security-opt", "label=disable"}
+
+	if err := validatePodmanOptions(options); err != nil {
+		return nil, err
+	}
+
+	if options.Userns != "" {
+		args = append(args, "--userns", options.Userns)
+	}
+
+	for _, uidMap := range options.UidMap {
+		args = append(args, "--uidmap", uidMap)
+	}
+	for _, gidMap := range options.GidMap {
+		args = append(args, "--gidmap", gidMap)
+	}
+
+	hasIdMapping := len(options.UidMap) > 0 || len(options.GidMap) > 0
+	if !hasIdMapping {
+		for _, arg := range parsedConfig.RunArgs {
+			if strings.Contains(arg, "--uidmap") || strings.Contains(arg, "--gidmap") {
+				hasIdMapping = true
+				break
+			}
+		}
+	}
+
+	if !hasIdMapping && options.Userns == "" {
+		remoteUser := parsedConfig.RemoteUser
+		if remoteUser == "" {
+			remoteUser = parsedConfig.ContainerUser
+		}
+		if remoteUser == "" {
+			remoteUser = options.User
+		}
+		if remoteUser == "" {
+			remoteUser = "root"
+		}
+
+		// only add --userns=keep-id if not running as root
+		if remoteUser != "root" && remoteUser != "0" && os.Getuid() != 0 {
+			args = append(args, "--userns=keep-id")
+		}
+	}
+
+	return args, nil
+}
+
+func validatePodmanOptions(options *driver.RunOptions) error {
+	if err := validateUserns(options.Userns); err != nil {
+		return err
+	}
+
+	if err := validateMappings(options.UidMap, "uidmap"); err != nil {
+		return err
+	}
+
+	if err := validateMappings(options.GidMap, "gidmap"); err != nil {
+		return err
+	}
+
+	return validateOptionConflicts(options)
+}
+
+func validateUserns(userns string) error {
+	if userns == "" {
+		return nil
+	}
+
+	validValues := []string{"keep-id", "host"}
+	if slices.Contains(validValues, userns) {
+		return nil
+	}
+
+	if strings.HasPrefix(userns, "container:") || strings.HasPrefix(userns, "ns:") {
+		return nil
+	}
+
+	return fmt.Errorf("invalid userns value: %s", userns)
+}
+
+func validateMappings(mappings []string, mapType string) error {
+	for _, mapping := range mappings {
+		if !isValidMapping(mapping) {
+			return fmt.Errorf("invalid %s format: %s (expected format: container_id:host_id:amount)", mapType, mapping)
+		}
+	}
+	return nil
+}
+
+func validateOptionConflicts(options *driver.RunOptions) error {
+	if options.Userns != "" && (len(options.UidMap) > 0 || len(options.GidMap) > 0) {
+		if options.Userns != "keep-id" {
+			return fmt.Errorf("cannot combine --userns=%s with --uidmap/--gidmap", options.Userns)
+		}
+	}
+	return nil
+}
+
+func isValidMapping(mapping string) bool {
+	parts := strings.Split(mapping, ":")
+	if len(parts) != 3 {
+		return false
+	}
+	for _, part := range parts {
+		if _, err := strconv.Atoi(part); err != nil {
+			return false
+		}
+	}
+	return true
 }

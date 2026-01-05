@@ -224,6 +224,10 @@ type CLIOptions struct {
 	SSHAuthSockID               string            `json:"sshAuthSockID,omitempty"` // ID to use when looking for SSH_AUTH_SOCK, defaults to a new random ID if not set (only used for browser IDEs)
 	StrictHostKeyChecking       bool              `json:"strictHostKeyChecking,omitempty"`
 	ExtraDevContainerPath       string            `json:"extraDevContainerPath,omitempty"`
+	User                        string            `json:"user,omitempty"`
+	Userns                      string            `json:"userns,omitempty"`
+	UidMap                      []string          `json:"uidMap,omitempty"`
+	GidMap                      []string          `json:"gidMap,omitempty"`
 
 	// build options
 	Repository string   `json:"repository,omitempty"`

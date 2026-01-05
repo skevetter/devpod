@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/command"
 	"github.com/skevetter/devpod/pkg/daemon/agent"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
@@ -40,7 +41,17 @@ func (r *runner) runSingleContainer(
 	options UpOptions,
 	timeout time.Duration,
 ) (*config.Result, error) {
-	r.Log.Debugf("Starting devcontainer in single container mode...")
+	r.Log.WithFields(logrus.Fields{
+		"workspaceID": r.ID,
+		"config":      fmt.Sprintf("%+v", parsedConfig.Config),
+		"options":     fmt.Sprintf("%+v", options),
+		"context":     fmt.Sprintf("%+v", substitutionContext),
+		"platform":    fmt.Sprintf("%+v", options.Platform),
+	}).Debug("start container in single mode with options")
+
+	substitutionContext.Userns = options.Userns
+	substitutionContext.UidMap = options.UidMap
+	substitutionContext.GidMap = options.GidMap
 
 	// Check if Docker exists before trying to find containers
 	var containerDetails *config.ContainerDetails
@@ -298,6 +309,9 @@ func (r *runner) getDockerlessRunOptions(
 		Privileged:     mergedConfig.Privileged,
 		WorkspaceMount: &workspaceMountParsed,
 		Mounts:         mounts,
+		Userns:         substitutionContext.Userns,
+		UidMap:         substitutionContext.UidMap,
+		GidMap:         substitutionContext.GidMap,
 	}, nil
 }
 
@@ -345,6 +359,9 @@ func (r *runner) getRunOptions(
 		WorkspaceMount: &workspaceMountParsed,
 		SecurityOpt:    mergedConfig.SecurityOpt,
 		Mounts:         mergedConfig.Mounts,
+		Userns:         substitutionContext.Userns,
+		UidMap:         substitutionContext.UidMap,
+		GidMap:         substitutionContext.GidMap,
 	}, nil
 }
 
