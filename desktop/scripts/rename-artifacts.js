@@ -1,11 +1,11 @@
-import { existsSync, renameSync } from "fs"
-import { join, basename, extname, dirname } from "path"
-import { glob } from "glob"
+const fs = require("fs")
+const path = require("path")
+const { glob } = require("glob")
 
 async function renameArtifacts() {
-  const bundleDir = join(__dirname, "../src-tauri/target/release/bundle")
+  const bundleDir = path.join(__dirname, "../src-tauri/target/release/bundle")
 
-  if (!existsSync(bundleDir)) {
+  if (!fs.existsSync(bundleDir)) {
     console.log("Bundle directory not found, skipping rename")
     return
   }
@@ -34,8 +34,8 @@ async function renameArtifacts() {
     const files = await glob(pattern, { cwd: bundleDir })
 
     for (const file of files) {
-      const oldPath = join(bundleDir, file)
-      const fileName = basename(file)
+      const oldPath = path.join(bundleDir, file)
+      const fileName = path.basename(file)
 
       // Extract components from filename
       let platform = ""
@@ -64,21 +64,21 @@ async function renameArtifacts() {
         } else if (fileName.endsWith(".exe")) {
           newFileName = `DevPod_${platform}_${arch}-setup.exe`
         } else {
-          const ext = extname(fileName)
+          const ext = path.extname(fileName)
           newFileName = `DevPod_${platform}_${arch}${ext}`
         }
       }
 
-      const newPath = join(dirname(oldPath), newFileName)
+      const newPath = path.join(path.dirname(oldPath), newFileName)
 
-      if (oldPath !== newPath && existsSync(oldPath)) {
-        renameSync(oldPath, newPath)
-        console.log(`renamed ${fileName} → ${newFileName}`)
+      if (oldPath !== newPath && fs.existsSync(oldPath)) {
+        fs.renameSync(oldPath, newPath)
+        console.log(`Renamed: ${fileName} → ${newFileName}`)
 
         // Rename signature file if exists
-        if (existsSync(oldPath + ".sig")) {
-          renameSync(oldPath + ".sig", newPath + ".sig")
-          console.log(`renamed ${fileName}.sig → ${newFileName}.sig`)
+        if (fs.existsSync(oldPath + ".sig")) {
+          fs.renameSync(oldPath + ".sig", newPath + ".sig")
+          console.log(`Renamed: ${fileName}.sig → ${newFileName}.sig`)
         }
       }
     }
