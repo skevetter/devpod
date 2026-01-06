@@ -613,6 +613,8 @@ github.com/skevetter/log v0.0.0-20251225081445-b5dfd11ce781 h1:TgxwN+W2c19aqSUvY
 github.com/skevetter/log v0.0.0-20251225081445-b5dfd11ce781/go.mod h1:Aqjwx8xRSxBWtTYXK3EzxManSgYZl7FaSh8J5LvTAK0=
 github.com/skevetter/log v0.0.0-20260105052530-e30187d28685 h1:TnCB5DzkD702+gB1p+eDSrKfEKeOPXzJavYifKRTqHY=
 github.com/skevetter/log v0.0.0-20260105052530-e30187d28685/go.mod h1:Aqjwx8xRSxBWtTYXK3EzxManSgYZl7FaSh8J5LvTAK0=
+github.com/skevetter/log v0.0.0-20260106023547-bfd26ab1367c h1:2IjLo9V6TLV2rORRKKu+NVMSrOAEeuS4KJPk3v9e1rs=
+github.com/skevetter/log v0.0.0-20260106023547-bfd26ab1367c/go.mod h1:Aqjwx8xRSxBWtTYXK3EzxManSgYZl7FaSh8J5LvTAK0=
 github.com/skevetter/ssh v0.0.8 h1:YH9ENxRgfA3wGogxzBx16gQbSiR39sqCx36t8wLnQlw=
 github.com/skevetter/ssh v0.0.8/go.mod h1:Kwjgc5zB58WGC40nP1rBQIPYoNnhkAwmkf/OvErc0ow=
 github.com/skevetter/tailscale v1.92.2 h1:9P3GFPhZJpnoHzgwk86kK1fNNB8ibOIgkkHqt3ARaRM=
