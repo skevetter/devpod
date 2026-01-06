@@ -126,8 +126,16 @@ jobs:
 
           ls -R "$TEMP_DIR/devpod-bin/"
           mkdir -p ./bin/
+          # Copy all devpod binaries to bin directory
           find "$TEMP_DIR/devpod-bin/" -name "devpod-*" -exec cp {} ./bin \;
           find ./bin -name "devpod-*" -exec chmod +x {} \;
+
+          # Replace binary names with target os
+          find ./bin -name "devpod-linux-amd64" -exec mv {} devpod-cli-x86_64-unknown-linux-gnu \;
+          find ./bin -name "devpod-darwin-amd64" -exec mv {} devpod-cli-x86_64-apple-darwin \;
+          find ./bin -name "devpod-darwin-arm64" -exec mv {} devpod-cli-aarch64-apple-darwin \;
+          find ./bin -name "devpod-windows-amd64" -exec mv {} devpod-cli-x86_64-pc-windows-msvc.exe \;
+
           ls -R ./bin/
 
       - name: generate pro provider
