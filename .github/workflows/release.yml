@@ -155,6 +155,7 @@ jobs:
             patchelf
 
       - name: install desktop dependencies
+        working-directory: ./desktop
         run: yarn install --frozen-lockfile
 
       - name: tauri build
