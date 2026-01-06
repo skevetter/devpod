@@ -414,7 +414,7 @@ jobs:
       - name: download CLI artifacts
         uses: actions/download-artifact@v7
         with:
-          pattern: devpod-${{ steps.os.outputs.runner_os }}
+          pattern: devpod-*
           path: ${{ runner.temp }}/devpod-bin/
           merge-multiple: true
 
