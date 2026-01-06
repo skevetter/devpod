@@ -1,6 +1,9 @@
-const fs = require("fs")
-const path = require("path")
-const { glob } = require("glob")
+import fs from "fs"
+import path from "path"
+import { glob } from "glob"
+import { fileURLToPath } from "url"
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 async function renameArtifacts() {
   const bundleDir = path.join(__dirname, "../src-tauri/target/release/bundle")
