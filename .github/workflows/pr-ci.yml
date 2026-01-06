@@ -279,7 +279,7 @@ jobs:
 
           ls -R "$TEMP_DIR/devpod-bin/"
           mkdir -p ./bin/
-          find "$TEMP_DIR/devpod-bin/" -name "devpod-*" -exec cp {} ./bin \;
+          find "$TEMP_DIR/devpod-bin/" -type f -name "devpod-*" -exec cp {} ./bin \;
           find ./bin -name "devpod-*" -exec chmod +x {} \;
           ls -R ./bin/
 
@@ -425,7 +425,7 @@ jobs:
           ls -R "$TEMP_DIR/devpod-bin/"
           mkdir -p ./bin/
           # Copy all devpod binaries to bin directory
-          find "$TEMP_DIR/devpod-bin/" -name "devpod-*" -exec cp {} ./bin \;
+          find "$TEMP_DIR/devpod-bin/" -type f -name "devpod-*" -exec cp {} ./bin \;
           find ./bin -name "devpod-*" -exec chmod +x {} \;
 
           # Replace binary names with target os
