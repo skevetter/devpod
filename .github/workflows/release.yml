@@ -133,7 +133,7 @@ jobs:
       - name: generate pro provider
         if: matrix.arch == 'amd64' && matrix.runner == 'ubuntu-latest'
         working-directory: ./hack/pro
-        run: go run ./main.go ${{ inputs.tag || github.ref_name }} > ${{ runner.temp }}/devpod-bin/provider.yaml
+        run: go run ./main.go ${{ inputs.tag || github.ref_name }} ../../desktop/src-tauri/bin > ${{ runner.temp }}/devpod-bin/provider.yaml
 
       - name: rename binaries for desktop build
         run: |

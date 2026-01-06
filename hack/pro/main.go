@@ -14,15 +14,24 @@ import (
 //go:embed provider.yaml
 var provider string
 
-var checksumMap = map[string]string{
-	"./bin/devpod-linux-amd64":       "##CHECKSUM_LINUX_AMD64##",
-	"./bin/devpod-linux-arm64":       "##CHECKSUM_LINUX_ARM64##",
-	"./bin/devpod-darwin-amd64":      "##CHECKSUM_DARWIN_AMD64##",
-	"./bin/devpod-darwin-arm64":      "##CHECKSUM_DARWIN_ARM64##",
-	"./bin/devpod-windows-amd64.exe": "##CHECKSUM_WINDOWS_AMD64##",
-}
-
 func main() {
+	if len(os.Args) < 2 {
+		panic("usage: go run main.go <version> [base_path]")
+	}
+
+	basePath := "./bin"
+	if len(os.Args) > 2 {
+		basePath = os.Args[2]
+	}
+
+	checksumMap := map[string]string{
+		filepath.Join(basePath, "devpod-linux-amd64"):       "##CHECKSUM_LINUX_AMD64##",
+		filepath.Join(basePath, "devpod-linux-arm64"):       "##CHECKSUM_LINUX_ARM64##",
+		filepath.Join(basePath, "devpod-darwin-amd64"):      "##CHECKSUM_DARWIN_AMD64##",
+		filepath.Join(basePath, "devpod-darwin-arm64"):      "##CHECKSUM_DARWIN_ARM64##",
+		filepath.Join(basePath, "devpod-windows-amd64.exe"): "##CHECKSUM_WINDOWS_AMD64##",
+	}
+
 	partial := os.Getenv("PARTIAL") == "true"
 	sourceFile, ok := os.LookupEnv("SOURCE_FILE")
 	absPath := ""
