@@ -9,14 +9,8 @@ on:
 
 jobs:
   build-cli:
-    name: Build CLI Binary on ${{ matrix.runner }}
-    strategy:
-      matrix:
-        include:
-          - runner: ubuntu-latest
-          - runner: macos-latest
-          - runner: windows-latest
-    runs-on: ${{ matrix.runner }}
+    name: Build CLI Binary
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v6
 
@@ -24,26 +18,16 @@ jobs:
         with:
           go-version-file: go.mod
 
-      - name: get operating system lowercase
-        id: os
-        shell: bash
-        run: |
-          OS=$(echo "${{ runner.os }}" | tr '[:upper:]' '[:lower:]')
-          if [ "$OS" == "macos" ]; then
-            OS="darwin"
-          fi
-          echo "runner_os=$OS" >> "$GITHUB_OUTPUT"
-
       - uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser
           version: "~> v2"
-          args: build --id devpod-${{ steps.os.outputs.runner_os }} --snapshot
+          args: build --id devpod --snapshot
 
       - uses: actions/upload-artifact@v6
         with:
-          name: devpod-${{ steps.os.outputs.runner_os }}
-          path: dist/devpod-${{ steps.os.outputs.runner_os }}_*/devpod-${{ steps.os.outputs.runner_os }}-*
+          name: devpod
+          path: dist/*/devpod-*
 
   build-desktop:
     name: Build Desktop App for ${{ matrix.arch }} on ${{ matrix.runner }}
