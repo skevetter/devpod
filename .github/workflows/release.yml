@@ -125,12 +125,13 @@ jobs:
           mkdir -p ./bin/
           find "$TEMP_DIR/devpod-bin/" -type f -name "devpod-*" -exec cp {} ./bin \;
           find ./bin -type f -name "devpod-*" -exec chmod +x {} \;
+          mkdir ../../dist/ && cp ./bin/* ../../dist/
           ls -R ./bin/
 
       - name: generate pro provider
         if: matrix.arch == 'amd64' && matrix.runner == 'ubuntu-latest'
         working-directory: ./hack/pro
-        run: go run ./main.go ${{ inputs.tag || github.ref_name }} ../../desktop/src-tauri/bin > ${{ runner.temp }}/devpod-bin/provider.yaml
+        run: go run ./main.go ${{ inputs.tag || github.ref_name }} ../../desktop/src-tauri/bin > ../../dist/provider.yaml
 
       - name: rename binaries for desktop build
         shell: bash
@@ -191,10 +192,4 @@ jobs:
           tag_name: ${{ inputs.tag || github.ref_name }}
           draft: true
           files: |
-            ./desktop/src-tauri/bin/devpod-linux-amd64
-            ./desktop/src-tauri/bin/devpod-linux-arm64
-            ./desktop/src-tauri/bin/devpod-darwin-amd64
-            ./desktop/src-tauri/bin/devpod-darwin-arm64
-            ./desktop/src-tauri/bin/devpod-windows-amd64.exe
-            ./desktop/src-tauri/bin/devpod-windows-arm64.exe
-            ${{ runner.temp }}/devpod-bin/provider.yaml
+            ./dist/*
