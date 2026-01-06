@@ -1,0 +1,15 @@
+{
+  "bundle": {
+    "linux": {
+      "deb": {
+        "depends": ["libwebkit2gtk-4.1-0", "libgtk-3-0"]
+      },
+      "appimage": {
+        "bundleMediaFramework": true
+      },
+      "rpm": {
+        "depends": ["webkit2gtk4.1", "gtk3"]
+      }
+    }
+  }
+}

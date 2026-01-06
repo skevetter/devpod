@@ -7,15 +7,6 @@
   },
   "bundle": {
     "active": true,
-    "windows": {
-      "certificateThumbprint": null,
-      "digestAlgorithm": "sha256",
-      "timestampUrl": "",
-      "nsis": {
-        "displayLanguageSelector": false,
-        "installMode": "currentUser"
-      }
-    },
     "category": "DeveloperTool",
     "copyright": "",
     "externalBin": ["bin/devpod-cli"],
@@ -30,33 +21,6 @@
     "shortDescription": "Spin up dev environments in any infra",
     "longDescription": "Dev-environments-as-code like Terraform but for dev environments. Like Codespaces but open-source, client-only and unopinionated: Works with any IDE and lets you use any cloud, kubernetes or just on localhost docker.",
     "targets": "all",
-    "macOS": {
-      "entitlements": "./entitlements.plist",
-      "exceptionDomain": "",
-      "frameworks": [],
-      "providerShortName": null,
-      "signingIdentity": "-",
-      "dmg": {
-        "background": "dmg-background.png",
-        "windowSize": {
-          "width": 660,
-          "height": 400
-        },
-        "appPosition": {
-          "x": 180,
-          "y": 160
-        },
-        "applicationFolderPosition": {
-          "x": 480,
-          "y": 160
-        }
-      }
-    },
-    "linux": {
-      "deb": {
-        "depends": []
-      }
-    },
     "createUpdaterArtifacts": true
   },
   "productName": "DevPod",

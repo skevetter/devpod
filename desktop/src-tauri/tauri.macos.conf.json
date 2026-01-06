@@ -1,0 +1,26 @@
+{
+  "bundle": {
+    "macOS": {
+      "entitlements": "./entitlements.plist",
+      "exceptionDomain": "",
+      "frameworks": [],
+      "providerShortName": null,
+      "signingIdentity": "-",
+      "dmg": {
+        "background": "dmg-background.png",
+        "windowSize": {
+          "width": 660,
+          "height": 400
+        },
+        "appPosition": {
+          "x": 180,
+          "y": 160
+        },
+        "applicationFolderPosition": {
+          "x": 480,
+          "y": 160
+        }
+      }
+    }
+  }
+}

@@ -1,306 +1,186 @@
 name: Release
 on:
-  release:
-    types: [prereleased]
   workflow_dispatch:
     inputs:
-      dry_run:
-        description: "run as dry run (creates draft release for testing)"
+      tag:
+        description: tag name for the release (e.g., v1.0.0)
         required: true
-        type: boolean
-        default: true
-      auto_cleanup:
-        description: "cleanup release after dry run"
-        required: true
-        type: boolean
-        default: false
+        type: string
 
 jobs:
-  create-release:
-    name: Create Release
-    permissions:
-      contents: write
-    runs-on: ubuntu-latest
-    outputs:
-      package_version: ${{ steps.create-release.outputs.package_version }}
-      original_package_version: ${{ steps.create-release.outputs.original_package_version }}
-      release_id: ${{ steps.create-release.outputs.release_id }}
-      is_dry_run: ${{ steps.check-mode.outputs.is_dry_run }}
+  build-cli:
+    name: Build CLI Binary on ${{ matrix.runner }}
+    strategy:
+      matrix:
+        include:
+          - runner: ubuntu-latest
+          - runner: macos-latest
+          - runner: windows-latest
+    runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v6
 
-      - name: check mode
-        id: check-mode
-        run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.dry_run }}" == "true" ]]; then
-            echo "is_dry_run=true" >> "$GITHUB_OUTPUT"
-          elif [[ "${{ github.event_name }}" == "release" ]]; then
-            if [[ ! "${{ github.ref }}" =~ ^refs/tags/v ]]; then
-              echo "Error: Production release must be triggered by a tag starting with 'v'"
-              exit 1
-            fi
-            echo "is_dry_run=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "Error: Invalid workflow trigger"
-            exit 1
-          fi
-
-      - name: create draft release for dry run
-        if: steps.check-mode.outputs.is_dry_run == 'true'
-        id: create-draft
-        uses: actions/github-script@v8
+      - uses: actions/setup-go@v6
         with:
-          script: |
-            const release = await github.rest.repos.createRelease({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              tag_name: 'v0.0.0-10',
-              name: 'Test Release (Dry Run)',
-              draft: true,
-              prerelease: true,
-              body: 'Automated dry run test release'
-            })
+          go-version-file: go.mod
 
-            core.setOutput('package_version', '0.0.0-10')
-            core.setOutput('original_package_version', '0.0.0-10')
-            core.setOutput('release_id', release.data.id)
-
-      - name: get release from tag
-        if: steps.check-mode.outputs.is_dry_run == 'false'
-        uses: ./.github/actions/create-release
-        id: create-tag-release
-
-      - name: set outputs
-        id: create-release
+      - name: get operating system lowercase
+        id: os
+        shell: bash
         run: |
-          if [[ "${{ steps.check-mode.outputs.is_dry_run }}" == "true" ]]; then
-            {
-              echo "package_version=${{ steps.create-draft.outputs.package_version }}"
-              echo "original_package_version=${{ steps.create-draft.outputs.original_package_version }}"
-              echo "release_id=${{ steps.create-draft.outputs.release_id }}"
-            } >> "$GITHUB_OUTPUT"
-          else
-            {
-              echo "package_version=${{ steps.create-tag-release.outputs.package_version }}"
-              echo "original_package_version=${{ steps.create-tag-release.outputs.original_package_version }}"
-              echo "release_id=${{ steps.create-tag-release.outputs.release_id }}"
-            } >> "$GITHUB_OUTPUT"
+          OS=$(echo "${{ runner.os }}" | tr '[:upper:]' '[:lower:]')
+          if [ "$OS" == "macos" ]; then
+            OS="darwin"
           fi
+          echo "runner_os=$OS" >> "$GITHUB_OUTPUT"
 
-  build-linux:
-    name: Build Linux Release Artifacts ${{ matrix.settings.target }}
-    needs: [create-release]
+      - uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: "~> v2"
+          args: build --id devpod-${{ steps.os.outputs.runner_os }} --snapshot
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: devpod-${{ steps.os.outputs.runner_os }}
+          path: dist/devpod-${{ steps.os.outputs.runner_os }}_*/devpod-${{ steps.os.outputs.runner_os }}-*
+
+  build-desktop:
+    name: Build Desktop App for ${{ matrix.arch }} on ${{ matrix.runner }}
+    needs: build-cli
     permissions:
       contents: write
     strategy:
-      fail-fast: false
       matrix:
-        settings:
-          - target: x86_64-unknown-linux-gnu
-            arch: amd64
-            cli_only: false
-          - target: aarch64-unknown-linux-gnu
-            arch: arm64
-            cli_only: true
-    runs-on: ubuntu-latest
+        include:
+          - arch: amd64
+            target: x86_64-unknown-linux-gnu
+            runner: ubuntu-latest
+            tauri_config_args: ""
+            tauri_include_updater_json: true
+            tauri_ci: true
 
+          - arch: amd64
+            target: x86_64-unknown-linux-gnu
+            runner: ubuntu-latest
+            tauri_config_args: "--config src-tauri/tauri.flatpak.conf.json"
+            tauri_include_updater_json: false
+            tauri_ci: true
+
+          - arch: amd64
+            target: x86_64-apple-darwin
+            runner: macos-latest
+            tauri_config_args: ""
+            tauri_include_updater_json: false
+            tauri_ci: true
+
+          - arch: arm64
+            target: aarch64-apple-darwin
+            runner: macos-latest
+            tauri_config_args: ""
+            tauri_include_updater_json: false
+            tauri_ci: false # https://github.com/tauri-apps/tauri/issues/3055
+
+          - arch: amd64
+            target: x86_64-pc-windows-msvc
+            runner: windows-latest
+            tauri_config_args: ""
+            tauri_include_updater_json: false
+            tauri_ci: true
+    runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v6
 
-      - name: setup build environment
-        uses: ./.github/actions/setup-build-environment
-        with:
-          host: ubuntu-latest
-          target: ${{ matrix.settings.target }}
-          package_version: ${{ needs.create-release.outputs.package_version }}
-          cli_only: ${{ matrix.settings.cli_only }}
-          cache-key-suffix: "relase-linux-${{ github.run_id }}"
+      - name: setup Task
+        uses: go-task/setup-task@v1
 
-      - name: build CLI
-        uses: ./.github/actions/build-cli
+      - name: setup Node
+        uses: actions/setup-node@v6
         with:
-          host: ubuntu-latest
-          target: ${{ matrix.settings.target }}
-          os: linux
-          arch: ${{ matrix.settings.arch }}
-          version: ${{ needs.create-release.outputs.original_package_version }}
-          telemetry_private_key: ${{ secrets.DEVPOD_TELEMETRY_PRIVATE_KEY }}
-          crane_private_key: ${{ secrets.CRANE_PRIVATE_KEY }}
-          output_path: release
-          sidecar_path: desktop/src-tauri/bin
+          node-version: "latest"
 
-      - name: build desktop app
-        if: matrix.settings.target == 'x86_64-unknown-linux-gnu'
+      - name: setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: setup Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./desktop/src-tauri -> target"
+
+      - name: get operating system lowercase
+        id: os
+        shell: bash
+        run: |
+          OS=$(echo "${{ runner.os }}" | tr '[:upper:]' '[:lower:]')
+          if [ "$OS" == "macos" ]; then
+            OS="darwin"
+          fi
+          echo "runner_os=$OS" >> "$GITHUB_OUTPUT"
+
+      - name: download CLI artifacts
+        uses: actions/download-artifact@v7
+        with:
+          pattern: devpod-${{ steps.os.outputs.runner_os }}
+          path: ${{ runner.temp }}/devpod-bin/
+          merge-multiple: true
+
+      - name: generate pro provider
+        if: matrix.arch == 'amd64' && matrix.runner == 'ubuntu-latest'
+        working-directory: ./hack/pro
+        run: go run ./main.go ${{ inputs.tag || github.ref_name }} > ${{ runner.temp }}/devpod-bin/provider.yaml
+
+      - name: setup executable
+        shell: bash
+        working-directory: ./desktop/src-tauri
+        run: |
+          if [ "${{ runner.os }}" == "Windows" ]; then
+            TEMP_DIR="${{ runner.temp }}"
+            TEMP_DIR="${TEMP_DIR//\\//}"
+            ls -R "$TEMP_DIR/devpod-bin/"
+            mkdir -p ./bin/
+            find "$TEMP_DIR/devpod-bin/" -name "devpod-${{ steps.os.outputs.runner_os }}-${{ matrix.arch }}.exe" -exec cp {} ./bin/devpod-cli-${{ matrix.target }}.exe \;
+          else
+            ls -R "${{ runner.temp }}/devpod-bin/"
+            mkdir -p ./bin/
+            find "${{ runner.temp }}/devpod-bin/" -name "devpod-${{ steps.os.outputs.runner_os }}-${{ matrix.arch }}" -exec cp {} ./bin/devpod-cli-${{ matrix.target }} \;
+            chmod +x "./bin/devpod-cli-${{ matrix.target }}"
+            ls -R ./bin/
+          fi
+
+      - name: install linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update && sudo apt-get install -y \
+            libayatana-appindicator3-dev \
+            libgtk-3-dev \
+            librsvg2-dev \
+            libwebkit2gtk-4.1-dev \
+            patchelf
+
+      - name: install desktop dependencies
+        run: task desktop:build && task desktop:tauri:generate-types
+
+      - name: tauri build
         uses: tauri-apps/tauri-action@v0.6
         with:
-          releaseId: ${{ needs.create-release.outputs.release_id }}
-          projectPath: ./desktop
-          args: --target ${{ matrix.settings.target }} --config src-tauri/tauri-flatpak.conf.json --bundles appimage,deb,updater
-          includeUpdaterJson: true
+          projectPath: "./desktop"
+          args: "--target ${{ matrix.target }} ${{ matrix.tauri_config_args }}"
+          tagName: ${{ inputs.tag || github.ref_name }}
+          releaseName: "DevPod ${{ inputs.tag || github.ref_name }}"
+          releaseDraft: true
+          generateReleaseNotes: true
+          includeUpdaterJson: ${{ matrix.tauri_include_updater_json }}
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          CI: ${{ matrix.tauri_ci }}
 
-      - name: create linux release artifacts
-        if: matrix.settings.cli_only == false
-        uses: ./.github/actions/create-linux-release-artifacts
+      - name: upload cli assets
+        uses: softprops/action-gh-release@v2
         with:
-          target: ${{ matrix.settings.target }}
-          package_version: ${{ needs.create-release.outputs.package_version }}
-          release_id: ${{ needs.create-release.outputs.release_id }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          tauri_private_key: ${{ secrets.TAURI_PRIVATE_KEY }}
-          tauri_key_password: ${{ secrets.TAURI_KEY_PASSWORD }}
-          app_image_sign: ${{ secrets.APP_IMAGE_SIGN }}
-          app_image_sign_key: ${{ secrets.APP_IMAGE_SIGN_KEY }}
-          app_image_sign_passphrase: ${{ secrets.APP_IMAGE_SIGN_PASSPHRASE }}
-
-      - name: upload CLI asset
-        uses: ./.github/actions/upload-cli-asset
-        with:
-          target: ${{ matrix.settings.target }}
-          os: linux
-          arch: ${{ matrix.settings.arch }}
-          release_id: ${{ needs.create-release.outputs.release_id }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-
-  build-macos:
-    name: Build MacOS Release Artifacts ${{ matrix.settings.target }}
-    needs: [create-release, build-linux]
-    permissions:
-      contents: write
-    strategy:
-      fail-fast: false
-      matrix:
-        settings:
-          - target: x86_64-apple-darwin
-            arch: amd64
-          - target: aarch64-apple-darwin
-            arch: arm64
-    runs-on: macos-latest
-
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: setup build environment
-        uses: ./.github/actions/setup-build-environment
-        with:
-          host: macos-latest
-          target: ${{ matrix.settings.target }}
-          package_version: ${{ needs.create-release.outputs.package_version }}
-          cli_only: false
-          cache-key-suffix: "release-macos-${{ github.run_id }}"
-
-      - name: build CLI
-        uses: ./.github/actions/build-cli
-        with:
-          host: macos-latest
-          target: ${{ matrix.settings.target }}
-          os: darwin
-          arch: ${{ matrix.settings.arch }}
-          version: ${{ needs.create-release.outputs.original_package_version }}
-          telemetry_private_key: ${{ secrets.DEVPOD_TELEMETRY_PRIVATE_KEY }}
-          crane_private_key: ${{ secrets.CRANE_PRIVATE_KEY }}
-          output_path: release
-          sidecar_path: desktop/src-tauri/bin
-
-      - name: create macOS release artifacts
-        uses: ./.github/actions/create-macos-release-artifacts
-        with:
-          target: ${{ matrix.settings.target }}
-          release_id: ${{ needs.create-release.outputs.release_id }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          tauri_private_key: ${{ secrets.TAURI_PRIVATE_KEY }}
-          tauri_key_password: ${{ secrets.TAURI_KEY_PASSWORD }}
-
-      - name: upload CLI asset
-        uses: ./.github/actions/upload-cli-asset
-        with:
-          target: ${{ matrix.settings.target }}
-          os: darwin
-          arch: ${{ matrix.settings.arch }}
-          release_id: ${{ needs.create-release.outputs.release_id }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-
-  build-windows:
-    name: Build Windows Release Artifacts windows-x86_64-pc-windows-msvc
-    needs: [create-release, build-linux]
-    permissions:
-      contents: write
-    runs-on: windows-latest
-
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: setup build environment
-        uses: ./.github/actions/setup-build-environment
-        with:
-          host: windows-latest
-          target: x86_64-pc-windows-msvc
-          package_version: ${{ needs.create-release.outputs.package_version }}
-          cli_only: false
-          cache-key-suffix: "build-windows-${{ github.run_id }}"
-
-      - name: build CLI
-        uses: ./.github/actions/build-cli
-        with:
-          host: windows-latest
-          target: x86_64-pc-windows-msvc
-          os: windows
-          arch: amd64
-          version: ${{ needs.create-release.outputs.original_package_version }}
-          telemetry_private_key: ${{ secrets.DEVPOD_TELEMETRY_PRIVATE_KEY }}
-          crane_private_key: ${{ secrets.CRANE_PRIVATE_KEY }}
-          output_path: release
-          sidecar_path: desktop/src-tauri/bin
-
-      - name: create windows release artifacts
-        uses: ./.github/actions/create-windows-release-artifacts
-        with:
-          target: x86_64-pc-windows-msvc
-          arch: amd64
-          package_version: ${{ needs.create-release.outputs.package_version }}
-          release_id: ${{ needs.create-release.outputs.release_id }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          tauri_private_key: ${{ secrets.TAURI_PRIVATE_KEY }}
-          tauri_key_password: ${{ secrets.TAURI_KEY_PASSWORD }}
-
-  publish:
-    name: Publish Release
-    needs: [create-release, build-linux, build-macos, build-windows]
-    if: needs.create-release.outputs.is_dry_run == 'false'
-    permissions:
-      contents: write
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: release pro provider
-        uses: ./.github/actions/release-pro-provider
-        with:
-          version: v${{ needs.create-release.outputs.original_package_version }}
-          github_token: ${{ github.token }}
-
-      - name: update latest.json
-        uses: ./.github/actions/update-latest-json
-        with:
-          release_id: ${{ needs.create-release.outputs.release_id }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-
-  cleanup:
-    name: Cleanup Draft Release
-    needs: [create-release, build-linux, build-macos, build-windows]
-    if: always() && needs.create-release.outputs.is_dry_run == 'true' && inputs.auto_cleanup
-    permissions:
-      contents: write
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/github-script@v8
-        with:
-          script: |
-            await github.rest.repos.deleteRelease({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              release_id: "${{ needs.create-release.outputs.release_id }}"
-            })
-            console.log("Deleted release: ${{ needs.create-release.outputs.release_id }}")
+          tag_name: ${{ inputs.tag || github.ref_name }}
+          draft: true
+          files: |
+            ${{ runner.temp }}/devpod-bin/*

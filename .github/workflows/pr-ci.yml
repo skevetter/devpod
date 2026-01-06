@@ -368,7 +368,7 @@ jobs:
           - arch: amd64
             target: x86_64-unknown-linux-gnu
             runner: ubuntu-latest
-            tauri_config_args: "--config src-tauri/tauri-flatpak.conf.json --bundles appimage,deb,updater"
+            tauri_config_args: "--config src-tauri/tauri.flatpak.conf.json"
             tauri_include_updater_json: true
             tauri_ci: true
 

@@ -1,5 +1,7 @@
 {
-  "identifier": "sh.loft.devpod.for.devpod.devs",
+  "bundle": {
+    "targets": ["flatpak"]
+  },
   "plugins": {
     "updater": {
       "active": false
