@@ -126,11 +126,6 @@ jobs:
           path: ${{ runner.temp }}/devpod-bin/
           merge-multiple: true
 
-      - name: generate pro provider
-        if: matrix.arch == 'amd64' && matrix.runner == 'ubuntu-latest'
-        working-directory: ./hack/pro
-        run: go run ./main.go ${{ inputs.tag || github.ref_name }} > ${{ runner.temp }}/devpod-bin/provider.yaml
-
       - name: setup executable
         shell: bash
         working-directory: ./desktop/src-tauri
@@ -138,16 +133,18 @@ jobs:
           if [ "${{ runner.os }}" == "Windows" ]; then
             TEMP_DIR="${{ runner.temp }}"
             TEMP_DIR="${TEMP_DIR//\\//}"
-            ls -R "$TEMP_DIR/devpod-bin/"
-            mkdir -p ./bin/
-            find "$TEMP_DIR/devpod-bin/" -name "devpod-${{ steps.os.outputs.runner_os }}-${{ matrix.arch }}.exe" -exec cp {} ./bin/devpod-cli-${{ matrix.target }}.exe \;
-          else
-            ls -R "${{ runner.temp }}/devpod-bin/"
-            mkdir -p ./bin/
-            find "${{ runner.temp }}/devpod-bin/" -name "devpod-${{ steps.os.outputs.runner_os }}-${{ matrix.arch }}" -exec cp {} ./bin/devpod-cli-${{ matrix.target }} \;
-            chmod +x "./bin/devpod-cli-${{ matrix.target }}"
-            ls -R ./bin/
           fi
+
+          ls -R "$TEMP_DIR/devpod-bin/"
+          mkdir -p ./bin/
+          find "$TEMP_DIR/devpod-bin/" -name "devpod-*" -exec cp {} ./bin \;
+          find ./bin -name "devpod-*" -exec chmod +x {} \;
+          ls -R ./bin/
+
+      - name: generate pro provider
+        if: matrix.arch == 'amd64' && matrix.runner == 'ubuntu-latest' && matrix.tauri_config_args == ''
+        working-directory: ./hack/pro
+        run: go run ./main.go ${{ inputs.tag || github.ref_name }} > ${{ runner.temp }}/devpod-bin/provider.yaml
 
       - name: install linux dependencies
         if: runner.os == 'Linux'
