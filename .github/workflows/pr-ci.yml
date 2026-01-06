@@ -422,8 +422,8 @@ jobs:
         shell: bash
         working-directory: ./desktop/src-tauri
         run: |
+          TEMP_DIR="${{ runner.temp }}"
           if [ "${{ runner.os }}" == "Windows" ]; then
-            TEMP_DIR="${{ runner.temp }}"
             TEMP_DIR="${TEMP_DIR//\\//}"
           fi
 
