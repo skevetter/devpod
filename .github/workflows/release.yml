@@ -56,35 +56,24 @@ jobs:
           - arch: amd64
             target: x86_64-unknown-linux-gnu
             runner: ubuntu-latest
-            tauri_config_args: ""
             tauri_include_updater_json: true
-            tauri_ci: true
-
-          - arch: amd64
-            target: x86_64-unknown-linux-gnu
-            runner: ubuntu-latest
-            tauri_config_args: "--config src-tauri/tauri.flatpak.conf.json"
-            tauri_include_updater_json: false
             tauri_ci: true
 
           - arch: amd64
             target: x86_64-apple-darwin
             runner: macos-latest
-            tauri_config_args: ""
             tauri_include_updater_json: false
             tauri_ci: true
 
           - arch: arm64
             target: aarch64-apple-darwin
             runner: macos-latest
-            tauri_config_args: ""
             tauri_include_updater_json: false
             tauri_ci: false # https://github.com/tauri-apps/tauri/issues/3055
 
           - arch: amd64
             target: x86_64-pc-windows-msvc
             runner: windows-latest
-            tauri_config_args: ""
             tauri_include_updater_json: false
             tauri_ci: true
     runs-on: ${{ matrix.runner }}
@@ -142,7 +131,7 @@ jobs:
           ls -R ./bin/
 
       - name: generate pro provider
-        if: matrix.arch == 'amd64' && matrix.runner == 'ubuntu-latest' && matrix.tauri_config_args == ''
+        if: matrix.arch == 'amd64' && matrix.runner == 'ubuntu-latest'
         working-directory: ./hack/pro
         run: go run ./main.go ${{ inputs.tag || github.ref_name }} > ${{ runner.temp }}/devpod-bin/provider.yaml
 
@@ -163,7 +152,7 @@ jobs:
         uses: tauri-apps/tauri-action@v0.6
         with:
           projectPath: "./desktop"
-          args: "--target ${{ matrix.target }} ${{ matrix.tauri_config_args }}"
+          args: "--target ${{ matrix.target }}"
           tagName: ${{ inputs.tag || github.ref_name }}
           releaseName: "DevPod ${{ inputs.tag || github.ref_name }}"
           releaseDraft: true

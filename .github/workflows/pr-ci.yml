@@ -368,28 +368,18 @@ jobs:
           - arch: amd64
             target: x86_64-unknown-linux-gnu
             runner: ubuntu-latest
-            tauri_config_args: "--config src-tauri/tauri.flatpak.conf.json"
             tauri_include_updater_json: true
-            tauri_ci: true
-
-          - arch: amd64
-            target: x86_64-apple-darwin
-            runner: macos-latest
-            tauri_config_args: ""
-            tauri_include_updater_json: false
             tauri_ci: true
 
           - arch: arm64
             target: aarch64-apple-darwin
             runner: macos-latest
-            tauri_config_args: ""
             tauri_include_updater_json: false
             tauri_ci: false # https://github.com/tauri-apps/tauri/issues/3055
 
           - arch: amd64
             target: x86_64-pc-windows-msvc
             runner: windows-latest
-            tauri_config_args: ""
             tauri_include_updater_json: false
             tauri_ci: true
     runs-on: ${{ matrix.runner }}
@@ -435,16 +425,13 @@ jobs:
           if [ "${{ runner.os }}" == "Windows" ]; then
             TEMP_DIR="${{ runner.temp }}"
             TEMP_DIR="${TEMP_DIR//\\//}"
-            ls -R "$TEMP_DIR/devpod-bin/"
-            mkdir -p ./bin/
-            find "$TEMP_DIR/devpod-bin/" -name "devpod-${{ steps.os.outputs.runner_os }}-${{ matrix.arch }}.exe" -exec cp {} ./bin/devpod-cli-${{ matrix.target }}.exe \;
-          else
-            ls -R "${{ runner.temp }}/devpod-bin/"
-            mkdir -p ./bin/
-            find "${{ runner.temp }}/devpod-bin/" -name "devpod-${{ steps.os.outputs.runner_os }}-${{ matrix.arch }}" -exec cp {} ./bin/devpod-cli-${{ matrix.target }} \;
-            chmod +x "./bin/devpod-cli-${{ matrix.target }}"
-            ls -R ./bin/
           fi
+
+          ls -R "$TEMP_DIR/devpod-bin/"
+          mkdir -p ./bin/
+          find "$TEMP_DIR/devpod-bin/" -name "devpod-*" -exec cp {} ./bin \;
+          find ./bin -name "devpod-*" -exec chmod +x {} \;
+          ls -R ./bin/
 
       - name: install linux dependencies
         if: runner.os == 'Linux'
@@ -474,7 +461,7 @@ jobs:
         uses: tauri-apps/tauri-action@v0.6
         with:
           projectPath: "./desktop"
-          args: "--target ${{ matrix.target }} ${{ matrix.tauri_config_args }}"
+          args: "--target ${{ matrix.target }}"
           includeUpdaterJson: ${{ matrix.tauri_include_updater_json }}
         env:
           GITHUB_TOKEN: ${{ github.token }}
