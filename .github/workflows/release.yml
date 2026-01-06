@@ -136,6 +136,8 @@ jobs:
         run: go run ./main.go ${{ inputs.tag || github.ref_name }} ../../desktop/src-tauri/bin > ${{ runner.temp }}/devpod-bin/provider.yaml
 
       - name: rename binaries for desktop build
+        shell: bash
+        working-directory: ./desktop/src-tauri
         run: |
           find ./bin -type f -name "devpod-linux-amd64" -exec mv {} ./bin/devpod-cli-x86_64-unknown-linux-gnu \;
           find ./bin -type f -name "devpod-linux-arm64" -exec mv {} ./bin/devpod-cli-aarch64-unknown-linux-gnu \;
