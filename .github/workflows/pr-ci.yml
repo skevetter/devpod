@@ -272,21 +272,16 @@ jobs:
         shell: bash
         working-directory: ./e2e
         run: |
+          TEMP_DIR="${{ runner.temp }}"
           if [ "${{ runner.os }}" == "Windows" ]; then
-            TEMP_DIR="${{ runner.temp }}"
             TEMP_DIR="${TEMP_DIR//\\//}"
-            ls -R "$TEMP_DIR/devpod-bin/"
-            mkdir -p ./bin/
-            find "$TEMP_DIR/devpod-bin/" -name "devpod-${{ steps.os.outputs.runner_os }}-amd64.exe" -exec mv {} ./bin/devpod-${{ steps.os.outputs.runner_os }}-amd64.exe \;
-            ls -R ./bin/
-          else
-            ls -R "${{ runner.temp }}/devpod-bin/"
-            mkdir -p ./bin/
-            find "${{ runner.temp }}/devpod-bin/" -name "devpod-${{ steps.os.outputs.runner_os }}-amd64" -exec mv {} ./bin/devpod-${{ steps.os.outputs.runner_os }}-amd64 \;
-            find "${{ runner.temp }}/devpod-bin/" -name "devpod-${{ steps.os.outputs.runner_os }}-arm64" -exec mv {} ./bin/devpod-${{ steps.os.outputs.runner_os }}-arm64 \;
-            chmod +x "./bin/devpod-${{ steps.os.outputs.runner_os }}-amd64"
-            ls -R ./bin/
           fi
+
+          ls -R "$TEMP_DIR/devpod-bin/"
+          mkdir -p ./bin/
+          find "$TEMP_DIR/devpod-bin/" -name "devpod-*" -exec cp {} ./bin \;
+          find ./bin -name "devpod-*" -exec chmod +x {} \;
+          ls -R ./bin/
 
       - name: generate uuid
         if: matrix.install-kind == true && runner.os != 'Windows' && (matrix.requires-secret == false || needs.can-read-secret.outputs.secret-set == 'true')
