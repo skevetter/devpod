@@ -130,7 +130,13 @@ jobs:
           find "$TEMP_DIR/devpod-bin/" -name "devpod-*" -exec cp {} ./bin \;
           find ./bin -name "devpod-*" -exec chmod +x {} \;
 
-          # Replace binary names with target os
+      - name: generate pro provider
+        if: matrix.arch == 'amd64' && matrix.runner == 'ubuntu-latest'
+        working-directory: ./hack/pro
+        run: go run ./main.go ${{ inputs.tag || github.ref_name }} > ${{ runner.temp }}/devpod-bin/provider.yaml
+
+      - name: rename binaries for desktop build
+        run: |
           find ./bin -name "devpod-linux-amd64" -exec mv {} ./bin/devpod-cli-x86_64-unknown-linux-gnu \;
           find ./bin -name "devpod-linux-arm64" -exec mv {} ./bin/devpod-cli-aarch64-unknown-linux-gnu \;
           find ./bin -name "devpod-darwin-amd64" -exec mv {} ./bin/devpod-cli-x86_64-apple-darwin \;
@@ -139,11 +145,6 @@ jobs:
           find ./bin -name "devpod-windows-arm64.exe" -exec mv {} ./bin/devpod-cli-aarch64-pc-windows-msvc.exe \;
 
           ls -R ./bin/
-
-      - name: generate pro provider
-        if: matrix.arch == 'amd64' && matrix.runner == 'ubuntu-latest'
-        working-directory: ./hack/pro
-        run: go run ./main.go ${{ inputs.tag || github.ref_name }} > ${{ runner.temp }}/devpod-bin/provider.yaml
 
       - name: install linux dependencies
         if: runner.os == 'Linux'
