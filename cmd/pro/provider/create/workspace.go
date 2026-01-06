@@ -52,7 +52,7 @@ func (cmd *WorkspaceCmd) Run(ctx context.Context, stdin io.Reader, stdout io.Wri
 		return err
 	}
 
-	// fully serialized intance, right now only used by GUI
+	// fully serialized instance, right now only used by GUI
 	instanceEnv := os.Getenv(platform.WorkspaceInstanceEnv)
 	if instanceEnv != "" {
 		instance := &managementv1.DevPodWorkspaceInstance{} // init pointer

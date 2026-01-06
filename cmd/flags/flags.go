@@ -1,8 +1,10 @@
 package flags
 
 import (
+	"encoding/csv"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/skevetter/devpod/pkg/platform"
 	"github.com/skevetter/log"
@@ -27,11 +29,11 @@ const DevpodEnvPrefix = "DEVPOD_"
 // Defines a string flag with specified name, environment variable, default value, and usage string.
 // The argument variable points to a string variable in which to store the value of the flag.
 func StringVarE(f *flag.FlagSet, variable *string, name string, environmentVariable string, defaultValue string, usage string) {
-	f.StringVar(variable, name, GetEnv(environmentVariable, defaultValue), usage+". You can also use "+environmentVariable+" to set this")
+	f.StringVar(variable, name, GetStringEnv(environmentVariable, defaultValue), usage+". You can also use "+environmentVariable+" to set this")
 }
 
-func GetEnv(key string, defaultValue string) string {
-	if value, exists := os.LookupEnv(key); exists {
+func GetStringEnv(environmentVariable string, defaultValue string) string {
+	if value, exists := os.LookupEnv(environmentVariable); exists {
 		return value
 	}
 	return defaultValue
@@ -43,11 +45,42 @@ func BoolVarE(f *flag.FlagSet, variable *bool, name string, environmentVariable 
 	f.BoolVar(variable, name, GetBoolEnv(environmentVariable, defaultValue), usage+". You can also use "+environmentVariable+" to set this")
 }
 
-func GetBoolEnv(key string, defaultValue bool) bool {
-	if value, exists := os.LookupEnv(key); exists {
+func GetBoolEnv(environmentVariable string, defaultValue bool) bool {
+	if value, exists := os.LookupEnv(environmentVariable); exists {
 		result, err := strconv.ParseBool(value)
 		if err != nil {
-			log.Default.Warnf("invalid boolean value %s for key %s, falling back to default %v", value, key, defaultValue)
+			log.Default.Warnf("invalid boolean value %s for environment variable %s, falling back to default %v", value, environmentVariable, defaultValue)
+			return defaultValue
+		}
+		return result
+	}
+	return defaultValue
+}
+
+// Defines a string flag with specified name, environment variable, default value, and usage string.
+// The argument variable points to a []string variable in which to store the values of the multiple flags.
+// The value of each argument will not try to be separated by comma. Use a StringSliceVar for that.
+func StringArrayVarE(f *flag.FlagSet, variable *[]string, name string, environmentVariable string, defaultValue []string, usage string) {
+	f.StringArrayVar(variable, name, GetStringSliceEnv(environmentVariable, defaultValue), usage)
+}
+
+// Defines a string flag with specified name, environment variable, default value, and usage string.
+// The argument variable points to a []string variable in which to store the value of the flag.
+// Compared to StringArrayVar flags, StringSliceVar flags take comma-separated value as arguments and split them accordingly.
+func StringSliceVarE(f *flag.FlagSet, variable *[]string, name string, environmentVariable string, defaultValue []string, usage string) {
+	f.StringSliceVar(variable, name, GetStringSliceEnv(environmentVariable, defaultValue), usage)
+}
+
+func GetStringSliceEnv(environmentVariable string, defaultValue []string) []string {
+	if value, exists := os.LookupEnv(environmentVariable); exists {
+		if value == "" {
+			return []string{}
+		}
+		stringReader := strings.NewReader(value)
+		csvReader := csv.NewReader(stringReader)
+		result, err := csvReader.Read()
+		if err != nil {
+			log.Default.Warnf("invalid string list value %s for environment variable %s, falling back to default %v", value, environmentVariable, defaultValue)
 			return defaultValue
 		}
 		return result

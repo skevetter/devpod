@@ -47,7 +47,14 @@ func (o Options) GetValue(values map[string]config.OptionValue, key string) stri
 // ReusesAuthSock determines if the --reuse-ssh-auth-sock flag should be passed to the ssh server helper based on the IDE.
 // Browser based IDEs use a browser tunnel to communicate with the remote server instead of an independent ssh connection
 func ReusesAuthSock(ide string) bool {
-	return ide == "openvscode" || ide == "jupyternotebook"
+	switch ide {
+	case string(config.IDEOpenVSCode):
+		return true
+	case string(config.IDEJupyterNotebook):
+		return true
+	default:
+		return false
+	}
 }
 
 type ProgressReader struct {
