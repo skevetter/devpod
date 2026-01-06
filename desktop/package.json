@@ -66,6 +66,7 @@
     "@eslint/js": "9.39.2",
     "@tanstack/eslint-plugin-query": "4.39.1",
     "@tauri-apps/cli": "2.9.6",
+    "glob": "^10.3.10",
     "@types/node": "18.19.130",
     "@types/react": "18.3.27",
     "@types/react-dom": "18.3.7",

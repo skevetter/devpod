@@ -186,8 +186,15 @@ jobs:
 
       - name: upload cli assets
         uses: softprops/action-gh-release@v2
+        if: runner.os == 'Linux'
         with:
           tag_name: ${{ inputs.tag || github.ref_name }}
           draft: true
           files: |
-            ${{ runner.temp }}/devpod-bin/*
+            ./desktop/src-tauri/bin/devpod-linux-amd64
+            ./desktop/src-tauri/bin/devpod-linux-arm64
+            ./desktop/src-tauri/bin/devpod-darwin-amd64
+            ./desktop/src-tauri/bin/devpod-darwin-arm64
+            ./desktop/src-tauri/bin/devpod-windows-amd64.exe
+            ./desktop/src-tauri/bin/devpod-windows-arm64.exe
+            ${{ runner.temp }}/devpod-bin/provider.yaml

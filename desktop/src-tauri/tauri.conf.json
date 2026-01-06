@@ -2,6 +2,7 @@
   "build": {
     "beforeDevCommand": "yarn dev",
     "beforeBuildCommand": "yarn build",
+    "beforeBundleCommand": "node ../scripts/rename-artifacts.js",
     "frontendDist": "../dist",
     "devUrl": "http://localhost:1420"
   },
