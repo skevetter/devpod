@@ -4,7 +4,7 @@
 
   <name>Devpod</name>
   <summary>Codespaces but open-source, client-only and unopinionated: Works with any IDE and lets you use any cloud, kubernetes or just localhost docker.</summary>
-  <developer_name>Loft Labs</developer_name>
+  <developer_name>skevetter</developer_name>
 
   <metadata_license>FSFAP</metadata_license>
   <project_license>MPL-2.0</project_license>
@@ -42,9 +42,9 @@
   </screenshots>
 
   <releases>
-    <release type="stable" version="v0.6.10" date="2024-01-21">
+    <release type="stable" version="__VERSION__" date="__DATE__">
       <description>
-		    <p>Release notes can be found at https://github.com/skevetter/devpod/releases/tag/v0.6.10</p>
+		    <p>Release notes can be found at https://github.com/skevetter/devpod/releases/tag/__VERSION__</p>
       </description>
     </release>
   </releases>

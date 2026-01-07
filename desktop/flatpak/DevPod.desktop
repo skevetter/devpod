@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=DevPod
+Comment=Codespaces but open-source, client-only and unopinionated
+Exec=sh.loft.devpod
+Icon=sh.loft.devpod
+StartupNotify=true
+Categories=Development;
+Keywords=development;container;devcontainer;remote;

@@ -129,7 +129,7 @@ jobs:
           ls -R ./bin/
 
       - name: generate pro provider
-        if: matrix.arch == 'amd64' && matrix.runner == 'ubuntu-latest'
+        if: runner.os == 'Linux'
         working-directory: ./hack/pro
         run: go run ./main.go ${{ inputs.tag || github.ref_name }} ../../desktop/src-tauri/bin > ../../dist/provider.yaml
 
@@ -194,3 +194,43 @@ jobs:
           draft: true
           files: |
             ./dist/*
+
+      - name: update flatpak metadata version and date
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          DATE=$(date +%Y-%m-%d)
+          VERSION="${{ inputs.tag || github.ref_name }}"
+
+          # Update metainfo.xml
+          sed -i "s/__VERSION__/${VERSION}/g" ./desktop/flatpak/DevPod.metainfo.xml
+          sed -i "s/__DATE__/${DATE}/g" ./desktop/flatpak/DevPod.metainfo.xml
+
+          # Calculate SHA256 values and update Flatpak manifest template
+          DEB_SHA256=$(sha256sum ./desktop/src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/deb/DevPod_*_amd64.deb | cut -d' ' -f1)
+          META_SHA256=$(sha256sum ./desktop/flatpak/DevPod.metainfo.xml | cut -d' ' -f1)
+          DESKTOP_SHA256=$(sha256sum ./desktop/flatpak/DevPod.desktop | cut -d' ' -f1)
+
+          sed -i "s/\${VERSION}/${VERSION}/g" ./desktop/flatpak/sh.loft.devpod.tmpl
+          sed -i "s/\${SHA256}/${DEB_SHA256}/g" ./desktop/flatpak/sh.loft.devpod.tmpl
+          sed -i "s/\${DESKTOP_SHA256}/${DESKTOP_SHA256}/g" ./desktop/flatpak/sh.loft.devpod.tmpl
+          sed -i "s/\${META_SHA256}/${META_SHA256}/g" ./desktop/flatpak/sh.loft.devpod.tmpl
+
+      - name: upload flatpak assets
+        uses: softprops/action-gh-release@v2
+        if: runner.os == 'Linux'
+        with:
+          tag_name: ${{ inputs.tag || github.ref_name }}
+          draft: true
+          files: |
+            ./desktop/flatpak/DevPod.metainfo.xml
+            ./desktop/flatpak/DevPod.desktop
+            ./desktop/flatpak/sh.loft.devpod.tmpl
+
+      - name: build flatpak bundle
+        uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+        if: runner.os == 'Linux'
+        with:
+          bundle: DevPod.flatpak
+          manifest-path: desktop/flatpak/sh.loft.devpod.tmpl
+          upload-artifact: true

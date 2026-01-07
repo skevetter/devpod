@@ -1,7 +1,7 @@
 id: sh.loft.devpod
 
 runtime: org.gnome.Platform
-runtime-version: '47'
+runtime-version: '48'
 sdk: org.gnome.Sdk
 
 command: "sh.loft.devpod"
@@ -25,28 +25,26 @@ modules:
     buildsystem: simple
     sources:
       - type: file
-        url: https://github.com/skevetter/devpod/releases/download/v${VERSION}/DevPod_${VERSION}_amd64.deb
+        url: https://github.com/skevetter/devpod/releases/download/${VERSION}/DevPod_linux_amd64.deb
         sha256: ${SHA256}
         only-arches: [x86_64]
+
       - type: file
-        url: https://github.com/skevetter/devpod/releases/download/v${VERSION}/DevPod.desktop
+        url: https://github.com/skevetter/devpod/releases/download/${VERSION}/DevPod.desktop
         sha256: ${DESKTOP_SHA256}
+
       - type: file
-        url: https://github.com/skevetter/devpod/releases/download/v${VERSION}/DevPod.metainfo.xml
+        url: https://github.com/skevetter/devpod/releases/download/${VERSION}/DevPod.metainfo.xml
         sha256: ${META_SHA256}
-      - type: file
-        path: devpod-wrapper
     build-commands:
       - ar -x *.deb
       - tar -xf data.tar.gz
-      - cp devpod-wrapper /app/bin/devpod-cli
-      - chmod +x /app/bin/devpod-cli
-      - install -Dm755 usr/bin/devpod-cli /app/bin/devpod-bin
-      - install -Dm755 usr/bin/DevPod\ Desktop /app/bin/sh.loft.devpod
+      - install -Dm755 usr/bin/devpod-cli /app/bin/devpod-cli
+      - install -Dm755 "usr/bin/DevPod Desktop" /app/bin/sh.loft.devpod
       - install -Dm644 DevPod.desktop /app/share/applications/sh.loft.devpod.desktop
       - desktop-file-edit --set-key Exec --set-value sh.loft.devpod /app/share/applications/sh.loft.devpod.desktop
       - desktop-file-edit --set-icon sh.loft.devpod /app/share/applications/sh.loft.devpod.desktop
-      - install -Dm644 usr/share/icons/hicolor/128x128/apps/DevPod\ Desktop.png /app/share/icons/hicolor/128x128/apps/sh.loft.devpod.png
-      - install -Dm644 usr/share/icons/hicolor/32x32/apps/DevPod\ Desktop.png /app/share/icons/hicolor/32x32/apps/sh.loft.devpod.png
-      - install -Dm644 usr/share/icons/hicolor/256x256@2/apps/DevPod\ Desktop.png /app/share/icons/hicolor/256x256@2/apps/sh.loft.devpod.png
+      - install -Dm644 "usr/share/icons/hicolor/128x128/apps/DevPod Desktop.png" /app/share/icons/hicolor/128x128/apps/sh.loft.devpod.png
+      - install -Dm644 "usr/share/icons/hicolor/32x32/apps/DevPod Desktop.png" /app/share/icons/hicolor/32x32/apps/sh.loft.devpod.png
+      - install -Dm644 "usr/share/icons/hicolor/256x256@2/apps/DevPod Desktop.png" /app/share/icons/hicolor/256x256@2/apps/sh.loft.devpod.png
       - install -Dm644 DevPod.metainfo.xml /app/share/metainfo/sh.loft.devpod.metainfo.xml
