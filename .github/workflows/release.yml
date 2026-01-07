@@ -195,8 +195,30 @@ jobs:
           files: |
             ./dist/*
 
-      - name: update flatpak metadata version and date
+      - name: upload desktop linux artifact for flatpak
         if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v6
+        with:
+          path: ./desktop/src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/deb/DevPod_*_amd64.deb
+          name: devpod-linux
+
+  build-flatpak:
+    name: Build Flatpak
+    runs-on: ubuntu-latest
+    needs: build-desktop
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-48
+      options: --privileged
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: download desktop linux artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: devpod-linux
+          path: /tmp/devpod/
+
+      - name: update flatpak metadata version and date
         shell: bash
         run: |
           DATE=$(date +%Y-%m-%d)
@@ -207,14 +229,14 @@ jobs:
           sed -i "s/__DATE__/${DATE}/g" ./desktop/flatpak/DevPod.metainfo.xml
 
           # Calculate SHA256 values and update Flatpak manifest template
-          DEB_SHA256=$(sha256sum ./desktop/src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/deb/DevPod_*_amd64.deb | cut -d' ' -f1)
+          DEB_SHA256=$(sha256sum /tmp/devpod/DevPod_*_amd64.deb | cut -d' ' -f1)
           META_SHA256=$(sha256sum ./desktop/flatpak/DevPod.metainfo.xml | cut -d' ' -f1)
           DESKTOP_SHA256=$(sha256sum ./desktop/flatpak/DevPod.desktop | cut -d' ' -f1)
 
-          sed -i "s/\${VERSION}/${VERSION}/g" ./desktop/flatpak/sh.loft.devpod.tmpl
-          sed -i "s/\${SHA256}/${DEB_SHA256}/g" ./desktop/flatpak/sh.loft.devpod.tmpl
-          sed -i "s/\${DESKTOP_SHA256}/${DESKTOP_SHA256}/g" ./desktop/flatpak/sh.loft.devpod.tmpl
-          sed -i "s/\${META_SHA256}/${META_SHA256}/g" ./desktop/flatpak/sh.loft.devpod.tmpl
+          sed -i "s/\${VERSION}/${VERSION}/g" ./desktop/flatpak/sh.loft.devpod.yml
+          sed -i "s/\${SHA256}/${DEB_SHA256}/g" ./desktop/flatpak/sh.loft.devpod.yml
+          sed -i "s/\${DESKTOP_SHA256}/${DESKTOP_SHA256}/g" ./desktop/flatpak/sh.loft.devpod.yml
+          sed -i "s/\${META_SHA256}/${META_SHA256}/g" ./desktop/flatpak/sh.loft.devpod.yml
 
       - name: upload flatpak assets
         uses: softprops/action-gh-release@v2
@@ -225,12 +247,11 @@ jobs:
           files: |
             ./desktop/flatpak/DevPod.metainfo.xml
             ./desktop/flatpak/DevPod.desktop
-            ./desktop/flatpak/sh.loft.devpod.tmpl
+            ./desktop/flatpak/sh.loft.devpod.yml
 
-      - name: build flatpak bundle
-        uses: flatpak/flatpak-github-actions/flatpak-builder@v6
-        if: runner.os == 'Linux'
+      - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
         with:
           bundle: DevPod.flatpak
-          manifest-path: desktop/flatpak/sh.loft.devpod.tmpl
+          manifest-path: desktop/flatpak/sh.loft.devpod.yml
+          cache-key: flatpak-builder-${{ github.sha }}
           upload-artifact: true
