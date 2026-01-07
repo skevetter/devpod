@@ -199,8 +199,8 @@ jobs:
         if: runner.os == 'Linux'
         uses: actions/upload-artifact@v6
         with:
+          name: devpod-flatpak
           path: ./desktop/src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/deb/DevPod_*_amd64.deb
-          name: devpod-linux
 
   build-flatpak:
     name: Build Flatpak
@@ -215,7 +215,7 @@ jobs:
       - name: download desktop linux artifact
         uses: actions/download-artifact@v7
         with:
-          name: devpod-linux
+          name: devpod-flatpak
           path: /tmp/devpod/
 
       - name: update flatpak metadata version and date
