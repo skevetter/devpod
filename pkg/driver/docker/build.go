@@ -162,6 +162,11 @@ func (d *dockerDriver) buildxBuild(ctx context.Context, writer io.Writer, platfo
 		args = append(args, "--load")
 	}
 
+	// add push (skip Docker daemon when pushing directly to registry)
+	if options.Push {
+		args = append(args, "--push")
+	}
+
 	// docker images
 	for _, image := range options.Images {
 		args = append(args, "-t", image)
