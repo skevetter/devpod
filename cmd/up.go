@@ -1063,6 +1063,36 @@ func mergeEnvFromFiles(baseOptions *provider2.CLIOptions) error {
 	return nil
 }
 
+var gitEnvironmentVariables = [...]string{
+	"GIT_AUTHOR_NAME",
+	"GIT_AUTHOR_EMAIL",
+	"GIT_AUTHOR_DATE",
+	"GIT_COMMITTER_NAME",
+	"GIT_COMMITTER_EMAIL",
+	"GIT_COMMITTER_DATE",
+}
+
+func mergeGitEnvironment(baseOptions *provider2.CLIOptions) {
+	for _, environmentVariable := range gitEnvironmentVariables {
+		mergeEnvironmentVariable(baseOptions, environmentVariable)
+	}
+}
+
+func mergeEnvironmentVariable(baseOptions *provider2.CLIOptions, environmentVariable string) {
+	if value, exists := os.LookupEnv(environmentVariable); exists {
+		found := false
+		for _, assignment := range baseOptions.WorkspaceEnv {
+			if strings.HasPrefix(assignment, environmentVariable+"=") {
+				found = true
+				break
+			}
+		}
+		if !found {
+			baseOptions.WorkspaceEnv = append(baseOptions.WorkspaceEnv, environmentVariable+"="+value)
+		}
+	}
+}
+
 func createSSHCommand(
 	ctx context.Context,
 	client client2.BaseWorkspaceClient,
@@ -1410,6 +1440,8 @@ func (cmd *UpCmd) prepareClient(ctx context.Context, devPodConfig *config.Config
 	if err := mergeEnvFromFiles(&cmd.CLIOptions); err != nil {
 		return nil, logger, err
 	}
+
+	mergeGitEnvironment(&cmd.CLIOptions)
 
 	var source *provider2.WorkspaceSource
 	if cmd.Source != "" {
