@@ -35,6 +35,7 @@ import (
 	"github.com/skevetter/devpod/pkg/ide/vscode"
 	"github.com/skevetter/devpod/pkg/ide/zed"
 	open2 "github.com/skevetter/devpod/pkg/open"
+	options2 "github.com/skevetter/devpod/pkg/options"
 	"github.com/skevetter/devpod/pkg/platform"
 	"github.com/skevetter/devpod/pkg/port"
 	provider2 "github.com/skevetter/devpod/pkg/provider"
@@ -1063,34 +1064,13 @@ func mergeEnvFromFiles(baseOptions *provider2.CLIOptions) error {
 	return nil
 }
 
-var gitEnvironmentVariables = [...]string{
+var propagatedEnvironmentVariables = []string{
 	"GIT_AUTHOR_NAME",
 	"GIT_AUTHOR_EMAIL",
 	"GIT_AUTHOR_DATE",
 	"GIT_COMMITTER_NAME",
 	"GIT_COMMITTER_EMAIL",
 	"GIT_COMMITTER_DATE",
-}
-
-func mergeGitEnvironment(baseOptions *provider2.CLIOptions) {
-	for _, environmentVariable := range gitEnvironmentVariables {
-		mergeEnvironmentVariable(baseOptions, environmentVariable)
-	}
-}
-
-func mergeEnvironmentVariable(baseOptions *provider2.CLIOptions, environmentVariable string) {
-	if value, exists := os.LookupEnv(environmentVariable); exists {
-		found := false
-		for _, assignment := range baseOptions.WorkspaceEnv {
-			if strings.HasPrefix(assignment, environmentVariable+"=") {
-				found = true
-				break
-			}
-		}
-		if !found {
-			baseOptions.WorkspaceEnv = append(baseOptions.WorkspaceEnv, environmentVariable+"="+value)
-		}
-	}
 }
 
 func createSSHCommand(
@@ -1441,7 +1421,7 @@ func (cmd *UpCmd) prepareClient(ctx context.Context, devPodConfig *config.Config
 		return nil, logger, err
 	}
 
-	mergeGitEnvironment(&cmd.CLIOptions)
+	cmd.WorkspaceEnv = options2.AssignUnassignedFromEnvironment(cmd.WorkspaceEnv, propagatedEnvironmentVariables, "")
 
 	var source *provider2.WorkspaceSource
 	if cmd.Source != "" {
