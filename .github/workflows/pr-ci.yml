@@ -424,11 +424,9 @@ jobs:
 
           ls -R "$TEMP_DIR/devpod-bin/"
           mkdir -p ./bin/
-          # Copy all devpod binaries to bin directory
           find "$TEMP_DIR/devpod-bin/" -type f -name "devpod-*" -exec cp {} ./bin \;
           find ./bin -type f -name "devpod-*" -exec chmod +x {} \;
 
-          # Replace binary names with target os
           find ./bin -type f -name "devpod-linux-amd64" -exec mv {} ./bin/devpod-cli-x86_64-unknown-linux-gnu \;
           find ./bin -type f -name "devpod-linux-arm64" -exec mv {} ./bin/devpod-cli-aarch64-unknown-linux-gnu \;
           find ./bin -type f -name "devpod-darwin-amd64" -exec mv {} ./bin/devpod-cli-x86_64-apple-darwin \;

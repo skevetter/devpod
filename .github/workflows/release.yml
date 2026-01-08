@@ -219,7 +219,7 @@ jobs:
         uses: actions/download-artifact@v7
         with:
           name: devpod-flatpak
-          path: /tmp/devpod/
+          path: /${{ runner.temp }}/devpod/
 
       - name: update flatpak metadata version and date
         shell: bash
@@ -232,7 +232,7 @@ jobs:
           sed -i "s/__DATE__/${DATE}/g" ./desktop/flatpak/DevPod.metainfo.xml
 
           # Calculate SHA256 values and update Flatpak manifest template
-          DEB_SHA256=$(sha256sum /tmp/devpod/DevPod_*_amd64.deb | cut -d' ' -f1)
+          DEB_SHA256=$(sha256sum /${{ runner.temp }}/devpod/DevPod_*_amd64.deb | cut -d' ' -f1)
           META_SHA256=$(sha256sum ./desktop/flatpak/DevPod.metainfo.xml | cut -d' ' -f1)
           DESKTOP_SHA256=$(sha256sum ./desktop/flatpak/DevPod.desktop | cut -d' ' -f1)
 
@@ -243,7 +243,6 @@ jobs:
 
       - name: upload flatpak assets
         uses: softprops/action-gh-release@v2
-        if: runner.os == 'Linux'
         with:
           tag_name: ${{ inputs.tag || github.ref_name }}
           draft: true
@@ -258,3 +257,15 @@ jobs:
           manifest-path: desktop/flatpak/sh.loft.devpod.yml
           cache-key: flatpak-builder-${{ github.sha }}
           upload-artifact: true
+
+      - name: upload flatpak bundle
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.tag || github.ref_name }}
+          draft: true
+          files: |
+            ./DevPod.flatpak
+            ./DevPod-x86_64.flatpak.zip
+
+      - name: print current files
+        run: ls -R ./
