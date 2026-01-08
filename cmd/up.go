@@ -1421,7 +1421,7 @@ func (cmd *UpCmd) prepareClient(ctx context.Context, devPodConfig *config.Config
 		return nil, logger, err
 	}
 
-	cmd.WorkspaceEnv = options2.AssignUnassignedFromEnvironment(cmd.WorkspaceEnv, propagatedEnvironmentVariables, "")
+	cmd.WorkspaceEnv = options2.PropagateFromEnvironment(cmd.WorkspaceEnv, propagatedEnvironmentVariables, "")
 
 	var source *provider2.WorkspaceSource
 	if cmd.Source != "" {

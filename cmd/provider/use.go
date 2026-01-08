@@ -142,7 +142,7 @@ func setOptions(
 		return nil, err
 	}
 
-	userOptions = options2.AssignUnassignedFromEnvironment(
+	userOptions = options2.PropagateFromEnvironment(
 		userOptions,
 		slices.Collect(maps.Keys(provider.Options)),
 		flags.DevpodEnvPrefix+"PROVIDER_"+strings.ToUpper(provider.Name)+"_",
