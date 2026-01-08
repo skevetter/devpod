@@ -1,10 +1,10 @@
 name: Pull Request
 
 on:
-  # push:
-  #   branches: [main]
+  push:
+    branches: [main]
   workflow_dispatch:
-  # pull_request:
+  pull_request:
 
 jobs:
   can-read-secret:
@@ -366,16 +366,22 @@ jobs:
             tauri_include_updater_json: true
             tauri_ci: true
 
+          - arch: amd64
+            target: x86_64-apple-darwin
+            runner: macos-latest
+            tauri_include_updater_json: true
+            tauri_ci: true
+
           - arch: arm64
             target: aarch64-apple-darwin
             runner: macos-latest
-            tauri_include_updater_json: false
+            tauri_include_updater_json: true
             tauri_ci: false # https://github.com/tauri-apps/tauri/issues/3055
 
           - arch: amd64
             target: x86_64-pc-windows-msvc
             runner: windows-latest
-            tauri_include_updater_json: false
+            tauri_include_updater_json: true
             tauri_ci: true
     runs-on: ${{ matrix.runner }}
     steps:
