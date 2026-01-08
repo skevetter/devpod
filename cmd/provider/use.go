@@ -4,9 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"maps"
-	"slices"
-	"strings"
 
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/cmd/completion"
@@ -142,10 +139,10 @@ func setOptions(
 		return nil, err
 	}
 
-	userOptions = options2.PropagateFromEnvironment(
+	userOptions = options2.PropagateOptionsFromEnvironment(
 		userOptions,
-		slices.Collect(maps.Keys(provider.Options)),
-		flags.DevpodEnvPrefix+"PROVIDER_"+strings.ToUpper(provider.Name)+"_",
+		provider.Options,
+		flags.DevpodEnvPrefix+"PROVIDER_"+provider.Name+"_",
 	)
 
 	// parse options

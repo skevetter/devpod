@@ -10,6 +10,7 @@ import (
 	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/ide"
 	"github.com/skevetter/devpod/pkg/ide/ideparse"
+	options2 "github.com/skevetter/devpod/pkg/options"
 	"github.com/spf13/cobra"
 )
 
@@ -74,8 +75,14 @@ func (cmd *UseCmd) Run(ctx context.Context, ide string) error {
 	return nil
 }
 
-func setOptions(devPodConfig *config.Config, ide string, options []string, ideOptions ide.Options) error {
-	optionValues, err := ideparse.ParseOptions(options, ideOptions)
+func setOptions(devPodConfig *config.Config, ide string, userOptions []string, ideOptions ide.Options) error {
+	userOptions = options2.PropagateOptionsFromEnvironment(
+		userOptions,
+		ideOptions,
+		flags.DevpodEnvPrefix+"IDE_"+ide+"_",
+	)
+
+	optionValues, err := ideparse.ParseOptions(userOptions, ideOptions)
 	if err != nil {
 		return err
 	}
