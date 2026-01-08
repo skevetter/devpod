@@ -1,5 +1,7 @@
 name: Release
 on:
+  release:
+    types: [prereleased]
   workflow_dispatch:
     inputs:
       tag:
