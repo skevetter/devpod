@@ -502,14 +502,18 @@ jobs:
       - name: download desktop linux artifact
         uses: actions/download-artifact@v7
         with:
-          name: devpod-ubuntu-latest-amd64
+          name: desktop-ubuntu-latest-amd64
           path: ${{ runner.temp }}/devpod/
+
+      - name: rename downloaded artifact
+        run: |
+          find ${{ runner.temp }}/devpod/ -type f -name "DevPod_0.0.0_amd64.deb" -exec mv {} ${{ runner.temp }}/devpod/DevPod_linux_amd64.deb \;
 
       - name: update flatpak metadata version and date
         shell: bash
         run: |
           DATE=$(date +%Y-%m-%d)
-          VERSION="v0.0.0-flatpak"
+          VERSION="v0.0.0"
 
           # Update metainfo.xml
           sed -i "s/__VERSION__/${VERSION}/g" ./desktop/flatpak/DevPod.metainfo.xml
