@@ -250,15 +250,33 @@ func (o *VsCodeServer) findServerBinaryPath(location string) string {
 				break
 			}
 
-			binPath = filepath.Join(binDir, entries[0].Name(), "bin", "cursor-server")
+			// Try direct path first: bin/<commit>/bin/cursor-server
+			firstEntry := entries[0].Name()
+			binPath = filepath.Join(binDir, firstEntry, "bin", "cursor-server")
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second*4)
 			out, err := exec.CommandContext(ctx, binPath, "--help").CombinedOutput()
 			cancel()
 			if err != nil {
-				o.log.Infof("Execute %s: %v", binPath, command.WrapCommandError(out, err))
-				o.log.Info("Wait until cursor-server is installed...")
-				time.Sleep(time.Second * 3)
-				continue
+				// Try platform-specific path: bin/<platform>/<commit>/bin/cursor-server
+				// Cursor installs to bin/linux-x64/<commit>/bin/cursor-server on Linux
+				platformEntries, platformErr := os.ReadDir(filepath.Join(binDir, firstEntry))
+				if platformErr == nil && len(platformEntries) > 0 {
+					binPath = filepath.Join(binDir, firstEntry, platformEntries[0].Name(), "bin", "cursor-server")
+					ctx, cancel := context.WithTimeout(context.Background(), time.Second*4)
+					out, err := exec.CommandContext(ctx, binPath, "--help").CombinedOutput()
+					cancel()
+					if err != nil {
+						o.log.Infof("Execute %s: %v", binPath, command.WrapCommandError(out, err))
+						o.log.Info("Wait until cursor-server is installed...")
+						time.Sleep(time.Second * 3)
+						continue
+					}
+				} else {
+					o.log.Infof("Execute %s: %v", binPath, command.WrapCommandError(out, err))
+					o.log.Info("Wait until cursor-server is installed...")
+					time.Sleep(time.Second * 3)
+					continue
+				}
 			}
 
 			break
