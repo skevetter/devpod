@@ -9,12 +9,12 @@ import (
 
 // Takes a list of assignments in KEY=VALUE format, a map of option to propagate, and an environment variable prefix,
 // and returns a new list with additional assignments from environment variables for any options not already assigned.
-func PropagateOptionsFromEnvironment[Map ~map[string]V, V any](
+func InheritOptionsFromEnvironment[Map ~map[string]V, V any](
 	assignments []string,
 	options Map,
 	prefix string,
 ) []string {
-	return PropagateFromEnvironment(
+	return InheritFromEnvironment(
 		assignments,
 		slices.Collect(maps.Keys(options)),
 		strings.ToUpper(prefix),
@@ -23,7 +23,7 @@ func PropagateOptionsFromEnvironment[Map ~map[string]V, V any](
 
 // Takes a list of assignments in KEY=VALUE format, a list of option names to check, and an environment variable prefix,
 // and returns a new list with additional assignments from environment variables for any names not already assigned.
-func PropagateFromEnvironment(
+func InheritFromEnvironment(
 	assignments []string,
 	names []string,
 	prefix string,

@@ -52,7 +52,7 @@ func NewAddCmd(f *flags.GlobalFlags) *cobra.Command {
 		},
 	}
 
-	flags.BoolVarE(addCmd.Flags(), &cmd.SingleMachine, "single-machine", flags.DevpodEnvPrefix+"SINGLE_MACHINE", false, "If enabled will use a single machine for all workspaces")
+	addCmd.Flags().BoolVar(&cmd.SingleMachine, "single-machine", false, "If enabled will use a single machine for all workspaces")
 	addCmd.Flags().StringVar(&cmd.Name, "name", "", "The name to use for this provider. If empty will use the name within the loaded config")
 	addCmd.Flags().StringVar(&cmd.FromExisting, "from-existing", "", "The name of an existing provider to use as a template. Needs to be used in conjunction with the --name flag")
 	addCmd.Flags().BoolVar(&cmd.Use, "use", true, "If enabled will automatically activate the provider")

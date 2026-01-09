@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/cmd/agent"
@@ -22,6 +23,7 @@ import (
 	log2 "github.com/skevetter/log"
 	"github.com/skevetter/log/terminal"
 	"github.com/spf13/cobra"
+	flag "github.com/spf13/pflag"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -138,5 +140,51 @@ func BuildRoot() *cobra.Command {
 	rootCmd.AddCommand(NewUpgradeCmd())
 	rootCmd.AddCommand(NewTroubleshootCmd(globalFlags))
 	rootCmd.AddCommand(NewPingCmd(globalFlags))
+
+	inheritCommandFlagsFromEnvironment(rootCmd)
+
 	return rootCmd
+}
+
+func inheritCommandFlagsFromEnvironment(cmd *cobra.Command) {
+	inheritFlagsFromEnvironment(cmd.Flags())
+	inheritFlagsFromEnvironment(cmd.PersistentFlags())
+
+	for _, sub := range cmd.Commands() {
+		inheritCommandFlagsFromEnvironment(sub)
+	}
+}
+
+// Inherits default values for all flags that have a corresponding environment variable set.
+func inheritFlagsFromEnvironment(flags *flag.FlagSet) {
+	flags.VisitAll(func(flag *flag.Flag) {
+		// calculate environment variable name from flag name
+		suffix := strings.ToUpper(strings.ReplaceAll(flag.Name, "-", "_"))
+
+		// do not prepend "DEVPOD_" to the environment variable name if the flag name starts with "devpod"
+		// (applies to one flag - "devpod-home").
+		var environmentVariable string
+		if strings.HasPrefix(suffix, "DEVPOD_") {
+			environmentVariable = suffix
+		} else {
+			environmentVariable = "DEVPOD_" + suffix
+		}
+
+		if value, exists := os.LookupEnv(environmentVariable); exists {
+			// set the variable holding the flag's value to the default supplied by the environment
+			err := flag.Value.Set(value)
+			if err != nil {
+				log2.Default.Fatalf("failed to set flag %s from the environment variable %s with value %s: %+v", flag.Name, environmentVariable, value, err)
+			}
+			// reflect this default in the usage output
+			flag.DefValue = value
+		}
+
+		// add note about environment variable to usage, but only if it is not there yet -
+		// in case we visit the same flag more than once.
+		usageAddition := ". You can also use " + environmentVariable + " to set this"
+		if !strings.HasSuffix(flag.Usage, usageAddition) {
+			flag.Usage = flag.Usage + usageAddition
+		}
+	})
 }

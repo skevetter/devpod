@@ -20,7 +20,7 @@ type assignmentTestCase struct {
 	ExpectedAssignments []string
 }
 
-func TestPropagateFromEnvironment(t *testing.T) {
+func TestInheritFromEnvironment(t *testing.T) {
 	testCases := []assignmentTestCase{
 		{
 			Name: "assigned, not in the environment",
@@ -102,7 +102,7 @@ func TestPropagateFromEnvironment(t *testing.T) {
 			}
 		}
 
-		result := PropagateFromEnvironment(testCase.Assignments, testCase.Names, testCase.EnvironmentVariablePrefix)
+		result := InheritFromEnvironment(testCase.Assignments, testCase.Names, testCase.EnvironmentVariablePrefix)
 
 		assert.DeepEqual(t, result, testCase.ExpectedAssignments)
 	}

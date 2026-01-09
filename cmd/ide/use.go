@@ -76,10 +76,10 @@ func (cmd *UseCmd) Run(ctx context.Context, ide string) error {
 }
 
 func setOptions(devPodConfig *config.Config, ide string, userOptions []string, ideOptions ide.Options) error {
-	userOptions = options2.PropagateOptionsFromEnvironment(
+	userOptions = options2.InheritOptionsFromEnvironment(
 		userOptions,
 		ideOptions,
-		flags.DevpodEnvPrefix+"IDE_"+ide+"_",
+		"DEVPOD_IDE_"+ide+"_",
 	)
 
 	optionValues, err := ideparse.ParseOptions(userOptions, ideOptions)

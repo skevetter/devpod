@@ -46,7 +46,7 @@ func NewSetOptionsCmd(f *flags.GlobalFlags) *cobra.Command {
 		},
 	}
 
-	flags.BoolVarE(setOptionsCmd.Flags(), &cmd.SingleMachine, "single-machine", flags.DevpodEnvPrefix+"SINGLE_MACHINE", false, "If enabled will use a single machine for all workspaces")
+	setOptionsCmd.Flags().BoolVar(&cmd.SingleMachine, "single-machine", false, "If enabled will use a single machine for all workspaces")
 	setOptionsCmd.Flags().BoolVar(&cmd.Reconfigure, "reconfigure", false, "If enabled will not merge existing provider config")
 	setOptionsCmd.Flags().StringArrayVarP(&cmd.Options, "option", "o", []string{}, "Provider option in the form KEY=VALUE")
 	setOptionsCmd.Flags().BoolVar(&cmd.Dry, "dry", false, "Dry will not persist the options to file and instead return the new filled options")

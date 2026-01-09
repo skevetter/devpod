@@ -115,13 +115,13 @@ func NewUpCmd(f *flags.GlobalFlags) *cobra.Command {
 			return cmd.Run(ctx, devPodConfig, client, args, logger)
 		},
 	}
-	flags.BoolVarE(upCmd.Flags(), &cmd.ConfigureSSH, "configure-ssh", flags.DevpodEnvPrefix+"CONFIGURE_SSH", true, "If true will configure the ssh config to include the DevPod workspace")
-	flags.BoolVarE(upCmd.Flags(), &cmd.GPGAgentForwarding, "gpg-agent-forwarding", flags.DevpodEnvPrefix+"GPG_AGENT_FORWARDING", false, "If true forward the local gpg-agent to the DevPod workspace")
-	flags.StringVarE(upCmd.Flags(), &cmd.SSHConfigPath, "ssh-config", flags.DevpodEnvPrefix+"SSH_CONFIG", "", "The path to the ssh config to modify, if empty will use ~/.ssh/config")
-	flags.StringVarE(upCmd.Flags(), &cmd.DotfilesSource, "dotfiles", flags.DevpodEnvPrefix+"DOTFILES", "", "The path or url to the dotfiles to use in the container")
-	flags.StringVarE(upCmd.Flags(), &cmd.DotfilesScript, "dotfiles-script", flags.DevpodEnvPrefix+"DOTFILES_SCRIPT", "", "The path in dotfiles directory to use to install the dotfiles, if empty will try to guess")
-	flags.StringSliceVarE(upCmd.Flags(), &cmd.DotfilesScriptEnv, "dotfiles-script-env", flags.DevpodEnvPrefix+"DOTFILES_SCRIPT_ENV", []string{}, "Extra environment variables to put into the dotfiles install script. E.g. MY_ENV_VAR=MY_VALUE")
-	flags.StringSliceVarE(upCmd.Flags(), &cmd.DotfilesScriptEnvFile, "dotfiles-script-env-file", flags.DevpodEnvPrefix+"DOTFILES_SCRIPT_ENV_FILE", []string{}, "The path to files containing environment variables to set for the dotfiles install script")
+	upCmd.Flags().BoolVar(&cmd.ConfigureSSH, "configure-ssh", true, "If true will configure the ssh config to include the DevPod workspace")
+	upCmd.Flags().BoolVar(&cmd.GPGAgentForwarding, "gpg-agent-forwarding", false, "If true forward the local gpg-agent to the DevPod workspace")
+	upCmd.Flags().StringVar(&cmd.SSHConfigPath, "ssh-config", "", "The path to the ssh config to modify, if empty will use ~/.ssh/config")
+	upCmd.Flags().StringVar(&cmd.DotfilesSource, "dotfiles", "", "The path or url to the dotfiles to use in the container")
+	upCmd.Flags().StringVar(&cmd.DotfilesScript, "dotfiles-script", "", "The path in dotfiles directory to use to install the dotfiles, if empty will try to guess")
+	upCmd.Flags().StringSliceVar(&cmd.DotfilesScriptEnv, "dotfiles-script-env", []string{}, "Extra environment variables to put into the dotfiles install script. E.g. MY_ENV_VAR=MY_VALUE")
+	upCmd.Flags().StringSliceVar(&cmd.DotfilesScriptEnvFile, "dotfiles-script-env-file", []string{}, "The path to files containing environment variables to set for the dotfiles install script")
 	upCmd.Flags().StringArrayVar(&cmd.IDEOptions, "ide-option", []string{}, "IDE option in the form KEY=VALUE")
 	upCmd.Flags().StringVar(&cmd.DevContainerImage, "devcontainer-image", "", "The container image to use, this will override the devcontainer.json value in the project")
 	upCmd.Flags().StringVar(&cmd.DevContainerPath, "devcontainer-path", "", "The path to the devcontainer.json relative to the project")
@@ -132,17 +132,17 @@ func NewUpCmd(f *flags.GlobalFlags) *cobra.Command {
 	upCmd.Flags().BoolVar(&cmd.Recreate, "recreate", false, "If true will remove any existing containers and recreate them")
 	upCmd.Flags().BoolVar(&cmd.Reset, "reset", false, "If true will remove any existing containers including sources, and recreate them")
 	upCmd.Flags().StringSliceVar(&cmd.PrebuildRepositories, "prebuild-repository", []string{}, "Docker repository that hosts devpod prebuilds for this workspace")
-	flags.StringArrayVarE(upCmd.Flags(), &cmd.WorkspaceEnv, "workspace-env", flags.DevpodEnvPrefix+"WORKSPACE_ENV", []string{}, "Extra env variables to put into the workspace. E.g. MY_ENV_VAR=MY_VALUE")
-	flags.StringSliceVarE(upCmd.Flags(), &cmd.WorkspaceEnvFile, "workspace-env-file", flags.DevpodEnvPrefix+"WORKSPACE_ENV_FILE", []string{}, "The path to files containing a list of extra env variables to put into the workspace. E.g. MY_ENV_VAR=MY_VALUE")
-	flags.StringArrayVarE(upCmd.Flags(), &cmd.InitEnv, "init-env", flags.DevpodEnvPrefix+"INIT_ENV", []string{}, "Extra env variables to inject during the initialization of the workspace. E.g. MY_ENV_VAR=MY_VALUE")
+	upCmd.Flags().StringArrayVar(&cmd.WorkspaceEnv, "workspace-env", []string{}, "Extra env variables to put into the workspace. E.g. MY_ENV_VAR=MY_VALUE")
+	upCmd.Flags().StringSliceVar(&cmd.WorkspaceEnvFile, "workspace-env-file", []string{}, "The path to files containing a list of extra env variables to put into the workspace. E.g. MY_ENV_VAR=MY_VALUE")
+	upCmd.Flags().StringArrayVar(&cmd.InitEnv, "init-env", []string{}, "Extra env variables to inject during the initialization of the workspace. E.g. MY_ENV_VAR=MY_VALUE")
 	upCmd.Flags().StringVar(&cmd.ID, "id", "", "The id to use for the workspace")
 	upCmd.Flags().StringVar(&cmd.Machine, "machine", "", "The machine to use for this workspace. The machine needs to exist beforehand or the command will fail. If the workspace already exists, this option has no effect")
-	flags.StringVarE(upCmd.Flags(), &cmd.IDE, "ide", flags.DevpodEnvPrefix+"IDE", "", "The IDE to open the workspace in. If empty will use vscode locally or in browser")
+	upCmd.Flags().StringVar(&cmd.IDE, "ide", "", "The IDE to open the workspace in. If empty will use vscode locally or in browser")
 	upCmd.Flags().BoolVar(&cmd.OpenIDE, "open-ide", true, "If this is false and an IDE is configured, DevPod will only install the IDE server backend, but not open it")
 	upCmd.Flags().Var(&cmd.GitCloneStrategy, "git-clone-strategy", "The git clone strategy DevPod uses to checkout git based workspaces. Can be full (default), blobless, treeless or shallow")
 	upCmd.Flags().BoolVar(&cmd.GitCloneRecursiveSubmodules, "git-clone-recursive-submodules", false, "If true will clone git submodule repositories recursively")
 	upCmd.Flags().StringVar(&cmd.GitSSHSigningKey, "git-ssh-signing-key", "", "The ssh key to use when signing git commits. Used to explicitly setup DevPod's ssh signature forwarding with given key. Should be same format as value of `git config user.signingkey`")
-	flags.StringVarE(upCmd.Flags(), &cmd.FallbackImage, "fallback-image", flags.DevpodEnvPrefix+"FALLBACK_IMAGE", "", "The fallback image to use if no devcontainer configuration has been detected")
+	upCmd.Flags().StringVar(&cmd.FallbackImage, "fallback-image", "", "The fallback image to use if no devcontainer configuration has been detected")
 	upCmd.Flags().BoolVar(&cmd.DisableDaemon, "disable-daemon", false, "If enabled, will not install a daemon into the target machine to track activity")
 	upCmd.Flags().StringVar(&cmd.Source, "source", "", "Optional source for the workspace. E.g. git:https://github.com/my-org/my-repo")
 	upCmd.Flags().StringVar(&cmd.Userns, "userns", "", "User namespace to use for the container (Podman only; e.g. \"keep-id\", \"host\", or \"auto\")")
@@ -1064,7 +1064,7 @@ func mergeEnvFromFiles(baseOptions *provider2.CLIOptions) error {
 	return nil
 }
 
-var propagatedEnvironmentVariables = []string{
+var inheritedEnvironmentVariables = []string{
 	"GIT_AUTHOR_NAME",
 	"GIT_AUTHOR_EMAIL",
 	"GIT_AUTHOR_DATE",
@@ -1421,7 +1421,7 @@ func (cmd *UpCmd) prepareClient(ctx context.Context, devPodConfig *config.Config
 		return nil, logger, err
 	}
 
-	cmd.WorkspaceEnv = options2.PropagateFromEnvironment(cmd.WorkspaceEnv, propagatedEnvironmentVariables, "")
+	cmd.WorkspaceEnv = options2.InheritFromEnvironment(cmd.WorkspaceEnv, inheritedEnvironmentVariables, "")
 
 	var source *provider2.WorkspaceSource
 	if cmd.Source != "" {
