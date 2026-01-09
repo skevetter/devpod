@@ -505,32 +505,36 @@ jobs:
           name: desktop-ubuntu-latest-amd64
           path: /tmp/devpod/
 
-      - name: move and rename deb package
-        run: mv /tmp/devpod/deb/DevPod_0.0.0_amd64.deb /tmp/devpod/DevPod_linux_amd64.deb
+      - name: prepare flatpak manifest for PR build
+        shell: bash
+        run: |
+          cp desktop/flatpak/sh.loft.devpod.yml desktop/flatpak/sh.loft.devpod-pr.yml
+
+          # shellcheck disable=SC2016
+          sed -i 's|url: https://github.com/skevetter/devpod/releases/download/${VERSION}/DevPod_linux_amd64.deb|path: /tmp/devpod/deb/DevPod_0.0.0_amd64.deb|' desktop/flatpak/sh.loft.devpod-pr.yml
+          # shellcheck disable=SC2016
+          sed -i 's|url: https://github.com/skevetter/devpod/releases/download/${VERSION}/DevPod.desktop|path: ./desktop/flatpak/DevPod.desktop|' desktop/flatpak/sh.loft.devpod-pr.yml
+          # shellcheck disable=SC2016
+          sed -i 's|url: https://github.com/skevetter/devpod/releases/download/${VERSION}/DevPod.metainfo.xml|path: ./desktop/flatpak/DevPod.metainfo.xml|' desktop/flatpak/sh.loft.devpod-pr.yml
+
+          # shellcheck disable=SC2016
+          sed -i '/sha256: ${SHA256}/d' desktop/flatpak/sh.loft.devpod-pr.yml
+          # shellcheck disable=SC2016
+          sed -i '/sha256: ${DESKTOP_SHA256}/d' desktop/flatpak/sh.loft.devpod-pr.yml
+          # shellcheck disable=SC2016
+          sed -i '/sha256: ${META_SHA256}/d' desktop/flatpak/sh.loft.devpod-pr.yml
 
       - name: update flatpak metadata version and date
-        shell: bash
         run: |
           DATE=$(date +%Y-%m-%d)
           VERSION="v0.0.0"
 
-          # Update metainfo.xml
           sed -i "s/__VERSION__/${VERSION}/g" ./desktop/flatpak/DevPod.metainfo.xml
           sed -i "s/__DATE__/${DATE}/g" ./desktop/flatpak/DevPod.metainfo.xml
-
-          # Calculate SHA256 values and update Flatpak manifest template
-          DEB_SHA256=$(sha256sum /tmp/devpod/DevPod_*_amd64.deb | cut -d' ' -f1)
-          META_SHA256=$(sha256sum ./desktop/flatpak/DevPod.metainfo.xml | cut -d' ' -f1)
-          DESKTOP_SHA256=$(sha256sum ./desktop/flatpak/DevPod.desktop | cut -d' ' -f1)
-
-          sed -i "s/\${VERSION}/${VERSION}/g" ./desktop/flatpak/sh.loft.devpod.yml
-          sed -i "s/\${SHA256}/${DEB_SHA256}/g" ./desktop/flatpak/sh.loft.devpod.yml
-          sed -i "s/\${DESKTOP_SHA256}/${DESKTOP_SHA256}/g" ./desktop/flatpak/sh.loft.devpod.yml
-          sed -i "s/\${META_SHA256}/${META_SHA256}/g" ./desktop/flatpak/sh.loft.devpod.yml
 
       - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
         with:
           bundle: DevPod.flatpak
-          manifest-path: desktop/flatpak/sh.loft.devpod.yml
+          manifest-path: desktop/flatpak/sh.loft.devpod-pr.yml
           cache-key: flatpak-builder-${{ github.sha }}
           upload-artifact: true
