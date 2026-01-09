@@ -221,7 +221,7 @@ jobs:
         uses: actions/download-artifact@v7
         with:
           name: devpod-flatpak
-          path: /${{ runner.temp }}/devpod/
+          path: ${{ runner.temp }}/devpod/
 
       - name: update flatpak metadata version and date
         shell: bash
@@ -234,7 +234,7 @@ jobs:
           sed -i "s/__DATE__/${DATE}/g" ./desktop/flatpak/DevPod.metainfo.xml
 
           # Calculate SHA256 values and update Flatpak manifest template
-          DEB_SHA256=$(sha256sum /${{ runner.temp }}/devpod/DevPod_*_amd64.deb | cut -d' ' -f1)
+          DEB_SHA256=$(sha256sum ${{ runner.temp }}/devpod/DevPod_*_amd64.deb | cut -d' ' -f1)
           META_SHA256=$(sha256sum ./desktop/flatpak/DevPod.metainfo.xml | cut -d' ' -f1)
           DESKTOP_SHA256=$(sha256sum ./desktop/flatpak/DevPod.desktop | cut -d' ' -f1)
 
