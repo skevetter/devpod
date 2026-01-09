@@ -505,15 +505,13 @@ jobs:
           name: desktop-ubuntu-latest-amd64
           path: ${{ runner.temp }}/devpod/
 
-      - name: rename downloaded artifact
-        run: |
-          find ${{ runner.temp }}/devpod/ -type f -name "DevPod_0.0.0_amd64.deb" -exec mv {} ${{ runner.temp }}/devpod/DevPod_linux_amd64.deb \;
-
       - name: update flatpak metadata version and date
         shell: bash
         run: |
           DATE=$(date +%Y-%m-%d)
           VERSION="v0.0.0"
+
+          ls -R ${{ runner.temp }}/devpod/
 
           # Update metainfo.xml
           sed -i "s/__VERSION__/${VERSION}/g" ./desktop/flatpak/DevPod.metainfo.xml
