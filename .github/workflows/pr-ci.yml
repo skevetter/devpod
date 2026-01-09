@@ -505,13 +505,14 @@ jobs:
           name: desktop-ubuntu-latest-amd64
           path: /tmp/devpod/
 
+      - name: move and rename deb package
+        run: mv /tmp/devpod/deb/DevPod_0.0.0_amd64.deb /tmp/devpod/DevPod_linux_amd64.deb
+
       - name: update flatpak metadata version and date
         shell: bash
         run: |
           DATE=$(date +%Y-%m-%d)
           VERSION="v0.0.0"
-
-          ls -R /tmp/devpod/
 
           # Update metainfo.xml
           sed -i "s/__VERSION__/${VERSION}/g" ./desktop/flatpak/DevPod.metainfo.xml
