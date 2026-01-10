@@ -31,7 +31,7 @@
   "identifier": "sh.loft.devpod",
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDMzMkVCREU0RTZCRjQ1NEQKUldSTlJiL201TDB1TTl2MkxzRDB4ZVhyVlByWnBiOEZyUEFLeDFONnFvNENtVm9uVEw1NjJTeHAK",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDBGNjRFNEJERTMxODY1Q0QKUldUTlpSamp2ZVJrRDg3QWlWWkNPSm1GRDhZYm1yeTJ3SEZYR0s3OW8rZ1c1QWJCRDF2TjUzc2kK",
       "windows": {
         "installMode": "passive"
       },

@@ -161,16 +161,6 @@ jobs:
         working-directory: ./desktop
         run: yarn install --frozen-lockfile
 
-      - name: generate signing key and update config
-        id: generate
-        working-directory: ./desktop
-        shell: bash
-        run: |
-          # throwaway signing key for test CI builds
-          yarn tauri signer generate --ci -w ./app.key -p "github-actions"
-          TAURI_PUBKEY=$(cat ./app.key.pub)
-          jq --arg pubkey "$TAURI_PUBKEY" '.plugins.updater.pubkey = $pubkey' src-tauri/tauri.conf.json > tmp.json && mv tmp.json src-tauri/tauri.conf.json
-
       - name: tauri build
         uses: tauri-apps/tauri-action@v0.6
         with:
@@ -184,8 +174,8 @@ jobs:
           assetNamePattern: "[name]_[platform]_[arch][ext]"
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          TAURI_SIGNING_PRIVATE_KEY: "${{ github.workspace }}/desktop/app.key"
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: "github-actions"
+          TAURI_SIGNING_PRIVATE_KEY: "${{ secrets.DEVPOD_TAURI_PRIVATE_SIGNING_KEY }}"
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: "${{ secrets.DEVPOD_TAURI_PRIVATE_SIGNING_KEY_PASSWORD }}"
           CI: ${{ matrix.tauri_ci }}
 
       - name: upload cli assets
