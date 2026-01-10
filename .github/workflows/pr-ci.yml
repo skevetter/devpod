@@ -510,7 +510,7 @@ jobs:
       - name: prepare flatpak manifest for PR build
         shell: bash
         run: |
-          sed -i "s|url: https://github.com/skevetter/devpod/releases/download/${VERSION}/DevPod_linux_amd64.deb|path: /tmp/devpod/deb/DevPod_0.0.0_amd64.deb|" "$GITHUB_WORKSPACE/desktop/flatpak/sh.loft.devpod.yml"
+          sed -i "s|url: https://github.com/skevetter/devpod/releases/download/\${VERSION}/DevPod_linux_amd64.deb|path: /tmp/devpod/deb/DevPod_0.0.0_amd64.deb|" "$GITHUB_WORKSPACE/desktop/flatpak/sh.loft.devpod.yml"
           sed -i "s|url: https://github.com/skevetter/devpod/releases/download/\${VERSION}/DevPod.desktop|path: $GITHUB_WORKSPACE/desktop/flatpak/DevPod.desktop|" "$GITHUB_WORKSPACE/desktop/flatpak/sh.loft.devpod.yml"
           sed -i "s|url: https://github.com/skevetter/devpod/releases/download/\${VERSION}/DevPod.metainfo.xml|path: $GITHUB_WORKSPACE/desktop/flatpak/DevPod.metainfo.xml|" "$GITHUB_WORKSPACE/desktop/flatpak/sh.loft.devpod.yml"
           sed -i "/sha256: \${SHA256}/d" "$GITHUB_WORKSPACE/desktop/flatpak/sh.loft.devpod.yml"
