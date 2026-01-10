@@ -505,23 +505,26 @@ jobs:
           name: desktop-ubuntu-latest-amd64
           path: /tmp/devpod/
 
+      # Use GITHUB_WORKSPACE in containers because the path differs from github.workspace
+      # for more details, see https://github.com/actions/checkout/issues/785
       - name: prepare flatpak manifest for PR build
         shell: bash
         run: |
-          # shellcheck disable=SC2016
-          sed -i 's|url: https://github.com/skevetter/devpod/releases/download/${VERSION}/DevPod_linux_amd64.deb|path: /tmp/devpod/deb/DevPod_0.0.0_amd64.deb|' ${{ github.workspace }}/desktop/flatpak/sh.loft.devpod.yml
-          # shellcheck disable=SC2016
-          sed -i 's|url: https://github.com/skevetter/devpod/releases/download/${VERSION}/DevPod.desktop|path: ${{ github.workspace }}/desktop/flatpak/DevPod.desktop|' ${{ github.workspace }}/desktop/flatpak/sh.loft.devpod.yml
-          # shellcheck disable=SC2016
-          sed -i 's|url: https://github.com/skevetter/devpod/releases/download/${VERSION}/DevPod.metainfo.xml|path: ${{ github.workspace }}/desktop/flatpak/DevPod.metainfo.xml|' ${{ github.workspace }}/desktop/flatpak/sh.loft.devpod.yml
+          pwd
+          ls -R "$GITHUB_WORKSPACE"
+          # shellcheck disable=SC2016,SC2086
+          sed -i 's|url: https://github.com/skevetter/devpod/releases/download/${VERSION}/DevPod_linux_amd64.deb|path: /tmp/devpod/deb/DevPod_0.0.0_amd64.deb|' $GITHUB_WORKSPACE/desktop/flatpak/sh.loft.devpod.yml
+          # shellcheck disable=SC2016,SC2086
+          sed -i 's|url: https://github.com/skevetter/devpod/releases/download/${VERSION}/DevPod.desktop|path: $GITHUB_WORKSPACE/desktop/flatpak/DevPod.desktop|' $GITHUB_WORKSPACE/desktop/flatpak/sh.loft.devpod.yml
+          # shellcheck disable=SC2016,SC2086
+          sed -i 's|url: https://github.com/skevetter/devpod/releases/download/${VERSION}/DevPod.metainfo.xml|path: $GITHUB_WORKSPACE/desktop/flatpak/DevPod.metainfo.xml|' $GITHUB_WORKSPACE/desktop/flatpak/sh.loft.devpod.yml
 
-          # shellcheck disable=SC2016
-          sed -i '/sha256: ${SHA256}/d' ${{ github.workspace }}/desktop/flatpak/sh.loft.devpod.yml
-          # shellcheck disable=SC2016
-          sed -i '/sha256: ${DESKTOP_SHA256}/d' ${{ github.workspace }}/desktop/flatpak/sh.loft.devpod.yml
-          # shellcheck disable=SC2016
-          sed -i '/sha256: ${META_SHA256}/d' ${{ github.workspace }}/desktop/flatpak/sh.loft.devpod.yml
-
+          # shellcheck disable=SC2016,SC2086
+          sed -i '/sha256: ${SHA256}/d' $GITHUB_WORKSPACE/desktop/flatpak/sh.loft.devpod.yml
+          # shellcheck disable=SC2016,SC2086
+          sed -i '/sha256: ${DESKTOP_SHA256}/d' $GITHUB_WORKSPACE/desktop/flatpak/sh.loft.devpod.yml
+          # shellcheck disable=SC2016,SC2086
+          sed -i '/sha256: ${META_SHA256}/d' $GITHUB_WORKSPACE/desktop/flatpak/sh.loft.devpod.yml
       - name: update flatpak metadata version and date
         run: |
           DATE=$(date +%Y-%m-%d)
