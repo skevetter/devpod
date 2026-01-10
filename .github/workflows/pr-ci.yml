@@ -508,21 +508,19 @@ jobs:
       - name: prepare flatpak manifest for PR build
         shell: bash
         run: |
-          cp desktop/flatpak/sh.loft.devpod.yml desktop/flatpak/sh.loft.devpod-pr.yml
+          # shellcheck disable=SC2016
+          sed -i 's|url: https://github.com/skevetter/devpod/releases/download/${VERSION}/DevPod_linux_amd64.deb|path: /tmp/devpod/deb/DevPod_0.0.0_amd64.deb|' ${{ github.workspace }}/desktop/flatpak/sh.loft.devpod.yml
+          # shellcheck disable=SC2016
+          sed -i 's|url: https://github.com/skevetter/devpod/releases/download/${VERSION}/DevPod.desktop|path: ${{ github.workspace }}/desktop/flatpak/DevPod.desktop|' ${{ github.workspace }}/desktop/flatpak/sh.loft.devpod.yml
+          # shellcheck disable=SC2016
+          sed -i 's|url: https://github.com/skevetter/devpod/releases/download/${VERSION}/DevPod.metainfo.xml|path: ${{ github.workspace }}/desktop/flatpak/DevPod.metainfo.xml|' ${{ github.workspace }}/desktop/flatpak/sh.loft.devpod.yml
 
           # shellcheck disable=SC2016
-          sed -i 's|url: https://github.com/skevetter/devpod/releases/download/${VERSION}/DevPod_linux_amd64.deb|path: /tmp/devpod/deb/DevPod_0.0.0_amd64.deb|' desktop/flatpak/sh.loft.devpod-pr.yml
+          sed -i '/sha256: ${SHA256}/d' ${{ github.workspace }}/desktop/flatpak/sh.loft.devpod.yml
           # shellcheck disable=SC2016
-          sed -i 's|url: https://github.com/skevetter/devpod/releases/download/${VERSION}/DevPod.desktop|path: ./desktop/flatpak/DevPod.desktop|' desktop/flatpak/sh.loft.devpod-pr.yml
+          sed -i '/sha256: ${DESKTOP_SHA256}/d' ${{ github.workspace }}/desktop/flatpak/sh.loft.devpod.yml
           # shellcheck disable=SC2016
-          sed -i 's|url: https://github.com/skevetter/devpod/releases/download/${VERSION}/DevPod.metainfo.xml|path: ./desktop/flatpak/DevPod.metainfo.xml|' desktop/flatpak/sh.loft.devpod-pr.yml
-
-          # shellcheck disable=SC2016
-          sed -i '/sha256: ${SHA256}/d' desktop/flatpak/sh.loft.devpod-pr.yml
-          # shellcheck disable=SC2016
-          sed -i '/sha256: ${DESKTOP_SHA256}/d' desktop/flatpak/sh.loft.devpod-pr.yml
-          # shellcheck disable=SC2016
-          sed -i '/sha256: ${META_SHA256}/d' desktop/flatpak/sh.loft.devpod-pr.yml
+          sed -i '/sha256: ${META_SHA256}/d' ${{ github.workspace }}/desktop/flatpak/sh.loft.devpod.yml
 
       - name: update flatpak metadata version and date
         run: |
@@ -535,6 +533,6 @@ jobs:
       - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
         with:
           bundle: DevPod.flatpak
-          manifest-path: desktop/flatpak/sh.loft.devpod-pr.yml
+          manifest-path: desktop/flatpak/sh.loft.devpod.yml
           cache-key: flatpak-builder-${{ github.sha }}
           upload-artifact: true
