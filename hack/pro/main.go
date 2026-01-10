@@ -14,6 +14,11 @@ import (
 //go:embed provider.yaml
 var provider string
 
+// main is the program entry point.
+// It requires a version argument and accepts an optional base path as the second CLI argument.
+// The program loads an embedded provider YAML (or the file pointed to by SOURCE_FILE), replaces the `##VERSION##` token with the provided version and replaces checksum tokens for platform binaries with their lowercase SHA-256 sums computed from files under the base path.
+// If the environment variable PARTIAL is "true", missing files are skipped; otherwise missing files cause the program to exit with a panic.
+// If SOURCE_FILE is set, the updated content is written back to that file; otherwise the updated content is printed to stdout.
 func main() {
 	if len(os.Args) < 2 {
 		panic("usage: go run main.go <version> [base_path]")
