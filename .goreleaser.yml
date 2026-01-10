@@ -70,6 +70,23 @@ builds:
       - netgo
       - osusergo
 
+  - id: devpod-pro-dev
+    goos: [linux]
+    goarch: [amd64]
+    binary: devpod-{{ .Os }}-{{ .Arch }}-pro
+    ldflags: -s -w
+    env:
+      - CGO_ENABLED=0
+    tags:
+      - profile
+      - osusergo
+      - netgo
+    hooks:
+      post:
+        - cmd: kubectl -n "{{ .Env.DEVPOD_PRO_NS | default "default" }}" cp --no-preserve=true dist/devpod-pro_linux_amd64_v1/devpod-{{ .Os }}-{{ .Arch }}-pro "$(kubectl -n "{{ .Env.DEVPOD_PRO_NS | default "default" }}" get pods -l app=loft -o jsonpath="{.items[0].metadata.name}")":/usr/local/bin/devpod
+          env:
+            - DEVPOD_PRO_NS={{ .Env.DEVPOD_PRO_NS | default "default" }}
+
 archives:
   - formats: [tar.gz]
     format_overrides:

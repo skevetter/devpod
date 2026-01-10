@@ -21,6 +21,15 @@ tasks:
       GITHUB_REPOSITORY_OWNER: skevetter
     cmd: goreleaser build --id devpod-dev --snapshot --clean
 
+  cli:build:dev:pro:
+    desc: build devpod CLI for pro feature
+    vars:
+      NS: '{{.NS | default "default"}}'
+    cmd: goreleaser build --id devpod-pro-dev --snapshot --clean
+    env:
+      GITHUB_REPOSITORY_OWNER: skevetter
+      DEVPOD_PRO_NS: "{{.NS}}"
+
   cli:build:setup-cache:
     desc: setup cache for CLI builds
     deps:
