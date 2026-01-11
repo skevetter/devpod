@@ -160,7 +160,7 @@ jobs:
           CI: true
 
       - name: upload desktop linux artifact for flatpak
-        uses: actions/upload-artifact@v4 # pin to v4 for act support, see https://nektosact.com/usage/index.html?highlight=artif#action-artifacts
+        uses: actions/upload-artifact@v6 # pin to v4 for act support, see https://nektosact.com/usage/index.html?highlight=artif#action-artifacts
         with:
           name: devpod-flatpak
           path: ./desktop/src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/deb/DevPod_*_amd64.deb
@@ -179,7 +179,7 @@ jobs:
         run: git clone https://github.com/flathub/shared-modules.git desktop/flatpak/shared-modules
 
       - name: download desktop linux artifact
-        uses: actions/download-artifact@v4 # pin to v4 for act support, see https://nektosact.com/usage/index.html?highlight=artif#action-artifacts
+        uses: actions/download-artifact@v7 # pin to v4 for act support, see https://nektosact.com/usage/index.html?highlight=artif#action-artifacts
         with:
           name: devpod-flatpak
           path: /tmp/devpod/
