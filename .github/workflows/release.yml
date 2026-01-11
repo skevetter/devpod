@@ -159,7 +159,7 @@ jobs:
 
       - name: install desktop dependencies
         working-directory: ./desktop
-        run: yarn install --frozen-lockfile
+        run: yarn install --frozen-lockfile && yarn version --new-version ${{ inputs.tag || github.ref_name }} --no-git-tag-version
 
       - name: tauri build
         uses: tauri-apps/tauri-action@v0.6
