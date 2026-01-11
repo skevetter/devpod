@@ -1,3 +1,5 @@
+//go:build linux || darwin || unix
+
 package up
 
 import (
@@ -297,7 +299,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 					testGID, err := strconv.Atoi(currentUser.Gid)
 					framework.ExpectNoError(err)
 
-					ginkgo.By(fmt.Sprintf("Test user configuration: uid=%d, gid=%d", testUID, testGID))
+					ginkgo.By(fmt.Sprintf("test user configuration: uid=%d, gid=%d", testUID, testGID))
 
 					tempDir, err := setupWorkspace("tests/up/testdata/docker-compose-uid-mapping-vscode", tc.initialDir, tc.f)
 					framework.ExpectNoError(err)
