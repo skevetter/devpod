@@ -60,6 +60,15 @@
     {
       "matchPackageNames": ["gopkg.in/yaml.v2"],
       "allowedVersions": "v2.4.0"
+    },
+    {
+      "matchPackageNames": [
+        "actions/upload-artifact",
+        "actions/download-artifact"
+      ],
+      "matchFileNames": [".github/workflows/act.yml"],
+      "allowedVersions": "v4",
+      "description": "Pin to v4 for act support in act.yml workflow only"
     }
   ]
 }
