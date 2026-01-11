@@ -68,7 +68,7 @@
       ],
       "matchFileNames": [".github/workflows/act.yml"],
       "allowedVersions": "v4",
-      "description": "Pin to v4 for act support in act.yml workflow only"
+      "description": "pin to v4 for act support in act.yml workflow only"
     }
   ]
 }
