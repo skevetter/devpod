@@ -117,9 +117,7 @@ func (suite *ExtendTestSuite) TestComputeAutomaticFeatureOrder_SimpleDependency(
 	}
 
 	installationOrder, err := getOrderedFeatureSets(features)
-	if err != nil {
-		suite.Require().NoError(err)
-	}
+	suite.Require().NoError(err)
 
 	suite.Len(installationOrder, 2)
 	expectedDependency := normalizeFeatureID("dependency-feature")
@@ -150,9 +148,7 @@ func (suite *ExtendTestSuite) TestComputeAutomaticFeatureOrder_DependsOnAndInsta
 	}
 
 	installationOrder, err := getOrderedFeatureSets(features)
-	if err != nil {
-		suite.Require().NoError(err)
-	}
+	suite.Require().NoError(err)
 
 	suite.Len(installationOrder, 2)
 	expectedSharedDep := normalizeFeatureID("shared-dependency")
@@ -181,9 +177,7 @@ func (suite *ExtendTestSuite) TestComputeAutomaticFeatureOrder_OnlyInstallsAfter
 	}
 
 	installationOrder, err := getOrderedFeatureSets(features)
-	if err != nil {
-		suite.Require().NoError(err)
-	}
+	suite.Require().NoError(err)
 
 	suite.Len(installationOrder, 2)
 	expectedPreferredFirst := normalizeFeatureID("preferred-first-feature")
@@ -220,9 +214,7 @@ func (suite *ExtendTestSuite) TestComputeAutomaticFeatureOrder_ChainedDependenci
 	}
 
 	installationOrder, err := getOrderedFeatureSets(features)
-	if err != nil {
-		suite.Require().NoError(err)
-	}
+	suite.Require().NoError(err)
 
 	suite.Len(installationOrder, 3)
 
@@ -233,7 +225,7 @@ func (suite *ExtendTestSuite) TestComputeAutomaticFeatureOrder_ChainedDependenci
 	}
 	for i, expectedFeatureID := range expectedOrder {
 		if installationOrder[i].ConfigID != expectedFeatureID {
-			suite.Fail("Position %d: expected %s, got %s", i, expectedFeatureID, installationOrder[i].ConfigID)
+			suite.Failf("Position mismatch", "Position %d: expected %s, got %s", i, expectedFeatureID, installationOrder[i].ConfigID)
 		}
 	}
 }
@@ -287,6 +279,7 @@ func (suite *ExtendTestSuite) TestFeatureOrderWithDependencies_SameDependsOnAndI
 	suite.Require().NoError(err)
 	suite.Len(installationOrder, 2)
 	suite.Equal("ghcr.io/devcontainers/features/node", installationOrder[0].ConfigID)
+	suite.Equal("dev-code", installationOrder[1].ConfigID)
 }
 
 func (suite *ExtendTestSuite) TestComputeFeatureOrder_NoOverride() {
@@ -302,16 +295,13 @@ func (suite *ExtendTestSuite) TestComputeFeatureOrder_NoOverride() {
 	}
 
 	order, err := getSortedFeatureSets(devContainer, features)
-	if err != nil {
-		suite.Require().NoError(err)
-	}
+	suite.Require().NoError(err)
 
 	suite.Len(order, 2)
 	expectedFeatureB := normalizeFeatureID("feature-b")
 	expectedFeatureA := normalizeFeatureID("feature-a")
-
 	if order[0].ConfigID != expectedFeatureB || order[1].ConfigID != expectedFeatureA {
-		suite.Fail("Expected [%s, %s], got [%s, %s]", expectedFeatureB, expectedFeatureA, order[0].ConfigID, order[1].ConfigID)
+		suite.Failf("Order mismatch", "Expected [%s, %s], got [%s, %s]", expectedFeatureB, expectedFeatureA, order[0].ConfigID, order[1].ConfigID)
 	}
 }
 
@@ -328,13 +318,10 @@ func (suite *ExtendTestSuite) TestComputeFeatureOrder_WithOverride() {
 	}
 
 	order, err := getSortedFeatureSets(devContainer, features)
-	if err != nil {
-		suite.Require().NoError(err)
-	}
-
+	suite.Require().NoError(err)
 	suite.Len(order, 2)
 	if order[0].ConfigID != "feature-a" || order[1].ConfigID != "feature-b" {
-		suite.Fail("Expected [feature-a, feature-b], got [%s, %s]", order[0].ConfigID, order[1].ConfigID)
+		suite.Failf("Order mismatch", "Expected [feature-a, feature-b], got [%s, %s]", order[0].ConfigID, order[1].ConfigID)
 	}
 }
 
@@ -352,14 +339,11 @@ func (suite *ExtendTestSuite) TestComputeFeatureOrder_PartialOverride() {
 	}
 
 	order, err := getSortedFeatureSets(devContainer, features)
-	if err != nil {
-		suite.Require().NoError(err)
-	}
-
+	suite.Require().NoError(err)
 	suite.Len(order, 3)
 
 	if order[0].ConfigID != "feature-c" {
-		suite.Fail("Expected feature-c first, got %s", order[0].ConfigID)
+		suite.Failf("First element mismatch", "Expected feature-c first, got %s", order[0].ConfigID)
 	}
 }
 
@@ -376,7 +360,7 @@ func (suite *ExtendTestSuite) TestApplyManualOrdering() {
 	suite.Len(result, 3)
 	for i, expectedID := range expected {
 		if result[i].ConfigID != expectedID {
-			suite.Fail("Position %d: expected %s, got %s", i, expectedID, result[i].ConfigID)
+			suite.Failf("Position mismatch", "Position %d: expected %s, got %s", i, expectedID, result[i].ConfigID)
 		}
 	}
 }

@@ -278,7 +278,7 @@ type featureProcessor struct {
 func (p *featureProcessor) processFeature(featureID string, featureOptions any) (*config.FeatureSet, error) {
 	featureFolder, err := ProcessFeatureID(featureID, p.devContainerConfig, p.log, p.forceBuild)
 	if err != nil {
-		return nil, fmt.Errorf("process feature ID %w", err)
+		return nil, fmt.Errorf("process feature ID %s: %w", featureID, err)
 	}
 
 	p.log.Debugf("parse dev container feature in %s", featureFolder)
@@ -498,7 +498,16 @@ func buildFeatureLookupMap(features []*config.FeatureSet) map[string]*config.Fea
 }
 
 func hasHardDependency(feature *config.FeatureSet, originalID, normalizedID string) bool {
-	_, existsOriginal := feature.Config.DependsOn[originalID]
-	_, existsNormalized := feature.Config.DependsOn[normalizedID]
-	return existsOriginal || existsNormalized
+	if _, ok := feature.Config.DependsOn[originalID]; ok {
+		return true
+	}
+	if _, ok := feature.Config.DependsOn[normalizedID]; ok {
+		return true
+	}
+	for id := range feature.Config.DependsOn {
+		if normalizeFeatureID(id) == normalizedID {
+			return true
+		}
+	}
+	return false
 }
