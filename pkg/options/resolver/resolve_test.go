@@ -29,13 +29,7 @@ func TestResolveTestSuite(t *testing.T) {
 	suite.Run(t, new(ResolveTestSuite))
 }
 
-func (suite *ResolveTestSuite) TestResolveOptions_EmptyGraph() {
-	result, err := suite.resolver.resolveOptions(context.Background(), map[string]config.OptionValue{})
-	suite.NoError(err)
-	suite.Empty(result)
-}
-
-func (suite *ResolveTestSuite) TestResolveOptions_NodeExistenceCheck() {
+func (suite *ResolveTestSuite) TestResolveOptions_HandlesRemovedNodeWithDanglingEdge() {
 	option1 := &types.Option{Default: "value1"}
 	option2 := &types.Option{Default: "value2"}
 

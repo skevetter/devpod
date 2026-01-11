@@ -118,13 +118,9 @@ func (g *Graph[T]) RemoveNode(id string) error {
 	}
 
 	for parentID := range g.edges {
-		filteredEdges := []string{}
-		for _, childID := range g.edges[parentID] {
-			if childID != id {
-				filteredEdges = append(filteredEdges, childID)
-			}
-		}
-		g.edges[parentID] = filteredEdges
+		g.edges[parentID] = slices.DeleteFunc(g.edges[parentID], func(childID string) bool {
+			return childID == id
+		})
 	}
 
 	delete(g.nodes, id)

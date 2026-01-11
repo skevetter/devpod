@@ -47,6 +47,8 @@ func (suite *ResolverTestSuite) TestBasicFunctionality() {
 	suite.NoError(err)
 	suite.NotNil(resolved)
 	suite.NotNil(newDefs)
+	suite.Equal("value1", resolved["option1"].Value)
+	suite.Equal("default2", resolved["option2"].Value)
 }
 
 func (suite *ResolverTestSuite) TestGraphFunctionality() {
@@ -252,7 +254,7 @@ func (suite *ResolverTestSuite) TestResolveOptions_CircularDependency() {
 	suite.Contains(err.Error(), "circular dependency")
 }
 
-func TestCombineFunction(t *testing.T) {
+func (suite *ResolverTestSuite) TestCombineFunction() {
 	existing := map[string]config.OptionValue{
 		"key1": {Value: "existing_value1"},
 		"key2": {Value: "existing_value2"},
@@ -265,18 +267,12 @@ func TestCombineFunction(t *testing.T) {
 
 	result := combine(existing, extra)
 
-	if result["key1"] != "existing_value1" {
-		t.Errorf("Expected existing_value1, got %s", result["key1"])
-	}
-	if result["key2"] != "existing_value2" {
-		t.Errorf("Expected existing_value2 (existing should override extra), got %s", result["key2"])
-	}
-	if result["key3"] != "extra_value3" {
-		t.Errorf("Expected extra_value3, got %s", result["key3"])
-	}
+	suite.Equal("existing_value1", result["key1"])
+	suite.Equal("existing_value2", result["key2"], "existing should override extra")
+	suite.Equal("extra_value3", result["key3"])
 }
 
-func TestSubOptionsBasicFunctionality(t *testing.T) {
+func (suite *ResolverTestSuite) TestSubOptionsBasicFunctionality() {
 	logger := log.Default
 	resolver := New(map[string]string{}, map[string]string{}, logger, WithResolveSubOptions())
 
@@ -289,16 +285,11 @@ func TestSubOptionsBasicFunctionality(t *testing.T) {
 	optionValues := map[string]config.OptionValue{}
 
 	resolved, _, err := resolver.Resolve(context.Background(), nil, optionDefs, optionValues)
-	if err != nil {
-		t.Fatalf("Resolve failed: %v", err)
-	}
-
-	if resolved["parent"].Value != "parent_value" {
-		t.Errorf("Expected parent_value, got %s", resolved["parent"].Value)
-	}
+	suite.NoError(err)
+	suite.Equal("parent_value", resolved["parent"].Value)
 }
 
-func TestAddOptionsToGraph_MultipleCallsRegression(t *testing.T) {
+func TestAddOptionsToGraph_MultipleCalls(t *testing.T) {
 	g := graph.NewGraph[*types.Option]()
 
 	optionDefs := config.OptionDefinitions{
@@ -317,6 +308,6 @@ func TestAddOptionsToGraph_MultipleCallsRegression(t *testing.T) {
 
 	nodes := g.GetNodes()
 	if len(nodes) != 2 {
-		t.Errorf("Expected 2 nodes (root + opt1), got %d", len(nodes))
+		t.Errorf("Expected 2 nodes (implicit root node + opt1), got %d. Multiple calls should not duplicate nodes.", len(nodes))
 	}
 }
