@@ -173,8 +173,7 @@ jobs:
           args: "--target ${{ matrix.target }}"
           tagName: ${{ inputs.tag || github.ref_name }}
           releaseName: "DevPod ${{ inputs.tag || github.ref_name }}"
-          prerelease: ${{ github.event_name == 'release' && 'true' || 'false' }}
-          releaseDraft: ${{ github.event_name != 'release' && 'true' || 'false' }}
+          releaseDraft: true
           generateReleaseNotes: true
           includeUpdaterJson: ${{ matrix.tauri_include_updater_json }}
           assetNamePattern: "[name]_[platform]_[arch][ext]"
@@ -189,7 +188,7 @@ jobs:
         if: runner.os == 'Linux'
         with:
           tag_name: ${{ inputs.tag || github.ref_name }}
-          prerelease: true
+          draft: true
           files: |
             ./dist/*
 
@@ -243,8 +242,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ inputs.tag || github.ref_name }}
-          prerelease: ${{ github.event_name == 'release' && 'true' || 'false' }}
-          draft: ${{ github.event_name != 'release' && 'true' || 'false' }}
+          draft: true
           files: |
             ./desktop/flatpak/DevPod.metainfo.xml
             ./desktop/flatpak/DevPod.desktop
@@ -261,8 +259,18 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ inputs.tag || github.ref_name }}
-          prerelease: ${{ github.event_name == 'release' && 'true' || 'false' }}
-          draft: ${{ github.event_name != 'release' && 'true' || 'false' }}
+          draft: true
           files: |
             ./DevPod.flatpak
             ./DevPod-x86_64.flatpak.zip
+
+  prerelease:
+    name: Publish Prerelease
+    needs: [build-desktop, build-flatpak]
+    if: github.event.release.prerelease
+    runs-on: ubuntu-latest
+    steps:
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.tag || github.ref_name }}
+          prerelease: true
