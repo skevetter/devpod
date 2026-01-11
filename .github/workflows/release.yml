@@ -159,7 +159,11 @@ jobs:
 
       - name: install desktop dependencies
         working-directory: ./desktop
-        run: yarn install --frozen-lockfile && yarn version --new-version ${{ inputs.tag || github.ref_name }} --no-git-tag-version
+        run: |
+          yarn install --frozen-lockfile
+          VERSION=${{ inputs.tag || github.ref_name }}
+          VERSION="${VERSION#v}"
+          yarn version --new-version "$VERSION" --no-git-tag-version
 
       - name: tauri build
         uses: tauri-apps/tauri-action@v0.6
@@ -172,7 +176,6 @@ jobs:
           generateReleaseNotes: true
           includeUpdaterJson: ${{ matrix.tauri_include_updater_json }}
           assetNamePattern: "[name]_[platform]_[arch][ext]"
-          appVersion: ${{ inputs.tag || github.ref_name }}
         env:
           GITHUB_TOKEN: ${{ github.token }}
           TAURI_SIGNING_PRIVATE_KEY: "${{ secrets.DEVPOD_TAURI_PRIVATE_SIGNING_KEY }}"
