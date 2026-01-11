@@ -22,26 +22,30 @@ func NewGraph[T comparable]() *Graph[T] {
 	}
 }
 
+// AddNode adds a node to the graph with the given ID and data.
+// Returns an error if a node with the same ID already exists.
 func (g *Graph[T]) AddNode(id string, data T) error {
+	if _, exists := g.nodes[id]; exists {
+		return fmt.Errorf("node %s already exists", id)
+	}
 	g.nodes[id] = data
-	if _, exists := g.inDegree[id]; !exists {
-		g.inDegree[id] = 0
-	}
-	if g.edges[id] == nil {
-		g.edges[id] = []string{}
-	}
+	g.inDegree[id] = 0
+	g.edges[id] = []string{}
 	return nil
 }
 
+// AddNodes adds multiple nodes to the graph.
+// Returns an error if any node with the same ID already exists.
 func (g *Graph[T]) AddNodes(nodes map[string]T) error {
+	for id := range nodes {
+		if _, exists := g.nodes[id]; exists {
+			return fmt.Errorf("node %s already exists", id)
+		}
+	}
 	for id, data := range nodes {
 		g.nodes[id] = data
-		if _, exists := g.inDegree[id]; !exists {
-			g.inDegree[id] = 0
-		}
-		if g.edges[id] == nil {
-			g.edges[id] = []string{}
-		}
+		g.inDegree[id] = 0
+		g.edges[id] = []string{}
 	}
 	return nil
 }
@@ -71,21 +75,12 @@ func (g *Graph[T]) RemoveEdge(from, to string) error {
 		return fmt.Errorf("target node %s does not exist", to)
 	}
 
-	newEdges := []string{}
-	edgeFound := false
-	for _, child := range g.edges[from] {
-		if child != to {
-			newEdges = append(newEdges, child)
-		} else {
-			edgeFound = true
-		}
-	}
-
-	if edgeFound {
-		g.edges[from] = newEdges
-		if g.inDegree[to] > 0 {
-			g.inDegree[to]--
-		}
+	oldLen := len(g.edges[from])
+	g.edges[from] = slices.DeleteFunc(g.edges[from], func(child string) bool {
+		return child == to
+	})
+	if len(g.edges[from]) < oldLen && g.inDegree[to] > 0 {
+		g.inDegree[to]--
 	}
 
 	return nil
@@ -246,31 +241,36 @@ func (g *Graph[T]) String() string {
 }
 
 func (g *Graph[T]) Sort() ([]T, error) {
-	workingInDegree := copyInDegreeMap(g.inDegree)
-	zeroInDegreeQueue := initializeQueue(workingInDegree)
-	sortedResult := make([]T, 0, len(g.nodes))
-
-	for len(zeroInDegreeQueue) > 0 {
-		currentNode := dequeue(&zeroInDegreeQueue)
-		sortedResult = append(sortedResult, g.nodes[currentNode])
-		processNeighbors(g.edges, currentNode, workingInDegree, &zeroInDegreeQueue)
+	sortedIDs, err := g.sortNodeIDs()
+	if err != nil {
+		return nil, err
 	}
-
-	if len(sortedResult) != len(g.nodes) {
-		remainingNodes := []string{}
-		for nodeID, degree := range workingInDegree {
-			if degree > 0 {
-				remainingNodes = append(remainingNodes, nodeID)
-			}
-		}
-		sort.Strings(remainingNodes)
-		return nil, fmt.Errorf("circular dependency detected among nodes: %v", remainingNodes)
+	result := make([]T, len(sortedIDs))
+	for i, id := range sortedIDs {
+		result[i] = g.nodes[id]
 	}
-
-	return sortedResult, nil
+	return result, nil
 }
 
 func (g *Graph[T]) SortNodeIDs() ([]string, error) {
+	return g.sortNodeIDs()
+}
+
+func (g *Graph[T]) HasCircularDependency() bool {
+	workingInDegree := copyInDegreeMap(g.inDegree)
+	zeroInDegreeQueue := initializeQueue(workingInDegree)
+	processedCount := 0
+
+	for len(zeroInDegreeQueue) > 0 {
+		currentNode := dequeue(&zeroInDegreeQueue)
+		processedCount++
+		processNeighbors(g.edges, currentNode, workingInDegree, &zeroInDegreeQueue)
+	}
+
+	return processedCount != len(g.nodes)
+}
+
+func (g *Graph[T]) sortNodeIDs() ([]string, error) {
 	workingInDegree := copyInDegreeMap(g.inDegree)
 	zeroInDegreeQueue := initializeQueue(workingInDegree)
 	sortedResult := make([]string, 0, len(g.nodes))
@@ -293,20 +293,6 @@ func (g *Graph[T]) SortNodeIDs() ([]string, error) {
 	}
 
 	return sortedResult, nil
-}
-
-func (g *Graph[T]) HasCircularDependency() bool {
-	workingInDegree := copyInDegreeMap(g.inDegree)
-	zeroInDegreeQueue := initializeQueue(workingInDegree)
-	processedCount := 0
-
-	for len(zeroInDegreeQueue) > 0 {
-		currentNode := dequeue(&zeroInDegreeQueue)
-		processedCount++
-		processNeighbors(g.edges, currentNode, workingInDegree, &zeroInDegreeQueue)
-	}
-
-	return processedCount != len(g.nodes)
 }
 
 func (g *Graph[T]) collectChildren(id string, nodesToRemove *[]string) {

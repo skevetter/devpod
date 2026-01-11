@@ -27,7 +27,7 @@ func TestCreateFeatureLookup(t *testing.T) {
 	}
 }
 
-func TestIsAlreadyHardDependency(t *testing.T) {
+func TestHasHardDependency(t *testing.T) {
 	tests := []struct {
 		name                string
 		feature             *config.FeatureSet

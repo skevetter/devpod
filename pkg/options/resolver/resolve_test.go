@@ -40,7 +40,7 @@ func (suite *ResolveTestSuite) TestResolveOptions_NodeExistenceCheck() {
 	suite.Empty(result)
 }
 
-func (suite *ResolveTestSuite) TestResolveOptions_SortNodeIDsUsage() {
+func (suite *ResolveTestSuite) TestResolveOptions_WithDependencies() {
 	option1 := &types.Option{Default: "value1"}
 	option2 := &types.Option{Default: "value2"}
 
@@ -54,7 +54,7 @@ func (suite *ResolveTestSuite) TestResolveOptions_SortNodeIDsUsage() {
 	suite.Equal("value1", result["option1"].Value)
 	suite.Equal("value2", result["option2"].Value)
 }
-func (suite *ResolveTestSuite) TestResolveOptions_DuplicateQueueHandling() {
+func (suite *ResolveTestSuite) TestResolveOptions_MultipleNodes() {
 	nodes := map[string]*types.Option{
 		"option1": {Default: "value1"},
 		"option2": {Default: "value2"},

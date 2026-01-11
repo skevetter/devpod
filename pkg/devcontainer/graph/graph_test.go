@@ -20,6 +20,12 @@ func (suite *GraphTestSuite) TestAddNode() {
 	err := suite.graph.AddNode("node1", "data1")
 	suite.NoError(err)
 	suite.Equal("data1", suite.graph.nodes["node1"])
+
+	// Test duplicate node error
+	err = suite.graph.AddNode("node1", "data2")
+	suite.Error(err)
+	suite.Contains(err.Error(), "node1 already exists")
+	suite.Equal("data1", suite.graph.nodes["node1"])
 }
 
 func (suite *GraphTestSuite) TestAddNodes() {
@@ -35,6 +41,17 @@ func (suite *GraphTestSuite) TestAddNodes() {
 	for id, expectedData := range nodes {
 		suite.Equal(expectedData, suite.graph.nodes[id])
 	}
+
+	// Test duplicate node error
+	duplicateNodes := map[string]string{
+		"node1": "new_data1",
+		"node4": "data4",
+	}
+	err = suite.graph.AddNodes(duplicateNodes)
+	suite.Error(err)
+	suite.Contains(err.Error(), "node1 already exists")
+	suite.Equal("data1", suite.graph.nodes["node1"])
+	suite.NotContains(suite.graph.nodes, "node4")
 }
 
 func (suite *GraphTestSuite) TestAddEdge() {

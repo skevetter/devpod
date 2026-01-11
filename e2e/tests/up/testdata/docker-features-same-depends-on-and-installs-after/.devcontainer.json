@@ -1,5 +1,5 @@
 {
-  "image": "mcr.microsoft.com/devcontainers/base:alpine",
+  "image": "ubuntu",
   "features": {
     "./features/test-feature": {},
     "ghcr.io/devcontainers/features/node:latest": {}
