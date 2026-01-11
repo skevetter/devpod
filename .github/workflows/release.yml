@@ -158,6 +158,7 @@ jobs:
             patchelf
 
       - name: install desktop dependencies
+        shell: bash
         working-directory: ./desktop
         run: |
           yarn install --frozen-lockfile
@@ -172,7 +173,8 @@ jobs:
           args: "--target ${{ matrix.target }}"
           tagName: ${{ inputs.tag || github.ref_name }}
           releaseName: "DevPod ${{ inputs.tag || github.ref_name }}"
-          prerelease: true
+          prerelease: ${{ github.event_name == 'release' && 'true' || 'false' }}
+          releaseDraft: ${{ github.event_name != 'release' && 'true' || 'false' }}
           generateReleaseNotes: true
           includeUpdaterJson: ${{ matrix.tauri_include_updater_json }}
           assetNamePattern: "[name]_[platform]_[arch][ext]"
