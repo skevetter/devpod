@@ -358,28 +358,28 @@ func NormalizeFeatureID(featureID string) string {
 	return ref.String()
 }
 
-func getSortedFeatureSets(devContainer *config.DevContainerConfig, features []*config.FeatureSet) ([]*config.FeatureSet, error) {
-	automaticOrder, err := getOrderedFeatureSets(features)
+func getSortedFeatureSets(devContainer *config.DevContainerConfig, featureSets []*config.FeatureSet) ([]*config.FeatureSet, error) {
+	orderedFeatureSets, err := getOrderedFeatureSets(featureSets)
 	if err != nil {
 		return nil, err
 	}
 
 	if len(devContainer.OverrideFeatureInstallOrder) == 0 {
-		return automaticOrder, nil
+		return orderedFeatureSets, nil
 	}
 
-	return sortFeaturesByOverride(devContainer.OverrideFeatureInstallOrder, automaticOrder), nil
+	return sortFeaturesByOverride(devContainer.OverrideFeatureInstallOrder, orderedFeatureSets), nil
 }
 
-func sortFeaturesByOverride(overrideOrder []string, automaticOrder []*config.FeatureSet) []*config.FeatureSet {
-	orderedFeatures := make([]*config.FeatureSet, 0, len(automaticOrder))
+func sortFeaturesByOverride(overrideOrder []string, featureSets []*config.FeatureSet) []*config.FeatureSet {
+	orderedFeatures := make([]*config.FeatureSet, 0, len(featureSets))
 	seen := make(map[string]bool)
 
 	for _, overrideFeatureID := range overrideOrder {
-		feature := extractFeatureByID(automaticOrder, overrideFeatureID)
+		feature := extractFeatureByID(featureSets, overrideFeatureID)
 		if feature == nil {
 			normalizedID := NormalizeFeatureID(overrideFeatureID)
-			feature = extractFeatureByID(automaticOrder, normalizedID)
+			feature = extractFeatureByID(featureSets, normalizedID)
 		}
 
 		if feature != nil && !seen[feature.ConfigID] {
@@ -388,7 +388,7 @@ func sortFeaturesByOverride(overrideOrder []string, automaticOrder []*config.Fea
 		}
 	}
 
-	for _, feature := range automaticOrder {
+	for _, feature := range featureSets {
 		if !seen[feature.ConfigID] {
 			orderedFeatures = append(orderedFeatures, feature)
 			seen[feature.ConfigID] = true
