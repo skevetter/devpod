@@ -172,6 +172,7 @@ jobs:
           generateReleaseNotes: true
           includeUpdaterJson: ${{ matrix.tauri_include_updater_json }}
           assetNamePattern: "[name]_[platform]_[arch][ext]"
+          appVersion: ${{ inputs.tag || github.ref_name }}
         env:
           GITHUB_TOKEN: ${{ github.token }}
           TAURI_SIGNING_PRIVATE_KEY: "${{ secrets.DEVPOD_TAURI_PRIVATE_SIGNING_KEY }}"
