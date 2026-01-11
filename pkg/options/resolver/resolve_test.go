@@ -7,6 +7,7 @@ import (
 	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/devcontainer/graph"
 	"github.com/skevetter/devpod/pkg/types"
+	"github.com/skevetter/log"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -17,7 +18,10 @@ type ResolveTestSuite struct {
 
 func (suite *ResolveTestSuite) SetupTest() {
 	suite.resolver = &Resolver{
-		graph: graph.NewGraph[*types.Option](),
+		graph:       graph.NewGraph[*types.Option](),
+		userOptions: make(map[string]string),
+		extraValues: make(map[string]string),
+		log:         log.Default,
 	}
 }
 
@@ -32,8 +36,8 @@ func (suite *ResolveTestSuite) TestResolveOptions_EmptyGraph() {
 }
 
 func (suite *ResolveTestSuite) TestResolveOptions_NodeExistenceCheck() {
-	_ = suite.resolver.graph.AddNode("test", &types.Option{})
-	_ = suite.resolver.graph.RemoveNode("test")
+	suite.Require().NoError(suite.resolver.graph.AddNode("test", &types.Option{}))
+	suite.Require().NoError(suite.resolver.graph.RemoveNode("test"))
 
 	result, err := suite.resolver.resolveOptions(context.Background(), map[string]config.OptionValue{})
 	suite.NoError(err)
@@ -44,9 +48,9 @@ func (suite *ResolveTestSuite) TestResolveOptions_WithDependencies() {
 	option1 := &types.Option{Default: "value1"}
 	option2 := &types.Option{Default: "value2"}
 
-	_ = suite.resolver.graph.AddNode("option1", option1)
-	_ = suite.resolver.graph.AddNode("option2", option2)
-	_ = suite.resolver.graph.AddEdge("option1", "option2")
+	suite.Require().NoError(suite.resolver.graph.AddNode("option1", option1))
+	suite.Require().NoError(suite.resolver.graph.AddNode("option2", option2))
+	suite.Require().NoError(suite.resolver.graph.AddEdge("option1", "option2"))
 
 	result, err := suite.resolver.resolveOptions(context.Background(), map[string]config.OptionValue{})
 	suite.NoError(err)
@@ -61,9 +65,12 @@ func (suite *ResolveTestSuite) TestResolveOptions_MultipleNodes() {
 		"option3": {Default: "value3"},
 	}
 
-	_ = suite.resolver.graph.AddNodes(nodes)
+	suite.Require().NoError(suite.resolver.graph.AddNodes(nodes))
 
 	result, err := suite.resolver.resolveOptions(context.Background(), map[string]config.OptionValue{})
 	suite.NoError(err)
 	suite.Len(result, 3)
+	suite.Equal("value1", result["option1"].Value)
+	suite.Equal("value2", result["option2"].Value)
+	suite.Equal("value3", result["option3"].Value)
 }

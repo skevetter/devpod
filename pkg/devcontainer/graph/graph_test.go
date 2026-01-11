@@ -55,8 +55,8 @@ func (suite *GraphTestSuite) TestAddNodes() {
 }
 
 func (suite *GraphTestSuite) TestAddEdge() {
-	_ = suite.graph.AddNode("parent", "parent_data")
-	_ = suite.graph.AddNode("child", "child_data")
+	suite.Require().NoError(suite.graph.AddNode("parent", "parent_data"))
+	suite.Require().NoError(suite.graph.AddNode("child", "child_data"))
 
 	err := suite.graph.AddEdge("parent", "child")
 	suite.NoError(err)
@@ -65,9 +65,9 @@ func (suite *GraphTestSuite) TestAddEdge() {
 }
 
 func (suite *GraphTestSuite) TestTopologicalSort() {
-	_ = suite.graph.AddNode("A", "dataA")
-	_ = suite.graph.AddNode("B", "dataB")
-	_ = suite.graph.AddEdge("A", "B")
+	suite.Require().NoError(suite.graph.AddNode("A", "dataA"))
+	suite.Require().NoError(suite.graph.AddNode("B", "dataB"))
+	suite.Require().NoError(suite.graph.AddEdge("A", "B"))
 
 	result, err := suite.graph.Sort()
 	suite.NoError(err)
@@ -77,9 +77,9 @@ func (suite *GraphTestSuite) TestTopologicalSort() {
 }
 
 func (suite *GraphTestSuite) TestSortNodeIDs() {
-	_ = suite.graph.AddNode("A", "dataA")
-	_ = suite.graph.AddNode("B", "dataB")
-	_ = suite.graph.AddEdge("A", "B")
+	suite.Require().NoError(suite.graph.AddNode("A", "dataA"))
+	suite.Require().NoError(suite.graph.AddNode("B", "dataB"))
+	suite.Require().NoError(suite.graph.AddEdge("A", "B"))
 
 	result, err := suite.graph.SortNodeIDs()
 	suite.NoError(err)
@@ -89,19 +89,19 @@ func (suite *GraphTestSuite) TestSortNodeIDs() {
 }
 
 func (suite *GraphTestSuite) TestCircularDependency() {
-	_ = suite.graph.AddNode("A", "dataA")
-	_ = suite.graph.AddNode("B", "dataB")
-	_ = suite.graph.AddEdge("A", "B")
-	_ = suite.graph.AddEdge("B", "A")
+	suite.Require().NoError(suite.graph.AddNode("A", "dataA"))
+	suite.Require().NoError(suite.graph.AddNode("B", "dataB"))
+	suite.Require().NoError(suite.graph.AddEdge("A", "B"))
+	suite.Require().NoError(suite.graph.AddEdge("B", "A"))
 
 	_, err := suite.graph.Sort()
 	suite.Error(err)
 }
 
 func (suite *GraphTestSuite) TestRemoveNode() {
-	_ = suite.graph.AddNode("A", "dataA")
-	_ = suite.graph.AddNode("B", "dataB")
-	_ = suite.graph.AddEdge("A", "B")
+	suite.Require().NoError(suite.graph.AddNode("A", "dataA"))
+	suite.Require().NoError(suite.graph.AddNode("B", "dataB"))
+	suite.Require().NoError(suite.graph.AddEdge("A", "B"))
 
 	err := suite.graph.RemoveNode("B")
 	suite.NoError(err)
@@ -110,11 +110,11 @@ func (suite *GraphTestSuite) TestRemoveNode() {
 }
 
 func (suite *GraphTestSuite) TestRemoveSubGraph() {
-	_ = suite.graph.AddNode("A", "dataA")
-	_ = suite.graph.AddNode("B", "dataB")
-	_ = suite.graph.AddNode("C", "dataC")
-	_ = suite.graph.AddEdge("A", "B")
-	_ = suite.graph.AddEdge("B", "C")
+	suite.Require().NoError(suite.graph.AddNode("A", "dataA"))
+	suite.Require().NoError(suite.graph.AddNode("B", "dataB"))
+	suite.Require().NoError(suite.graph.AddNode("C", "dataC"))
+	suite.Require().NoError(suite.graph.AddEdge("A", "B"))
+	suite.Require().NoError(suite.graph.AddEdge("B", "C"))
 
 	err := suite.graph.RemoveSubGraph("B")
 	suite.NoError(err)
@@ -134,9 +134,9 @@ func (suite *GraphTestSuite) TestRemoveEdge() {
 		{
 			name: "remove existing edge",
 			setup: func() {
-				_ = suite.graph.AddNode("A", "dataA")
-				_ = suite.graph.AddNode("B", "dataB")
-				_ = suite.graph.AddEdge("A", "B")
+				suite.Require().NoError(suite.graph.AddNode("A", "dataA"))
+				suite.Require().NoError(suite.graph.AddNode("B", "dataB"))
+				suite.Require().NoError(suite.graph.AddEdge("A", "B"))
 			},
 			from: "A", to: "B",
 			wantErr: false,
@@ -147,8 +147,8 @@ func (suite *GraphTestSuite) TestRemoveEdge() {
 		{
 			name: "remove non-existing edge",
 			setup: func() {
-				_ = suite.graph.AddNode("A", "dataA")
-				_ = suite.graph.AddNode("B", "dataB")
+				suite.Require().NoError(suite.graph.AddNode("A", "dataA"))
+				suite.Require().NoError(suite.graph.AddNode("B", "dataB"))
 			},
 			from: "A", to: "B",
 			wantErr: false,
@@ -159,7 +159,7 @@ func (suite *GraphTestSuite) TestRemoveEdge() {
 		{
 			name: "remove edge from non-existing source",
 			setup: func() {
-				_ = suite.graph.AddNode("B", "dataB")
+				suite.Require().NoError(suite.graph.AddNode("B", "dataB"))
 			},
 			from: "A", to: "B",
 			wantErr: true,
@@ -194,7 +194,7 @@ func (suite *GraphTestSuite) TestUpdateNode() {
 		{
 			name: "update existing node",
 			setup: func() {
-				_ = suite.graph.AddNode("node1", "original")
+				suite.Require().NoError(suite.graph.AddNode("node1", "original"))
 			},
 			nodeID:  "node1",
 			newData: "updated",
@@ -244,41 +244,41 @@ func (suite *GraphTestSuite) TestEdgeCount() {
 		{
 			name: "nodes without edges",
 			setup: func() {
-				_ = suite.graph.AddNode("A", "dataA")
-				_ = suite.graph.AddNode("B", "dataB")
+				suite.Require().NoError(suite.graph.AddNode("A", "dataA"))
+				suite.Require().NoError(suite.graph.AddNode("B", "dataB"))
 			},
 			expectedCount: 0,
 		},
 		{
 			name: "single edge",
 			setup: func() {
-				_ = suite.graph.AddNode("A", "dataA")
-				_ = suite.graph.AddNode("B", "dataB")
-				_ = suite.graph.AddEdge("A", "B")
+				suite.Require().NoError(suite.graph.AddNode("A", "dataA"))
+				suite.Require().NoError(suite.graph.AddNode("B", "dataB"))
+				suite.Require().NoError(suite.graph.AddEdge("A", "B"))
 			},
 			expectedCount: 1,
 		},
 		{
 			name: "multiple edges",
 			setup: func() {
-				_ = suite.graph.AddNode("A", "dataA")
-				_ = suite.graph.AddNode("B", "dataB")
-				_ = suite.graph.AddNode("C", "dataC")
-				_ = suite.graph.AddEdge("A", "B")
-				_ = suite.graph.AddEdge("A", "C")
-				_ = suite.graph.AddEdge("B", "C")
+				suite.Require().NoError(suite.graph.AddNode("A", "dataA"))
+				suite.Require().NoError(suite.graph.AddNode("B", "dataB"))
+				suite.Require().NoError(suite.graph.AddNode("C", "dataC"))
+				suite.Require().NoError(suite.graph.AddEdge("A", "B"))
+				suite.Require().NoError(suite.graph.AddEdge("A", "C"))
+				suite.Require().NoError(suite.graph.AddEdge("B", "C"))
 			},
 			expectedCount: 3,
 		},
 		{
 			name: "edges after removal",
 			setup: func() {
-				_ = suite.graph.AddNode("A", "dataA")
-				_ = suite.graph.AddNode("B", "dataB")
-				_ = suite.graph.AddNode("C", "dataC")
-				_ = suite.graph.AddEdge("A", "B")
-				_ = suite.graph.AddEdge("A", "C")
-				_ = suite.graph.RemoveEdge("A", "B")
+				suite.Require().NoError(suite.graph.AddNode("A", "dataA"))
+				suite.Require().NoError(suite.graph.AddNode("B", "dataB"))
+				suite.Require().NoError(suite.graph.AddNode("C", "dataC"))
+				suite.Require().NoError(suite.graph.AddEdge("A", "B"))
+				suite.Require().NoError(suite.graph.AddEdge("A", "C"))
+				suite.Require().NoError(suite.graph.RemoveEdge("A", "B"))
 			},
 			expectedCount: 1,
 		},
@@ -297,19 +297,19 @@ func (suite *GraphTestSuite) TestEdgeCount() {
 func (suite *GraphTestSuite) TestIsEmpty() {
 	suite.True(suite.graph.IsEmpty())
 
-	_ = suite.graph.AddNode("A", "dataA")
+	suite.Require().NoError(suite.graph.AddNode("A", "dataA"))
 	suite.False(suite.graph.IsEmpty())
 
-	_ = suite.graph.RemoveNode("A")
+	suite.Require().NoError(suite.graph.RemoveNode("A"))
 	suite.True(suite.graph.IsEmpty())
 }
 
 func (suite *GraphTestSuite) TestString() {
 	suite.Equal("Graph: empty", suite.graph.String())
 
-	_ = suite.graph.AddNode("A", "dataA")
-	_ = suite.graph.AddNode("B", "dataB")
-	_ = suite.graph.AddEdge("A", "B")
+	suite.Require().NoError(suite.graph.AddNode("A", "dataA"))
+	suite.Require().NoError(suite.graph.AddNode("B", "dataB"))
+	suite.Require().NoError(suite.graph.AddEdge("A", "B"))
 
 	output := suite.graph.String()
 	suite.Contains(output, "Graph: 2 nodes, 1 edges")
@@ -318,14 +318,14 @@ func (suite *GraphTestSuite) TestString() {
 func (suite *GraphTestSuite) TestHasCircularDependency() {
 	suite.False(suite.graph.HasCircularDependency())
 
-	_ = suite.graph.AddNode("A", "dataA")
-	_ = suite.graph.AddNode("B", "dataB")
+	suite.Require().NoError(suite.graph.AddNode("A", "dataA"))
+	suite.Require().NoError(suite.graph.AddNode("B", "dataB"))
 	suite.False(suite.graph.HasCircularDependency())
 
-	_ = suite.graph.AddEdge("A", "B")
+	suite.Require().NoError(suite.graph.AddEdge("A", "B"))
 	suite.False(suite.graph.HasCircularDependency())
 
-	_ = suite.graph.AddEdge("B", "A")
+	suite.Require().NoError(suite.graph.AddEdge("B", "A"))
 	suite.True(suite.graph.HasCircularDependency())
 }
 func (suite *GraphTestSuite) TestSetNode() {
@@ -340,11 +340,11 @@ func (suite *GraphTestSuite) TestSetNode() {
 }
 
 func (suite *GraphTestSuite) TestGetChildren() {
-	_ = suite.graph.AddNode("parent", "p")
-	_ = suite.graph.AddNode("child1", "c1")
-	_ = suite.graph.AddNode("child2", "c2")
-	_ = suite.graph.AddEdge("parent", "child1")
-	_ = suite.graph.AddEdge("parent", "child2")
+	suite.Require().NoError(suite.graph.AddNode("parent", "p"))
+	suite.Require().NoError(suite.graph.AddNode("child1", "c1"))
+	suite.Require().NoError(suite.graph.AddNode("child2", "c2"))
+	suite.Require().NoError(suite.graph.AddEdge("parent", "child1"))
+	suite.Require().NoError(suite.graph.AddEdge("parent", "child2"))
 
 	children := suite.graph.GetChildren("parent")
 	suite.Len(children, 2)
@@ -353,11 +353,11 @@ func (suite *GraphTestSuite) TestGetChildren() {
 }
 
 func (suite *GraphTestSuite) TestGetParents() {
-	_ = suite.graph.AddNode("parent1", "p1")
-	_ = suite.graph.AddNode("parent2", "p2")
-	_ = suite.graph.AddNode("child", "c")
-	_ = suite.graph.AddEdge("parent1", "child")
-	_ = suite.graph.AddEdge("parent2", "child")
+	suite.Require().NoError(suite.graph.AddNode("parent1", "p1"))
+	suite.Require().NoError(suite.graph.AddNode("parent2", "p2"))
+	suite.Require().NoError(suite.graph.AddNode("child", "c"))
+	suite.Require().NoError(suite.graph.AddEdge("parent1", "child"))
+	suite.Require().NoError(suite.graph.AddEdge("parent2", "child"))
 
 	parents := suite.graph.GetParents("child")
 	suite.Len(parents, 2)
@@ -365,25 +365,25 @@ func (suite *GraphTestSuite) TestGetParents() {
 }
 
 func (suite *GraphTestSuite) TestHasEdge() {
-	_ = suite.graph.AddNode("A", "dataA")
-	_ = suite.graph.AddNode("B", "dataB")
+	suite.Require().NoError(suite.graph.AddNode("A", "dataA"))
+	suite.Require().NoError(suite.graph.AddNode("B", "dataB"))
 
 	suite.False(suite.graph.HasEdge("A", "B"))
 
-	_ = suite.graph.AddEdge("A", "B")
+	suite.Require().NoError(suite.graph.AddEdge("A", "B"))
 	suite.True(suite.graph.HasEdge("A", "B"))
 	suite.False(suite.graph.HasEdge("B", "A"))
 }
 
 func (suite *GraphTestSuite) TestRemoveChildren() {
-	_ = suite.graph.AddNode("parent", "p")
-	_ = suite.graph.AddNode("child1", "c1")
-	_ = suite.graph.AddNode("child2", "c2")
-	_ = suite.graph.AddNode("grandchild", "gc")
+	suite.Require().NoError(suite.graph.AddNode("parent", "p"))
+	suite.Require().NoError(suite.graph.AddNode("child1", "c1"))
+	suite.Require().NoError(suite.graph.AddNode("child2", "c2"))
+	suite.Require().NoError(suite.graph.AddNode("grandchild", "gc"))
 
-	_ = suite.graph.AddEdge("parent", "child1")
-	_ = suite.graph.AddEdge("parent", "child2")
-	_ = suite.graph.AddEdge("child1", "grandchild")
+	suite.Require().NoError(suite.graph.AddEdge("parent", "child1"))
+	suite.Require().NoError(suite.graph.AddEdge("parent", "child2"))
+	suite.Require().NoError(suite.graph.AddEdge("child1", "grandchild"))
 
 	err := suite.graph.RemoveChildren("parent")
 	suite.NoError(err)
@@ -396,19 +396,19 @@ func (suite *GraphTestSuite) TestRemoveChildren() {
 func (suite *GraphTestSuite) TestNodeCount() {
 	suite.Equal(0, suite.graph.NodeCount())
 
-	_ = suite.graph.AddNode("A", "dataA")
+	suite.Require().NoError(suite.graph.AddNode("A", "dataA"))
 	suite.Equal(1, suite.graph.NodeCount())
 
-	_ = suite.graph.AddNode("B", "dataB")
+	suite.Require().NoError(suite.graph.AddNode("B", "dataB"))
 	suite.Equal(2, suite.graph.NodeCount())
 
-	_ = suite.graph.RemoveNode("A")
+	suite.Require().NoError(suite.graph.RemoveNode("A"))
 	suite.Equal(1, suite.graph.NodeCount())
 }
 
 func (suite *GraphTestSuite) TestGetAllNodes() {
-	_ = suite.graph.AddNode("A", "dataA")
-	_ = suite.graph.AddNode("B", "dataB")
+	suite.Require().NoError(suite.graph.AddNode("A", "dataA"))
+	suite.Require().NoError(suite.graph.AddNode("B", "dataB"))
 
 	nodes := suite.graph.GetNodes()
 	suite.Len(nodes, 2)
@@ -423,10 +423,10 @@ func (suite *GraphTestSuite) TestEdgeCases() {
 		{
 			name: "duplicate edge prevention",
 			test: func() {
-				_ = suite.graph.AddNode("A", "dataA")
-				_ = suite.graph.AddNode("B", "dataB")
-				_ = suite.graph.AddEdge("A", "B")
-				_ = suite.graph.AddEdge("A", "B") // duplicate
+				suite.Require().NoError(suite.graph.AddNode("A", "dataA"))
+				suite.Require().NoError(suite.graph.AddNode("B", "dataB"))
+				suite.Require().NoError(suite.graph.AddEdge("A", "B"))
+				suite.Require().NoError(suite.graph.AddEdge("A", "B")) // duplicate
 				suite.Equal(1, suite.graph.EdgeCount())
 			},
 		},
@@ -454,7 +454,7 @@ func (suite *GraphTestSuite) TestEdgeCases() {
 		{
 			name: "remove edge to non-existing target",
 			test: func() {
-				_ = suite.graph.AddNode("A", "dataA")
+				suite.Require().NoError(suite.graph.AddNode("A", "dataA"))
 				err := suite.graph.RemoveEdge("A", "missing")
 				suite.Error(err)
 			},
@@ -462,20 +462,20 @@ func (suite *GraphTestSuite) TestEdgeCases() {
 		{
 			name: "complex circular dependency",
 			test: func() {
-				_ = suite.graph.AddNode("A", "dataA")
-				_ = suite.graph.AddNode("B", "dataB")
-				_ = suite.graph.AddNode("C", "dataC")
-				_ = suite.graph.AddEdge("A", "B")
-				_ = suite.graph.AddEdge("B", "C")
-				_ = suite.graph.AddEdge("C", "A") // creates cycle
+				suite.Require().NoError(suite.graph.AddNode("A", "dataA"))
+				suite.Require().NoError(suite.graph.AddNode("B", "dataB"))
+				suite.Require().NoError(suite.graph.AddNode("C", "dataC"))
+				suite.Require().NoError(suite.graph.AddEdge("A", "B"))
+				suite.Require().NoError(suite.graph.AddEdge("B", "C"))
+				suite.Require().NoError(suite.graph.AddEdge("C", "A")) // creates cycle
 				suite.True(suite.graph.HasCircularDependency())
 			},
 		},
 		{
 			name: "self loop",
 			test: func() {
-				_ = suite.graph.AddNode("A", "dataA")
-				_ = suite.graph.AddEdge("A", "A")
+				suite.Require().NoError(suite.graph.AddNode("A", "dataA"))
+				suite.Require().NoError(suite.graph.AddEdge("A", "A"))
 				suite.True(suite.graph.HasCircularDependency())
 			},
 		},
@@ -500,11 +500,11 @@ func (suite *GraphTestSuite) TestLargeGraph() {
 	nodeCount := 100
 
 	for i := range nodeCount {
-		_ = suite.graph.AddNode(fmt.Sprintf("node%d", i), fmt.Sprintf("data%d", i))
+		suite.Require().NoError(suite.graph.AddNode(fmt.Sprintf("node%d", i), fmt.Sprintf("data%d", i)))
 	}
 
 	for i := 0; i < nodeCount-1; i++ {
-		_ = suite.graph.AddEdge(fmt.Sprintf("node%d", i), fmt.Sprintf("node%d", i+1))
+		suite.Require().NoError(suite.graph.AddEdge(fmt.Sprintf("node%d", i), fmt.Sprintf("node%d", i+1)))
 	}
 
 	suite.Equal(nodeCount, suite.graph.NodeCount())
@@ -533,14 +533,14 @@ func (suite *GraphTestSuite) TestTopologicalSortAdvanced() {
 		{
 			name: "diamond dependency",
 			setup: func() {
-				_ = suite.graph.AddNode("A", "dataA")
-				_ = suite.graph.AddNode("B", "dataB")
-				_ = suite.graph.AddNode("C", "dataC")
-				_ = suite.graph.AddNode("D", "dataD")
-				_ = suite.graph.AddEdge("A", "B")
-				_ = suite.graph.AddEdge("A", "C")
-				_ = suite.graph.AddEdge("B", "D")
-				_ = suite.graph.AddEdge("C", "D")
+				suite.Require().NoError(suite.graph.AddNode("A", "dataA"))
+				suite.Require().NoError(suite.graph.AddNode("B", "dataB"))
+				suite.Require().NoError(suite.graph.AddNode("C", "dataC"))
+				suite.Require().NoError(suite.graph.AddNode("D", "dataD"))
+				suite.Require().NoError(suite.graph.AddEdge("A", "B"))
+				suite.Require().NoError(suite.graph.AddEdge("A", "C"))
+				suite.Require().NoError(suite.graph.AddEdge("B", "D"))
+				suite.Require().NoError(suite.graph.AddEdge("C", "D"))
 			},
 			wantErr: false,
 			verify: func(result []string) {
@@ -552,12 +552,12 @@ func (suite *GraphTestSuite) TestTopologicalSortAdvanced() {
 		{
 			name: "three node cycle",
 			setup: func() {
-				_ = suite.graph.AddNode("A", "dataA")
-				_ = suite.graph.AddNode("B", "dataB")
-				_ = suite.graph.AddNode("C", "dataC")
-				_ = suite.graph.AddEdge("A", "B")
-				_ = suite.graph.AddEdge("B", "C")
-				_ = suite.graph.AddEdge("C", "A")
+				suite.Require().NoError(suite.graph.AddNode("A", "dataA"))
+				suite.Require().NoError(suite.graph.AddNode("B", "dataB"))
+				suite.Require().NoError(suite.graph.AddNode("C", "dataC"))
+				suite.Require().NoError(suite.graph.AddEdge("A", "B"))
+				suite.Require().NoError(suite.graph.AddEdge("B", "C"))
+				suite.Require().NoError(suite.graph.AddEdge("C", "A"))
 			},
 			wantErr: true,
 			verify: func(result []string) {
