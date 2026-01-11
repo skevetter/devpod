@@ -2,6 +2,7 @@ package driver
 
 import (
 	"context"
+	"io"
 
 	"github.com/skevetter/devpod/pkg/compose"
 	config2 "github.com/skevetter/devpod/pkg/config"
@@ -46,7 +47,11 @@ type DockerDriver interface {
 	// PushDevContainer pushes the given image to a registry
 	PushDevContainer(ctx context.Context, image string) error
 
+	// TagDevContainer tags the given image with the given tag
 	TagDevContainer(ctx context.Context, image, tag string) error
+
+	// UpdateContainerUserUID updates the container user UID/GID to match local user
+	UpdateContainerUserUID(ctx context.Context, workspaceId string, parsedConfig *config.DevContainerConfig, writer io.Writer) error
 
 	// ComposeHelper returns the compose helper
 	ComposeHelper() (*compose.ComposeHelper, error)

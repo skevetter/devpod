@@ -1,0 +1,10 @@
+name: devcontainer
+
+services:
+  devcontainer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ../project:/workspaces/project
+    command: sleep infinity

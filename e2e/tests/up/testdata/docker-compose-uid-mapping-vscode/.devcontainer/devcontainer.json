@@ -1,0 +1,7 @@
+{
+  "name": "Test",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "devcontainer",
+  "workspaceFolder": "/workspaces/project",
+  "remoteUser": "vscode"
+}

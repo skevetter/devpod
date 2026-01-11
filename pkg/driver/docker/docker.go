@@ -405,7 +405,7 @@ func (d *dockerDriver) RunDockerDevContainer(
 		return fmt.Errorf("failed to start dev container %w", err)
 	}
 
-	err = d.updateContainerUserUID(ctx, workspaceId, parsedConfig, writer)
+	err = d.UpdateContainerUserUID(ctx, workspaceId, parsedConfig, writer)
 	if err != nil {
 		return err
 	}
@@ -587,7 +587,7 @@ func isValidMapping(mapping string) bool {
 	}
 	return true
 }
-func (d *dockerDriver) updateContainerUserUID(ctx context.Context, workspaceId string, parsedConfig *config.DevContainerConfig, writer io.Writer) error {
+func (d *dockerDriver) UpdateContainerUserUID(ctx context.Context, workspaceId string, parsedConfig *config.DevContainerConfig, writer io.Writer) error {
 	isLinux := runtime.GOOS == "linux"
 	hasUser := parsedConfig.ContainerUser != "" || parsedConfig.RemoteUser != ""
 	shouldUpdate := parsedConfig.UpdateRemoteUserUID == nil || *parsedConfig.UpdateRemoteUserUID
@@ -743,11 +743,11 @@ func (d *dockerDriver) updateContainerUserUID(ctx context.Context, workspaceId s
 	}
 
 	d.Log.WithFields(logrus.Fields{
-		"container_user": containerUser,
-		"container_uid":  containerUid,
-		"container_gid":  containerGid,
-		"local_uid":      localUid,
-		"local_gid":      localGid,
+		"containerUser": containerUser,
+		"containerUid":  containerUid,
+		"containerGid":  containerGid,
+		"localUid":      localUid,
+		"localGid":      localGid,
 	}).Info("updating container user UID and GID")
 
 	args = []string{"cp", containerPasswdFileOut.Name(), fmt.Sprintf("%s:/etc/passwd", container.ID)}

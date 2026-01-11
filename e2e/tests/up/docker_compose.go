@@ -7,8 +7,11 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"os/user"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/docker/docker/api/types/container"
@@ -55,6 +58,63 @@ func (tc *testContext) verifyWorkspaceMount(ctx context.Context, workspace *prov
 	gomega.Expect(mount.Destination).To(gomega.Equal("/workspaces"))
 	gomega.Expect(mount.RW).To(gomega.BeTrue())
 	return nil
+}
+
+func getContainerUID(ctx context.Context, f *framework.Framework, workspaceDir, username string) int {
+	out, err := f.DevPodSSH(ctx, workspaceDir, fmt.Sprintf("id -u %s", username))
+	framework.ExpectNoError(err)
+	uid, err := strconv.Atoi(strings.TrimSpace(out))
+	framework.ExpectNoError(err)
+	return uid
+}
+
+func getContainerGID(ctx context.Context, f *framework.Framework, workspaceDir, username string) int {
+	out, err := f.DevPodSSH(ctx, workspaceDir, fmt.Sprintf("id -g %s", username))
+	framework.ExpectNoError(err)
+	gid, err := strconv.Atoi(strings.TrimSpace(out))
+	framework.ExpectNoError(err)
+	return gid
+}
+
+func verifyContainerUser(ctx context.Context, f *framework.Framework, workspaceDir, expectedUser string) {
+	out, err := f.DevPodSSH(ctx, workspaceDir, "whoami")
+	framework.ExpectNoError(err)
+	ginkgo.By(fmt.Sprintf("container user %s", strings.TrimSpace(out)))
+	gomega.Expect(strings.TrimSpace(out)).To(gomega.Equal(expectedUser), fmt.Sprintf("remote container user should be %s", expectedUser))
+}
+
+func verifyUIDMapping(containerUID, containerGID, hostUID, hostGID, defaultUID, defaultGID int, username string) {
+	ginkgo.By(fmt.Sprintf("container UID mapping: %s=%d, expected=%d", username, containerUID, hostUID))
+	ginkgo.By(fmt.Sprintf("container GID mapping: %s=%d, expected=%d", username, containerGID, hostGID))
+
+	if hostUID == 0 {
+		ginkgo.By("running as root user on host")
+		gomega.Expect(containerUID).To(gomega.Equal(defaultUID), fmt.Sprintf("%s user UID should remain %d when host is root", username, defaultUID))
+		gomega.Expect(containerGID).To(gomega.Equal(defaultGID), fmt.Sprintf("%s user GID should remain %d when host is root", username, defaultGID))
+	} else {
+		ginkgo.By("running as non-root user on host")
+		gomega.Expect(containerUID).To(gomega.Equal(hostUID), fmt.Sprintf("%s user UID should match host user UID", username))
+		gomega.Expect(containerGID).To(gomega.Equal(hostGID), fmt.Sprintf("%s user GID should match host user GID", username))
+	}
+}
+
+func verifyHostFileAccess(filePath, expectedContent string) {
+	content, err := os.ReadFile(filePath)
+	framework.ExpectNoError(err)
+	gomega.Expect(string(content)).To(gomega.ContainSubstring(expectedContent), "host file should be accessible to host user")
+}
+
+func verifyHostFileOwnership(filePath string, expectedUID, expectedGID int, isRootHost bool) {
+	info, err := os.Stat(filePath)
+	framework.ExpectNoError(err)
+	stat := info.Sys().(*syscall.Stat_t)
+
+	if isRootHost {
+		ginkgo.By(fmt.Sprintf("Host file ownership: uid=%d, gid=%d (container user owns files when host is root)", int(stat.Uid), int(stat.Gid)))
+	} else {
+		gomega.Expect(int(stat.Uid)).To(gomega.Equal(expectedUID), "host file UID should match expected UID")
+		gomega.Expect(int(stat.Gid)).To(gomega.Equal(expectedGID), "host file GID should match expected GID")
+	}
 }
 
 var _ = DevPodDescribe("devpod up test suite", func() {
@@ -189,6 +249,80 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 					framework.ExpectNoError(err)
 					gomega.Expect(detail.Config.Entrypoint).NotTo(gomega.ContainElement("bash"), "overrides container entry point")
 					gomega.Expect(detail.Config.Cmd).To(gomega.BeEmpty(), "overrides container command")
+				}, ginkgo.SpecTimeout(framework.GetTimeout()))
+
+				ginkgo.It("implements updateRemoteUserUID with root container user", func(ctx context.Context) {
+					currentUser, err := user.Current()
+					framework.ExpectNoError(err)
+
+					testUID, err := strconv.Atoi(currentUser.Uid)
+					framework.ExpectNoError(err)
+					testGID, err := strconv.Atoi(currentUser.Gid)
+					framework.ExpectNoError(err)
+
+					ginkgo.By(fmt.Sprintf("test user configuration: uid=%d, gid=%d", testUID, testGID))
+
+					tempDir, err := setupWorkspace("tests/up/testdata/docker-compose-uid-mapping", tc.initialDir, tc.f)
+					framework.ExpectNoError(err)
+
+					ws, err := devPodUpAndFindWorkspace(ctx, tc.f, tempDir)
+					framework.ExpectNoError(err, "failed to setup workspace")
+
+					ids, err := findComposeContainer(ctx, tc.dockerHelper, tc.composeHelper, ws.UID, "webserver")
+					framework.ExpectNoError(err)
+					gomega.Expect(ids).To(gomega.HaveLen(1), "1 compose container to be created")
+
+					username := "www-data"
+					defaultUID, defaultGID := 33, 33
+					hostFile := filepath.Join(tempDir, ".devcontainer", "var", "www", "html", "index.html")
+					expectedContent := "Hello World!"
+
+					verifyContainerUser(ctx, tc.f, tempDir, username)
+
+					containerUID := getContainerUID(ctx, tc.f, tempDir, username)
+					containerGID := getContainerGID(ctx, tc.f, tempDir, username)
+					verifyUIDMapping(containerUID, containerGID, testUID, testGID, defaultUID, defaultGID, username)
+
+					verifyHostFileAccess(hostFile, expectedContent)
+					verifyHostFileOwnership(hostFile, testUID, testGID, testUID == 0)
+
+				}, ginkgo.SpecTimeout(framework.GetTimeout()))
+
+				ginkgo.It("implements updateRemoteUserUID with non-root container user (vscode)", func(ctx context.Context) {
+					currentUser, err := user.Current()
+					framework.ExpectNoError(err)
+
+					testUID, err := strconv.Atoi(currentUser.Uid)
+					framework.ExpectNoError(err)
+					testGID, err := strconv.Atoi(currentUser.Gid)
+					framework.ExpectNoError(err)
+
+					ginkgo.By(fmt.Sprintf("Test user configuration: uid=%d, gid=%d", testUID, testGID))
+
+					tempDir, err := setupWorkspace("tests/up/testdata/docker-compose-uid-mapping-vscode", tc.initialDir, tc.f)
+					framework.ExpectNoError(err)
+
+					ws, err := devPodUpAndFindWorkspace(ctx, tc.f, tempDir)
+					framework.ExpectNoError(err, "failed to setup workspace")
+
+					ids, err := findComposeContainer(ctx, tc.dockerHelper, tc.composeHelper, ws.UID, "devcontainer")
+					framework.ExpectNoError(err)
+					gomega.Expect(ids).To(gomega.HaveLen(1), "1 compose container to be created")
+
+					username := "vscode"
+					defaultUID, defaultGID := 1001, 1001
+					hostFile := filepath.Join(tempDir, "project", "test.txt")
+					expectedContent := "docker compose user test!"
+
+					verifyContainerUser(ctx, tc.f, tempDir, username)
+
+					containerUID := getContainerUID(ctx, tc.f, tempDir, username)
+					containerGID := getContainerGID(ctx, tc.f, tempDir, username)
+					verifyUIDMapping(containerUID, containerGID, testUID, testGID, defaultUID, defaultGID, username)
+
+					verifyHostFileAccess(hostFile, expectedContent)
+					verifyHostFileOwnership(hostFile, testUID, testGID, testUID == 0)
+
 				}, ginkgo.SpecTimeout(framework.GetTimeout()))
 			})
 
