@@ -142,7 +142,7 @@ jobs:
             runner: ubuntu-latest
             free-disk-space: true
             install-kind: true
-            requires-secret: false
+            requires-secret: true
 
           - label: up && workspace
             runner: ubuntu-latest
