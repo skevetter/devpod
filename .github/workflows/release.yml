@@ -243,7 +243,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ inputs.tag || github.ref_name }}
-          prerelease: true
+          prerelease: ${{ github.event_name == 'release' && 'true' || 'false' }}
+          draft: ${{ github.event_name != 'release' && 'true' || 'false' }}
           files: |
             ./desktop/flatpak/DevPod.metainfo.xml
             ./desktop/flatpak/DevPod.desktop
@@ -260,7 +261,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ inputs.tag || github.ref_name }}
-          prerelease: true
+          prerelease: ${{ github.event_name == 'release' && 'true' || 'false' }}
+          draft: ${{ github.event_name != 'release' && 'true' || 'false' }}
           files: |
             ./DevPod.flatpak
             ./DevPod-x86_64.flatpak.zip
