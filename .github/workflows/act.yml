@@ -1,4 +1,4 @@
-name: Test E2E With Act
+name: Act
 
 on:
   workflow_dispatch:
@@ -10,68 +10,34 @@ on:
 
 jobs:
   e2e-test:
-    name: Act E2E Tests
-    runs-on: ubuntu-latest
+    name: E2E Tests
+    runs-on: js-latest
     steps:
-      - run: printenv
-        if: env.ACT
-
-      - run: cat /etc/passwd
-        if: env.ACT
-
-      - name: check docker access
-        if: env.ACT
-        run: |
-          sudo chown runner:runner /var/run/docker.sock
-          docker version && docker ps -a
-
-      - uses: jlumbroso/free-disk-space@v1.3.1
-        if: env.ACT == 'false'
-
       - uses: actions/checkout@v6
 
+      - name: setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+
       - name: setup Go
-        if: env.ACT
         uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
 
-      - run: sudo apt update && sudo apt install -y nodejs
-        if: env.ACT
+      - name: install task
+        run: go install github.com/go-task/task/v3/cmd/task@latest
 
-      - name: setup Node
-        uses: actions/setup-node@v6
-        if: env.ACT
-        with:
-          node-version: "latest"
+      - name: install goreleaser
+        run: go install github.com/goreleaser/goreleaser/v2@latest
 
-      - uses: go-task/setup-task@v1
+      - name: check docker access
+        run: docker version && docker ps -a
 
-      - name: setup goreleaser
-        if: env.ACT == 'false'
-        uses: goreleaser/goreleaser-action@v6
-        with:
-          distribution: goreleaser
-          version: "~> v2"
-          install-only: true
-
-      - name: install goreleaser for ACT
-        if: env.ACT
-        run: sudo /opt/hostedtoolcache/node/25.2.1/x64/bin/npm i -g @goreleaser/goreleaser
-
-      - name: setup kind
-        uses: engineerd/setup-kind@v0.6.2
-        if: env.ACT == 'false'
-        with:
-          name: "debug-cluster"
-          version: v0.24.0
-          image: kindest/node:v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a
-          skipClusterLogsExport: true
-
-      - name: build E2E test binary
+      - name: build test binary
         run: task cli:test:e2e:build
 
-      - name: run E2E tests
+      - name: run tests
         env:
           GH_USERNAME: ${{ github.repository_owner }}
           GH_ACCESS_TOKEN: ${{ secrets.GH_PRIVATE_REPO_TOKEN_TEST || github.token }}
@@ -84,14 +50,19 @@ jobs:
             ${{ github.event.inputs.test_focus == '' && 'task cli:test:e2e' || format('task cli:test:e2e:focus -- "{0}"', github.event.inputs.test_focus) }} || true
 
   build-ui:
-    name: User Interface Build
-    runs-on: ubuntu-latest
+    name: Build User Interface
+    runs-on: js-latest
     steps:
       - uses: actions/checkout@v6
 
+      - name: setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+
       - name: install dependencies
         working-directory: ./desktop
-        run: yarn install --frozen-lockfile
+        run: corepack enable yarn && yarn install
 
       - name: lint
         working-directory: ./desktop
@@ -108,3 +79,133 @@ jobs:
       - name: build
         working-directory: ./desktop
         run: yarn build
+
+  build-desktop:
+    name: Build Desktop App
+    runs-on: js-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+
+      - name: install desktop dependencies
+        working-directory: ./desktop
+        run: corepack enable yarn && yarn install
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: "~> v2"
+          args: build --id devpod-linux --snapshot
+
+      - name: setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-gnu
+
+      - name: setup Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./desktop/src-tauri -> target"
+
+      - name: setup executable
+        shell: bash
+        working-directory: ./desktop/src-tauri
+        run: |
+          mkdir -p ./bin/
+          find "../../dist" -type f -name "devpod-*" -exec mv {} ./bin \;
+          find ./bin -type f -name "devpod-*" -exec chmod +x {} \;
+
+      - name: rename binaries for desktop build
+        shell: bash
+        working-directory: ./desktop/src-tauri
+        run: find ./bin -type f -name "devpod-linux-amd64" -exec mv {} ./bin/devpod-cli-x86_64-unknown-linux-gnu \;
+
+      - name: install linux dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y \
+            libayatana-appindicator3-dev \
+            libgtk-3-dev \
+            librsvg2-dev \
+            libwebkit2gtk-4.1-dev \
+            patchelf
+
+      - name: generate signing key and update config
+        id: generate
+        working-directory: ./desktop
+        shell: bash
+        run: |
+          # throwaway signing key for test CI builds
+          yarn tauri signer generate --ci -w ./app.key -p "github-actions"
+          TAURI_PUBKEY=$(cat ./app.key.pub)
+          jq --arg pubkey "$TAURI_PUBKEY" '.plugins.updater.pubkey = $pubkey' src-tauri/tauri.conf.json > tmp.json && mv tmp.json src-tauri/tauri.conf.json
+
+      - name: tauri build
+        uses: tauri-apps/tauri-action@v0.6
+        with:
+          projectPath: "./desktop"
+          args: --target x86_64-unknown-linux-gnu --bundles deb
+          assetNamePattern: "[name]_[platform]_[arch][ext]"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          TAURI_SIGNING_PRIVATE_KEY: "${{ github.workspace }}/desktop/app.key"
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: "github-actions"
+          CI: true
+
+      - name: upload desktop linux artifact for flatpak
+        uses: actions/upload-artifact@v4 # pin to v4 for act support, see https://nektosact.com/usage/index.html?highlight=artif#action-artifacts
+        with:
+          name: devpod-flatpak
+          path: ./desktop/src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/deb/DevPod_*_amd64.deb
+
+  build-flatpak:
+    name: Build Flatpak
+    runs-on: js-latest
+    needs: [build-desktop]
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-48
+      options: --privileged
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: clone shared-modules
+        run: git clone https://github.com/flathub/shared-modules.git desktop/flatpak/shared-modules
+
+      - name: download desktop linux artifact
+        uses: actions/download-artifact@v4 # pin to v4 for act support, see https://nektosact.com/usage/index.html?highlight=artif#action-artifacts
+        with:
+          name: devpod-flatpak
+          path: /tmp/devpod/
+
+      # Use GITHUB_WORKSPACE in containers because the path differs from github.workspace
+      # for more details, see https://github.com/actions/checkout/issues/785
+      - name: prepare flatpak manifest for PR build
+        shell: bash
+        run: |
+          sed -i "s|url: https://github.com/skevetter/devpod/releases/download/\${VERSION}/DevPod_linux_amd64.deb|path: /tmp/devpod/DevPod_0.0.0_amd64.deb|" "$GITHUB_WORKSPACE/desktop/flatpak/sh.loft.devpod.yml"
+          sed -i "s|url: https://github.com/skevetter/devpod/releases/download/\${VERSION}/DevPod.desktop|path: $GITHUB_WORKSPACE/desktop/flatpak/DevPod.desktop|" "$GITHUB_WORKSPACE/desktop/flatpak/sh.loft.devpod.yml"
+          sed -i "s|url: https://github.com/skevetter/devpod/releases/download/\${VERSION}/DevPod.metainfo.xml|path: $GITHUB_WORKSPACE/desktop/flatpak/DevPod.metainfo.xml|" "$GITHUB_WORKSPACE/desktop/flatpak/sh.loft.devpod.yml"
+          sed -i "/sha256: \${SHA256}/d" "$GITHUB_WORKSPACE/desktop/flatpak/sh.loft.devpod.yml"
+          sed -i "/sha256: \${DESKTOP_SHA256}/d" "$GITHUB_WORKSPACE/desktop/flatpak/sh.loft.devpod.yml"
+          sed -i "/sha256: \${META_SHA256}/d" "$GITHUB_WORKSPACE/desktop/flatpak/sh.loft.devpod.yml"
+
+      - name: update flatpak metadata version and date
+        run: |
+          DATE=$(date +%Y-%m-%d)
+          VERSION="v0.0.0"
+
+          sed -i "s/__VERSION__/${VERSION}/g" "$GITHUB_WORKSPACE/desktop/flatpak/DevPod.metainfo.xml"
+          sed -i "s/__DATE__/${DATE}/g" "$GITHUB_WORKSPACE/desktop/flatpak/DevPod.metainfo.xml"
+
+      - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+        with:
+          bundle: DevPod.flatpak
+          manifest-path: desktop/flatpak/sh.loft.devpod.yml
+          upload-artifact: false

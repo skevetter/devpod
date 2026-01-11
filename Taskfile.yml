@@ -167,13 +167,17 @@ tasks:
     dir: desktop/src-tauri
     cmd: cargo update
 
-  desktop:act:build:
+  desktop:act:build:ui:
+    desc: build desktop ui using act
+    cmd: act workflow_dispatch -W .github/workflows/act.yml -j build-ui
+
+  desktop:act:build:app:
     desc: build desktop application using act
-    cmd: |
-      act workflow_dispatch \
-        -W .github/workflows/act.yml \
-        -j build-ui \
-        --platform ubuntu-latest=ghcr.io/catthehacker/ubuntu:js-latest
+    cmd: act workflow_dispatch -W .github/workflows/act.yml -j build-desktop
+
+  desktop:act:build:flatpak:
+    desc: build desktop flatpak using act
+    cmd: act workflow_dispatch -W .github/workflows/act.yml -j build-flatpak
 
   github:dev-release:upload:
     desc: upload dev binaries to GitHub release tag v0.0.0-10 for testing
