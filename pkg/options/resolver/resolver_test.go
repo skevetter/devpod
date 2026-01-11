@@ -194,7 +194,7 @@ func (suite *ResolverTestSuite) TestResolveOptions_ExpiredCache() {
 	suite.Equal("new_default", result["cached_option"].Value)
 }
 
-func (suite *ResolverTestSuite) TestResolveOptions_ChildInvalidation() {
+func (suite *ResolverTestSuite) TestResolveOptions_PreserveChildWhenParentUnchanged() {
 	suite.resolver.graph = graph.NewGraph[*types.Option]()
 
 	parentOption := &types.Option{Description: "Parent", Default: "new_parent_value"}
@@ -289,25 +289,16 @@ func (suite *ResolverTestSuite) TestSubOptionsBasicFunctionality() {
 	suite.Equal("parent_value", resolved["parent"].Value)
 }
 
-func TestAddOptionsToGraph_MultipleCalls(t *testing.T) {
+func (suite *ResolveTestSuite) TestAddOptionsToGraph_MultipleCalls() {
 	g := graph.NewGraph[*types.Option]()
 
 	optionDefs := config.OptionDefinitions{
 		"opt1": &types.Option{Description: "Option 1"},
 	}
 
-	err := addOptionsToGraph(g, optionDefs, map[string]config.OptionValue{})
-	if err != nil {
-		t.Fatalf("First call failed: %v", err)
-	}
-
-	err = addOptionsToGraph(g, optionDefs, map[string]config.OptionValue{})
-	if err != nil {
-		t.Fatalf("Second call failed: %v", err)
-	}
+	suite.Require().NoError(addOptionsToGraph(g, optionDefs, map[string]config.OptionValue{}))
+	suite.Require().NoError(addOptionsToGraph(g, optionDefs, map[string]config.OptionValue{}))
 
 	nodes := g.GetNodes()
-	if len(nodes) != 2 {
-		t.Errorf("Expected 2 nodes (implicit root node + opt1), got %d. Multiple calls should not duplicate nodes.", len(nodes))
-	}
+	suite.Len(nodes, 2, "Multiple calls to addOptionsToGraph should not duplicate nodes.")
 }
