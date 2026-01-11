@@ -259,7 +259,7 @@ jobs:
         shell: bash
         run: |
           rm -rf "$GITHUB_WORKSPACE/desktop/flatpak/"
-          mv "$GITHUB_WORKSPACE/desktop/flatpak-build/sh.loft.devpod.yml" "$GITHUB_WORKSPACE/desktop/flatpak/sh.loft.devpod.yml"
+          mv "$GITHUB_WORKSPACE/desktop/flatpak-build/" "$GITHUB_WORKSPACE/desktop/flatpak/"
 
       # Use GITHUB_WORKSPACE in containers because the path differs from github.workspace
       # for more details, see https://github.com/actions/checkout/issues/785
@@ -301,3 +301,4 @@ jobs:
         with:
           tag_name: ${{ inputs.tag || github.ref_name }}
           prerelease: true
+          draft: false
