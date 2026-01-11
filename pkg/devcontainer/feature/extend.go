@@ -228,23 +228,22 @@ func findContainerUsers(baseImageMetadata *config.ImageMetadataConfig, composeSe
 }
 
 func fetchFeatures(devContainerConfig *config.DevContainerConfig, log log.Logger, forceBuild bool) ([]*config.FeatureSet, error) {
-	// Process user-defined features first
-	userFeatures := map[string]*config.FeatureSet{}
-	for featureID, featureOptions := range devContainerConfig.Features {
-		featureSet, err := processFeature(featureID, featureOptions, devContainerConfig, log, forceBuild)
-		if err != nil {
-			return nil, fmt.Errorf("process feature %s %w", featureID, err)
-		}
-		userFeatures[featureSet.ConfigID] = featureSet
+	processor := &featureProcessor{
+		devContainerConfig: devContainerConfig,
+		log:                log,
+		forceBuild:         forceBuild,
 	}
 
-	// Resolve dependencies recursively
+	userFeatures, err := getUserFeatures(processor, devContainerConfig)
+	if err != nil {
+		return nil, err
+	}
+
 	allFeatures, err := resolveDependencies(devContainerConfig, userFeatures, log, forceBuild)
 	if err != nil {
 		return nil, fmt.Errorf("resolve dependencies %w", err)
 	}
 
-	// Convert map to slice
 	featureSets := make([]*config.FeatureSet, 0, len(allFeatures))
 	for _, featureSet := range allFeatures {
 		featureSets = append(featureSets, featureSet)
@@ -258,69 +257,83 @@ func fetchFeatures(devContainerConfig *config.DevContainerConfig, log log.Logger
 	return featureSets, nil
 }
 
-func processFeature(featureID string, featureOptions any, devContainerConfig *config.DevContainerConfig, log log.Logger, forceBuild bool) (*config.FeatureSet, error) {
-	featureFolder, err := ProcessFeatureID(featureID, devContainerConfig, log, forceBuild)
+func getUserFeatures(processor *featureProcessor, devContainerConfig *config.DevContainerConfig) (map[string]*config.FeatureSet, error) {
+	userFeatures := map[string]*config.FeatureSet{}
+	for featureID, featureOptions := range devContainerConfig.Features {
+		featureSet, err := processor.processFeature(featureID, featureOptions)
+		if err != nil {
+			return nil, fmt.Errorf("process feature %s %w", featureID, err)
+		}
+		userFeatures[featureSet.ConfigID] = featureSet
+	}
+	return userFeatures, nil
+}
+
+type featureProcessor struct {
+	devContainerConfig *config.DevContainerConfig
+	log                log.Logger
+	forceBuild         bool
+}
+
+func (p *featureProcessor) processFeature(featureID string, featureOptions any) (*config.FeatureSet, error) {
+	featureFolder, err := ProcessFeatureID(featureID, p.devContainerConfig, p.log, p.forceBuild)
 	if err != nil {
 		return nil, fmt.Errorf("process feature ID %w", err)
 	}
 
-	log.Debugf("parse dev container feature in %s", featureFolder)
+	p.log.Debugf("parse dev container feature in %s", featureFolder)
 	featureConfig, err := config.ParseDevContainerFeature(featureFolder)
 	if err != nil {
 		return nil, fmt.Errorf("parse feature %w", err)
 	}
 
 	return &config.FeatureSet{
-		ConfigID: NormalizeFeatureID(featureID),
+		ConfigID: normalizeFeatureID(featureID),
 		Folder:   featureFolder,
 		Config:   featureConfig,
 		Options:  featureOptions,
 	}, nil
 }
 
-func resolveFeatureDependency(
-	featureID string,
-	featureSet *config.FeatureSet,
-	features map[string]*config.FeatureSet,
-	resolved map[string]*config.FeatureSet,
-	visiting map[string]bool,
-	devContainerConfig *config.DevContainerConfig,
-	log log.Logger,
-	forceBuild bool,
-) error {
-	if resolved[featureID] != nil {
+type featureDependencyResolver struct {
+	features  map[string]*config.FeatureSet
+	resolved  map[string]*config.FeatureSet
+	visiting  map[string]bool
+	processor *featureProcessor
+}
+
+func (r *featureDependencyResolver) resolveFeatureDependency(featureID string, featureSet *config.FeatureSet) error {
+	if r.resolved[featureID] != nil {
 		return nil // Already resolved
 	}
 
-	if visiting[featureID] {
+	if r.visiting[featureID] {
 		return fmt.Errorf("circular dependency detected involving feature %s", featureID)
 	}
 
-	visiting[featureID] = true
-	defer func() { visiting[featureID] = false }()
+	r.visiting[featureID] = true
+	defer func() { r.visiting[featureID] = false }()
 
-	// Process dependencies first
 	for depID, depOptions := range featureSet.Config.DependsOn {
-		normalizedDepID := NormalizeFeatureID(depID)
-		depFeatureSet, exists := features[normalizedDepID]
+		normalizedDepID := normalizeFeatureID(depID)
+		depFeatureSet, exists := r.features[normalizedDepID]
 		if !exists {
-			// Auto-install dependency
-			log.Debugf("installing dependency feature %s", depID)
+			r.processor.log.Debugf("installing dependency feature %s", depID)
 			var err error
-			depFeatureSet, err = processFeature(depID, depOptions, devContainerConfig, log, forceBuild)
+			depFeatureSet, err = r.processor.processFeature(depID, depOptions)
 			if err != nil {
 				return fmt.Errorf("failed to resolve dependency %s %w", depID, err)
 			}
-			features[normalizedDepID] = depFeatureSet
+			r.features[normalizedDepID] = depFeatureSet
 		}
 
-		err := resolveFeatureDependency(normalizedDepID, depFeatureSet, features, resolved, visiting, devContainerConfig, log, forceBuild)
+		err := r.resolveFeatureDependency(normalizedDepID, depFeatureSet)
 		if err != nil {
 			return err
 		}
 	}
 
-	resolved[featureID] = featureSet
+	r.resolved[featureID] = featureSet
 	return nil
 }
 
@@ -330,21 +343,30 @@ func resolveDependencies(
 	log log.Logger,
 	forceBuild bool,
 ) (map[string]*config.FeatureSet, error) {
-	resolved := make(map[string]*config.FeatureSet)
-	visiting := make(map[string]bool)
+	processor := &featureProcessor{
+		devContainerConfig: devContainerConfig,
+		log:                log,
+		forceBuild:         forceBuild,
+	}
 
-	// Resolve all features
+	resolver := &featureDependencyResolver{
+		features:  features,
+		resolved:  make(map[string]*config.FeatureSet),
+		visiting:  make(map[string]bool),
+		processor: processor,
+	}
+
 	for featureID, featureSet := range features {
-		err := resolveFeatureDependency(featureID, featureSet, features, resolved, visiting, devContainerConfig, log, forceBuild)
+		err := resolver.resolveFeatureDependency(featureID, featureSet)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	return resolved, nil
+	return resolver.resolved, nil
 }
 
-func NormalizeFeatureID(featureID string) string {
+func normalizeFeatureID(featureID string) string {
 	ref, err := name.ParseReference(featureID)
 	if err != nil {
 		return featureID
@@ -378,7 +400,7 @@ func sortFeaturesByOverride(overrideOrder []string, featureSets []*config.Featur
 	for _, overrideFeatureID := range overrideOrder {
 		feature := extractFeatureByID(featureSets, overrideFeatureID)
 		if feature == nil {
-			normalizedID := NormalizeFeatureID(overrideFeatureID)
+			normalizedID := normalizeFeatureID(overrideFeatureID)
 			feature = extractFeatureByID(featureSets, normalizedID)
 		}
 
@@ -451,7 +473,7 @@ func buildFeatureDependencyGraph(features []*config.FeatureSet) (*graph.Graph[*c
 
 func addHardDependencies(g *graph.Graph[*config.FeatureSet], feature *config.FeatureSet, featureLookup map[string]*config.FeatureSet) error {
 	for id := range feature.Config.DependsOn {
-		normalizedID := NormalizeFeatureID(id)
+		normalizedID := normalizeFeatureID(id)
 		if _, exists := featureLookup[normalizedID]; exists {
 			if err := g.AddEdge(normalizedID, feature.ConfigID); err != nil {
 				return err
@@ -463,7 +485,7 @@ func addHardDependencies(g *graph.Graph[*config.FeatureSet], feature *config.Fea
 
 func addSoftDependencies(g *graph.Graph[*config.FeatureSet], feature *config.FeatureSet, featureLookup map[string]*config.FeatureSet) error {
 	for _, id := range feature.Config.InstallsAfter {
-		normalizedID := NormalizeFeatureID(id)
+		normalizedID := normalizeFeatureID(id)
 		if _, exists := featureLookup[normalizedID]; !exists {
 			continue
 		}

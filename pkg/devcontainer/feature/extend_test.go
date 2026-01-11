@@ -100,7 +100,7 @@ func TestHasHardDependency(t *testing.T) {
 func TestComputeAutomaticFeatureOrder_SimpleDependency(t *testing.T) {
 	features := []*config.FeatureSet{
 		{
-			ConfigID: NormalizeFeatureID("dependent-feature"),
+			ConfigID: normalizeFeatureID("dependent-feature"),
 			Config: &config.FeatureConfig{
 				DependsOn: config.DependsOnField{
 					"dependency-feature": map[string]any{},
@@ -108,7 +108,7 @@ func TestComputeAutomaticFeatureOrder_SimpleDependency(t *testing.T) {
 			},
 		},
 		{
-			ConfigID: NormalizeFeatureID("dependency-feature"),
+			ConfigID: normalizeFeatureID("dependency-feature"),
 			Config: &config.FeatureConfig{
 				DependsOn: config.DependsOnField{},
 			},
@@ -124,8 +124,8 @@ func TestComputeAutomaticFeatureOrder_SimpleDependency(t *testing.T) {
 		t.Fatalf("Expected 2 features, got %d", len(installationOrder))
 	}
 
-	expectedDependency := NormalizeFeatureID("dependency-feature")
-	expectedDependent := NormalizeFeatureID("dependent-feature")
+	expectedDependency := normalizeFeatureID("dependency-feature")
+	expectedDependent := normalizeFeatureID("dependent-feature")
 
 	if installationOrder[0].ConfigID != expectedDependency {
 		t.Errorf("Expected %s first, got %s", expectedDependency, installationOrder[0].ConfigID)
@@ -138,7 +138,7 @@ func TestComputeAutomaticFeatureOrder_SimpleDependency(t *testing.T) {
 func TestComputeAutomaticFeatureOrder_DependsOnAndInstallsAfter(t *testing.T) {
 	features := []*config.FeatureSet{
 		{
-			ConfigID: NormalizeFeatureID("feature-with-both-dependencies"),
+			ConfigID: normalizeFeatureID("feature-with-both-dependencies"),
 			Config: &config.FeatureConfig{
 				DependsOn: config.DependsOnField{
 					"shared-dependency": map[string]any{},
@@ -147,7 +147,7 @@ func TestComputeAutomaticFeatureOrder_DependsOnAndInstallsAfter(t *testing.T) {
 			},
 		},
 		{
-			ConfigID: NormalizeFeatureID("shared-dependency"),
+			ConfigID: normalizeFeatureID("shared-dependency"),
 			Config: &config.FeatureConfig{
 				DependsOn:     config.DependsOnField{},
 				InstallsAfter: []string{},
@@ -164,8 +164,8 @@ func TestComputeAutomaticFeatureOrder_DependsOnAndInstallsAfter(t *testing.T) {
 		t.Fatalf("Expected 2 features, got %d", len(installationOrder))
 	}
 
-	expectedSharedDep := NormalizeFeatureID("shared-dependency")
-	expectedFeatureWithBoth := NormalizeFeatureID("feature-with-both-dependencies")
+	expectedSharedDep := normalizeFeatureID("shared-dependency")
+	expectedFeatureWithBoth := normalizeFeatureID("feature-with-both-dependencies")
 
 	if installationOrder[0].ConfigID != expectedSharedDep {
 		t.Errorf("Expected %s first, got %s", expectedSharedDep, installationOrder[0].ConfigID)
@@ -178,14 +178,14 @@ func TestComputeAutomaticFeatureOrder_DependsOnAndInstallsAfter(t *testing.T) {
 func TestComputeAutomaticFeatureOrder_OnlyInstallsAfter(t *testing.T) {
 	features := []*config.FeatureSet{
 		{
-			ConfigID: NormalizeFeatureID("feature-with-soft-dependency"),
+			ConfigID: normalizeFeatureID("feature-with-soft-dependency"),
 			Config: &config.FeatureConfig{
 				DependsOn:     config.DependsOnField{},
 				InstallsAfter: []string{"preferred-first-feature"},
 			},
 		},
 		{
-			ConfigID: NormalizeFeatureID("preferred-first-feature"),
+			ConfigID: normalizeFeatureID("preferred-first-feature"),
 			Config: &config.FeatureConfig{
 				DependsOn:     config.DependsOnField{},
 				InstallsAfter: []string{},
@@ -202,8 +202,8 @@ func TestComputeAutomaticFeatureOrder_OnlyInstallsAfter(t *testing.T) {
 		t.Fatalf("Expected 2 features, got %d", len(installationOrder))
 	}
 
-	expectedPreferredFirst := NormalizeFeatureID("preferred-first-feature")
-	expectedFeatureWithSoft := NormalizeFeatureID("feature-with-soft-dependency")
+	expectedPreferredFirst := normalizeFeatureID("preferred-first-feature")
+	expectedFeatureWithSoft := normalizeFeatureID("feature-with-soft-dependency")
 
 	if installationOrder[0].ConfigID != expectedPreferredFirst {
 		t.Errorf("Expected %s first, got %s", expectedPreferredFirst, installationOrder[0].ConfigID)
@@ -216,7 +216,7 @@ func TestComputeAutomaticFeatureOrder_OnlyInstallsAfter(t *testing.T) {
 func TestComputeAutomaticFeatureOrder_ChainedDependencies(t *testing.T) {
 	features := []*config.FeatureSet{
 		{
-			ConfigID: NormalizeFeatureID("top-level-feature"),
+			ConfigID: normalizeFeatureID("top-level-feature"),
 			Config: &config.FeatureConfig{
 				DependsOn: config.DependsOnField{
 					"middle-level-feature": map[string]any{},
@@ -224,7 +224,7 @@ func TestComputeAutomaticFeatureOrder_ChainedDependencies(t *testing.T) {
 			},
 		},
 		{
-			ConfigID: NormalizeFeatureID("middle-level-feature"),
+			ConfigID: normalizeFeatureID("middle-level-feature"),
 			Config: &config.FeatureConfig{
 				DependsOn: config.DependsOnField{
 					"base-level-feature": map[string]any{},
@@ -232,7 +232,7 @@ func TestComputeAutomaticFeatureOrder_ChainedDependencies(t *testing.T) {
 			},
 		},
 		{
-			ConfigID: NormalizeFeatureID("base-level-feature"),
+			ConfigID: normalizeFeatureID("base-level-feature"),
 			Config: &config.FeatureConfig{
 				DependsOn: config.DependsOnField{},
 			},
@@ -249,9 +249,9 @@ func TestComputeAutomaticFeatureOrder_ChainedDependencies(t *testing.T) {
 	}
 
 	expectedOrder := []string{
-		NormalizeFeatureID("base-level-feature"),
-		NormalizeFeatureID("middle-level-feature"),
-		NormalizeFeatureID("top-level-feature"),
+		normalizeFeatureID("base-level-feature"),
+		normalizeFeatureID("middle-level-feature"),
+		normalizeFeatureID("top-level-feature"),
 	}
 	for i, expectedFeatureID := range expectedOrder {
 		if installationOrder[i].ConfigID != expectedFeatureID {
@@ -263,7 +263,7 @@ func TestComputeAutomaticFeatureOrder_ChainedDependencies(t *testing.T) {
 func TestComputeAutomaticFeatureOrder_CircularDependency(t *testing.T) {
 	features := []*config.FeatureSet{
 		{
-			ConfigID: NormalizeFeatureID("feature-a"),
+			ConfigID: normalizeFeatureID("feature-a"),
 			Config: &config.FeatureConfig{
 				DependsOn: config.DependsOnField{
 					"feature-b": map[string]any{},
@@ -271,7 +271,7 @@ func TestComputeAutomaticFeatureOrder_CircularDependency(t *testing.T) {
 			},
 		},
 		{
-			ConfigID: NormalizeFeatureID("feature-b"),
+			ConfigID: normalizeFeatureID("feature-b"),
 			Config: &config.FeatureConfig{
 				DependsOn: config.DependsOnField{
 					"feature-a": map[string]any{},
@@ -335,8 +335,8 @@ func TestComputeFeatureOrder_NoOverride(t *testing.T) {
 	}
 
 	features := []*config.FeatureSet{
-		{ConfigID: NormalizeFeatureID("feature-a"), Config: &config.FeatureConfig{DependsOn: config.DependsOnField{"feature-b": map[string]any{}}}},
-		{ConfigID: NormalizeFeatureID("feature-b"), Config: &config.FeatureConfig{DependsOn: config.DependsOnField{}}},
+		{ConfigID: normalizeFeatureID("feature-a"), Config: &config.FeatureConfig{DependsOn: config.DependsOnField{"feature-b": map[string]any{}}}},
+		{ConfigID: normalizeFeatureID("feature-b"), Config: &config.FeatureConfig{DependsOn: config.DependsOnField{}}},
 	}
 
 	order, err := getSortedFeatureSets(devContainer, features)
@@ -348,8 +348,8 @@ func TestComputeFeatureOrder_NoOverride(t *testing.T) {
 		t.Fatalf("Expected 2 features, got %d", len(order))
 	}
 
-	expectedFeatureB := NormalizeFeatureID("feature-b")
-	expectedFeatureA := NormalizeFeatureID("feature-a")
+	expectedFeatureB := normalizeFeatureID("feature-b")
+	expectedFeatureA := normalizeFeatureID("feature-a")
 
 	if order[0].ConfigID != expectedFeatureB || order[1].ConfigID != expectedFeatureA {
 		t.Errorf("Expected [%s, %s], got [%s, %s]", expectedFeatureB, expectedFeatureA, order[0].ConfigID, order[1].ConfigID)
