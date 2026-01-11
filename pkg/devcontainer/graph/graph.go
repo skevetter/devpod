@@ -351,5 +351,5 @@ func processNeighbors(edges map[string][]string, currentNode string, inDegree ma
 
 func insertSorted(queue *[]string, nodeToInsert string) {
 	insertPosition := sort.SearchStrings(*queue, nodeToInsert)
-	*queue = append((*queue)[:insertPosition], append([]string{nodeToInsert}, (*queue)[insertPosition:]...)...)
+	*queue = slices.Insert(*queue, insertPosition, nodeToInsert)
 }

@@ -36,12 +36,18 @@ func (suite *ResolveTestSuite) TestResolveOptions_EmptyGraph() {
 }
 
 func (suite *ResolveTestSuite) TestResolveOptions_NodeExistenceCheck() {
-	suite.Require().NoError(suite.resolver.graph.AddNode("test", &types.Option{}))
-	suite.Require().NoError(suite.resolver.graph.RemoveNode("test"))
+	option1 := &types.Option{Default: "value1"}
+	option2 := &types.Option{Default: "value2"}
+
+	suite.Require().NoError(suite.resolver.graph.AddNode("option1", option1))
+	suite.Require().NoError(suite.resolver.graph.AddNode("option2", option2))
+	suite.Require().NoError(suite.resolver.graph.AddEdge("option1", "option2"))
+	suite.Require().NoError(suite.resolver.graph.RemoveNode("option2"))
 
 	result, err := suite.resolver.resolveOptions(context.Background(), map[string]config.OptionValue{})
 	suite.NoError(err)
-	suite.Empty(result)
+	suite.Len(result, 1)
+	suite.Equal("value1", result["option1"].Value)
 }
 
 func (suite *ResolveTestSuite) TestResolveOptions_WithDependencies() {
