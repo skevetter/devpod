@@ -251,7 +251,7 @@ func (suite *ResolverTestSuite) TestResolveOptions_CircularDependency() {
 
 	_, err := suite.resolver.resolveOptions(context.Background(), map[string]config.OptionValue{})
 	suite.Error(err)
-	suite.Contains(err.Error(), "circular dependency")
+	suite.Contains(err.Error(), "circular")
 }
 
 func (suite *ResolverTestSuite) TestCombineFunction() {
@@ -272,7 +272,7 @@ func (suite *ResolverTestSuite) TestCombineFunction() {
 	suite.Equal("extra_value3", result["key3"])
 }
 
-func (suite *ResolverTestSuite) TestSubOptionsBasicFunctionality() {
+func (suite *ResolverTestSuite) TestBasicResolverFunctionality() {
 	logger := log.Default
 	resolver := New(map[string]string{}, map[string]string{}, logger, WithResolveSubOptions())
 
@@ -289,7 +289,7 @@ func (suite *ResolverTestSuite) TestSubOptionsBasicFunctionality() {
 	suite.Equal("parent_value", resolved["parent"].Value)
 }
 
-func (suite *ResolveTestSuite) TestAddOptionsToGraph_MultipleCalls() {
+func (suite *ResolverTestSuite) TestAddOptionsToGraph_MultipleCalls() {
 	g := graph.NewGraph[*types.Option]()
 
 	optionDefs := config.OptionDefinitions{

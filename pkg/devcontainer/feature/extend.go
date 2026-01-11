@@ -239,7 +239,7 @@ func fetchFeatures(devContainerConfig *config.DevContainerConfig, log log.Logger
 		return nil, err
 	}
 
-	allFeatures, err := resolveDependencies(devContainerConfig, userFeatures, log, forceBuild)
+	allFeatures, err := resolveDependencies(processor, userFeatures)
 	if err != nil {
 		return nil, fmt.Errorf("resolve dependencies %w", err)
 	}
@@ -338,17 +338,9 @@ func (r *featureDependencyResolver) resolveFeatureDependency(featureID string, f
 }
 
 func resolveDependencies(
-	devContainerConfig *config.DevContainerConfig,
+	processor *featureProcessor,
 	features map[string]*config.FeatureSet,
-	log log.Logger,
-	forceBuild bool,
 ) (map[string]*config.FeatureSet, error) {
-	processor := &featureProcessor{
-		devContainerConfig: devContainerConfig,
-		log:                log,
-		forceBuild:         forceBuild,
-	}
-
 	resolver := &featureDependencyResolver{
 		features:  features,
 		resolved:  make(map[string]*config.FeatureSet),
@@ -450,11 +442,7 @@ func getOrderedFeatureSets(features []*config.FeatureSet) ([]*config.FeatureSet,
 func buildFeatureDependencyGraph(features []*config.FeatureSet) (*graph.Graph[*config.FeatureSet], error) {
 	g := graph.NewGraph[*config.FeatureSet]()
 	featureLookup := buildFeatureLookupMap(features)
-	nodes := make(map[string]*config.FeatureSet, len(features))
-	for _, feature := range features {
-		nodes[feature.ConfigID] = feature
-	}
-	if err := g.AddNodes(nodes); err != nil {
+	if err := g.AddNodes(featureLookup); err != nil {
 		return nil, fmt.Errorf("failed to add features: %w", err)
 	}
 

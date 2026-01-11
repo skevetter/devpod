@@ -1,13 +1,21 @@
 package feature
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestCreateFeatureLookup(t *testing.T) {
+type ExtendTestSuite struct {
+	suite.Suite
+}
+
+func TestExtendTestSuite(t *testing.T) {
+	suite.Run(t, new(ExtendTestSuite))
+}
+
+func (suite *ExtendTestSuite) TestCreateFeatureLookup() {
 	features := []*config.FeatureSet{
 		{ConfigID: "feature-a"},
 		{ConfigID: "feature-b"},
@@ -15,19 +23,14 @@ func TestCreateFeatureLookup(t *testing.T) {
 	}
 
 	lookup := buildFeatureLookupMap(features)
-
-	if len(lookup) != 3 {
-		t.Errorf("Expected 3 entries, got %d", len(lookup))
-	}
+	suite.Len(lookup, 3)
 
 	for _, feature := range features {
-		if lookup[feature.ConfigID] != feature {
-			t.Errorf("Lookup failed for %s", feature.ConfigID)
-		}
+		suite.Equal(feature, lookup[feature.ConfigID])
 	}
 }
 
-func TestHasHardDependency(t *testing.T) {
+func (suite *ExtendTestSuite) TestHasHardDependency() {
 	tests := []struct {
 		name                string
 		feature             *config.FeatureSet
@@ -88,16 +91,14 @@ func TestHasHardDependency(t *testing.T) {
 	}
 
 	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
+		suite.Run(testCase.name, func() {
 			actualIsDuplicate := hasHardDependency(testCase.feature, testCase.originalID, testCase.normalizedID)
-			if actualIsDuplicate != testCase.expectedIsDuplicate {
-				t.Errorf("Expected %v, got %v", testCase.expectedIsDuplicate, actualIsDuplicate)
-			}
+			suite.Equal(testCase.expectedIsDuplicate, actualIsDuplicate)
 		})
 	}
 }
 
-func TestComputeAutomaticFeatureOrder_SimpleDependency(t *testing.T) {
+func (suite *ExtendTestSuite) TestComputeAutomaticFeatureOrder_SimpleDependency() {
 	features := []*config.FeatureSet{
 		{
 			ConfigID: normalizeFeatureID("dependent-feature"),
@@ -117,25 +118,18 @@ func TestComputeAutomaticFeatureOrder_SimpleDependency(t *testing.T) {
 
 	installationOrder, err := getOrderedFeatureSets(features)
 	if err != nil {
-		t.Fatalf("Expected no error, got: %v", err)
+		suite.Require().NoError(err)
 	}
 
-	if len(installationOrder) != 2 {
-		t.Fatalf("Expected 2 features, got %d", len(installationOrder))
-	}
-
+	suite.Len(installationOrder, 2)
 	expectedDependency := normalizeFeatureID("dependency-feature")
 	expectedDependent := normalizeFeatureID("dependent-feature")
 
-	if installationOrder[0].ConfigID != expectedDependency {
-		t.Errorf("Expected %s first, got %s", expectedDependency, installationOrder[0].ConfigID)
-	}
-	if installationOrder[1].ConfigID != expectedDependent {
-		t.Errorf("Expected %s second, got %s", expectedDependent, installationOrder[1].ConfigID)
-	}
+	suite.Equal(expectedDependency, installationOrder[0].ConfigID)
+	suite.Equal(expectedDependent, installationOrder[1].ConfigID)
 }
 
-func TestComputeAutomaticFeatureOrder_DependsOnAndInstallsAfter(t *testing.T) {
+func (suite *ExtendTestSuite) TestComputeAutomaticFeatureOrder_DependsOnAndInstallsAfter() {
 	features := []*config.FeatureSet{
 		{
 			ConfigID: normalizeFeatureID("feature-with-both-dependencies"),
@@ -157,25 +151,18 @@ func TestComputeAutomaticFeatureOrder_DependsOnAndInstallsAfter(t *testing.T) {
 
 	installationOrder, err := getOrderedFeatureSets(features)
 	if err != nil {
-		t.Fatalf("Expected no error, got: %v", err)
+		suite.Require().NoError(err)
 	}
 
-	if len(installationOrder) != 2 {
-		t.Fatalf("Expected 2 features, got %d", len(installationOrder))
-	}
-
+	suite.Len(installationOrder, 2)
 	expectedSharedDep := normalizeFeatureID("shared-dependency")
 	expectedFeatureWithBoth := normalizeFeatureID("feature-with-both-dependencies")
 
-	if installationOrder[0].ConfigID != expectedSharedDep {
-		t.Errorf("Expected %s first, got %s", expectedSharedDep, installationOrder[0].ConfigID)
-	}
-	if installationOrder[1].ConfigID != expectedFeatureWithBoth {
-		t.Errorf("Expected %s second, got %s", expectedFeatureWithBoth, installationOrder[1].ConfigID)
-	}
+	suite.Equal(expectedSharedDep, installationOrder[0].ConfigID)
+	suite.Equal(expectedFeatureWithBoth, installationOrder[1].ConfigID)
 }
 
-func TestComputeAutomaticFeatureOrder_OnlyInstallsAfter(t *testing.T) {
+func (suite *ExtendTestSuite) TestComputeAutomaticFeatureOrder_OnlyInstallsAfter() {
 	features := []*config.FeatureSet{
 		{
 			ConfigID: normalizeFeatureID("feature-with-soft-dependency"),
@@ -195,25 +182,18 @@ func TestComputeAutomaticFeatureOrder_OnlyInstallsAfter(t *testing.T) {
 
 	installationOrder, err := getOrderedFeatureSets(features)
 	if err != nil {
-		t.Fatalf("Expected no error, got: %v", err)
+		suite.Require().NoError(err)
 	}
 
-	if len(installationOrder) != 2 {
-		t.Fatalf("Expected 2 features, got %d", len(installationOrder))
-	}
-
+	suite.Len(installationOrder, 2)
 	expectedPreferredFirst := normalizeFeatureID("preferred-first-feature")
 	expectedFeatureWithSoft := normalizeFeatureID("feature-with-soft-dependency")
 
-	if installationOrder[0].ConfigID != expectedPreferredFirst {
-		t.Errorf("Expected %s first, got %s", expectedPreferredFirst, installationOrder[0].ConfigID)
-	}
-	if installationOrder[1].ConfigID != expectedFeatureWithSoft {
-		t.Errorf("Expected %s second, got %s", expectedFeatureWithSoft, installationOrder[1].ConfigID)
-	}
+	suite.Equal(expectedPreferredFirst, installationOrder[0].ConfigID)
+	suite.Equal(expectedFeatureWithSoft, installationOrder[1].ConfigID)
 }
 
-func TestComputeAutomaticFeatureOrder_ChainedDependencies(t *testing.T) {
+func (suite *ExtendTestSuite) TestComputeAutomaticFeatureOrder_ChainedDependencies() {
 	features := []*config.FeatureSet{
 		{
 			ConfigID: normalizeFeatureID("top-level-feature"),
@@ -241,12 +221,10 @@ func TestComputeAutomaticFeatureOrder_ChainedDependencies(t *testing.T) {
 
 	installationOrder, err := getOrderedFeatureSets(features)
 	if err != nil {
-		t.Fatalf("Expected no error, got: %v", err)
+		suite.Require().NoError(err)
 	}
 
-	if len(installationOrder) != 3 {
-		t.Fatalf("Expected 3 features, got %d", len(installationOrder))
-	}
+	suite.Len(installationOrder, 3)
 
 	expectedOrder := []string{
 		normalizeFeatureID("base-level-feature"),
@@ -255,12 +233,12 @@ func TestComputeAutomaticFeatureOrder_ChainedDependencies(t *testing.T) {
 	}
 	for i, expectedFeatureID := range expectedOrder {
 		if installationOrder[i].ConfigID != expectedFeatureID {
-			t.Errorf("Position %d: expected %s, got %s", i, expectedFeatureID, installationOrder[i].ConfigID)
+			suite.Fail("Position %d: expected %s, got %s", i, expectedFeatureID, installationOrder[i].ConfigID)
 		}
 	}
 }
 
-func TestComputeAutomaticFeatureOrder_CircularDependency(t *testing.T) {
+func (suite *ExtendTestSuite) TestComputeAutomaticFeatureOrder_CircularDependency() {
 	features := []*config.FeatureSet{
 		{
 			ConfigID: normalizeFeatureID("feature-a"),
@@ -281,16 +259,11 @@ func TestComputeAutomaticFeatureOrder_CircularDependency(t *testing.T) {
 	}
 
 	_, err := getOrderedFeatureSets(features)
-	if err == nil {
-		t.Fatal("Expected circular dependency error, got nil")
-	}
-
-	if !strings.Contains(err.Error(), "circular") {
-		t.Errorf("Expected circular dependency error, got: %v", err)
-	}
+	suite.Error(err)
+	suite.Contains(err.Error(), "circular")
 }
 
-func TestFeatureOrderWithDependencies_SameDependsOnAndInstallsAfter(t *testing.T) {
+func (suite *ExtendTestSuite) TestFeatureOrderWithDependencies_SameDependsOnAndInstallsAfter() {
 	features := []*config.FeatureSet{
 		{
 			ConfigID: "dev-code",
@@ -311,23 +284,12 @@ func TestFeatureOrderWithDependencies_SameDependsOnAndInstallsAfter(t *testing.T
 	}
 
 	installationOrder, err := getOrderedFeatureSets(features)
-	if err != nil {
-		t.Fatalf("Expected no circular dependency error, got: %v", err)
-	}
-
-	if len(installationOrder) != 2 {
-		t.Fatalf("Expected 2 features, got %d", len(installationOrder))
-	}
-
-	if installationOrder[0].ConfigID != "ghcr.io/devcontainers/features/node" {
-		t.Errorf("Expected node feature first, got %s", installationOrder[0].ConfigID)
-	}
-	if installationOrder[1].ConfigID != "dev-code" {
-		t.Errorf("Expected dev-code second, got %s", installationOrder[1].ConfigID)
-	}
+	suite.Require().NoError(err)
+	suite.Len(installationOrder, 2)
+	suite.Equal("ghcr.io/devcontainers/features/node", installationOrder[0].ConfigID)
 }
 
-func TestComputeFeatureOrder_NoOverride(t *testing.T) {
+func (suite *ExtendTestSuite) TestComputeFeatureOrder_NoOverride() {
 	devContainer := &config.DevContainerConfig{
 		DevContainerConfigBase: config.DevContainerConfigBase{
 			OverrideFeatureInstallOrder: []string{},
@@ -341,22 +303,19 @@ func TestComputeFeatureOrder_NoOverride(t *testing.T) {
 
 	order, err := getSortedFeatureSets(devContainer, features)
 	if err != nil {
-		t.Fatalf("Expected no error, got: %v", err)
+		suite.Require().NoError(err)
 	}
 
-	if len(order) != 2 {
-		t.Fatalf("Expected 2 features, got %d", len(order))
-	}
-
+	suite.Len(order, 2)
 	expectedFeatureB := normalizeFeatureID("feature-b")
 	expectedFeatureA := normalizeFeatureID("feature-a")
 
 	if order[0].ConfigID != expectedFeatureB || order[1].ConfigID != expectedFeatureA {
-		t.Errorf("Expected [%s, %s], got [%s, %s]", expectedFeatureB, expectedFeatureA, order[0].ConfigID, order[1].ConfigID)
+		suite.Fail("Expected [%s, %s], got [%s, %s]", expectedFeatureB, expectedFeatureA, order[0].ConfigID, order[1].ConfigID)
 	}
 }
 
-func TestComputeFeatureOrder_WithOverride(t *testing.T) {
+func (suite *ExtendTestSuite) TestComputeFeatureOrder_WithOverride() {
 	devContainer := &config.DevContainerConfig{
 		DevContainerConfigBase: config.DevContainerConfigBase{
 			OverrideFeatureInstallOrder: []string{"feature-a", "feature-b"},
@@ -370,19 +329,16 @@ func TestComputeFeatureOrder_WithOverride(t *testing.T) {
 
 	order, err := getSortedFeatureSets(devContainer, features)
 	if err != nil {
-		t.Fatalf("Expected no error, got: %v", err)
+		suite.Require().NoError(err)
 	}
 
-	if len(order) != 2 {
-		t.Fatalf("Expected 2 features, got %d", len(order))
-	}
-
+	suite.Len(order, 2)
 	if order[0].ConfigID != "feature-a" || order[1].ConfigID != "feature-b" {
-		t.Errorf("Expected [feature-a, feature-b], got [%s, %s]", order[0].ConfigID, order[1].ConfigID)
+		suite.Fail("Expected [feature-a, feature-b], got [%s, %s]", order[0].ConfigID, order[1].ConfigID)
 	}
 }
 
-func TestComputeFeatureOrder_PartialOverride(t *testing.T) {
+func (suite *ExtendTestSuite) TestComputeFeatureOrder_PartialOverride() {
 	devContainer := &config.DevContainerConfig{
 		DevContainerConfigBase: config.DevContainerConfigBase{
 			OverrideFeatureInstallOrder: []string{"feature-c"},
@@ -397,19 +353,17 @@ func TestComputeFeatureOrder_PartialOverride(t *testing.T) {
 
 	order, err := getSortedFeatureSets(devContainer, features)
 	if err != nil {
-		t.Fatalf("Expected no error, got: %v", err)
+		suite.Require().NoError(err)
 	}
 
-	if len(order) != 3 {
-		t.Fatalf("Expected 3 features, got %d", len(order))
-	}
+	suite.Len(order, 3)
 
 	if order[0].ConfigID != "feature-c" {
-		t.Errorf("Expected feature-c first, got %s", order[0].ConfigID)
+		suite.Fail("Expected feature-c first, got %s", order[0].ConfigID)
 	}
 }
 
-func TestApplyManualOrdering(t *testing.T) {
+func (suite *ExtendTestSuite) TestApplyManualOrdering() {
 	automaticOrder := []*config.FeatureSet{
 		{ConfigID: "feature-a"},
 		{ConfigID: "feature-b"},
@@ -417,22 +371,17 @@ func TestApplyManualOrdering(t *testing.T) {
 	}
 
 	overrideOrder := []string{"feature-c", "feature-a"}
-
 	result := sortFeaturesByOverride(overrideOrder, automaticOrder)
-
 	expected := []string{"feature-c", "feature-a", "feature-b"}
-	if len(result) != 3 {
-		t.Fatalf("Expected 3 features, got %d", len(result))
-	}
-
+	suite.Len(result, 3)
 	for i, expectedID := range expected {
 		if result[i].ConfigID != expectedID {
-			t.Errorf("Position %d: expected %s, got %s", i, expectedID, result[i].ConfigID)
+			suite.Fail("Position %d: expected %s, got %s", i, expectedID, result[i].ConfigID)
 		}
 	}
 }
 
-func TestExtractFeatureByID(t *testing.T) {
+func (suite *ExtendTestSuite) TestExtractFeatureByID() {
 	features := []*config.FeatureSet{
 		{ConfigID: "feature-a"},
 		{ConfigID: "feature-b"},
@@ -440,26 +389,26 @@ func TestExtractFeatureByID(t *testing.T) {
 
 	found := extractFeatureByID(features, "feature-b")
 	if found == nil || found.ConfigID != "feature-b" {
-		t.Errorf("Expected to find feature-b")
+		suite.Fail("Expected to find feature-b")
 	}
 
 	notFound := extractFeatureByID(features, "feature-c")
 	if notFound != nil {
-		t.Errorf("Expected not to find feature-c")
+		suite.Fail("Expected not to find feature-c")
 	}
 }
 
-func TestContainsFeature(t *testing.T) {
+func (suite *ExtendTestSuite) TestContainsFeature() {
 	features := []*config.FeatureSet{
 		{ConfigID: "feature-a"},
 		{ConfigID: "feature-b"},
 	}
 
 	if !containsFeature(features, "feature-a") {
-		t.Errorf("Expected to contain feature-a")
+		suite.Fail("Expected to contain feature-a")
 	}
 
 	if containsFeature(features, "feature-c") {
-		t.Errorf("Expected not to contain feature-c")
+		suite.Fail("Expected not to contain feature-c")
 	}
 }
