@@ -224,11 +224,18 @@ jobs:
           DATE=$(date +%Y-%m-%d)
           VERSION="${{ inputs.tag || github.ref_name }}"
 
-          # Update metainfo.xml
           sed -i "s/__VERSION__/${VERSION}/g" ./desktop/flatpak/DevPod.metainfo.xml
           sed -i "s/__DATE__/${DATE}/g" ./desktop/flatpak/DevPod.metainfo.xml
 
-          # Calculate SHA256 values and update Flatpak manifest template
+      - name: copy flatpak files to build workspace
+        shell: bash
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/desktop/flatpak-build/"
+          cp -R ./desktop/flatpak/* "$GITHUB_WORKSPACE/desktop/flatpak-build/"
+
+      - name: prepare flatpak assets
+        shell: bash
+        run: |
           DEB_SHA256=$(sha256sum /tmp/devpod/DevPod_*_amd64.deb | cut -d' ' -f1)
           META_SHA256=$(sha256sum ./desktop/flatpak/DevPod.metainfo.xml | cut -d' ' -f1)
           DESKTOP_SHA256=$(sha256sum ./desktop/flatpak/DevPod.desktop | cut -d' ' -f1)
@@ -247,6 +254,26 @@ jobs:
             ./desktop/flatpak/DevPod.metainfo.xml
             ./desktop/flatpak/DevPod.desktop
             ./desktop/flatpak/sh.loft.devpod.yml
+
+      - name: restore flatpak manifest for build
+        shell: bash
+        run: |
+          rm -rf "$GITHUB_WORKSPACE/desktop/flatpak/"
+          mv "$GITHUB_WORKSPACE/desktop/flatpak-build/sh.loft.devpod.yml" "$GITHUB_WORKSPACE/desktop/flatpak/sh.loft.devpod.yml"
+
+      # Use GITHUB_WORKSPACE in containers because the path differs from github.workspace
+      # for more details, see https://github.com/actions/checkout/issues/785
+      - name: prepare flatpak manifest for build
+        shell: bash
+        run: |
+          VERSION="${{ inputs.tag || github.ref_name }}"
+          VERSION="${VERSION#v}"
+          sed -i "s|url: https://github.com/skevetter/devpod/releases/download/\${VERSION}/DevPod_linux_amd64.deb|path: /tmp/devpod/DevPod_${VERSION}_amd64.deb|" "$GITHUB_WORKSPACE/desktop/flatpak/sh.loft.devpod.yml"
+          sed -i "s|url: https://github.com/skevetter/devpod/releases/download/\${VERSION}/DevPod.desktop|path: $GITHUB_WORKSPACE/desktop/flatpak/DevPod.desktop|" "$GITHUB_WORKSPACE/desktop/flatpak/sh.loft.devpod.yml"
+          sed -i "s|url: https://github.com/skevetter/devpod/releases/download/\${VERSION}/DevPod.metainfo.xml|path: $GITHUB_WORKSPACE/desktop/flatpak/DevPod.metainfo.xml|" "$GITHUB_WORKSPACE/desktop/flatpak/sh.loft.devpod.yml"
+          sed -i "/sha256: \${SHA256}/d" "$GITHUB_WORKSPACE/desktop/flatpak/sh.loft.devpod.yml"
+          sed -i "/sha256: \${DESKTOP_SHA256}/d" "$GITHUB_WORKSPACE/desktop/flatpak/sh.loft.devpod.yml"
+          sed -i "/sha256: \${META_SHA256}/d" "$GITHUB_WORKSPACE/desktop/flatpak/sh.loft.devpod.yml"
 
       - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
         with:
