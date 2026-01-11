@@ -250,10 +250,9 @@ func fetchFeatures(devContainerConfig *config.DevContainerConfig, log log.Logger
 		featureSets = append(featureSets, featureSet)
 	}
 
-	// Compute order
 	featureSets, err = getSortedFeatureSets(devContainerConfig, featureSets)
 	if err != nil {
-		return nil, fmt.Errorf("compute feature order %w", err)
+		return nil, fmt.Errorf("failed to get sorted feature sets %w", err)
 	}
 
 	return featureSets, nil
@@ -374,6 +373,8 @@ func getSortedFeatureSets(devContainer *config.DevContainerConfig, features []*c
 
 func sortFeaturesByOverride(overrideOrder []string, automaticOrder []*config.FeatureSet) []*config.FeatureSet {
 	orderedFeatures := make([]*config.FeatureSet, 0, len(automaticOrder))
+	seen := make(map[string]bool)
+
 	for _, overrideFeatureID := range overrideOrder {
 		feature := extractFeatureByID(automaticOrder, overrideFeatureID)
 		if feature == nil {
@@ -381,14 +382,16 @@ func sortFeaturesByOverride(overrideOrder []string, automaticOrder []*config.Fea
 			feature = extractFeatureByID(automaticOrder, normalizedID)
 		}
 
-		if feature != nil {
+		if feature != nil && !seen[feature.ConfigID] {
 			orderedFeatures = append(orderedFeatures, feature)
+			seen[feature.ConfigID] = true
 		}
 	}
 
 	for _, feature := range automaticOrder {
-		if !containsFeature(orderedFeatures, feature.ConfigID) {
+		if !seen[feature.ConfigID] {
 			orderedFeatures = append(orderedFeatures, feature)
+			seen[feature.ConfigID] = true
 		}
 	}
 
@@ -460,15 +463,16 @@ func addHardDependencies(g *graph.Graph[*config.FeatureSet], feature *config.Fea
 
 func addSoftDependencies(g *graph.Graph[*config.FeatureSet], feature *config.FeatureSet, featureLookup map[string]*config.FeatureSet) error {
 	for _, id := range feature.Config.InstallsAfter {
-		if _, exists := featureLookup[id]; !exists {
+		normalizedID := NormalizeFeatureID(id)
+		if _, exists := featureLookup[normalizedID]; !exists {
 			continue
 		}
 
-		if dependencyExists(feature, id, NormalizeFeatureID(id)) {
-			continue
+		if hasHardDependency(feature, id, normalizedID) {
+			continue // already added as hard dependency
 		}
 
-		if err := g.AddEdge(id, feature.ConfigID); err != nil {
+		if err := g.AddEdge(normalizedID, feature.ConfigID); err != nil {
 			return err
 		}
 	}
@@ -483,7 +487,7 @@ func buildFeatureLookupMap(features []*config.FeatureSet) map[string]*config.Fea
 	return lookup
 }
 
-func dependencyExists(feature *config.FeatureSet, originalID, normalizedID string) bool {
+func hasHardDependency(feature *config.FeatureSet, originalID, normalizedID string) bool {
 	_, existsOriginal := feature.Config.DependsOn[originalID]
 	_, existsNormalized := feature.Config.DependsOn[normalizedID]
 	return existsOriginal || existsNormalized

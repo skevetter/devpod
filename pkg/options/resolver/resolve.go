@@ -312,7 +312,6 @@ func resolveDynamicOptions(ctx context.Context, options config.OptionDefinitions
 		if processed[opt] {
 			continue
 		}
-		processed[opt] = true
 
 		if !r.graph.HasNode(opt) {
 			continue
@@ -327,6 +326,8 @@ func resolveDynamicOptions(ctx context.Context, options config.OptionDefinitions
 		if err != nil {
 			return fmt.Errorf("get sub options for %s %w", opt, err)
 		}
+
+		processed[opt] = true
 
 		for optionName := range subOptions {
 			if !processed[optionName] {

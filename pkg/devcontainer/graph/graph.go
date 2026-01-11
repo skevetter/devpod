@@ -83,7 +83,9 @@ func (g *Graph[T]) RemoveEdge(from, to string) error {
 
 	if edgeFound {
 		g.edges[from] = newEdges
-		g.inDegree[to]--
+		if g.inDegree[to] > 0 {
+			g.inDegree[to]--
+		}
 	}
 
 	return nil
@@ -171,7 +173,9 @@ func (g *Graph[T]) RemoveSubGraph(id string) error {
 	g.collectChildren(id, &nodesToRemove)
 
 	for _, nodeID := range nodesToRemove {
-		_ = g.RemoveNode(nodeID)
+		if err := g.RemoveNode(nodeID); err != nil {
+			return err
+		}
 	}
 
 	return nil

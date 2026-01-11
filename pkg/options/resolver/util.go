@@ -41,7 +41,7 @@ func addDependency(g *graph.Graph[*types.Option], optionValues map[string]config
 		}
 
 		childOption, childExists := g.GetNode(childName)
-		if childExists {
+		if childExists && childOption != nil {
 			if !option.Global && childOption.Global {
 				return fmt.Errorf("cannot use a global option as a dependency of a non-global option. Option '%s' used in children of option '%s'", childName, optionName)
 			}
@@ -59,7 +59,7 @@ func addDependency(g *graph.Graph[*types.Option], optionValues map[string]config
 		}
 
 		depOption, depExists := g.GetNode(dep)
-		if depExists {
+		if depExists && depOption != nil {
 			if option.Global && !depOption.Global {
 				return fmt.Errorf("cannot use a non-global option as a dependency of a global option. Option '%s' used in default of option '%s'", dep, optionName)
 			}
@@ -77,7 +77,7 @@ func addDependency(g *graph.Graph[*types.Option], optionValues map[string]config
 		}
 
 		depOption, depExists := g.GetNode(dep)
-		if depExists {
+		if depExists && depOption != nil {
 			if option.Global && !depOption.Global {
 				return fmt.Errorf("cannot use a non-global option as a dependency of a global option. Option '%s' used in command of option '%s'", dep, optionName)
 			}

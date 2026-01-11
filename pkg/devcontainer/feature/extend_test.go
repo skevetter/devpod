@@ -89,7 +89,7 @@ func TestIsAlreadyHardDependency(t *testing.T) {
 
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
-			actualIsDuplicate := dependencyExists(testCase.feature, testCase.originalID, testCase.normalizedID)
+			actualIsDuplicate := hasHardDependency(testCase.feature, testCase.originalID, testCase.normalizedID)
 			if actualIsDuplicate != testCase.expectedIsDuplicate {
 				t.Errorf("Expected %v, got %v", testCase.expectedIsDuplicate, actualIsDuplicate)
 			}
@@ -100,7 +100,7 @@ func TestIsAlreadyHardDependency(t *testing.T) {
 func TestComputeAutomaticFeatureOrder_SimpleDependency(t *testing.T) {
 	features := []*config.FeatureSet{
 		{
-			ConfigID: "dependent-feature",
+			ConfigID: NormalizeFeatureID("dependent-feature"),
 			Config: &config.FeatureConfig{
 				DependsOn: config.DependsOnField{
 					"dependency-feature": map[string]any{},
@@ -108,7 +108,7 @@ func TestComputeAutomaticFeatureOrder_SimpleDependency(t *testing.T) {
 			},
 		},
 		{
-			ConfigID: "dependency-feature",
+			ConfigID: NormalizeFeatureID("dependency-feature"),
 			Config: &config.FeatureConfig{
 				DependsOn: config.DependsOnField{},
 			},
@@ -124,11 +124,14 @@ func TestComputeAutomaticFeatureOrder_SimpleDependency(t *testing.T) {
 		t.Fatalf("Expected 2 features, got %d", len(installationOrder))
 	}
 
-	if installationOrder[0].ConfigID != "dependency-feature" {
-		t.Errorf("Expected dependency-feature first, got %s", installationOrder[0].ConfigID)
+	expectedDependency := NormalizeFeatureID("dependency-feature")
+	expectedDependent := NormalizeFeatureID("dependent-feature")
+
+	if installationOrder[0].ConfigID != expectedDependency {
+		t.Errorf("Expected %s first, got %s", expectedDependency, installationOrder[0].ConfigID)
 	}
-	if installationOrder[1].ConfigID != "dependent-feature" {
-		t.Errorf("Expected dependent-feature second, got %s", installationOrder[1].ConfigID)
+	if installationOrder[1].ConfigID != expectedDependent {
+		t.Errorf("Expected %s second, got %s", expectedDependent, installationOrder[1].ConfigID)
 	}
 }
 
@@ -175,14 +178,14 @@ func TestComputeAutomaticFeatureOrder_DependsOnAndInstallsAfter(t *testing.T) {
 func TestComputeAutomaticFeatureOrder_OnlyInstallsAfter(t *testing.T) {
 	features := []*config.FeatureSet{
 		{
-			ConfigID: "feature-with-soft-dependency",
+			ConfigID: NormalizeFeatureID("feature-with-soft-dependency"),
 			Config: &config.FeatureConfig{
 				DependsOn:     config.DependsOnField{},
 				InstallsAfter: []string{"preferred-first-feature"},
 			},
 		},
 		{
-			ConfigID: "preferred-first-feature",
+			ConfigID: NormalizeFeatureID("preferred-first-feature"),
 			Config: &config.FeatureConfig{
 				DependsOn:     config.DependsOnField{},
 				InstallsAfter: []string{},
@@ -199,18 +202,21 @@ func TestComputeAutomaticFeatureOrder_OnlyInstallsAfter(t *testing.T) {
 		t.Fatalf("Expected 2 features, got %d", len(installationOrder))
 	}
 
-	if installationOrder[0].ConfigID != "preferred-first-feature" {
-		t.Errorf("Expected preferred-first-feature first, got %s", installationOrder[0].ConfigID)
+	expectedPreferredFirst := NormalizeFeatureID("preferred-first-feature")
+	expectedFeatureWithSoft := NormalizeFeatureID("feature-with-soft-dependency")
+
+	if installationOrder[0].ConfigID != expectedPreferredFirst {
+		t.Errorf("Expected %s first, got %s", expectedPreferredFirst, installationOrder[0].ConfigID)
 	}
-	if installationOrder[1].ConfigID != "feature-with-soft-dependency" {
-		t.Errorf("Expected feature-with-soft-dependency second, got %s", installationOrder[1].ConfigID)
+	if installationOrder[1].ConfigID != expectedFeatureWithSoft {
+		t.Errorf("Expected %s second, got %s", expectedFeatureWithSoft, installationOrder[1].ConfigID)
 	}
 }
 
 func TestComputeAutomaticFeatureOrder_ChainedDependencies(t *testing.T) {
 	features := []*config.FeatureSet{
 		{
-			ConfigID: "top-level-feature",
+			ConfigID: NormalizeFeatureID("top-level-feature"),
 			Config: &config.FeatureConfig{
 				DependsOn: config.DependsOnField{
 					"middle-level-feature": map[string]any{},
@@ -218,7 +224,7 @@ func TestComputeAutomaticFeatureOrder_ChainedDependencies(t *testing.T) {
 			},
 		},
 		{
-			ConfigID: "middle-level-feature",
+			ConfigID: NormalizeFeatureID("middle-level-feature"),
 			Config: &config.FeatureConfig{
 				DependsOn: config.DependsOnField{
 					"base-level-feature": map[string]any{},
@@ -226,7 +232,7 @@ func TestComputeAutomaticFeatureOrder_ChainedDependencies(t *testing.T) {
 			},
 		},
 		{
-			ConfigID: "base-level-feature",
+			ConfigID: NormalizeFeatureID("base-level-feature"),
 			Config: &config.FeatureConfig{
 				DependsOn: config.DependsOnField{},
 			},
@@ -242,7 +248,11 @@ func TestComputeAutomaticFeatureOrder_ChainedDependencies(t *testing.T) {
 		t.Fatalf("Expected 3 features, got %d", len(installationOrder))
 	}
 
-	expectedOrder := []string{"base-level-feature", "middle-level-feature", "top-level-feature"}
+	expectedOrder := []string{
+		NormalizeFeatureID("base-level-feature"),
+		NormalizeFeatureID("middle-level-feature"),
+		NormalizeFeatureID("top-level-feature"),
+	}
 	for i, expectedFeatureID := range expectedOrder {
 		if installationOrder[i].ConfigID != expectedFeatureID {
 			t.Errorf("Position %d: expected %s, got %s", i, expectedFeatureID, installationOrder[i].ConfigID)
