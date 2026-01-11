@@ -1,6 +1,7 @@
 package feature
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
@@ -134,7 +135,7 @@ func TestComputeAutomaticFeatureOrder_SimpleDependency(t *testing.T) {
 func TestComputeAutomaticFeatureOrder_DependsOnAndInstallsAfter(t *testing.T) {
 	features := []*config.FeatureSet{
 		{
-			ConfigID: "feature-with-both-dependencies",
+			ConfigID: NormalizeFeatureID("feature-with-both-dependencies"),
 			Config: &config.FeatureConfig{
 				DependsOn: config.DependsOnField{
 					"shared-dependency": map[string]any{},
@@ -143,7 +144,7 @@ func TestComputeAutomaticFeatureOrder_DependsOnAndInstallsAfter(t *testing.T) {
 			},
 		},
 		{
-			ConfigID: "shared-dependency",
+			ConfigID: NormalizeFeatureID("shared-dependency"),
 			Config: &config.FeatureConfig{
 				DependsOn:     config.DependsOnField{},
 				InstallsAfter: []string{},
@@ -160,11 +161,14 @@ func TestComputeAutomaticFeatureOrder_DependsOnAndInstallsAfter(t *testing.T) {
 		t.Fatalf("Expected 2 features, got %d", len(installationOrder))
 	}
 
-	if installationOrder[0].ConfigID != "shared-dependency" {
-		t.Errorf("Expected shared-dependency first, got %s", installationOrder[0].ConfigID)
+	expectedSharedDep := NormalizeFeatureID("shared-dependency")
+	expectedFeatureWithBoth := NormalizeFeatureID("feature-with-both-dependencies")
+
+	if installationOrder[0].ConfigID != expectedSharedDep {
+		t.Errorf("Expected %s first, got %s", expectedSharedDep, installationOrder[0].ConfigID)
 	}
-	if installationOrder[1].ConfigID != "feature-with-both-dependencies" {
-		t.Errorf("Expected feature-with-both-dependencies second, got %s", installationOrder[1].ConfigID)
+	if installationOrder[1].ConfigID != expectedFeatureWithBoth {
+		t.Errorf("Expected %s second, got %s", expectedFeatureWithBoth, installationOrder[1].ConfigID)
 	}
 }
 
@@ -249,7 +253,7 @@ func TestComputeAutomaticFeatureOrder_ChainedDependencies(t *testing.T) {
 func TestComputeAutomaticFeatureOrder_CircularDependency(t *testing.T) {
 	features := []*config.FeatureSet{
 		{
-			ConfigID: "feature-a",
+			ConfigID: NormalizeFeatureID("feature-a"),
 			Config: &config.FeatureConfig{
 				DependsOn: config.DependsOnField{
 					"feature-b": map[string]any{},
@@ -257,7 +261,7 @@ func TestComputeAutomaticFeatureOrder_CircularDependency(t *testing.T) {
 			},
 		},
 		{
-			ConfigID: "feature-b",
+			ConfigID: NormalizeFeatureID("feature-b"),
 			Config: &config.FeatureConfig{
 				DependsOn: config.DependsOnField{
 					"feature-a": map[string]any{},
@@ -271,7 +275,7 @@ func TestComputeAutomaticFeatureOrder_CircularDependency(t *testing.T) {
 		t.Fatal("Expected circular dependency error, got nil")
 	}
 
-	if !containsSubstring(err.Error(), "circular") {
+	if !strings.Contains(err.Error(), "circular") {
 		t.Errorf("Expected circular dependency error, got: %v", err)
 	}
 }
@@ -321,8 +325,8 @@ func TestComputeFeatureOrder_NoOverride(t *testing.T) {
 	}
 
 	features := []*config.FeatureSet{
-		{ConfigID: "feature-a", Config: &config.FeatureConfig{DependsOn: config.DependsOnField{"feature-b": map[string]any{}}}},
-		{ConfigID: "feature-b", Config: &config.FeatureConfig{DependsOn: config.DependsOnField{}}},
+		{ConfigID: NormalizeFeatureID("feature-a"), Config: &config.FeatureConfig{DependsOn: config.DependsOnField{"feature-b": map[string]any{}}}},
+		{ConfigID: NormalizeFeatureID("feature-b"), Config: &config.FeatureConfig{DependsOn: config.DependsOnField{}}},
 	}
 
 	order, err := getSortedFeatureSets(devContainer, features)
@@ -334,8 +338,11 @@ func TestComputeFeatureOrder_NoOverride(t *testing.T) {
 		t.Fatalf("Expected 2 features, got %d", len(order))
 	}
 
-	if order[0].ConfigID != "feature-b" || order[1].ConfigID != "feature-a" {
-		t.Errorf("Expected [feature-b, feature-a], got [%s, %s]", order[0].ConfigID, order[1].ConfigID)
+	expectedFeatureB := NormalizeFeatureID("feature-b")
+	expectedFeatureA := NormalizeFeatureID("feature-a")
+
+	if order[0].ConfigID != expectedFeatureB || order[1].ConfigID != expectedFeatureA {
+		t.Errorf("Expected [%s, %s], got [%s, %s]", expectedFeatureB, expectedFeatureA, order[0].ConfigID, order[1].ConfigID)
 	}
 }
 
@@ -445,17 +452,4 @@ func TestContainsFeature(t *testing.T) {
 	if containsFeature(features, "feature-c") {
 		t.Errorf("Expected not to contain feature-c")
 	}
-}
-
-func containsSubstring(text, substring string) bool {
-	return len(text) >= len(substring) && (text == substring || len(substring) == 0 ||
-		(len(text) > len(substring) && (text[:len(substring)] == substring || text[len(text)-len(substring):] == substring ||
-			func() bool {
-				for i := 1; i <= len(text)-len(substring); i++ {
-					if text[i:i+len(substring)] == substring {
-						return true
-					}
-				}
-				return false
-			}())))
 }

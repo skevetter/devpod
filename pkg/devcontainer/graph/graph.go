@@ -24,7 +24,9 @@ func NewGraph[T comparable]() *Graph[T] {
 
 func (g *Graph[T]) AddNode(id string, data T) error {
 	g.nodes[id] = data
-	g.inDegree[id] = 0
+	if _, exists := g.inDegree[id]; !exists {
+		g.inDegree[id] = 0
+	}
 	if g.edges[id] == nil {
 		g.edges[id] = []string{}
 	}
@@ -34,7 +36,9 @@ func (g *Graph[T]) AddNode(id string, data T) error {
 func (g *Graph[T]) AddNodes(nodes map[string]T) error {
 	for id, data := range nodes {
 		g.nodes[id] = data
-		g.inDegree[id] = 0
+		if _, exists := g.inDegree[id]; !exists {
+			g.inDegree[id] = 0
+		}
 		if g.edges[id] == nil {
 			g.edges[id] = []string{}
 		}
@@ -110,6 +114,12 @@ func (g *Graph[T]) RemoveNode(id string) error {
 		return fmt.Errorf("node %s does not exist", id)
 	}
 
+	for _, childID := range g.edges[id] {
+		if g.inDegree[childID] > 0 {
+			g.inDegree[childID]--
+		}
+	}
+
 	for parentID := range g.edges {
 		filteredEdges := []string{}
 		for _, childID := range g.edges[parentID] {
@@ -128,7 +138,13 @@ func (g *Graph[T]) RemoveNode(id string) error {
 }
 
 func (g *Graph[T]) GetChildren(id string) []string {
-	return g.edges[id]
+	children := g.edges[id]
+	if children == nil {
+		return []string{}
+	}
+	result := make([]string, len(children))
+	copy(result, children)
+	return result
 }
 
 func (g *Graph[T]) GetParents(id string) []string {
@@ -155,7 +171,7 @@ func (g *Graph[T]) RemoveSubGraph(id string) error {
 	g.collectChildren(id, &nodesToRemove)
 
 	for _, nodeID := range nodesToRemove {
-		g.RemoveNode(nodeID)
+		_ = g.RemoveNode(nodeID)
 	}
 
 	return nil
@@ -194,7 +210,9 @@ func (g *Graph[T]) IsEmpty() bool {
 }
 
 func (g *Graph[T]) GetNodes() map[string]T {
-	return g.nodes
+	result := make(map[string]T, len(g.nodes))
+	maps.Copy(result, g.nodes)
+	return result
 }
 
 func (g *Graph[T]) String() string {
@@ -288,9 +306,24 @@ func (g *Graph[T]) HasCircularDependency() bool {
 }
 
 func (g *Graph[T]) collectChildren(id string, nodesToRemove *[]string) {
-	*nodesToRemove = append(*nodesToRemove, id)
-	for _, childID := range g.edges[id] {
-		g.collectChildren(childID, nodesToRemove)
+	stack := []string{id}
+	visited := make(map[string]bool)
+
+	for len(stack) > 0 {
+		current := stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
+
+		if visited[current] {
+			continue
+		}
+		visited[current] = true
+
+		*nodesToRemove = append(*nodesToRemove, current)
+		for _, childID := range g.edges[current] {
+			if !visited[childID] {
+				stack = append(stack, childID)
+			}
+		}
 	}
 }
 

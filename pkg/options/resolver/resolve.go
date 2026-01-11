@@ -231,7 +231,7 @@ func (r *Resolver) refreshSubOptions(
 
 	for childID := range r.getChangedOptions(r.dynamicOptionsForNode(resolvedOptionValues[optionName].Children), newDynamicOptions, resolvedOptionValues) {
 		delete(resolvedOptionValues, childID)
-		r.graph.RemoveNode(childID)
+		_ = r.graph.RemoveNode(childID)
 	}
 
 	// remove invalid existing user values
@@ -261,9 +261,9 @@ func (r *Resolver) refreshSubOptions(
 		return fmt.Errorf("add sub options %w", err)
 	}
 
-	err = resolveDynamicOptions(ctx, newDynamicOptions, r, err, resolvedOptionValues)
+	err = resolveDynamicOptions(ctx, newDynamicOptions, r, resolvedOptionValues)
 	if err != nil {
-		return err
+		return fmt.Errorf("resolve dynamic sub options %w", err)
 	}
 
 	return nil
@@ -298,7 +298,7 @@ func (q *queue) isEmpty() bool {
 	return q.head >= len(q.items)
 }
 
-func resolveDynamicOptions(ctx context.Context, options config.OptionDefinitions, r *Resolver, err error, optionValues map[string]config.OptionValue) error {
+func resolveDynamicOptions(ctx context.Context, options config.OptionDefinitions, r *Resolver, optionValues map[string]config.OptionValue) error {
 	q := newQueue(len(options))
 	processed := make(map[string]bool)
 
@@ -318,7 +318,7 @@ func resolveDynamicOptions(ctx context.Context, options config.OptionDefinitions
 			continue
 		}
 
-		err = r.resolveOption(ctx, opt, optionValues)
+		err := r.resolveOption(ctx, opt, optionValues)
 		if err != nil {
 			return fmt.Errorf("resolve dynamic option %s %w", opt, err)
 		}
@@ -355,7 +355,7 @@ func (r *Resolver) retrieveSubOptions(ctx context.Context, optionName string, op
 
 	for childID := range r.getChangedOptions(r.dynamicOptionsForNode(options[optionName].Children), suboptions, options) {
 		delete(options, childID)
-		r.graph.RemoveNode(childID)
+		_ = r.graph.RemoveNode(childID)
 	}
 
 	for name, option := range suboptions {

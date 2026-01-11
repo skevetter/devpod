@@ -80,7 +80,7 @@ func (suite *ResolverTestSuite) TestResolveOptions_SingleOption() {
 		Description: "Test option",
 		Default:     "default_value",
 	}
-	suite.resolver.graph.AddNode("test_option", option)
+	_ = suite.resolver.graph.AddNode("test_option", option)
 
 	result, err := suite.resolver.resolveOptions(context.Background(), map[string]config.OptionValue{})
 	suite.NoError(err)
@@ -97,7 +97,7 @@ func (suite *ResolverTestSuite) TestResolveOptions_UserProvidedValue() {
 		Description: "Test option",
 		Default:     "default_value",
 	}
-	suite.resolver.graph.AddNode("test_option", option)
+	_ = suite.resolver.graph.AddNode("test_option", option)
 
 	result, err := suite.resolver.resolveOptions(context.Background(), map[string]config.OptionValue{})
 	suite.NoError(err)
@@ -111,7 +111,7 @@ func (suite *ResolverTestSuite) TestResolveOptions_EnumValue() {
 		Description: "Test enum option",
 		Enum:        []types.OptionEnum{{Value: "only_choice"}},
 	}
-	suite.resolver.graph.AddNode("enum_option", option)
+	_ = suite.resolver.graph.AddNode("enum_option", option)
 
 	result, err := suite.resolver.resolveOptions(context.Background(), map[string]config.OptionValue{})
 	suite.NoError(err)
@@ -126,7 +126,7 @@ func (suite *ResolverTestSuite) TestResolveOptions_SkipGlobalOption() {
 		Global:      true,
 		Default:     "global_default",
 	}
-	suite.resolver.graph.AddNode("global_option", option)
+	_ = suite.resolver.graph.AddNode("global_option", option)
 
 	result, err := suite.resolver.resolveOptions(context.Background(), map[string]config.OptionValue{})
 	suite.NoError(err)
@@ -141,7 +141,7 @@ func (suite *ResolverTestSuite) TestResolveOptions_SkipLocalOption() {
 		Local:       true,
 		Default:     "local_default",
 	}
-	suite.resolver.graph.AddNode("local_option", option)
+	_ = suite.resolver.graph.AddNode("local_option", option)
 
 	result, err := suite.resolver.resolveOptions(context.Background(), map[string]config.OptionValue{})
 	suite.NoError(err)
@@ -155,7 +155,7 @@ func (suite *ResolverTestSuite) TestResolveOptions_CachedValue() {
 		Cache:       "1h",
 		Default:     "new_default",
 	}
-	suite.resolver.graph.AddNode("cached_option", option)
+	_ = suite.resolver.graph.AddNode("cached_option", option)
 
 	now := types.NewTime(time.Now())
 	existingValue := map[string]config.OptionValue{
@@ -177,7 +177,7 @@ func (suite *ResolverTestSuite) TestResolveOptions_ExpiredCache() {
 		Cache:       "1ns",
 		Default:     "new_default",
 	}
-	suite.resolver.graph.AddNode("cached_option", option)
+	_ = suite.resolver.graph.AddNode("cached_option", option)
 
 	pastTime := types.NewTime(time.Now().Add(-time.Hour))
 	existingValue := map[string]config.OptionValue{
@@ -198,9 +198,9 @@ func (suite *ResolverTestSuite) TestResolveOptions_ChildInvalidation() {
 	parentOption := &types.Option{Description: "Parent", Default: "new_parent_value"}
 	childOption := &types.Option{Description: "Child", Default: "child_default"}
 
-	suite.resolver.graph.AddNode("parent", parentOption)
-	suite.resolver.graph.AddNode("child", childOption)
-	suite.resolver.graph.AddEdge("parent", "child")
+	_ = suite.resolver.graph.AddNode("parent", parentOption)
+	_ = suite.resolver.graph.AddNode("child", childOption)
+	_ = suite.resolver.graph.AddEdge("parent", "child")
 
 	existingValues := map[string]config.OptionValue{
 		"parent": {Value: "old_parent_value", UserProvided: true},
@@ -220,9 +220,9 @@ func (suite *ResolverTestSuite) TestResolveOptions_PreserveUserProvidedChild() {
 	parentOption := &types.Option{Description: "Parent", Default: "new_parent_value"}
 	childOption := &types.Option{Description: "Child", Default: "child_default"}
 
-	suite.resolver.graph.AddNode("parent", parentOption)
-	suite.resolver.graph.AddNode("child", childOption)
-	suite.resolver.graph.AddEdge("parent", "child")
+	_ = suite.resolver.graph.AddNode("parent", parentOption)
+	_ = suite.resolver.graph.AddNode("child", childOption)
+	_ = suite.resolver.graph.AddEdge("parent", "child")
 
 	existingValues := map[string]config.OptionValue{
 		"parent": {Value: "old_parent_value", UserProvided: true},
@@ -242,10 +242,10 @@ func (suite *ResolverTestSuite) TestResolveOptions_CircularDependency() {
 	option1 := &types.Option{Description: "Option 1"}
 	option2 := &types.Option{Description: "Option 2"}
 
-	suite.resolver.graph.AddNode("opt1", option1)
-	suite.resolver.graph.AddNode("opt2", option2)
-	suite.resolver.graph.AddEdge("opt1", "opt2")
-	suite.resolver.graph.AddEdge("opt2", "opt1")
+	_ = suite.resolver.graph.AddNode("opt1", option1)
+	_ = suite.resolver.graph.AddNode("opt2", option2)
+	_ = suite.resolver.graph.AddEdge("opt1", "opt2")
+	_ = suite.resolver.graph.AddEdge("opt2", "opt1")
 
 	_, err := suite.resolver.resolveOptions(context.Background(), map[string]config.OptionValue{})
 	suite.Error(err)

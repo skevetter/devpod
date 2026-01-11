@@ -43,14 +43,14 @@ func addDependency(g *graph.Graph[*types.Option], optionValues map[string]config
 		childOption, childExists := g.GetNode(childName)
 		if childExists {
 			if !option.Global && childOption.Global {
-				return fmt.Errorf("cannot use a global option as a dependency of a non-global option. Option '%s' used in command of option '%s'", childName, optionName)
+				return fmt.Errorf("cannot use a global option as a dependency of a non-global option. Option '%s' used in children of option '%s'", childName, optionName)
 			}
 			if option.Local && !childOption.Local {
-				return fmt.Errorf("cannot use a non-local option as a dependency of a local option. Option '%s' used in command of option '%s'", childName, optionName)
+				return fmt.Errorf("cannot use a non-local option as a dependency of a local option. Option '%s' used in children of option '%s'", childName, optionName)
 			}
 		}
 
-		g.AddEdge(optionName, childName)
+		_ = g.AddEdge(optionName, childName)
 	}
 
 	for _, dep := range findVariables(option.Default) {
@@ -68,7 +68,7 @@ func addDependency(g *graph.Graph[*types.Option], optionValues map[string]config
 			}
 		}
 
-		g.AddEdge(dep, optionName)
+		_ = g.AddEdge(dep, optionName)
 	}
 
 	for _, dep := range findVariables(option.Command) {
@@ -86,7 +86,7 @@ func addDependency(g *graph.Graph[*types.Option], optionValues map[string]config
 			}
 		}
 
-		g.AddEdge(dep, optionName)
+		_ = g.AddEdge(dep, optionName)
 	}
 
 	return nil
@@ -94,12 +94,12 @@ func addDependency(g *graph.Graph[*types.Option], optionValues map[string]config
 
 func addOptionsToGraph(g *graph.Graph[*types.Option], optionDefinitions config.OptionDefinitions, optionValues map[string]config.OptionValue) error {
 	if !g.HasNode(rootID) {
-		g.AddNode(rootID, nil)
+		_ = g.AddNode(rootID, nil)
 	}
 
 	for optionName, option := range optionDefinitions {
-		g.SetNode(optionName, option)
-		g.AddEdge(rootID, optionName)
+		_ = g.SetNode(optionName, option)
+		_ = g.AddEdge(rootID, optionName)
 	}
 
 	err := addDependencies(g, optionDefinitions, optionValues)

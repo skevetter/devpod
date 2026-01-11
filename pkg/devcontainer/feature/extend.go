@@ -447,9 +447,10 @@ func buildFeatureDependencyGraph(features []*config.FeatureSet) (*graph.Graph[*c
 }
 
 func addHardDependencies(g *graph.Graph[*config.FeatureSet], feature *config.FeatureSet, featureLookup map[string]*config.FeatureSet) error {
-	for dependencyID := range feature.Config.DependsOn {
-		if _, exists := featureLookup[dependencyID]; exists {
-			if err := g.AddEdge(dependencyID, feature.ConfigID); err != nil {
+	for id := range feature.Config.DependsOn {
+		normalizedID := NormalizeFeatureID(id)
+		if _, exists := featureLookup[normalizedID]; exists {
+			if err := g.AddEdge(normalizedID, feature.ConfigID); err != nil {
 				return err
 			}
 		}
@@ -458,16 +459,16 @@ func addHardDependencies(g *graph.Graph[*config.FeatureSet], feature *config.Fea
 }
 
 func addSoftDependencies(g *graph.Graph[*config.FeatureSet], feature *config.FeatureSet, featureLookup map[string]*config.FeatureSet) error {
-	for _, installAfterID := range feature.Config.InstallsAfter {
-		if _, exists := featureLookup[installAfterID]; !exists {
+	for _, id := range feature.Config.InstallsAfter {
+		if _, exists := featureLookup[id]; !exists {
 			continue
 		}
 
-		if dependencyExists(feature, installAfterID, NormalizeFeatureID(installAfterID)) {
+		if dependencyExists(feature, id, NormalizeFeatureID(id)) {
 			continue
 		}
 
-		if err := g.AddEdge(installAfterID, feature.ConfigID); err != nil {
+		if err := g.AddEdge(id, feature.ConfigID); err != nil {
 			return err
 		}
 	}

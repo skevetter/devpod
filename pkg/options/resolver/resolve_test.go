@@ -32,8 +32,8 @@ func (suite *ResolveTestSuite) TestResolveOptions_EmptyGraph() {
 }
 
 func (suite *ResolveTestSuite) TestResolveOptions_NodeExistenceCheck() {
-	suite.resolver.graph.AddNode("test", &types.Option{})
-	suite.resolver.graph.RemoveNode("test")
+	_ = suite.resolver.graph.AddNode("test", &types.Option{})
+	_ = suite.resolver.graph.RemoveNode("test")
 
 	result, err := suite.resolver.resolveOptions(context.Background(), map[string]config.OptionValue{})
 	suite.NoError(err)
@@ -44,9 +44,9 @@ func (suite *ResolveTestSuite) TestResolveOptions_SortNodeIDsUsage() {
 	option1 := &types.Option{Default: "value1"}
 	option2 := &types.Option{Default: "value2"}
 
-	suite.resolver.graph.AddNode("option1", option1)
-	suite.resolver.graph.AddNode("option2", option2)
-	suite.resolver.graph.AddEdge("option1", "option2")
+	_ = suite.resolver.graph.AddNode("option1", option1)
+	_ = suite.resolver.graph.AddNode("option2", option2)
+	_ = suite.resolver.graph.AddEdge("option1", "option2")
 
 	result, err := suite.resolver.resolveOptions(context.Background(), map[string]config.OptionValue{})
 	suite.NoError(err)
@@ -61,7 +61,7 @@ func (suite *ResolveTestSuite) TestResolveOptions_DuplicateQueueHandling() {
 		"option3": {Default: "value3"},
 	}
 
-	suite.resolver.graph.AddNodes(nodes)
+	_ = suite.resolver.graph.AddNodes(nodes)
 
 	result, err := suite.resolver.resolveOptions(context.Background(), map[string]config.OptionValue{})
 	suite.NoError(err)
