@@ -22,7 +22,7 @@ import (
 )
 
 const PROVIDER_BINARY = "PRO_PROVIDER"
-const providerRepo = "loft-sh/devpod"
+const providerRepo = "skevetter/devpod"
 
 // LoginCmd holds the login cmd flags
 type LoginCmd struct {

@@ -18,7 +18,7 @@ import (
 var version string = strings.TrimPrefix(versionpkg.GetVersion(), "v")
 var devVersion string = strings.TrimPrefix(versionpkg.DevVersion, "v")
 
-var githubSlug = "loft-sh/devpod"
+var githubSlug = "skevetter/devpod"
 
 func PrintNewerVersionWarning() {
 	if os.Getenv("DEVPOD_SKIP_VERSION_CHECK") != "true" {

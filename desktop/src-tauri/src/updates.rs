@@ -15,8 +15,8 @@ use tokio::fs::File;
 use ts_rs::TS;
 
 const UPDATE_POLL_INTERVAL: std::time::Duration = std::time::Duration::from_secs(60 * 10);
-const RELEASES_URL: &str = "https://update-server.devpod.sh/releases";
-const FALLBACK_RELEASES_URL: &str = "https://api.github.com/repos/loft-sh/devpod/releases";
+const RELEASES_URL: &str = "https://api.github.com/repos/skevetter/devpod/releases";
+const FALLBACK_RELEASES_URL: &str = "https://api.github.com/repos/skevetter/devpod/releases";
 
 #[derive(Error, Debug)]
 pub enum UpdateError {
@@ -267,7 +267,7 @@ impl<'a> UpdateHelper<'a> {
     }
 
     pub async fn fetch_releases_from_url(&self, url: &str) -> anyhow::Result<Vec<Release>> {
-        let client = Client::builder().user_agent("loft-sh/devpod").build()?;
+        let client = Client::builder().user_agent("skevetter/devpod").build()?;
 
         let response = client
             .request(Method::GET, url)

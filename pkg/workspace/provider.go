@@ -207,7 +207,7 @@ func DownloadProviderGithub(originalPath string, log log.Logger) ([]byte, *provi
 	// split by separator
 	splitted := strings.Split(strings.TrimSuffix(path, "/"), "/")
 	if len(splitted) == 1 {
-		path = "loft-sh/devpod-provider-" + path
+		path = "skevetter/devpod-provider-" + path
 	} else if len(splitted) != 2 {
 		return nil, nil, nil
 	}
