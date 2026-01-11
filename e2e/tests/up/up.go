@@ -676,5 +676,28 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 			framework.ExpectNoError(err)
 			gomega.Expect(out).To(gomega.ContainSubstring("Python 3.11"))
 		}, ginkgo.SpecTimeout(framework.GetTimeout()*5)) // This test compiles Python
+
+		ginkgo.It("should handle same feature in dependsOn and installsAfter", ginkgo.Label("features", "depends-on"), func(ctx context.Context) {
+			f, err := setupDockerProvider(initialDir+"/bin", "docker")
+			framework.ExpectNoError(err)
+
+			tempDir, err := framework.CopyToTempDir("tests/up/testdata/docker-features-same-depends-on-and-installs-after")
+			framework.ExpectNoError(err)
+			ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
+
+			workspaceName := filepath.Base(tempDir)
+			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), workspaceName)
+
+			err = f.DevPodUp(ctx, tempDir)
+			framework.ExpectNoError(err)
+
+			out, err := f.DevPodSSH(ctx, workspaceName, "cat /tmp/test-result")
+			framework.ExpectNoError(err)
+			gomega.Expect(out).To(gomega.ContainSubstring("test-passed"))
+
+			out, err = f.DevPodSSH(ctx, workspaceName, "node --version")
+			framework.ExpectNoError(err)
+			gomega.Expect(out).To(gomega.MatchRegexp(`v\d+\.\d+\.\d+`))
+		}, ginkgo.SpecTimeout(framework.GetTimeout()))
 	})
 })

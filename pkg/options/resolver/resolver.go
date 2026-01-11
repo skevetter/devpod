@@ -117,7 +117,7 @@ func (r *Resolver) Resolve(
 
 	// create a new graph, which we resolve from top to bottom, where a child represents an
 	// option that is dependent on the parent. Parents will be resolved first.
-	r.graph = graph.NewGraphOf(graph.NewNode[*types.Option](rootID, nil), "provider option")
+	r.graph = graph.NewGraph[*types.Option]()
 	err := addOptionsToGraph(r.graph, mergedOptionDefinitions, optionValues)
 	if err != nil {
 		return nil, nil, err
@@ -131,7 +131,7 @@ func (r *Resolver) Resolve(
 
 	// find out new dynamic options
 	newDynamicDefinitions := config.OptionDefinitions{}
-	for k, node := range r.graph.Nodes {
+	for k, option := range r.graph.GetNodes() {
 		if k == rootID || optionDefinitions[k] != nil {
 			continue
 		}
@@ -139,7 +139,7 @@ func (r *Resolver) Resolve(
 		// check if someone has the option as children
 		for _, v := range resolvedOptions {
 			if contains(v.Children, k) {
-				newDynamicDefinitions[k] = node.Data
+				newDynamicDefinitions[k] = option
 				break
 			}
 		}

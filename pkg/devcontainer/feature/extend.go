@@ -251,7 +251,7 @@ func fetchFeatures(devContainerConfig *config.DevContainerConfig, log log.Logger
 	}
 
 	// Compute order
-	featureSets, err = computeFeatureOrder(devContainerConfig, featureSets)
+	featureSets, err = getSortedFeatureSets(devContainerConfig, featureSets)
 	if err != nil {
 		return nil, fmt.Errorf("compute feature order %w", err)
 	}
@@ -359,100 +359,131 @@ func NormalizeFeatureID(featureID string) string {
 	return ref.String()
 }
 
-func computeFeatureOrder(devContainer *config.DevContainerConfig, features []*config.FeatureSet) ([]*config.FeatureSet, error) {
-	if len(devContainer.OverrideFeatureInstallOrder) == 0 {
-		return computeAutomaticFeatureOrder(features)
-	}
-
-	automaticOrder, err := computeAutomaticFeatureOrder(features)
+func getSortedFeatureSets(devContainer *config.DevContainerConfig, features []*config.FeatureSet) ([]*config.FeatureSet, error) {
+	automaticOrder, err := getOrderedFeatureSets(features)
 	if err != nil {
 		return nil, err
 	}
 
-	orderedFeatures := []*config.FeatureSet{}
-	for _, feature := range devContainer.OverrideFeatureInstallOrder {
-		featureID := NormalizeFeatureID(feature)
-
-		// remove from automaticOrder and move to orderedFeatures
-		newAutomaticOrder := []*config.FeatureSet{}
-		for _, featureConfig := range automaticOrder {
-			if featureConfig.ConfigID == featureID {
-				orderedFeatures = append(orderedFeatures, featureConfig)
-				continue
-			}
-
-			newAutomaticOrder = append(newAutomaticOrder, featureConfig)
-		}
-		automaticOrder = newAutomaticOrder
+	if len(devContainer.OverrideFeatureInstallOrder) == 0 {
+		return automaticOrder, nil
 	}
 
-	orderedFeatures = append(orderedFeatures, automaticOrder...)
-	return orderedFeatures, nil
+	return sortFeaturesByOverride(devContainer.OverrideFeatureInstallOrder, automaticOrder), nil
 }
 
-func computeAutomaticFeatureOrder(features []*config.FeatureSet) ([]*config.FeatureSet, error) {
-	g := graph.NewGraph(graph.NewNode[*config.FeatureSet]("root", nil))
+func sortFeaturesByOverride(overrideOrder []string, automaticOrder []*config.FeatureSet) []*config.FeatureSet {
+	orderedFeatures := make([]*config.FeatureSet, 0, len(automaticOrder))
+	for _, overrideFeatureID := range overrideOrder {
+		feature := extractFeatureByID(automaticOrder, overrideFeatureID)
+		if feature == nil {
+			normalizedID := NormalizeFeatureID(overrideFeatureID)
+			feature = extractFeatureByID(automaticOrder, normalizedID)
+		}
 
-	// build lookup map
-	lookup := map[string]*config.FeatureSet{}
+		if feature != nil {
+			orderedFeatures = append(orderedFeatures, feature)
+		}
+	}
+
+	for _, feature := range automaticOrder {
+		if !containsFeature(orderedFeatures, feature.ConfigID) {
+			orderedFeatures = append(orderedFeatures, feature)
+		}
+	}
+
+	return orderedFeatures
+}
+
+func extractFeatureByID(features []*config.FeatureSet, featureID string) *config.FeatureSet {
+	for _, feature := range features {
+		if feature.ConfigID == featureID {
+			return feature
+		}
+	}
+	return nil
+}
+
+func containsFeature(features []*config.FeatureSet, featureID string) bool {
+	for _, feature := range features {
+		if feature.ConfigID == featureID {
+			return true
+		}
+	}
+	return false
+}
+
+func getOrderedFeatureSets(features []*config.FeatureSet) ([]*config.FeatureSet, error) {
+	dependencyGraph, err := buildFeatureDependencyGraph(features)
+	if err != nil {
+		return nil, err
+	}
+
+	return dependencyGraph.Sort()
+}
+
+func buildFeatureDependencyGraph(features []*config.FeatureSet) (*graph.Graph[*config.FeatureSet], error) {
+	g := graph.NewGraph[*config.FeatureSet]()
+	featureLookup := buildFeatureLookupMap(features)
+	nodes := make(map[string]*config.FeatureSet, len(features))
+	for _, feature := range features {
+		nodes[feature.ConfigID] = feature
+	}
+	if err := g.AddNodes(nodes); err != nil {
+		return nil, fmt.Errorf("failed to add features: %w", err)
+	}
+
+	for _, feature := range features {
+		if err := addHardDependencies(g, feature, featureLookup); err != nil {
+			return nil, err
+		}
+
+		if err := addSoftDependencies(g, feature, featureLookup); err != nil {
+			return nil, err
+		}
+	}
+
+	return g, nil
+}
+
+func addHardDependencies(g *graph.Graph[*config.FeatureSet], feature *config.FeatureSet, featureLookup map[string]*config.FeatureSet) error {
+	for dependencyID := range feature.Config.DependsOn {
+		if _, exists := featureLookup[dependencyID]; exists {
+			if err := g.AddEdge(dependencyID, feature.ConfigID); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func addSoftDependencies(g *graph.Graph[*config.FeatureSet], feature *config.FeatureSet, featureLookup map[string]*config.FeatureSet) error {
+	for _, installAfterID := range feature.Config.InstallsAfter {
+		if _, exists := featureLookup[installAfterID]; !exists {
+			continue
+		}
+
+		if dependencyExists(feature, installAfterID, NormalizeFeatureID(installAfterID)) {
+			continue
+		}
+
+		if err := g.AddEdge(installAfterID, feature.ConfigID); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func buildFeatureLookupMap(features []*config.FeatureSet) map[string]*config.FeatureSet {
+	lookup := make(map[string]*config.FeatureSet, len(features))
 	for _, feature := range features {
 		lookup[feature.ConfigID] = feature
 	}
+	return lookup
+}
 
-	// Add all features to graph
-	for _, feature := range features {
-		_, err := g.InsertNodeAt("root", feature.ConfigID, feature)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// Add dependency edges
-	for _, feature := range features {
-		// Add hard dependency edges (dependsOn); these dependencies must come first
-		for depID := range feature.Config.DependsOn {
-			normalizedDepID := NormalizeFeatureID(depID)
-			depFeature, ok := lookup[normalizedDepID]
-			if ok {
-				// Add edge from feature to dependency (feature -> dependency)
-				// This ensures dependency is installed first (removed as leaf first)
-				_, err := g.InsertNodeAt(feature.ConfigID, normalizedDepID, depFeature)
-				if err != nil {
-					return nil, err
-				}
-			}
-		}
-
-		// Add soft dependency edges (installsAfter); only add if already in the list
-		for _, installAfter := range feature.Config.InstallsAfter {
-			_, ok := lookup[installAfter]
-			if !ok {
-				continue
-			}
-
-			// Add an edge from installAfter feature to current feature
-			_, err := g.InsertNodeAt(installAfter, feature.ConfigID, feature)
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
-
-	// now remove node after node (topological sort)
-	ordered := []*config.FeatureSet{}
-	for {
-		leaf := g.GetNextLeaf(g.Root)
-		if leaf == g.Root {
-			break
-		}
-
-		err := g.RemoveNode(leaf.ID)
-		if err != nil {
-			return nil, err
-		}
-
-		ordered = append(ordered, leaf.Data)
-	}
-
-	return ordered, nil
+func dependencyExists(feature *config.FeatureSet, originalID, normalizedID string) bool {
+	_, existsOriginal := feature.Config.DependsOn[originalID]
+	_, existsNormalized := feature.Config.DependsOn[normalizedID]
+	return existsOriginal || existsNormalized
 }

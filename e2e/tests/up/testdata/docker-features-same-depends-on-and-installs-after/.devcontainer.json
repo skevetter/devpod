@@ -1,0 +1,7 @@
+{
+  "image": "mcr.microsoft.com/devcontainers/base:alpine",
+  "features": {
+    "./features/test-feature": {},
+    "ghcr.io/devcontainers/features/node:latest": {}
+  }
+}

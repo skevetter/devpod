@@ -2,309 +2,331 @@ package graph
 
 import (
 	"fmt"
+	"maps"
+	"slices"
+	"sort"
 	"strings"
-
-	"github.com/pkg/errors"
 )
 
 type Graph[T comparable] struct {
-	Nodes map[string]*Node[T]
-	Root  *Node[T]
-
-	item string
+	nodes    map[string]T
+	edges    map[string][]string
+	inDegree map[string]int
 }
 
-func NewGraph[T comparable](root *Node[T]) *Graph[T] {
-	graph := &Graph[T]{
-		Nodes: make(map[string]*Node[T]),
-		Root:  root,
-	}
-
-	graph.Nodes[root.ID] = root
-	return graph
-}
-
-func NewGraphOf[T comparable](root *Node[T], item string) *Graph[T] {
-	graph := &Graph[T]{
-		Nodes: make(map[string]*Node[T]),
-		Root:  root,
-		item:  item,
-	}
-
-	graph.Nodes[root.ID] = root
-	return graph
-}
-
-// Node is a node in a graph
-type Node[T comparable] struct {
-	ID   string
-	Data T
-
-	Parents []*Node[T]
-	Childs  []*Node[T]
-
-	Done bool
-}
-
-func NewNode[T comparable](id string, data T) *Node[T] {
-	return &Node[T]{
-		ID:   id,
-		Data: data,
-
-		Parents: []*Node[T]{},
-		Childs:  []*Node[T]{},
+func NewGraph[T comparable]() *Graph[T] {
+	return &Graph[T]{
+		nodes:    make(map[string]T),
+		edges:    make(map[string][]string),
+		inDegree: make(map[string]int),
 	}
 }
 
-// Clone returns a cloned graph
-func (g *Graph[T]) Clone() *Graph[T] {
-	retGraph := &Graph[T]{
-		Nodes: map[string]*Node[T]{},
-		item:  g.item,
+func (g *Graph[T]) AddNode(id string, data T) error {
+	g.nodes[id] = data
+	g.inDegree[id] = 0
+	if g.edges[id] == nil {
+		g.edges[id] = []string{}
 	}
+	return nil
+}
 
-	// copy nodes
-	for k, v := range g.Nodes {
-		retGraph.Nodes[k] = NewNode(v.ID, v.Data)
-	}
-	retGraph.Root = retGraph.Nodes[g.Root.ID]
-
-	// copy edges
-	for k, v := range g.Nodes {
-		for _, child := range v.Childs {
-			retGraph.Nodes[k].Childs = append(retGraph.Nodes[k].Childs, retGraph.Nodes[child.ID])
+func (g *Graph[T]) AddNodes(nodes map[string]T) error {
+	for id, data := range nodes {
+		g.nodes[id] = data
+		g.inDegree[id] = 0
+		if g.edges[id] == nil {
+			g.edges[id] = []string{}
 		}
-		for _, parent := range v.Parents {
-			retGraph.Nodes[k].Parents = append(retGraph.Nodes[k].Parents, retGraph.Nodes[parent.ID])
+	}
+	return nil
+}
+
+func (g *Graph[T]) AddEdge(from, to string) error {
+	if _, exists := g.nodes[from]; !exists {
+		return fmt.Errorf("source node %s does not exist", from)
+	}
+	if _, exists := g.nodes[to]; !exists {
+		return fmt.Errorf("target node %s does not exist", to)
+	}
+
+	if slices.Contains(g.edges[from], to) {
+		return nil
+	}
+
+	g.edges[from] = append(g.edges[from], to)
+	g.inDegree[to]++
+	return nil
+}
+
+func (g *Graph[T]) RemoveEdge(from, to string) error {
+	if _, exists := g.nodes[from]; !exists {
+		return fmt.Errorf("source node %s does not exist", from)
+	}
+	if _, exists := g.nodes[to]; !exists {
+		return fmt.Errorf("target node %s does not exist", to)
+	}
+
+	newEdges := []string{}
+	edgeFound := false
+	for _, child := range g.edges[from] {
+		if child != to {
+			newEdges = append(newEdges, child)
+		} else {
+			edgeFound = true
 		}
 	}
 
-	return retGraph
-}
-
-func (g *Graph[T]) NextFromTop() *Node[T] {
-	clonedGraph := g.Clone()
-	orderedOptions := []string{}
-	nextLeaf := clonedGraph.GetNextLeaf(clonedGraph.Root)
-	for nextLeaf != clonedGraph.Root {
-		orderedOptions = append(orderedOptions, nextLeaf.ID)
-		err := clonedGraph.RemoveNode(nextLeaf.ID)
-		if err != nil {
-			return nil
-		}
-
-		nextLeaf = clonedGraph.GetNextLeaf(clonedGraph.Root)
-	}
-
-	for i := len(orderedOptions) - 1; i >= 0; i-- {
-		nextNode := g.Nodes[orderedOptions[i]]
-		if nextNode == nil || nextNode.Done {
-			continue
-		}
-
-		nextNode.Done = true
-		return nextNode
+	if edgeFound {
+		g.edges[from] = newEdges
+		g.inDegree[to]--
 	}
 
 	return nil
 }
 
-// InsertNodeAt inserts a new node at the given parent position
-func (g *Graph[T]) InsertNodeAt(parentID string, id string, data T) (*Node[T], error) {
-	parentNode, ok := g.Nodes[parentID]
-	if !ok {
-		return nil, errors.Errorf("Parent %s does not exist", parentID)
+func (g *Graph[T]) GetNode(id string) (T, bool) {
+	node, exists := g.nodes[id]
+	return node, exists
+}
+
+func (g *Graph[T]) UpdateNode(id string, data T) error {
+	if _, exists := g.nodes[id]; !exists {
+		return fmt.Errorf("node %s does not exist", id)
 	}
-	if existingNode, ok := g.Nodes[id]; ok {
-		err := g.AddEdge(parentNode.ID, existingNode.ID)
-		if err != nil {
-			return nil, err
+	g.nodes[id] = data
+	return nil
+}
+
+func (g *Graph[T]) SetNode(id string, data T) error {
+	if g.HasNode(id) {
+		return g.UpdateNode(id, data)
+	}
+	return g.AddNode(id, data)
+}
+
+func (g *Graph[T]) RemoveNode(id string) error {
+	if _, exists := g.nodes[id]; !exists {
+		return fmt.Errorf("node %s does not exist", id)
+	}
+
+	for parentID := range g.edges {
+		filteredEdges := []string{}
+		for _, childID := range g.edges[parentID] {
+			if childID != id {
+				filteredEdges = append(filteredEdges, childID)
+			}
 		}
-
-		return existingNode, nil
+		g.edges[parentID] = filteredEdges
 	}
 
-	node := NewNode(id, data)
+	delete(g.nodes, id)
+	delete(g.edges, id)
+	delete(g.inDegree, id)
 
-	g.Nodes[node.ID] = node
+	return nil
+}
 
-	parentNode.Childs = append(parentNode.Childs, node)
-	node.Parents = append(node.Parents, parentNode)
+func (g *Graph[T]) GetChildren(id string) []string {
+	return g.edges[id]
+}
 
-	return node, nil
+func (g *Graph[T]) GetParents(id string) []string {
+	parents := []string{}
+	for nodeID, children := range g.edges {
+		if slices.Contains(children, id) {
+			parents = append(parents, nodeID)
+		}
+	}
+	sort.Strings(parents)
+	return parents
+}
+
+func (g *Graph[T]) HasEdge(from, to string) bool {
+	return slices.Contains(g.edges[from], to)
 }
 
 func (g *Graph[T]) RemoveSubGraph(id string) error {
-	if node, ok := g.Nodes[id]; ok {
-		// remove all childs
-		for _, child := range node.Childs {
-			err := g.RemoveSubGraph(child.ID)
-			if err != nil {
-				return err
-			}
-		}
+	if _, exists := g.nodes[id]; !exists {
+		return nil
+	}
 
-		// Remove child from parents
-		return g.RemoveNode(id)
+	nodesToRemove := []string{}
+	g.collectChildren(id, &nodesToRemove)
+
+	for _, nodeID := range nodesToRemove {
+		g.RemoveNode(nodeID)
 	}
 
 	return nil
 }
 
-// RemoveNode removes a node with no children in the graph
-func (g *Graph[T]) RemoveNode(id string) error {
-	if node, ok := g.Nodes[id]; ok {
-		if len(node.Childs) > 0 {
-			return errors.Errorf("Cannot remove %s from graph because it has still children", getNameOrID(node))
+func (g *Graph[T]) RemoveChildren(id string) error {
+	children := g.GetChildren(id)
+	for _, childID := range children {
+		err := g.RemoveSubGraph(childID)
+		if err != nil {
+			return err
 		}
-
-		// Remove child from parents
-		for _, parent := range node.Parents {
-			i := -1
-			for idx, c := range parent.Childs {
-				if c.ID == id {
-					i = idx
-				}
-			}
-
-			if i == -1 {
-				return fmt.Errorf("couldn't find %s in parent", getNameOrID(node))
-			}
-			parent.Childs = append(parent.Childs[:i], parent.Childs[i+1:]...)
-		}
-
-		// Remove from graph nodes
-		delete(g.Nodes, id)
 	}
-
 	return nil
 }
 
-// GetNextLeaf returns the next leaf in the graph from node start
-func (g *Graph[T]) GetNextLeaf(start *Node[T]) *Node[T] {
-	if len(start.Childs) == 0 {
-		return start
-	}
-
-	return g.GetNextLeaf(start.Childs[0])
+func (g *Graph[T]) HasNode(id string) bool {
+	_, exists := g.nodes[id]
+	return exists
 }
 
-// CyclicError is the type that is returned if a cyclic edge would be inserted
-type CyclicError[T comparable] struct {
-	What string
-	path []*Node[T]
+func (g *Graph[T]) NodeCount() int {
+	return len(g.nodes)
 }
 
-// Error implements error interface
-func (c *CyclicError[T]) Error() string {
-	cycle := []string{getNameOrID(c.path[len(c.path)-1])}
-
-	for _, node := range c.path {
-		cycle = append(cycle, getNameOrID(node))
+func (g *Graph[T]) EdgeCount() int {
+	totalEdges := 0
+	for _, children := range g.edges {
+		totalEdges += len(children)
 	}
-
-	what := "dependency"
-	if c.What != "" {
-		what = c.What
-	}
-
-	return fmt.Sprintf("cyclic %s found:\n%s", what, strings.Join(cycle, "\n"))
+	return totalEdges
 }
 
-func (g *Graph[T]) AddChild(parentID string, childID string) error {
-	return g.AddEdge(parentID, childID)
+func (g *Graph[T]) IsEmpty() bool {
+	return len(g.nodes) == 0
 }
 
-// AddEdge adds a new edge from a node to a node and returns an error if it would result in a cyclic graph
-func (g *Graph[T]) AddEdge(fromID string, toID string) error {
-	from, ok := g.Nodes[fromID]
-	if !ok {
-		return errors.Errorf("fromID %s does not exist", fromID)
-	}
-	to, ok := g.Nodes[toID]
-	if !ok {
-		return errors.Errorf("toID %s does not exist", toID)
+func (g *Graph[T]) GetNodes() map[string]T {
+	return g.nodes
+}
+
+func (g *Graph[T]) String() string {
+	if g.IsEmpty() {
+		return "Graph: empty"
 	}
 
-	// Check if there is already an edge
-	for _, child := range from.Childs {
-		if child.ID == to.ID {
-			return nil
+	var output strings.Builder
+	output.WriteString(fmt.Sprintf("Graph: %d nodes, %d edges\n", g.NodeCount(), g.EdgeCount()))
+
+	sortedNodeIDs := make([]string, 0, len(g.nodes))
+	for id := range g.nodes {
+		sortedNodeIDs = append(sortedNodeIDs, id)
+	}
+	sort.Strings(sortedNodeIDs)
+
+	for _, id := range sortedNodeIDs {
+		children := g.GetChildren(id)
+		if len(children) > 0 {
+			output.WriteString(fmt.Sprintf("  %s -> %v\n", id, children))
+		} else {
+			output.WriteString(fmt.Sprintf("  %s\n", id))
 		}
 	}
 
-	// Check if cyclic
-	path := findFirstPath(to, from)
-	if path != nil {
-		return &CyclicError[T]{
-			path: path,
-			What: g.item,
-		}
-	}
-
-	from.Childs = append(from.Childs, to)
-	to.Parents = append(to.Parents, from)
-	return nil
+	return output.String()
 }
 
-// find first path from node to node with DFS
-func findFirstPath[T comparable](from *Node[T], to *Node[T]) []*Node[T] {
-	isVisited := map[string]bool{}
-	pathList := []*Node[T]{from}
+func (g *Graph[T]) Sort() ([]T, error) {
+	workingInDegree := copyInDegreeMap(g.inDegree)
+	zeroInDegreeQueue := initializeQueue(workingInDegree)
+	sortedResult := make([]T, 0, len(g.nodes))
 
-	// Call recursive utility
-	if findFirstPathRecursive(from, to, isVisited, &pathList) {
-		return pathList
+	for len(zeroInDegreeQueue) > 0 {
+		currentNode := dequeue(&zeroInDegreeQueue)
+		sortedResult = append(sortedResult, g.nodes[currentNode])
+		processNeighbors(g.edges, currentNode, workingInDegree, &zeroInDegreeQueue)
 	}
 
-	return nil
-}
-
-// A recursive function to print
-// all paths from 'u' to 'd'.
-// isVisited[] keeps track of
-// vertices in current path.
-// localPathList<> stores actual
-// vertices in the current path
-func findFirstPathRecursive[T comparable](u *Node[T], d *Node[T], isVisited map[string]bool, localPathList *[]*Node[T]) bool {
-	// Mark the current node
-	isVisited[u.ID] = true
-
-	// Is destination?
-	if u.ID == d.ID {
-		return true
-	}
-
-	// Recur for all the vertices
-	// adjacent to current vertex
-	for _, child := range u.Childs {
-		if _, ok := isVisited[child.ID]; !ok {
-			// store current node
-			// in path[]
-			*localPathList = append(*localPathList, child)
-			if findFirstPathRecursive(child, d, isVisited, localPathList) {
-				return true
-			}
-
-			// remove current node
-			// in path[]
-			i := -1
-			for idx, c := range *localPathList {
-				if c.ID == child.ID {
-					i = idx
-				}
-			}
-			if i != -1 {
-				*localPathList = append((*localPathList)[:i], (*localPathList)[i+1:]...)
+	if len(sortedResult) != len(g.nodes) {
+		remainingNodes := []string{}
+		for nodeID, degree := range workingInDegree {
+			if degree > 0 {
+				remainingNodes = append(remainingNodes, nodeID)
 			}
 		}
+		sort.Strings(remainingNodes)
+		return nil, fmt.Errorf("circular dependency detected among nodes: %v", remainingNodes)
 	}
 
-	// Mark the current node
-	delete(isVisited, u.ID)
-	return false
+	return sortedResult, nil
 }
 
-func getNameOrID[T comparable](n *Node[T]) string {
-	return n.ID
+func (g *Graph[T]) SortNodeIDs() ([]string, error) {
+	workingInDegree := copyInDegreeMap(g.inDegree)
+	zeroInDegreeQueue := initializeQueue(workingInDegree)
+	sortedResult := make([]string, 0, len(g.nodes))
+
+	for len(zeroInDegreeQueue) > 0 {
+		currentNode := dequeue(&zeroInDegreeQueue)
+		sortedResult = append(sortedResult, currentNode)
+		processNeighbors(g.edges, currentNode, workingInDegree, &zeroInDegreeQueue)
+	}
+
+	if len(sortedResult) != len(g.nodes) {
+		remainingNodes := []string{}
+		for nodeID, degree := range workingInDegree {
+			if degree > 0 {
+				remainingNodes = append(remainingNodes, nodeID)
+			}
+		}
+		sort.Strings(remainingNodes)
+		return nil, fmt.Errorf("circular dependency detected among nodes: %v", remainingNodes)
+	}
+
+	return sortedResult, nil
+}
+
+func (g *Graph[T]) HasCircularDependency() bool {
+	workingInDegree := copyInDegreeMap(g.inDegree)
+	zeroInDegreeQueue := initializeQueue(workingInDegree)
+	processedCount := 0
+
+	for len(zeroInDegreeQueue) > 0 {
+		currentNode := dequeue(&zeroInDegreeQueue)
+		processedCount++
+		processNeighbors(g.edges, currentNode, workingInDegree, &zeroInDegreeQueue)
+	}
+
+	return processedCount != len(g.nodes)
+}
+
+func (g *Graph[T]) collectChildren(id string, nodesToRemove *[]string) {
+	*nodesToRemove = append(*nodesToRemove, id)
+	for _, childID := range g.edges[id] {
+		g.collectChildren(childID, nodesToRemove)
+	}
+}
+
+func copyInDegreeMap(original map[string]int) map[string]int {
+	copied := make(map[string]int, len(original))
+	maps.Copy(copied, original)
+	return copied
+}
+
+func initializeQueue(inDegree map[string]int) []string {
+	zeroInDegreeNodes := make([]string, 0)
+	for nodeID, degree := range inDegree {
+		if degree == 0 {
+			zeroInDegreeNodes = append(zeroInDegreeNodes, nodeID)
+		}
+	}
+	sort.Strings(zeroInDegreeNodes)
+	return zeroInDegreeNodes
+}
+
+func dequeue(queue *[]string) string {
+	firstNode := (*queue)[0]
+	*queue = (*queue)[1:]
+	return firstNode
+}
+
+func processNeighbors(edges map[string][]string, currentNode string, inDegree map[string]int, queue *[]string) {
+	for _, neighborNode := range edges[currentNode] {
+		inDegree[neighborNode]--
+		if inDegree[neighborNode] == 0 {
+			insertSorted(queue, neighborNode)
+		}
+	}
+}
+
+func insertSorted(queue *[]string, nodeToInsert string) {
+	insertPosition := sort.SearchStrings(*queue, nodeToInsert)
+	*queue = append((*queue)[:insertPosition], append([]string{nodeToInsert}, (*queue)[insertPosition:]...)...)
 }

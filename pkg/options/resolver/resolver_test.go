@@ -1,0 +1,322 @@
+package resolver
+
+import (
+	"context"
+	"testing"
+	"time"
+
+	"github.com/skevetter/devpod/pkg/config"
+	"github.com/skevetter/devpod/pkg/devcontainer/graph"
+	"github.com/skevetter/devpod/pkg/types"
+	"github.com/skevetter/log"
+	"github.com/stretchr/testify/suite"
+)
+
+type ResolverTestSuite struct {
+	suite.Suite
+	resolver *Resolver
+	logger   log.Logger
+}
+
+func (suite *ResolverTestSuite) SetupTest() {
+	suite.logger = log.Default
+	suite.resolver = New(map[string]string{}, map[string]string{}, suite.logger)
+}
+
+func TestResolverSuite(t *testing.T) {
+	suite.Run(t, new(ResolverTestSuite))
+}
+
+func (suite *ResolverTestSuite) TestBasicFunctionality() {
+	optionDefs := map[string]*types.Option{
+		"option1": {
+			Description: "Test option 1",
+			Default:     "default1",
+		},
+		"option2": {
+			Description: "Test option 2",
+			Default:     "default2",
+		},
+	}
+
+	optionValues := map[string]config.OptionValue{
+		"option1": {Value: "value1"},
+	}
+
+	resolved, newDefs, err := suite.resolver.Resolve(context.Background(), nil, optionDefs, optionValues)
+	suite.NoError(err)
+	suite.NotNil(resolved)
+	suite.NotNil(newDefs)
+}
+
+func (suite *ResolverTestSuite) TestGraphFunctionality() {
+	optionDefs := map[string]*types.Option{
+		"test": {
+			Description: "Test option",
+			Default:     "test_default",
+		},
+	}
+
+	optionValues := map[string]config.OptionValue{}
+
+	_, _, err := suite.resolver.Resolve(context.Background(), nil, optionDefs, optionValues)
+	suite.NoError(err)
+
+	suite.NotNil(suite.resolver.graph)
+	suite.NotEmpty(suite.resolver.graph.GetNodes())
+}
+
+func (suite *ResolverTestSuite) TestResolveOptions_EmptyGraph() {
+	suite.resolver.graph = graph.NewGraph[*types.Option]()
+
+	result, err := suite.resolver.resolveOptions(context.Background(), map[string]config.OptionValue{})
+	suite.NoError(err)
+	suite.Empty(result)
+}
+
+func (suite *ResolverTestSuite) TestResolveOptions_SingleOption() {
+	suite.resolver.graph = graph.NewGraph[*types.Option]()
+	option := &types.Option{
+		Description: "Test option",
+		Default:     "default_value",
+	}
+	suite.resolver.graph.AddNode("test_option", option)
+
+	result, err := suite.resolver.resolveOptions(context.Background(), map[string]config.OptionValue{})
+	suite.NoError(err)
+	suite.Len(result, 1)
+	suite.Equal("default_value", result["test_option"].Value)
+}
+
+func (suite *ResolverTestSuite) TestResolveOptions_UserProvidedValue() {
+	userOptions := map[string]string{"test_option": "user_value"}
+	suite.resolver = New(userOptions, map[string]string{}, suite.logger)
+	suite.resolver.graph = graph.NewGraph[*types.Option]()
+
+	option := &types.Option{
+		Description: "Test option",
+		Default:     "default_value",
+	}
+	suite.resolver.graph.AddNode("test_option", option)
+
+	result, err := suite.resolver.resolveOptions(context.Background(), map[string]config.OptionValue{})
+	suite.NoError(err)
+	suite.Equal("user_value", result["test_option"].Value)
+	suite.True(result["test_option"].UserProvided)
+}
+
+func (suite *ResolverTestSuite) TestResolveOptions_EnumValue() {
+	suite.resolver.graph = graph.NewGraph[*types.Option]()
+	option := &types.Option{
+		Description: "Test enum option",
+		Enum:        []types.OptionEnum{{Value: "only_choice"}},
+	}
+	suite.resolver.graph.AddNode("enum_option", option)
+
+	result, err := suite.resolver.resolveOptions(context.Background(), map[string]config.OptionValue{})
+	suite.NoError(err)
+	suite.Equal("only_choice", result["enum_option"].Value)
+}
+
+func (suite *ResolverTestSuite) TestResolveOptions_SkipGlobalOption() {
+	suite.resolver.resolveGlobal = false
+	suite.resolver.graph = graph.NewGraph[*types.Option]()
+	option := &types.Option{
+		Description: "Global option",
+		Global:      true,
+		Default:     "global_default",
+	}
+	suite.resolver.graph.AddNode("global_option", option)
+
+	result, err := suite.resolver.resolveOptions(context.Background(), map[string]config.OptionValue{})
+	suite.NoError(err)
+	suite.Empty(result)
+}
+
+func (suite *ResolverTestSuite) TestResolveOptions_SkipLocalOption() {
+	suite.resolver.resolveLocal = false
+	suite.resolver.graph = graph.NewGraph[*types.Option]()
+	option := &types.Option{
+		Description: "Local option",
+		Local:       true,
+		Default:     "local_default",
+	}
+	suite.resolver.graph.AddNode("local_option", option)
+
+	result, err := suite.resolver.resolveOptions(context.Background(), map[string]config.OptionValue{})
+	suite.NoError(err)
+	suite.Empty(result)
+}
+
+func (suite *ResolverTestSuite) TestResolveOptions_CachedValue() {
+	suite.resolver.graph = graph.NewGraph[*types.Option]()
+	option := &types.Option{
+		Description: "Cached option",
+		Cache:       "1h",
+		Default:     "new_default",
+	}
+	suite.resolver.graph.AddNode("cached_option", option)
+
+	now := types.NewTime(time.Now())
+	existingValue := map[string]config.OptionValue{
+		"cached_option": {
+			Value:  "cached_value",
+			Filled: &now,
+		},
+	}
+
+	result, err := suite.resolver.resolveOptions(context.Background(), existingValue)
+	suite.NoError(err)
+	suite.Equal("cached_value", result["cached_option"].Value)
+}
+
+func (suite *ResolverTestSuite) TestResolveOptions_ExpiredCache() {
+	suite.resolver.graph = graph.NewGraph[*types.Option]()
+	option := &types.Option{
+		Description: "Cached option",
+		Cache:       "1ns",
+		Default:     "new_default",
+	}
+	suite.resolver.graph.AddNode("cached_option", option)
+
+	pastTime := types.NewTime(time.Now().Add(-time.Hour))
+	existingValue := map[string]config.OptionValue{
+		"cached_option": {
+			Value:  "old_cached_value",
+			Filled: &pastTime,
+		},
+	}
+
+	result, err := suite.resolver.resolveOptions(context.Background(), existingValue)
+	suite.NoError(err)
+	suite.Equal("new_default", result["cached_option"].Value)
+}
+
+func (suite *ResolverTestSuite) TestResolveOptions_ChildInvalidation() {
+	suite.resolver.graph = graph.NewGraph[*types.Option]()
+
+	parentOption := &types.Option{Description: "Parent", Default: "new_parent_value"}
+	childOption := &types.Option{Description: "Child", Default: "child_default"}
+
+	suite.resolver.graph.AddNode("parent", parentOption)
+	suite.resolver.graph.AddNode("child", childOption)
+	suite.resolver.graph.AddEdge("parent", "child")
+
+	existingValues := map[string]config.OptionValue{
+		"parent": {Value: "old_parent_value", UserProvided: true},
+		"child":  {Value: "old_child_value", UserProvided: false},
+	}
+
+	result, err := suite.resolver.resolveOptions(context.Background(), existingValues)
+	suite.NoError(err)
+
+	suite.Equal("old_parent_value", result["parent"].Value)
+	suite.Equal("old_child_value", result["child"].Value)
+}
+
+func (suite *ResolverTestSuite) TestResolveOptions_PreserveUserProvidedChild() {
+	suite.resolver.graph = graph.NewGraph[*types.Option]()
+
+	parentOption := &types.Option{Description: "Parent", Default: "new_parent_value"}
+	childOption := &types.Option{Description: "Child", Default: "child_default"}
+
+	suite.resolver.graph.AddNode("parent", parentOption)
+	suite.resolver.graph.AddNode("child", childOption)
+	suite.resolver.graph.AddEdge("parent", "child")
+
+	existingValues := map[string]config.OptionValue{
+		"parent": {Value: "old_parent_value", UserProvided: true},
+		"child":  {Value: "user_child_value", UserProvided: true},
+	}
+
+	result, err := suite.resolver.resolveOptions(context.Background(), existingValues)
+	suite.NoError(err)
+
+	suite.Equal("old_parent_value", result["parent"].Value)
+	suite.Equal("user_child_value", result["child"].Value)
+}
+
+func (suite *ResolverTestSuite) TestResolveOptions_CircularDependency() {
+	suite.resolver.graph = graph.NewGraph[*types.Option]()
+
+	option1 := &types.Option{Description: "Option 1"}
+	option2 := &types.Option{Description: "Option 2"}
+
+	suite.resolver.graph.AddNode("opt1", option1)
+	suite.resolver.graph.AddNode("opt2", option2)
+	suite.resolver.graph.AddEdge("opt1", "opt2")
+	suite.resolver.graph.AddEdge("opt2", "opt1")
+
+	_, err := suite.resolver.resolveOptions(context.Background(), map[string]config.OptionValue{})
+	suite.Error(err)
+	suite.Contains(err.Error(), "circular dependency")
+}
+
+func TestCombineFunction(t *testing.T) {
+	existing := map[string]config.OptionValue{
+		"key1": {Value: "existing_value1"},
+		"key2": {Value: "existing_value2"},
+	}
+
+	extra := map[string]string{
+		"key2": "extra_value2",
+		"key3": "extra_value3",
+	}
+
+	result := combine(existing, extra)
+
+	if result["key1"] != "existing_value1" {
+		t.Errorf("Expected existing_value1, got %s", result["key1"])
+	}
+	if result["key2"] != "existing_value2" {
+		t.Errorf("Expected existing_value2 (existing should override extra), got %s", result["key2"])
+	}
+	if result["key3"] != "extra_value3" {
+		t.Errorf("Expected extra_value3, got %s", result["key3"])
+	}
+}
+
+func TestSubOptionsBasicFunctionality(t *testing.T) {
+	logger := log.Default
+	resolver := New(map[string]string{}, map[string]string{}, logger, WithResolveSubOptions())
+
+	optionDefs := map[string]*types.Option{
+		"parent": {
+			Default: "parent_value",
+		},
+	}
+
+	optionValues := map[string]config.OptionValue{}
+
+	resolved, _, err := resolver.Resolve(context.Background(), nil, optionDefs, optionValues)
+	if err != nil {
+		t.Fatalf("Resolve failed: %v", err)
+	}
+
+	if resolved["parent"].Value != "parent_value" {
+		t.Errorf("Expected parent_value, got %s", resolved["parent"].Value)
+	}
+}
+
+func TestAddOptionsToGraph_MultipleCallsRegression(t *testing.T) {
+	g := graph.NewGraph[*types.Option]()
+
+	optionDefs := config.OptionDefinitions{
+		"opt1": &types.Option{Description: "Option 1"},
+	}
+
+	err := addOptionsToGraph(g, optionDefs, map[string]config.OptionValue{})
+	if err != nil {
+		t.Fatalf("First call failed: %v", err)
+	}
+
+	err = addOptionsToGraph(g, optionDefs, map[string]config.OptionValue{})
+	if err != nil {
+		t.Fatalf("Second call failed: %v", err)
+	}
+
+	nodes := g.GetNodes()
+	if len(nodes) != 2 {
+		t.Errorf("Expected 2 nodes (root + opt1), got %d", len(nodes))
+	}
+}

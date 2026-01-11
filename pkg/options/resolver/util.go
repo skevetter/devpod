@@ -20,94 +20,88 @@ func combine(resolvedOptions map[string]config.OptionValue, extraValues map[stri
 }
 
 func addDependencies(g *graph.Graph[*types.Option], options config.OptionDefinitions, optionValues map[string]config.OptionValue) error {
-	// add options
 	for optionName := range options {
 		err := addDependency(g, optionValues, optionName)
 		if err != nil {
 			return err
 		}
 	}
-
-	// remove root parent if possible
-	removeRootParent(g)
 	return nil
 }
 
 func addDependency(g *graph.Graph[*types.Option], optionValues map[string]config.OptionValue, optionName string) error {
-	option := g.Nodes[optionName].Data
+	option, exists := g.GetNode(optionName)
+	if !exists {
+		return nil
+	}
 
-	// Always add children as dependencies
 	for _, childName := range optionValues[optionName].Children {
-		if g.Nodes[childName] == nil || childName == optionName {
+		if !g.HasNode(childName) || childName == optionName {
 			continue
 		}
 
-		if !option.Global && g.Nodes[childName].Data.Global {
-			return fmt.Errorf("cannot use a global option as a dependency of a non-global option. Option '%s' used in command of option '%s'", childName, optionName)
-		} else if option.Local && !g.Nodes[childName].Data.Local {
-			return fmt.Errorf("cannot use a non-local option as a dependency of a local option. Option '%s' used in default of option '%s'", childName, optionName)
+		childOption, childExists := g.GetNode(childName)
+		if childExists {
+			if !option.Global && childOption.Global {
+				return fmt.Errorf("cannot use a global option as a dependency of a non-global option. Option '%s' used in command of option '%s'", childName, optionName)
+			}
+			if option.Local && !childOption.Local {
+				return fmt.Errorf("cannot use a non-local option as a dependency of a local option. Option '%s' used in command of option '%s'", childName, optionName)
+			}
 		}
 
-		err := g.AddChild(optionName, childName)
-		if err != nil {
-			return err
-		}
+		g.AddEdge(optionName, childName)
 	}
 
-	// Find variables in default value
 	for _, dep := range findVariables(option.Default) {
-		if g.Nodes[dep] == nil || dep == optionName {
+		if !g.HasNode(dep) || dep == optionName {
 			continue
 		}
 
-		if option.Global && !g.Nodes[dep].Data.Global {
-			return fmt.Errorf("cannot use a global option as a dependency of a non-global option. Option '%s' used in default of option '%s'", dep, optionName)
-		} else if !option.Local && g.Nodes[dep].Data.Local {
-			return fmt.Errorf("cannot use a non-local option as a dependency of a local option. Option '%s' used in default of option '%s'", dep, optionName)
+		depOption, depExists := g.GetNode(dep)
+		if depExists {
+			if option.Global && !depOption.Global {
+				return fmt.Errorf("cannot use a non-global option as a dependency of a global option. Option '%s' used in default of option '%s'", dep, optionName)
+			}
+			if !option.Local && depOption.Local {
+				return fmt.Errorf("cannot use a local option as a dependency of a non-local option. Option '%s' used in default of option '%s'", dep, optionName)
+			}
 		}
 
-		err := g.AddChild(dep, optionName)
-		if err != nil {
-			return err
-		}
+		g.AddEdge(dep, optionName)
 	}
 
-	// Find variables in command value
 	for _, dep := range findVariables(option.Command) {
-		if g.Nodes[dep] == nil || dep == optionName {
+		if !g.HasNode(dep) || dep == optionName {
 			continue
 		}
 
-		if option.Global && !g.Nodes[dep].Data.Global {
-			return fmt.Errorf("cannot use a global option as a dependency of a non-global option. Option '%s' used in command of option '%s'", dep, optionName)
-		} else if !option.Local && g.Nodes[dep].Data.Local {
-			return fmt.Errorf("cannot use a non-local option as a dependency of a local option. Option '%s' used in default of option '%s'", dep, optionName)
+		depOption, depExists := g.GetNode(dep)
+		if depExists {
+			if option.Global && !depOption.Global {
+				return fmt.Errorf("cannot use a non-global option as a dependency of a global option. Option '%s' used in command of option '%s'", dep, optionName)
+			}
+			if !option.Local && depOption.Local {
+				return fmt.Errorf("cannot use a local option as a dependency of a non-local option. Option '%s' used in command of option '%s'", dep, optionName)
+			}
 		}
 
-		err := g.AddChild(dep, optionName)
-		if err != nil {
-			return err
-		}
+		g.AddEdge(dep, optionName)
 	}
 
 	return nil
 }
 
 func addOptionsToGraph(g *graph.Graph[*types.Option], optionDefinitions config.OptionDefinitions, optionValues map[string]config.OptionValue) error {
-	for optionName, option := range optionDefinitions {
-		_, ok := g.Nodes[optionName]
-		if ok {
-			g.Nodes[optionName].Data = option
-			continue
-		}
-
-		_, err := g.InsertNodeAt(rootID, optionName, option)
-		if err != nil {
-			return err
-		}
+	if !g.HasNode(rootID) {
+		g.AddNode(rootID, nil)
 	}
 
-	// add dependencies
+	for optionName, option := range optionDefinitions {
+		g.SetNode(optionName, option)
+		g.AddEdge(rootID, optionName)
+	}
+
 	err := addDependencies(g, optionDefinitions, optionValues)
 	if err != nil {
 		return err
@@ -116,58 +110,13 @@ func addOptionsToGraph(g *graph.Graph[*types.Option], optionDefinitions config.O
 	return nil
 }
 
-func deleteChildrenOf(graph *graph.Graph[*types.Option], node *graph.Node[*types.Option]) error {
-	for _, child := range node.Childs {
-		err := graph.RemoveSubGraph(child.ID)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func removeRootParent(g *graph.Graph[*types.Option]) {
-	for optionName := range g.Nodes {
-		node := g.Nodes[optionName]
-
-		// remove root parent
-		if len(node.Parents) > 1 {
-			newParents := []*graph.Node[*types.Option]{}
-			removed := false
-			for _, parent := range node.Parents {
-				if parent.ID == rootID {
-					removed = true
-					continue
-				}
-				newParents = append(newParents, parent)
-			}
-			node.Parents = newParents
-
-			// remove from root childs
-			if removed {
-				newChilds := []*graph.Node[*types.Option]{}
-				for _, child := range g.Root.Childs {
-					if child.ID == node.ID {
-						continue
-					}
-					newChilds = append(newChilds, child)
-				}
-				g.Root.Childs = newChilds
-			}
-		}
-	}
-}
-
 func findVariables(str string) []string {
 	retVars := map[string]bool{}
 	matches := variableExpression.FindAllStringSubmatch(str, -1)
 	for _, match := range matches {
-		if len(match) != 5 {
-			continue
+		if len(match) >= 2 {
+			retVars[match[1]] = true
 		}
-
-		retVars[match[1]] = true
 	}
 
 	retVarsArr := []string{}
