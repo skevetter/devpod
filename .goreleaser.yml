@@ -15,17 +15,17 @@ builds:
     overrides:
       - goos: linux
         goarch: amd64
-        ldflags: -s -w -extldflags "-static"
+        ldflags: -s -w -extldflags "-static" -X main.build={{ .Env.DEVPOD_CLI_VERSION | default .Version }} -X main.commit={{ .Commit }} -X main.date={{ .Date }} -X github.com/skevetter/devpod/pkg/version.version={{ .Env.DEVPOD_CLI_VERSION | default .Version }}
         tags:
           - netgo
           - osusergo
       - goos: linux
         goarch: arm64
-        ldflags: -s -w -extldflags "-static"
+        ldflags: -s -w -extldflags "-static" -X main.build={{ .Env.DEVPOD_CLI_VERSION | default .Version }} -X main.commit={{ .Commit }} -X main.date={{ .Date }} -X github.com/skevetter/devpod/pkg/version.version={{ .Env.DEVPOD_CLI_VERSION | default .Version }}
         tags:
           - netgo
           - osusergo
-    ldflags: -s -w
+    ldflags: -s -w -X main.build={{ .Env.DEVPOD_CLI_VERSION | default .Version }} -X main.commit={{ .Commit }} -X main.date={{ .Date }} -X github.com/skevetter/devpod/pkg/version.version={{ .Env.DEVPOD_CLI_VERSION | default .Version }}
     env:
       - CGO_ENABLED=0
 
@@ -36,7 +36,7 @@ builds:
     goos: [linux]
     goarch: [amd64, arm64]
     binary: devpod-{{ .Os }}-{{ .Arch }}
-    ldflags: -s -w -extldflags "-static"
+    ldflags: -s -w -extldflags "-static" -X main.build={{ .Env.DEVPOD_CLI_VERSION | default .Version }} -X main.commit={{ .Commit }} -X main.date={{ .Date }} -X github.com/skevetter/devpod/pkg/version.version={{ .Env.DEVPOD_CLI_VERSION | default .Version }}
     env:
       - CGO_ENABLED=0
     tags:
@@ -50,12 +50,13 @@ builds:
     goos: [darwin]
     goarch: [amd64, arm64]
     binary: devpod-{{ .Os }}-{{ .Arch }}
+    ldflags: -s -w -X main.build={{ .Env.DEVPOD_CLI_VERSION | default .Version }} -X main.commit={{ .Commit }} -X main.date={{ .Date }} -X github.com/skevetter/devpod/pkg/version.version={{ .Env.DEVPOD_CLI_VERSION | default .Version }}
 
   - id: devpod-windows
     goos: [windows]
     goarch: [amd64, arm64]
     binary: devpod-{{ .Os }}-{{ .Arch }}
-    ldflags: -s -w
+    ldflags: -s -w -X main.build={{ .Env.DEVPOD_CLI_VERSION | default .Version }} -X main.commit={{ .Commit }} -X main.date={{ .Date }} -X github.com/skevetter/devpod/pkg/version.version={{ .Env.DEVPOD_CLI_VERSION | default .Version }}
     env:
       - CGO_ENABLED=0
 
@@ -63,7 +64,7 @@ builds:
     goos: [linux]
     goarch: [amd64]
     binary: devpod-{{ .Os }}-{{ .Arch }}
-    ldflags: -s -w -extldflags "-static"
+    ldflags: -s -w -extldflags "-static" -X main.build={{ .Env.DEVPOD_CLI_VERSION | default v0.0.0 }} -X main.commit={{ .Commit }} -X main.date={{ .Date }} -X github.com/skevetter/devpod/pkg/version.version={{ .Env.DEVPOD_CLI_VERSION | default v0.0.0 }}
     env:
       - CGO_ENABLED=0
     tags:
@@ -74,7 +75,7 @@ builds:
     goos: [linux]
     goarch: [amd64]
     binary: devpod-{{ .Os }}-{{ .Arch }}-pro
-    ldflags: -s -w
+    ldflags: -s -w -extldflags "-static" -X main.build={{ .Env.DEVPOD_CLI_VERSION | default v0.0.0 }} -X main.commit={{ .Commit }} -X main.date={{ .Date }} -X github.com/skevetter/devpod/pkg/version.version={{ .Env.DEVPOD_CLI_VERSION | default v0.0.0 }}
     env:
       - CGO_ENABLED=0
     tags:
