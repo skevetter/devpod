@@ -3,11 +3,13 @@ package agent
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -18,255 +20,550 @@ import (
 	"github.com/skevetter/log"
 )
 
+var (
+	ErrBinaryNotFound = errors.New("agent binary not found")
+	ErrInjectTimeout  = errors.New("injection timeout")
+	ErrArchMismatch   = errors.New("architecture mismatch")
+)
+
 var waitForInstanceConnectionTimeout = time.Minute * 5
 
-func InjectAgent(
-	ctx context.Context,
-	exec inject.ExecFunc,
-	local bool,
-	remoteAgentPath,
-	downloadURL string,
-	preferDownload bool,
-	log log.Logger,
-	timeout time.Duration,
-) error {
-	return InjectAgentAndExecute(
-		ctx,
-		exec,
-		local,
-		remoteAgentPath,
-		downloadURL,
-		preferDownload,
-		"",
-		nil,
-		nil,
-		nil,
-		log,
-		timeout,
-	)
+// InjectOptions defines the parameters for injecting the DevPod agent into a remote environment.
+type InjectOptions struct {
+	// Ctx is the context for the injection operation. Required.
+	Ctx context.Context
+	// Exec is the function used to execute commands on the remote machine. Required.
+	Exec inject.ExecFunc
+	// Log is the logger for capturing injection output. Required.
+	Log log.Logger
+
+	// IsLocal indicates if the injection target is the local machine.
+	IsLocal bool
+	// RemoteAgentPath is the path where the agent binary should be placed on the remote machine. Defaults to RemoteDevPodHelperLocation.
+	RemoteAgentPath string
+	// DownloadURL is the base URL to download the agent binary from. Defaults to DefaultAgentDownloadURL().
+	DownloadURL string
+	// PreferDownload forces downloading the agent even if a local binary is available.
+	// Defaults to version-based preference (true for release, false for dev).
+	PreferDownload bool
+	// Timeout is the maximum duration to wait for the injection to complete. Defaults to 5 minutes.
+	Timeout time.Duration
+
+	// Command is the command to execute after successful injection.
+	Command string
+
+	Stdin  io.Reader
+	Stdout io.Writer
+	Stderr io.Writer
+
+	// LocalVersion is the version of the local DevPod binary. Defaults to version.GetVersion().
+	LocalVersion string
+	// RemoteVersion is the expected version of the remote agent. Defaults to LocalVersion.
+	RemoteVersion string
+	// SkipVersionCheck disables the validation of the remote agent's version. Defaults to false, unless DEVPOD_AGENT_URL is set.
+	SkipVersionCheck bool
+	// MetricsCollector handles the recording of injection metrics. Defaults to LogMetricsCollector.
+	MetricsCollector MetricsCollector
 }
 
-func InjectAgentAndExecute(
-	ctx context.Context,
-	exec inject.ExecFunc,
-	local bool,
-	remoteAgentPath,
-	downloadURL string,
-	preferDownload bool,
-	command string,
-	stdin io.Reader,
-	stdout io.Writer,
-	stderr io.Writer,
-	log log.Logger,
-	timeout time.Duration,
-) error {
-	// should execute locally?
-	if local {
-		if command == "" {
-			return nil
-		}
-
-		log.Debug("execute command locally")
-		return shell.RunEmulatedShell(ctx, command, stdin, stdout, stderr, nil)
+func (o *InjectOptions) ApplyDefaults() {
+	if o.RemoteAgentPath == "" {
+		o.RemoteAgentPath = RemoteDevPodHelperLocation
+	}
+	if o.DownloadURL == "" {
+		o.DownloadURL = DefaultAgentDownloadURL()
+	}
+	if o.Timeout == 0 {
+		o.Timeout = waitForInstanceConnectionTimeout
+	}
+	if o.LocalVersion == "" {
+		o.LocalVersion = version.GetVersion()
+	}
+	if o.RemoteVersion == "" {
+		o.RemoteVersion = o.LocalVersion
 	}
 
-	defer log.Debug("done InjectAgentAndExecute")
-	if remoteAgentPath == "" {
-		remoteAgentPath = RemoteDevPodHelperLocation
-	}
-	if downloadURL == "" {
-		downloadURL = DefaultAgentDownloadURL()
+	if os.Getenv(EnvDevPodAgentURL) != "" {
+		o.SkipVersionCheck = true
+		o.PreferDownload = true
 	}
 
-	versionCheck := fmt.Sprintf(`[ "$(%s version 2>/dev/null || echo 'false')" != "%s" ]`, remoteAgentPath, version.GetVersion())
 	if version.GetVersion() == version.DevVersion {
-		preferDownload = false
+		o.PreferDownload = false
 	}
+}
 
-	// install devpod into the target
-	// do a simple hello world to check if we can get something
-	now := time.Now()
-	lastMessage := time.Now()
-	for {
-		buf := &bytes.Buffer{}
-		if stderr != nil {
-			stderr = io.MultiWriter(stderr, buf)
-		} else {
-			stderr = buf
-		}
-
-		scriptParams := &inject.Params{
-			Command:             command,
-			AgentRemotePath:     remoteAgentPath,
-			DownloadURLs:        inject.NewDownloadURLs(downloadURL),
-			ExistsCheck:         versionCheck,
-			PreferAgentDownload: preferDownload,
-			ShouldChmodPath:     true,
-		}
-
-		wasExecuted, err := inject.InjectAndExecute(
-			ctx,
-			exec,
-			func(arm bool) (io.ReadCloser, error) {
-				return injectBinary(arm, downloadURL, log)
-			},
-			scriptParams,
-			stdin,
-			stdout,
-			stderr,
-			timeout,
-			log,
-		)
-		if err != nil {
-			if time.Since(now) > waitForInstanceConnectionTimeout {
-				return fmt.Errorf("timeout waiting for instance connection %w", err)
-			} else if wasExecuted {
-				return fmt.Errorf("agent error: %s %w", buf.String(), err)
-			}
-
-			if time.Since(lastMessage) > time.Second*5 {
-				log.Info("waiting for devpod agent to come up")
-				lastMessage = time.Now()
-			}
-
-			log.WithFields(logrus.Fields{
-				"error":  err,
-				"output": buf.String(),
-			}).Debug("inject error")
-			time.Sleep(time.Second * 3)
-			continue
-		}
-
-		break
+func (o *InjectOptions) Validate() error {
+	if o.Ctx == nil {
+		return fmt.Errorf("context is required")
 	}
-
+	if o.Exec == nil {
+		return fmt.Errorf("exec function is required")
+	}
+	if o.Log == nil {
+		return fmt.Errorf("logger is required")
+	}
 	return nil
 }
 
-func injectBinary(arm bool, tryDownloadURL string, log log.Logger) (io.ReadCloser, error) {
-	// this means we need to
-	targetArch := "amd64"
-	if arm {
-		targetArch = "arm64"
+func InjectAgent(opts *InjectOptions) error {
+	opts.ApplyDefaults()
+	if err := opts.Validate(); err != nil {
+		return err
 	}
 
-	// make sure a linux arm64 binary exists locally
-	var err error
-	var binaryPath string
-	if runtime.GOOS == "linux" && runtime.GOARCH == targetArch {
-		binaryPath, err = os.Executable()
-		if err != nil {
-			return nil, fmt.Errorf("get executable %w", err)
+	if opts.MetricsCollector == nil {
+		opts.MetricsCollector = &LogMetricsCollector{Log: opts.Log}
+	}
+
+	metrics := &InjectionMetrics{StartTime: time.Now(), BinarySource: "existing"}
+	defer func() {
+		metrics.EndTime = time.Now()
+		if opts.MetricsCollector != nil {
+			opts.MetricsCollector.RecordInjection(metrics)
 		}
+	}()
 
-		// check if we still exist
-		_, err = os.Stat(binaryPath)
-		if err != nil {
-			binaryPath = ""
-		}
-
-		log.WithFields(logrus.Fields{
-			"path": binaryPath,
-			"arch": targetArch,
-		}).Debug("using current binary for agent injection")
+	if opts.IsLocal {
+		return injectLocally(opts)
 	}
 
-	// try to look up runner binaries
-	if binaryPath == "" {
-		binaryPath = getRunnerBinary(targetArch)
+	opts.Log.WithFields(logrus.Fields{
+		"localVersion":  opts.LocalVersion,
+		"remoteVersion": opts.RemoteVersion,
+		"skipCheck":     opts.SkipVersionCheck,
+	}).Debug("starting agent injection")
+
+	vc := newVersionChecker(opts)
+	bm := NewBinaryManager(opts.Log, opts.LocalVersion, opts.DownloadURL)
+	retry := DefaultRetryStrategy()
+	if opts.Timeout > 0 {
+		retry.Timeout = opts.Timeout
 	}
 
-	if binaryPath != "" {
-		log.WithFields(logrus.Fields{
-			"path": binaryPath,
-			"arch": targetArch,
-			"url":  tryDownloadURL,
-		}).Debug("found runner binary for agent injection")
-	}
-
-	// download devpod locally
-	if binaryPath == "" {
-		binaryPath, err = downloadAgentLocally(tryDownloadURL, targetArch, log)
-		if err != nil {
-			return nil, fmt.Errorf("download agent locally %w", err)
-		}
-	}
-
-	// read file
-	file, err := os.Open(binaryPath)
-	if err != nil {
-		return nil, fmt.Errorf("open agent binary %w", err)
-	}
-
-	return file, nil
+	return retry.WithRetry(opts.Ctx, opts.Log, func(attempt int) error {
+		return injectAgent(attempt, opts, bm, vc, metrics)
+	})
 }
 
-func downloadAgentLocally(tryDownloadURL, targetArch string, log log.Logger) (string, error) {
-	agentPath := filepath.Join(os.TempDir(), "devpod-cache", "devpod-linux-"+targetArch)
-	log.WithFields(logrus.Fields{
-		"path": agentPath,
-	}).Debug("checking for devpod agent binary")
-
-	// create path
-	err := os.MkdirAll(filepath.Dir(agentPath), 0755)
-	if err != nil {
-		return "", fmt.Errorf("create agent path %w", err)
+func injectLocally(opts *InjectOptions) error {
+	if opts.Command == "" {
+		return nil
 	}
-	log.WithFields(logrus.Fields{
-		"path": filepath.Dir(agentPath),
-	}).Debug("created agent path")
-
-	stat, statErr := os.Stat(agentPath)
-	if version.GetVersion() == version.DevVersion && statErr == nil {
-		return agentPath, nil
-	}
-
-	fullDownloadURL := tryDownloadURL + "/devpod-linux-" + targetArch
-	log.WithFields(logrus.Fields{
-		"url": fullDownloadURL,
-	}).Debug("attempting to download devpod agent")
-
-	resp, err := devpodhttp.GetHTTPClient().Get(fullDownloadURL)
-	if err != nil {
-		return "", fmt.Errorf("download devpod %w", err)
-	}
-	defer func() { _ = resp.Body.Close() }()
-
-	if statErr == nil && stat.Size() == resp.ContentLength {
-		return agentPath, nil
-	}
-
-	log.Info("download devpod agent binary")
-	file, err := os.Create(agentPath)
-	if err != nil {
-		return "", fmt.Errorf("create agent binary %w", err)
-	}
-	log.WithFields(logrus.Fields{
-		"path": agentPath,
-	}).Debug("created agent binary")
-	defer func() { _ = file.Close() }()
-
-	_, err = io.Copy(file, resp.Body)
-	if err != nil {
-		_ = os.Remove(agentPath)
-		log.WithFields(logrus.Fields{
-			"error": err,
-			"url":   fullDownloadURL,
-		}).Error("failed to download devpod agent")
-		return "", fmt.Errorf("failed to download devpod from URL %s %w", fullDownloadURL, err)
-	}
-
-	return agentPath, nil
+	opts.Log.Debug("execute command locally")
+	return shell.RunEmulatedShell(opts.Ctx, opts.Command, opts.Stdin, opts.Stdout, opts.Stderr, nil)
 }
 
-func getRunnerBinary(targetArch string) string {
-	binaryPath := filepath.Join(os.TempDir(), "devpod-cache", "devpod-linux-"+targetArch)
-	_, err := os.Stat(binaryPath)
-	if err != nil {
-		return ""
+func injectAgent(
+	attempt int,
+	opts *InjectOptions,
+	bm *BinaryManager,
+	vc *versionChecker,
+	metrics *InjectionMetrics,
+) error {
+	metrics.Attempts = attempt
+
+	buf := &bytes.Buffer{}
+	var stderr io.Writer = buf
+	if opts.Stderr != nil {
+		stderr = io.MultiWriter(opts.Stderr, buf)
 	}
+
+	binaryLoader := func(arm bool) (io.ReadCloser, error) {
+		arch := "amd64"
+		if arm {
+			arch = "arm64"
+		}
+		stream, source, err := bm.AcquireBinary(opts.Ctx, arch)
+		if err != nil {
+			return nil, err
+		}
+		metrics.BinarySource = source
+		return stream, nil
+	}
+
+	scriptParams := &inject.Params{
+		Command:             opts.Command,
+		AgentRemotePath:     opts.RemoteAgentPath,
+		DownloadURLs:        inject.NewDownloadURLs(opts.DownloadURL),
+		ExistsCheck:         vc.buildExistsCheck(opts.RemoteAgentPath),
+		PreferAgentDownload: opts.PreferDownload,
+		ShouldChmodPath:     true,
+	}
+
+	wasExecuted, err := inject.Inject(inject.InjectOptions{
+		Ctx:          opts.Ctx,
+		Exec:         opts.Exec,
+		LocalFile:    binaryLoader,
+		ScriptParams: scriptParams,
+		Stdin:        opts.Stdin,
+		Stdout:       opts.Stdout,
+		Stderr:       stderr,
+		Timeout:      opts.Timeout,
+		Log:          opts.Log,
+	})
+
+	if err != nil {
+		metrics.Error = err
+		if wasExecuted {
+			return &InjectError{
+				Stage: "command_exec",
+				Cause: fmt.Errorf("%w: %s", err, buf.String()),
+			}
+		}
+		return &InjectError{Stage: "inject", Cause: err}
+	}
+
+	if !opts.SkipVersionCheck {
+		detectedVersion, err := vc.validateRemoteAgent(opts.Ctx, opts.Exec, opts.RemoteAgentPath, opts.Log)
+		if detectedVersion != "" {
+			metrics.AgentVersion = detectedVersion
+		}
+		if err != nil {
+			opts.Log.WithFields(logrus.Fields{"error": err}).Warn("Version validation failed")
+			metrics.VersionCheck = false
+		} else {
+			metrics.VersionCheck = true
+		}
+	} else {
+		metrics.AgentVersion = opts.RemoteVersion
+	}
+
+	metrics.Success = true
+	return nil
+}
+
+type InjectError struct {
+	Stage   string
+	Cause   error
+	Context map[string]string
+}
+
+func (e *InjectError) Error() string {
+	if e.Cause != nil {
+		return fmt.Sprintf("[%s] %v", e.Stage, e.Cause)
+	}
+	return fmt.Sprintf("[%s] unknown error", e.Stage)
+}
+
+func (e *InjectError) Unwrap() error {
+	return e.Cause
+}
+
+func IsRetryable(err error) bool {
+	var injectErr *InjectError
+	if errors.As(err, &injectErr) {
+		return injectErr.Stage != "version_check"
+	}
+	return true
+}
+
+type InjectionMetrics struct {
+	StartTime    time.Time
+	EndTime      time.Time
+	Attempts     int
+	BinarySource string
+	AgentVersion string
+	VersionCheck bool
+	Success      bool
+	Error        error
+}
+
+type MetricsCollector interface {
+	RecordInjection(metrics *InjectionMetrics)
+}
+
+type LogMetricsCollector struct {
+	Log log.Logger
+}
+
+func (c *LogMetricsCollector) RecordInjection(metrics *InjectionMetrics) {
+	c.Log.WithFields(logrus.Fields{
+		"duration":     metrics.EndTime.Sub(metrics.StartTime),
+		"attempts":     metrics.Attempts,
+		"binarySource": metrics.BinarySource,
+		"agentVersion": metrics.AgentVersion,
+		"versionCheck": metrics.VersionCheck,
+		"success":      metrics.Success,
+	}).Debug("agent injection metrics")
+}
+
+type RetryStrategy struct {
+	MaxAttempts  int
+	InitialDelay time.Duration
+	MaxDelay     time.Duration
+	Timeout      time.Duration
+}
+
+func DefaultRetryStrategy() *RetryStrategy {
+	return &RetryStrategy{
+		MaxAttempts:  100,
+		InitialDelay: 3 * time.Second,
+		MaxDelay:     15 * time.Second,
+		Timeout:      5 * time.Minute,
+	}
+}
+
+type RetryableFunc func(attempt int) error
+
+func (s *RetryStrategy) WithRetry(ctx context.Context, log log.Logger, fn RetryableFunc) error {
+	ctx, cancel := context.WithTimeout(ctx, s.Timeout)
+	defer cancel()
+
+	delay := s.InitialDelay
+	attempt := 1
+
+	for {
+		err := fn(attempt)
+		if err == nil {
+			return nil
+		}
+
+		if !IsRetryable(err) {
+			return err
+		}
+		if attempt >= s.MaxAttempts {
+			return err
+		}
+
+		select {
+		case <-ctx.Done():
+			return ErrInjectTimeout
+		case <-time.After(delay):
+			delay *= 2
+			if delay > s.MaxDelay {
+				delay = s.MaxDelay
+			}
+			attempt++
+		}
+	}
+}
+
+type versionChecker struct {
+	localVersion  string
+	remoteVersion string
+	skipCheck     bool
+}
+
+func newVersionChecker(opts *InjectOptions) *versionChecker {
+	return &versionChecker{
+		localVersion:  opts.LocalVersion,
+		remoteVersion: opts.RemoteVersion,
+		skipCheck:     opts.SkipVersionCheck,
+	}
+}
+
+func (vc *versionChecker) buildExistsCheck(agentPath string) string {
+	if vc.skipCheck {
+		return fmt.Sprintf(`[ ! -x %s ]`, agentPath)
+	}
+	return fmt.Sprintf(`[ "$(%s version 2>/dev/null || echo 'false')" != "%s" ]`,
+		agentPath, vc.remoteVersion)
+}
+
+func (vc *versionChecker) validateRemoteAgent(
+	ctx context.Context,
+	exec inject.ExecFunc,
+	agentPath string,
+	log log.Logger,
+) (string, error) {
+	if vc.skipCheck {
+		log.Debug("skipping version validation")
+		return "", nil
+	}
+
+	buf := &bytes.Buffer{}
+	versionCmd := fmt.Sprintf("%s version", agentPath)
+	err := exec(ctx, versionCmd, nil, buf, io.Discard)
+	if err != nil {
+		return "", fmt.Errorf("failed to get remote agent version: %w", err)
+	}
+
+	actualVersion := strings.TrimSpace(buf.String())
+	if actualVersion != vc.remoteVersion {
+		return actualVersion, fmt.Errorf("version mismatch: expected %s, got %s",
+			vc.remoteVersion, actualVersion)
+	}
+
 	log.WithFields(logrus.Fields{
-		"path": binaryPath,
-	}).Debug("found runner binary in devpod-cache")
-	return binaryPath
+		"expected": vc.remoteVersion,
+		"actual":   actualVersion,
+	}).Debug("remote agent version validated")
+
+	return actualVersion, nil
+}
+
+type BinarySource interface {
+	GetBinary(ctx context.Context, arch string) (io.ReadCloser, error)
+	SourceName() string
+}
+
+type BinaryManager struct {
+	sources []BinarySource
+	logger  log.Logger
+}
+
+func NewBinaryManager(logger log.Logger, version string, downloadURL string) *BinaryManager {
+	cachePath := filepath.Join(os.TempDir(), "devpod-cache")
+	cache := &BinaryCache{BaseDir: cachePath}
+
+	return &BinaryManager{
+		sources: []BinarySource{
+			&InjectSource{},
+			&FileCacheSource{Cache: cache},
+			&HTTPDownloadSource{BaseURL: downloadURL, Version: version, Cache: cache},
+		},
+		logger: logger,
+	}
+}
+
+func (m *BinaryManager) AcquireBinary(ctx context.Context, arch string) (io.ReadCloser, string, error) {
+	for _, source := range m.sources {
+		binary, err := source.GetBinary(ctx, arch)
+		if err == nil {
+			m.logger.Debugf("acquired binary from %s", source.SourceName())
+			return binary, source.SourceName(), nil
+		}
+	}
+	return nil, "", ErrBinaryNotFound
+}
+
+type BinaryCache struct {
+	BaseDir string
+}
+
+func (c *BinaryCache) Get(arch string) (io.ReadCloser, error) {
+	return os.Open(c.pathFor(arch))
+}
+
+func (c *BinaryCache) Set(arch string, data io.Reader) error {
+	return c.atomicWrite(c.pathFor(arch), data)
+}
+
+func (c *BinaryCache) pathFor(arch string) string {
+	return filepath.Join(c.BaseDir, "devpod-linux-"+arch)
+}
+
+func (c *BinaryCache) atomicWrite(path string, data io.Reader) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		return err
+	}
+
+	temp := path + ".tmp"
+	file, err := os.Create(temp)
+	if err != nil {
+		return err
+	}
+
+	if _, err := io.Copy(file, data); err != nil {
+		file.Close()
+		os.Remove(temp)
+		return err
+	}
+
+	file.Close()
+	return os.Rename(temp, path)
+}
+
+type InjectSource struct{}
+
+func (s *InjectSource) GetBinary(ctx context.Context, arch string) (io.ReadCloser, error) {
+	if !s.matchesCurrentRuntime(arch) {
+		return nil, ErrArchMismatch
+	}
+	return s.openCurrentExecutable()
+}
+
+func (s *InjectSource) matchesCurrentRuntime(arch string) bool {
+	return runtime.GOOS == "linux" && runtime.GOARCH == arch
+}
+
+func (s *InjectSource) openCurrentExecutable() (io.ReadCloser, error) {
+	path, err := os.Executable()
+	if err != nil {
+		return nil, err
+	}
+	return os.Open(path)
+}
+
+func (s *InjectSource) SourceName() string {
+	return "local_executable"
+}
+
+type FileCacheSource struct {
+	Cache *BinaryCache
+}
+
+func (s *FileCacheSource) GetBinary(ctx context.Context, arch string) (io.ReadCloser, error) {
+	return s.Cache.Get(arch)
+}
+
+func (s *FileCacheSource) SourceName() string {
+	return "local_cache"
+}
+
+type HTTPDownloadSource struct {
+	BaseURL string
+	Version string
+	Cache   *BinaryCache
+}
+
+func (s *HTTPDownloadSource) GetBinary(ctx context.Context, arch string) (io.ReadCloser, error) {
+	url := fmt.Sprintf("%s/devpod-linux-%s", s.BaseURL, arch)
+
+	resp, err := devpodhttp.GetHTTPClient().Get(url)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode != 200 {
+		resp.Body.Close()
+		return nil, fmt.Errorf("bad status: %s", resp.Status)
+	}
+
+	if s.Cache != nil {
+		return s.cacheAndReturn(arch, resp.Body)
+	}
+
+	return resp.Body, nil
+}
+
+func (s *HTTPDownloadSource) cacheAndReturn(arch string, body io.ReadCloser) (io.ReadCloser, error) {
+	pr, pw := io.Pipe()
+
+	go func() {
+		defer body.Close()
+
+		cachePath := s.Cache.pathFor(arch)
+		if err := os.MkdirAll(filepath.Dir(cachePath), 0755); err != nil {
+			io.Copy(pw, body)
+			pw.Close()
+			return
+		}
+
+		tmpPath := cachePath + ".tmp"
+		file, err := os.Create(tmpPath)
+		if err != nil {
+			io.Copy(pw, body)
+			pw.Close()
+			return
+		}
+
+		defer pw.Close()
+		defer file.Close()
+
+		mw := io.MultiWriter(file, pw)
+		if _, err := io.Copy(mw, body); err != nil {
+			os.Remove(tmpPath)
+			return
+		}
+
+		os.Rename(tmpPath, cachePath)
+	}()
+
+	return pr, nil
+}
+
+func (s *HTTPDownloadSource) SourceName() string {
+	return "http_download"
 }

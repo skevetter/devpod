@@ -78,9 +78,9 @@ func (c *ContainerTunnel) Run(ctx context.Context, handler Handler, cfg *config.
 		if c.log.GetLevel() == logrus.DebugLevel {
 			command += " --debug"
 		}
-		tunnelChan <- agent.InjectAgentAndExecute(
-			cancelCtx,
-			func(ctx context.Context, command string, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
+		tunnelChan <- agent.InjectAgent(&agent.InjectOptions{
+			Ctx: cancelCtx,
+			Exec: func(ctx context.Context, command string, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
 				return c.client.Command(ctx, client.CommandOptions{
 					Command: command,
 					Stdin:   stdin,
@@ -88,16 +88,16 @@ func (c *ContainerTunnel) Run(ctx context.Context, handler Handler, cfg *config.
 					Stderr:  stderr,
 				})
 			},
-			c.client.AgentLocal(),
-			c.client.AgentPath(),
-			c.client.AgentURL(),
-			true,
-			command,
-			stdinReader,
-			stdoutWriter,
-			writer,
-			c.log.ErrorStreamOnly(),
-			timeout)
+			IsLocal:         c.client.AgentLocal(),
+			RemoteAgentPath: c.client.AgentPath(),
+			DownloadURL:     c.client.AgentURL(),
+			Command:         command,
+			Stdin:           stdinReader,
+			Stdout:          stdoutWriter,
+			Stderr:          writer,
+			Log:             c.log.ErrorStreamOnly(),
+			Timeout:         timeout,
+		})
 	}()
 
 	// connect to container

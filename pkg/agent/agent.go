@@ -443,10 +443,18 @@ func Tunnel(
 	log log.Logger,
 	timeout time.Duration,
 ) error {
-	// inject agent
-	err := InjectAgent(ctx, func(ctx context.Context, command string, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
-		return exec(ctx, "root", command, stdin, stdout, stderr)
-	}, false, ContainerDevPodHelperLocation, DefaultAgentDownloadURL(), false, log, timeout)
+	err := InjectAgent(&InjectOptions{
+		Ctx: ctx,
+		Exec: func(ctx context.Context, command string, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
+			return exec(ctx, "root", command, stdin, stdout, stderr)
+		},
+		IsLocal:         false,
+		RemoteAgentPath: ContainerDevPodHelperLocation,
+		DownloadURL:     DefaultAgentDownloadURL(),
+		PreferDownload:  false,
+		Log:             log,
+		Timeout:         timeout,
+	})
 	if err != nil {
 		return err
 	}
