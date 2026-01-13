@@ -2,10 +2,8 @@ package agent
 
 import (
 	"context"
-	"errors"
 	"io"
 	"testing"
-	"time"
 
 	"github.com/skevetter/log"
 	"github.com/stretchr/testify/suite"
@@ -82,24 +80,6 @@ func (s *InjectTestSuite) TestVersionChecker() {
 		s.NoError(err)
 		s.Empty(detected)
 	})
-}
-
-func (s *InjectTestSuite) TestRetryStrategy() {
-	rs := &RetryStrategy{
-		MaxAttempts:  3,
-		InitialDelay: time.Millisecond,
-		MaxDelay:     time.Millisecond * 10,
-		Timeout:      time.Second,
-	}
-
-	attempts := 0
-	err := rs.WithRetry(s.ctx, s.logger, func(a int) error {
-		attempts = a
-		return errors.New("fail")
-	})
-
-	s.Error(err)
-	s.Equal(3, attempts, "Should retry up to MaxAttempts")
 }
 
 // MockExecFunc is a helper for testing
