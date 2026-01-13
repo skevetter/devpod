@@ -222,7 +222,6 @@ func buildAgentClient(ctx context.Context, workspaceClient client.WorkspaceClien
 			Stderr:          writer,
 			Log:             log.ErrorStreamOnly(),
 			Timeout:         wInfo.InjectTimeout,
-			PreferDownload:  wInfo.PreferDownload,
 		})
 	}()
 
