@@ -249,6 +249,10 @@ func (l *TunnelLogStreamer) process(r io.Reader) {
 		l.lastLines = append(l.lastLines, line)
 		l.mu.Unlock()
 	}
+
+	if err := scanner.Err(); err != nil {
+		l.logger.WithFields(logrus.Fields{"error": err}).Debug("error reading tunnel output")
+	}
 }
 
 func (l *TunnelLogStreamer) logLine(line string) {

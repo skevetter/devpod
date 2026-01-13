@@ -84,12 +84,13 @@ func (o *InjectOptions) ApplyDefaults() {
 		o.RemoteVersion = o.LocalVersion
 	}
 
-	if os.Getenv(EnvDevPodAgentURL) != "" {
+	hasCustomAgentURL := os.Getenv(EnvDevPodAgentURL) != ""
+	if hasCustomAgentURL {
 		o.SkipVersionCheck = true
 	}
 
 	if o.PreferDownload == nil {
-		if os.Getenv(EnvDevPodAgentURL) != "" {
+		if hasCustomAgentURL {
 			o.PreferDownload = Bool(true)
 		} else {
 			if version.GetVersion() == version.DevVersion {
@@ -352,10 +353,10 @@ func newVersionChecker(opts *InjectOptions) *versionChecker {
 
 func (vc *versionChecker) buildExistsCheck(agentPath string) string {
 	if vc.skipCheck {
-		return fmt.Sprintf(`[ ! -x %s ]`, agentPath)
+		return fmt.Sprintf(`! [ -x "%s" ]`, agentPath)
 	}
-	return fmt.Sprintf(`[ "$(%s version 2>/dev/null || echo 'false')" != "%s" ]`,
-		agentPath, vc.remoteVersion)
+	return fmt.Sprintf(`! { [ -x "%s" ] && [ "$("%s" version 2>/dev/null)" = "%s" ]; }`,
+		agentPath, agentPath, vc.remoteVersion)
 }
 
 func (vc *versionChecker) validateRemoteAgent(
