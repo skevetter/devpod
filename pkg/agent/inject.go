@@ -356,8 +356,7 @@ func RetryWithDeadline(
 		}
 
 		if attempt == cfg.MaxAttempts {
-			return fmt.Errorf("%w after %d attempts: %v",
-				ErrInjectTimeout, attempt, err)
+			return fmt.Errorf("agent injection failed after %d attempts: %w", attempt, err)
 		}
 
 		lastErr = err
@@ -365,8 +364,7 @@ func RetryWithDeadline(
 		if !cfg.Deadline.IsZero() {
 			remaining := time.Until(cfg.Deadline)
 			if remaining <= 0 {
-				return fmt.Errorf("%w after %d attempts: %v",
-					ErrInjectTimeout, attempt, lastErr)
+				return fmt.Errorf("agent injection failed after %d attempts: %w", attempt, err)
 			}
 			if sleep > remaining {
 				sleep = remaining
