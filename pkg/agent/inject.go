@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
@@ -104,7 +105,12 @@ func (o *InjectOptions) ApplyDefaults() {
 
 	preferDownloadEnv := os.Getenv(EnvDevPodAgentPreferDownload)
 	if preferDownloadEnv != "" {
-		o.PreferDownload = Bool(preferDownloadEnv == "true")
+		pref, err := strconv.ParseBool(preferDownloadEnv)
+		if err != nil {
+			o.Log.Warnf("failed to parse %s, using default", EnvDevPodAgentPreferDownload)
+			pref = true
+		}
+		o.PreferDownload = Bool(pref)
 	} else if hasCustomAgentURL {
 		o.PreferDownload = Bool(true)
 	} else if version.GetVersion() == version.DevVersion {
@@ -551,7 +557,7 @@ func (s *HTTPDownloadSource) GetBinary(ctx context.Context, arch string) (io.Rea
 	contentType := resp.Header.Get("Content-Type")
 	if strings.Contains(contentType, "text/html") {
 		_ = resp.Body.Close()
-		return nil, fmt.Errorf("received HTML instead of binary from %s (check if the AGENT_URL is correct)", downloadURL)
+		return nil, fmt.Errorf("received HTML instead of binary from %s (check if the download URL is correct)", downloadURL)
 	}
 
 	if s.Cache != nil {
