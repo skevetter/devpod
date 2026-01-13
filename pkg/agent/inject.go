@@ -145,7 +145,7 @@ func InjectAgent(opts *InjectOptions) error {
 	}).Debug("starting agent injection")
 
 	vc := newVersionChecker(opts)
-	bm := NewBinaryManager(opts.Log, opts.LocalVersion, opts.DownloadURL)
+	bm := NewBinaryManager(opts.Log, opts.DownloadURL)
 	retry := DefaultRetryStrategy()
 	if opts.Timeout > 0 {
 		retry.Timeout = opts.Timeout
@@ -401,7 +401,7 @@ type BinaryManager struct {
 	logger  log.Logger
 }
 
-func NewBinaryManager(logger log.Logger, version string, downloadURL string) *BinaryManager {
+func NewBinaryManager(logger log.Logger, downloadURL string) *BinaryManager {
 	cachePath := filepath.Join(os.TempDir(), "devpod-cache")
 	cache := &BinaryCache{BaseDir: cachePath}
 
