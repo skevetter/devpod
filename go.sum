@@ -451,6 +451,8 @@ github.com/loft-sh/api/v4 v4.3.0-devpod.alpha.31 h1:H2k4Qi7zWloBQmD6fepUaZOpzmv6
 github.com/loft-sh/api/v4 v4.3.0-devpod.alpha.31/go.mod h1:qBNf6+sIg2XNYdBWe2c16C1gjDcrKZ88sGd76oYT3Jg=
 github.com/loft-sh/apiserver v0.0.0-20250910060242-4b9f3ffe0646 h1:ZWOAMcsIZN4GKESwZBWU1+uepe+L8owmrkJDe5j4KlE=
 github.com/loft-sh/apiserver v0.0.0-20250910060242-4b9f3ffe0646/go.mod h1:hLlplUgCm+KDLoTVfSNTGQSBx/fhsTxu5m8d1LBUXKA=
+github.com/loft-sh/apiserver v0.0.0-20260113122925-594495a02e96 h1:MnvrgRnVm7X8zQPyVS2U2veIxacmVUYSFTHsoi6sJrw=
+github.com/loft-sh/apiserver v0.0.0-20260113122925-594495a02e96/go.mod h1:yBY01KhmW2XAWoqbAx8rx3xqwVwGMa3OYwiM2eYalY4=
 github.com/loft-sh/programming-language-detection v0.0.5 h1:XiWlxtrf4t6Z7SQiob0JMKaCeMHCP3kWhB80wLt+EMY=
 github.com/loft-sh/programming-language-detection v0.0.5/go.mod h1:QGPQGKr9q1+rQS4OyisS5CPGY1a76SdNaZuk9oy+2cE=
 github.com/loft-sh/ssh v0.0.5 h1:CmLfBrbekAZmYhpS+urhqmUZW1XU9kUo2bi4lJiUFH8=

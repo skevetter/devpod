@@ -32,7 +32,7 @@ require (
 	github.com/loft-sh/agentapi/v4 v4.5.3
 	github.com/loft-sh/analytics-client v0.0.0-20240219162240-2f4c64b2494e
 	github.com/loft-sh/api/v4 v4.3.0-devpod.alpha.31
-	github.com/loft-sh/apiserver v0.0.0-20250910060242-4b9f3ffe0646
+	github.com/loft-sh/apiserver v0.0.0-20260113122925-594495a02e96
 	github.com/loft-sh/programming-language-detection v0.0.5
 	github.com/mattn/go-isatty v0.0.20
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d
