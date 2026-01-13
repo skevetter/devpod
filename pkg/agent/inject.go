@@ -371,7 +371,7 @@ func RetryWithDeadline(
 			}
 		}
 
-		log.WithFields(map[string]any{
+		log.WithFields(logrus.Fields{
 			"attempt": attempt,
 			"delay":   sleep,
 			"error":   err,
