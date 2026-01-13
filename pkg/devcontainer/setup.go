@@ -41,7 +41,7 @@ func (r *runner) setupContainer(
 		IsLocal:         false,
 		RemoteAgentPath: agent.ContainerDevPodHelperLocation,
 		DownloadURL:     agent.DefaultAgentDownloadURL(),
-		PreferDownload:  false,
+		PreferDownload:  agent.Bool(false),
 		Log:             r.Log,
 		Timeout:         timeout,
 	})

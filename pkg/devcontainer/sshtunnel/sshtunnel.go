@@ -186,6 +186,8 @@ func ExecuteCommand(
 	return result, <-errChan
 }
 
+const maxLogLines = 1
+
 type TunnelLogStreamer struct {
 	pw     *io.PipeWriter
 	logger log.Logger
@@ -201,7 +203,7 @@ func NewTunnelLogStreamer(logger log.Logger) *TunnelLogStreamer {
 		pw:        pw,
 		logger:    logger,
 		done:      make(chan struct{}),
-		lastLines: make([]string, 0, 1),
+		lastLines: make([]string, 0, maxLogLines),
 	}
 
 	go l.process(pr)
@@ -241,7 +243,7 @@ func (l *TunnelLogStreamer) process(r io.Reader) {
 		l.logLine(line)
 
 		l.mu.Lock()
-		if len(l.lastLines) >= 1 {
+		if len(l.lastLines) >= maxLogLines {
 			l.lastLines = l.lastLines[1:]
 		}
 		l.lastLines = append(l.lastLines, line)

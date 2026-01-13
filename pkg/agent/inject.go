@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -45,7 +46,7 @@ type InjectOptions struct {
 	DownloadURL string
 	// PreferDownload forces downloading the agent even if a local binary is available.
 	// Defaults to true for release versions, false for dev versions.
-	PreferDownload bool
+	PreferDownload *bool
 	// Timeout is the maximum duration to wait for the injection to complete. Defaults to 5 minutes.
 	Timeout time.Duration
 
@@ -85,12 +86,23 @@ func (o *InjectOptions) ApplyDefaults() {
 
 	if os.Getenv(EnvDevPodAgentURL) != "" {
 		o.SkipVersionCheck = true
-		o.PreferDownload = true
-	} else if version.GetVersion() == version.DevVersion {
-		o.PreferDownload = false
-	} else {
-		o.PreferDownload = true
 	}
+
+	if o.PreferDownload == nil {
+		if os.Getenv(EnvDevPodAgentURL) != "" {
+			o.PreferDownload = Bool(true)
+		} else {
+			if version.GetVersion() == version.DevVersion {
+				o.PreferDownload = Bool(false)
+			} else {
+				o.PreferDownload = Bool(true)
+			}
+		}
+	}
+}
+
+func Bool(b bool) *bool {
+	return &b
 }
 
 func (o *InjectOptions) Validate() error {
@@ -112,10 +124,7 @@ func InjectAgent(opts *InjectOptions) error {
 		return err
 	}
 
-	if opts.MetricsCollector == nil {
-		opts.MetricsCollector = &LogMetricsCollector{Log: opts.Log}
-	}
-
+	opts.MetricsCollector = &LogMetricsCollector{Log: opts.Log}
 	metrics := &InjectionMetrics{StartTime: time.Now(), BinarySource: "existing"}
 	defer func() {
 		metrics.EndTime = time.Now()
@@ -187,7 +196,7 @@ func injectAgent(
 		AgentRemotePath:     opts.RemoteAgentPath,
 		DownloadURLs:        inject.NewDownloadURLs(opts.DownloadURL),
 		ExistsCheck:         vc.buildExistsCheck(opts.RemoteAgentPath),
-		PreferAgentDownload: opts.PreferDownload,
+		PreferAgentDownload: *opts.PreferDownload,
 		ShouldChmodPath:     true,
 	}
 
@@ -247,14 +256,6 @@ func (e *InjectError) Error() string {
 
 func (e *InjectError) Unwrap() error {
 	return e.Cause
-}
-
-func IsRetryable(err error) bool {
-	var injectErr *InjectError
-	if errors.As(err, &injectErr) {
-		return true
-	}
-	return true
 }
 
 type InjectionMetrics struct {
@@ -318,9 +319,6 @@ func (s *RetryStrategy) WithRetry(ctx context.Context, log log.Logger, fn Retrya
 			return nil
 		}
 
-		if !IsRetryable(err) {
-			return err
-		}
 		if attempt >= s.MaxAttempts {
 			return err
 		}
@@ -423,6 +421,7 @@ func (m *BinaryManager) AcquireBinary(ctx context.Context, arch string) (io.Read
 			m.logger.Debugf("acquired binary from %s", source.SourceName())
 			return binary, source.SourceName(), nil
 		}
+		m.logger.Debugf("source %s failed: %v", source.SourceName(), err)
 	}
 	return nil, "", ErrBinaryNotFound
 }
@@ -448,11 +447,11 @@ func (c *BinaryCache) atomicWrite(path string, data io.Reader) error {
 		return err
 	}
 
-	temp := path + ".tmp"
-	file, err := os.Create(temp)
+	file, err := os.CreateTemp(filepath.Dir(path), "devpod-*.tmp")
 	if err != nil {
 		return err
 	}
+	temp := file.Name()
 
 	if _, err := io.Copy(file, data); err != nil {
 		_ = file.Close()
@@ -460,7 +459,10 @@ func (c *BinaryCache) atomicWrite(path string, data io.Reader) error {
 		return err
 	}
 
-	_ = file.Close()
+	if err := file.Close(); err != nil {
+		_ = os.Remove(temp)
+		return err
+	}
 	return os.Rename(temp, path)
 }
 
@@ -509,7 +511,12 @@ type HTTPDownloadSource struct {
 func (s *HTTPDownloadSource) GetBinary(ctx context.Context, arch string) (io.ReadCloser, error) {
 	url := fmt.Sprintf("%s/devpod-linux-%s", s.BaseURL, arch)
 
-	resp, err := devpodhttp.GetHTTPClient().Get(url)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := devpodhttp.GetHTTPClient().Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -557,7 +564,6 @@ func (s *HTTPDownloadSource) cacheAndReturn(arch string, body io.ReadCloser) (io
 
 		success := false
 		defer func() {
-			_ = file.Close()
 			if !success {
 				_ = os.Remove(tmpPath)
 			}
@@ -565,6 +571,7 @@ func (s *HTTPDownloadSource) cacheAndReturn(arch string, body io.ReadCloser) (io
 
 		mw := io.MultiWriter(file, pw)
 		if _, err := io.Copy(mw, body); err != nil {
+			_ = file.Close()
 			_ = pw.CloseWithError(err)
 			return
 		}

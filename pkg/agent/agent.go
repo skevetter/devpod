@@ -451,7 +451,7 @@ func Tunnel(
 		IsLocal:         false,
 		RemoteAgentPath: ContainerDevPodHelperLocation,
 		DownloadURL:     DefaultAgentDownloadURL(),
-		PreferDownload:  false,
+		PreferDownload:  Bool(false),
 		Log:             log,
 		Timeout:         timeout,
 	})
