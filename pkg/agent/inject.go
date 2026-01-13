@@ -44,7 +44,7 @@ type InjectOptions struct {
 	// DownloadURL is the base URL to download the agent binary from. Defaults to DefaultAgentDownloadURL().
 	DownloadURL string
 	// PreferDownload forces downloading the agent even if a local binary is available.
-	// Defaults to version-based preference (true for release, false for dev).
+	// Defaults to true for release versions, false for dev versions.
 	PreferDownload bool
 	// Timeout is the maximum duration to wait for the injection to complete. Defaults to 5 minutes.
 	Timeout time.Duration
@@ -86,10 +86,10 @@ func (o *InjectOptions) ApplyDefaults() {
 	if os.Getenv(EnvDevPodAgentURL) != "" {
 		o.SkipVersionCheck = true
 		o.PreferDownload = true
-	}
-
-	if version.GetVersion() == version.DevVersion {
+	} else if version.GetVersion() == version.DevVersion {
 		o.PreferDownload = false
+	} else {
+		o.PreferDownload = true
 	}
 }
 
@@ -234,9 +234,8 @@ func injectAgent(
 }
 
 type InjectError struct {
-	Stage   string
-	Cause   error
-	Context map[string]string
+	Stage string
+	Cause error
 }
 
 func (e *InjectError) Error() string {
@@ -253,7 +252,7 @@ func (e *InjectError) Unwrap() error {
 func IsRetryable(err error) bool {
 	var injectErr *InjectError
 	if errors.As(err, &injectErr) {
-		return injectErr.Stage != "version_check"
+		return true
 	}
 	return true
 }
@@ -297,7 +296,7 @@ type RetryStrategy struct {
 
 func DefaultRetryStrategy() *RetryStrategy {
 	return &RetryStrategy{
-		MaxAttempts:  100,
+		MaxAttempts:  30,
 		InitialDelay: 3 * time.Second,
 		MaxDelay:     15 * time.Second,
 		Timeout:      5 * time.Minute,
@@ -411,7 +410,7 @@ func NewBinaryManager(logger log.Logger, version string, downloadURL string) *Bi
 		sources: []BinarySource{
 			&InjectSource{},
 			&FileCacheSource{Cache: cache},
-			&HTTPDownloadSource{BaseURL: downloadURL, Version: version, Cache: cache},
+			&HTTPDownloadSource{BaseURL: downloadURL, Cache: cache},
 		},
 		logger: logger,
 	}
@@ -456,12 +455,12 @@ func (c *BinaryCache) atomicWrite(path string, data io.Reader) error {
 	}
 
 	if _, err := io.Copy(file, data); err != nil {
-		file.Close()
-		os.Remove(temp)
+		_ = file.Close()
+		_ = os.Remove(temp)
 		return err
 	}
 
-	file.Close()
+	_ = file.Close()
 	return os.Rename(temp, path)
 }
 
@@ -504,7 +503,6 @@ func (s *FileCacheSource) SourceName() string {
 
 type HTTPDownloadSource struct {
 	BaseURL string
-	Version string
 	Cache   *BinaryCache
 }
 
@@ -517,7 +515,7 @@ func (s *HTTPDownloadSource) GetBinary(ctx context.Context, arch string) (io.Rea
 	}
 
 	if resp.StatusCode != 200 {
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		return nil, fmt.Errorf("bad status: %s", resp.Status)
 	}
 
@@ -532,33 +530,51 @@ func (s *HTTPDownloadSource) cacheAndReturn(arch string, body io.ReadCloser) (io
 	pr, pw := io.Pipe()
 
 	go func() {
-		defer body.Close()
+		defer func() {
+			_ = body.Close()
+		}()
 
 		cachePath := s.Cache.pathFor(arch)
 		if err := os.MkdirAll(filepath.Dir(cachePath), 0755); err != nil {
-			io.Copy(pw, body)
-			pw.Close()
+			if _, err := io.Copy(pw, body); err != nil {
+				_ = pw.CloseWithError(err)
+			} else {
+				_ = pw.Close()
+			}
 			return
 		}
 
-		tmpPath := cachePath + ".tmp"
-		file, err := os.Create(tmpPath)
+		file, err := os.CreateTemp(filepath.Dir(cachePath), "devpod-agent-*.tmp")
 		if err != nil {
-			io.Copy(pw, body)
-			pw.Close()
+			if _, err := io.Copy(pw, body); err != nil {
+				_ = pw.CloseWithError(err)
+			} else {
+				_ = pw.Close()
+			}
 			return
 		}
+		tmpPath := file.Name()
 
-		defer pw.Close()
-		defer file.Close()
+		success := false
+		defer func() {
+			_ = file.Close()
+			if !success {
+				_ = os.Remove(tmpPath)
+			}
+		}()
 
 		mw := io.MultiWriter(file, pw)
 		if _, err := io.Copy(mw, body); err != nil {
-			os.Remove(tmpPath)
+			_ = pw.CloseWithError(err)
 			return
 		}
 
-		os.Rename(tmpPath, cachePath)
+		_ = pw.Close()
+		_ = file.Close()
+
+		if err := os.Rename(tmpPath, cachePath); err == nil {
+			success = true
+		}
 	}()
 
 	return pr, nil

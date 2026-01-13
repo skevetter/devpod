@@ -1,7 +1,7 @@
 package sshtunnel
 
 import (
-	"bytes"
+	"bufio"
 	"context"
 	"fmt"
 	"io"
@@ -153,14 +153,15 @@ func ExecuteCommand(
 			}
 		}
 
-		var stderrBuf bytes.Buffer
-		tunnelWriter := io.MultiWriter(&stderrBuf, &tunnelLogWriter{logger: log})
+		streamer := NewTunnelLogStreamer(log)
+		defer func() { _ = streamer.Close() }()
 
 		log.WithFields(logrus.Fields{"command": command}).Debug("running agent command in SSH tunnel")
-		err = devssh.Run(ctx, sshClient, command, gRPCConnStdinReader, gRPCConnStdoutWriter, tunnelWriter, nil)
+		err = devssh.Run(ctx, sshClient, command, gRPCConnStdinReader, gRPCConnStdoutWriter, streamer, nil)
 		if err != nil {
-			if stderrBuf.Len() > 0 {
-				errChan <- fmt.Errorf("run agent command failed %s", stderrBuf.String())
+			_ = streamer.Close()
+			if out := streamer.ErrorOutput(); out != "" {
+				errChan <- fmt.Errorf("run agent command failed\n%s", out)
 			} else {
 				errChan <- fmt.Errorf("run agent command failed %w", err)
 			}
@@ -185,42 +186,85 @@ func ExecuteCommand(
 	return result, <-errChan
 }
 
-type tunnelLogWriter struct {
+type TunnelLogStreamer struct {
+	pw     *io.PipeWriter
 	logger log.Logger
-	buffer bytes.Buffer
-	mu     sync.Mutex
+	done   chan struct{}
+
+	mu        sync.Mutex
+	lastLines []string
 }
 
-func (w *tunnelLogWriter) Write(p []byte) (int, error) {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-
-	w.buffer.Write(p)
-
-	for {
-		line, err := w.buffer.ReadString('\n')
-		if err != nil {
-			w.buffer.WriteString(line) // Put back incomplete line
-			break
-		}
-
-		line = strings.TrimSpace(line)
-		if line == "" {
-			continue
-		}
-
-		if matched, level := w.extractLogLevel(line); matched {
-			w.logger.Print(level, line)
-		} else {
-			// Default messages to debug
-			w.logger.Debug(line)
-		}
+func NewTunnelLogStreamer(logger log.Logger) *TunnelLogStreamer {
+	pr, pw := io.Pipe()
+	l := &TunnelLogStreamer{
+		pw:        pw,
+		logger:    logger,
+		done:      make(chan struct{}),
+		lastLines: make([]string, 0, 1),
 	}
 
-	return len(p), nil
+	go l.process(pr)
+	return l
 }
 
-func (w *tunnelLogWriter) extractLogLevel(line string) (bool, logrus.Level) {
+func (l *TunnelLogStreamer) Write(p []byte) (int, error) {
+	return l.pw.Write(p)
+}
+
+func (l *TunnelLogStreamer) Close() error {
+	err := l.pw.Close()
+	<-l.done
+	return err
+}
+
+func (l *TunnelLogStreamer) ErrorOutput() string {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	if len(l.lastLines) == 0 {
+		return ""
+	}
+
+	return strings.Join(l.lastLines, "\n")
+}
+
+func (l *TunnelLogStreamer) process(r io.Reader) {
+	defer close(l.done)
+	scanner := bufio.NewScanner(r)
+
+	buf := make([]byte, 0, 64*1024)
+	scanner.Buffer(buf, 1024*1024)
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		l.logLine(line)
+
+		l.mu.Lock()
+		if len(l.lastLines) >= 1 {
+			l.lastLines = l.lastLines[1:]
+		}
+		l.lastLines = append(l.lastLines, line)
+		l.mu.Unlock()
+	}
+}
+
+func (l *TunnelLogStreamer) logLine(line string) {
+	line = strings.TrimSpace(line)
+	// Remove carriage returns to prevent terminal overwriting (e.g. git progress)
+	line = strings.ReplaceAll(line, "\r", "")
+	if line == "" {
+		return
+	}
+
+	if matched, level := l.extractLogLevel(line); matched {
+		l.logger.Print(level, line)
+	} else {
+		l.logger.Debug(line)
+	}
+}
+
+func (l *TunnelLogStreamer) extractLogLevel(line string) (bool, logrus.Level) {
 	parts := strings.SplitN(line, " ", 3)
 	if len(parts) < 2 {
 		return false, logrus.DebugLevel

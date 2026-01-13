@@ -112,7 +112,7 @@ type MockExecFunc struct {
 func (m *MockExecFunc) Exec(ctx context.Context, cmd string, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
 	m.CapturedCmd = cmd
 	if stdout != nil {
-		stdout.Write([]byte(m.Output))
+		_, _ = stdout.Write([]byte(m.Output))
 	}
 	return m.Err
 }

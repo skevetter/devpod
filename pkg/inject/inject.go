@@ -41,6 +41,13 @@ type InjectOptions struct {
 }
 
 func Inject(opts InjectOptions) (bool, error) {
+	if opts.Log == nil {
+		return true, fmt.Errorf("log is required")
+	}
+	if opts.ScriptParams == nil {
+		return true, fmt.Errorf("script params is required")
+	}
+
 	scriptRawCode, err := GenerateScript(Script, opts.ScriptParams)
 	if err != nil {
 		return true, err
