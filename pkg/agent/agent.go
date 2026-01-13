@@ -450,12 +450,12 @@ func Tunnel(
 		Exec: func(ctx context.Context, command string, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
 			return exec(ctx, "root", command, stdin, stdout, stderr)
 		},
-		IsLocal:         false,
-		RemoteAgentPath: ContainerDevPodHelperLocation,
-		DownloadURL:     DefaultAgentDownloadURL(),
-		PreferDownload:  Bool(false),
-		Log:             log,
-		Timeout:         timeout,
+		IsLocal:                     false,
+		RemoteAgentPath:             ContainerDevPodHelperLocation,
+		DownloadURL:                 DefaultAgentDownloadURL(),
+		PreferDownloadFromRemoteUrl: Bool(false),
+		Log:                         log,
+		Timeout:                     timeout,
 	})
 	if err != nil {
 		return err

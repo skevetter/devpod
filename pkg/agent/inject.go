@@ -46,9 +46,9 @@ type InjectOptions struct {
 	RemoteAgentPath string
 	// DownloadURL is the base URL to download the agent binary from. Defaults to DefaultAgentDownloadURL().
 	DownloadURL string
-	// PreferDownload forces downloading the agent even if a local binary is available.
+	// PreferDownloadFromRemoteUrl forces downloading the agent even if a local binary is available.
 	// Defaults to true for release versions, false for dev versions.
-	PreferDownload *bool
+	PreferDownloadFromRemoteUrl *bool
 	// Timeout is the maximum duration to wait for the injection to complete. Defaults to 5 minutes.
 	Timeout time.Duration
 
@@ -95,11 +95,10 @@ func (o *InjectOptions) ApplyDefaults() {
 	isDefaultURL := o.DownloadURL == DefaultAgentDownloadURL()
 	hasCustomAgentURL := os.Getenv(EnvDevPodAgentURL) != "" || !isDefaultURL
 
-	if o.PreferDownload != nil {
+	if o.PreferDownloadFromRemoteUrl != nil {
 		return
 	}
 
-	o.SkipVersionCheck = false
 	preferDownloadEnv := os.Getenv(EnvDevPodAgentPreferDownload)
 	if preferDownloadEnv != "" {
 		pref, err := strconv.ParseBool(preferDownloadEnv)
@@ -107,16 +106,16 @@ func (o *InjectOptions) ApplyDefaults() {
 			o.Log.Warnf("failed to parse %s, using default", EnvDevPodAgentPreferDownload)
 			pref = true
 		}
-		o.PreferDownload = Bool(pref)
+		o.PreferDownloadFromRemoteUrl = Bool(pref)
 		o.SkipVersionCheck = true
 	} else if hasCustomAgentURL {
-		o.PreferDownload = Bool(true)
+		o.PreferDownloadFromRemoteUrl = Bool(true)
 		o.SkipVersionCheck = true
 	} else if version.GetVersion() == version.DevVersion {
-		o.PreferDownload = Bool(false)
+		o.PreferDownloadFromRemoteUrl = Bool(false)
 		o.SkipVersionCheck = true
 	} else {
-		o.PreferDownload = Bool(true)
+		o.PreferDownloadFromRemoteUrl = Bool(true)
 	}
 }
 
@@ -157,9 +156,11 @@ func InjectAgent(opts *InjectOptions) error {
 	}
 
 	opts.Log.WithFields(logrus.Fields{
-		"localVersion":  opts.LocalVersion,
-		"remoteVersion": opts.RemoteVersion,
-		"skipCheck":     opts.SkipVersionCheck,
+		"localVersion":   opts.LocalVersion,
+		"remoteVersion":  opts.RemoteVersion,
+		"skipCheck":      opts.SkipVersionCheck,
+		"preferDownload": opts.PreferDownloadFromRemoteUrl,
+		"timeout":        opts.Timeout,
 	}).Debug("starting agent injection")
 
 	vc := newVersionChecker(opts)
@@ -169,8 +170,8 @@ func InjectAgent(opts *InjectOptions) error {
 		opts.Log,
 		RetryConfig{
 			MaxAttempts:  30,
-			InitialDelay: 3 * time.Second,
-			MaxDelay:     15 * time.Second,
+			InitialDelay: 10 * time.Second,
+			MaxDelay:     60 * time.Second,
 			Deadline:     time.Now().Add(opts.Timeout),
 		},
 		func(attempt int) error {
@@ -220,7 +221,7 @@ func injectAgent(
 		AgentRemotePath:     opts.RemoteAgentPath,
 		DownloadURLs:        inject.NewDownloadURLs(opts.DownloadURL),
 		ExistsCheck:         vc.buildExistsCheck(opts.RemoteAgentPath),
-		PreferAgentDownload: *opts.PreferDownload,
+		PreferAgentDownload: *opts.PreferDownloadFromRemoteUrl,
 		ShouldChmodPath:     true,
 	}
 
