@@ -41,6 +41,8 @@ jobs:
           distribution: goreleaser
           version: "~> v2"
           args: build --id devpod-${{ steps.os.outputs.runner_os }} --snapshot
+        env:
+          DEVPOD_CLI_VERSION: ${{ inputs.tag || github.ref_name }}
 
       - uses: actions/upload-artifact@v6
         with:
@@ -158,8 +160,13 @@ jobs:
             patchelf
 
       - name: install desktop dependencies
+        shell: bash
         working-directory: ./desktop
-        run: yarn install --frozen-lockfile
+        run: |
+          yarn install --frozen-lockfile
+          VERSION=${{ inputs.tag || github.ref_name }}
+          VERSION="${VERSION#v}"
+          yarn version --new-version "$VERSION" --no-git-tag-version
 
       - name: tauri build
         uses: tauri-apps/tauri-action@v0.6
@@ -168,7 +175,7 @@ jobs:
           args: "--target ${{ matrix.target }}"
           tagName: ${{ inputs.tag || github.ref_name }}
           releaseName: "DevPod ${{ inputs.tag || github.ref_name }}"
-          prerelease: true
+          releaseDraft: true
           generateReleaseNotes: true
           includeUpdaterJson: ${{ matrix.tauri_include_updater_json }}
           assetNamePattern: "[name]_[platform]_[arch][ext]"
@@ -183,7 +190,7 @@ jobs:
         if: runner.os == 'Linux'
         with:
           tag_name: ${{ inputs.tag || github.ref_name }}
-          prerelease: true
+          draft: true
           files: |
             ./dist/*
 
@@ -219,11 +226,18 @@ jobs:
           DATE=$(date +%Y-%m-%d)
           VERSION="${{ inputs.tag || github.ref_name }}"
 
-          # Update metainfo.xml
           sed -i "s/__VERSION__/${VERSION}/g" ./desktop/flatpak/DevPod.metainfo.xml
           sed -i "s/__DATE__/${DATE}/g" ./desktop/flatpak/DevPod.metainfo.xml
 
-          # Calculate SHA256 values and update Flatpak manifest template
+      - name: copy flatpak files to build workspace
+        shell: bash
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/desktop/flatpak-build/"
+          cp -R ./desktop/flatpak/* "$GITHUB_WORKSPACE/desktop/flatpak-build/"
+
+      - name: prepare flatpak assets
+        shell: bash
+        run: |
           DEB_SHA256=$(sha256sum /tmp/devpod/DevPod_*_amd64.deb | cut -d' ' -f1)
           META_SHA256=$(sha256sum ./desktop/flatpak/DevPod.metainfo.xml | cut -d' ' -f1)
           DESKTOP_SHA256=$(sha256sum ./desktop/flatpak/DevPod.desktop | cut -d' ' -f1)
@@ -237,11 +251,31 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ inputs.tag || github.ref_name }}
-          prerelease: true
+          draft: true
           files: |
             ./desktop/flatpak/DevPod.metainfo.xml
             ./desktop/flatpak/DevPod.desktop
             ./desktop/flatpak/sh.loft.devpod.yml
+
+      - name: restore flatpak manifest for build
+        shell: bash
+        run: |
+          rm -rf "$GITHUB_WORKSPACE/desktop/flatpak/"
+          mv "$GITHUB_WORKSPACE/desktop/flatpak-build/" "$GITHUB_WORKSPACE/desktop/flatpak/"
+
+      # Use GITHUB_WORKSPACE in containers because the path differs from github.workspace
+      # for more details, see https://github.com/actions/checkout/issues/785
+      - name: prepare flatpak manifest for build
+        shell: bash
+        run: |
+          VERSION="${{ inputs.tag || github.ref_name }}"
+          VERSION="${VERSION#v}"
+          sed -i "s|url: https://github.com/skevetter/devpod/releases/download/\${VERSION}/DevPod_linux_amd64.deb|path: /tmp/devpod/DevPod_${VERSION}_amd64.deb|" "$GITHUB_WORKSPACE/desktop/flatpak/sh.loft.devpod.yml"
+          sed -i "s|url: https://github.com/skevetter/devpod/releases/download/\${VERSION}/DevPod.desktop|path: $GITHUB_WORKSPACE/desktop/flatpak/DevPod.desktop|" "$GITHUB_WORKSPACE/desktop/flatpak/sh.loft.devpod.yml"
+          sed -i "s|url: https://github.com/skevetter/devpod/releases/download/\${VERSION}/DevPod.metainfo.xml|path: $GITHUB_WORKSPACE/desktop/flatpak/DevPod.metainfo.xml|" "$GITHUB_WORKSPACE/desktop/flatpak/sh.loft.devpod.yml"
+          sed -i "/sha256: \${SHA256}/d" "$GITHUB_WORKSPACE/desktop/flatpak/sh.loft.devpod.yml"
+          sed -i "/sha256: \${DESKTOP_SHA256}/d" "$GITHUB_WORKSPACE/desktop/flatpak/sh.loft.devpod.yml"
+          sed -i "/sha256: \${META_SHA256}/d" "$GITHUB_WORKSPACE/desktop/flatpak/sh.loft.devpod.yml"
 
       - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
         with:
@@ -254,7 +288,19 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ inputs.tag || github.ref_name }}
-          prerelease: true
+          draft: true
           files: |
             ./DevPod.flatpak
             ./DevPod-x86_64.flatpak.zip
+
+  prerelease:
+    name: Publish Prerelease
+    needs: [build-desktop, build-flatpak]
+    if: github.event.release.prerelease
+    runs-on: ubuntu-latest
+    steps:
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.tag || github.ref_name }}
+          prerelease: true
+          draft: false

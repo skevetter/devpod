@@ -84,6 +84,8 @@ jobs:
           distribution: goreleaser
           version: "~> v2"
           args: build --id devpod-${{ steps.os.outputs.runner_os }} --snapshot
+        env:
+          DEVPOD_CLI_VERSION: v0.0.0
 
       - uses: actions/upload-artifact@v6
         with:

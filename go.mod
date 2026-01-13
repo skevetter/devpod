@@ -15,7 +15,7 @@ require (
 	github.com/containers/image/v5 v5.36.2
 	github.com/creack/pty v1.1.24
 	github.com/distribution/reference v0.6.0
-	github.com/docker/cli v29.1.3+incompatible
+	github.com/docker/cli v29.1.4+incompatible
 	github.com/docker/docker v28.5.2+incompatible
 	github.com/docker/go-connections v0.6.0
 	github.com/evanphx/json-patch v5.9.11+incompatible
@@ -38,8 +38,8 @@ require (
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d
 	github.com/moby/buildkit v0.26.3
 	github.com/moby/term v0.5.2
-	github.com/onsi/ginkgo/v2 v2.27.3
-	github.com/onsi/gomega v1.38.3
+	github.com/onsi/ginkgo/v2 v2.27.4
+	github.com/onsi/gomega v1.39.0
 	github.com/pkg/errors v0.9.1
 	github.com/pkg/sftp v1.13.10
 	github.com/ramr/go-reaper v0.3.1
@@ -69,7 +69,7 @@ require (
 	k8s.io/utils v0.0.0-20260108192941-914a6e750570
 	mvdan.cc/sh/v3 v3.12.0
 	sigs.k8s.io/controller-runtime v0.22.4
-	tailscale.com v1.92.4
+	tailscale.com v1.92.5
 )
 
 require (

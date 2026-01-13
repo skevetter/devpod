@@ -28,28 +28,43 @@ type injectResult struct {
 	err         error
 }
 
-func InjectAndExecute(
-	ctx context.Context,
-	exec ExecFunc,
-	localFile LocalFile,
-	scriptParams *Params,
-	stdin io.Reader,
-	stdout io.Writer,
-	stderr io.Writer,
-	timeout time.Duration,
-	log log.Logger,
-) (bool, error) {
-	scriptRawCode, err := GenerateScript(Script, scriptParams)
+type InjectOptions struct {
+	Ctx          context.Context
+	Exec         ExecFunc
+	LocalFile    LocalFile
+	ScriptParams *Params
+	Stdin        io.Reader
+	Stdout       io.Writer
+	Stderr       io.Writer
+	Timeout      time.Duration
+	Log          log.Logger
+}
+
+func Inject(opts InjectOptions) (bool, error) {
+	if opts.Ctx == nil {
+		return false, fmt.Errorf("context is required")
+	}
+	if opts.Exec == nil {
+		return false, fmt.Errorf("exec function is required")
+	}
+	if opts.Log == nil {
+		return false, fmt.Errorf("log is required")
+	}
+	if opts.ScriptParams == nil {
+		return false, fmt.Errorf("script params is required")
+	}
+
+	scriptRawCode, err := GenerateScript(Script, opts.ScriptParams)
 	if err != nil {
 		return true, err
 	}
 
-	log.Debug("execute inject script")
-	if scriptParams.PreferAgentDownload {
-		log.WithFields(logrus.Fields{"url": scriptParams.DownloadURLs.Base}).Debug("download agent")
+	opts.Log.Debug("execute inject script")
+	if opts.ScriptParams.PreferAgentDownload {
+		opts.Log.WithFields(logrus.Fields{"url": opts.ScriptParams.DownloadURLs.Base}).Debug("download agent")
 	}
 
-	defer log.Debug("done injecting")
+	defer opts.Log.Debug("done injecting")
 
 	// start script
 	stdinReader, stdinWriter, err := os.Pipe()
@@ -64,26 +79,26 @@ func InjectAndExecute(
 	}
 
 	// delayed stderr
-	delayedStderr := newDelayedWriter(stderr)
+	delayedStderr := newDelayedWriter(opts.Stderr)
 
 	// check if context is done
 	select {
-	case <-ctx.Done():
+	case <-opts.Ctx.Done():
 		return true, context.Canceled
 	default:
 	}
 
 	// create cancel context
-	cancelCtx, cancel := context.WithCancel(ctx)
+	cancelCtx, cancel := context.WithCancel(opts.Ctx)
 	defer cancel()
 
 	// start execution of inject.sh
 	execErrChan := make(chan error, 1)
 	go func() {
 		defer func() { _ = stdoutWriter.Close() }()
-		defer log.Debug("done exec")
+		defer opts.Log.Debug("done exec")
 
-		err := exec(cancelCtx, scriptRawCode, stdinReader, stdoutWriter, delayedStderr)
+		err := opts.Exec(cancelCtx, scriptRawCode, stdinReader, stdoutWriter, delayedStderr)
 		if err != nil && !errors.Is(err, context.Canceled) && !strings.Contains(err.Error(), "signal: ") {
 			execErrChan <- command.WrapCommandError(delayedStderr.Buffer(), err)
 		} else {
@@ -95,9 +110,9 @@ func InjectAndExecute(
 	injectChan := make(chan injectResult, 1)
 	go func() {
 		defer func() { _ = stdinWriter.Close() }()
-		defer log.Debug("done inject")
+		defer opts.Log.Debug("done inject")
 
-		wasExecuted, err := inject(localFile, stdinWriter, stdin, stdoutReader, stdout, delayedStderr, timeout, log)
+		wasExecuted, err := inject(opts.LocalFile, stdinWriter, opts.Stdin, stdoutReader, opts.Stdout, delayedStderr, opts.Timeout, opts.Log)
 		injectChan <- injectResult{
 			wasExecuted: wasExecuted,
 			err:         command.WrapCommandError(delayedStderr.Buffer(), err),
@@ -118,13 +133,13 @@ func InjectAndExecute(
 		return result.wasExecuted, result.err
 	} else if err != nil {
 		return result.wasExecuted, err
-	} else if result.wasExecuted || scriptParams.Command == "" {
+	} else if result.wasExecuted || opts.ScriptParams.Command == "" {
 		return result.wasExecuted, nil
 	}
 
-	log.Debugf("Rerun command as binary was injected")
+	opts.Log.Debugf("Rerun command as binary was injected")
 	delayedStderr.Start()
-	return true, exec(ctx, scriptParams.Command, stdin, stdout, delayedStderr)
+	return true, opts.Exec(opts.Ctx, opts.ScriptParams.Command, opts.Stdin, opts.Stdout, delayedStderr)
 }
 
 func inject(

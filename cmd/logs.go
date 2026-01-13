@@ -86,9 +86,9 @@ func (cmd *LogsCmd) Run(ctx context.Context, args []string) error {
 		stderr := log.ErrorStreamOnly().Writer(logrus.DebugLevel, false)
 		defer func() { _ = stderr.Close() }()
 
-		errChan <- agent.InjectAgentAndExecute(
-			ctx,
-			func(ctx context.Context, command string, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
+		errChan <- agent.InjectAgent(&agent.InjectOptions{
+			Ctx: ctx,
+			Exec: func(ctx context.Context, command string, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
 				return client.Command(ctx, clientpkg.CommandOptions{
 					Command: command,
 					Stdin:   stdin,
@@ -96,15 +96,16 @@ func (cmd *LogsCmd) Run(ctx context.Context, args []string) error {
 					Stderr:  stderr,
 				})
 			},
-			client.AgentLocal(),
-			client.AgentPath(),
-			client.AgentURL(),
-			true,
-			sshServerCmd,
-			stdinReader,
-			stdoutWriter,
-			stderr,
-			log.ErrorStreamOnly(), timeout)
+			IsLocal:         client.AgentLocal(),
+			RemoteAgentPath: client.AgentPath(),
+			DownloadURL:     client.AgentURL(),
+			Command:         sshServerCmd,
+			Stdin:           stdinReader,
+			Stdout:          stdoutWriter,
+			Stderr:          stderr,
+			Log:             log.ErrorStreamOnly(),
+			Timeout:         timeout,
+		})
 	}()
 
 	// create agent command

@@ -203,9 +203,9 @@ func buildAgentClient(ctx context.Context, workspaceClient client.WorkspaceClien
 		writer := log.ErrorStreamOnly().Writer(logrus.InfoLevel, false)
 		defer func() { _ = writer.Close() }()
 
-		errChan <- agent.InjectAgentAndExecute(
-			cancelCtx,
-			func(ctx context.Context, command string, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
+		errChan <- agent.InjectAgent(&agent.InjectOptions{
+			Ctx: cancelCtx,
+			Exec: func(ctx context.Context, command string, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
 				return workspaceClient.Command(ctx, client.CommandOptions{
 					Command: command,
 					Stdin:   stdin,
@@ -213,16 +213,16 @@ func buildAgentClient(ctx context.Context, workspaceClient client.WorkspaceClien
 					Stderr:  stderr,
 				})
 			},
-			workspaceClient.AgentLocal(),
-			workspaceClient.AgentPath(),
-			workspaceClient.AgentURL(),
-			true,
-			command,
-			stdinReader,
-			stdoutWriter,
-			writer,
-			log.ErrorStreamOnly(),
-			wInfo.InjectTimeout)
+			IsLocal:         workspaceClient.AgentLocal(),
+			RemoteAgentPath: workspaceClient.AgentPath(),
+			DownloadURL:     workspaceClient.AgentURL(),
+			Command:         command,
+			Stdin:           stdinReader,
+			Stdout:          stdoutWriter,
+			Stderr:          writer,
+			Log:             log.ErrorStreamOnly(),
+			Timeout:         wInfo.InjectTimeout,
+		})
 	}()
 
 	// create container etc.

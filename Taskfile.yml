@@ -19,6 +19,7 @@ tasks:
     desc: build devpod CLI for development
     env:
       GITHUB_REPOSITORY_OWNER: skevetter
+      DEVPOD_CLI_VERSION: v0.0.0
     cmd: goreleaser build --id devpod-dev --snapshot --clean
 
   cli:build:dev:pro:

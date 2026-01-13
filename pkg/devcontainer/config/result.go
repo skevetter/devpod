@@ -3,7 +3,6 @@ package config
 import (
 	"maps"
 	"slices"
-	"strings"
 )
 
 const UserLabel = "devpod.user"
@@ -56,13 +55,6 @@ func GetRemoteUser(result *Result) string {
 	if result.ContainerDetails != nil && result.ContainerDetails.Config.Labels != nil {
 		if userLabel := result.ContainerDetails.Config.Labels[UserLabel]; userLabel != "" {
 			return userLabel
-		}
-	}
-
-	if result.ContainerDetails != nil && result.ContainerDetails.Config.User != "" {
-		userParts := strings.Split(result.ContainerDetails.Config.User, ":")
-		if userParts[0] != "" {
-			return userParts[0]
 		}
 	}
 

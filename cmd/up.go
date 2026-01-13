@@ -563,9 +563,9 @@ func (cmd *UpCmd) devPodUpMachine(
 	}
 
 	agentInjectFunc := func(cancelCtx context.Context, sshCmd string, sshTunnelStdinReader, sshTunnelStdoutWriter *os.File, writer io.WriteCloser) error {
-		return agent.InjectAgentAndExecute(
-			cancelCtx,
-			func(ctx context.Context, command string, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
+		return agent.InjectAgent(&agent.InjectOptions{
+			Ctx: cancelCtx,
+			Exec: func(ctx context.Context, command string, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
 				return client.Command(ctx, client2.CommandOptions{
 					Command: command,
 					Stdin:   stdin,
@@ -573,17 +573,16 @@ func (cmd *UpCmd) devPodUpMachine(
 					Stderr:  stderr,
 				})
 			},
-			client.AgentLocal(),
-			client.AgentPath(),
-			client.AgentURL(),
-			true,
-			sshCmd,
-			sshTunnelStdinReader,
-			sshTunnelStdoutWriter,
-			writer,
-			log.ErrorStreamOnly(),
-			wInfo.InjectTimeout,
-		)
+			IsLocal:         client.AgentLocal(),
+			RemoteAgentPath: client.AgentPath(),
+			DownloadURL:     client.AgentURL(),
+			Command:         sshCmd,
+			Stdin:           sshTunnelStdinReader,
+			Stdout:          sshTunnelStdoutWriter,
+			Stderr:          writer,
+			Log:             log.ErrorStreamOnly(),
+			Timeout:         wInfo.InjectTimeout,
+		})
 	}
 
 	return sshtunnel.ExecuteCommand(

@@ -33,9 +33,18 @@ func (r *runner) setupContainer(
 	timeout time.Duration,
 ) (*config.Result, error) {
 	// inject agent
-	err := agent.InjectAgent(ctx, func(ctx context.Context, command string, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
-		return r.Driver.CommandDevContainer(ctx, r.ID, "root", command, stdin, stdout, stderr)
-	}, false, agent.ContainerDevPodHelperLocation, agent.DefaultAgentDownloadURL(), false, r.Log, timeout)
+	err := agent.InjectAgent(&agent.InjectOptions{
+		Ctx: ctx,
+		Exec: func(ctx context.Context, command string, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
+			return r.Driver.CommandDevContainer(ctx, r.ID, "root", command, stdin, stdout, stderr)
+		},
+		IsLocal:         false,
+		RemoteAgentPath: agent.ContainerDevPodHelperLocation,
+		DownloadURL:     agent.DefaultAgentDownloadURL(),
+		PreferDownload:  agent.Bool(false),
+		Log:             r.Log,
+		Timeout:         timeout,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("inject agent %w", err)
 	}
