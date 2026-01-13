@@ -355,7 +355,8 @@ func RetryWithDeadline(
 		}
 
 		if attempt == cfg.MaxAttempts {
-			return err
+			return fmt.Errorf("%w after %d attempts: %v",
+				ErrInjectTimeout, attempt, err)
 		}
 
 		lastErr = err
