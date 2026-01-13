@@ -578,6 +578,7 @@ func (s *HTTPDownloadSource) cacheAndReturn(arch string, body io.ReadCloser) (io
 		}
 
 		_ = pw.Close()
+		_ = file.Sync()
 		_ = file.Close()
 
 		if err := os.Rename(tmpPath, cachePath); err == nil {
