@@ -460,6 +460,12 @@ func (c *BinaryCache) atomicWrite(path string, data io.Reader) error {
 		return err
 	}
 
+	if err := file.Chmod(0755); err != nil {
+		_ = file.Close()
+		_ = os.Remove(temp)
+		return err
+	}
+
 	if err := file.Close(); err != nil {
 		_ = os.Remove(temp)
 		return err
@@ -522,7 +528,7 @@ func (s *HTTPDownloadSource) GetBinary(ctx context.Context, arch string) (io.Rea
 		return nil, err
 	}
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		_ = resp.Body.Close()
 		return nil, fmt.Errorf("bad status: %s", resp.Status)
 	}
