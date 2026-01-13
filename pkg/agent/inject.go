@@ -95,14 +95,11 @@ func (o *InjectOptions) ApplyDefaults() {
 	isDefaultURL := o.DownloadURL == DefaultAgentDownloadURL()
 	hasCustomAgentURL := os.Getenv(EnvDevPodAgentURL) != "" || !isDefaultURL
 
-	if hasCustomAgentURL {
-		o.SkipVersionCheck = true
-	}
-
 	if o.PreferDownload != nil {
 		return
 	}
 
+	o.SkipVersionCheck = false
 	preferDownloadEnv := os.Getenv(EnvDevPodAgentPreferDownload)
 	if preferDownloadEnv != "" {
 		pref, err := strconv.ParseBool(preferDownloadEnv)
@@ -111,10 +108,13 @@ func (o *InjectOptions) ApplyDefaults() {
 			pref = true
 		}
 		o.PreferDownload = Bool(pref)
+		o.SkipVersionCheck = true
 	} else if hasCustomAgentURL {
 		o.PreferDownload = Bool(true)
+		o.SkipVersionCheck = true
 	} else if version.GetVersion() == version.DevVersion {
 		o.PreferDownload = Bool(false)
+		o.SkipVersionCheck = true
 	} else {
 		o.PreferDownload = Bool(true)
 	}
