@@ -55,7 +55,11 @@ func Inject(opts InjectOptions) (bool, error) {
 	}
 
 	if opts.ScriptParams.PreferAgentDownload {
-		opts.Log.WithFields(logrus.Fields{"url": opts.ScriptParams.DownloadURLs.Base}).Debug("prefer downloading agent from URL")
+		url := ""
+		if opts.ScriptParams.DownloadURLs != nil {
+			url = opts.ScriptParams.DownloadURLs.Base
+		}
+		opts.Log.WithFields(logrus.Fields{"url": url}).Debug("prefer downloading agent from URL")
 	}
 
 	scriptRawCode, err := GenerateScript(Script, opts.ScriptParams)
