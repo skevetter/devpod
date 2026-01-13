@@ -303,12 +303,12 @@ type LogMetricsCollector struct {
 
 func (c *LogMetricsCollector) RecordInjection(metrics *InjectionMetrics) {
 	c.Log.WithFields(logrus.Fields{
-		"duration":          metrics.EndTime.Sub(metrics.StartTime),
-		"attempts":          metrics.Attempts,
-		"binarySource":      metrics.BinarySource,
-		"localAgentVersion": metrics.AgentVersion,
-		"versionCheck":      metrics.VersionCheck,
-		"success":           metrics.Success,
+		"duration":           metrics.EndTime.Sub(metrics.StartTime),
+		"attempts":           metrics.Attempts,
+		"binarySource":       metrics.BinarySource,
+		"remoteAgentVersion": metrics.AgentVersion,
+		"versionCheck":       metrics.VersionCheck,
+		"success":            metrics.Success,
 	}).Debug("agent injection metrics")
 }
 
@@ -327,49 +327,25 @@ func RetryWithDeadline(
 	cfg RetryConfig,
 	fn RetryFunc,
 ) error {
-	if cfg.MaxAttempts <= 0 {
-		cfg.MaxAttempts = 1
-	}
-
+	cfg.applyDefaults()
 	delay := cfg.InitialDelay
-	if delay <= 0 {
-		delay = time.Second
-	}
-
-	var lastErr error
-
 	for attempt := 1; attempt <= cfg.MaxAttempts; attempt++ {
-		if !cfg.Deadline.IsZero() && time.Now().After(cfg.Deadline) {
-			return fmt.Errorf("%w after %d attempts: %v",
-				ErrInjectTimeout, attempt-1, lastErr)
+		if err := cfg.checkDeadline(attempt - 1); err != nil {
+			return err
 		}
-
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		default:
+		if err := checkContextCancelled(ctx); err != nil {
+			return err
 		}
 
 		err := fn(attempt)
 		if err == nil {
 			return nil
 		}
-
 		if attempt == cfg.MaxAttempts {
 			return fmt.Errorf("agent injection failed after %d attempts: %w", attempt, err)
 		}
 
-		lastErr = err
-		sleep := delay
-		if !cfg.Deadline.IsZero() {
-			remaining := time.Until(cfg.Deadline)
-			if remaining <= 0 {
-				return fmt.Errorf("agent injection failed after %d attempts: %w", attempt, err)
-			}
-			if sleep > remaining {
-				sleep = remaining
-			}
-		}
+		sleep := calculateSleep(delay, &cfg)
 
 		log.WithFields(logrus.Fields{
 			"attempt": attempt,
@@ -377,10 +353,8 @@ func RetryWithDeadline(
 			"error":   err,
 		}).Debug("retrying")
 
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-time.After(sleep):
+		if err := sleepWithContext(ctx, sleep); err != nil {
+			return err
 		}
 
 		delay *= 2
@@ -389,7 +363,58 @@ func RetryWithDeadline(
 		}
 	}
 
-	return lastErr
+	// This should not be reachable because a return should occur in the loop
+	return fmt.Errorf("retry loop exited unexpectedly")
+}
+
+// applyDefaults sets default values for retry configuration
+func (cfg *RetryConfig) applyDefaults() {
+	if cfg.MaxAttempts <= 0 {
+		cfg.MaxAttempts = 1
+	}
+	if cfg.InitialDelay <= 0 {
+		cfg.InitialDelay = time.Second
+	}
+}
+
+// checkDeadline returns an error if the deadline has been exceeded
+func (cfg *RetryConfig) checkDeadline(attemptsCompleted int) error {
+	if cfg.Deadline.IsZero() || !time.Now().After(cfg.Deadline) {
+		return nil
+	}
+	return fmt.Errorf("%w after %d attempts", ErrInjectTimeout, attemptsCompleted)
+}
+
+// checkContextCancelled returns an error if the context has been cancelled
+func checkContextCancelled(ctx context.Context) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+		return nil
+	}
+}
+
+// calculateSleep determines the sleep duration respecting deadline and max delay
+func calculateSleep(delay time.Duration, cfg *RetryConfig) time.Duration {
+	sleep := delay
+	if !cfg.Deadline.IsZero() {
+		remaining := time.Until(cfg.Deadline)
+		if remaining > 0 && sleep > remaining {
+			sleep = remaining
+		}
+	}
+	return sleep
+}
+
+// sleepWithContext sleeps for the specified duration with context cancellation support
+func sleepWithContext(ctx context.Context, duration time.Duration) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-time.After(duration):
+		return nil
+	}
 }
 
 type versionChecker struct {
