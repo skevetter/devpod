@@ -96,7 +96,6 @@ func (cmd *SSHCmd) Run(ctx context.Context, args []string) error {
 				Stderr:          stderr,
 				Log:             log.Default.ErrorStreamOnly(),
 				Timeout:         timeout,
-				PreferDownload:  devPodConfig.ParseBoolOption(config.ContextOptionAgentPreferDownload),
 			})
 		}, writer)
 }

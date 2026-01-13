@@ -528,16 +528,19 @@ type HTTPDownloadSource struct {
 
 func (s *HTTPDownloadSource) GetBinary(ctx context.Context, arch string) (io.ReadCloser, error) {
 	binaryName := "devpod-linux-" + arch
-	downloadURL, _ := url.JoinPath(s.BaseURL, binaryName)
+	downloadURL, err := url.JoinPath(s.BaseURL, binaryName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to construct download URL: %w", err)
+	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, downloadURL, nil)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
 	resp, err := devpodhttp.GetHTTPClient().Do(req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to download binary: %w", err)
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {

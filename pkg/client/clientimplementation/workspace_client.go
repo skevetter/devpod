@@ -229,9 +229,6 @@ func (s *workspaceClient) agentInfo(cliOptions provider.CLIOptions) *provider.Ag
 	// Get the timeout from the context options
 	agentInfo.InjectTimeout = config.ParseTimeOption(s.devPodConfig, config.ContextOptionAgentInjectTimeout)
 
-	// Get the prefer download from the context options
-	agentInfo.PreferDownload = s.devPodConfig.ParseBoolOption(config.ContextOptionAgentPreferDownload)
-
 	// Set registry cache from context option
 	agentInfo.RegistryCache = s.devPodConfig.ContextOption(config.ContextOptionRegistryCache)
 

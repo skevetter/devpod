@@ -20,7 +20,6 @@ const (
 	ContextOptionSSHAgentForwarding         = "SSH_AGENT_FORWARDING"
 	ContextOptionSSHConfigPath              = "SSH_CONFIG_PATH"
 	ContextOptionAgentInjectTimeout         = "AGENT_INJECT_TIMEOUT"
-	ContextOptionAgentPreferDownload        = "AGENT_PREFER_DOWNLOAD"
 	ContextOptionRegistryCache              = "REGISTRY_CACHE"
 	ContextOptionSSHStrictHostKeyChecking   = "SSH_STRICT_HOST_KEY_CHECKING"
 )
@@ -94,12 +93,6 @@ var ContextOptions = []ContextOption{
 		Name:        ContextOptionAgentInjectTimeout,
 		Description: "Specifies the timeout to inject the agent",
 		Default:     "20",
-	},
-	{
-		Name:        ContextOptionAgentPreferDownload,
-		Description: "Specifies if DevPod should prefer downloading the agent binary from the agent url instead of uploading from the local binary",
-		Default:     "",
-		Enum:        []string{"true", "false"},
 	},
 	{
 		Name:        ContextOptionRegistryCache,

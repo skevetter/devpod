@@ -105,7 +105,6 @@ func (cmd *LogsCmd) Run(ctx context.Context, args []string) error {
 			Stderr:          stderr,
 			Log:             log.ErrorStreamOnly(),
 			Timeout:         timeout,
-			PreferDownload:  devPodConfig.ParseBoolOption(config.ContextOptionAgentPreferDownload),
 		})
 	}()
 
