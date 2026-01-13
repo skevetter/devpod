@@ -164,14 +164,19 @@ func InjectAgent(opts *InjectOptions) error {
 
 	vc := newVersionChecker(opts)
 	bm := NewBinaryManager(opts.Log, opts.DownloadURL)
-	retry := DefaultRetryStrategy()
-	if opts.Timeout > 0 {
-		retry.Timeout = opts.Timeout
-	}
-
-	return retry.WithRetry(opts.Ctx, opts.Log, func(attempt int) error {
-		return injectAgent(attempt, opts, bm, vc, metrics)
-	})
+	return RetryWithDeadline(
+		opts.Ctx,
+		opts.Log,
+		RetryConfig{
+			MaxAttempts:  30,
+			InitialDelay: 3 * time.Second,
+			MaxDelay:     15 * time.Second,
+			Deadline:     time.Now().Add(opts.Timeout),
+		},
+		func(attempt int) error {
+			return injectAgent(attempt, opts, bm, vc, metrics)
+		},
+	)
 }
 
 func injectLocally(opts *InjectOptions) error {
@@ -306,52 +311,85 @@ func (c *LogMetricsCollector) RecordInjection(metrics *InjectionMetrics) {
 	}).Debug("agent injection metrics")
 }
 
-type RetryStrategy struct {
+type RetryConfig struct {
 	MaxAttempts  int
 	InitialDelay time.Duration
 	MaxDelay     time.Duration
-	Timeout      time.Duration
+	Deadline     time.Time
 }
 
-func DefaultRetryStrategy() *RetryStrategy {
-	return &RetryStrategy{
-		MaxAttempts:  30,
-		InitialDelay: 3 * time.Second,
-		MaxDelay:     15 * time.Second,
-		Timeout:      5 * time.Minute,
+type RetryFunc func(attempt int) error
+
+func RetryWithDeadline(
+	ctx context.Context,
+	log log.Logger,
+	cfg RetryConfig,
+	fn RetryFunc,
+) error {
+	if cfg.MaxAttempts <= 0 {
+		cfg.MaxAttempts = 1
 	}
-}
 
-type RetryableFunc func(attempt int) error
+	delay := cfg.InitialDelay
+	if delay <= 0 {
+		delay = time.Second
+	}
 
-func (s *RetryStrategy) WithRetry(ctx context.Context, log log.Logger, fn RetryableFunc) error {
-	ctx, cancel := context.WithTimeout(ctx, s.Timeout)
-	defer cancel()
+	var lastErr error
 
-	delay := s.InitialDelay
-	attempt := 1
+	for attempt := 1; attempt <= cfg.MaxAttempts; attempt++ {
+		if !cfg.Deadline.IsZero() && time.Now().After(cfg.Deadline) {
+			return fmt.Errorf("%w after %d attempts: %v",
+				ErrInjectTimeout, attempt-1, lastErr)
+		}
 
-	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+		}
+
 		err := fn(attempt)
 		if err == nil {
 			return nil
 		}
 
-		if attempt >= s.MaxAttempts {
+		if attempt == cfg.MaxAttempts {
 			return err
 		}
 
+		lastErr = err
+		sleep := delay
+		if !cfg.Deadline.IsZero() {
+			remaining := time.Until(cfg.Deadline)
+			if remaining <= 0 {
+				return fmt.Errorf("%w after %d attempts: %v",
+					ErrInjectTimeout, attempt, lastErr)
+			}
+			if sleep > remaining {
+				sleep = remaining
+			}
+		}
+
+		log.WithFields(map[string]any{
+			"attempt": attempt,
+			"delay":   sleep,
+			"error":   err,
+		}).Debug("retrying")
+
 		select {
 		case <-ctx.Done():
-			return ErrInjectTimeout
-		case <-time.After(delay):
-			delay *= 2
-			if delay > s.MaxDelay {
-				delay = s.MaxDelay
-			}
-			attempt++
+			return ctx.Err()
+		case <-time.After(sleep):
+		}
+
+		delay *= 2
+		if delay > cfg.MaxDelay {
+			delay = cfg.MaxDelay
 		}
 	}
+
+	return lastErr
 }
 
 type versionChecker struct {
