@@ -305,3 +305,12 @@ func ParseTimeOption(cfg *Config, opt string) time.Duration {
 	}
 	return time.Duration(timeout) * time.Second
 }
+
+func (c *Config) ParseBoolOption(opt string) *bool {
+	val := c.ContextOption(opt)
+	if val == "" {
+		return nil
+	}
+	b := val == "true"
+	return &b
+}

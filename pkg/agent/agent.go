@@ -33,6 +33,8 @@ const defaultAgentDownloadURL = "https://github.com/skevetter/devpod/releases/do
 
 const EnvDevPodAgentURL = "DEVPOD_AGENT_URL"
 
+const EnvDevPodAgentPreferDownload = "DEVPOD_AGENT_PREFER_DOWNLOAD"
+
 const WorkspaceBusyFile = "workspace.lock"
 
 func DefaultAgentDownloadURL() string {

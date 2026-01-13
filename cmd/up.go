@@ -582,6 +582,7 @@ func (cmd *UpCmd) devPodUpMachine(
 			Stderr:          writer,
 			Log:             log.ErrorStreamOnly(),
 			Timeout:         wInfo.InjectTimeout,
+			PreferDownload:  wInfo.PreferDownload,
 		})
 	}
 

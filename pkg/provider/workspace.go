@@ -193,6 +193,9 @@ type AgentWorkspaceInfo struct {
 	// InjectTimeout specifies how long to wait for the agent to be injected into the dev container
 	InjectTimeout time.Duration `json:"injectTimeout,omitempty"`
 
+	// PreferDownload specifies if DevPod should prefer downloading the agent binary from the agent url instead of uploading from the local binary
+	PreferDownload *bool `json:"preferDownload,omitempty"`
+
 	// RegistryCache defines the registry to use for caching builds
 	RegistryCache string `json:"registryCache,omitempty"`
 }

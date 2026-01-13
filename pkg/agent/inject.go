@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -84,21 +85,32 @@ func (o *InjectOptions) ApplyDefaults() {
 		o.RemoteVersion = o.LocalVersion
 	}
 
-	hasCustomAgentURL := os.Getenv(EnvDevPodAgentURL) != ""
+	if strings.Contains(o.DownloadURL, "github.com") && strings.Contains(o.DownloadURL, "/releases/tag/") {
+		normalizedDownloadUrl := strings.Replace(o.DownloadURL, "/releases/tag/", "/releases/download/", 1)
+		o.Log.Warnf("download URL %s is a tag URL, normalizing to download URL %s", o.DownloadURL, normalizedDownloadUrl)
+		o.DownloadURL = normalizedDownloadUrl
+	}
+
+	isDefaultURL := o.DownloadURL == DefaultAgentDownloadURL()
+	hasCustomAgentURL := os.Getenv(EnvDevPodAgentURL) != "" || !isDefaultURL
+
 	if hasCustomAgentURL {
 		o.SkipVersionCheck = true
 	}
 
-	if o.PreferDownload == nil {
-		if hasCustomAgentURL {
-			o.PreferDownload = Bool(true)
-		} else {
-			if version.GetVersion() == version.DevVersion {
-				o.PreferDownload = Bool(false)
-			} else {
-				o.PreferDownload = Bool(true)
-			}
-		}
+	if o.PreferDownload != nil {
+		return
+	}
+
+	preferDownloadEnv := os.Getenv(EnvDevPodAgentPreferDownload)
+	if preferDownloadEnv != "" {
+		o.PreferDownload = Bool(preferDownloadEnv == "true")
+	} else if hasCustomAgentURL {
+		o.PreferDownload = Bool(true)
+	} else if version.GetVersion() == version.DevVersion {
+		o.PreferDownload = Bool(false)
+	} else {
+		o.PreferDownload = Bool(true)
 	}
 }
 
@@ -230,11 +242,10 @@ func injectAgent(
 			metrics.AgentVersion = detectedVersion
 		}
 		if err != nil {
-			opts.Log.WithFields(logrus.Fields{"error": err}).Warn("Version validation failed")
 			metrics.VersionCheck = false
-		} else {
-			metrics.VersionCheck = true
+			return &InjectError{Stage: "version_check", Cause: err}
 		}
+		metrics.VersionCheck = true
 	} else {
 		metrics.AgentVersion = opts.RemoteVersion
 	}
@@ -516,9 +527,10 @@ type HTTPDownloadSource struct {
 }
 
 func (s *HTTPDownloadSource) GetBinary(ctx context.Context, arch string) (io.ReadCloser, error) {
-	url := fmt.Sprintf("%s/devpod-linux-%s", s.BaseURL, arch)
+	binaryName := "devpod-linux-" + arch
+	downloadURL, _ := url.JoinPath(s.BaseURL, binaryName)
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, downloadURL, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -531,6 +543,12 @@ func (s *HTTPDownloadSource) GetBinary(ctx context.Context, arch string) (io.Rea
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		_ = resp.Body.Close()
 		return nil, fmt.Errorf("bad status: %s", resp.Status)
+	}
+
+	contentType := resp.Header.Get("Content-Type")
+	if strings.Contains(contentType, "text/html") {
+		_ = resp.Body.Close()
+		return nil, fmt.Errorf("received HTML instead of binary from %s (check if the AGENT_URL is correct)", downloadURL)
 	}
 
 	if s.Cache != nil {
