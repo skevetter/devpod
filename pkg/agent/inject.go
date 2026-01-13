@@ -124,13 +124,13 @@ func InjectAgent(opts *InjectOptions) error {
 		return err
 	}
 
-	opts.MetricsCollector = &LogMetricsCollector{Log: opts.Log}
+	if opts.MetricsCollector == nil {
+		opts.MetricsCollector = &LogMetricsCollector{Log: opts.Log}
+	}
 	metrics := &InjectionMetrics{StartTime: time.Now(), BinarySource: "existing"}
 	defer func() {
 		metrics.EndTime = time.Now()
-		if opts.MetricsCollector != nil {
-			opts.MetricsCollector.RecordInjection(metrics)
-		}
+		opts.MetricsCollector.RecordInjection(metrics)
 	}()
 
 	if opts.IsLocal {
@@ -541,23 +541,23 @@ func (s *HTTPDownloadSource) cacheAndReturn(arch string, body io.ReadCloser) (io
 			_ = body.Close()
 		}()
 
-		cachePath := s.Cache.pathFor(arch)
-		if err := os.MkdirAll(filepath.Dir(cachePath), 0755); err != nil {
+		streamOnly := func() {
 			if _, err := io.Copy(pw, body); err != nil {
 				_ = pw.CloseWithError(err)
 			} else {
 				_ = pw.Close()
 			}
+		}
+
+		cachePath := s.Cache.pathFor(arch)
+		if err := os.MkdirAll(filepath.Dir(cachePath), 0755); err != nil {
+			streamOnly()
 			return
 		}
 
 		file, err := os.CreateTemp(filepath.Dir(cachePath), "devpod-agent-*.tmp")
 		if err != nil {
-			if _, err := io.Copy(pw, body); err != nil {
-				_ = pw.CloseWithError(err)
-			} else {
-				_ = pw.Close()
-			}
+			streamOnly()
 			return
 		}
 		tmpPath := file.Name()

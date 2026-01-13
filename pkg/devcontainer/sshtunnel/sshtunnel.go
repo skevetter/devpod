@@ -161,7 +161,7 @@ func ExecuteCommand(
 		if err != nil {
 			_ = streamer.Close()
 			if out := streamer.ErrorOutput(); out != "" {
-				errChan <- fmt.Errorf("run agent command failed\n%s", out)
+				errChan <- fmt.Errorf("run agent command failed: %w\n%s", err, out)
 			} else {
 				errChan <- fmt.Errorf("run agent command failed %w", err)
 			}

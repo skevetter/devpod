@@ -41,6 +41,12 @@ type InjectOptions struct {
 }
 
 func Inject(opts InjectOptions) (bool, error) {
+	if opts.Ctx == nil {
+		return false, fmt.Errorf("context is required")
+	}
+	if opts.Exec == nil {
+		return false, fmt.Errorf("exec function is required")
+	}
 	if opts.Log == nil {
 		return false, fmt.Errorf("log is required")
 	}
