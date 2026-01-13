@@ -159,7 +159,7 @@ func InjectAgent(opts *InjectOptions) error {
 		"localVersion":   opts.LocalVersion,
 		"remoteVersion":  opts.RemoteVersion,
 		"skipCheck":      opts.SkipVersionCheck,
-		"preferDownload": opts.PreferDownloadFromRemoteUrl,
+		"preferDownload": strconv.FormatBool(*opts.PreferDownloadFromRemoteUrl),
 		"timeout":        opts.Timeout,
 	}).Debug("starting agent injection")
 
@@ -303,12 +303,12 @@ type LogMetricsCollector struct {
 
 func (c *LogMetricsCollector) RecordInjection(metrics *InjectionMetrics) {
 	c.Log.WithFields(logrus.Fields{
-		"duration":     metrics.EndTime.Sub(metrics.StartTime),
-		"attempts":     metrics.Attempts,
-		"binarySource": metrics.BinarySource,
-		"agentVersion": metrics.AgentVersion,
-		"versionCheck": metrics.VersionCheck,
-		"success":      metrics.Success,
+		"duration":          metrics.EndTime.Sub(metrics.StartTime),
+		"attempts":          metrics.Attempts,
+		"binarySource":      metrics.BinarySource,
+		"localAgentVersion": metrics.AgentVersion,
+		"versionCheck":      metrics.VersionCheck,
+		"success":           metrics.Success,
 	}).Debug("agent injection metrics")
 }
 
