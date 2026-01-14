@@ -177,7 +177,7 @@ export function SourceInput({ isDisabled, resetPreset }: TSourceInputProps) {
     }
 
     return {
-      placeholder: "github.com/skevetter/devpod-example-go",
+      placeholder: "github.com/microsoft/vscode-remote-try-go",
       secondaryAction: (
         <Popover isLazy onOpen={handlePopoverOpened}>
           <PopoverTrigger>
