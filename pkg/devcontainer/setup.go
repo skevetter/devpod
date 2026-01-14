@@ -38,12 +38,12 @@ func (r *runner) setupContainer(
 		Exec: func(ctx context.Context, command string, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
 			return r.Driver.CommandDevContainer(ctx, r.ID, "root", command, stdin, stdout, stderr)
 		},
-		IsLocal:         false,
-		RemoteAgentPath: agent.ContainerDevPodHelperLocation,
-		DownloadURL:     agent.DefaultAgentDownloadURL(),
-		PreferDownload:  agent.Bool(false),
-		Log:             r.Log,
-		Timeout:         timeout,
+		IsLocal:                     false,
+		RemoteAgentPath:             agent.ContainerDevPodHelperLocation,
+		DownloadURL:                 agent.DefaultAgentDownloadURL(),
+		PreferDownloadFromRemoteUrl: agent.Bool(false),
+		Log:                         r.Log,
+		Timeout:                     timeout,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("inject agent %w", err)

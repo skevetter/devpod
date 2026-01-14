@@ -33,7 +33,7 @@
     "@tauri-apps/api": "2.9.1",
     "@tauri-apps/plugin-clipboard-manager": "2.3.2",
     "@tauri-apps/plugin-dialog": "2.4.2",
-    "@tauri-apps/plugin-fs": "2.4.4",
+    "@tauri-apps/plugin-fs": "2.4.5",
     "@tauri-apps/plugin-log": "2.7.1",
     "@tauri-apps/plugin-os": "2.3.2",
     "@tauri-apps/plugin-process": "2.3.1",
@@ -61,12 +61,12 @@
     "uuid": "13.0.0"
   },
   "devDependencies": {
-    "@eslint/compat": "2.0.0",
+    "@eslint/compat": "2.0.1",
     "@eslint/eslintrc": "3.3.3",
     "@eslint/js": "9.39.2",
     "@tanstack/eslint-plugin-query": "4.39.1",
     "@tauri-apps/cli": "2.9.6",
-    "@types/node": "24.10.4",
+    "@types/node": "24.10.8",
     "@types/react": "18.3.27",
     "@types/react-dom": "18.3.7",
     "@typescript-eslint/eslint-plugin": "8.52.0",

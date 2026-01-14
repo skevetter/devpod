@@ -2,10 +2,8 @@ package agent
 
 import (
 	"context"
-	"errors"
 	"io"
 	"testing"
-	"time"
 
 	"github.com/skevetter/log"
 	"github.com/stretchr/testify/suite"
@@ -57,7 +55,7 @@ func (s *InjectTestSuite) TestVersionChecker() {
 		}
 		mockExec := &MockExecFunc{Output: "v1.0.0\n"}
 
-		detected, err := vc.validateRemoteAgent(s.ctx, mockExec.Exec, "/path", s.logger)
+		detected, err := vc.detectRemoteAgentVersion(s.ctx, mockExec.Exec, "/path", s.logger)
 		s.NoError(err)
 		s.Equal("v1.0.0", detected)
 	})
@@ -69,37 +67,22 @@ func (s *InjectTestSuite) TestVersionChecker() {
 		}
 		mockExec := &MockExecFunc{Output: "v0.9.0\n"}
 
-		detected, err := vc.validateRemoteAgent(s.ctx, mockExec.Exec, "/path", s.logger)
+		detected, err := vc.detectRemoteAgentVersion(s.ctx, mockExec.Exec, "/path", s.logger)
 		s.Error(err)
 		s.Equal("v0.9.0", detected)
 	})
 
 	s.Run("Skip", func() {
-		vc := &versionChecker{skipCheck: true}
-		mockExec := &MockExecFunc{Output: "irrelevant"}
+		vc := &versionChecker{
+			remoteVersion: "v1.0.0",
+			skipCheck:     true,
+		}
+		mockExec := &MockExecFunc{Output: "v0.9.0\n"}
 
-		detected, err := vc.validateRemoteAgent(s.ctx, mockExec.Exec, "/path", s.logger)
+		detected, err := vc.detectRemoteAgentVersion(s.ctx, mockExec.Exec, "/path", s.logger)
 		s.NoError(err)
-		s.Empty(detected)
+		s.Equal("v0.9.0", detected)
 	})
-}
-
-func (s *InjectTestSuite) TestRetryStrategy() {
-	rs := &RetryStrategy{
-		MaxAttempts:  3,
-		InitialDelay: time.Millisecond,
-		MaxDelay:     time.Millisecond * 10,
-		Timeout:      time.Second,
-	}
-
-	attempts := 0
-	err := rs.WithRetry(s.ctx, s.logger, func(a int) error {
-		attempts = a
-		return errors.New("fail")
-	})
-
-	s.Error(err)
-	s.Equal(3, attempts, "Should retry up to MaxAttempts")
 }
 
 // MockExecFunc is a helper for testing

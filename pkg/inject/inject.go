@@ -54,16 +54,20 @@ func Inject(opts InjectOptions) (bool, error) {
 		return false, fmt.Errorf("script params is required")
 	}
 
+	if opts.ScriptParams.PreferAgentDownload {
+		url := ""
+		if opts.ScriptParams.DownloadURLs != nil {
+			url = opts.ScriptParams.DownloadURLs.Base
+		}
+		opts.Log.WithFields(logrus.Fields{"url": url}).Debug("prefer downloading agent from URL")
+	}
+
 	scriptRawCode, err := GenerateScript(Script, opts.ScriptParams)
 	if err != nil {
 		return true, err
 	}
 
 	opts.Log.Debug("execute inject script")
-	if opts.ScriptParams.PreferAgentDownload {
-		opts.Log.WithFields(logrus.Fields{"url": opts.ScriptParams.DownloadURLs.Base}).Debug("download agent")
-	}
-
 	defer opts.Log.Debug("done injecting")
 
 	// start script
