@@ -248,18 +248,17 @@ func injectAgent(
 		return &InjectError{Stage: "inject", Cause: err}
 	}
 
+	detectedVersion, err := vc.detectRemoteAgentVersion(opts.Ctx, opts.Exec, opts.RemoteAgentPath, opts.Log)
+	if detectedVersion != "" {
+		metrics.AgentVersion = detectedVersion
+	}
+
 	if !opts.SkipVersionCheck {
-		detectedVersion, err := vc.validateRemoteAgent(opts.Ctx, opts.Exec, opts.RemoteAgentPath, opts.Log)
-		if detectedVersion != "" {
-			metrics.AgentVersion = detectedVersion
-		}
 		if err != nil {
 			metrics.VersionCheck = false
 			return &InjectError{Stage: "version_check", Cause: err}
 		}
 		metrics.VersionCheck = true
-	} else {
-		metrics.AgentVersion = opts.RemoteVersion
 	}
 
 	metrics.Success = true
@@ -439,17 +438,12 @@ func (vc *versionChecker) buildExistsCheck(agentPath string) string {
 		agentPath, agentPath, vc.remoteVersion)
 }
 
-func (vc *versionChecker) validateRemoteAgent(
+func (vc *versionChecker) detectRemoteAgentVersion(
 	ctx context.Context,
 	exec inject.ExecFunc,
 	agentPath string,
 	log log.Logger,
 ) (string, error) {
-	if vc.skipCheck {
-		log.Debug("skipping version validation")
-		return "", nil
-	}
-
 	buf := &bytes.Buffer{}
 	versionCmd := fmt.Sprintf("%s version", agentPath)
 	err := exec(ctx, versionCmd, nil, buf, io.Discard)
@@ -458,6 +452,12 @@ func (vc *versionChecker) validateRemoteAgent(
 	}
 
 	actualVersion := strings.TrimSpace(buf.String())
+
+	if vc.skipCheck {
+		log.Debugf("skipping version validation, detected version: %s", actualVersion)
+		return actualVersion, nil
+	}
+
 	if actualVersion != vc.remoteVersion {
 		return actualVersion, fmt.Errorf("version mismatch: expected %s, got %s",
 			vc.remoteVersion, actualVersion)
