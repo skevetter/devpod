@@ -211,9 +211,9 @@ func (d *dockerDriver) buildxBuild(ctx context.Context, writer io.Writer, platfo
 	err := d.Docker.Run(ctx, args, nil, writer, multiWriter)
 	if err != nil {
 		if stderrBuf.Len() > 0 {
-			return fmt.Errorf("failed to build image %w %s", err, strings.TrimSpace(stderrBuf.String()))
+			return fmt.Errorf("failed to build image: %w: %s", err, strings.TrimSpace(stderrBuf.String()))
 		}
-		return fmt.Errorf("build image %w", err)
+		return fmt.Errorf("failed to build image: %w", err)
 	}
 
 	return nil
