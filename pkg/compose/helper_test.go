@@ -2,9 +2,19 @@ package compose
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/suite"
 )
 
-func TestParseVersion(t *testing.T) {
+type HelperTestSuite struct {
+	suite.Suite
+}
+
+func TestHelperSuite(t *testing.T) {
+	suite.Run(t, new(HelperTestSuite))
+}
+
+func (s *HelperTestSuite) TestParseVersion() {
 	tests := []struct {
 		name    string
 		version string
@@ -49,14 +59,13 @@ func TestParseVersion(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		s.Run(tt.name, func() {
 			got, err := parseVersion(tt.version)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("parseVersion() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !tt.wantErr && got.String() != tt.want {
-				t.Errorf("parseVersion() = %v, want %v", got.String(), tt.want)
+			if tt.wantErr {
+				s.Error(err)
+			} else {
+				s.NoError(err)
+				s.Equal(tt.want, got.String())
 			}
 		})
 	}
