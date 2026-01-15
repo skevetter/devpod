@@ -145,7 +145,7 @@ func (h *ComposeHelper) Remove(ctx context.Context, projectName string, args []s
 }
 
 func (h *ComposeHelper) GetDefaultImage(projectName, serviceName string) (string, error) {
-	version, err := semver.Parse(strings.TrimPrefix(h.Version, "v"))
+	version, err := parseVersion(h.Version)
 	if err != nil {
 		return "", err
 	}
@@ -215,8 +215,21 @@ func (h *ComposeHelper) buildCmd(ctx context.Context, args ...string) *exec.Cmd 
 	return exec.CommandContext(ctx, h.Command, allArgs...)
 }
 
+// parseVersion extracts and parses the semver portion from version strings.
+// Handles non-standard formats like Ubuntu packages (2.37.1+ds1-0ubuntu2~24.04.1)
+// and desktop versions (2.40.3-desktop.1) by extracting only major.minor.patch.
+func parseVersion(version string) (semver.Version, error) {
+	version = strings.TrimPrefix(version, "v")
+	re := regexp.MustCompile(`^(\d+\.\d+\.\d+)`)
+	matches := re.FindStringSubmatch(version)
+	if len(matches) < 2 {
+		return semver.Version{}, fmt.Errorf("invalid version format: %s", version)
+	}
+	return semver.Parse(matches[1])
+}
+
 func (h *ComposeHelper) useNewProjectName() (bool, error) {
-	version, err := semver.Parse(h.Version)
+	version, err := parseVersion(h.Version)
 	if err != nil {
 		return false, err
 	}
