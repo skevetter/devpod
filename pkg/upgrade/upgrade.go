@@ -1,6 +1,7 @@
 package upgrade
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -10,8 +11,8 @@ import (
 	versionpkg "github.com/skevetter/devpod/pkg/version"
 	"github.com/skevetter/log"
 
-	"github.com/blang/semver"
-	"github.com/rhysd/go-github-selfupdate/selfupdate"
+	"github.com/blang/semver/v4"
+	"github.com/creativeprojects/go-selfupdate"
 )
 
 // Version holds the current version tag
@@ -39,18 +40,17 @@ var (
 // CheckForNewerVersion checks if there is a newer version on github and returns the newer version
 func CheckForNewerVersion() (string, error) {
 	latestVersionOnce.Do(func() {
-		latest, found, err := selfupdate.DetectLatest(githubSlug)
+		latest, found, err := selfupdate.DetectLatest(context.Background(), selfupdate.ParseSlug(githubSlug))
 		if err != nil {
 			errLatestVersion = err
 			return
 		}
 
-		v := semver.MustParse(version)
-		if !found || latest.Version.Equals(v) {
+		if !found || latest.Equal(version) {
 			return
 		}
 
-		latestVersion = latest.Version.String()
+		latestVersion = latest.Version()
 	})
 
 	return latestVersion, errLatestVersion
@@ -90,7 +90,7 @@ func Upgrade(flagVersion string, log log.Logger) error {
 		return fmt.Errorf("failed to initialize updater %w", err)
 	}
 	if flagVersion != "" {
-		release, found, err := updater.DetectVersion(githubSlug, flagVersion)
+		release, found, err := updater.DetectVersion(context.Background(), selfupdate.ParseSlug(githubSlug), flagVersion)
 		if err != nil {
 			return fmt.Errorf("find version %w", err)
 		} else if !found {
@@ -105,7 +105,7 @@ func Upgrade(flagVersion string, log log.Logger) error {
 		log.WithFields(logrus.Fields{
 			"version": flagVersion,
 		}).Info("downloading version")
-		err = updater.UpdateTo(release, cmdPath)
+		err = updater.UpdateTo(context.Background(), release, cmdPath)
 		if err != nil {
 			return err
 		}
@@ -125,22 +125,20 @@ func Upgrade(flagVersion string, log log.Logger) error {
 		return nil
 	}
 
-	v := semver.MustParse(version)
-
 	log.Info("downloading newest version")
-	latest, err := updater.UpdateSelf(v, githubSlug)
+	latest, err := updater.UpdateSelf(context.Background(), version, selfupdate.ParseSlug(githubSlug))
 	if err != nil {
 		return err
 	}
 
-	if latest.Version.Equals(v) {
+	if latest.Equal(version) {
 		// latest version is the same as current version. It means current binary is up to date.
 		log.WithFields(logrus.Fields{
 			"version": version,
 		}).Info("current binary is the latest version")
 	} else {
 		log.WithFields(logrus.Fields{
-			"version": latest.Version,
+			"version": latest.Version(),
 		}).Done("updated to version")
 		log.WithFields(logrus.Fields{
 			"releaseNotes": latest.ReleaseNotes,
