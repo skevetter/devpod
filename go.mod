@@ -43,7 +43,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/pkg/sftp v1.13.10
 	github.com/ramr/go-reaper v0.3.1
-	github.com/sirupsen/logrus v1.9.3
+	github.com/sirupsen/logrus v1.9.4
 	github.com/skevetter/log v0.0.0-20260106023547-bfd26ab1367c
 	github.com/skevetter/ssh v0.0.8
 	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
