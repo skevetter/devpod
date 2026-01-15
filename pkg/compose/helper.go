@@ -10,7 +10,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
 	composecli "github.com/compose-spec/compose-go/v2/cli"
 	composetypes "github.com/compose-spec/compose-go/v2/types"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
