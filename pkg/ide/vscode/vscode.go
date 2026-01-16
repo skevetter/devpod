@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kballard/go-shellquote"
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/command"
 	"github.com/skevetter/devpod/pkg/config"
@@ -52,9 +53,9 @@ type flavorConfig struct {
 var flavorConfigs = map[Flavor]flavorConfig{
 	FlavorStable:      {"VSCode", ".vscode-server", "code-server"},
 	FlavorInsiders:    {"VSCode Insiders", ".vscode-server-insiders", "code-server-insiders"},
-	FlavorCursor:      {"Cursor", ".cursor-server", "cursor-server"},
-	FlavorPositron:    {"positron", ".positron-server", "positron-server"},
-	FlavorCodium:      {"VSCodium", ".vscodium-server", "codium-server"},
+	FlavorCursor:      {"Cursor", ".cursor-server", "cursor"},
+	FlavorPositron:    {"positron", ".positron-server", "positron"},
+	FlavorCodium:      {"VSCodium", ".vscodium-server", "codium"},
 	FlavorWindsurf:    {"Windsurf", ".windsurf-server", "windsurf"},
 	FlavorAntigravity: {"Antigravity", ".antigravity-server", "agy"},
 }
@@ -197,12 +198,12 @@ func (o *VsCodeServer) installExtension(binPath, extension string, stdout, stder
 }
 
 func (o *VsCodeServer) buildExtensionCommand(binPath, extension string) *exec.Cmd {
-	installCmd := fmt.Sprintf("%s serve-local --accept-server-license-terms --install-extension '%s'", binPath, extension)
-
 	if o.userName != "" {
-		return exec.Command("su", o.userName, "-c", installCmd)
+		cmd := fmt.Sprintf("%s serve-local --accept-server-license-terms --install-extension %s",
+			binPath, shellquote.Join(extension))
+		return exec.Command("su", o.userName, "-c", cmd)
 	}
-	return exec.Command("sh", "-c", installCmd)
+	return exec.Command(binPath, "serve-local", "--accept-server-license-terms", "--install-extension", extension)
 }
 
 func (o *VsCodeServer) findServerBinaryPath(location string) string {
@@ -261,9 +262,6 @@ func (o *VsCodeServer) findInSystemPath(binName string) string {
 	if err != nil {
 		return ""
 	}
-	if !o.validateBinary(path) {
-		return ""
-	}
 	return path
 }
 
@@ -290,9 +288,32 @@ func (o *VsCodeServer) findInDir(root, binName string) string {
 }
 
 func (o *VsCodeServer) validateBinary(binPath string) bool {
+	if !o.isSafeBinary(binPath) {
+		o.log.WithFields(logrus.Fields{"path": binPath}).Warn("binary failed safety checks")
+		return false
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), binaryValidateTimeout)
 	defer cancel()
 	return exec.CommandContext(ctx, binPath, "--help").Run() == nil
+}
+
+func (o *VsCodeServer) isSafeBinary(binPath string) bool {
+	info, err := os.Stat(binPath)
+	if err != nil {
+		return false
+	}
+
+	mode := info.Mode()
+	if !mode.IsRegular() {
+		return false
+	}
+
+	if mode.Perm()&0002 != 0 {
+		return false
+	}
+
+	return true
 }
 
 func (o *VsCodeServer) prepareServerLocation(create bool) (string, error) {
