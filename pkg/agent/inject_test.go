@@ -60,18 +60,6 @@ func (s *InjectTestSuite) TestVersionChecker() {
 		s.Equal("v1.0.0", detected)
 	})
 
-	s.Run("Mismatch", func() {
-		vc := &versionChecker{
-			remoteVersion: "v1.0.0",
-			skipCheck:     false,
-		}
-		mockExec := &MockExecFunc{Output: "v0.9.0\n"}
-
-		detected, err := vc.detectRemoteAgentVersion(s.ctx, mockExec.Exec, "/path", s.logger)
-		s.Error(err)
-		s.Equal("v0.9.0", detected)
-	})
-
 	s.Run("Skip", func() {
 		vc := &versionChecker{
 			remoteVersion: "v1.0.0",

@@ -459,8 +459,13 @@ func (vc *versionChecker) detectRemoteAgentVersion(
 	}
 
 	if actualVersion != vc.remoteVersion {
-		return actualVersion, fmt.Errorf("version mismatch: expected %s, got %s",
-			vc.remoteVersion, actualVersion)
+		log.WithFields(logrus.Fields{
+			"expectedVersion": vc.remoteVersion,
+			"actualVersion":   actualVersion,
+			"agentPath":       agentPath,
+		}).Warnf("the remote agent version does not match the expected version." +
+			"if your workspace fails to deploy, you may need to manually remove " +
+			"the existing agent and redeploy.")
 	}
 
 	log.WithFields(logrus.Fields{
