@@ -463,8 +463,8 @@ func (vc *versionChecker) detectRemoteAgentVersion(
 			"expectedVersion": vc.remoteVersion,
 			"actualVersion":   actualVersion,
 			"agentPath":       agentPath,
-		}).Warnf("the remote agent version does not match the expected version." +
-			"if your workspace fails to deploy, you may need to manually remove " +
+		}).Warnf("the remote agent version does not match the expected version. " +
+			"If your workspace fails to deploy, you may need to manually remove " +
 			"the existing agent and redeploy.")
 	}
 
