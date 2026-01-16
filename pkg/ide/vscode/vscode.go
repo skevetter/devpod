@@ -199,8 +199,13 @@ func (o *VsCodeServer) installExtension(binPath, extension string, stdout, stder
 
 func (o *VsCodeServer) buildExtensionCommand(binPath, extension string) *exec.Cmd {
 	if o.userName != "" {
-		cmd := fmt.Sprintf("%s serve-local --accept-server-license-terms --install-extension %s",
-			binPath, shellquote.Join(extension))
+		cmd := shellquote.Join(
+			binPath,
+			"serve-local",
+			"--accept-server-license-terms",
+			"--install-extension",
+			extension,
+		)
 		return exec.Command("su", o.userName, "-c", cmd)
 	}
 	return exec.Command(binPath, "serve-local", "--accept-server-license-terms", "--install-extension", extension)
