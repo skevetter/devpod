@@ -244,7 +244,7 @@ module.exports = {
         {
           type: "doc",
           id: "other-topics/mobile-support",
-        }
+        },
       ],
     },
     {
@@ -253,8 +253,8 @@ module.exports = {
     },
     {
       type: "link",
-      label: "Open Sourced by Loft",
-      href: "https://loft.sh/",
+      label: "maintained by skevetter",
+      href: "https://github.com/skevetter/devpod",
     },
   ],
 };
