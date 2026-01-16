@@ -74,5 +74,10 @@ func (cmd *VSCodeAsyncCmd) Run(_ *cobra.Command, _ []string) error {
 func setupVSCodeExtensions(setupInfo *config.Result, flavor vscode.Flavor, log log.Logger) error {
 	vsCodeConfiguration := config.GetVSCodeConfiguration(setupInfo.MergedConfig)
 	user := config.GetRemoteUser(setupInfo)
-	return vscode.NewVSCodeServer(vsCodeConfiguration.Extensions, "", user, nil, flavor, log).InstallExtensions()
+	return vscode.NewVSCodeServer(vscode.ServerOptions{
+		Extensions: vsCodeConfiguration.Extensions,
+		UserName:   user,
+		Flavor:     flavor,
+		Log:        log,
+	}).InstallExtensions()
 }

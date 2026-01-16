@@ -3,6 +3,7 @@ package vscode
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -34,25 +35,53 @@ const (
 	FlavorAntigravity Flavor = "antigravity"
 )
 
+const (
+	serverSearchTimeout   = time.Minute * 10
+	initialBackoff        = time.Second * 2
+	maxBackoff            = time.Second * 30
+	binaryValidateTimeout = time.Second * 4
+	maxSearchDepth        = 10
+)
+
+type flavorConfig struct {
+	displayName string
+	serverDir   string
+	binName     string
+}
+
+var flavorConfigs = map[Flavor]flavorConfig{
+	FlavorStable:      {"VSCode", ".vscode-server", "code-server"},
+	FlavorInsiders:    {"VSCode Insiders", ".vscode-server-insiders", "code-server-insiders"},
+	FlavorCursor:      {"Cursor", ".cursor-server", "cursor-server"},
+	FlavorPositron:    {"positron", ".positron-server", "positron-server"},
+	FlavorCodium:      {"VSCodium", ".vscodium-server", "codium-server"},
+	FlavorWindsurf:    {"Windsurf", ".windsurf-server", "windsurf"},
+	FlavorAntigravity: {"Antigravity", ".antigravity-server", "agy"},
+}
+
 func (f Flavor) DisplayName() string {
-	switch f {
-	case FlavorStable:
-		return "VSCode"
-	case FlavorInsiders:
-		return "VSCode Insiders"
-	case FlavorCursor:
-		return "Cursor"
-	case FlavorPositron:
-		return "positron"
-	case FlavorCodium:
-		return "VSCodium"
-	case FlavorWindsurf:
-		return "Windsurf"
-	case FlavorAntigravity:
-		return "Antigravity"
-	default:
-		return "VSCode"
+	if cfg, ok := flavorConfigs[f]; ok {
+		return cfg.displayName
 	}
+	return "VSCode"
+}
+
+type ServerOptions struct {
+	Extensions []string
+	Settings   string
+	UserName   string
+	Values     map[string]config.OptionValue
+	Flavor     Flavor
+	Log        log.Logger
+}
+
+type VsCodeServer struct {
+	values     map[string]config.OptionValue
+	extensions []string
+	settings   string
+	userName   string
+	flavor     Flavor
+	log        log.Logger
 }
 
 var Options = ide.Options{
@@ -67,164 +96,137 @@ var Options = ide.Options{
 	},
 }
 
-func NewVSCodeServer(extensions []string, settings string, userName string, values map[string]config.OptionValue, flavor Flavor, log log.Logger) *VsCodeServer {
-	if flavor == "" {
-		flavor = FlavorStable
+func NewVSCodeServer(opts ServerOptions) *VsCodeServer {
+	if opts.Flavor == "" {
+		opts.Flavor = FlavorStable
 	}
 
 	return &VsCodeServer{
-		values:     values,
-		extensions: extensions,
-		settings:   settings,
-		userName:   userName,
-		log:        log,
-		flavor:     flavor,
+		values:     opts.Values,
+		extensions: opts.Extensions,
+		settings:   opts.Settings,
+		userName:   opts.UserName,
+		log:        opts.Log,
+		flavor:     opts.Flavor,
 	}
 }
 
-type VsCodeServer struct {
-	values     map[string]config.OptionValue
-	extensions []string
-	settings   string
-	userName   string
-	flavor     Flavor
-	log        log.Logger
-}
-
 func (o *VsCodeServer) InstallExtensions() error {
-	location, err := prepareServerLocation(o.userName, false, o.flavor)
+	location, err := o.prepareServerLocation(false)
 	if err != nil {
 		return err
 	}
 
 	binPath := o.waitForServerBinary(location)
 	if binPath == "" {
-		return fmt.Errorf("unable to locate server binary in workspace")
+		return fmt.Errorf("unable to locate server binary")
 	}
-	// start log writer
-	writer := o.log.Writer(logrus.InfoLevel, false)
-	errwriter := o.log.Writer(logrus.ErrorLevel, false)
-	defer func() { _ = writer.Close() }()
-	defer func() { _ = errwriter.Close() }()
 
-	// download extensions
-	for _, extension := range o.extensions {
-		o.log.Info("install extension " + extension)
-		runCommand := fmt.Sprintf("%s serve-local --accept-server-license-terms --install-extension '%s'", binPath, extension)
-		args := []string{}
-		if o.userName != "" {
-			args = append(args, "su", o.userName, "-c", runCommand)
+	writer := o.log.Writer(logrus.InfoLevel, false)
+	errWriter := o.log.Writer(logrus.ErrorLevel, false)
+	defer func() { _ = writer.Close() }()
+	defer func() { _ = errWriter.Close() }()
+
+	for _, ext := range o.extensions {
+		if err := o.installExtension(binPath, ext, writer, errWriter); err != nil {
+			o.log.WithFields(logrus.Fields{"extension": ext, "error": err}).Warn("failed installing extension")
 		} else {
-			args = append(args, "sh", "-c", runCommand)
+			o.log.WithFields(logrus.Fields{"extension": ext}).Info("installed extension")
 		}
-		cmd := exec.Command(args[0], args[1:]...)
-		cmd.Stdout = writer
-		cmd.Stderr = errwriter
-		err := cmd.Run()
-		if err != nil {
-			o.log.WithFields(logrus.Fields{
-				"extension": extension,
-				"error":     err,
-			}).Warn("failed installing extension")
-		}
-		o.log.WithFields(logrus.Fields{
-			"extension": extension,
-		}).Info("installed extension")
 	}
 
 	return nil
 }
 
 func (o *VsCodeServer) Install() error {
-	location, err := prepareServerLocation(o.userName, true, o.flavor)
+	location, err := o.prepareServerLocation(true)
 	if err != nil {
 		return err
 	}
 
-	settingsDir := filepath.Join(location, "data", "Machine")
-	err = os.MkdirAll(settingsDir, 0755)
-	if err != nil {
-		return err
-	}
-
-	// is installed
-	settingsFile := filepath.Join(settingsDir, "settings.json")
-	_, err = os.Stat(settingsFile)
-	if err == nil {
+	settingsFile := filepath.Join(location, "data", "Machine", "settings.json")
+	if o.isAlreadyInstalled(settingsFile) {
 		return nil
 	}
 
-	InstallAPKRequirements(o.log)
-
-	// add settings
-	if o.settings == "" {
-		o.settings = "{}"
-	}
-
-	// set settings
-	err = os.WriteFile(settingsFile, []byte(o.settings), 0600)
-	if err != nil {
+	if err := o.setupSettings(settingsFile); err != nil {
 		return err
 	}
 
-	// chown location
 	if o.userName != "" {
-		err = copy2.ChownR(location, o.userName)
-		if err != nil {
-			return fmt.Errorf("chown %w", err)
-		}
+		return o.changeOwnership(location)
 	}
 
 	return nil
 }
 
-const (
-	serverSearchTimeout   = time.Minute * 10
-	initialBackoff        = time.Second * 2
-	maxBackoff            = time.Second * 30
-	binaryValidateTimeout = time.Second * 4
-	maxSearchDepth        = 10
-)
-
-type serverConfig struct {
-	serverName string
-	binName    string
+func (o *VsCodeServer) isAlreadyInstalled(settingsFile string) bool {
+	_, err := os.Stat(settingsFile)
+	return err == nil
 }
 
-func (o *VsCodeServer) getServerConfig() serverConfig {
-	switch o.flavor {
-	case FlavorStable:
-		return serverConfig{"vscode-server", "code-server"}
-	case FlavorCursor:
-		return serverConfig{"cursor-server", "cursor-server"}
-	case FlavorPositron:
-		return serverConfig{"positron-server", "positron-server"}
-	case FlavorCodium:
-		return serverConfig{"vscodium-server", "codium-server"}
-	case FlavorInsiders:
-		return serverConfig{"vscode-server-insiders", "code-server-insiders"}
-	default:
-		return serverConfig{"vscode-server", "code-server"}
+func (o *VsCodeServer) setupSettings(settingsFile string) error {
+	if err := os.MkdirAll(filepath.Dir(settingsFile), 0755); err != nil {
+		return err
 	}
+
+	InstallAPKRequirements(o.log)
+
+	settings := o.settings
+	if settings == "" {
+		settings = "{}"
+	}
+
+	return os.WriteFile(settingsFile, []byte(settings), 0600)
+}
+
+func (o *VsCodeServer) changeOwnership(location string) error {
+	if err := copy2.ChownR(location, o.userName); err != nil {
+		return fmt.Errorf("chown: %w", err)
+	}
+	return nil
+}
+
+func (o *VsCodeServer) installExtension(binPath, extension string, stdout, stderr io.Writer) error {
+	o.log.WithFields(logrus.Fields{"extension": extension}).Info("installing extension")
+
+	cmd := o.buildExtensionCommand(binPath, extension)
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
+	return cmd.Run()
+}
+
+func (o *VsCodeServer) buildExtensionCommand(binPath, extension string) *exec.Cmd {
+	installCmd := fmt.Sprintf("%s serve-local --accept-server-license-terms --install-extension '%s'", binPath, extension)
+
+	if o.userName != "" {
+		return exec.Command("su", o.userName, "-c", installCmd)
+	}
+	return exec.Command("sh", "-c", installCmd)
 }
 
 func (o *VsCodeServer) findServerBinaryPath(location string) string {
-	cfg := o.getServerConfig()
+	cfg, ok := flavorConfigs[o.flavor]
+	if !ok {
+		cfg = flavorConfigs[FlavorStable]
+	}
 
 	searches := []struct {
 		name string
-		find func() string
+		fn   func() string
 	}{
 		{"system PATH", func() string { return o.findInSystemPath(cfg.binName) }},
-		{"install dir", func() string { return o.findBinaryInDir(location, cfg.binName) }},
+		{"install dir", func() string { return o.findInDir(location, cfg.binName) }},
 	}
 
 	for _, s := range searches {
-		if path := s.find(); path != "" {
-			if o.validateBinary(path) {
-				o.log.WithFields(logrus.Fields{"server": cfg.serverName, "path": path, "location": s.name}).Info("found server binary")
-				return path
-			}
+		if path := s.fn(); path != "" && o.validateBinary(path) {
+			o.log.WithFields(logrus.Fields{
+				"server":   cfg.serverDir,
+				"path":     path,
+				"location": s.name,
+			}).Info("found server binary")
+			return path
 		}
 	}
 
@@ -255,17 +257,19 @@ func (o *VsCodeServer) waitForServerBinary(location string) string {
 }
 
 func (o *VsCodeServer) findInSystemPath(binName string) string {
-	if path, err := exec.LookPath(binName); err == nil {
-		if o.validateBinary(path) {
-			return path
-		}
+	path, err := exec.LookPath(binName)
+	if err != nil {
+		return ""
 	}
-	return ""
+	if !o.validateBinary(path) {
+		return ""
+	}
+	return path
 }
 
-func (o *VsCodeServer) findBinaryInDir(root, binName string) string {
+func (o *VsCodeServer) findInDir(root, binName string) string {
 	var found string
-	filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
+	_ = filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
 		if err != nil || found != "" {
 			return filepath.SkipDir
 		}
@@ -291,41 +295,30 @@ func (o *VsCodeServer) validateBinary(binPath string) bool {
 	return exec.CommandContext(ctx, binPath, "--help").Run() == nil
 }
 
-func prepareServerLocation(userName string, create bool, flavor Flavor) (string, error) {
-	var err error
-	homeFolder := ""
-	if userName != "" {
-		homeFolder, err = command.GetHome(userName)
-	} else {
-		homeFolder, err = util.UserHomeDir()
-	}
+func (o *VsCodeServer) prepareServerLocation(create bool) (string, error) {
+	homeFolder, err := o.getHomeFolder()
 	if err != nil {
 		return "", err
 	}
 
-	folderName := ".vscode-server"
-	switch flavor {
-	case FlavorStable:
-		folderName = ".vscode-server"
-	case FlavorInsiders:
-		folderName = ".vscode-server-insiders"
-	case FlavorCursor:
-		folderName = ".cursor-server"
-	case FlavorPositron:
-		folderName = ".positron-server"
-	case FlavorCodium:
-		folderName = ".vscodium-server"
-	case FlavorWindsurf:
-		folderName = ".windsurf-server"
+	cfg, ok := flavorConfigs[o.flavor]
+	if !ok {
+		cfg = flavorConfigs[FlavorStable]
 	}
 
-	folder := filepath.Join(homeFolder, folderName)
+	folder := filepath.Join(homeFolder, cfg.serverDir)
 	if create {
-		err = os.MkdirAll(folder, 0755)
-		if err != nil {
+		if err := os.MkdirAll(folder, 0755); err != nil {
 			return "", err
 		}
 	}
 
 	return folder, nil
+}
+
+func (o *VsCodeServer) getHomeFolder() (string, error) {
+	if o.userName != "" {
+		return command.GetHome(o.userName)
+	}
+	return util.UserHomeDir()
 }

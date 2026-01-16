@@ -487,7 +487,14 @@ func (cmd *SetupContainerCmd) setupVSCode(setupInfo *config.Result, ideOptions m
 	}
 
 	user := config.GetRemoteUser(setupInfo)
-	err := vscode.NewVSCodeServer(vsCodeConfiguration.Extensions, settings, user, ideOptions, flavor, log).Install()
+	err := vscode.NewVSCodeServer(vscode.ServerOptions{
+		Extensions: vsCodeConfiguration.Extensions,
+		Settings:   settings,
+		UserName:   user,
+		Values:     ideOptions,
+		Flavor:     flavor,
+		Log:        log,
+	}).Install()
 	if err != nil {
 		return err
 	}
