@@ -23,20 +23,25 @@ var (
 	MarkerEndPrefix   = "# DevPod End "
 )
 
-func ConfigureSSHConfig(sshConfigPath, context, workspace, user, workdir string, gpgagent bool, devPodHome string, log log.Logger) error {
-	return configureSSHConfigSameFile(sshConfigPath, context, workspace, user, workdir, "", gpgagent, devPodHome, log)
+func ConfigureSSHConfig(sshConfigPath, sshConfigIncludePath, context, workspace, user, workdir string, gpgagent bool, devPodHome string, log log.Logger) error {
+	return configureSSHConfigSameFile(sshConfigPath, sshConfigIncludePath, context, workspace, user, workdir, "", gpgagent, devPodHome, log)
 }
 
-func configureSSHConfigSameFile(sshConfigPath, context, workspace, user, workdir, command string, gpgagent bool, devPodHome string, log log.Logger) error {
+func configureSSHConfigSameFile(sshConfigPath, sshConfigIncludePath, context, workspace, user, workdir, command string, gpgagent bool, devPodHome string, log log.Logger) error {
 	configLock.Lock()
 	defer configLock.Unlock()
 
-	newFile, err := addHost(sshConfigPath, workspace+"."+"devpod", user, context, workspace, workdir, command, gpgagent, devPodHome)
+	targetPath := sshConfigPath
+	if sshConfigIncludePath != "" {
+		targetPath = sshConfigIncludePath
+	}
+
+	newFile, err := addHost(targetPath, workspace+"."+"devpod", user, context, workspace, workdir, command, gpgagent, devPodHome)
 	if err != nil {
 		return fmt.Errorf("parse ssh config %w", err)
 	}
 
-	return writeSSHConfig(sshConfigPath, newFile, log)
+	return writeSSHConfig(targetPath, newFile, log)
 }
 
 type DevPodSSHEntry struct {
@@ -135,15 +140,24 @@ func addHostSection(config, execPath, host, user, context, workspace, workdir, c
 	return strings.Join(lines, newLineSep), nil
 }
 
-func GetUser(workspaceID string, sshConfigPath string) (string, error) {
+func GetUser(workspaceID string, sshConfigPath string, sshConfigIncludePath string) (string, error) {
 	path, err := ResolveSSHConfigPath(sshConfigPath)
 	if err != nil {
 		return "", fmt.Errorf("invalid ssh config path %w", err)
 	}
 	sshConfigPath = path
 
+	targetPath := sshConfigPath
+	if sshConfigIncludePath != "" {
+		includePath, err := ResolveSSHConfigPath(sshConfigIncludePath)
+		if err != nil {
+			return "", fmt.Errorf("invalid ssh config include path %w", err)
+		}
+		targetPath = includePath
+	}
+
 	user := "root"
-	_, err = transformHostSection(sshConfigPath, workspaceID+"."+"devpod", func(line string) string {
+	_, err = transformHostSection(targetPath, workspaceID+"."+"devpod", func(line string) string {
 		splitted := strings.Split(strings.ToLower(strings.TrimSpace(line)), " ")
 		if len(splitted) == 2 && splitted[0] == "user" {
 			user = strings.Trim(splitted[1], "\"")
@@ -158,16 +172,21 @@ func GetUser(workspaceID string, sshConfigPath string) (string, error) {
 	return user, nil
 }
 
-func RemoveFromConfig(workspaceID string, sshConfigPath string, log log.Logger) error {
+func RemoveFromConfig(workspaceID string, sshConfigPath string, sshConfigIncludePath string, log log.Logger) error {
 	configLock.Lock()
 	defer configLock.Unlock()
 
-	newFile, err := removeFromConfig(sshConfigPath, workspaceID+"."+"devpod")
+	targetPath := sshConfigPath
+	if sshConfigIncludePath != "" {
+		targetPath = sshConfigIncludePath
+	}
+
+	newFile, err := removeFromConfig(targetPath, workspaceID+"."+"devpod")
 	if err != nil {
 		return fmt.Errorf("parse ssh config %w", err)
 	}
 
-	return writeSSHConfig(sshConfigPath, newFile, log)
+	return writeSSHConfig(targetPath, newFile, log)
 }
 
 func writeSSHConfig(path, content string, log log.Logger) error {

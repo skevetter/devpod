@@ -128,7 +128,7 @@ func (cmd *SSHCmd) Run(
 	// get user
 	if cmd.User == "" {
 		var err error
-		cmd.User, err = devssh.GetUser(client.WorkspaceConfig().ID, client.WorkspaceConfig().SSHConfigPath)
+		cmd.User, err = devssh.GetUser(client.WorkspaceConfig().ID, client.WorkspaceConfig().SSHConfigPath, client.WorkspaceConfig().SSHConfigIncludePath)
 		if err != nil {
 			return err
 		}

@@ -143,7 +143,7 @@ func cleanupLocalWorkspaces(ctx context.Context, devPodConfig *config.Config, wo
 					return
 				}
 				// delete workspace folder
-				err = clientimplementation.DeleteWorkspaceFolder(devPodConfig.DefaultContext, client.Workspace(), client.WorkspaceConfig().SSHConfigPath, log)
+				err = clientimplementation.DeleteWorkspaceFolder(devPodConfig.DefaultContext, client.Workspace(), client.WorkspaceConfig().SSHConfigPath, client.WorkspaceConfig().SSHConfigIncludePath, log)
 				if err != nil {
 					log.WithFields(logrus.Fields{
 						"workspaceId": w.ID,

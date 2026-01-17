@@ -81,7 +81,7 @@ func (cmd *UpCmd) Run(ctx context.Context) error {
 
 	tunnelClient, logger, credentialsDir, err := initWorkspace(cancelCtx, cancel, workspaceInfo, cmd.Debug, !workspaceInfo.CLIOptions.Platform.Enabled && !workspaceInfo.CLIOptions.DisableDaemon)
 	if err != nil {
-		err1 := clientimplementation.DeleteWorkspaceFolder(workspaceInfo.Workspace.Context, workspaceInfo.Workspace.ID, workspaceInfo.Workspace.SSHConfigPath, logger)
+		err1 := clientimplementation.DeleteWorkspaceFolder(workspaceInfo.Workspace.Context, workspaceInfo.Workspace.ID, workspaceInfo.Workspace.SSHConfigPath, workspaceInfo.Workspace.SSHConfigIncludePath, logger)
 		if err1 != nil {
 			return fmt.Errorf("%s %w", err1.Error(), err)
 		}

@@ -88,6 +88,7 @@ func NewBuildCmd(flags *flags.GlobalFlags) *cobra.Command {
 				cmd.DevContainerImage,
 				cmd.DevContainerPath,
 				sshConfigPath,
+				"",
 				nil,
 				cmd.UID,
 				false,
