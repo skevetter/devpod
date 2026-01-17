@@ -16,7 +16,6 @@ type RunDockerDevContainerParams struct {
 	WorkspaceID  string
 	Options      *RunOptions
 	ParsedConfig *config.DevContainerConfig
-	Init         *bool
 	IDE          string
 	IDEOptions   map[string]config2.OptionValue
 }

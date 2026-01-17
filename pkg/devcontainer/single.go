@@ -222,7 +222,6 @@ func (r *runner) runContainer(
 			WorkspaceID:  r.ID,
 			Options:      runOptions,
 			ParsedConfig: parsedConfig.Config,
-			Init:         mergedConfig.Init,
 			IDE:          r.WorkspaceConfig.Workspace.IDE.Name,
 			IDEOptions:   r.WorkspaceConfig.Workspace.IDE.Options,
 		})
@@ -303,6 +302,7 @@ func (r *runner) getDockerlessRunOptions(
 			config.UserLabel + "=" + buildInfo.Dockerless.User,
 		},
 		Privileged:     mergedConfig.Privileged,
+		Init:           mergedConfig.Init,
 		WorkspaceMount: &workspaceMountParsed,
 		Mounts:         mounts,
 		Userns:         substitutionContext.Userns,
@@ -352,6 +352,7 @@ func (r *runner) getRunOptions(
 		CapAdd:         mergedConfig.CapAdd,
 		Labels:         labels,
 		Privileged:     mergedConfig.Privileged,
+		Init:           mergedConfig.Init,
 		WorkspaceMount: &workspaceMountParsed,
 		SecurityOpt:    mergedConfig.SecurityOpt,
 		Mounts:         mergedConfig.Mounts,

@@ -73,6 +73,9 @@ type RunOptions struct {
 	// Privileged indicates if the container should run with elevated permissions
 	Privileged *bool `json:"privileged,omitempty"`
 
+	// Init passes the --init flag when creating the container
+	Init *bool `json:"init,omitempty"`
+
 	// WorkspaceMount is the mount where the workspace should get mounted
 	WorkspaceMount *config.Mount `json:"workspaceMount,omitempty"`
 

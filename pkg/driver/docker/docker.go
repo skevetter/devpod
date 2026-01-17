@@ -286,6 +286,7 @@ func (d *dockerDriver) buildRunArgs(params *driver.RunDockerDevContainerParams, 
 		addWorkspaceMount(helper).
 		addUser().
 		addEnv().
+		addInit().
 		addPrivileged()
 
 	if err := b.addPodmanArgs(); err != nil {
@@ -326,6 +327,11 @@ func (b *runArgsBuilder) addUser() *runArgsBuilder {
 
 func (b *runArgsBuilder) addEnv() *runArgsBuilder {
 	b.args = b.driver.addEnvArgs(b.args, b.params.Options)
+	return b
+}
+
+func (b *runArgsBuilder) addInit() *runArgsBuilder {
+	b.args = b.driver.addInitArgs(b.args, b.params.Options)
 	return b
 }
 
@@ -427,6 +433,13 @@ func (d *dockerDriver) addUserArgs(args []string, options *driver.RunOptions) []
 func (d *dockerDriver) addEnvArgs(args []string, options *driver.RunOptions) []string {
 	for k, v := range options.Env {
 		args = append(args, "-e", k+"="+v)
+	}
+	return args
+}
+
+func (d *dockerDriver) addInitArgs(args []string, options *driver.RunOptions) []string {
+	if options.Init != nil && *options.Init {
+		args = append(args, "--init")
 	}
 	return args
 }
@@ -837,7 +850,7 @@ func (d *dockerDriver) applyPermissions(ctx context.Context, containerID, localU
 	}
 
 	if containerHome == "" {
-		log.WithFields(logrus.Fields{"containerID": containerID}).Warn("container home directory not found, skipping chown")
+		d.Log.WithFields(logrus.Fields{"containerID": containerID}).Warn("container home directory not found, skipping chown")
 		return nil
 	}
 
