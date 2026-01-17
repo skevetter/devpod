@@ -410,7 +410,12 @@ func (s *workspaceClient) Delete(ctx context.Context, opt client.DeleteOptions) 
 		}
 	}
 
-	return DeleteWorkspaceFolder(s.workspace.Context, s.workspace.ID, s.workspace.SSHConfigPath, s.workspace.SSHConfigIncludePath, s.log)
+	return DeleteWorkspaceFolder(DeleteWorkspaceFolderParams{
+		Context:              s.workspace.Context,
+		WorkspaceID:          s.workspace.ID,
+		SSHConfigPath:        s.workspace.SSHConfigPath,
+		SSHConfigIncludePath: s.workspace.SSHConfigIncludePath,
+	}, s.log)
 }
 
 func (s *workspaceClient) isMachineRunning(ctx context.Context) (bool, error) {
@@ -643,13 +648,21 @@ func DeleteMachineFolder(context, machineID string) error {
 	return nil
 }
 
-func DeleteWorkspaceFolder(context string, workspaceID string, sshConfigPath string, sshConfigIncludePath string, log log.Logger) error {
-	path, err := ssh.ResolveSSHConfigPath(sshConfigPath)
+type DeleteWorkspaceFolderParams struct {
+	Context              string
+	WorkspaceID          string
+	SSHConfigPath        string
+	SSHConfigIncludePath string
+}
+
+func DeleteWorkspaceFolder(params DeleteWorkspaceFolderParams, log log.Logger) error {
+	path, err := ssh.ResolveSSHConfigPath(params.SSHConfigPath)
 	if err != nil {
 		return err
 	}
-	sshConfigPath = path
+	sshConfigPath := path
 
+	sshConfigIncludePath := params.SSHConfigIncludePath
 	if sshConfigIncludePath != "" {
 		includePath, err := ssh.ResolveSSHConfigPath(sshConfigIncludePath)
 		if err != nil {
@@ -658,12 +671,12 @@ func DeleteWorkspaceFolder(context string, workspaceID string, sshConfigPath str
 		sshConfigIncludePath = includePath
 	}
 
-	err = ssh.RemoveFromConfig(workspaceID, sshConfigPath, sshConfigIncludePath, log)
+	err = ssh.RemoveFromConfig(params.WorkspaceID, sshConfigPath, sshConfigIncludePath, log)
 	if err != nil {
-		log.Errorf("Remove workspace '%s' from ssh config: %v", workspaceID, err)
+		log.Errorf("Remove workspace '%s' from ssh config: %v", params.WorkspaceID, err)
 	}
 
-	workspaceFolder, err := provider.GetWorkspaceDir(context, workspaceID)
+	workspaceFolder, err := provider.GetWorkspaceDir(params.Context, params.WorkspaceID)
 	if err != nil {
 		return err
 	}

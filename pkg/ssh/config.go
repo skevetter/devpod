@@ -23,25 +23,34 @@ var (
 	MarkerEndPrefix   = "# DevPod End "
 )
 
-func ConfigureSSHConfig(sshConfigPath, sshConfigIncludePath, context, workspace, user, workdir string, gpgagent bool, devPodHome string, log log.Logger) error {
-	return configureSSHConfigSameFile(sshConfigPath, sshConfigIncludePath, context, workspace, user, workdir, "", gpgagent, devPodHome, log)
+type SSHConfigParams struct {
+	SSHConfigPath        string
+	SSHConfigIncludePath string
+	Context              string
+	Workspace            string
+	User                 string
+	Workdir              string
+	Command              string
+	GPGAgent             bool
+	DevPodHome           string
+	Log                  log.Logger
 }
 
-func configureSSHConfigSameFile(sshConfigPath, sshConfigIncludePath, context, workspace, user, workdir, command string, gpgagent bool, devPodHome string, log log.Logger) error {
+func ConfigureSSHConfig(params SSHConfigParams) error {
 	configLock.Lock()
 	defer configLock.Unlock()
 
-	targetPath := sshConfigPath
-	if sshConfigIncludePath != "" {
-		targetPath = sshConfigIncludePath
+	targetPath := params.SSHConfigPath
+	if params.SSHConfigIncludePath != "" {
+		targetPath = params.SSHConfigIncludePath
 	}
 
-	newFile, err := addHost(targetPath, workspace+"."+"devpod", user, context, workspace, workdir, command, gpgagent, devPodHome)
+	newFile, err := addHost(targetPath, params.Workspace+"."+"devpod", params.User, params.Context, params.Workspace, params.Workdir, params.Command, params.GPGAgent, params.DevPodHome)
 	if err != nil {
 		return fmt.Errorf("parse ssh config %w", err)
 	}
 
-	return writeSSHConfig(targetPath, newFile, log)
+	return writeSSHConfig(targetPath, newFile, params.Log)
 }
 
 type DevPodSSHEntry struct {

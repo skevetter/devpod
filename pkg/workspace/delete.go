@@ -36,7 +36,12 @@ func Delete(ctx context.Context, devPodConfig *config.Config, args []string, ign
 		log.Errorf("Error retrieving workspace: %v", err)
 
 		// delete workspace folder
-		err = clientimplementation.DeleteWorkspaceFolder(devPodConfig.DefaultContext, workspaceID, "", "", log)
+		err = clientimplementation.DeleteWorkspaceFolder(clientimplementation.DeleteWorkspaceFolderParams{
+			Context:              devPodConfig.DefaultContext,
+			WorkspaceID:          workspaceID,
+			SSHConfigPath:        "",
+			SSHConfigIncludePath: "",
+		}, log)
 		if err != nil {
 			return "", err
 		}
@@ -52,7 +57,12 @@ func Delete(ctx context.Context, devPodConfig *config.Config, args []string, ign
 	workspaceConfig := client.WorkspaceConfig()
 	if !force && workspaceConfig.Imported {
 		// delete workspace folder
-		err = clientimplementation.DeleteWorkspaceFolder(devPodConfig.DefaultContext, client.Workspace(), workspaceConfig.SSHConfigPath, workspaceConfig.SSHConfigIncludePath, log)
+		err = clientimplementation.DeleteWorkspaceFolder(clientimplementation.DeleteWorkspaceFolderParams{
+			Context:              devPodConfig.DefaultContext,
+			WorkspaceID:          client.Workspace(),
+			SSHConfigPath:        workspaceConfig.SSHConfigPath,
+			SSHConfigIncludePath: workspaceConfig.SSHConfigIncludePath,
+		}, log)
 		if err != nil {
 			return "", err
 		}
@@ -138,7 +148,12 @@ func deleteSingleMachine(ctx context.Context, client client2.BaseWorkspaceClient
 	}
 
 	// delete workspace folder
-	err = clientimplementation.DeleteWorkspaceFolder(client.Context(), client.Workspace(), client.WorkspaceConfig().SSHConfigPath, client.WorkspaceConfig().SSHConfigIncludePath, log)
+	err = clientimplementation.DeleteWorkspaceFolder(clientimplementation.DeleteWorkspaceFolderParams{
+		Context:              client.Context(),
+		WorkspaceID:          client.Workspace(),
+		SSHConfigPath:        client.WorkspaceConfig().SSHConfigPath,
+		SSHConfigIncludePath: client.WorkspaceConfig().SSHConfigIncludePath,
+	}, log)
 	if err != nil {
 		return false, err
 	}

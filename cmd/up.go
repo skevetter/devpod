@@ -215,7 +215,14 @@ func (cmd *UpCmd) Run(
 		setupGPGAgentForwarding := cmd.GPGAgentForwarding || devPodConfig.ContextOption(config.ContextOptionGPGAgentForwarding) == "true"
 		sshConfigIncludePath := devPodConfig.ContextOption(config.ContextOptionSSHConfigIncludePath)
 
-		err = configureSSH(client, cmd.SSHConfigPath, sshConfigIncludePath, user, workdir, setupGPGAgentForwarding, devPodHome)
+		err = configureSSH(client, configureSSHParams{
+			sshConfigPath:        cmd.SSHConfigPath,
+			sshConfigIncludePath: sshConfigIncludePath,
+			user:                 user,
+			workdir:              workdir,
+			gpgagent:             setupGPGAgentForwarding,
+			devPodHome:           devPodHome,
+		})
 		if err != nil {
 			return err
 		}
@@ -1003,13 +1010,23 @@ func startBrowserTunnel(
 	return nil
 }
 
-func configureSSH(client client2.BaseWorkspaceClient, sshConfigPath, sshConfigIncludePath, user, workdir string, gpgagent bool, devPodHome string) error {
-	path, err := devssh.ResolveSSHConfigPath(sshConfigPath)
+type configureSSHParams struct {
+	sshConfigPath        string
+	sshConfigIncludePath string
+	user                 string
+	workdir              string
+	gpgagent             bool
+	devPodHome           string
+}
+
+func configureSSH(client client2.BaseWorkspaceClient, params configureSSHParams) error {
+	path, err := devssh.ResolveSSHConfigPath(params.sshConfigPath)
 	if err != nil {
 		return fmt.Errorf("invalid ssh config path %w", err)
 	}
-	sshConfigPath = path
+	sshConfigPath := path
 
+	sshConfigIncludePath := params.sshConfigIncludePath
 	if sshConfigIncludePath != "" {
 		includePath, err := devssh.ResolveSSHConfigPath(sshConfigIncludePath)
 		if err != nil {
@@ -1018,17 +1035,17 @@ func configureSSH(client client2.BaseWorkspaceClient, sshConfigPath, sshConfigIn
 		sshConfigIncludePath = includePath
 	}
 
-	err = devssh.ConfigureSSHConfig(
-		sshConfigPath,
-		sshConfigIncludePath,
-		client.Context(),
-		client.Workspace(),
-		user,
-		workdir,
-		gpgagent,
-		devPodHome,
-		log.Default,
-	)
+	err = devssh.ConfigureSSHConfig(devssh.SSHConfigParams{
+		SSHConfigPath:        sshConfigPath,
+		SSHConfigIncludePath: sshConfigIncludePath,
+		Context:              client.Context(),
+		Workspace:            client.Workspace(),
+		User:                 params.user,
+		Workdir:              params.workdir,
+		GPGAgent:             params.gpgagent,
+		DevPodHome:           params.devPodHome,
+		Log:                  log.Default,
+	})
 	if err != nil {
 		return err
 	}
@@ -1450,21 +1467,23 @@ func (cmd *UpCmd) prepareClient(ctx context.Context, devPodConfig *config.Config
 	client, err := workspace2.Resolve(
 		ctx,
 		devPodConfig,
-		cmd.IDE,
-		cmd.IDEOptions,
-		args,
-		cmd.ID,
-		cmd.Machine,
-		cmd.ProviderOptions,
-		cmd.Reconfigure,
-		cmd.DevContainerImage,
-		cmd.DevContainerPath,
-		cmd.SSHConfigPath,
-		sshConfigIncludePath,
-		source,
-		cmd.UID,
-		true,
-		cmd.Owner,
+		workspace2.ResolveParams{
+			IDE:                  cmd.IDE,
+			IDEOptions:           cmd.IDEOptions,
+			Args:                 args,
+			DesiredID:            cmd.ID,
+			DesiredMachine:       cmd.Machine,
+			ProviderUserOptions:  cmd.ProviderOptions,
+			ReconfigureProvider:  cmd.Reconfigure,
+			DevContainerImage:    cmd.DevContainerImage,
+			DevContainerPath:     cmd.DevContainerPath,
+			SSHConfigPath:        cmd.SSHConfigPath,
+			SSHConfigIncludePath: sshConfigIncludePath,
+			Source:               source,
+			UID:                  cmd.UID,
+			ChangeLastUsed:       true,
+			Owner:                cmd.Owner,
+		},
 		logger,
 	)
 	if err != nil {
