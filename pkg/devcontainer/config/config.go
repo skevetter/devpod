@@ -305,6 +305,25 @@ type HostRequirements struct {
 	GPU types.StrBool `json:"gpu,omitempty"`
 }
 
+// ShouldEnableGPU determines if GPU should be enabled based on requirements and availability
+func (h *HostRequirements) ShouldEnableGPU(gpuAvailable bool) (enable bool, warnIfMissing bool) {
+	if h == nil || h.GPU == "" {
+		return false, false
+	}
+
+	gpuValue := string(h.GPU)
+	if gpuValue == "optional" {
+		return gpuAvailable, false
+	}
+
+	required, err := h.GPU.Bool()
+	if err != nil {
+		return false, false
+	}
+
+	return required && gpuAvailable, required && !gpuAvailable
+}
+
 type PortAttribute struct {
 	// Defines the action that occurs when the port is discovered for automatic forwarding
 	// default=notify

@@ -351,26 +351,7 @@ func (d *dockerDriver) RunDockerDevContainer(
 		args = append(args, "-l", label)
 	}
 
-	// check GPU
-	if parsedConfig.HostRequirements != nil && parsedConfig.HostRequirements.GPU == "true" {
-		enabled, _ := d.Docker.GPUSupportEnabled()
-		if enabled {
-			args = append(args, "--gpus", "all")
-		}
-	}
-
-	// runArgs
-	// check if we need to add --gpus=all to the run args based on the dev container's host requirments
-	if parsedConfig.HostRequirements != nil {
-		usesGpu, err := parsedConfig.HostRequirements.GPU.Bool()
-		if err != nil && usesGpu {
-			// check if the user manually add --gpus=all, if not then add it
-			if !slices.Contains(parsedConfig.RunArgs, "--gpus=all") {
-				args = append(args, "--gpus=all")
-			}
-		}
-	}
-
+	args = appendGPUOptions(parsedConfig, d, args)
 	args = append(args, parsedConfig.RunArgs...)
 
 	// run detached
@@ -411,6 +392,20 @@ func (d *dockerDriver) RunDockerDevContainer(
 	}
 
 	return nil
+}
+
+func appendGPUOptions(parsedConfig *config.DevContainerConfig, d *dockerDriver, args []string) []string {
+	if parsedConfig.HostRequirements != nil {
+		gpuAvailable, _ := d.Docker.GPUSupportEnabled()
+		enableGPU, warnIfMissing := parsedConfig.HostRequirements.ShouldEnableGPU(gpuAvailable)
+		if enableGPU {
+			args = append(args, "--gpus", "all")
+		}
+		if warnIfMissing {
+			d.Log.Warnf("GPU required but not available on host")
+		}
+	}
+	return args
 }
 
 func (d *dockerDriver) EnsureImage(
