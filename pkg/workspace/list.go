@@ -54,11 +54,11 @@ func List(ctx context.Context, devPodConfig *config.Config, skipPro bool, owner 
 			if localWorkspace.IsPro() {
 				if shouldDeleteLocalWorkspace(ctx, localWorkspace, proWorkspaceResults) {
 					err = clientimplementation.DeleteWorkspaceFolder(clientimplementation.DeleteWorkspaceFolderParams{
-					Context:              devPodConfig.DefaultContext,
-					WorkspaceID:          localWorkspace.ID,
-					SSHConfigPath:        localWorkspace.SSHConfigPath,
-					SSHConfigIncludePath: localWorkspace.SSHConfigIncludePath,
-				}, log)
+						Context:              devPodConfig.DefaultContext,
+						WorkspaceID:          localWorkspace.ID,
+						SSHConfigPath:        localWorkspace.SSHConfigPath,
+						SSHConfigIncludePath: localWorkspace.SSHConfigIncludePath,
+					}, log)
 					if err != nil {
 						log.Debugf("failed to delete local workspace %s: %v", localWorkspace.ID, err)
 					}
