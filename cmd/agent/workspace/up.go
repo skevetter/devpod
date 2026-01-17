@@ -81,10 +81,10 @@ func (cmd *UpCmd) Run(ctx context.Context) error {
 		cmd.Debug,
 		cmd.shouldInstallDaemon(workspaceInfo),
 	)
+	defer cmd.cleanupCredentials(credentialsDir)
 	if err != nil {
 		return cmd.handleInitError(err, workspaceInfo, logger)
 	}
-	defer cmd.cleanupCredentials(credentialsDir)
 
 	if err := cmd.up(ctx, workspaceInfo, tunnelClient, logger); err != nil {
 		return fmt.Errorf("devcontainer up %w", err)
@@ -119,6 +119,9 @@ func (cmd *UpCmd) shouldInstallDaemon(workspaceInfo *provider2.AgentWorkspaceInf
 }
 
 func (cmd *UpCmd) handleInitError(err error, workspaceInfo *provider2.AgentWorkspaceInfo, logger log.Logger) error {
+	if logger == nil {
+		logger = log.Discard
+	}
 	deleteErr := clientimplementation.DeleteWorkspaceFolder(clientimplementation.DeleteWorkspaceFolderParams{
 		Context:              workspaceInfo.Workspace.Context,
 		WorkspaceID:          workspaceInfo.Workspace.ID,
@@ -274,7 +277,7 @@ func initWorkspace(ctx context.Context, cancel context.CancelFunc, workspaceInfo
 	dockerErrChan := init.installDockerAsync()
 
 	if err := init.prepareWorkspaceContent(); err != nil {
-		return nil, init.logger, "", err
+		return nil, init.logger, init.dockerCredentialsDir, err
 	}
 
 	if init.shouldInstallDaemon {
@@ -284,7 +287,7 @@ func initWorkspace(ctx context.Context, cancel context.CancelFunc, workspaceInfo
 	}
 
 	if err := init.waitForDocker(dockerErrChan); err != nil {
-		return nil, nil, "", err
+		return nil, nil, init.dockerCredentialsDir, err
 	}
 
 	daemonErrChan := init.configureDockerDaemonAsync()
@@ -433,7 +436,11 @@ func (w *workspaceInitializer) shouldConfigureDockerDaemon() bool {
 	}
 
 	local, err := w.workspaceInfo.Agent.Local.Bool()
-	return err != nil && !local
+	if err != nil {
+		w.logger.Debugf("failed to parse Local option: %v", err)
+		return false
+	}
+	return !local
 }
 
 type prepareWorkspaceParams struct {
