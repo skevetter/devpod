@@ -777,7 +777,7 @@ exec "$$@"
 	}
 
 	gpuSupportEnabled, _ := composeHelper.Docker.GPUSupportEnabled()
-	configureGPUResources(parsedConfig, gpuSupportEnabled, overrideService)
+	r.configureGPUResources(parsedConfig, gpuSupportEnabled, overrideService)
 
 	for _, mount := range mergedConfig.Mounts {
 		overrideService.Volumes = append(overrideService.Volumes, composetypes.ServiceVolumeConfig{
@@ -813,9 +813,9 @@ exec "$$@"
 	return project
 }
 
-func configureGPUResources(parsedConfig *config.SubstitutedConfig, gpuSupportEnabled bool, overrideService *composetypes.ServiceConfig) {
+func (r *runner) configureGPUResources(parsedConfig *config.SubstitutedConfig, gpuSupportEnabled bool, overrideService *composetypes.ServiceConfig) {
 	if parsedConfig.Config.HostRequirements != nil {
-		enableGPU, _ := parsedConfig.Config.HostRequirements.ShouldEnableGPU(gpuSupportEnabled)
+		enableGPU, warnIfMissing := parsedConfig.Config.HostRequirements.ShouldEnableGPU(gpuSupportEnabled)
 		if enableGPU {
 			overrideService.Deploy = &composetypes.DeployConfig{
 				Resources: composetypes.Resources{
@@ -828,6 +828,9 @@ func configureGPUResources(parsedConfig *config.SubstitutedConfig, gpuSupportEna
 					},
 				},
 			}
+		}
+		if warnIfMissing {
+			r.Log.Warn("GPU required but not available on host")
 		}
 	}
 }

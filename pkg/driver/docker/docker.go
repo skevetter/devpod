@@ -402,7 +402,7 @@ func appendGPUOptions(parsedConfig *config.DevContainerConfig, d *dockerDriver, 
 			args = append(args, "--gpus", "all")
 		}
 		if warnIfMissing {
-			d.Log.Warnf("GPU required but not available on host")
+			d.Log.Warn("GPU required but not available on host")
 		}
 	}
 	return args
