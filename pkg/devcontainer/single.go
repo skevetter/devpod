@@ -218,15 +218,14 @@ func (r *runner) runContainer(
 	// check if docker
 	dockerDriver, ok := r.Driver.(driver.DockerDriver)
 	if ok {
-		return dockerDriver.RunDockerDevContainer(
-			ctx,
-			r.ID,
-			runOptions,
-			parsedConfig.Config,
-			mergedConfig.Init,
-			r.WorkspaceConfig.Workspace.IDE.Name,
-			r.WorkspaceConfig.Workspace.IDE.Options,
-		)
+		return dockerDriver.RunDockerDevContainer(ctx, &driver.RunDockerDevContainerParams{
+			WorkspaceID:  r.ID,
+			Options:      runOptions,
+			ParsedConfig: parsedConfig.Config,
+			Init:         mergedConfig.Init,
+			IDE:          r.WorkspaceConfig.Workspace.IDE.Name,
+			IDEOptions:   r.WorkspaceConfig.Workspace.IDE.Options,
+		})
 	}
 
 	// build run options for regular driver

@@ -12,6 +12,15 @@ import (
 	"github.com/skevetter/devpod/pkg/provider"
 )
 
+type RunDockerDevContainerParams struct {
+	WorkspaceID  string
+	Options      *RunOptions
+	ParsedConfig *config.DevContainerConfig
+	Init         *bool
+	IDE          string
+	IDEOptions   map[string]config2.OptionValue
+}
+
 type DockerDriver interface {
 	Driver
 
@@ -22,15 +31,7 @@ type DockerDriver interface {
 	GetImageTag(ctx context.Context, imageName string) (string, error)
 
 	// RunDockerDevContainer runs a docker devcontainer
-	RunDockerDevContainer(
-		ctx context.Context,
-		workspaceId string,
-		options *RunOptions,
-		parsedConfig *config.DevContainerConfig,
-		init *bool,
-		ide string,
-		ideOptions map[string]config2.OptionValue,
-	) error
+	RunDockerDevContainer(ctx context.Context, params *RunDockerDevContainerParams) error
 
 	// BuildDevContainer builds a devcontainer
 	BuildDevContainer(
