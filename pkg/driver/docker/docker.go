@@ -7,7 +7,6 @@ import (
 	"io"
 	"os"
 	"os/user"
-	"regexp"
 	"runtime"
 	"slices"
 	"strconv"
@@ -614,62 +613,90 @@ type userInfo struct {
 	home string
 }
 
-func (d *dockerDriver) updatePasswdFile(passwdIn *os.File, passwdOut *os.File, containerUser, localUid, localGid string) (*userInfo, error) {
-	scanner := bufio.NewScanner(passwdIn)
-	info := &userInfo{}
-	re := regexp.MustCompile(fmt.Sprintf(`^%s:(?P<password>x?):(?P<uid>.*):(?P<gid>.*):(?P<gcos>.*):(?P<home>.*):(?P<shell>.*)$`, containerUser))
+type lineProcessor func(line string, fields []string) (modifiedLine string, shouldWrite bool, err error)
+
+func (d *dockerDriver) processColonDelimitedFile(in *os.File, out *os.File, fieldCount int, processor lineProcessor) error {
+	scanner := bufio.NewScanner(in)
 
 	for scanner.Scan() {
-		match := re.FindStringSubmatch(scanner.Text())
-		if match == nil {
-			if _, err := fmt.Fprintf(passwdOut, "%s\n", scanner.Text()); err != nil {
-				return nil, err
-			}
-			continue
-		}
-		result := make(map[string]string)
-		for i, name := range re.SubexpNames() {
-			if i != 0 && name != "" {
-				result[name] = match[i]
-			}
-		}
-		info.uid = result["uid"]
-		info.gid = result["gid"]
-		info.home = result["home"]
+		line := scanner.Text()
+		fields := strings.SplitN(line, ":", fieldCount)
 
-		if _, err := fmt.Fprintf(passwdOut, "%s:%s:%s:%s:%s:%s:%s\n", containerUser, result["password"], localUid, localGid, result["gcos"], result["home"], result["shell"]); err != nil {
-			return nil, err
-		}
-	}
-
-	return info, scanner.Err()
-}
-
-func (d *dockerDriver) updateGroupFile(groupIn *os.File, groupOut *os.File, containerGid, localGid string) error {
-	scanner := bufio.NewScanner(groupIn)
-	re := regexp.MustCompile(fmt.Sprintf(`^(?P<group>.*):(?P<password>x?):%s:(?P<group_list>.*)$`, containerGid))
-
-	for scanner.Scan() {
-		match := re.FindStringSubmatch(scanner.Text())
-		if match == nil {
-			if _, err := fmt.Fprintf(groupOut, "%s\n", scanner.Text()); err != nil {
+		if len(fields) < fieldCount {
+			if _, err := fmt.Fprintf(out, "%s\n", line); err != nil {
 				return err
 			}
 			continue
 		}
-		result := make(map[string]string)
-		for i, name := range re.SubexpNames() {
-			if i != 0 && name != "" {
-				result[name] = match[i]
-			}
+
+		modifiedLine, shouldWrite, err := processor(line, fields)
+		if err != nil {
+			return err
 		}
 
-		if _, err := fmt.Fprintf(groupOut, "%s:%s:%s:%s\n", result["group"], result["password"], localGid, result["group_list"]); err != nil {
-			return err
+		if shouldWrite {
+			if _, err := fmt.Fprintf(out, "%s\n", modifiedLine); err != nil {
+				return err
+			}
+		} else {
+			if _, err := fmt.Fprintf(out, "%s\n", line); err != nil {
+				return err
+			}
 		}
 	}
 
 	return scanner.Err()
+}
+
+// updatePasswdFile processes /etc/passwd, replacing the target user's UID/GID with local values.
+// It reads each line from passwdIn, and for lines matching containerUser, extracts the original
+// UID, GID, and home directory, then writes a modified entry with localUid and localGid to passwdOut.
+// All other lines are copied unchanged. Returns userInfo with the original container values, or an
+// error if the user is not found in the passwd file.
+func (d *dockerDriver) updatePasswdFile(passwdIn *os.File, passwdOut *os.File, containerUser, localUid, localGid string) (*userInfo, error) {
+	info := &userInfo{}
+
+	// parse passwd format: username:password:uid:gid:gecos:home:shell
+	processor := func(line string, fields []string) (string, bool, error) {
+		if fields[0] != containerUser {
+			return "", false, nil
+		}
+
+		info.uid = fields[2]
+		info.gid = fields[3]
+		info.home = fields[5]
+
+		modifiedLine := strings.Join([]string{fields[0], fields[1], localUid, localGid, fields[4], fields[5], fields[6]}, ":")
+		return modifiedLine, true, nil
+	}
+
+	if err := d.processColonDelimitedFile(passwdIn, passwdOut, 7, processor); err != nil {
+		return nil, err
+	}
+
+	if info.uid == "" {
+		return nil, fmt.Errorf("user %q not found in passwd", containerUser)
+	}
+
+	return info, nil
+}
+
+// updateGroupFile processes /etc/group, replacing entries with the target GID to use localGid.
+// It reads each line from groupIn, and for lines where the GID field matches containerGid,
+// writes a modified entry with localGid to groupOut. All other lines are copied unchanged.
+// Returns an error if scanning fails.
+func (d *dockerDriver) updateGroupFile(groupIn *os.File, groupOut *os.File, containerGid, localGid string) error {
+	// parse group format: groupname:password:gid:user_list
+	processor := func(line string, fields []string) (string, bool, error) {
+		if fields[2] != containerGid {
+			return "", false, nil
+		}
+
+		modifiedLine := strings.Join([]string{fields[0], fields[1], localGid, fields[3]}, ":")
+		return modifiedLine, true, nil
+	}
+
+	return d.processColonDelimitedFile(groupIn, groupOut, 4, processor)
 }
 
 func (d *dockerDriver) applyPermissions(ctx context.Context, containerID, localUid, localGid, containerHome string, writer io.Writer) error {
@@ -693,15 +720,19 @@ type tempFiles struct {
 
 func (t *tempFiles) cleanup() {
 	if t.passwdIn != nil {
+		_ = t.passwdIn.Close()
 		_ = os.Remove(t.passwdIn.Name())
 	}
 	if t.groupIn != nil {
+		_ = t.groupIn.Close()
 		_ = os.Remove(t.groupIn.Name())
 	}
 	if t.passwdOut != nil {
+		_ = t.passwdOut.Close()
 		_ = os.Remove(t.passwdOut.Name())
 	}
 	if t.groupOut != nil {
+		_ = t.groupOut.Close()
 		_ = os.Remove(t.groupOut.Name())
 	}
 }
@@ -717,16 +748,19 @@ func (d *dockerDriver) createTempFiles() (*tempFiles, error) {
 
 	files.groupIn, err = os.CreateTemp("", "devpod_container_group_in")
 	if err != nil {
+		files.cleanup()
 		return nil, err
 	}
 
 	files.passwdOut, err = os.CreateTemp("", "devpod_container_passwd_out")
 	if err != nil {
+		files.cleanup()
 		return nil, err
 	}
 
 	files.groupOut, err = os.CreateTemp("", "devpod_container_group_out")
 	if err != nil {
+		files.cleanup()
 		return nil, err
 	}
 
@@ -745,7 +779,7 @@ func (d *dockerDriver) processUserFiles(files *tempFiles, containerUser, localUi
 	if err != nil {
 		return nil, err
 	}
-	defer passwdIn.Close()
+	defer func() { _ = passwdIn.Close() }()
 
 	info, err := d.updatePasswdFile(passwdIn, files.passwdOut, containerUser, localUid, localGid)
 	if err != nil {
@@ -756,7 +790,7 @@ func (d *dockerDriver) processUserFiles(files *tempFiles, containerUser, localUi
 	if err != nil {
 		return nil, err
 	}
-	defer groupIn.Close()
+	defer func() { _ = groupIn.Close() }()
 
 	return info, d.updateGroupFile(groupIn, files.groupOut, info.gid, localGid)
 }
