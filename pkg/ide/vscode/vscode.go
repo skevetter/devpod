@@ -53,7 +53,7 @@ type flavorConfig struct {
 var flavorConfigs = map[Flavor]flavorConfig{
 	FlavorStable:      {"VSCode", ".vscode-server", "code-server"},
 	FlavorInsiders:    {"VSCode Insiders", ".vscode-server-insiders", "code-server-insiders"},
-	FlavorCursor:      {"Cursor", ".cursor-server", "cursor"},
+	FlavorCursor:      {"Cursor", ".cursor-server", "cursor-server"},
 	FlavorPositron:    {"positron", ".positron-server", "positron"},
 	FlavorCodium:      {"VSCodium", ".vscodium-server", "codium"},
 	FlavorWindsurf:    {"Windsurf", ".windsurf-server", "windsurf"},
@@ -198,17 +198,18 @@ func (o *VsCodeServer) installExtension(binPath, extension string, stdout, stder
 }
 
 func (o *VsCodeServer) buildExtensionCommand(binPath, extension string) *exec.Cmd {
+	args := []string{"--install-extension", extension}
+
+	// VSCode stable/insiders use serve-local subcommand
+	if o.flavor == FlavorStable || o.flavor == FlavorInsiders {
+		args = append([]string{"serve-local", "--accept-server-license-terms"}, args...)
+	}
+
 	if o.userName != "" {
-		cmd := shellquote.Join(
-			binPath,
-			"serve-local",
-			"--accept-server-license-terms",
-			"--install-extension",
-			extension,
-		)
+		cmd := shellquote.Join(append([]string{binPath}, args...)...)
 		return exec.Command("su", o.userName, "-c", cmd)
 	}
-	return exec.Command(binPath, "serve-local", "--accept-server-license-terms", "--install-extension", extension)
+	return exec.Command(binPath, args...)
 }
 
 func (o *VsCodeServer) findServerBinaryPath(location string) string {
