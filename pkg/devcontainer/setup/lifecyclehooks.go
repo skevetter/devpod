@@ -9,8 +9,6 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
-	"regexp"
-	"slices"
 	"strings"
 	"sync"
 
@@ -21,6 +19,7 @@ import (
 	"github.com/skevetter/log"
 )
 
+// RunLifecycleHooks executes the lifecycle commands for a development container.
 func RunLifecycleHooks(ctx context.Context, setupInfo *config.Result, log log.Logger) error {
 	mergedConfig := setupInfo.MergedConfig
 	remoteUser := config.GetRemoteUser(setupInfo)
@@ -28,7 +27,7 @@ func RunLifecycleHooks(ctx context.Context, setupInfo *config.Result, log log.Lo
 	if err != nil {
 		log.WithFields(logrus.Fields{"error": err}).Error("failed to probe environment, this might lead to an incomplete setup of your workspace")
 	}
-	remoteEnv := mergeRemoteEnv(mergedConfig.RemoteEnv, probedEnv, remoteUser)
+	remoteEnv := mergeRemoteEnv(mergedConfig.RemoteEnv, probedEnv)
 
 	workspaceFolder := setupInfo.SubstitutionContext.ContainerWorkspaceFolder
 	containerDetails := setupInfo.ContainerDetails
@@ -184,35 +183,37 @@ func containsError(line string) bool {
 	return strings.Contains(strings.ToLower(line), "error")
 }
 
-func mergeRemoteEnv(remoteEnv map[string]string, probedEnv map[string]string, remoteUser string) map[string]string {
+// mergeRemoteEnv merges remoteEnv with probedEnv according to the devcontainer specification.
+//
+// From the spec (https://containers.dev/implementors/spec/#merge-logic):
+// "remoteEnv: Object of strings. Per variable, last value wins."
+//
+// This means:
+// 1. Start with probedEnv (environment variables probed from the container)
+// 2. Override with remoteEnv (explicitly set in devcontainer.json)
+// 3. For each variable in remoteEnv, the remoteEnv value completely replaces any probed value
+//
+// remoteEnv should be used for PATH modifications:
+// "If you want to reference an existing container variable while setting this one
+// (like updating the PATH), use remoteEnv instead."
+// Reference: https://containers.dev/implementors/json_reference/#general-properties
+//
+// When PATH is set in remoteEnv, it is used exactly as specified without merging
+// with the probed PATH.
+//
+// Example from spec:
+//
+//	"remoteEnv": { "PATH": "${containerEnv:PATH}:/some/other/path" }
+//
+// Parameters:
+//   - remoteEnv: Environment variables from devcontainer.json remoteEnv property
+//   - probedEnv: Environment variables probed from the container using userEnvProbe
+//
+// Returns:
+//   - Merged environment map where remoteEnv values override probedEnv values
+func mergeRemoteEnv(remoteEnv map[string]string, probedEnv map[string]string) map[string]string {
 	retEnv := map[string]string{}
-
-	// Order matters here
-	// remoteEnv should always override probedEnv as it has been specified explicitly by the devcontainer author
 	maps.Copy(retEnv, probedEnv)
 	maps.Copy(retEnv, remoteEnv)
-	probedPath, probeOk := probedEnv["PATH"]
-	remotePath, remoteOk := remoteEnv["PATH"]
-	if probeOk && remoteOk {
-		// merge probed PATH and remote PATH
-		sbinRegex := regexp.MustCompile(`/sbin(/|$)`)
-		probedTokens := strings.Split(probedPath, ":")
-		insertAt := 0
-		for e := range strings.SplitSeq(remotePath, ":") {
-			// check if remotePath entry is in probed tokens
-			i := slices.Index(probedTokens, e)
-			if i == -1 {
-				// only include /sbin paths for root users
-				if remoteUser == "root" || !sbinRegex.MatchString(e) {
-					probedTokens = slices.Insert(probedTokens, insertAt, e)
-				}
-			} else {
-				insertAt = i + 1
-			}
-		}
-
-		retEnv["PATH"] = strings.Join(probedTokens, ":")
-	}
-
 	return retEnv
 }
