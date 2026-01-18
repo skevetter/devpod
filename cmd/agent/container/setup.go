@@ -518,7 +518,7 @@ func (cmd *SetupContainerCmd) setupVSCode(setupInfo *config.Result, ideOptions m
 		args := []string{
 			"agent", "container", "vscode-async",
 			"--setup-info", cmd.SetupInfo,
-			"--release-channel", string(flavor),
+			"--flavor", string(flavor),
 		}
 
 		return exec.Command(binaryPath, args...), nil
