@@ -158,7 +158,13 @@ func (r *DockerHelper) RunWithDir(ctx context.Context, dir string, args []string
 func (r *DockerHelper) StartContainer(ctx context.Context, containerId string) error {
 	out, err := r.buildCmd(ctx, "start", containerId).CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("start command: %v %w", string(out), err)
+		stateErr, _ := r.buildCmd(ctx, "inspect", containerId, "--format", "{{.State.Error}} (exit code: {{.State.ExitCode}})").CombinedOutput()
+		logs, _ := r.buildCmd(ctx, "logs", containerId, "--tail", "50").CombinedOutput()
+		details := strings.TrimSpace(string(stateErr) + "\n" + string(logs))
+		if details != "" {
+			r.Log.Errorf("container failed to start: %s", details)
+		}
+		return fmt.Errorf("failed to start container: %s: %w", string(out), err)
 	}
 
 	container, err := r.FindContainerByID(ctx, []string{containerId})
