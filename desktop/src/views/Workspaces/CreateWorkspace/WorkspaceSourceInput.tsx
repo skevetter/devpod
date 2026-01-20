@@ -260,7 +260,7 @@ export function WorkspaceSourceInput({
           </Popover>
         </TabPanel>
         <TabPanel {...tabPanelProps}>
-          <Input {...inputCommonProps} width="full" placeholder="alpine" />
+          <Input {...inputCommonProps} width="full" placeholder="mcr.microsoft.com/devcontainers/base:ubuntu" />
         </TabPanel>
       </TabPanels>
     </Tabs>
