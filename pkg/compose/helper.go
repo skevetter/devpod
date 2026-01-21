@@ -15,6 +15,7 @@ import (
 	composetypes "github.com/compose-spec/compose-go/v2/types"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	"github.com/skevetter/devpod/pkg/docker"
+	"github.com/skevetter/log"
 )
 
 const (
@@ -51,39 +52,72 @@ type ComposeHelper struct {
 
 // NewComposeHelper creates a new ComposeHelper instance after detecting whether Docker
 // Compose V1 or V2 is installed. It returns an error if neither is found.
-// The Compose plugin can be installed on linux using
-// sudo curl -SL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-$(uname -m) -o /usr/libexec/docker/cli-plugins/docker-compose
-// sudo chmod +x /usr/libexec/docker/cli-plugins/docker-compose
 func NewComposeHelper(dockerHelper *docker.DockerHelper) (*ComposeHelper, error) {
-	// Docker Compose V2
-	if exec.Command("docker", "compose").Run() == nil {
-		out, err := exec.Command("docker", "compose", "version", "--short").CombinedOutput()
-		if err != nil {
-			return nil, fmt.Errorf("failed to get docker compose version %s: %w", string(out), err)
-		}
-		return &ComposeHelper{
-			Command: "docker",
-			Version: strings.TrimSpace(string(out)),
-			Args:    []string{"compose"},
-			Docker:  dockerHelper,
-		}, nil
+	dockerCmd := dockerHelper.DockerCommand
+	if dockerCmd == "" {
+		dockerCmd = "docker"
 	}
 
-	// Docker Compose V1
-	if _, err := exec.LookPath("docker-compose"); err == nil {
-		out, err := exec.Command("docker-compose", "version", "--short").CombinedOutput()
-		if err != nil {
-			return nil, fmt.Errorf("failed to get docker-compose version %s: %w", string(out), err)
-		}
-		return &ComposeHelper{
-			Command: "docker-compose",
-			Version: strings.TrimSpace(string(out)),
-			Args:    []string{},
-			Docker:  dockerHelper,
-		}, nil
+	if helper, err := tryDockerComposeV2(dockerCmd, dockerHelper.Log); err == nil {
+		helper.Docker = dockerHelper
+		return helper, nil
+	}
+
+	if helper, err := tryDockerComposeV1(); err == nil {
+		helper.Docker = dockerHelper
+		return helper, nil
 	}
 
 	return nil, fmt.Errorf("docker compose not installed")
+}
+
+// tryDockerComposeV2 checks if Docker Compose V2 is available and returns a ComposeHelper if so.
+// The Compose V2 plugin can be installed on linux using
+// sudo curl -SL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-$(uname -m) -o /usr/libexec/docker/cli-plugins/docker-compose
+// sudo chmod +x /usr/libexec/docker/cli-plugins/docker-compose
+// Docker Compose V2 requires the buildx plugin for building images and can be installed using
+// sudo curl -SL https://github.com/docker/buildx/releases/latest/download/buildx-v0.30.1.linux-amd64 -o /usr/libexec/docker/cli-plugins/docker-buildx
+// sudo chmod +x /usr/libexec/docker/cli-plugins/docker-buildx
+func tryDockerComposeV2(dockerCmd string, log log.Logger) (*ComposeHelper, error) {
+	if exec.Command(dockerCmd, "compose").Run() != nil {
+		return nil, fmt.Errorf("docker compose not available")
+	}
+
+	out, err := exec.Command(dockerCmd, "compose", "version", "--short").CombinedOutput()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get docker compose version %s: %w", string(out), err)
+	}
+
+	helper := &ComposeHelper{
+		Command: dockerCmd,
+		Version: strings.TrimSpace(string(out)),
+		Args:    []string{"compose"},
+	}
+
+	out, err = exec.Command("docker", "buildx", "version").CombinedOutput()
+	if err != nil {
+		// Gracefully handle missing buildx as users might only use compose for running existing images
+		log.Errorf("docker buildx not available %s: %w", string(out), err)
+	}
+
+	return helper, nil
+}
+
+func tryDockerComposeV1() (*ComposeHelper, error) {
+	if _, err := exec.LookPath("docker-compose"); err != nil {
+		return nil, fmt.Errorf("docker-compose not found in PATH")
+	}
+
+	out, err := exec.Command("docker-compose", "version", "--short").CombinedOutput()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get docker-compose version %s: %w", string(out), err)
+	}
+
+	return &ComposeHelper{
+		Command: "docker-compose",
+		Version: strings.TrimSpace(string(out)),
+		Args:    []string{},
+	}, nil
 }
 
 func (h *ComposeHelper) FindDevContainer(ctx context.Context, projectName, serviceName string) (*config.ContainerDetails, error) {
