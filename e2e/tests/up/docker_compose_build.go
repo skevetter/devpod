@@ -28,7 +28,7 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 			framework.ExpectNoError(err)
 
 			dockerHelper = &docker.DockerHelper{DockerCommand: "docker", Log: log.Default}
-			composeHelper, err = compose.NewComposeHelper("", dockerHelper)
+			composeHelper, err = compose.NewComposeHelper(dockerHelper)
 			framework.ExpectNoError(err)
 
 			f, err = setupDockerProvider(initialDir+"/bin", "docker")

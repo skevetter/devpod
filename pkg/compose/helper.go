@@ -18,10 +18,8 @@ import (
 )
 
 const (
-	DockerCommand        = "docker"
-	DockerComposeCommand = "docker-compose"
-	ProjectLabel         = "com.docker.compose.project"
-	ServiceLabel         = "com.docker.compose.service"
+	ProjectLabel = "com.docker.compose.project"
+	ServiceLabel = "com.docker.compose.service"
 )
 
 func LoadDockerComposeProject(ctx context.Context, paths []string, envFiles []string) (*composetypes.Project, error) {
@@ -51,38 +49,41 @@ type ComposeHelper struct {
 	Docker  *docker.DockerHelper
 }
 
-func NewComposeHelper(dockerComposeCLI string, dockerHelper *docker.DockerHelper) (*ComposeHelper, error) {
-	dockerCLI := dockerHelper.DockerCommand
-	if dockerCLI == "" {
-		dockerCLI = DockerCommand
-	}
-
-	if dockerComposeCLI == "" {
-		dockerComposeCLI = DockerComposeCommand
-	}
-
-	// Use docker compose (v2)
-	out, err := exec.Command(dockerCLI, "compose", "version", "--short").Output()
-	if err == nil {
+// NewComposeHelper creates a new ComposeHelper instance after detecting whether Docker
+// Compose V1 or V2 is installed. It returns an error if neither is found.
+// The Compose plugin can be installed on linux using
+// sudo curl -SL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-$(uname -m) -o /usr/libexec/docker/cli-plugins/docker-compose
+// sudo chmod +x /usr/libexec/docker/cli-plugins/docker-compose
+func NewComposeHelper(dockerHelper *docker.DockerHelper) (*ComposeHelper, error) {
+	// Docker Compose V2
+	if exec.Command("docker", "compose").Run() == nil {
+		out, err := exec.Command("docker", "compose", "version", "--short").CombinedOutput()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get docker compose version %s: %w", string(out), err)
+		}
 		return &ComposeHelper{
-			Command: dockerCLI,
+			Command: "docker",
 			Version: strings.TrimSpace(string(out)),
 			Args:    []string{"compose"},
 			Docker:  dockerHelper,
 		}, nil
 	}
 
-	// Fallback to docker-compose (v1)
-	if out, err := exec.Command(dockerComposeCLI, "version", "--short").Output(); err == nil {
+	// Docker Compose V1
+	if _, err := exec.LookPath("docker-compose"); err == nil {
+		out, err := exec.Command("docker-compose", "version", "--short").CombinedOutput()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get docker-compose version %s: %w", string(out), err)
+		}
 		return &ComposeHelper{
-			Command: dockerComposeCLI,
+			Command: "docker-compose",
 			Version: strings.TrimSpace(string(out)),
 			Args:    []string{},
 			Docker:  dockerHelper,
 		}, nil
 	}
 
-	return nil, err
+	return nil, fmt.Errorf("docker compose not installed")
 }
 
 func (h *ComposeHelper) FindDevContainer(ctx context.Context, projectName, serviceName string) (*config.ContainerDetails, error) {

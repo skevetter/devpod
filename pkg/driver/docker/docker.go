@@ -194,7 +194,7 @@ func (d *dockerDriver) ComposeHelper() (*compose.ComposeHelper, error) {
 	}
 
 	var err error
-	d.Compose, err = compose.NewComposeHelper(compose.DockerComposeCommand, d.Docker)
+	d.Compose, err = compose.NewComposeHelper(d.Docker)
 	return d.Compose, err
 }
 
