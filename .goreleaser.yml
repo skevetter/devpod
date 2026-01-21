@@ -63,8 +63,8 @@ builds:
       - CGO_ENABLED=0
 
   - id: devpod-dev
-    goos: [linux]
-    goarch: [amd64]
+    goos: [linux, darwin]
+    goarch: [amd64, arm64]
     binary: devpod-{{ .Os }}-{{ .Arch }}
     ldflags: -s -w -extldflags '-static' -X main.build={{ .Env.DEVPOD_CLI_VERSION }} -X main.commit={{ .Commit }} -X main.date={{ .Date }} -X github.com/skevetter/devpod/pkg/version.version={{ .Env.DEVPOD_CLI_VERSION }}
     env:
