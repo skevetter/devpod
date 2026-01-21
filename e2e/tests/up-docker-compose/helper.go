@@ -1,3 +1,5 @@
+//go:build linux || darwin || unix
+
 package up
 
 import (
@@ -34,6 +36,9 @@ func (btc *baseTestContext) inspectContainer(ctx context.Context, ids []string) 
 	var details []container.InspectResponse
 	if err := btc.dockerHelper.Inspect(ctx, ids, "container", &details); err != nil {
 		return nil, err
+	}
+	if len(details) == 0 {
+		return nil, fmt.Errorf("no container details returned")
 	}
 	return &details[0], nil
 }

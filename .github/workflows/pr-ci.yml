@@ -96,6 +96,7 @@ jobs:
     name: Test ${{ matrix.label }} on ${{ matrix.runner }}
     needs: [can-read-secret, build-cli]
     strategy:
+      fail-fast: false
       matrix:
         include:
           - label: context
@@ -145,6 +146,8 @@ jobs:
             free-disk-space: true
             install-kind: true
             requires-secret: true
+
+          # Up tests
 
           - label: up && workspace
             runner: ubuntu-latest
@@ -223,6 +226,8 @@ jobs:
             free-disk-space: false
             install-kind: false
             requires-secret: false
+
+          #  Up Docker Compose tests
 
           - label: up-docker-compose && build
             runner: ubuntu-latest

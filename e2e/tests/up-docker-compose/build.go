@@ -1,3 +1,5 @@
+//go:build linux || darwin || unix
+
 package up
 
 import (
@@ -35,7 +37,7 @@ var _ = ginkgo.Describe("devpod up docker compose test suite", ginkgo.Label("up-
 	})
 
 	ginkgo.It("should start a new workspace with multistage build", func(ctx context.Context) {
-		tempDir, err := setupWorkspace("tests/up/testdata/docker-compose-with-multi-stage-build", initialDir, f)
+		tempDir, err := setupWorkspace("tests/up-docker-compose/testdata/docker-compose-with-multi-stage-build", initialDir, f)
 		framework.ExpectNoError(err)
 
 		// Wait for devpod workspace to come online (deadline: 30s)
@@ -44,7 +46,7 @@ var _ = ginkgo.Describe("devpod up docker compose test suite", ginkgo.Label("up-
 	}, ginkgo.SpecTimeout(framework.GetTimeout()*3))
 
 	ginkgo.It("should NOT delete container when rebuild fails", func(ctx context.Context) {
-		tempDir, err := setupWorkspace("tests/up/testdata/docker-compose-rebuild-fail", initialDir, f)
+		tempDir, err := setupWorkspace("tests/up-docker-compose/testdata/docker-compose-rebuild-fail", initialDir, f)
 		framework.ExpectNoError(err)
 
 		ginkgo.By("Starting DevPod")
@@ -78,9 +80,11 @@ var _ = ginkgo.Describe("devpod up docker compose test suite", ginkgo.Label("up-
 
 		failingConfig, err := os.Open(filepath.Join(tempDir, "fail.devcontainer.json"))
 		framework.ExpectNoError(err)
+		defer func() { _ = failingConfig.Close() }()
 
 		newConfig, err := os.Create(origPath)
 		framework.ExpectNoError(err)
+		defer func() { _ = newConfig.Close() }()
 
 		_, err = io.Copy(newConfig, failingConfig)
 		framework.ExpectNoError(err)
@@ -99,7 +103,7 @@ var _ = ginkgo.Describe("devpod up docker compose test suite", ginkgo.Label("up-
 	})
 
 	ginkgo.It("should delete container upon successful rebuild", func(ctx context.Context) {
-		tempDir, err := setupWorkspace("tests/up/testdata/docker-compose-rebuild-success", initialDir, f)
+		tempDir, err := setupWorkspace("tests/up-docker-compose/testdata/docker-compose-rebuild-success", initialDir, f)
 		framework.ExpectNoError(err)
 
 		ginkgo.By("Starting DevPod")

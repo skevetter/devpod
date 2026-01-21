@@ -36,25 +36,25 @@ var _ = ginkgo.Describe("devpod up docker compose test suite", ginkgo.Label("up-
 	})
 
 	ginkgo.It("root folder", func(ctx context.Context) {
-		tempDir, workspace, err := tc.setupAndStartWorkspace(ctx, "tests/up/testdata/docker-compose")
+		tempDir, workspace, err := tc.setupAndStartWorkspace(ctx, "tests/up-docker-compose/testdata/docker-compose")
 		framework.ExpectNoError(err)
 		framework.ExpectNoError(tc.verifyWorkspaceMount(ctx, workspace, tempDir))
 	}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
 	ginkgo.It("sub-folder", func(ctx context.Context) {
-		tempDir, workspace, err := tc.setupAndStartWorkspace(ctx, "tests/up/testdata/docker-compose-subfolder")
+		tempDir, workspace, err := tc.setupAndStartWorkspace(ctx, "tests/up-docker-compose/testdata/docker-compose-subfolder")
 		framework.ExpectNoError(err)
 		framework.ExpectNoError(tc.verifyWorkspaceMount(ctx, workspace, tempDir))
 	}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
 	ginkgo.It("overrides", func(ctx context.Context) {
-		tempDir, workspace, err := tc.setupAndStartWorkspace(ctx, "tests/up/testdata/docker-compose-overrides")
+		tempDir, workspace, err := tc.setupAndStartWorkspace(ctx, "tests/up-docker-compose/testdata/docker-compose-overrides")
 		framework.ExpectNoError(err)
 		framework.ExpectNoError(tc.verifyWorkspaceMount(ctx, workspace, tempDir))
 	}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
 	ginkgo.It("env-file", func(ctx context.Context) {
-		tempDir, err := setupWorkspace("tests/up/testdata/docker-compose-env-file", tc.initialDir, tc.f)
+		tempDir, err := setupWorkspace("tests/up-docker-compose/testdata/docker-compose-env-file", tc.initialDir, tc.f)
 		framework.ExpectNoError(err)
 
 		devPodUpOutput, _, err := tc.f.ExecCommandCapture(ctx, []string{"up", "--debug", "--ide", "none", tempDir})
@@ -70,23 +70,32 @@ var _ = ginkgo.Describe("devpod up docker compose test suite", ginkgo.Label("up-
 	}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
 	ginkgo.It("restart", func(ctx context.Context) {
-		tempDir, err := setupWorkspace("tests/up/testdata/docker-compose-env-file", tc.initialDir, tc.f)
+		tempDir, err := setupWorkspace("tests/up-docker-compose/testdata/docker-compose-env-file", tc.initialDir, tc.f)
 		framework.ExpectNoError(err)
 
-		devPodUpOutput, _, err := tc.f.ExecCommandCapture(ctx, []string{"up", "--debug", "--ide", "none", tempDir})
+		err = tc.f.DevPodUp(ctx, tempDir)
 		framework.ExpectNoError(err)
 
 		workspace, err := tc.f.FindWorkspace(ctx, tempDir)
 		framework.ExpectNoError(err)
 
-		ids, err := findComposeContainer(ctx, tc.dockerHelper, tc.composeHelper, workspace.UID, "app")
+		initialIds, err := findComposeContainer(ctx, tc.dockerHelper, tc.composeHelper, workspace.UID, "app")
 		framework.ExpectNoError(err)
-		gomega.Expect(ids).To(gomega.HaveLen(1), "1 compose container to be created")
-		gomega.Expect(devPodUpOutput).NotTo(gomega.ContainSubstring("Defaulting to a blank string."))
+		gomega.Expect(initialIds).To(gomega.HaveLen(1), "1 compose container to be created")
+
+		err = tc.f.DevPodWorkspaceStop(ctx, tempDir)
+		framework.ExpectNoError(err)
+
+		err = tc.f.DevPodUp(ctx, tempDir)
+		framework.ExpectNoError(err)
+
+		restartIds, err := findComposeContainer(ctx, tc.dockerHelper, tc.composeHelper, workspace.UID, "app")
+		framework.ExpectNoError(err)
+		gomega.Expect(restartIds).To(gomega.HaveLen(1), "1 compose container after restart")
 	}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
 	ginkgo.It("environment variables", func(ctx context.Context) {
-		_, workspace, err := tc.setupAndStartWorkspace(ctx, "tests/up/testdata/docker-compose-container-env")
+		_, workspace, err := tc.setupAndStartWorkspace(ctx, "tests/up-docker-compose/testdata/docker-compose-container-env")
 		framework.ExpectNoError(err)
 
 		ids, err := findComposeContainer(ctx, tc.dockerHelper, tc.composeHelper, workspace.UID, "app")
@@ -98,7 +107,7 @@ var _ = ginkgo.Describe("devpod up docker compose test suite", ginkgo.Label("up-
 	}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
 	ginkgo.It("user", func(ctx context.Context) {
-		_, workspace, err := tc.setupAndStartWorkspace(ctx, "tests/up/testdata/docker-compose-container-user")
+		_, workspace, err := tc.setupAndStartWorkspace(ctx, "tests/up-docker-compose/testdata/docker-compose-container-user")
 		framework.ExpectNoError(err)
 
 		ids, err := findComposeContainer(ctx, tc.dockerHelper, tc.composeHelper, workspace.UID, "app")
@@ -110,7 +119,7 @@ var _ = ginkgo.Describe("devpod up docker compose test suite", ginkgo.Label("up-
 	}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
 	ginkgo.It("override command", func(ctx context.Context) {
-		_, workspace, err := tc.setupAndStartWorkspace(ctx, "tests/up/testdata/docker-compose-override-command")
+		_, workspace, err := tc.setupAndStartWorkspace(ctx, "tests/up-docker-compose/testdata/docker-compose-override-command")
 		framework.ExpectNoError(err)
 
 		_, detail, err := tc.getAppContainer(ctx, workspace)
@@ -130,7 +139,7 @@ var _ = ginkgo.Describe("devpod up docker compose test suite", ginkgo.Label("up-
 
 		ginkgo.By(fmt.Sprintf("test user configuration: uid=%d, gid=%d", testUID, testGID))
 
-		tempDir, err := setupWorkspace("tests/up/testdata/docker-compose-uid-mapping", tc.initialDir, tc.f)
+		tempDir, err := setupWorkspace("tests/up-docker-compose/testdata/docker-compose-uid-mapping", tc.initialDir, tc.f)
 		framework.ExpectNoError(err)
 
 		ws, err := devPodUpAndFindWorkspace(ctx, tc.f, tempDir)
@@ -167,7 +176,7 @@ var _ = ginkgo.Describe("devpod up docker compose test suite", ginkgo.Label("up-
 
 		ginkgo.By(fmt.Sprintf("test user configuration: uid=%d, gid=%d", testUID, testGID))
 
-		tempDir, err := setupWorkspace("tests/up/testdata/docker-compose-uid-mapping-vscode", tc.initialDir, tc.f)
+		tempDir, err := setupWorkspace("tests/up-docker-compose/testdata/docker-compose-uid-mapping-vscode", tc.initialDir, tc.f)
 		framework.ExpectNoError(err)
 
 		ws, err := devPodUpAndFindWorkspace(ctx, tc.f, tempDir)
@@ -194,7 +203,7 @@ var _ = ginkgo.Describe("devpod up docker compose test suite", ginkgo.Label("up-
 	}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
 	ginkgo.It("privileged", func(ctx context.Context) {
-		_, workspace, err := tc.setupAndStartWorkspace(ctx, "tests/up/testdata/docker-compose-privileged")
+		_, workspace, err := tc.setupAndStartWorkspace(ctx, "tests/up-docker-compose/testdata/docker-compose-privileged")
 		framework.ExpectNoError(err)
 
 		_, detail, err := tc.getAppContainer(ctx, workspace)
@@ -203,7 +212,7 @@ var _ = ginkgo.Describe("devpod up docker compose test suite", ginkgo.Label("up-
 	}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
 	ginkgo.It("capabilities", func(ctx context.Context) {
-		_, workspace, err := tc.setupAndStartWorkspace(ctx, "tests/up/testdata/docker-compose-capadd")
+		_, workspace, err := tc.setupAndStartWorkspace(ctx, "tests/up-docker-compose/testdata/docker-compose-capadd")
 		framework.ExpectNoError(err)
 
 		_, detail, err := tc.getAppContainer(ctx, workspace)
@@ -213,7 +222,7 @@ var _ = ginkgo.Describe("devpod up docker compose test suite", ginkgo.Label("up-
 	}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
 	ginkgo.It("security options", func(ctx context.Context) {
-		_, workspace, err := tc.setupAndStartWorkspace(ctx, "tests/up/testdata/docker-compose-securityOpt")
+		_, workspace, err := tc.setupAndStartWorkspace(ctx, "tests/up-docker-compose/testdata/docker-compose-securityOpt")
 		framework.ExpectNoError(err)
 
 		_, detail, err := tc.getAppContainer(ctx, workspace)
@@ -223,7 +232,7 @@ var _ = ginkgo.Describe("devpod up docker compose test suite", ginkgo.Label("up-
 	}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
 	ginkgo.It("remote env", func(ctx context.Context) {
-		_, workspace, err := tc.setupAndStartWorkspace(ctx, "tests/up/testdata/docker-compose-remote-env")
+		_, workspace, err := tc.setupAndStartWorkspace(ctx, "tests/up-docker-compose/testdata/docker-compose-remote-env")
 		framework.ExpectNoError(err)
 
 		ids, err := findComposeContainer(ctx, tc.dockerHelper, tc.composeHelper, workspace.UID, "app")
@@ -238,7 +247,7 @@ var _ = ginkgo.Describe("devpod up docker compose test suite", ginkgo.Label("up-
 	}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
 	ginkgo.It("remote user", func(ctx context.Context) {
-		_, workspace, err := tc.setupAndStartWorkspace(ctx, "tests/up/testdata/docker-compose-remote-user")
+		_, workspace, err := tc.setupAndStartWorkspace(ctx, "tests/up-docker-compose/testdata/docker-compose-remote-user")
 		framework.ExpectNoError(err)
 
 		ids, err := findComposeContainer(ctx, tc.dockerHelper, tc.composeHelper, workspace.UID, "app")
@@ -250,38 +259,38 @@ var _ = ginkgo.Describe("devpod up docker compose test suite", ginkgo.Label("up-
 	}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
 	ginkgo.It("variables substitution", func(ctx context.Context) {
-		tempDir, workspace, err := tc.setupAndStartWorkspace(ctx, "tests/up/testdata/docker-compose-variables")
+		tempDir, workspace, err := tc.setupAndStartWorkspace(ctx, "tests/up-docker-compose/testdata/docker-compose-variables")
 		framework.ExpectNoError(err)
 
 		ids, err := findComposeContainer(ctx, tc.dockerHelper, tc.composeHelper, workspace.UID, "app")
 		framework.ExpectNoError(err)
 		gomega.Expect(ids).To(gomega.HaveLen(1), "1 compose container to be created")
 
-		devContainerID, err := tc.execSSH(ctx, workspace.ID, "cat $HOME/dev-container-id.out")
+		devContainerID, err := tc.execSSH(ctx, tempDir, "cat $HOME/dev-container-id.out")
 		framework.ExpectNoError(err)
 		gomega.Expect(devContainerID).NotTo(gomega.BeEmpty())
 
-		containerEnvPath, err := tc.execSSH(ctx, workspace.ID, "cat $HOME/container-env-path.out")
+		containerEnvPath, err := tc.execSSH(ctx, tempDir, "cat $HOME/container-env-path.out")
 		framework.ExpectNoError(err)
 		gomega.Expect(containerEnvPath).To(gomega.ContainSubstring("/usr/local/bin"))
 
-		localEnvHome, err := tc.execSSH(ctx, workspace.ID, "cat $HOME/local-env-home.out")
+		localEnvHome, err := tc.execSSH(ctx, tempDir, "cat $HOME/local-env-home.out")
 		framework.ExpectNoError(err)
 		gomega.Expect(localEnvHome).To(gomega.Equal(os.Getenv("HOME")))
 
-		localWorkspaceFolder, err := tc.execSSH(ctx, workspace.ID, "cat $HOME/local-workspace-folder.out")
+		localWorkspaceFolder, err := tc.execSSH(ctx, tempDir, "cat $HOME/local-workspace-folder.out")
 		framework.ExpectNoError(err)
 		gomega.Expect(framework.CleanString(localWorkspaceFolder)).To(gomega.Equal(framework.CleanString(tempDir)))
 
-		localWorkspaceFolderBasename, err := tc.execSSH(ctx, workspace.ID, "cat $HOME/local-workspace-folder-basename.out")
+		localWorkspaceFolderBasename, err := tc.execSSH(ctx, tempDir, "cat $HOME/local-workspace-folder-basename.out")
 		framework.ExpectNoError(err)
 		gomega.Expect(localWorkspaceFolderBasename).To(gomega.Equal(filepath.Base(tempDir)))
 
-		containerWorkspaceFolder, err := tc.execSSH(ctx, workspace.ID, "cat $HOME/container-workspace-folder.out")
+		containerWorkspaceFolder, err := tc.execSSH(ctx, tempDir, "cat $HOME/container-workspace-folder.out")
 		framework.ExpectNoError(err)
 		gomega.Expect(containerWorkspaceFolder).To(gomega.Equal("/workspaces"))
 
-		containerWorkspaceFolderBasename, err := tc.execSSH(ctx, workspace.ID, "cat $HOME/container-workspace-folder-basename.out")
+		containerWorkspaceFolderBasename, err := tc.execSSH(ctx, tempDir, "cat $HOME/container-workspace-folder-basename.out")
 		framework.ExpectNoError(err)
 		gomega.Expect(containerWorkspaceFolderBasename).To(gomega.Equal("workspaces"))
 	}, ginkgo.SpecTimeout(framework.GetTimeout()))
