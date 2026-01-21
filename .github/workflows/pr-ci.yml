@@ -209,18 +209,6 @@ jobs:
             install-kind: true
             requires-secret: false
 
-          - label: context
-            runner: windows-latest
-            free-disk-space: false
-            install-kind: false
-            requires-secret: false
-
-          - label: provider
-            runner: windows-latest
-            free-disk-space: false
-            install-kind: true
-            requires-secret: false
-
           - label: docker-install
             runner: ubuntu-latest
             free-disk-space: false
@@ -241,11 +229,26 @@ jobs:
             install-kind: true
             requires-secret: false
 
-          - label: up-docker-compose && features
+          - label: up-docker-compose && suite
             runner: ubuntu-latest
             free-disk-space: false
             install-kind: true
             requires-secret: false
+
+          # Up Windows tests
+
+          - label: context
+            runner: windows-latest
+            free-disk-space: false
+            install-kind: false
+            requires-secret: false
+
+          - label: provider
+            runner: windows-latest
+            free-disk-space: false
+            install-kind: true
+            requires-secret: false
+
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: jlumbroso/free-disk-space@v1.3.1

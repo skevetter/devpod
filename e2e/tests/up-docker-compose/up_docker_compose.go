@@ -1,5 +1,3 @@
-//go:build linux || darwin || unix
-
 package up
 
 import (
@@ -22,7 +20,7 @@ import (
 	"github.com/skevetter/log"
 )
 
-var _ = ginkgo.Describe("devpod up docker compose test suite", ginkgo.Label("up-docker-compose", "features"), func() {
+var _ = ginkgo.Describe("devpod up docker compose test suite", ginkgo.Label("up-docker-compose", "suite"), func() {
 	var tc *testContext
 
 	ginkgo.BeforeEach(func(ctx context.Context) {
@@ -215,5 +213,10 @@ var _ = ginkgo.Describe("devpod up docker compose test suite", ginkgo.Label("up-
 		dbIDs, err := findComposeContainer(ctx, tc.dockerHelper, tc.composeHelper, workspace.UID, "db")
 		framework.ExpectNoError(err)
 		gomega.Expect(dbIDs).To(gomega.BeEmpty(), "db container not to be created")
+	}, ginkgo.SpecTimeout(framework.GetTimeout()))
+
+	ginkgo.It("user lookup with no remoteUser", func(ctx context.Context) {
+		_, _, err := tc.setupAndStartWorkspace(ctx, "tests/up-docker-compose/testdata/docker-compose-lookup-user")
+		framework.ExpectNoError(err)
 	}, ginkgo.SpecTimeout(framework.GetTimeout()))
 })

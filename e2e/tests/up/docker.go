@@ -85,11 +85,6 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 				err = dtc.f.DevPodUp(ctx, tempDir, "--source", fmt.Sprintf("container:%s", containerDetails[0].ID))
 				framework.ExpectNoError(err)
 			}, ginkgo.SpecTimeout(framework.GetTimeout()))
-
-			ginkgo.It("user lookup with no remoteUser", func(ctx context.Context) {
-				_, err := dtc.setupAndUp(ctx, "tests/up/testdata/docker-compose-lookup-user")
-				framework.ExpectNoError(err)
-			}, ginkgo.SpecTimeout(framework.GetTimeout()))
 		})
 
 		ginkgo.Context("devcontainer configuration", func() {

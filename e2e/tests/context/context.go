@@ -30,7 +30,6 @@ var _ = DevPodDescribe("devpod context test suite", func() {
 			framework.ExpectNoError(err)
 		})
 
-		// written by @skevetter; copied from https://github.com/skevetter/devpod/pull/162
 		ginkgo.It("should use shared context in IDE commands", func() {
 			f := framework.NewDefaultFramework(initialDir + "/bin")
 

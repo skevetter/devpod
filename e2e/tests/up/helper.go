@@ -10,12 +10,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/docker/docker/api/types/container"
 	"github.com/onsi/ginkgo/v2"
 	"github.com/skevetter/devpod/e2e/framework"
-	"github.com/skevetter/devpod/pkg/compose"
 	docker "github.com/skevetter/devpod/pkg/docker"
-	provider2 "github.com/skevetter/devpod/pkg/provider"
 	"github.com/skevetter/log"
 	"github.com/skevetter/log/scanner"
 )
@@ -33,17 +30,6 @@ func (btc *baseTestContext) execSSHCapture(ctx context.Context, projectName, com
 
 func (btc *baseTestContext) execSSH(ctx context.Context, tempDir, command string) (string, error) {
 	return btc.f.DevPodSSH(ctx, tempDir, command)
-}
-
-func (btc *baseTestContext) inspectContainer(ctx context.Context, ids []string) (*container.InspectResponse, error) {
-	if len(ids) == 0 {
-		return nil, fmt.Errorf("no container IDs provided")
-	}
-	var details []container.InspectResponse
-	if err := btc.dockerHelper.Inspect(ctx, ids, "container", &details); err != nil {
-		return nil, err
-	}
-	return &details[0], nil
 }
 
 // Log scanning functions
@@ -142,18 +128,4 @@ func setupWorkspaceAndUp(ctx context.Context, testdataPath, initialDir string, f
 		return "", err
 	}
 	return tempDir, f.DevPodUp(ctx, append([]string{tempDir}, args...)...)
-}
-
-func findComposeContainer(ctx context.Context, dockerHelper *docker.DockerHelper, composeHelper *compose.ComposeHelper, workspaceUID, serviceName string) ([]string, error) {
-	return dockerHelper.FindContainer(ctx, []string{
-		fmt.Sprintf("%s=%s", compose.ProjectLabel, composeHelper.GetProjectName(workspaceUID)),
-		fmt.Sprintf("%s=%s", compose.ServiceLabel, serviceName),
-	})
-}
-
-func devPodUpAndFindWorkspace(ctx context.Context, f *framework.Framework, tempDir string, args ...string) (*provider2.Workspace, error) {
-	if err := f.DevPodUp(ctx, append([]string{tempDir}, args...)...); err != nil {
-		return nil, err
-	}
-	return f.FindWorkspace(ctx, tempDir)
 }
