@@ -3,7 +3,6 @@ package up
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"os"
 	"path"
 	"path/filepath"
@@ -13,7 +12,6 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
-	"github.com/onsi/gomega/ghttp"
 	"github.com/skevetter/devpod/e2e/framework"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	docker "github.com/skevetter/devpod/pkg/docker"
@@ -231,87 +229,6 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 
 				err = dtc.f.DevPodWorkspaceDelete(ctx, tempDir)
 				framework.ExpectNoError(err)
-			}, ginkgo.SpecTimeout(framework.GetTimeout()))
-		})
-
-		ginkgo.Context("features", func() {
-			ginkgo.It("lifecycle hooks dependencies", func(ctx context.Context) {
-				_, err := dtc.setupAndUp(ctx, "tests/up/testdata/docker-features-lifecycle-hooks", "--debug")
-				framework.ExpectNoError(err)
-			}, ginkgo.SpecTimeout(framework.GetTimeout()))
-
-			ginkgo.It("lifecycle hooks execution", func(ctx context.Context) {
-				tempDir, err := dtc.setupAndUp(ctx, "tests/up/testdata/docker-feature-hooks")
-				framework.ExpectNoError(err)
-
-				out, err := dtc.execSSH(ctx, tempDir, "cat /tmp/feature-onCreate.txt")
-				framework.ExpectNoError(err)
-				framework.ExpectEqual(strings.TrimSpace(out), "feature-onCreate")
-
-				out, err = dtc.execSSH(ctx, tempDir, "cat /tmp/feature-postCreate.txt")
-				framework.ExpectNoError(err)
-				framework.ExpectEqual(strings.TrimSpace(out), "feature-postCreate")
-
-				out, err = dtc.execSSH(ctx, tempDir, "cat /tmp/feature-postStart.txt")
-				framework.ExpectNoError(err)
-				framework.ExpectEqual(strings.TrimSpace(out), "feature-postStart")
-			}, ginkgo.SpecTimeout(framework.GetTimeout()))
-
-			ginkgo.It("http headers download", func(ctx context.Context) {
-				server := ghttp.NewServer()
-				ginkgo.DeferCleanup(server.Close)
-
-				tempDir, err := framework.CopyToTempDir("tests/up/testdata/docker-features-http-headers")
-				framework.ExpectNoError(err)
-				ginkgo.DeferCleanup(framework.CleanupTempDir, dtc.initialDir, tempDir)
-				ginkgo.DeferCleanup(dtc.f.DevPodWorkspaceDelete, context.Background(), tempDir)
-
-				featureArchiveFilePath := path.Join(tempDir, "devcontainer-feature-hello.tgz")
-				featureFiles := []string{path.Join(tempDir, "devcontainer-feature.json"), path.Join(tempDir, "install.sh")}
-				err = createTarGzArchive(featureArchiveFilePath, featureFiles)
-				framework.ExpectNoError(err)
-
-				devContainerFileBuf, err := os.ReadFile(path.Join(tempDir, ".devcontainer.json"))
-				framework.ExpectNoError(err)
-
-				output := strings.ReplaceAll(string(devContainerFileBuf), "#{server_url}", server.URL())
-				err = os.WriteFile(path.Join(tempDir, ".devcontainer.json"), []byte(output), 0644)
-				framework.ExpectNoError(err)
-
-				respHeader := http.Header{}
-				respHeader.Set("Content-Disposition", "attachment; filename=devcontainer-feature-hello.tgz")
-
-				featureArchiveFileBuf, err := os.ReadFile(featureArchiveFilePath)
-				framework.ExpectNoError(err)
-
-				server.AppendHandlers(
-					ghttp.CombineHandlers(
-						ghttp.VerifyRequest("GET", "/devcontainer-feature-hello.tgz"),
-						ghttp.VerifyHeaderKV("Foo-Header", "Foo"),
-						ghttp.RespondWith(http.StatusOK, featureArchiveFileBuf, respHeader),
-					),
-				)
-
-				err = dtc.f.DevPodUp(ctx, tempDir)
-				framework.ExpectNoError(err)
-			}, ginkgo.SpecTimeout(framework.GetTimeout()))
-
-			ginkgo.It("resolves user variable in dockerfile", func(ctx context.Context) {
-				tempDir, err := dtc.setupAndUp(ctx, "tests/up/testdata/docker-user-variable-in-dockerfile")
-				framework.ExpectNoError(err)
-
-				out, err := dtc.execSSH(ctx, tempDir, "whoami")
-				framework.ExpectNoError(err)
-				framework.ExpectEqual(strings.TrimSpace(out), "testuser")
-			}, ginkgo.SpecTimeout(framework.GetTimeout()))
-
-			ginkgo.It("preserves user when feature is present with variable", func(ctx context.Context) {
-				tempDir, err := dtc.setupAndUp(ctx, "tests/up/testdata/docker-user-variable-with-feature")
-				framework.ExpectNoError(err)
-
-				out, err := dtc.execSSH(ctx, tempDir, "whoami")
-				framework.ExpectNoError(err)
-				framework.ExpectEqual(strings.TrimSpace(out), "ubuntu")
 			}, ginkgo.SpecTimeout(framework.GetTimeout()))
 		})
 

@@ -1,0 +1,7 @@
+{
+  "id": "test-feature",
+  "version": "1.0.0",
+  "name": "Test Feature with Forward Reference",
+  "description": "Feature that depends on python but is declared after it",
+  "installsAfter": ["ghcr.io/devcontainers/features/python"]
+}

@@ -1,0 +1,10 @@
+{
+  "id": "mixedDeps",
+  "version": "1.0.0",
+  "name": "Mixed Dependencies Feature",
+  "description": "Feature with both dependsOn and installsAfter",
+  "dependsOn": {
+    "./features/hardDep": {}
+  },
+  "installsAfter": ["ghcr.io/devcontainers/feature-starter/hello:latest"]
+}

@@ -1,0 +1,6 @@
+{
+  "image": "mcr.microsoft.com/devcontainers/base:alpine",
+  "features": {
+    "./features/featureA": {}
+  }
+}

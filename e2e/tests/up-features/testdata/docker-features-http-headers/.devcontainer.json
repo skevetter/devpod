@@ -1,0 +1,14 @@
+{
+  "name": "Test hello",
+  "image": "ubuntu",
+  "features": {
+    "#{server_url}/devcontainer-feature-hello.tgz": {}
+  },
+  "customizations": {
+    "devpod": {
+      "featureDownloadHTTPHeaders": {
+        "Foo-Header": "Foo"
+      }
+    }
+  }
+}

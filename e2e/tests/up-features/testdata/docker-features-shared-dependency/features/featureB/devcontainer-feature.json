@@ -1,0 +1,11 @@
+{
+  "name": "Feature B",
+  "id": "featureB",
+  "version": "1.0.0",
+  "description": "Feature B that depends on shared dependency",
+  "dependsOn": {
+    "ghcr.io/devcontainers/feature-starter/hello:latest": {
+      "greeting": "from B"
+    }
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "name": "Feature Lifecycle Hooks Test",
+  "image": "ubuntu",
+  "features": {
+    "./.devcontainer/features/test-hooks": {}
+  }
+}

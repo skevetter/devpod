@@ -167,12 +167,6 @@ jobs:
             install-kind: true
             requires-secret: false
 
-          - label: up && features
-            runner: ubuntu-latest
-            free-disk-space: true
-            install-kind: true
-            requires-secret: false
-
           - label: up && error
             runner: ubuntu-latest
             free-disk-space: true
@@ -192,12 +186,6 @@ jobs:
             requires-secret: false
 
           - label: up-docker
-            runner: ubuntu-latest
-            free-disk-space: false
-            install-kind: true
-            requires-secret: false
-
-          - label: up-docker-wsl
             runner: ubuntu-latest
             free-disk-space: false
             install-kind: true
@@ -235,6 +223,14 @@ jobs:
             install-kind: true
             requires-secret: false
 
+          # Up Docker Feature tests
+
+          - label: up-features && suite
+            runner: ubuntu-latest
+            free-disk-space: true
+            install-kind: true
+            requires-secret: false
+
           # Up Windows tests
 
           - label: context
@@ -245,6 +241,13 @@ jobs:
 
           - label: provider
             runner: windows-latest
+            free-disk-space: false
+            install-kind: true
+            requires-secret: false
+
+          # TODO: should use windows-latest
+          - label: up-docker-wsl
+            runner: ubuntu-latest
             free-disk-space: false
             install-kind: true
             requires-secret: false

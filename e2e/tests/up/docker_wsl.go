@@ -3,18 +3,14 @@ package up
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"os"
-	"path"
 	"path/filepath"
 	"runtime"
-	"strings"
 
 	"github.com/docker/docker/api/types/container"
 
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
-	"github.com/onsi/gomega/ghttp"
 	"github.com/skevetter/devpod/e2e/framework"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	docker "github.com/skevetter/devpod/pkg/docker"
@@ -170,16 +166,6 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 				gomega.Expect(bar).To(gomega.Equal("FOO"))
 			}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
-			ginkgo.Context("should start a new workspace with features", func() {
-				ginkgo.It("ensure dependencies installed via features are accessible in lifecycle hooks", func(ctx context.Context) {
-					tempDir, err := setupWorkspace("tests/up/testdata/docker-features-lifecycle-hooks", initialDir, f)
-					framework.ExpectNoError(err)
-
-					// Wait for devpod workspace to come online (deadline: 30s)
-					err = f.DevPodUp(ctx, tempDir, "--debug")
-					framework.ExpectNoError(err)
-				}, ginkgo.SpecTimeout(framework.GetTimeout()))
-			})
 			ginkgo.It("should start a new workspace with dotfiles - no install script", func(ctx context.Context) {
 				tempDir, err := setupWorkspace("tests/up/testdata/docker", initialDir, f)
 				framework.ExpectNoError(err)
@@ -288,56 +274,6 @@ var _ = DevPodDescribe("devpod up test suite", func() {
 
 				framework.ExpectEqual(out, expectedOutput, "should match")
 				framework.ExpectNotEqual(out, unexpectedOutput, "should NOT match")
-			}, ginkgo.SpecTimeout(framework.GetTimeout()))
-
-			ginkgo.It("should use http headers to download feature", func(ctx context.Context) {
-				server := ghttp.NewServer()
-
-				tempDir, err := framework.CopyToTempDir("tests/up/testdata/docker-features-http-headers")
-				framework.ExpectNoError(err)
-
-				featureArchiveFilePath := path.Join(tempDir, "devcontainer-feature-hello.tgz")
-				featureFiles := []string{path.Join(tempDir, "devcontainer-feature.json"), path.Join(tempDir, "install.sh")}
-				err = createTarGzArchive(featureArchiveFilePath, featureFiles)
-				framework.ExpectNoError(err)
-
-				devContainerFileBuf, err := os.ReadFile(path.Join(tempDir, ".devcontainer.json"))
-				framework.ExpectNoError(err)
-
-				output := strings.ReplaceAll(string(devContainerFileBuf), "#{server_url}", server.URL())
-				err = os.WriteFile(path.Join(tempDir, ".devcontainer.json"), []byte(output), 0644)
-				framework.ExpectNoError(err)
-
-				ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
-				ginkgo.DeferCleanup(server.Close)
-
-				respHeader := http.Header{}
-				respHeader.Set("Content-Disposition", "attachment; filename=devcontainer-feature-hello.tgz")
-
-				featureArchiveFileBuf, err := os.ReadFile(featureArchiveFilePath)
-				framework.ExpectNoError(err)
-
-				f := framework.NewDefaultFramework(initialDir + "/bin")
-				server.AppendHandlers(
-					ghttp.CombineHandlers(
-						ghttp.VerifyRequest("GET", "/devcontainer-feature-hello.tgz"),
-						ghttp.VerifyHeaderKV("Foo-Header", "Foo"),
-						ghttp.RespondWith(http.StatusOK, featureArchiveFileBuf, respHeader),
-					),
-				)
-
-				_ = f.DevPodProviderDelete(ctx, "docker")
-				err = f.DevPodProviderAdd(ctx, "docker")
-				framework.ExpectNoError(err)
-				err = f.DevPodProviderUse(ctx, "docker")
-				framework.ExpectNoError(err)
-
-				ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), tempDir)
-
-				// Wait for devpod workspace to come online (deadline: 30s)
-				err = f.DevPodUp(ctx, tempDir)
-				framework.ExpectNoError(err)
-				server.Close()
 			}, ginkgo.SpecTimeout(framework.GetTimeout()))
 		})
 	})

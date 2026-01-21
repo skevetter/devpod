@@ -1,0 +1,9 @@
+{
+  "id": "dependsOnDemo",
+  "version": "0.1.0",
+  "name": "dependsOn demo",
+  "description": "Demonstrate behaviour of dependsOn property in devcontainer-feature.json",
+  "dependsOn": {
+    "ghcr.io/devcontainers/feature-starter/hello:latest": {}
+  }
+}

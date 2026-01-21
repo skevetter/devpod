@@ -1,0 +1,7 @@
+{
+  "image": "ubuntu",
+  "features": {
+    "./features/test-feature": {},
+    "ghcr.io/devcontainers/features/node:latest": {}
+  }
+}

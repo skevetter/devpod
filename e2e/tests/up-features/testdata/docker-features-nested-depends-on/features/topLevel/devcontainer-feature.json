@@ -1,0 +1,9 @@
+{
+  "id": "topLevel",
+  "version": "1.0.0",
+  "name": "Top Level Feature",
+  "description": "Feature that depends on middle level",
+  "dependsOn": {
+    "./features/middleLevel": {}
+  }
+}
