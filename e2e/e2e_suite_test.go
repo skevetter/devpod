@@ -23,6 +23,7 @@ import (
 	_ "github.com/skevetter/devpod/e2e/tests/provider"
 	_ "github.com/skevetter/devpod/e2e/tests/ssh"
 	_ "github.com/skevetter/devpod/e2e/tests/up"
+	_ "github.com/skevetter/devpod/e2e/tests/up-docker-compose"
 )
 
 // TestRunE2ETests checks configuration parameters (specified through flags) and then runs

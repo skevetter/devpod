@@ -200,18 +200,6 @@ jobs:
             install-kind: true
             requires-secret: false
 
-          - label: up-docker-compose
-            runner: ubuntu-latest
-            free-disk-space: false
-            install-kind: true
-            requires-secret: false
-
-          - label: up-docker-compose-build
-            runner: ubuntu-latest
-            free-disk-space: false
-            install-kind: true
-            requires-secret: false
-
           - label: up-docker-build
             runner: ubuntu-latest
             free-disk-space: false
@@ -234,6 +222,24 @@ jobs:
             runner: ubuntu-latest
             free-disk-space: false
             install-kind: false
+            requires-secret: false
+
+          - label: up-docker-compose && build
+            runner: ubuntu-latest
+            free-disk-space: false
+            install-kind: true
+            requires-secret: false
+
+          - label: up-docker-compose && config
+            runner: ubuntu-latest
+            free-disk-space: false
+            install-kind: true
+            requires-secret: false
+
+          - label: up-docker-compose && features
+            runner: ubuntu-latest
+            free-disk-space: false
+            install-kind: true
             requires-secret: false
     runs-on: ${{ matrix.runner }}
     steps:
