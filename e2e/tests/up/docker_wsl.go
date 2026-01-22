@@ -27,15 +27,14 @@ var _ = ginkgo.Describe("testing up command for windows", ginkgo.Label("up-docke
 		initialDir, err = os.Getwd()
 		framework.ExpectNoError(err)
 
-		dockerHelper = &docker.DockerHelper{DockerCommand: "docker", Log: log.Default}
-
 		originalDockerHost = os.Getenv("DOCKER_HOST")
 		if originalDockerHost == "" {
 			err = os.Setenv("DOCKER_HOST", "npipe:////./pipe/podman-machine-default")
 			framework.ExpectNoError(err)
 		}
 
-		f, err = setupDockerProvider(filepath.Join(initialDir, "bin"), "docker")
+		dockerHelper = &docker.DockerHelper{DockerCommand: "podman", Log: log.Default}
+		f, err = setupDockerProvider(filepath.Join(initialDir, "bin"), "podman")
 		framework.ExpectNoError(err)
 	})
 
