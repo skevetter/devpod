@@ -1,9 +1,0 @@
-{
-  "name": "Self Dependency Feature",
-  "id": "selfDep",
-  "version": "1.0.0",
-  "description": "Feature that depends on itself",
-  "dependsOn": {
-    "./features/selfDep": {}
-  }
-}

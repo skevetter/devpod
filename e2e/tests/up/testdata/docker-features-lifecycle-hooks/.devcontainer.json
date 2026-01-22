@@ -1,8 +1,0 @@
-{
-  "name": "Test Git",
-  "image": "ubuntu",
-  "features": {
-    "ghcr.io/devcontainers/features/git:1": {}
-  },
-  "postStartCommand": "git version"
-}

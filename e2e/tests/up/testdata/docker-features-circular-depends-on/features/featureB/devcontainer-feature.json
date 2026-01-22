@@ -1,9 +1,0 @@
-{
-  "id": "featureB",
-  "version": "1.0.0",
-  "name": "Feature B",
-  "description": "Feature B depends on A (circular)",
-  "dependsOn": {
-    "./features/featureA": {}
-  }
-}

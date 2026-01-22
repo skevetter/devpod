@@ -1,7 +1,0 @@
-{
-  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
-  "features": {
-    "./features/dependsOnDemo": {},
-    "ghcr.io/devcontainers/features/node:1": {}
-  }
-}

@@ -36,6 +36,9 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-features", "suite
 		workspaceName := filepath.Base(tempDir)
 		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), workspaceName)
 
+		err = f.DevPodUp(ctx, tempDir)
+		framework.ExpectNoError(err)
+
 		out, err := f.DevPodSSH(ctx, tempDir, "cat /tmp/feature-onCreate.txt")
 		framework.ExpectNoError(err)
 		framework.ExpectEqual(strings.TrimSpace(out), "feature-onCreate")
@@ -327,7 +330,7 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-features", "suite
 		f, err := setupDockerProvider(initialDir+"/bin", "docker")
 		framework.ExpectNoError(err)
 
-		tempDir, err := framework.CopyToTempDir("tests/up-features/testdata/docker-user-variable-in-dockerfile")
+		tempDir, err := framework.CopyToTempDir("tests/up-features/testdata/docker-features-with-user-variable-in-dockerfile")
 		framework.ExpectNoError(err)
 		ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
 
@@ -343,7 +346,7 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-features", "suite
 		f, err := setupDockerProvider(initialDir+"/bin", "docker")
 		framework.ExpectNoError(err)
 
-		tempDir, err := framework.CopyToTempDir("tests/up-features/testdata/docker-user-variable-with-feature")
+		tempDir, err := framework.CopyToTempDir("tests/up-features/testdata/docker-features-with-user-variable")
 		framework.ExpectNoError(err)
 		ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
 

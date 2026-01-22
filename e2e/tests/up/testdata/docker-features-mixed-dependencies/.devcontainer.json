@@ -1,7 +1,0 @@
-{
-  "image": "mcr.microsoft.com/devcontainers/base:alpine",
-  "features": {
-    "./features/mixedDeps": {},
-    "ghcr.io/devcontainers/feature-starter/hello:1": {}
-  }
-}
