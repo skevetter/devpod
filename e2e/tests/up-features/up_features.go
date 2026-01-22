@@ -1,4 +1,5 @@
 //go:build linux || darwin || unix
+
 package up
 
 import (
