@@ -33,21 +33,21 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-features", "suite
 		framework.ExpectNoError(err)
 		ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
 
-		workspaceName := filepath.Base(tempDir)
-		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), workspaceName)
+		wsName := filepath.Base(tempDir)
+		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), wsName)
 
 		err = f.DevPodUp(ctx, tempDir)
 		framework.ExpectNoError(err)
 
-		out, err := f.DevPodSSH(ctx, tempDir, "cat /tmp/feature-onCreate.txt")
+		out, err := f.DevPodSSH(ctx, wsName, "cat /tmp/feature-onCreate.txt")
 		framework.ExpectNoError(err)
 		framework.ExpectEqual(strings.TrimSpace(out), "feature-onCreate")
 
-		out, err = f.DevPodSSH(ctx, tempDir, "cat /tmp/feature-postCreate.txt")
+		out, err = f.DevPodSSH(ctx, wsName, "cat /tmp/feature-postCreate.txt")
 		framework.ExpectNoError(err)
 		framework.ExpectEqual(strings.TrimSpace(out), "feature-postCreate")
 
-		out, err = f.DevPodSSH(ctx, tempDir, "cat /tmp/feature-postStart.txt")
+		out, err = f.DevPodSSH(ctx, wsName, "cat /tmp/feature-postStart.txt")
 		framework.ExpectNoError(err)
 		framework.ExpectEqual(strings.TrimSpace(out), "feature-postStart")
 	}, ginkgo.SpecTimeout(framework.GetTimeout()))
@@ -94,8 +94,8 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-features", "suite
 		err = f.DevPodProviderUse(ctx, "docker")
 		framework.ExpectNoError(err)
 
-		workspaceName := filepath.Base(tempDir)
-		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), workspaceName)
+		wsName := filepath.Base(tempDir)
+		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), wsName)
 
 		err = f.DevPodUp(ctx, tempDir)
 		framework.ExpectNoError(err)
@@ -109,8 +109,8 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-features", "suite
 		framework.ExpectNoError(err)
 		ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
 
-		workspaceName := filepath.Base(tempDir)
-		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), workspaceName)
+		wsName := filepath.Base(tempDir)
+		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), wsName)
 
 		err = f.DevPodUp(ctx, tempDir)
 		framework.ExpectNoError(err)
@@ -124,13 +124,13 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-features", "suite
 		framework.ExpectNoError(err)
 		ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
 
-		workspaceName := filepath.Base(tempDir)
-		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), workspaceName)
+		wsName := filepath.Base(tempDir)
+		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), wsName)
 
 		err = f.DevPodUp(ctx, tempDir)
 		framework.ExpectNoError(err)
 
-		out, err := f.DevPodSSH(ctx, workspaceName, "test-depends-on")
+		out, err := f.DevPodSSH(ctx, wsName, "test-depends-on")
 		framework.ExpectNoError(err)
 		gomega.Expect(out).To(gomega.ContainSubstring("SUCCESS: hello command is available"))
 		gomega.Expect(out).To(gomega.ContainSubstring("hey, vscode"))
@@ -144,13 +144,13 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-features", "suite
 		framework.ExpectNoError(err)
 		ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
 
-		workspaceName := filepath.Base(tempDir)
-		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), workspaceName)
+		wsName := filepath.Base(tempDir)
+		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), wsName)
 
 		err = f.DevPodUp(ctx, tempDir)
 		framework.ExpectNoError(err)
 
-		out, err := f.DevPodSSH(ctx, workspaceName, "test-depends-on")
+		out, err := f.DevPodSSH(ctx, wsName, "test-depends-on")
 		framework.ExpectNoError(err)
 		gomega.Expect(out).To(gomega.ContainSubstring("SUCCESS: hello command is available"))
 		gomega.Expect(out).To(gomega.ContainSubstring("hey, vscode"))
@@ -164,14 +164,14 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-features", "suite
 		framework.ExpectNoError(err)
 		ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
 
-		workspaceName := filepath.Base(tempDir)
-		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), workspaceName)
+		wsName := filepath.Base(tempDir)
+		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), wsName)
 
 		err = f.DevPodUp(ctx, tempDir)
 		framework.ExpectNoError(err)
 
 		// Test nested dependency chain works
-		out, err := f.DevPodSSH(ctx, workspaceName, "test-nested-chain")
+		out, err := f.DevPodSSH(ctx, wsName, "test-nested-chain")
 		framework.ExpectNoError(err)
 		gomega.Expect(out).To(gomega.ContainSubstring("All dependencies available"))
 	}, ginkgo.SpecTimeout(framework.GetTimeout()))
@@ -184,8 +184,8 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-features", "suite
 		framework.ExpectNoError(err)
 		ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
 
-		workspaceName := filepath.Base(tempDir)
-		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), workspaceName)
+		wsName := filepath.Base(tempDir)
+		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), wsName)
 
 		// This should fail with circular dependency error
 		err = f.DevPodUp(ctx, tempDir)
@@ -201,14 +201,14 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-features", "suite
 		framework.ExpectNoError(err)
 		ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
 
-		workspaceName := filepath.Base(tempDir)
-		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), workspaceName)
+		wsName := filepath.Base(tempDir)
+		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), wsName)
 
 		err = f.DevPodUp(ctx, tempDir)
 		framework.ExpectNoError(err)
 
 		// Test dependency installed with correct options
-		out, err := f.DevPodSSH(ctx, workspaceName, "hello")
+		out, err := f.DevPodSSH(ctx, wsName, "hello")
 		framework.ExpectNoError(err)
 		gomega.Expect(out).To(gomega.ContainSubstring("custom greeting"))
 	}, ginkgo.SpecTimeout(framework.GetTimeout()))
@@ -221,14 +221,14 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-features", "suite
 		framework.ExpectNoError(err)
 		ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
 
-		workspaceName := filepath.Base(tempDir)
-		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), workspaceName)
+		wsName := filepath.Base(tempDir)
+		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), wsName)
 
 		err = f.DevPodUp(ctx, tempDir)
 		framework.ExpectNoError(err)
 
 		// Test correct installation order
-		out, err := f.DevPodSSH(ctx, workspaceName, "test-install-order")
+		out, err := f.DevPodSSH(ctx, wsName, "test-install-order")
 		framework.ExpectNoError(err)
 		gomega.Expect(out).To(gomega.ContainSubstring("Correct order"))
 	}, ginkgo.SpecTimeout(framework.GetTimeout()))
@@ -241,8 +241,8 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-features", "suite
 		framework.ExpectNoError(err)
 		ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
 
-		workspaceName := filepath.Base(tempDir)
-		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), workspaceName)
+		wsName := filepath.Base(tempDir)
+		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), wsName)
 
 		// Should fail with circular dependency error
 		err = f.DevPodUp(ctx, tempDir)
@@ -257,8 +257,8 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-features", "suite
 		framework.ExpectNoError(err)
 		ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
 
-		workspaceName := filepath.Base(tempDir)
-		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), workspaceName)
+		wsName := filepath.Base(tempDir)
+		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), wsName)
 
 		// Should fail when dependency cannot be resolved
 		err = f.DevPodUp(ctx, tempDir)
@@ -273,14 +273,14 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-features", "suite
 		framework.ExpectNoError(err)
 		ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
 
-		workspaceName := filepath.Base(tempDir)
-		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), workspaceName)
+		wsName := filepath.Base(tempDir)
+		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), wsName)
 
 		err = f.DevPodUp(ctx, tempDir)
 		framework.ExpectNoError(err)
 
 		// Verify shared dependency was installed only once and both features work
-		out, err := f.DevPodSSH(ctx, workspaceName, "hello")
+		out, err := f.DevPodSSH(ctx, wsName, "hello")
 		framework.ExpectNoError(err)
 		// Should contain greeting from one of the features (last one wins)
 		gomega.Expect(out).To(gomega.ContainSubstring("from"))
@@ -294,15 +294,15 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-features", "suite
 		framework.ExpectNoError(err)
 		ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
 
-		workspaceName := filepath.Base(tempDir)
-		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), workspaceName)
+		wsName := filepath.Base(tempDir)
+		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), wsName)
 
 		// This should not fail with "Parent does not exist" error
 		err = f.DevPodUp(ctx, tempDir)
 		framework.ExpectNoError(err)
 
 		// Test that both features are installed correctly
-		out, err := f.DevPodSSH(ctx, workspaceName, "python3 --version")
+		out, err := f.DevPodSSH(ctx, wsName, "python3 --version")
 		framework.ExpectNoError(err)
 		gomega.Expect(out).To(gomega.ContainSubstring("Python 3.11"))
 	}, ginkgo.SpecTimeout(framework.GetTimeout()*5)) // This test compiles Python
@@ -315,17 +315,17 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-features", "suite
 		framework.ExpectNoError(err)
 		ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
 
-		workspaceName := filepath.Base(tempDir)
-		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), workspaceName)
+		wsName := filepath.Base(tempDir)
+		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), wsName)
 
 		err = f.DevPodUp(ctx, tempDir)
 		framework.ExpectNoError(err)
 
-		out, err := f.DevPodSSH(ctx, workspaceName, "cat /tmp/test-result")
+		out, err := f.DevPodSSH(ctx, wsName, "cat /tmp/test-result")
 		framework.ExpectNoError(err)
 		gomega.Expect(out).To(gomega.ContainSubstring("test-passed"))
 
-		out, err = f.DevPodSSH(ctx, workspaceName, "node --version")
+		out, err = f.DevPodSSH(ctx, wsName, "node --version")
 		framework.ExpectNoError(err)
 		gomega.Expect(out).To(gomega.MatchRegexp(`v\d+\.\d+\.\d+`))
 	}, ginkgo.SpecTimeout(framework.GetTimeout()))
@@ -338,13 +338,13 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-features", "suite
 		framework.ExpectNoError(err)
 		ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
 
-		workspaceName := filepath.Base(tempDir)
-		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), workspaceName)
+		wsName := filepath.Base(tempDir)
+		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), wsName)
 
 		err = f.DevPodUp(ctx, tempDir)
 		framework.ExpectNoError(err)
 
-		out, err := f.DevPodSSH(ctx, tempDir, "whoami")
+		out, err := f.DevPodSSH(ctx, wsName, "whoami")
 		framework.ExpectNoError(err)
 		framework.ExpectEqual(strings.TrimSpace(out), "testuser")
 	}, ginkgo.SpecTimeout(framework.GetTimeout()))
@@ -357,13 +357,13 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-features", "suite
 		framework.ExpectNoError(err)
 		ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
 
-		workspaceName := filepath.Base(tempDir)
-		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), workspaceName)
+		wsName := filepath.Base(tempDir)
+		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), wsName)
 
 		err = f.DevPodUp(ctx, tempDir)
 		framework.ExpectNoError(err)
 
-		out, err := f.DevPodSSH(ctx, tempDir, "whoami")
+		out, err := f.DevPodSSH(ctx, wsName, "whoami")
 		framework.ExpectNoError(err)
 		framework.ExpectEqual(strings.TrimSpace(out), "ubuntu")
 	}, ginkgo.SpecTimeout(framework.GetTimeout()))
