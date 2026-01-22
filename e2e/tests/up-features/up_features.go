@@ -87,11 +87,15 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-features", "suite
 			),
 		)
 		_ = f.DevPodProviderDelete(ctx, "docker")
+
 		err = f.DevPodProviderAdd(ctx, "docker")
 		framework.ExpectNoError(err)
+
 		err = f.DevPodProviderUse(ctx, "docker")
 		framework.ExpectNoError(err)
-		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), tempDir)
+
+		workspaceName := filepath.Base(tempDir)
+		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), workspaceName)
 
 		err = f.DevPodUp(ctx, tempDir)
 		framework.ExpectNoError(err)
@@ -337,6 +341,9 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-features", "suite
 		workspaceName := filepath.Base(tempDir)
 		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), workspaceName)
 
+		err = f.DevPodUp(ctx, tempDir)
+		framework.ExpectNoError(err)
+
 		out, err := f.DevPodSSH(ctx, tempDir, "whoami")
 		framework.ExpectNoError(err)
 		framework.ExpectEqual(strings.TrimSpace(out), "testuser")
@@ -352,6 +359,9 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-features", "suite
 
 		workspaceName := filepath.Base(tempDir)
 		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), workspaceName)
+
+		err = f.DevPodUp(ctx, tempDir)
+		framework.ExpectNoError(err)
 
 		out, err := f.DevPodSSH(ctx, tempDir, "whoami")
 		framework.ExpectNoError(err)
