@@ -18,8 +18,7 @@ var _ = ginkgo.Describe("testing up command for working with git repositories", 
 		framework.ExpectNoError(err)
 	})
 
-	ginkgo.It("should allow checkout of a GitRepo from a commit hash", func() {
-		ctx := context.Background()
+	ginkgo.It("should allow checkout of a GitRepo from a commit hash", func(ctx context.Context) {
 		f, err := setupDockerProvider(initialDir+"/bin", "docker")
 		framework.ExpectNoError(err)
 
@@ -31,22 +30,19 @@ var _ = ginkgo.Describe("testing up command for working with git repositories", 
 		framework.ExpectNoError(err)
 	}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
-	ginkgo.It("should allow checkout of a GitRepo from a pull request reference", func() {
-		ctx := context.Background()
+	ginkgo.It("should allow checkout of a GitRepo from a pull request reference", func(ctx context.Context) {
 		f, err := setupDockerProvider(initialDir+"/bin", "docker")
 		framework.ExpectNoError(err)
 
-		name := "pr100"
+		name := "devpod"
 		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), name)
 
-		// Wait for devpod workspace to come online (deadline: 30s)
-		err = f.DevPodUp(ctx, "github.com/loft-sh/devpod")
+		err = f.DevPodUp(ctx, "github.com/skevetter/devpod@pull/100/head")
 		framework.ExpectNoError(err)
 	}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
-	ginkgo.It("create workspace in a subpath", func() {
+	ginkgo.It("create workspace in a subpath", func(ctx context.Context) {
 		const providerName = "test-docker"
-		ctx := context.Background()
 
 		f := framework.NewDefaultFramework(initialDir + "/bin")
 

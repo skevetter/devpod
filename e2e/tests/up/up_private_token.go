@@ -19,11 +19,10 @@ var _ = ginkgo.Describe("testing up command with private repos", ginkgo.Label("u
 		framework.ExpectNoError(err)
 	})
 
-	ginkgo.It("should allow checkout of a private GitRepo", func() {
+	ginkgo.It("should allow checkout of a private GitRepo", func(ctx context.Context) {
 		username := os.Getenv("GH_USERNAME")
 		token := os.Getenv("GH_ACCESS_TOKEN")
 
-		ctx := context.Background()
 		f, err := setupDockerProvider(initialDir+"/bin", "docker")
 		framework.ExpectNoError(err)
 

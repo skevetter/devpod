@@ -16,7 +16,7 @@ import (
 	"github.com/skevetter/log"
 )
 
-var _ = ginkgo.Describe("testing up command for windows", ginkgo.Label("up-docker-wsl"), ginkgo.Ordered, func() {
+var _ = ginkgo.Describe("testing up command for windows", ginkgo.Label("up-docker-wsl"), func() {
 	var f *framework.Framework
 	var dockerHelper *docker.DockerHelper
 	var initialDir string
@@ -33,7 +33,7 @@ var _ = ginkgo.Describe("testing up command for windows", ginkgo.Label("up-docke
 		err = os.Setenv("DOCKER_HOST", "tcp://localhost:2375")
 		framework.ExpectNoError(err)
 
-		f, err = setupDockerProvider(initialDir+"/bin", "docker")
+		f, err = setupDockerProvider(filepath.Join(initialDir, "bin"), "docker")
 		framework.ExpectNoError(err)
 	})
 

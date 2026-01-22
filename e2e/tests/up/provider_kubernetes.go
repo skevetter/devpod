@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"os"
 	"os/exec"
+	"time"
 
 	"github.com/onsi/ginkgo/v2"
+	"github.com/onsi/gomega"
 	"github.com/skevetter/devpod/e2e/framework"
 )
 
@@ -19,8 +21,7 @@ var _ = ginkgo.Describe("testing up command for kubernetes provider", ginkgo.Lab
 		framework.ExpectNoError(err)
 	})
 
-	ginkgo.It("runs devpod in Kubernetes", func() {
-		ctx := context.Background()
+	ginkgo.It("runs devpod in Kubernetes", func(ctx context.Context) {
 		f := framework.NewDefaultFramework(initialDir + "/bin")
 		tempDir, err := framework.CopyToTempDir("tests/up/testdata/kubernetes")
 		framework.ExpectNoError(err)
@@ -39,15 +40,18 @@ var _ = ginkgo.Describe("testing up command for kubernetes provider", ginkgo.Lab
 		framework.ExpectNoError(err)
 
 		// check pod is there
-		cmd := exec.CommandContext(ctx, "kubectl", "get", "pods", "-l", "devpod.sh/created=true", "-o", "json", "-n", "devpod")
-		stdout, err := cmd.Output()
-		framework.ExpectNoError(err)
-
-		// check if pod is there
 		list := &framework.PodList{}
-		err = json.Unmarshal(stdout, list)
-		framework.ExpectNoError(err)
-		framework.ExpectEqual(len(list.Items), 1, "Expect 1 pod")
+		gomega.Eventually(func() int {
+			cmd := exec.CommandContext(ctx, "kubectl", "get", "pods", "-l", "devpod.sh/created=true", "-o", "json", "-n", "devpod")
+			stdout, err := cmd.Output()
+			if err != nil {
+				return -1
+			}
+			if err := json.Unmarshal(stdout, list); err != nil {
+				return -1
+			}
+			return len(list.Items)
+		}, 30*time.Second, 500*time.Millisecond).Should(gomega.Equal(1), "Expect 1 pod")
 		framework.ExpectEqual(len(list.Items[0].Spec.Containers), 1, "Expect 1 container")
 		framework.ExpectEqual(list.Items[0].Spec.Containers[0].Image, "mcr.microsoft.com/devcontainers/go:1", "Expect container image")
 
@@ -59,35 +63,41 @@ var _ = ginkgo.Describe("testing up command for kubernetes provider", ginkgo.Lab
 		err = f.DevPodWorkspaceStop(ctx, tempDir)
 		framework.ExpectNoError(err)
 
-		// check pod is there
-		cmd = exec.CommandContext(ctx, "kubectl", "get", "pods", "-l", "devpod.sh/created=true", "-o", "json", "-n", "devpod")
-		stdout, err = cmd.Output()
-		framework.ExpectNoError(err)
-
-		// check if pod is there
-		list = &framework.PodList{}
-		err = json.Unmarshal(stdout, list)
-		framework.ExpectNoError(err)
-		framework.ExpectEqual(len(list.Items), 0, "Expect no pods")
+		// check pod is gone
+		gomega.Eventually(func() int {
+			cmd := exec.CommandContext(ctx, "kubectl", "get", "pods", "-l", "devpod.sh/created=true", "-o", "json", "-n", "devpod")
+			stdout, err := cmd.Output()
+			if err != nil {
+				return -1
+			}
+			list := &framework.PodList{}
+			if err := json.Unmarshal(stdout, list); err != nil {
+				return -1
+			}
+			return len(list.Items)
+		}, 30*time.Second, 500*time.Millisecond).Should(gomega.Equal(0), "Expect no pods")
 
 		// run up
 		err = f.DevPodUp(ctx, tempDir)
 		framework.ExpectNoError(err)
-
-		// check pod is there
-		cmd = exec.CommandContext(ctx, "kubectl", "get", "pods", "-l", "devpod.sh/created=true", "-o", "json", "-n", "devpod")
-		stdout, err = cmd.Output()
-		framework.ExpectNoError(err)
 		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, tempDir)
 
-		// check if pod is there
-		list = &framework.PodList{}
-		err = json.Unmarshal(stdout, list)
-		framework.ExpectNoError(err)
-		framework.ExpectEqual(len(list.Items), 1, "Expect 1 pod")
+		// check pod is there
+		gomega.Eventually(func() int {
+			cmd := exec.CommandContext(ctx, "kubectl", "get", "pods", "-l", "devpod.sh/created=true", "-o", "json", "-n", "devpod")
+			stdout, err := cmd.Output()
+			if err != nil {
+				return -1
+			}
+			list := &framework.PodList{}
+			if err := json.Unmarshal(stdout, list); err != nil {
+				return -1
+			}
+			return len(list.Items)
+		}, 30*time.Second, 500*time.Millisecond).Should(gomega.Equal(1), "Expect 1 pod")
 
 		// check if ssh works
 		err = f.DevPodSSHEchoTestString(ctx, tempDir)
 		framework.ExpectNoError(err)
-	})
+	}, ginkgo.SpecTimeout(framework.GetTimeout()))
 })

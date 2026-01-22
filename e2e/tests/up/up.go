@@ -27,8 +27,7 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-workspaces"), fun
 		dockerHelper = &docker.DockerHelper{DockerCommand: "docker", Log: log.Default}
 	})
 
-	ginkgo.It("with env vars", func() {
-		ctx := context.Background()
+	ginkgo.It("with env vars", func(ctx context.Context) {
 		f, err := setupDockerProvider(initialDir+"/bin", "docker")
 		framework.ExpectNoError(err)
 
@@ -140,9 +139,8 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-workspaces"), fun
 		framework.ExpectEqual(out, value, "should be set now")
 	}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
-	ginkgo.It("create workspace without devcontainer.json", func() {
+	ginkgo.It("create workspace without devcontainer.json", func(ctx context.Context) {
 		const providerName = "test-docker"
-		ctx := context.Background()
 
 		f := framework.NewDefaultFramework(initialDir + "/bin")
 		tempDir, err := framework.CopyToTempDir("tests/up/testdata/no-devcontainer")
@@ -155,7 +153,6 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-workspaces"), fun
 		err = f.DevPodProviderUse(ctx, providerName)
 		framework.ExpectNoError(err)
 		ginkgo.DeferCleanup(func() {
-			_ = f.DevPodWorkspaceDelete(ctx, tempDir)
 			err = f.DevPodProviderDelete(ctx, providerName)
 			framework.ExpectNoError(err)
 		})
@@ -185,9 +182,8 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-workspaces"), fun
 		framework.ExpectNoError(err)
 	}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
-	ginkgo.It("recreate a local workspace", func() {
+	ginkgo.It("recreate a local workspace", func(ctx context.Context) {
 		const providerName = "test-docker"
-		ctx := context.Background()
 
 		f := framework.NewDefaultFramework(initialDir + "/bin")
 		tempDir, err := framework.CopyToTempDir("tests/up/testdata/no-devcontainer")
@@ -215,9 +211,8 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-workspaces"), fun
 		framework.ExpectNoError(err)
 	}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
-	ginkgo.It("recreate a remote workspace", func() {
+	ginkgo.It("recreate a remote workspace", func(ctx context.Context) {
 		const providerName = "test-docker"
-		ctx := context.Background()
 
 		f := framework.NewDefaultFramework(initialDir + "/bin")
 
@@ -249,9 +244,8 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-workspaces"), fun
 		framework.ExpectNoError(err)
 	}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
-	ginkgo.It("reset a remote workspace", func() {
+	ginkgo.It("reset a remote workspace", func(ctx context.Context) {
 		const providerName = "test-docker"
-		ctx := context.Background()
 
 		f := framework.NewDefaultFramework(initialDir + "/bin")
 

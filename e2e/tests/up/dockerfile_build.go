@@ -42,7 +42,6 @@ var _ = ginkgo.Describe("testing up command for dockerfile builds", ginkgo.Label
 		tempDir, err := setupWorkspace("tests/up/testdata/docker-localworkspacefolder", initialDir, f)
 		framework.ExpectNoError(err)
 
-		// Wait for devpod workspace to come online (deadline: 30s)
 		err = f.DevPodUp(ctx, tempDir, "--debug")
 		framework.ExpectNoError(err)
 	}, ginkgo.SpecTimeout(framework.GetTimeout()*3))

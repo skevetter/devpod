@@ -9,7 +9,7 @@ import (
 	"github.com/skevetter/devpod/e2e/framework"
 )
 
-var _ = ginkgo.Describe("testing up command for podman provider", ginkgo.Label("up-provider-podman"), ginkgo.Ordered, func() {
+var _ = ginkgo.Describe("testing up command for podman provider", ginkgo.Label("up-provider-podman"), func() {
 	var initialDir string
 
 	ginkgo.BeforeEach(func() {
@@ -18,7 +18,7 @@ var _ = ginkgo.Describe("testing up command for podman provider", ginkgo.Label("
 		framework.ExpectNoError(err)
 	})
 
-	ginkgo.Context("with rootless podman", ginkgo.Ordered, func() {
+	ginkgo.Context("with rootless podman", func() {
 		var f *framework.Framework
 
 		ginkgo.BeforeEach(func(ctx context.Context) {
@@ -37,7 +37,7 @@ var _ = ginkgo.Describe("testing up command for podman provider", ginkgo.Label("
 		}, ginkgo.SpecTimeout(framework.GetTimeout()))
 	})
 
-	ginkgo.Context("with rootfull podman", ginkgo.Ordered, func() {
+	ginkgo.Context("with rootfull podman", func() {
 		var f *framework.Framework
 
 		ginkgo.BeforeAll(func(ctx context.Context) {

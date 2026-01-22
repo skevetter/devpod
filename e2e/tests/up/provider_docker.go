@@ -17,7 +17,7 @@ import (
 	"github.com/skevetter/log"
 )
 
-var _ = ginkgo.Describe("testing up command for docker customizations", ginkgo.Label("up-provider-docker"), ginkgo.Ordered, func() {
+var _ = ginkgo.Describe("testing up command for docker customizations", ginkgo.Label("up-provider-docker"), func() {
 	var dtc *dockerTestContext
 
 	ginkgo.BeforeEach(func(ctx context.Context) {
