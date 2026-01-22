@@ -245,9 +245,8 @@ jobs:
             install-kind: true
             requires-secret: false
 
-          # TODO: should use windows-latest
           - label: up-docker-wsl
-            runner: ubuntu-latest
+            runner: windows-latest
             free-disk-space: false
             install-kind: true
             requires-secret: false

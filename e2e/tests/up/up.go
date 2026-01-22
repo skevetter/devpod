@@ -154,7 +154,7 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-workspaces"), fun
 		err = f.DevPodProviderUse(ctx, providerName)
 		framework.ExpectNoError(err)
 		ginkgo.DeferCleanup(func() {
-			err = f.DevPodProviderDelete(ctx, providerName)
+			err = f.DevPodProviderDelete(context.Background(), providerName)
 			framework.ExpectNoError(err)
 		})
 
@@ -197,7 +197,7 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-workspaces"), fun
 		err = f.DevPodProviderUse(ctx, providerName)
 		framework.ExpectNoError(err)
 		ginkgo.DeferCleanup(func() {
-			err = f.DevPodProviderDelete(ctx, providerName)
+			err = f.DevPodProviderDelete(context.Background(), providerName)
 			framework.ExpectNoError(err)
 		})
 
@@ -223,7 +223,7 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-workspaces"), fun
 		err = f.DevPodProviderUse(ctx, providerName)
 		framework.ExpectNoError(err)
 		ginkgo.DeferCleanup(func() {
-			err = f.DevPodProviderDelete(ctx, providerName)
+			err = f.DevPodProviderDelete(context.Background(), providerName)
 			framework.ExpectNoError(err)
 		})
 
@@ -256,7 +256,7 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-workspaces"), fun
 		err = f.DevPodProviderUse(ctx, providerName)
 		framework.ExpectNoError(err)
 		ginkgo.DeferCleanup(func() {
-			err = f.DevPodProviderDelete(ctx, providerName)
+			err = f.DevPodProviderDelete(context.Background(), providerName)
 			framework.ExpectNoError(err)
 		})
 

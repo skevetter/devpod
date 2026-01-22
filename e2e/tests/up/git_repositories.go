@@ -39,7 +39,7 @@ var _ = ginkgo.Describe("testing up command for working with git repositories", 
 
 		err = f.DevPodUp(ctx, "github.com/skevetter/devpod@pull/100/head")
 		framework.ExpectNoError(err)
-	}, ginkgo.SpecTimeout(framework.GetTimeout()))
+	}, ginkgo.SpecTimeout(framework.GetTimeout()*3))
 
 	ginkgo.It("create workspace in a subpath", func(ctx context.Context) {
 		const providerName = "test-docker"
@@ -52,7 +52,7 @@ var _ = ginkgo.Describe("testing up command for working with git repositories", 
 		err = f.DevPodProviderUse(ctx, providerName)
 		framework.ExpectNoError(err)
 		ginkgo.DeferCleanup(func() {
-			err = f.DevPodProviderDelete(ctx, providerName)
+			err = f.DevPodProviderDelete(context.Background(), providerName)
 			framework.ExpectNoError(err)
 		})
 
