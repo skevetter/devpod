@@ -221,4 +221,30 @@ var _ = ginkgo.Describe("devpod up docker compose test suite", ginkgo.Label("up-
 		_, _, err := tc.setupAndStartWorkspace(ctx, "tests/up-docker-compose/testdata/docker-compose-lookup-user")
 		framework.ExpectNoError(err)
 	}, ginkgo.SpecTimeout(framework.GetTimeout()))
+
+	ginkgo.It("dockerfile with args", func(ctx context.Context) {
+		tempDir, workspace, err := tc.setupAndStartWorkspace(ctx, "tests/up-docker-compose/testdata/docker-compose-dockerfile-args", "--debug")
+		framework.ExpectNoError(err)
+
+		ids, err := findComposeContainer(ctx, tc.dockerHelper, tc.composeHelper, workspace.UID, "app")
+		framework.ExpectNoError(err)
+		gomega.Expect(ids).To(gomega.HaveLen(1), "1 compose container to be created")
+
+		buildArgs, err := tc.execSSH(ctx, tempDir, "cat /build-args.txt")
+		framework.ExpectNoError(err)
+		gomega.Expect(strings.TrimSpace(buildArgs)).To(gomega.Equal("mcr.microsoft.com/devcontainers/go:dev-1.24"))
+	}, ginkgo.SpecTimeout(framework.GetTimeout()))
+
+	ginkgo.It("multi-stage dockerfile with args", func(ctx context.Context) {
+		tempDir, workspace, err := tc.setupAndStartWorkspace(ctx, "tests/up-docker-compose/testdata/docker-compose-dockerfile-args-multistage", "--debug")
+		framework.ExpectNoError(err)
+
+		ids, err := findComposeContainer(ctx, tc.dockerHelper, tc.composeHelper, workspace.UID, "app")
+		framework.ExpectNoError(err)
+		gomega.Expect(ids).To(gomega.HaveLen(1), "1 compose container to be created")
+
+		buildArgs, err := tc.execSSH(ctx, tempDir, "cat /build-args.txt")
+		framework.ExpectNoError(err)
+		gomega.Expect(strings.TrimSpace(buildArgs)).To(gomega.Equal("mcr.microsoft.com/devcontainers/go:dev-1.24"))
+	}, ginkgo.SpecTimeout(framework.GetTimeout()))
 })

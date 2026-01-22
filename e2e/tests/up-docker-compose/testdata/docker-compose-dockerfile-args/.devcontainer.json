@@ -1,0 +1,6 @@
+{
+  "name": "Composes a Dockerfile with build args",
+  "dockerComposeFile": "./docker-compose.yaml",
+  "service": "app",
+  "workspaceFolder": "/workspaces"
+}

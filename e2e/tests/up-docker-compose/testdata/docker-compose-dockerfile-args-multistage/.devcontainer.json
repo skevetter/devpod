@@ -1,0 +1,6 @@
+{
+  "name": "Multi-stage Dockerfile with build args",
+  "dockerComposeFile": "./docker-compose.yaml",
+  "service": "app",
+  "workspaceFolder": "/workspaces"
+}
