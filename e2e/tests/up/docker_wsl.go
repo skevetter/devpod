@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/docker/docker/api/types/container"
 
@@ -33,7 +34,7 @@ var _ = ginkgo.Describe("testing up command for windows", ginkgo.Label("up-docke
 			framework.ExpectNoError(err)
 		}
 
-		dockerHelper = &docker.DockerHelper{DockerCommand: "podman", Log: log.Default}
+		dockerHelper = &docker.DockerHelper{DockerCommand: "podman.exe", Log: log.Default}
 		f, err = setupDockerProvider(filepath.Join(initialDir, "bin"), "podman")
 		framework.ExpectNoError(err)
 	})
@@ -114,7 +115,7 @@ var _ = ginkgo.Describe("testing up command for windows", ginkgo.Label("up-docke
 
 		localEnvHome, _, err := f.ExecCommandCapture(ctx, []string{"ssh", "--command", "cat $HOME/local-env-home.out", projectName})
 		framework.ExpectNoError(err)
-		gomega.Expect(localEnvHome).To(gomega.Equal(os.Getenv("HOME")))
+		gomega.Expect(framework.CleanString(localEnvHome)).To(gomega.Equal(framework.CleanString(os.Getenv("HOME"))))
 
 		localWorkspaceFolder, _, err := f.ExecCommandCapture(ctx, []string{"ssh", "--command", "cat $HOME/local-workspace-folder.out", projectName})
 		framework.ExpectNoError(err)
@@ -154,11 +155,11 @@ var _ = ginkgo.Describe("testing up command for windows", ginkgo.Label("up-docke
 
 		foo, _, err := f.ExecCommandCapture(ctx, []string{"ssh", "--command", "cat $HOME/mnt1/foo.txt", projectName})
 		framework.ExpectNoError(err)
-		gomega.Expect(foo).To(gomega.Equal("BAR"))
+		gomega.Expect(strings.TrimSpace(foo)).To(gomega.Equal("BAR"))
 
 		bar, _, err := f.ExecCommandCapture(ctx, []string{"ssh", "--command", "cat $HOME/mnt2/bar.txt", projectName})
 		framework.ExpectNoError(err)
-		gomega.Expect(bar).To(gomega.Equal("FOO"))
+		gomega.Expect(strings.TrimSpace(bar)).To(gomega.Equal("FOO"))
 	}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
 	ginkgo.It("should start a new workspace with dotfiles - no install script", func(ctx context.Context) {
