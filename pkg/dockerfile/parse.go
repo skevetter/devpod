@@ -162,8 +162,7 @@ func (d *Dockerfile) resolveFromArgs(buildArgs map[string]string, variable strin
 			return strings.Trim(val, "\"'"), true
 		}
 		if arg.Value != nil && *arg.Value != "" {
-			value := d.expandVariables(*arg.Value, buildArgs, nil, stage, 0)
-			return strings.Trim(value, "\"'"), true
+			return strings.Trim(*arg.Value, "\"'"), true
 		}
 		return "", true
 	}

@@ -45,7 +45,7 @@ FROM ${BASE_IMAGE}:${BASE_VERSION}`
 	s.NoError(err)
 
 	baseImage := d.FindBaseImage(map[string]string{}, "")
-	s.Equal("ubuntu", baseImage)
+	s.Equal("ubuntu:20.04", baseImage)
 
 	baseImage = d.FindBaseImage(map[string]string{"BASE_IMAGE": "debian", "BASE_VERSION": "11"}, "")
 	s.Equal("debian:11", baseImage)
@@ -89,10 +89,10 @@ COPY --from=builder /app /app`
 	s.NoError(err)
 
 	baseImage := d.FindBaseImage(map[string]string{}, "")
-	s.Equal("golang", baseImage)
+	s.Equal("golang:1.21", baseImage)
 
 	baseImage = d.FindBaseImage(map[string]string{}, "builder")
-	s.Equal("golang", baseImage)
+	s.Equal("golang:1.21", baseImage)
 
 	baseImage = d.FindBaseImage(map[string]string{"BASE_IMAGE": "node", "BASE_VERSION": "18"}, "")
 	s.Equal("node:18", baseImage)
