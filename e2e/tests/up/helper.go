@@ -9,7 +9,9 @@ import (
 
 	"github.com/onsi/ginkgo/v2"
 	"github.com/skevetter/devpod/e2e/framework"
+	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	docker "github.com/skevetter/devpod/pkg/docker"
+	provider2 "github.com/skevetter/devpod/pkg/provider"
 	"github.com/skevetter/log"
 	"github.com/skevetter/log/scanner"
 )
@@ -27,6 +29,18 @@ func (btc *baseTestContext) execSSHCapture(ctx context.Context, projectName, com
 
 func (btc *baseTestContext) execSSH(ctx context.Context, tempDir, command string) (string, error) {
 	return btc.f.DevPodSSH(ctx, tempDir, command)
+}
+
+type dockerTestContext struct {
+	baseTestContext
+}
+
+func (dtc *dockerTestContext) setupAndUp(ctx context.Context, testDataPath string, upArgs ...string) (string, error) {
+	return setupWorkspaceAndUp(ctx, testDataPath, dtc.initialDir, dtc.f, upArgs...)
+}
+
+func (dtc *dockerTestContext) findWorkspaceContainer(ctx context.Context, workspace *provider2.Workspace) ([]string, error) {
+	return dtc.dockerHelper.FindContainer(ctx, []string{fmt.Sprintf("%s=%s", config.DockerIDLabel, workspace.UID)})
 }
 
 // Log scanning functions

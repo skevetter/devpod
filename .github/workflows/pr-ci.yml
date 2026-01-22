@@ -147,27 +147,27 @@ jobs:
             install-kind: true
             requires-secret: true
 
+          - label: docker-install
+            runner: ubuntu-latest
+            free-disk-space: false
+            install-kind: false
+            requires-secret: false
+
           # Up tests
 
-          - label: up && workspace
+          - label: up-workspaces
             runner: ubuntu-latest
             free-disk-space: true
             install-kind: true
             requires-secret: false
 
-          - label: up && git
+          - label: up-git-repositories
             runner: ubuntu-latest
             free-disk-space: true
             install-kind: true
             requires-secret: false
 
-          - label: up && provider-kubernetes
-            runner: ubuntu-latest
-            free-disk-space: true
-            install-kind: true
-            requires-secret: false
-
-          - label: up && error
+          - label: up-handle-errors
             runner: ubuntu-latest
             free-disk-space: true
             install-kind: true
@@ -179,28 +179,28 @@ jobs:
             install-kind: false
             requires-secret: true
 
-          - label: up-podman
+          - label: up-provider-kubernetes
             runner: ubuntu-latest
             free-disk-space: true
             install-kind: true
             requires-secret: false
 
-          - label: up-docker
+          - label: up-provider-podman
+            runner: ubuntu-latest
+            free-disk-space: true
+            install-kind: true
+            requires-secret: false
+
+          - label: up-provider-docker
             runner: ubuntu-latest
             free-disk-space: false
             install-kind: true
             requires-secret: false
 
-          - label: up-docker-build
+          - label: up-dockerfile-build
             runner: ubuntu-latest
             free-disk-space: false
             install-kind: true
-            requires-secret: false
-
-          - label: docker-install
-            runner: ubuntu-latest
-            free-disk-space: false
-            install-kind: false
             requires-secret: false
 
           #  Up Docker Compose tests
