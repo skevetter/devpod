@@ -34,7 +34,7 @@ var _ = ginkgo.Describe("testing up command for windows", ginkgo.Label("up-docke
 			framework.ExpectNoError(err)
 		}
 
-		dockerHelper = &docker.DockerHelper{DockerCommand: "podman.exe", Log: log.Default}
+		dockerHelper = &docker.DockerHelper{DockerCommand: "podman", Log: log.Default}
 		f, err = setupDockerProvider(filepath.Join(initialDir, "bin"), "podman")
 		framework.ExpectNoError(err)
 	})
@@ -51,7 +51,6 @@ var _ = ginkgo.Describe("testing up command for windows", ginkgo.Label("up-docke
 		tempDir, err := setupWorkspace("tests/up/testdata/docker", initialDir, f)
 		framework.ExpectNoError(err)
 
-		// Wait for devpod workspace to come online (deadline: 30s)
 		err = f.DevPodUp(ctx, tempDir)
 		framework.ExpectNoError(err)
 	}, ginkgo.SpecTimeout(framework.GetTimeout()))
@@ -80,7 +79,6 @@ var _ = ginkgo.Describe("testing up command for windows", ginkgo.Label("up-docke
 		containerDetail := containerDetails[0]
 		gomega.Expect(containerDetail.Config.WorkingDir).To(gomega.Equal("/workspaces/e2e"))
 
-		// Wait for devpod workspace to come online (deadline: 30s)
 		err = f.DevPodUp(ctx, tempDir, "--source", fmt.Sprintf("container:%s", containerDetail.ID))
 		framework.ExpectNoError(err)
 	}, ginkgo.SpecTimeout(framework.GetTimeout()))
@@ -115,7 +113,7 @@ var _ = ginkgo.Describe("testing up command for windows", ginkgo.Label("up-docke
 
 		localEnvHome, _, err := f.ExecCommandCapture(ctx, []string{"ssh", "--command", "cat $HOME/local-env-home.out", projectName})
 		framework.ExpectNoError(err)
-		gomega.Expect(framework.CleanString(localEnvHome)).To(gomega.Equal(framework.CleanString(os.Getenv("HOME"))))
+		gomega.Expect(strings.TrimSpace(localEnvHome)).To(gomega.Equal(strings.TrimSpace(os.Getenv("HOME"))))
 
 		localWorkspaceFolder, _, err := f.ExecCommandCapture(ctx, []string{"ssh", "--command", "cat $HOME/local-workspace-folder.out", projectName})
 		framework.ExpectNoError(err)
@@ -184,7 +182,6 @@ var _ = ginkgo.Describe("testing up command for windows", ginkgo.Label("up-docke
 		tempDir, err := setupWorkspace("tests/up/testdata/docker", initialDir, f)
 		framework.ExpectNoError(err)
 
-		// Wait for devpod workspace to come online (deadline: 30s)
 		err = f.DevPodUp(ctx, tempDir, "--dotfiles", "https://github.com/loft-sh/example-dotfiles", "--dotfiles-script", "install-example")
 		framework.ExpectNoError(err)
 
@@ -200,7 +197,6 @@ var _ = ginkgo.Describe("testing up command for windows", ginkgo.Label("up-docke
 		tempDir, err := setupWorkspace("tests/up/testdata/docker", initialDir, f)
 		framework.ExpectNoError(err)
 
-		// Wait for devpod workspace to come online (deadline: 30s)
 		err = f.DevPodUp(ctx, tempDir, "--dotfiles", "https://github.com/loft-sh/example-dotfiles@sha256:9a0b41808bf8f50e9871b3b5c9280fe22bf46a04")
 		framework.ExpectNoError(err)
 
@@ -218,7 +214,6 @@ var _ = ginkgo.Describe("testing up command for windows", ginkgo.Label("up-docke
 		tempDir, err := setupWorkspace("tests/up/testdata/docker", initialDir, f)
 		framework.ExpectNoError(err)
 
-		// Wait for devpod workspace to come online (deadline: 30s)
 		err = f.DevPodUp(ctx, tempDir, "--dotfiles", "https://github.com/loft-sh/example-dotfiles@do-not-delete")
 		framework.ExpectNoError(err)
 
@@ -233,7 +228,6 @@ var _ = ginkgo.Describe("testing up command for windows", ginkgo.Label("up-docke
 		tempDir, err := setupWorkspace("tests/up/testdata/docker", initialDir, f)
 		framework.ExpectNoError(err)
 
-		// Wait for devpod workspace to come online (deadline: 30s)
 		err = f.DevPodUp(ctx, tempDir, "--devcontainer-image", "alpine")
 		framework.ExpectNoError(err)
 
@@ -251,7 +245,6 @@ var _ = ginkgo.Describe("testing up command for windows", ginkgo.Label("up-docke
 		tempDir, err := setupWorkspace("tests/up/testdata/docker-with-multi-stage-build", initialDir, f)
 		framework.ExpectNoError(err)
 
-		// Wait for devpod workspace to come online (deadline: 30s)
 		err = f.DevPodUp(ctx, tempDir, "--devcontainer-image", "alpine")
 		framework.ExpectNoError(err)
 
