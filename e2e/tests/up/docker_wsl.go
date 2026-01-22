@@ -113,7 +113,8 @@ var _ = ginkgo.Describe("testing up command for windows", ginkgo.Label("up-docke
 
 		localEnvHome, _, err := f.ExecCommandCapture(ctx, []string{"ssh", "--command", "cat $HOME/local-env-home.out", projectName})
 		framework.ExpectNoError(err)
-		gomega.Expect(strings.TrimSpace(localEnvHome)).To(gomega.Equal(strings.TrimSpace(os.Getenv("HOME"))))
+		expectedHome := strings.ReplaceAll(os.Getenv("USERPROFILE"), "\\", "\\\\")
+		gomega.Expect(strings.TrimSpace(localEnvHome)).To(gomega.Equal(expectedHome))
 
 		localWorkspaceFolder, _, err := f.ExecCommandCapture(ctx, []string{"ssh", "--command", "cat $HOME/local-workspace-folder.out", projectName})
 		framework.ExpectNoError(err)
