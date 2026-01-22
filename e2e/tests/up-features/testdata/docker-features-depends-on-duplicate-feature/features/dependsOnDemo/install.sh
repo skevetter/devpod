@@ -7,6 +7,7 @@ echo "This feature depends on the hello feature being installed first"
 # Create a test script that uses the hello command
 cat >/usr/local/bin/test-depends-on <<'EOF'
 #!/bin/bash
+set -e
 if command -v hello >/dev/null 2>&1; then
     echo "SUCCESS: hello command is available"
     hello

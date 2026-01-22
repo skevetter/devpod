@@ -1,9 +1,0 @@
-{
-  "id": "middleLevel",
-  "version": "1.0.0",
-  "name": "Middle Level Feature",
-  "description": "Feature that depends on hello",
-  "dependsOn": {
-    "ghcr.io/devcontainers/feature-starter/hello:latest": {}
-  }
-}

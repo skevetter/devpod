@@ -6,5 +6,5 @@
   "dependsOn": {
     "./features/hardDep": {}
   },
-  "installsAfter": ["ghcr.io/devcontainers/feature-starter/hello:latest"]
+  "installsAfter": ["ghcr.io/devcontainers/feature-starter/hello:1"]
 }

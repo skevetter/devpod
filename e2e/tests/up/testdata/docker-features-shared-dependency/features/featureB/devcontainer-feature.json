@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "description": "Feature B that depends on shared dependency",
   "dependsOn": {
-    "ghcr.io/devcontainers/feature-starter/hello:latest": {
+    "ghcr.io/devcontainers/feature-starter/hello:1": {
       "greeting": "from B"
     }
   }

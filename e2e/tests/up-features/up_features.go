@@ -33,6 +33,9 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-features", "suite
 		framework.ExpectNoError(err)
 		ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
 
+		workspaceName := filepath.Base(tempDir)
+		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), workspaceName)
+
 		out, err := f.DevPodSSH(ctx, tempDir, "cat /tmp/feature-onCreate.txt")
 		framework.ExpectNoError(err)
 		framework.ExpectEqual(strings.TrimSpace(out), "feature-onCreate")
