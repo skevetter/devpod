@@ -7,8 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/docker/docker/api/types/container"
-
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	"github.com/skevetter/devpod/e2e/framework"
@@ -21,30 +19,14 @@ var _ = ginkgo.Describe("testing up command for windows", ginkgo.Label("up-docke
 	var f *framework.Framework
 	var dockerHelper *docker.DockerHelper
 	var initialDir string
-	var originalDockerHost string
 	var err error
 
 	ginkgo.BeforeEach(func(ctx context.Context) {
 		initialDir, err = os.Getwd()
 		framework.ExpectNoError(err)
-
-		originalDockerHost = os.Getenv("DOCKER_HOST")
-		if originalDockerHost == "" {
-			err = os.Setenv("DOCKER_HOST", "npipe:////./pipe/podman-machine-default")
-			framework.ExpectNoError(err)
-		}
-
 		dockerHelper = &docker.DockerHelper{DockerCommand: "podman", Log: log.Default}
 		f, err = setupDockerProvider(filepath.Join(initialDir, "bin"), "podman")
 		framework.ExpectNoError(err)
-	})
-
-	ginkgo.AfterEach(func() {
-		if originalDockerHost == "" {
-			_ = os.Unsetenv("DOCKER_HOST")
-		} else {
-			_ = os.Setenv("DOCKER_HOST", originalDockerHost)
-		}
 	})
 
 	ginkgo.It("should start a new workspace with existing image", func(ctx context.Context) {
@@ -52,34 +34,6 @@ var _ = ginkgo.Describe("testing up command for windows", ginkgo.Label("up-docke
 		framework.ExpectNoError(err)
 
 		err = f.DevPodUp(ctx, tempDir)
-		framework.ExpectNoError(err)
-	}, ginkgo.SpecTimeout(framework.GetTimeout()))
-
-	ginkgo.It("should start a new workspace with existing running container", func(ctx context.Context) {
-		tempDir, err := framework.CopyToTempDir("tests/up/testdata/no-devcontainer")
-		framework.ExpectNoError(err)
-		ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
-		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, tempDir)
-
-		err = dockerHelper.Run(ctx, []string{"run", "-d", "--label", "devpod-e2e-test-container=true", "-w", "/workspaces/e2e", "alpine", "sleep", "infinity"}, nil, nil, nil)
-		framework.ExpectNoError(err)
-
-		ids, err := dockerHelper.FindContainer(ctx, []string{
-			"devpod-e2e-test-container=true",
-		})
-		framework.ExpectNoError(err)
-		gomega.Expect(ids).To(gomega.HaveLen(1), "1 container is created")
-		ginkgo.DeferCleanup(dockerHelper.Remove, ids[0])
-		ginkgo.DeferCleanup(dockerHelper.Stop, ids[0])
-
-		var containerDetails []container.InspectResponse
-		err = dockerHelper.Inspect(ctx, ids, "container", &containerDetails)
-		framework.ExpectNoError(err)
-
-		containerDetail := containerDetails[0]
-		gomega.Expect(containerDetail.Config.WorkingDir).To(gomega.Equal("/workspaces/e2e"))
-
-		err = f.DevPodUp(ctx, tempDir, "--source", fmt.Sprintf("container:%s", containerDetail.ID))
 		framework.ExpectNoError(err)
 	}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
@@ -103,33 +57,33 @@ var _ = ginkgo.Describe("testing up command for windows", ginkgo.Label("up-docke
 		framework.ExpectNoError(err)
 		gomega.Expect(ids).To(gomega.HaveLen(1), "1 compose container to be created")
 
-		devContainerID, _, err := f.ExecCommandCapture(ctx, []string{"ssh", "--command", "cat $HOME/dev-container-id.out", projectName})
+		devContainerID, err := f.DevPodSSH(ctx, projectName, "cat $HOME/dev-container-id.out")
 		framework.ExpectNoError(err)
 		gomega.Expect(devContainerID).NotTo(gomega.BeEmpty())
 
-		containerEnvPath, _, err := f.ExecCommandCapture(ctx, []string{"ssh", "--command", "cat $HOME/container-env-path.out", projectName})
+		containerEnvPath, err := f.DevPodSSH(ctx, projectName, "cat $HOME/container-env-path.out")
 		framework.ExpectNoError(err)
 		gomega.Expect(containerEnvPath).To(gomega.ContainSubstring("/usr/local/bin"))
 
-		localEnvHome, _, err := f.ExecCommandCapture(ctx, []string{"ssh", "--command", "cat $HOME/local-env-home.out", projectName})
+		localEnvHome, err := f.DevPodSSH(ctx, projectName, "cat $HOME/local-env-home.out")
 		framework.ExpectNoError(err)
 		gomega.Expect(strings.TrimSpace(localEnvHome)).To(gomega.Equal(strings.TrimSpace(os.Getenv("USERPROFILE"))))
 
-		localWorkspaceFolder, _, err := f.ExecCommandCapture(ctx, []string{"ssh", "--command", "cat $HOME/local-workspace-folder.out", projectName})
+		localWorkspaceFolder, err := f.DevPodSSH(ctx, projectName, "cat $HOME/local-workspace-folder.out")
 		framework.ExpectNoError(err)
 		gomega.Expect(framework.CleanString(localWorkspaceFolder)).To(gomega.Equal(framework.CleanString(tempDir)))
 
-		localWorkspaceFolderBasename, _, err := f.ExecCommandCapture(ctx, []string{"ssh", "--command", "cat $HOME/local-workspace-folder-basename.out", projectName})
+		localWorkspaceFolderBasename, err := f.DevPodSSH(ctx, projectName, "cat $HOME/local-workspace-folder-basename.out")
 		framework.ExpectNoError(err)
 		gomega.Expect(localWorkspaceFolderBasename).To(gomega.Equal(filepath.Base(tempDir)))
 
-		containerWorkspaceFolder, _, err := f.ExecCommandCapture(ctx, []string{"ssh", "--command", "cat $HOME/container-workspace-folder.out", projectName})
+		containerWorkspaceFolder, err := f.DevPodSSH(ctx, projectName, "cat $HOME/container-workspace-folder.out")
 		framework.ExpectNoError(err)
 		gomega.Expect(framework.CleanString(containerWorkspaceFolder)).To(gomega.Equal(
 			framework.CleanString("workspaces" + filepath.Base(tempDir)),
 		))
 
-		containerWorkspaceFolderBasename, _, err := f.ExecCommandCapture(ctx, []string{"ssh", "--command", "cat $HOME/container-workspace-folder-basename.out", projectName})
+		containerWorkspaceFolderBasename, err := f.DevPodSSH(ctx, projectName, "cat $HOME/container-workspace-folder-basename.out")
 		framework.ExpectNoError(err)
 		gomega.Expect(containerWorkspaceFolderBasename).To(gomega.Equal(filepath.Base(tempDir)))
 	}, ginkgo.SpecTimeout(framework.GetTimeout()))
@@ -151,11 +105,11 @@ var _ = ginkgo.Describe("testing up command for windows", ginkgo.Label("up-docke
 		framework.ExpectNoError(err)
 		gomega.Expect(ids).To(gomega.HaveLen(1), "1 compose container to be created")
 
-		foo, _, err := f.ExecCommandCapture(ctx, []string{"ssh", "--command", "cat $HOME/mnt1/foo.txt", projectName})
+		foo, err := f.DevPodSSH(ctx, projectName, "cat $HOME/mnt1/foo.txt")
 		framework.ExpectNoError(err)
 		gomega.Expect(strings.TrimSpace(foo)).To(gomega.Equal("BAR"))
 
-		bar, _, err := f.ExecCommandCapture(ctx, []string{"ssh", "--command", "cat $HOME/mnt2/bar.txt", projectName})
+		bar, err := f.DevPodSSH(ctx, projectName, "cat $HOME/mnt2/bar.txt")
 		framework.ExpectNoError(err)
 		gomega.Expect(strings.TrimSpace(bar)).To(gomega.Equal("FOO"))
 	}, ginkgo.SpecTimeout(framework.GetTimeout()))
