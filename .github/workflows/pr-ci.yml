@@ -378,6 +378,7 @@ jobs:
           # NOTE: GitHub credentials are required for tests using private repos
           GH_USERNAME: ${{ github.repository_owner }}
           GH_ACCESS_TOKEN: ${{ matrix.requires-secret == true && secrets.GH_PRIVATE_REPO_TOKEN_TEST || github.token }}
+          DOCKER_HOST: ${{ runner.os == 'Windows' && 'npipe:////./pipe/podman-machine-default' || '' }}
         run: |
           if [ "${{ runner.os }}" == "Linux" ]; then
             sudo \
@@ -393,6 +394,7 @@ jobs:
               KUBECONFIG="${KUBECONFIG:-$HOME/.kube/config}" \
               PATH="${PATH}" \
               GOROOT="${GOROOT}" \
+              DOCKER_HOST="${DOCKER_HOST}" \
               go test -v -ginkgo.v -timeout 3600s --ginkgo.label-filter="${{ matrix.label }}"
           fi
 
