@@ -39,7 +39,7 @@ var _ = ginkgo.Describe("testing up command for kubernetes provider", ginkgo.Lab
 		framework.ExpectNoError(err)
 
 		// check pod is there
-		cmd := exec.Command("kubectl", "get", "pods", "-l", "devpod.sh/created=true", "-o", "json", "-n", "devpod")
+		cmd := exec.CommandContext(ctx, "kubectl", "get", "pods", "-l", "devpod.sh/created=true", "-o", "json", "-n", "devpod")
 		stdout, err := cmd.Output()
 		framework.ExpectNoError(err)
 
@@ -60,7 +60,7 @@ var _ = ginkgo.Describe("testing up command for kubernetes provider", ginkgo.Lab
 		framework.ExpectNoError(err)
 
 		// check pod is there
-		cmd = exec.Command("kubectl", "get", "pods", "-l", "devpod.sh/created=true", "-o", "json", "-n", "devpod")
+		cmd = exec.CommandContext(ctx, "kubectl", "get", "pods", "-l", "devpod.sh/created=true", "-o", "json", "-n", "devpod")
 		stdout, err = cmd.Output()
 		framework.ExpectNoError(err)
 
@@ -75,9 +75,10 @@ var _ = ginkgo.Describe("testing up command for kubernetes provider", ginkgo.Lab
 		framework.ExpectNoError(err)
 
 		// check pod is there
-		cmd = exec.Command("kubectl", "get", "pods", "-l", "devpod.sh/created=true", "-o", "json", "-n", "devpod")
+		cmd = exec.CommandContext(ctx, "kubectl", "get", "pods", "-l", "devpod.sh/created=true", "-o", "json", "-n", "devpod")
 		stdout, err = cmd.Output()
 		framework.ExpectNoError(err)
+		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, tempDir)
 
 		// check if pod is there
 		list = &framework.PodList{}
@@ -87,10 +88,6 @@ var _ = ginkgo.Describe("testing up command for kubernetes provider", ginkgo.Lab
 
 		// check if ssh works
 		err = f.DevPodSSHEchoTestString(ctx, tempDir)
-		framework.ExpectNoError(err)
-
-		// delete workspace
-		err = f.DevPodWorkspaceDelete(ctx, tempDir)
 		framework.ExpectNoError(err)
 	})
 })

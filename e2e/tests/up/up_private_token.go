@@ -2,7 +2,6 @@ package up
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -35,7 +34,7 @@ var _ = ginkgo.Describe("testing up command with private repos", ginkgo.Label("u
 		gitCredentialString := []byte("https://" + username + ":" + token + "@github.com")
 		err = os.WriteFile(
 			filepath.Join(os.Getenv("HOME"), ".git-credentials"),
-			gitCredentialString, 0o644)
+			gitCredentialString, 0o600)
 		framework.ExpectNoError(err)
 		defer func() { _ = os.Remove(filepath.Join(os.Getenv("HOME"), ".git-credentials")) }()
 
@@ -48,6 +47,6 @@ var _ = ginkgo.Describe("testing up command with private repos", ginkgo.Label("u
 		// verify forwarded credentials by cloning the private repo from within the container
 		out, err := f.DevPodSSH(ctx, name, "git clone https://github.com/"+username+"/test_private_repo")
 		framework.ExpectNoError(err)
-		fmt.Println(out)
-	})
+		ginkgo.By(out)
+	}, ginkgo.SpecTimeout(framework.GetTimeout()))
 })

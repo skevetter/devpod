@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 
 	"github.com/docker/docker/api/types/container"
 
@@ -22,18 +21,13 @@ var _ = ginkgo.Describe("testing up command for windows", ginkgo.Label("up-docke
 	var dockerHelper *docker.DockerHelper
 	var initialDir string
 	var originalDockerHost string
+	var err error
 
 	ginkgo.BeforeEach(func(ctx context.Context) {
-		if runtime.GOOS != "windows" {
-			ginkgo.Skip("WSL tests only run on Windows")
-		}
-
-		var err error
 		initialDir, err = os.Getwd()
 		framework.ExpectNoError(err)
 
 		dockerHelper = &docker.DockerHelper{DockerCommand: "docker", Log: log.Default}
-		framework.ExpectNoError(err)
 
 		originalDockerHost = os.Getenv("DOCKER_HOST")
 		err = os.Setenv("DOCKER_HOST", "tcp://localhost:2375")
@@ -201,11 +195,6 @@ var _ = ginkgo.Describe("testing up command for windows", ginkgo.Label("up-docke
 	}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
 	ginkgo.It("should start a new workspace with dotfiles - no install script, commit", func(ctx context.Context) {
-		// need to debug
-		if runtime.GOOS == "windows" {
-			ginkgo.Skip("skipping on windows")
-		}
-
 		tempDir, err := setupWorkspace("tests/up/testdata/docker", initialDir, f)
 		framework.ExpectNoError(err)
 
@@ -224,11 +213,6 @@ var _ = ginkgo.Describe("testing up command for windows", ginkgo.Label("up-docke
 	}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
 	ginkgo.It("should start a new workspace with dotfiles - no install script, branch", func(ctx context.Context) {
-		// need to debug
-		if runtime.GOOS == "windows" {
-			ginkgo.Skip("skipping on windows")
-		}
-
 		tempDir, err := setupWorkspace("tests/up/testdata/docker", initialDir, f)
 		framework.ExpectNoError(err)
 

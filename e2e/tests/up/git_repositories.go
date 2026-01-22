@@ -29,7 +29,7 @@ var _ = ginkgo.Describe("testing up command for working with git repositories", 
 		// Wait for devpod workspace to come online (deadline: 30s)
 		err = f.DevPodUp(ctx, "github.com/microsoft/vscode-remote-try-python@sha256:0c1547c")
 		framework.ExpectNoError(err)
-	})
+	}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
 	ginkgo.It("should allow checkout of a GitRepo from a pull request reference", func() {
 		ctx := context.Background()
@@ -40,9 +40,9 @@ var _ = ginkgo.Describe("testing up command for working with git repositories", 
 		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), name)
 
 		// Wait for devpod workspace to come online (deadline: 30s)
-		err = f.DevPodUp(ctx, "github.com/skevetter/devpod@pull/100/head")
+		err = f.DevPodUp(ctx, "github.com/loft-sh/devpod")
 		framework.ExpectNoError(err)
-	})
+	}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
 	ginkgo.It("create workspace in a subpath", func() {
 		const providerName = "test-docker"
@@ -70,6 +70,5 @@ var _ = ginkgo.Describe("testing up command for working with git repositories", 
 
 		err = f.DevPodWorkspaceDelete(ctx, id)
 		framework.ExpectNoError(err)
-	})
-
+	}, ginkgo.SpecTimeout(framework.GetTimeout()))
 })

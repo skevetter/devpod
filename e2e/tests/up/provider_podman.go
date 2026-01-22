@@ -46,20 +46,21 @@ var _ = ginkgo.Describe("testing up command for podman provider", ginkgo.Label("
 
 			defer func() { _ = wrapper.Close() }()
 
-			_, err = wrapper.WriteString(`#!/bin/sh
-				sudo podman "$@"
-				`)
+			_, err = wrapper.WriteString("#!/bin/sh\nsudo podman \"$@\"\n")
 			framework.ExpectNoError(err)
 
 			err = wrapper.Close()
 			framework.ExpectNoError(err)
 
-			cmd := exec.Command("sudo", "chmod", "+x", initialDir+"/bin/podman-rootful")
-			err = cmd.Run()
+			err = os.Chmod(initialDir+"/bin/podman-rootful", 0755)
 			framework.ExpectNoError(err)
 
 			err = exec.Command(initialDir+"/bin/podman-rootful", "ps").Run()
 			framework.ExpectNoError(err)
+
+			ginkgo.DeferCleanup(func() {
+				_ = os.Remove(initialDir + "/bin/podman-rootful")
+			})
 		})
 
 		ginkgo.BeforeEach(func(ctx context.Context) {

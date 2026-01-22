@@ -101,7 +101,7 @@ var _ = ginkgo.Describe("testing up command for docker customizations", ginkgo.L
 
 		containerWorkspaceFolder, err := dtc.execSSHCapture(ctx, workspace.ID, "cat $HOME/container-workspace-folder.out")
 		framework.ExpectNoError(err)
-		gomega.Expect(framework.CleanString(containerWorkspaceFolder)).To(gomega.Equal(framework.CleanString("workspaces" + filepath.Base(tempDir))))
+		gomega.Expect(framework.CleanString(containerWorkspaceFolder)).To(gomega.Equal(framework.CleanString(filepath.Join("/", "workspaces", filepath.Base(tempDir)))))
 
 		containerWorkspaceFolderBasename, err := dtc.execSSHCapture(ctx, workspace.ID, "cat $HOME/container-workspace-folder-basename.out")
 		framework.ExpectNoError(err)
@@ -139,7 +139,6 @@ var _ = ginkgo.Describe("testing up command for docker customizations", ginkgo.L
 		out, err := dtc.execSSH(ctx, tempDir, "grep ^ID= /etc/os-release")
 		framework.ExpectNoError(err)
 		framework.ExpectEqual(out, "ID=alpine\n")
-		framework.ExpectNotEqual(out, "ID=debian\n")
 	}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
 	ginkgo.It("custom image skip build", func(ctx context.Context) {
@@ -149,7 +148,6 @@ var _ = ginkgo.Describe("testing up command for docker customizations", ginkgo.L
 		out, err := dtc.execSSH(ctx, tempDir, "grep ^ID= /etc/os-release")
 		framework.ExpectNoError(err)
 		framework.ExpectEqual(out, "ID=alpine\n")
-		framework.ExpectNotEqual(out, "ID=debian\n")
 	}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
 	ginkgo.It("extra devcontainer merge", func(ctx context.Context) {

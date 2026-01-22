@@ -14,7 +14,7 @@ import (
 	"github.com/skevetter/log"
 )
 
-var _ = ginkgo.Describe("testing up command for dockerfile builds", ginkgo.Label("up-dockerfile-build"), ginkgo.Ordered, func() {
+var _ = ginkgo.Describe("testing up command for dockerfile builds", ginkgo.Label("up-dockerfile-build"), func() {
 	var f *framework.Framework
 	var dockerHelper *docker.DockerHelper
 	var initialDir string
@@ -25,7 +25,6 @@ var _ = ginkgo.Describe("testing up command for dockerfile builds", ginkgo.Label
 		framework.ExpectNoError(err)
 
 		dockerHelper = &docker.DockerHelper{DockerCommand: "docker", Log: log.Default}
-		framework.ExpectNoError(err)
 
 		f, err = setupDockerProvider(initialDir+"/bin", "docker")
 		framework.ExpectNoError(err)
@@ -71,9 +70,10 @@ var _ = ginkgo.Describe("testing up command for dockerfile builds", ginkgo.Label
 		scriptFile, err := os.OpenFile(scriptPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		framework.ExpectNoError(err)
 
-		defer func() { _ = scriptFile.Close() }()
-
 		_, err = scriptFile.Write([]byte("alias yr='date +%Y'"))
+		framework.ExpectNoError(err)
+
+		err = scriptFile.Close()
 		framework.ExpectNoError(err)
 
 		ginkgo.By("Starting DevPod again with --recreate")
@@ -112,10 +112,11 @@ var _ = ginkgo.Describe("testing up command for dockerfile builds", ginkgo.Label
 			os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 		framework.ExpectNoError(err)
 
-		defer func() { _ = scriptFile.Close() }()
-
 		ginkgo.By("Changing a file within context")
 		_, err = scriptFile.Write([]byte("apt install python"))
+		framework.ExpectNoError(err)
+
+		err = scriptFile.Close()
 		framework.ExpectNoError(err)
 
 		ginkgo.By("Starting DevPod again with --recreate")

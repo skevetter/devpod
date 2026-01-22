@@ -25,7 +25,6 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-workspaces"), fun
 		framework.ExpectNoError(err)
 
 		dockerHelper = &docker.DockerHelper{DockerCommand: "docker", Log: log.Default}
-		framework.ExpectNoError(err)
 	})
 
 	ginkgo.It("with env vars", func() {
@@ -139,7 +138,7 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-workspaces"), fun
 		out, err = f.DevPodSSH(ctx, name, "echo -n $TEST_OTHER_VAR")
 		framework.ExpectNoError(err)
 		framework.ExpectEqual(out, value, "should be set now")
-	})
+	}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
 	ginkgo.It("create workspace without devcontainer.json", func() {
 		const providerName = "test-docker"
@@ -184,7 +183,7 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-workspaces"), fun
 
 		err = f.DevPodWorkspaceDelete(ctx, tempDir)
 		framework.ExpectNoError(err)
-	})
+	}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
 	ginkgo.It("recreate a local workspace", func() {
 		const providerName = "test-docker"
@@ -214,7 +213,7 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-workspaces"), fun
 
 		err = f.DevPodWorkspaceDelete(ctx, tempDir)
 		framework.ExpectNoError(err)
-	})
+	}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
 	ginkgo.It("recreate a remote workspace", func() {
 		const providerName = "test-docker"
@@ -248,7 +247,7 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-workspaces"), fun
 
 		err = f.DevPodWorkspaceDelete(ctx, id)
 		framework.ExpectNoError(err)
-	})
+	}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
 	ginkgo.It("reset a remote workspace", func() {
 		const providerName = "test-docker"
@@ -262,8 +261,6 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-workspaces"), fun
 		err = f.DevPodProviderUse(ctx, providerName)
 		framework.ExpectNoError(err)
 		ginkgo.DeferCleanup(func() {
-			err = f.DevPodWorkspaceDelete(ctx, "jupyter-notebook-hello-world")
-			framework.ExpectNoError(err)
 			err = f.DevPodProviderDelete(ctx, providerName)
 			framework.ExpectNoError(err)
 		})
@@ -279,17 +276,17 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-workspaces"), fun
 		framework.ExpectNoError(err)
 
 		// reset
-		err = f.DevPodUpReset(ctx, "https://github.com/loft-sh/examples/@subpath:/devpod/jupyter-notebook-hello-world")
+		err = f.DevPodUpReset(ctx, "https://github.com/loft-sh/examples@subpath:/devpod/jupyter-notebook-hello-world")
 		framework.ExpectNoError(err)
 
 		// this should fail! because --reset should trigger a new git clone
 		_, err = f.DevPodSSH(ctx, id, fmt.Sprintf("ls /workspaces/%s/DATA", id))
 		framework.ExpectError(err)
-		// this should fail! because --recreare should trigger a new build, so a new rootfs
+		// this should fail! because --recreate should trigger a new build, so a new rootfs
 		_, err = f.DevPodSSH(ctx, id, "ls /ROOTFS")
 		framework.ExpectError(err)
 
 		err = f.DevPodWorkspaceDelete(ctx, id)
 		framework.ExpectNoError(err)
-	})
+	}, ginkgo.SpecTimeout(framework.GetTimeout()))
 })

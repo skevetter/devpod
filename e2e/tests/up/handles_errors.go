@@ -48,6 +48,9 @@ var _ = ginkgo.Describe("testing up command that handles workspace errors", gink
 	ginkgo.It("ensure workspace cleanup when failing to create a workspace", func(ctx context.Context) {
 		f, err := setupDockerProvider(initialDir+"/bin", "docker")
 		framework.ExpectNoError(err)
+		ginkgo.DeferCleanup(func() {
+			_ = f.DevPodProviderDelete(context.Background(), "docker")
+		})
 
 		initialList, err := f.DevPodList(ctx)
 		framework.ExpectNoError(err)
@@ -63,6 +66,9 @@ var _ = ginkgo.Describe("testing up command that handles workspace errors", gink
 	ginkgo.It("should fail with error when bind mount source does not exist", func(ctx context.Context) {
 		f, err := setupDockerProvider(initialDir+"/bin", "docker")
 		framework.ExpectNoError(err)
+		ginkgo.DeferCleanup(func() {
+			_ = f.DevPodProviderDelete(context.Background(), "docker")
+		})
 
 		tempDir, err := framework.CopyToTempDir("tests/up/testdata/docker-invalid-bind-mount")
 		framework.ExpectNoError(err)
