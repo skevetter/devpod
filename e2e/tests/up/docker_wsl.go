@@ -30,8 +30,10 @@ var _ = ginkgo.Describe("testing up command for windows", ginkgo.Label("up-docke
 		dockerHelper = &docker.DockerHelper{DockerCommand: "docker", Log: log.Default}
 
 		originalDockerHost = os.Getenv("DOCKER_HOST")
-		err = os.Setenv("DOCKER_HOST", "tcp://localhost:2375")
-		framework.ExpectNoError(err)
+		if originalDockerHost == "" {
+			err = os.Setenv("DOCKER_HOST", "npipe:////./pipe/podman-machine-default")
+			framework.ExpectNoError(err)
+		}
 
 		f, err = setupDockerProvider(filepath.Join(initialDir, "bin"), "docker")
 		framework.ExpectNoError(err)

@@ -75,6 +75,7 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-workspaces"), fun
 		// set env vars with file
 		tmpDir, err := framework.CreateTempDir()
 		framework.ExpectNoError(err)
+		defer func() { _ = os.RemoveAll(tmpDir) }()
 
 		// create invalid env file
 		invalidData := []byte("TEST VAR=" + value)
@@ -83,7 +84,6 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-workspaces"), fun
 			workspaceEnvFileInvalid,
 			invalidData, 0o644)
 		framework.ExpectNoError(err)
-		defer func() { _ = os.Remove(workspaceEnvFileInvalid) }()
 
 		// set env var
 		err = f.DevPodUp(ctx, name, "--workspace-env-file", workspaceEnvFileInvalid)
@@ -96,7 +96,6 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-workspaces"), fun
 			workspaceEnvFileValid,
 			validData, 0o644)
 		framework.ExpectNoError(err)
-		defer func() { _ = os.Remove(workspaceEnvFileValid) }()
 
 		// set env var
 		err = f.DevPodUp(ctx, name, "--workspace-env-file", workspaceEnvFileValid)
@@ -123,7 +122,6 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-workspaces"), fun
 			workspaceEnvFileValid2,
 			validData, 0o644)
 		framework.ExpectNoError(err)
-		defer func() { _ = os.Remove(workspaceEnvFileValid2) }()
 
 		// set env var from both files
 		err = f.DevPodUp(ctx, name, "--workspace-env-file", fmt.Sprintf("%s,%s", workspaceEnvFileValid, workspaceEnvFileValid2))

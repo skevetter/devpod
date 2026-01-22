@@ -37,7 +37,7 @@ var _ = ginkgo.Describe("testing up command for working with git repositories", 
 		name := "devpod"
 		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), name)
 
-		err = f.DevPodUp(ctx, "github.com/skevetter/devpod@pull/100/head")
+		err = f.DevPodUp(ctx, "github.com/skevetter/devpod@pull/1/head")
 		framework.ExpectNoError(err)
 	}, ginkgo.SpecTimeout(framework.GetTimeout()*3))
 
