@@ -31,7 +31,6 @@ var _ = ginkgo.Describe("testing up command for podman provider", ginkgo.Label("
 			tempDir, err := setupWorkspace("tests/up/testdata/docker", initialDir, f)
 			framework.ExpectNoError(err)
 
-			// Wait for devpod workspace to come online (deadline: 30s)
 			err = f.DevPodUp(ctx, tempDir)
 			framework.ExpectNoError(err)
 		}, ginkgo.SpecTimeout(framework.GetTimeout()))
@@ -40,7 +39,7 @@ var _ = ginkgo.Describe("testing up command for podman provider", ginkgo.Label("
 	ginkgo.Context("with rootfull podman", func() {
 		var f *framework.Framework
 
-		ginkgo.BeforeAll(func(ctx context.Context) {
+		ginkgo.BeforeEach(func(ctx context.Context) {
 			wrapper, err := os.Create(initialDir + "/bin/podman-rootful")
 			framework.ExpectNoError(err)
 
@@ -61,10 +60,7 @@ var _ = ginkgo.Describe("testing up command for podman provider", ginkgo.Label("
 			ginkgo.DeferCleanup(func() {
 				_ = os.Remove(initialDir + "/bin/podman-rootful")
 			})
-		})
 
-		ginkgo.BeforeEach(func(ctx context.Context) {
-			var err error
 			f, err = setupDockerProvider(initialDir+"/bin", initialDir+"/bin/podman-rootful")
 			framework.ExpectNoError(err)
 		})
@@ -73,7 +69,6 @@ var _ = ginkgo.Describe("testing up command for podman provider", ginkgo.Label("
 			tempDir, err := setupWorkspace("tests/up/testdata/docker", initialDir, f)
 			framework.ExpectNoError(err)
 
-			// Wait for devpod workspace to come online (deadline: 30s)
 			err = f.DevPodUp(ctx, tempDir)
 			framework.ExpectNoError(err)
 		}, ginkgo.SpecTimeout(framework.GetTimeout()))

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 
 	"github.com/onsi/ginkgo/v2"
@@ -28,7 +29,7 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-workspaces"), fun
 	})
 
 	ginkgo.It("with env vars", func(ctx context.Context) {
-		f, err := setupDockerProvider(initialDir+"/bin", "docker")
+		f, err := setupDockerProvider(filepath.Join(initialDir, "bin"), "docker")
 		framework.ExpectNoError(err)
 
 		name := "vscode-remote-try-python"
@@ -170,7 +171,7 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-workspaces"), fun
 		framework.ExpectNoError(err)
 		gomega.Expect(ids).To(gomega.HaveLen(1), "1 compose container to be created")
 
-		devcontainerPath := filepath.Join("/workspaces", projectName, ".devcontainer.json")
+		devcontainerPath := path.Join("/workspaces", projectName, ".devcontainer.json")
 
 		containerEnvPath, _, err := f.ExecCommandCapture(ctx, []string{"ssh", "--command", "cat " + devcontainerPath, projectName})
 		framework.ExpectNoError(err)
@@ -276,7 +277,7 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-workspaces"), fun
 		// this should fail! because --reset should trigger a new git clone
 		_, err = f.DevPodSSH(ctx, id, fmt.Sprintf("ls /workspaces/%s/DATA", id))
 		framework.ExpectError(err)
-		// this should fail! because --recreate should trigger a new build, so a new rootfs
+		// this should fail! because --reset should trigger a new build, so a new rootfs
 		_, err = f.DevPodSSH(ctx, id, "ls /ROOTFS")
 		framework.ExpectError(err)
 

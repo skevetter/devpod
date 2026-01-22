@@ -27,7 +27,7 @@ var _ = ginkgo.Describe("testing up command for docker customizations", ginkgo.L
 		framework.ExpectNoError(err)
 
 		dtc.dockerHelper = &docker.DockerHelper{DockerCommand: "docker", Log: log.Default}
-		dtc.f, err = setupDockerProvider(dtc.initialDir+"/bin", "docker")
+		dtc.f, err = setupDockerProvider(filepath.Join(dtc.initialDir, "bin"), "docker")
 		framework.ExpectNoError(err)
 	})
 
@@ -101,7 +101,7 @@ var _ = ginkgo.Describe("testing up command for docker customizations", ginkgo.L
 
 		containerWorkspaceFolder, err := dtc.execSSHCapture(ctx, workspace.ID, "cat $HOME/container-workspace-folder.out")
 		framework.ExpectNoError(err)
-		gomega.Expect(framework.CleanString(containerWorkspaceFolder)).To(gomega.Equal(framework.CleanString(filepath.Join("/", "workspaces", filepath.Base(tempDir)))))
+		gomega.Expect(framework.CleanString(containerWorkspaceFolder)).To(gomega.Equal(framework.CleanString(path.Join("/workspaces", filepath.Base(tempDir)))))
 
 		containerWorkspaceFolderBasename, err := dtc.execSSHCapture(ctx, workspace.ID, "cat $HOME/container-workspace-folder-basename.out")
 		framework.ExpectNoError(err)
