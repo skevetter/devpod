@@ -284,6 +284,14 @@ jobs:
           path: ${{ runner.temp }}/devpod-bin/
           merge-multiple: true
 
+      - name: download Linux CLI artifacts for Windows
+        if: runner.os == 'Windows' && (matrix.requires-secret == false || needs.can-read-secret.outputs.secret-set == 'true')
+        uses: actions/download-artifact@v7
+        with:
+          pattern: devpod-linux
+          path: ${{ runner.temp }}/devpod-bin/
+          merge-multiple: true
+
       # e2e expects executable to have name defined in e2e/framework/framework.go
       - name: setup executable
         if: matrix.requires-secret == false || needs.can-read-secret.outputs.secret-set == 'true'
