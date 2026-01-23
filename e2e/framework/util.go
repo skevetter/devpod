@@ -88,8 +88,7 @@ func CleanupTempDir(initialDir, tempDir string) {
 }
 
 func CleanString(input string) string {
-	input = strings.ReplaceAll(input, "\\", "")
-	return strings.ReplaceAll(input, "/", "")
+	return strings.TrimSpace(strings.ReplaceAll(input, "\\", "/"))
 }
 
 // createTempDir creates a temporary directory based on environment and base directory
