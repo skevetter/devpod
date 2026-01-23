@@ -231,7 +231,7 @@ jobs:
             install-kind: true
             requires-secret: false
 
-          # Up Windows tests
+          # Windows tests
 
           - label: context
             runner: windows-latest
@@ -333,26 +333,6 @@ jobs:
 
           kind create cluster --name "${{ steps.uuid.outputs.result }}" --image kindest/node:v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a
 
-      - name: verify podman setup (Windows)
-        if: matrix.install-kind == true && runner.os == 'Windows' && (matrix.requires-secret == false || needs.can-read-secret.outputs.secret-set == 'true')
-        shell: bash
-        run: |
-          echo "=== Podman version ==="
-          podman --version
-          echo "=== Podman machine status ==="
-          podman machine list
-          echo "=== DOCKER_HOST ==="
-          echo "$DOCKER_HOST"
-          echo "=== Which podman ==="
-          which podman
-          echo "=== Podman executable permissions ==="
-          ls -la "$(which podman)" || echo "Could not find podman"
-          ls -la "$(which podman.exe)" || echo "Could not find podman.exe"
-          echo "=== Test simple podman command ==="
-          podman ps || echo "podman ps failed with exit code $?"
-          echo "=== PATH ==="
-          echo "$PATH"
-
       # NOTE: engineerd/setup-kind does not work on Windows runners
       - name: setup kind
         if: matrix.install-kind == true && runner.os != 'Windows' && (matrix.requires-secret == false || needs.can-read-secret.outputs.secret-set == 'true')
@@ -378,7 +358,6 @@ jobs:
           # NOTE: GitHub credentials are required for tests using private repos
           GH_USERNAME: ${{ github.repository_owner }}
           GH_ACCESS_TOKEN: ${{ matrix.requires-secret == true && secrets.GH_PRIVATE_REPO_TOKEN_TEST || github.token }}
-          DOCKER_HOST: ${{ runner.os == 'Windows' && 'npipe:////./pipe/podman-machine-default' || '' }}
         run: |
           if [ "${{ runner.os }}" == "Linux" ]; then
             sudo \
@@ -394,7 +373,7 @@ jobs:
               KUBECONFIG="${KUBECONFIG:-$HOME/.kube/config}" \
               PATH="${PATH}" \
               GOROOT="${GOROOT}" \
-              DOCKER_HOST="${DOCKER_HOST}" \
+              DOCKER_HOST="npipe:////./pipe/podman-machine-default" \
               go test -v -ginkgo.v -timeout 3600s --ginkgo.label-filter="${{ matrix.label }}"
           fi
 

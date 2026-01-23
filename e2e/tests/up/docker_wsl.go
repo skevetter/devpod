@@ -73,29 +73,63 @@ var _ = ginkgo.Describe("testing up command for windows", ginkgo.Label("up-docke
 		ginkgo.By("checking localEnv HOME substitution")
 		localEnvHome, err := f.DevPodSSH(ctx, projectName, "cat $HOME/local-env-home.out")
 		framework.ExpectNoError(err)
-		gomega.Expect(framework.CleanString(localEnvHome)).To(gomega.Equal(framework.CleanString(os.Getenv("USERPROFILE"))))
+
+		ginkgo.By("localEnv HOME from SSH: " + localEnvHome)
+		cleanedLocalEnvHome := filepath.ToSlash(strings.TrimSpace(localEnvHome))
+		ginkgo.By("cleaned localEnv HOME: " + cleanedLocalEnvHome)
+
+		userProfile := os.Getenv("USERPROFILE")
+		ginkgo.By("USERPROFILE env: " + userProfile)
+		cleanedUserProfile := filepath.ToSlash(userProfile)
+		ginkgo.By("cleaned USERPROFILE: " + cleanedUserProfile)
+
+		gomega.Expect(cleanedLocalEnvHome).To(gomega.Equal(cleanedUserProfile))
 
 		ginkgo.By("checking localWorkspaceFolder substitution")
 		localWorkspaceFolder, err := f.DevPodSSH(ctx, projectName, "cat $HOME/local-workspace-folder.out")
 		framework.ExpectNoError(err)
-		gomega.Expect(framework.CleanString(filepath.ToSlash(localWorkspaceFolder))).To(gomega.Equal(framework.CleanString(filepath.ToSlash(tempDir))))
+
+		ginkgo.By("localWorkspaceFolder from SSH: " + localWorkspaceFolder)
+		cleanedLocalWorkspaceFolder := filepath.ToSlash(strings.TrimSpace(localWorkspaceFolder))
+		ginkgo.By("cleaned localWorkspaceFolder: " + cleanedLocalWorkspaceFolder)
+
+		cleanedTempDir := filepath.ToSlash(tempDir)
+		ginkgo.By("cleaned tempDir: " + cleanedTempDir)
+
+		gomega.Expect(cleanedLocalWorkspaceFolder).To(gomega.Equal(cleanedTempDir))
 
 		ginkgo.By("checking localWorkspaceFolderBasename substitution")
 		localWorkspaceFolderBasename, err := f.DevPodSSH(ctx, projectName, "cat $HOME/local-workspace-folder-basename.out")
 		framework.ExpectNoError(err)
-		gomega.Expect(localWorkspaceFolderBasename).To(gomega.Equal(filepath.Base(tempDir)))
+
+		ginkgo.By("localWorkspaceFolderBasename from SSH: " + localWorkspaceFolderBasename)
+		expectedBasename := filepath.Base(tempDir)
+		ginkgo.By("expected basename: " + expectedBasename)
+
+		gomega.Expect(strings.TrimSpace(localWorkspaceFolderBasename)).To(gomega.Equal(expectedBasename))
 
 		ginkgo.By("checking containerWorkspaceFolder substitution")
 		containerWorkspaceFolder, err := f.DevPodSSH(ctx, projectName, "cat $HOME/container-workspace-folder.out")
 		framework.ExpectNoError(err)
-		gomega.Expect(framework.CleanString(filepath.ToSlash(containerWorkspaceFolder))).To(gomega.Equal(
-			framework.CleanString(filepath.ToSlash("workspaces" + filepath.Base(tempDir))),
-		))
+
+		ginkgo.By("containerWorkspaceFolder from SSH: " + containerWorkspaceFolder)
+		cleanedContainerWorkspaceFolder := filepath.ToSlash(strings.TrimSpace(containerWorkspaceFolder))
+		ginkgo.By("cleaned containerWorkspaceFolder: " + cleanedContainerWorkspaceFolder)
+
+		expectedContainerFolder := filepath.ToSlash("workspaces" + filepath.Base(tempDir))
+		ginkgo.By("cleaned expected containerWorkspaceFolder: " + expectedContainerFolder)
+
+		gomega.Expect(cleanedContainerWorkspaceFolder).To(gomega.Equal(expectedContainerFolder))
 
 		ginkgo.By("checking containerWorkspaceFolderBasename substitution")
 		containerWorkspaceFolderBasename, err := f.DevPodSSH(ctx, projectName, "cat $HOME/container-workspace-folder-basename.out")
 		framework.ExpectNoError(err)
-		gomega.Expect(containerWorkspaceFolderBasename).To(gomega.Equal(filepath.Base(tempDir)))
+
+		ginkgo.By("containerWorkspaceFolderBasename from SSH: " + containerWorkspaceFolderBasename)
+		expectedContainerBasename := filepath.Base(tempDir)
+		ginkgo.By("expected container basename: " + expectedContainerBasename)
+
+		gomega.Expect(strings.TrimSpace(containerWorkspaceFolderBasename)).To(gomega.Equal(expectedContainerBasename))
 	}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
 	ginkgo.It("should start a new workspace with mounts", func(ctx context.Context) {
