@@ -67,7 +67,7 @@ var _ = ginkgo.Describe("testing up command for windows", ginkgo.Label("up-docke
 
 		localEnvHome, err := f.DevPodSSH(ctx, projectName, "cat $HOME/local-env-home.out")
 		framework.ExpectNoError(err)
-		gomega.Expect(strings.TrimSpace(localEnvHome)).To(gomega.Equal(strings.TrimSpace(os.Getenv("USERPROFILE"))))
+		gomega.Expect(framework.CleanString(localEnvHome)).To(gomega.Equal(framework.CleanString(os.Getenv("USERPROFILE"))))
 
 		localWorkspaceFolder, err := f.DevPodSSH(ctx, projectName, "cat $HOME/local-workspace-folder.out")
 		framework.ExpectNoError(err)
