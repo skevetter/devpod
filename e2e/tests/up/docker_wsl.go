@@ -71,7 +71,7 @@ var _ = ginkgo.Describe("testing up command for windows", ginkgo.Label("up-docke
 
 		localWorkspaceFolder, err := f.DevPodSSH(ctx, projectName, "cat $HOME/local-workspace-folder.out")
 		framework.ExpectNoError(err)
-		gomega.Expect(framework.CleanString(localWorkspaceFolder)).To(gomega.Equal(framework.CleanString(tempDir)))
+		gomega.Expect(framework.CleanString(filepath.ToSlash(localWorkspaceFolder))).To(gomega.Equal(framework.CleanString(filepath.ToSlash(tempDir))))
 
 		localWorkspaceFolderBasename, err := f.DevPodSSH(ctx, projectName, "cat $HOME/local-workspace-folder-basename.out")
 		framework.ExpectNoError(err)
@@ -79,8 +79,8 @@ var _ = ginkgo.Describe("testing up command for windows", ginkgo.Label("up-docke
 
 		containerWorkspaceFolder, err := f.DevPodSSH(ctx, projectName, "cat $HOME/container-workspace-folder.out")
 		framework.ExpectNoError(err)
-		gomega.Expect(framework.CleanString(containerWorkspaceFolder)).To(gomega.Equal(
-			framework.CleanString("workspaces" + filepath.Base(tempDir)),
+		gomega.Expect(framework.CleanString(filepath.ToSlash(containerWorkspaceFolder))).To(gomega.Equal(
+			framework.CleanString(filepath.ToSlash("workspaces" + filepath.Base(tempDir))),
 		))
 
 		containerWorkspaceFolderBasename, err := f.DevPodSSH(ctx, projectName, "cat $HOME/container-workspace-folder-basename.out")
