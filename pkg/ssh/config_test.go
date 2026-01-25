@@ -1,14 +1,21 @@
 package ssh
 
 import (
-	"fmt"
-	"strings"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestAddHostSection(t *testing.T) {
+type SSHConfigTestSuite struct {
+	suite.Suite
+}
+
+func TestSSHConfigSuite(t *testing.T) {
+	suite.Run(t, new(SSHConfigTestSuite))
+}
+
+func (s *SSHConfigTestSuite) TestAddHostSection() {
 	tests := []struct {
 		name       string
 		config     string
@@ -21,6 +28,7 @@ func TestAddHostSection(t *testing.T) {
 		command    string
 		gpgagent   bool
 		devPodHome string
+		provider   string
 		expected   string
 	}{
 		{
@@ -35,6 +43,7 @@ func TestAddHostSection(t *testing.T) {
 			command:    "",
 			gpgagent:   false,
 			devPodHome: "",
+			provider:   "",
 			expected: `# DevPod Start testhost
 Host testhost
   ForwardAgent yes
@@ -42,6 +51,31 @@ Host testhost
   StrictHostKeyChecking no
   UserKnownHostsFile /dev/null
   HostKeyAlgorithms rsa-sha2-256,rsa-sha2-512,ssh-rsa
+  ProxyCommand "/path/to/exec" ssh --stdio --context testcontext --user testuser testworkspace
+  User testuser
+# DevPod End testhost`,
+		},
+		{
+			name:       "AWS provider with ConnectTimeout",
+			config:     "",
+			execPath:   "/path/to/exec",
+			host:       "testhost",
+			user:       "testuser",
+			context:    "testcontext",
+			workspace:  "testworkspace",
+			workdir:    "",
+			command:    "",
+			gpgagent:   false,
+			devPodHome: "",
+			provider:   "aws",
+			expected: `# DevPod Start testhost
+Host testhost
+  ForwardAgent yes
+  LogLevel error
+  StrictHostKeyChecking no
+  UserKnownHostsFile /dev/null
+  HostKeyAlgorithms rsa-sha2-256,rsa-sha2-512,ssh-rsa
+  ConnectTimeout 60
   ProxyCommand "/path/to/exec" ssh --stdio --context testcontext --user testuser testworkspace
   User testuser
 # DevPod End testhost`,
@@ -58,6 +92,7 @@ Host testhost
 			command:    "",
 			gpgagent:   false,
 			devPodHome: "C:\\\\White Space\\devpod\\test",
+			provider:   "",
 			expected: `# DevPod Start testhost
 Host testhost
   ForwardAgent yes
@@ -81,6 +116,7 @@ Host testhost
 			command:    "",
 			gpgagent:   false,
 			devPodHome: "",
+			provider:   "",
 			expected: `# DevPod Start testhost
 Host testhost
   ForwardAgent yes
@@ -104,6 +140,7 @@ Host testhost
 			command:    "",
 			gpgagent:   true,
 			devPodHome: "",
+			provider:   "",
 			expected: `# DevPod Start testhost
 Host testhost
   ForwardAgent yes
@@ -127,6 +164,7 @@ Host testhost
 			command:    "ssh -W %h:%p bastion",
 			gpgagent:   false,
 			devPodHome: "",
+			provider:   "",
 			expected: `# DevPod Start testhost
 Host testhost
   ForwardAgent yes
@@ -151,6 +189,7 @@ Host testhost
 			command:    "",
 			gpgagent:   false,
 			devPodHome: "",
+			provider:   "",
 			expected: `# DevPod Start testhost
 Host testhost
   ForwardAgent yes
@@ -188,6 +227,7 @@ Host existinghost
 			command:    "",
 			gpgagent:   false,
 			devPodHome: "",
+			provider:   "",
 			expected: `# DevPod Start testhost
 Host testhost
   ForwardAgent yes
@@ -230,6 +270,7 @@ Include ~/config3`,
 			command:    "",
 			gpgagent:   false,
 			devPodHome: "",
+			provider:   "",
 			expected: `Include ~/config1
 
 Include ~/config2
@@ -251,43 +292,40 @@ Host testhost
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result, err := addHostSection(tt.config, tt.execPath, tt.host, tt.user, tt.context, tt.workspace, tt.workdir, tt.command, tt.gpgagent, tt.devPodHome)
-			if err != nil {
-				t.Errorf("Failed with err: %v", err)
+		s.Run(tt.name, func() {
+			result, err := addHostSection(tt.config, tt.execPath, addHostParams{
+				path:       "",
+				host:       tt.host,
+				user:       tt.user,
+				context:    tt.context,
+				workspace:  tt.workspace,
+				workdir:    tt.workdir,
+				command:    tt.command,
+				gpgagent:   tt.gpgagent,
+				devPodHome: tt.devPodHome,
+				provider:   tt.provider,
+			})
+
+			assert.NoError(s.T(), err)
+			assert.Equal(s.T(), tt.expected, result)
+			assert.Contains(s.T(), result, MarkerEndPrefix+tt.host)
+			assert.Contains(s.T(), result, "Host "+tt.host)
+			assert.Contains(s.T(), result, "User "+tt.user)
+
+			if tt.command != "" {
+				assert.Contains(s.T(), result, "ProxyCommand \""+tt.command+"\"")
 			}
 
-			if result != tt.expected {
-				t.Errorf("addHostSection result does not match expected.\nGot:\n%s\nExpected:\n%s", result, tt.expected)
-				t.Errorf("addHostSection result does not match expected:\n%s", cmp.Diff(result, tt.expected))
+			if tt.workdir != "" {
+				assert.Contains(s.T(), result, "--workdir \""+tt.workdir+"\"")
 			}
 
-			if !strings.Contains(result, MarkerEndPrefix+tt.host) {
-				t.Errorf("Result does not contain the end marker: %s", MarkerEndPrefix+tt.host)
+			if tt.gpgagent {
+				assert.Contains(s.T(), result, "--gpg-agent-forwarding")
 			}
 
-			if !strings.Contains(result, "Host "+tt.host) {
-				t.Errorf("Result does not contain the Host line: Host %s", tt.host)
-			}
-
-			if !strings.Contains(result, "User "+tt.user) {
-				t.Errorf("Result does not contain the User line: User %s", tt.user)
-			}
-
-			if tt.command != "" && !strings.Contains(result, fmt.Sprintf("ProxyCommand \"%s\"", tt.command)) {
-				t.Errorf("Result does not contain the custom ProxyCommand: %s", tt.command)
-			}
-
-			if tt.workdir != "" && !strings.Contains(result, fmt.Sprintf("--workdir \"%s\"", tt.workdir)) {
-				t.Errorf("Result does not contain the workdir: %s", tt.workdir)
-			}
-
-			if tt.gpgagent && !strings.Contains(result, "--gpg-agent-forwarding") {
-				t.Errorf("Result does not contain gpg-agent-forwarding flag")
-			}
-
-			if tt.config != "" && !strings.Contains(result, tt.config) {
-				t.Errorf("Result does not contain the original config")
+			if tt.config != "" {
+				assert.Contains(s.T(), result, tt.config)
 			}
 		})
 	}
