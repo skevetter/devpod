@@ -81,7 +81,7 @@ func (s *proxyClient) Unlock() {
 }
 
 func tryLock(ctx context.Context, lock *flock.Flock, name string, log log.Logger) error {
-	done := printLogMessagePeriodically(fmt.Sprintf("Trying to lock %s, seems like another process is running that blocks this %s", name, name), log)
+	done := scheduleLogMessage(fmt.Sprintf("Trying to lock %s, seems like another process is running that blocks this %s", name, name), log)
 	defer close(done)
 
 	now := time.Now()
@@ -169,20 +169,21 @@ func (s *proxyClient) RefreshOptions(ctx context.Context, userOptionsRaw []strin
 }
 
 func (s *proxyClient) Create(ctx context.Context, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
-	err := RunCommandWithBinaries(
-		ctx,
-		"createWorkspace",
-		s.config.Exec.Proxy.Create.Workspace,
-		s.workspace.Context,
-		s.workspace,
-		nil,
-		s.devPodConfig.ProviderOptions(s.config.Name),
-		s.config,
-		nil,
-		stdin,
-		stdout,
-		stderr,
-		s.log)
+	err := RunCommandWithBinaries(CommandOptions{
+		Ctx:       ctx,
+		Name:      "createWorkspace",
+		Command:   s.config.Exec.Proxy.Create.Workspace,
+		Context:   s.workspace.Context,
+		Workspace: s.workspace,
+		Machine:   nil,
+		Options:   s.devPodConfig.ProviderOptions(s.config.Name),
+		Config:    s.config,
+		ExtraEnv:  nil,
+		Stdin:     stdin,
+		Stdout:    stdout,
+		Stderr:    stderr,
+		Log:       s.log,
+	})
 	if err != nil {
 		return fmt.Errorf("create remote workspace  %w", err)
 	}
@@ -224,21 +225,21 @@ func (s *proxyClient) Up(ctx context.Context, opt client.UpOptions) error {
 		}
 	}
 
-	err := RunCommandWithBinaries(
-		ctx,
-		"up",
-		s.config.Exec.Proxy.Up,
-		s.workspace.Context,
-		s.workspace,
-		nil,
-		providerOptions,
-		s.config,
-		opts,
-		opt.Stdin,
-		opt.Stdout,
-		writer,
-		s.log.ErrorStreamOnly(),
-	)
+	err := RunCommandWithBinaries(CommandOptions{
+		Ctx:       ctx,
+		Name:      "up",
+		Command:   s.config.Exec.Proxy.Up,
+		Context:   s.workspace.Context,
+		Workspace: s.workspace,
+		Machine:   nil,
+		Options:   providerOptions,
+		Config:    s.config,
+		ExtraEnv:  opts,
+		Stdin:     opt.Stdin,
+		Stdout:    opt.Stdout,
+		Stderr:    writer,
+		Log:       s.log.ErrorStreamOnly(),
+	})
 	if err != nil {
 		return fmt.Errorf("error running devpod up %w", err)
 	}
@@ -250,21 +251,21 @@ func (s *proxyClient) Ssh(ctx context.Context, opt client.SshOptions) error {
 	writer, _ := devpodlog.PipeJSONStream(s.log.ErrorStreamOnly())
 	defer func() { _ = writer.Close() }()
 
-	err := RunCommandWithBinaries(
-		ctx,
-		"ssh",
-		s.config.Exec.Proxy.Ssh,
-		s.workspace.Context,
-		s.workspace,
-		nil,
-		s.devPodConfig.ProviderOptions(s.config.Name),
-		s.config,
-		EncodeOptions(opt, DevPodFlagsSsh),
-		opt.Stdin,
-		opt.Stdout,
-		writer,
-		s.log.ErrorStreamOnly(),
-	)
+	err := RunCommandWithBinaries(CommandOptions{
+		Ctx:       ctx,
+		Name:      "ssh",
+		Command:   s.config.Exec.Proxy.Ssh,
+		Context:   s.workspace.Context,
+		Workspace: s.workspace,
+		Machine:   nil,
+		Options:   s.devPodConfig.ProviderOptions(s.config.Name),
+		Config:    s.config,
+		ExtraEnv:  EncodeOptions(opt, DevPodFlagsSsh),
+		Stdin:     opt.Stdin,
+		Stdout:    opt.Stdout,
+		Stderr:    writer,
+		Log:       s.log.ErrorStreamOnly(),
+	})
 	if err != nil {
 		return err
 	}
@@ -294,21 +295,21 @@ func (s *proxyClient) Delete(ctx context.Context, opt client.DeleteOptions) erro
 		defer cancel()
 	}
 
-	err := RunCommandWithBinaries(
-		ctx,
-		"delete",
-		s.config.Exec.Proxy.Delete,
-		s.workspace.Context,
-		s.workspace,
-		nil,
-		s.devPodConfig.ProviderOptions(s.config.Name),
-		s.config,
-		EncodeOptions(opt, DevPodFlagsDelete),
-		nil,
-		writer,
-		writer,
-		s.log,
-	)
+	err := RunCommandWithBinaries(CommandOptions{
+		Ctx:       ctx,
+		Name:      "delete",
+		Command:   s.config.Exec.Proxy.Delete,
+		Context:   s.workspace.Context,
+		Workspace: s.workspace,
+		Machine:   nil,
+		Options:   s.devPodConfig.ProviderOptions(s.config.Name),
+		Config:    s.config,
+		ExtraEnv:  EncodeOptions(opt, DevPodFlagsDelete),
+		Stdin:     nil,
+		Stdout:    writer,
+		Stderr:    writer,
+		Log:       s.log,
+	})
 	if err != nil {
 		if !opt.Force {
 			return fmt.Errorf("error deleting workspace %w", err)
@@ -332,21 +333,21 @@ func (s *proxyClient) Stop(ctx context.Context, opt client.StopOptions) error {
 	writer, _ := devpodlog.PipeJSONStream(s.log.ErrorStreamOnly())
 	defer func() { _ = writer.Close() }()
 
-	err := RunCommandWithBinaries(
-		ctx,
-		"stop",
-		s.config.Exec.Proxy.Stop,
-		s.workspace.Context,
-		s.workspace,
-		nil,
-		s.devPodConfig.ProviderOptions(s.config.Name),
-		s.config,
-		nil,
-		nil,
-		writer,
-		writer,
-		s.log,
-	)
+	err := RunCommandWithBinaries(CommandOptions{
+		Ctx:       ctx,
+		Name:      "stop",
+		Command:   s.config.Exec.Proxy.Stop,
+		Context:   s.workspace.Context,
+		Workspace: s.workspace,
+		Machine:   nil,
+		Options:   s.devPodConfig.ProviderOptions(s.config.Name),
+		Config:    s.config,
+		ExtraEnv:  nil,
+		Stdin:     nil,
+		Stdout:    writer,
+		Stderr:    writer,
+		Log:       s.log,
+	})
 	if err != nil {
 		return fmt.Errorf("error stopping container %w", err)
 	}
@@ -360,21 +361,21 @@ func (s *proxyClient) Status(ctx context.Context, options client.StatusOptions) 
 
 	stdout := &bytes.Buffer{}
 	buf := &bytes.Buffer{}
-	err := RunCommandWithBinaries(
-		ctx,
-		"status",
-		s.config.Exec.Proxy.Status,
-		s.workspace.Context,
-		s.workspace,
-		nil,
-		s.devPodConfig.ProviderOptions(s.config.Name),
-		s.config,
-		EncodeOptions(options, DevPodFlagsStatus),
-		nil,
-		io.MultiWriter(stdout, buf),
-		buf,
-		s.log.ErrorStreamOnly(),
-	)
+	err := RunCommandWithBinaries(CommandOptions{
+		Ctx:       ctx,
+		Name:      "status",
+		Command:   s.config.Exec.Proxy.Status,
+		Context:   s.workspace.Context,
+		Workspace: s.workspace,
+		Machine:   nil,
+		Options:   s.devPodConfig.ProviderOptions(s.config.Name),
+		Config:    s.config,
+		ExtraEnv:  EncodeOptions(options, DevPodFlagsStatus),
+		Stdin:     nil,
+		Stdout:    io.MultiWriter(stdout, buf),
+		Stderr:    buf,
+		Log:       s.log.ErrorStreamOnly(),
+	})
 	if err != nil {
 		return client.StatusNotFound, fmt.Errorf("error retrieving container status: %s%w", buf.String(), err)
 	}
@@ -391,21 +392,21 @@ func (s *proxyClient) Status(ctx context.Context, options client.StatusOptions) 
 }
 
 func (s *proxyClient) updateInstance(ctx context.Context) error {
-	err := RunCommandWithBinaries(
-		ctx,
-		"updateWorkspace",
-		s.config.Exec.Proxy.Update.Workspace,
-		s.workspace.Context,
-		s.workspace,
-		nil,
-		s.devPodConfig.ProviderOptions(s.config.Name),
-		s.config,
-		nil,
-		os.Stdin,
-		os.Stdout,
-		os.Stderr,
-		s.log.ErrorStreamOnly(),
-	)
+	err := RunCommandWithBinaries(CommandOptions{
+		Ctx:       ctx,
+		Name:      "updateWorkspace",
+		Command:   s.config.Exec.Proxy.Update.Workspace,
+		Context:   s.workspace.Context,
+		Workspace: s.workspace,
+		Machine:   nil,
+		Options:   s.devPodConfig.ProviderOptions(s.config.Name),
+		Config:    s.config,
+		ExtraEnv:  nil,
+		Stdin:     os.Stdin,
+		Stdout:    os.Stdout,
+		Stderr:    os.Stderr,
+		Log:       s.log.ErrorStreamOnly(),
+	})
 	if err != nil {
 		return err
 	}

@@ -57,20 +57,16 @@ func (cmd *VersionCmd) Run(ctx context.Context, devPodConfig *config.Config, pro
 	// ignore --debug because we tunnel json through stdio
 	cmd.Log.SetLevel(logrus.InfoLevel)
 
-	err := clientimplementation.RunCommandWithBinaries(
-		ctx,
-		"getVersion",
-		providerConfig.Exec.Proxy.Get.Version,
-		devPodConfig.DefaultContext,
-		nil,
-		nil,
-		opts,
-		providerConfig,
-		nil,
-		nil,
-		&buf,
-		nil,
-		cmd.Log)
+	err := clientimplementation.RunCommandWithBinaries(clientimplementation.CommandOptions{
+		Ctx:     ctx,
+		Name:    "getVersion",
+		Command: providerConfig.Exec.Proxy.Get.Version,
+		Context: devPodConfig.DefaultContext,
+		Options: opts,
+		Config:  providerConfig,
+		Stdout:  &buf,
+		Log:     cmd.Log,
+	})
 	if err != nil {
 		return fmt.Errorf("get version %w", err)
 	}

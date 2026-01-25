@@ -301,7 +301,14 @@ func (c *customDriver) runCommand(
 	}
 
 	// run the command
-	return clientimplementation.RunCommand(ctx, command, environ, stdin, stdout, stderr)
+	return clientimplementation.RunCommand(clientimplementation.RunCommandOptions{
+		Ctx:     ctx,
+		Command: command,
+		Environ: environ,
+		Stdin:   stdin,
+		Stdout:  stdout,
+		Stderr:  stderr,
+	})
 }
 
 func ToEnvironWithBinaries(workspace *provider2.AgentWorkspaceInfo, log log.Logger) ([]string, error) {

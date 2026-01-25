@@ -60,20 +60,17 @@ func (cmd *CreateWorkspaceCmd) Run(ctx context.Context, devPodConfig *config.Con
 	// ignore --debug because we tunnel json through stdio
 	cmd.Log.SetLevel(logrus.InfoLevel)
 
-	err := clientimplementation.RunCommandWithBinaries(
-		ctx,
-		"createWorkspace",
-		provider.Exec.Proxy.Create.Workspace,
-		devPodConfig.DefaultContext,
-		nil,
-		nil,
-		opts,
-		provider,
-		nil,
-		nil,
-		&buf,
-		cmd.Log.ErrorStreamOnly().Writer(logrus.ErrorLevel, true),
-		cmd.Log)
+	err := clientimplementation.RunCommandWithBinaries(clientimplementation.CommandOptions{
+		Ctx:     ctx,
+		Name:    "createWorkspace",
+		Command: provider.Exec.Proxy.Create.Workspace,
+		Context: devPodConfig.DefaultContext,
+		Options: opts,
+		Config:  provider,
+		Stdout:  &buf,
+		Stderr:  cmd.Log.ErrorStreamOnly().Writer(logrus.ErrorLevel, true),
+		Log:     cmd.Log,
+	})
 	if err != nil {
 		return fmt.Errorf("create workspace %w", err)
 	}

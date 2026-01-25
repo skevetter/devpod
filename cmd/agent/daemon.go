@@ -152,14 +152,13 @@ func (cmd *DaemonCmd) runShutdownCommand(workspace *provider2.AgentWorkspaceInfo
 	// we run the timeout command now
 	buf := &bytes.Buffer{}
 	log.Infof("Run shutdown command for workspace %s: %s", workspace.Workspace.ID, strings.Join(workspace.Agent.Exec.Shutdown, " "))
-	err = clientimplementation.RunCommand(
-		context.Background(),
-		workspace.Agent.Exec.Shutdown,
-		environ,
-		nil,
-		buf,
-		buf,
-	)
+	err = clientimplementation.RunCommand(clientimplementation.RunCommandOptions{
+		Ctx:     context.Background(),
+		Command: workspace.Agent.Exec.Shutdown,
+		Environ: environ,
+		Stdout:  buf,
+		Stderr:  buf,
+	})
 	if err != nil {
 		log.Errorf("Error running %s: %s%w", strings.Join(workspace.Agent.Exec.Shutdown, " "), buf.String(), err)
 		return

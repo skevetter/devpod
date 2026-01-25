@@ -76,20 +76,17 @@ func (cmd *WatchWorkspacesCmd) Run(ctx context.Context, devPodConfig *config.Con
 	// ignore --debug because we tunnel json through stdio
 	cmd.Log.SetLevel(logrus.InfoLevel)
 
-	err := clientimplementation.RunCommandWithBinaries(
-		cancelCtx,
-		"watchWorkspaces",
-		providerConfig.Exec.Proxy.Watch.Workspaces,
-		devPodConfig.DefaultContext,
-		nil,
-		nil,
-		opts,
-		providerConfig,
-		nil,
-		nil,
-		os.Stdout,
-		log.Default.ErrorStreamOnly().Writer(logrus.ErrorLevel, false),
-		cmd.Log)
+	err := clientimplementation.RunCommandWithBinaries(clientimplementation.CommandOptions{
+		Ctx:     cancelCtx,
+		Name:    "watchWorkspaces",
+		Command: providerConfig.Exec.Proxy.Watch.Workspaces,
+		Context: devPodConfig.DefaultContext,
+		Options: opts,
+		Config:  providerConfig,
+		Stdout:  os.Stdout,
+		Stderr:  log.Default.ErrorStreamOnly().Writer(logrus.ErrorLevel, false),
+		Log:     cmd.Log,
+	})
 	if err != nil {
 		return fmt.Errorf("watch workspaces with provider \"%s\": %w", providerConfig.Name, err)
 	}

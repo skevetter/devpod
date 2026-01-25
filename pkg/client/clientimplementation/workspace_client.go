@@ -368,23 +368,23 @@ func (s *workspaceClient) Delete(ctx context.Context, opt client.DeleteOptions) 
 				return fmt.Errorf("agent info")
 			}
 			command := fmt.Sprintf("'%s' agent workspace delete --workspace-info '%s'", info.Agent.Path, compressed)
-			err = RunCommandWithBinaries(
-				ctx,
-				"command",
-				s.config.Exec.Command,
-				s.workspace.Context,
-				s.workspace,
-				s.machine,
-				s.devPodConfig.ProviderOptions(s.config.Name),
-				s.config,
-				map[string]string{
+			err = RunCommandWithBinaries(CommandOptions{
+				Ctx:       ctx,
+				Name:      "command",
+				Command:   s.config.Exec.Command,
+				Context:   s.workspace.Context,
+				Workspace: s.workspace,
+				Machine:   s.machine,
+				Options:   s.devPodConfig.ProviderOptions(s.config.Name),
+				Config:    s.config,
+				ExtraEnv: map[string]string{
 					provider.CommandEnv: command,
 				},
-				nil,
-				writer,
-				writer,
-				s.log.ErrorStreamOnly(),
-			)
+				Stdin:  nil,
+				Stdout: writer,
+				Stderr: writer,
+				Log:    s.log.ErrorStreamOnly(),
+			})
 			if err != nil {
 				if !opt.Force {
 					return err
@@ -470,23 +470,23 @@ func (s *workspaceClient) Stop(ctx context.Context, opt client.StopOptions) erro
 			return fmt.Errorf("agent info")
 		}
 		command := fmt.Sprintf("'%s' agent workspace stop --workspace-info '%s'", info.Agent.Path, compressed)
-		err = RunCommandWithBinaries(
-			ctx,
-			"command",
-			s.config.Exec.Command,
-			s.workspace.Context,
-			s.workspace,
-			s.machine,
-			s.devPodConfig.ProviderOptions(s.config.Name),
-			s.config,
-			map[string]string{
+		err = RunCommandWithBinaries(CommandOptions{
+			Ctx:       ctx,
+			Name:      "command",
+			Command:   s.config.Exec.Command,
+			Context:   s.workspace.Context,
+			Workspace: s.workspace,
+			Machine:   s.machine,
+			Options:   s.devPodConfig.ProviderOptions(s.config.Name),
+			Config:    s.config,
+			ExtraEnv: map[string]string{
 				provider.CommandEnv: command,
 			},
-			nil,
-			writer,
-			writer,
-			s.log.ErrorStreamOnly(),
-		)
+			Stdin:  nil,
+			Stdout: writer,
+			Stderr: writer,
+			Log:    s.log.ErrorStreamOnly(),
+		})
 		if err != nil {
 			return err
 		}
@@ -506,16 +506,33 @@ func (s *workspaceClient) Stop(ctx context.Context, opt client.StopOptions) erro
 func (s *workspaceClient) Command(ctx context.Context, commandOptions client.CommandOptions) (err error) {
 	// get environment variables
 	s.m.Lock()
-	environ, err := binaries.ToEnvironmentWithBinaries(s.workspace.Context, s.workspace, s.machine, s.devPodConfig.ProviderOptions(s.config.Name), s.config, map[string]string{
-		provider.CommandEnv: commandOptions.Command,
-	}, s.log)
+	environ, err := binaries.ToEnvironmentWithBinaries(binaries.EnvironmentOptions{
+		Context:   s.workspace.Context,
+		Workspace: s.workspace,
+		Machine:   s.machine,
+		Options:   s.devPodConfig.ProviderOptions(s.config.Name),
+		Config:    s.config,
+		ExtraEnv: map[string]string{
+			provider.CommandEnv: commandOptions.Command,
+		},
+		Log: s.log,
+	})
 	if err != nil {
 		return err
 	}
 	s.m.Unlock()
 
 	// resolve options
-	return runCommand(ctx, "command", s.config.Exec.Command, environ, commandOptions.Stdin, commandOptions.Stdout, commandOptions.Stderr, s.log.ErrorStreamOnly())
+	return runCommand(runCommandOptions{
+		Ctx:     ctx,
+		Name:    "command",
+		Command: s.config.Exec.Command,
+		Environ: environ,
+		Stdin:   commandOptions.Stdin,
+		Stdout:  commandOptions.Stdout,
+		Stderr:  commandOptions.Stderr,
+		Log:     s.log.ErrorStreamOnly(),
+	})
 }
 
 func (s *workspaceClient) Status(ctx context.Context, options client.StatusOptions) (client.Status, error) {
@@ -576,9 +593,23 @@ func (s *workspaceClient) getContainerStatus(ctx context.Context) (client.Status
 		return "", fmt.Errorf("get agent info")
 	}
 	command := fmt.Sprintf("'%s' agent workspace status --workspace-info '%s'", info.Agent.Path, compressed)
-	err = RunCommandWithBinaries(ctx, "command", s.config.Exec.Command, s.workspace.Context, s.workspace, s.machine, s.devPodConfig.ProviderOptions(s.config.Name), s.config, map[string]string{
-		provider.CommandEnv: command,
-	}, nil, io.MultiWriter(stdout, buf), buf, s.log.ErrorStreamOnly())
+	err = RunCommandWithBinaries(CommandOptions{
+		Ctx:       ctx,
+		Name:      "command",
+		Command:   s.config.Exec.Command,
+		Context:   s.workspace.Context,
+		Workspace: s.workspace,
+		Machine:   s.machine,
+		Options:   s.devPodConfig.ProviderOptions(s.config.Name),
+		Config:    s.config,
+		ExtraEnv: map[string]string{
+			provider.CommandEnv: command,
+		},
+		Stdin:  nil,
+		Stdout: io.MultiWriter(stdout, buf),
+		Stderr: buf,
+		Log:    s.log.ErrorStreamOnly(),
+	})
 	if err != nil {
 		return client.StatusNotFound, fmt.Errorf("error retrieving container status: %s%w", buf.String(), err)
 	}
@@ -600,31 +631,73 @@ func (s *workspaceClient) isMachineProvider() bool {
 	return len(s.config.Exec.Create) > 0
 }
 
-func RunCommandWithBinaries(ctx context.Context, name string, command types.StrArray, context string, workspace *provider.Workspace, machine *provider.Machine, options map[string]config.OptionValue, config *provider.ProviderConfig, extraEnv map[string]string, stdin io.Reader, stdout io.Writer, stderr io.Writer, log log.Logger) (err error) {
-	environ, err := binaries.ToEnvironmentWithBinaries(context, workspace, machine, options, config, extraEnv, log)
+type CommandOptions struct {
+	Ctx       context.Context
+	Name      string
+	Command   types.StrArray
+	Context   string
+	Workspace *provider.Workspace
+	Machine   *provider.Machine
+	Options   map[string]config.OptionValue
+	Config    *provider.ProviderConfig
+	ExtraEnv  map[string]string
+	Stdin     io.Reader
+	Stdout    io.Writer
+	Stderr    io.Writer
+	Log       log.Logger
+}
+
+func RunCommandWithBinaries(opts CommandOptions) error {
+	environ, err := binaries.ToEnvironmentWithBinaries(binaries.EnvironmentOptions{
+		Context:   opts.Context,
+		Workspace: opts.Workspace,
+		Machine:   opts.Machine,
+		Options:   opts.Options,
+		Config:    opts.Config,
+		ExtraEnv:  opts.ExtraEnv,
+		Log:       opts.Log,
+	})
 	if err != nil {
 		return err
 	}
 
-	return runCommand(ctx, name, command, environ, stdin, stdout, stderr, log)
+	return runCommand(runCommandOptions{
+		Ctx:     opts.Ctx,
+		Name:    opts.Name,
+		Command: opts.Command,
+		Environ: environ,
+		Stdin:   opts.Stdin,
+		Stdout:  opts.Stdout,
+		Stderr:  opts.Stderr,
+		Log:     opts.Log,
+	})
 }
 
-func RunCommand(ctx context.Context, command types.StrArray, environ []string, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
-	if len(command) == 0 {
+type RunCommandOptions struct {
+	Ctx     context.Context
+	Command types.StrArray
+	Environ []string
+	Stdin   io.Reader
+	Stdout  io.Writer
+	Stderr  io.Writer
+}
+
+func RunCommand(opts RunCommandOptions) error {
+	if len(opts.Command) == 0 {
 		return nil
 	}
 
 	// use shell if command length is equal 1
-	if len(command) == 1 {
-		return shell.RunEmulatedShell(ctx, command[0], stdin, stdout, stderr, environ)
+	if len(opts.Command) == 1 {
+		return shell.RunEmulatedShell(opts.Ctx, opts.Command[0], opts.Stdin, opts.Stdout, opts.Stderr, opts.Environ)
 	}
 
 	// run command
-	cmd := exec.CommandContext(ctx, command[0], command[1:]...)
-	cmd.Stdin = stdin
-	cmd.Stdout = stdout
-	cmd.Stderr = stderr
-	cmd.Env = environ
+	cmd := exec.CommandContext(opts.Ctx, opts.Command[0], opts.Command[1:]...)
+	cmd.Stdin = opts.Stdin
+	cmd.Stdout = opts.Stdout
+	cmd.Stderr = opts.Stderr
+	cmd.Env = opts.Environ
 	err := cmd.Run()
 	if err != nil {
 		return err

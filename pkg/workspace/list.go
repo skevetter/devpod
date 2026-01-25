@@ -308,17 +308,17 @@ func listInstancesProxyProvider(ctx context.Context, devPodConfig *config.Config
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	if err := clientimplementation.RunCommandWithBinaries(
-		ctx,
-		"listWorkspaces",
-		providerConfig.Exec.Proxy.List.Workspaces,
-		devPodConfig.DefaultContext,
-		nil,
-		nil,
-		opts,
-		providerConfig,
-		nil, nil, &stdout, &stderr, log,
-	); err != nil {
+	if err := clientimplementation.RunCommandWithBinaries(clientimplementation.CommandOptions{
+		Ctx:     ctx,
+		Name:    "listWorkspaces",
+		Command: providerConfig.Exec.Proxy.List.Workspaces,
+		Context: devPodConfig.DefaultContext,
+		Options: opts,
+		Config:  providerConfig,
+		Stdout:  &stdout,
+		Stderr:  &stderr,
+		Log:     log,
+	}); err != nil {
 		return nil, fmt.Errorf("failed to list pro workspaces: %s %w", stderr.String(), err)
 	}
 	if stdout.Len() == 0 {

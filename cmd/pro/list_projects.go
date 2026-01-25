@@ -53,20 +53,16 @@ func (cmd *ListProjectsCmd) Run(ctx context.Context, devPodConfig *config.Config
 	// ignore --debug because we tunnel json through stdio
 	cmd.Log.SetLevel(logrus.InfoLevel)
 
-	err := clientimplementation.RunCommandWithBinaries(
-		ctx,
-		"listProjects",
-		provider.Exec.Proxy.List.Projects,
-		devPodConfig.DefaultContext,
-		nil,
-		nil,
-		devPodConfig.ProviderOptions(provider.Name),
-		provider,
-		nil,
-		nil,
-		&buf,
-		nil,
-		cmd.Log)
+	err := clientimplementation.RunCommandWithBinaries(clientimplementation.CommandOptions{
+		Ctx:     ctx,
+		Name:    "listProjects",
+		Command: provider.Exec.Proxy.List.Projects,
+		Context: devPodConfig.DefaultContext,
+		Options: devPodConfig.ProviderOptions(provider.Name),
+		Config:  provider,
+		Stdout:  &buf,
+		Log:     cmd.Log,
+	})
 	if err != nil {
 		return fmt.Errorf("watch workspaces with provider \"%s\": %w", provider.Name, err)
 	}

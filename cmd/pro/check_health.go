@@ -65,20 +65,17 @@ func (cmd *CheckHealthCmd) Run(ctx context.Context, devPodConfig *config.Config,
 	// ignore --debug because we tunnel json through stdio
 	cmd.Log.SetLevel(logrus.InfoLevel)
 
-	err := clientimplementation.RunCommandWithBinaries(
-		ctx,
-		"health",
-		provider.Exec.Proxy.Health,
-		devPodConfig.DefaultContext,
-		nil,
-		nil,
-		devPodConfig.ProviderOptions(provider.Name),
-		provider,
-		nil,
-		nil,
-		&buf,
-		cmd.Log.Writer(logrus.ErrorLevel, true),
-		cmd.Log)
+	err := clientimplementation.RunCommandWithBinaries(clientimplementation.CommandOptions{
+		Ctx:     ctx,
+		Name:    "health",
+		Command: provider.Exec.Proxy.Health,
+		Context: devPodConfig.DefaultContext,
+		Options: devPodConfig.ProviderOptions(provider.Name),
+		Config:  provider,
+		Stdout:  &buf,
+		Stderr:  cmd.Log.Writer(logrus.ErrorLevel, true),
+		Log:     cmd.Log,
+	})
 	if err != nil {
 		return fmt.Errorf("check health with provider \"%s\": %w", provider.Name, err)
 	}

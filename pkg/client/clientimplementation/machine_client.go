@@ -86,7 +86,7 @@ func (s *machineClient) Context() string {
 }
 
 func (s *machineClient) Create(ctx context.Context, options client.CreateOptions) error {
-	done := printStillRunningLogMessagePeriodically(s.log)
+	done := scheduleLogMessage("Devpod create operation is in progress", s.log)
 	defer close(done)
 
 	writer := s.log.Writer(logrus.InfoLevel, false)
@@ -97,21 +97,18 @@ func (s *machineClient) Create(ctx context.Context, options client.CreateOptions
 		"machineId": s.machine.ID,
 		"provider":  s.config.Name,
 	}).Infof("creating machine")
-	err := RunCommandWithBinaries(
-		ctx,
-		"create",
-		s.config.Exec.Create,
-		s.machine.Context,
-		nil,
-		s.machine,
-		s.devPodConfig.ProviderOptions(s.config.Name),
-		s.config,
-		nil,
-		nil,
-		writer,
-		writer,
-		s.log,
-	)
+	err := RunCommandWithBinaries(CommandOptions{
+		Ctx:     ctx,
+		Name:    "create",
+		Command: s.config.Exec.Create,
+		Context: s.machine.Context,
+		Machine: s.machine,
+		Options: s.devPodConfig.ProviderOptions(s.config.Name),
+		Config:  s.config,
+		Stdout:  writer,
+		Stderr:  writer,
+		Log:     s.log,
+	})
 	if err != nil {
 		return err
 	}
@@ -124,7 +121,7 @@ func (s *machineClient) Create(ctx context.Context, options client.CreateOptions
 }
 
 func (s *machineClient) Start(ctx context.Context, options client.StartOptions) error {
-	done := printStillRunningLogMessagePeriodically(s.log)
+	done := scheduleLogMessage("Devpod start operation is in progress", s.log)
 	defer close(done)
 
 	writer := s.log.Writer(logrus.InfoLevel, false)
@@ -133,21 +130,18 @@ func (s *machineClient) Start(ctx context.Context, options client.StartOptions) 
 	s.log.WithFields(logrus.Fields{
 		"machineId": s.machine.ID,
 	}).Infof("starting machine")
-	err := RunCommandWithBinaries(
-		ctx,
-		"start",
-		s.config.Exec.Start,
-		s.machine.Context,
-		nil,
-		s.machine,
-		s.devPodConfig.ProviderOptions(s.config.Name),
-		s.config,
-		nil,
-		nil,
-		writer,
-		writer,
-		s.log,
-	)
+	err := RunCommandWithBinaries(CommandOptions{
+		Ctx:     ctx,
+		Name:    "start",
+		Command: s.config.Exec.Start,
+		Context: s.machine.Context,
+		Machine: s.machine,
+		Options: s.devPodConfig.ProviderOptions(s.config.Name),
+		Config:  s.config,
+		Stdout:  writer,
+		Stderr:  writer,
+		Log:     s.log,
+	})
 	if err != nil {
 		return err
 	}
@@ -159,7 +153,7 @@ func (s *machineClient) Start(ctx context.Context, options client.StartOptions) 
 }
 
 func (s *machineClient) Stop(ctx context.Context, options client.StopOptions) error {
-	done := printStillRunningLogMessagePeriodically(s.log)
+	done := scheduleLogMessage("Devpod stop operation is in progress", s.log)
 	defer close(done)
 
 	writer := s.log.Writer(logrus.InfoLevel, false)
@@ -168,21 +162,18 @@ func (s *machineClient) Stop(ctx context.Context, options client.StopOptions) er
 	s.log.WithFields(logrus.Fields{
 		"machineId": s.machine.ID,
 	}).Infof("stopping machine")
-	err := RunCommandWithBinaries(
-		ctx,
-		"stop",
-		s.config.Exec.Stop,
-		s.machine.Context,
-		nil,
-		s.machine,
-		s.devPodConfig.ProviderOptions(s.config.Name),
-		s.config,
-		nil,
-		nil,
-		writer,
-		writer,
-		s.log,
-	)
+	err := RunCommandWithBinaries(CommandOptions{
+		Ctx:     ctx,
+		Name:    "stop",
+		Command: s.config.Exec.Stop,
+		Context: s.machine.Context,
+		Machine: s.machine,
+		Options: s.devPodConfig.ProviderOptions(s.config.Name),
+		Config:  s.config,
+		Stdout:  writer,
+		Stderr:  writer,
+		Log:     s.log,
+	})
 	if err != nil {
 		return err
 	}
@@ -194,43 +185,40 @@ func (s *machineClient) Stop(ctx context.Context, options client.StopOptions) er
 }
 
 func (s *machineClient) Command(ctx context.Context, commandOptions client.CommandOptions) error {
-	return RunCommandWithBinaries(
-		ctx,
-		"command",
-		s.config.Exec.Command,
-		s.machine.Context,
-		nil,
-		s.machine,
-		s.devPodConfig.ProviderOptions(s.config.Name),
-		s.config,
-		map[string]string{
+	return RunCommandWithBinaries(CommandOptions{
+		Ctx:     ctx,
+		Name:    "command",
+		Command: s.config.Exec.Command,
+		Context: s.machine.Context,
+		Machine: s.machine,
+		Options: s.devPodConfig.ProviderOptions(s.config.Name),
+		Config:  s.config,
+		ExtraEnv: map[string]string{
 			provider.CommandEnv: commandOptions.Command,
 		},
-		commandOptions.Stdin,
-		commandOptions.Stdout,
-		commandOptions.Stderr,
-		s.log.ErrorStreamOnly(),
-	)
+		Stdin:  commandOptions.Stdin,
+		Stdout: commandOptions.Stdout,
+		Stderr: commandOptions.Stderr,
+		Log:    s.log.ErrorStreamOnly(),
+	})
 }
 
 func (s *machineClient) Status(ctx context.Context, options client.StatusOptions) (client.Status, error) {
 	stdout := &bytes.Buffer{}
 	stderr := &bytes.Buffer{}
-	err := RunCommandWithBinaries(
-		ctx,
-		"status",
-		s.config.Exec.Status,
-		s.machine.Context,
-		nil,
-		s.machine,
-		s.devPodConfig.ProviderOptions(s.config.Name),
-		s.config,
-		nil,
-		nil,
-		stdout,
-		stderr,
-		s.log,
-	)
+
+	err := RunCommandWithBinaries(CommandOptions{
+		Ctx:     ctx,
+		Name:    "status",
+		Command: s.config.Exec.Status,
+		Context: s.machine.Context,
+		Machine: s.machine,
+		Options: s.devPodConfig.ProviderOptions(s.config.Name),
+		Config:  s.config,
+		Stdout:  stdout,
+		Stderr:  stderr,
+		Log:     s.log,
+	})
 	if err != nil {
 		return client.StatusNotFound, fmt.Errorf("get status: %s%s", strings.TrimSpace(stdout.String()), strings.TrimSpace(stderr.String()))
 	}
@@ -260,7 +248,7 @@ func (s *machineClient) Delete(ctx context.Context, options client.DeleteOptions
 		defer cancel()
 	}
 
-	done := printStillRunningLogMessagePeriodically(s.log)
+	done := scheduleLogMessage("Devpod delete operation is in progress", s.log)
 	defer close(done)
 
 	writer := s.log.Writer(logrus.InfoLevel, false)
@@ -269,21 +257,18 @@ func (s *machineClient) Delete(ctx context.Context, options client.DeleteOptions
 	s.log.WithFields(logrus.Fields{
 		"machineId": s.machine.ID,
 	}).Infof("deleting machine")
-	err := RunCommandWithBinaries(
-		ctx,
-		"delete",
-		s.config.Exec.Delete,
-		s.machine.Context,
-		nil,
-		s.machine,
-		s.devPodConfig.ProviderOptions(s.config.Name),
-		s.config,
-		nil,
-		nil,
-		writer,
-		writer,
-		s.log,
-	)
+	err := RunCommandWithBinaries(CommandOptions{
+		Ctx:     ctx,
+		Name:    "delete",
+		Command: s.config.Exec.Delete,
+		Context: s.machine.Context,
+		Machine: s.machine,
+		Options: s.devPodConfig.ProviderOptions(s.config.Name),
+		Config:  s.config,
+		Stdout:  writer,
+		Stderr:  writer,
+		Log:     s.log,
+	})
 	if err != nil {
 		if !options.Force {
 			return err
@@ -307,31 +292,39 @@ func (s *machineClient) Delete(ctx context.Context, options client.DeleteOptions
 	return nil
 }
 
-func runCommand(ctx context.Context, name string, command types.StrArray, environ []string, stdin io.Reader, stdout io.Writer, stderr io.Writer, log log.Logger) (err error) {
-	if len(command) == 0 {
+type runCommandOptions struct {
+	Ctx     context.Context
+	Name    string
+	Command types.StrArray
+	Environ []string
+	Stdin   io.Reader
+	Stdout  io.Writer
+	Stderr  io.Writer
+	Log     log.Logger
+}
+
+func runCommand(opts runCommandOptions) error {
+	if len(opts.Command) == 0 {
 		return nil
 	}
 
-	// log
-	log.WithFields(logrus.Fields{
-		"name":    name,
-		"command": strings.Join(command, " "),
-	}).Debug("run provider command")
+	opts.Log.WithFields(logrus.Fields{"name": opts.Name, "command": strings.Join(opts.Command, " ")}).Debug("run provider command")
 
-	// set debug level
-	if log.GetLevel() == logrus.DebugLevel {
-		environ = append(environ, DevPodDebug+"=true")
+	if opts.Log.GetLevel() == logrus.DebugLevel {
+		opts.Environ = append(opts.Environ, DevPodDebug+"=true")
 	}
 
-	// run the command
-	return RunCommand(ctx, command, environ, stdin, stdout, stderr)
+	return RunCommand(RunCommandOptions{
+		Ctx:     opts.Ctx,
+		Command: opts.Command,
+		Environ: opts.Environ,
+		Stdin:   opts.Stdin,
+		Stdout:  opts.Stdout,
+		Stderr:  opts.Stderr,
+	})
 }
 
-func printStillRunningLogMessagePeriodically(log log.Logger) chan struct{} {
-	return printLogMessagePeriodically("Please wait. DevPod is still running, this might take a while", log)
-}
-
-func printLogMessagePeriodically(message string, log log.Logger) chan struct{} {
+func scheduleLogMessage(msg string, log log.Logger) chan struct{} {
 	done := make(chan struct{})
 	go func() {
 		for {
@@ -339,7 +332,7 @@ func printLogMessagePeriodically(message string, log log.Logger) chan struct{} {
 			case <-done:
 				return
 			case <-time.After(time.Second * 5):
-				log.Info(message)
+				log.Info(msg)
 			}
 		}
 	}()

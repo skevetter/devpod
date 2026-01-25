@@ -186,21 +186,17 @@ func setOptions(
 
 func initProvider(ctx context.Context, devPodConfig *config.Config, provider *provider2.ProviderConfig, stdout, stderr io.Writer) error {
 	// run init command
-	err := clientimplementation.RunCommandWithBinaries(
-		ctx,
-		"init",
-		provider.Exec.Init,
-		devPodConfig.DefaultContext,
-		nil,
-		nil,
-		devPodConfig.ProviderOptions(provider.Name),
-		provider,
-		nil,
-		nil,
-		stdout,
-		stderr,
-		log.Default,
-	)
+	err := clientimplementation.RunCommandWithBinaries(clientimplementation.CommandOptions{
+		Ctx:     ctx,
+		Name:    "init",
+		Command: provider.Exec.Init,
+		Context: devPodConfig.DefaultContext,
+		Options: devPodConfig.ProviderOptions(provider.Name),
+		Config:  provider,
+		Stdout:  stdout,
+		Stderr:  stderr,
+		Log:     log.Default,
+	})
 	if err != nil {
 		return fmt.Errorf("init %w", err)
 	}

@@ -60,20 +60,16 @@ func (cmd *ListClustersCmd) Run(ctx context.Context, devPodConfig *config.Config
 	cmd.Log.SetLevel(logrus.InfoLevel)
 
 	var buf bytes.Buffer
-	err := clientimplementation.RunCommandWithBinaries(
-		ctx,
-		"listClusters",
-		provider.Exec.Proxy.List.Clusters,
-		devPodConfig.DefaultContext,
-		nil,
-		nil,
-		opts,
-		provider,
-		nil,
-		nil,
-		&buf,
-		nil,
-		cmd.Log)
+	err := clientimplementation.RunCommandWithBinaries(clientimplementation.CommandOptions{
+		Ctx:     ctx,
+		Name:    "listClusters",
+		Command: provider.Exec.Proxy.List.Clusters,
+		Context: devPodConfig.DefaultContext,
+		Options: opts,
+		Config:  provider,
+		Stdout:  &buf,
+		Log:     cmd.Log,
+	})
 	if err != nil {
 		return fmt.Errorf("list clusters with provider \"%s\": %w", provider.Name, err)
 	}

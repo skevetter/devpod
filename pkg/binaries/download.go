@@ -20,9 +20,19 @@ import (
 	"github.com/skevetter/log/hash"
 )
 
-func ToEnvironmentWithBinaries(context string, workspace *provider2.Workspace, machine *provider2.Machine, options map[string]config.OptionValue, config *provider2.ProviderConfig, extraEnv map[string]string, log log.Logger) ([]string, error) {
-	environ := provider2.ToEnvironment(workspace, machine, options, extraEnv)
-	binariesMap, err := GetBinaries(context, config)
+type EnvironmentOptions struct {
+	Context   string
+	Workspace *provider2.Workspace
+	Machine   *provider2.Machine
+	Options   map[string]config.OptionValue
+	Config    *provider2.ProviderConfig
+	ExtraEnv  map[string]string
+	Log       log.Logger
+}
+
+func ToEnvironmentWithBinaries(opts EnvironmentOptions) ([]string, error) {
+	environ := provider2.ToEnvironment(opts.Workspace, opts.Machine, opts.Options, opts.ExtraEnv)
+	binariesMap, err := GetBinaries(opts.Context, opts.Config)
 	if err != nil {
 		return nil, err
 	}

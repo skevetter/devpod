@@ -59,20 +59,16 @@ func (cmd *ListTemplatesCmd) Run(ctx context.Context, devPodConfig *config.Confi
 	// ignore --debug because we tunnel json through stdio
 	cmd.Log.SetLevel(logrus.InfoLevel)
 	var buf bytes.Buffer
-	err := clientimplementation.RunCommandWithBinaries(
-		ctx,
-		"listTemplates",
-		provider.Exec.Proxy.List.Templates,
-		devPodConfig.DefaultContext,
-		nil,
-		nil,
-		opts,
-		provider,
-		nil,
-		nil,
-		&buf,
-		nil,
-		cmd.Log)
+	err := clientimplementation.RunCommandWithBinaries(clientimplementation.CommandOptions{
+		Ctx:     ctx,
+		Name:    "listTemplates",
+		Command: provider.Exec.Proxy.List.Templates,
+		Context: devPodConfig.DefaultContext,
+		Options: opts,
+		Config:  provider,
+		Stdout:  &buf,
+		Log:     cmd.Log,
+	})
 	if err != nil {
 		return fmt.Errorf("list templates with provider \"%s\": %w", provider.Name, err)
 	}

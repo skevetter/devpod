@@ -53,20 +53,16 @@ func (cmd *SelfCmd) Run(ctx context.Context, devPodConfig *config.Config, provid
 	// ignore --debug because we tunnel json through stdio
 	cmd.Log.SetLevel(logrus.InfoLevel)
 
-	err := clientimplementation.RunCommandWithBinaries(
-		ctx,
-		"getSelf",
-		provider.Exec.Proxy.Get.Self,
-		devPodConfig.DefaultContext,
-		nil,
-		nil,
-		devPodConfig.ProviderOptions(provider.Name),
-		provider,
-		nil,
-		nil,
-		&buf,
-		nil,
-		cmd.Log)
+	err := clientimplementation.RunCommandWithBinaries(clientimplementation.CommandOptions{
+		Ctx:     ctx,
+		Name:    "getSelf",
+		Command: provider.Exec.Proxy.Get.Self,
+		Context: devPodConfig.DefaultContext,
+		Options: devPodConfig.ProviderOptions(provider.Name),
+		Config:  provider,
+		Stdout:  &buf,
+		Log:     cmd.Log,
+	})
 	if err != nil {
 		return fmt.Errorf("get self %w", err)
 	}
