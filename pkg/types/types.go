@@ -158,7 +158,7 @@ func (s *StrBool) UnmarshalJSON(data []byte) error {
 }
 
 func (s *StrBool) Bool() (bool, error) {
-	if s == nil {
+	if s == nil || *s == "" {
 		return false, nil
 	}
 
