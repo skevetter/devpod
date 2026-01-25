@@ -104,7 +104,7 @@ func openViaBrowser(params OpenParams) error {
 
 	err := open.Run(openURL)
 	if err != nil {
-		params.Log.Errorf("flavor %s is not installed on host device: %w", params.Flavor.DisplayName(), err)
+		params.Log.Errorf("flavor %s is not installed on host device: %v", params.Flavor.DisplayName(), err)
 		return err
 	}
 
@@ -169,7 +169,7 @@ func listInstalledExtensions(cliPath, sshExtension string) (hasSSH, hasContainer
 func ensureSSHExtension(ctx context.Context, cliPath, sshExtension string, log log.Logger) error {
 	args := []string{"--install-extension", sshExtension}
 	log.Debugf("%s %s", cliPath, strings.Join(args, " "))
-	out, err := exec.CommandContext(ctx, cliPath, args...).Output()
+	out, err := exec.CommandContext(ctx, cliPath, args...).CombinedOutput()
 	if err != nil {
 		return command.WrapCommandError(out, err)
 	}
