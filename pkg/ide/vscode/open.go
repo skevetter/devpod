@@ -78,13 +78,17 @@ var openConfigs = map[Flavor]openConfig{
 func Open(ctx context.Context, params OpenParams) error {
 	cliErr := openViaCLI(ctx, params)
 	if cliErr == nil {
-		params.Log.Infof("Opened %s via CLI", params.Flavor.DisplayName())
+		params.Log.Infof("opened %s via CLI", params.Flavor.DisplayName())
 		return nil
+	}
+
+	if ctx.Err() != nil {
+		return ctx.Err()
 	}
 
 	browserErr := openViaBrowser(params)
 	if browserErr == nil {
-		params.Log.Infof("Opened %s via browser", params.Flavor.DisplayName())
+		params.Log.Infof("opened %s via browser", params.Flavor.DisplayName())
 		return nil
 	}
 
