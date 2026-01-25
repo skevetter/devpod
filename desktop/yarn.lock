@@ -1865,13 +1865,13 @@
     superjson "^1.10.0"
     use-sync-external-store "^1.2.0"
 
-"@tanstack/react-query@4.42.1":
-  version "4.42.1"
-  resolved "https://registry.yarnpkg.com/@tanstack/react-query/-/react-query-4.42.1.tgz#7dec7196a19a045a70b97880cd85b2f49ebdc167"
-  integrity sha512-DRclkqyXeJ0VMTv6KgJ8cf35hIKzvjmH36emzCfVcfjZhPD9yvPvLCb13n22TLGgbVnanhL/efDufRhGDfzqDg==
+"@tanstack/react-query@4.42.2":
+  version "4.42.2"
+  resolved "https://registry.yarnpkg.com/@tanstack/react-query/-/react-query-4.42.2.tgz#7d0beaf8bad710a9309730b51fb49985f08d0026"
+  integrity sha512-KFqT8wb/d0bHbzvJEuD/vEU8lUSC5cZDurOMtAR3G+mUABqVWvVswQ/norjFXedjQe+nfQQ9CWrOabWcRP3TKA==
   dependencies:
     "@tanstack/query-core" "4.41.1"
-    use-sync-external-store "^1.2.0"
+    use-sync-external-store "^1.6.0"
 
 "@tanstack/react-table@8.21.3":
   version "8.21.3"
@@ -5669,7 +5669,7 @@ use-sidecar@^1.1.3:
     detect-node-es "^1.1.0"
     tslib "^2.0.0"
 
-use-sync-external-store@^1.2.0:
+use-sync-external-store@^1.2.0, use-sync-external-store@^1.6.0:
   version "1.6.0"
   resolved "https://registry.yarnpkg.com/use-sync-external-store/-/use-sync-external-store-1.6.0.tgz#b174bfa65cb2b526732d9f2ac0a408027876f32d"
   integrity sha512-Pp6GSwGP/NrPIrxVFAIkOQeyw8lFenOHijQWkUTrDvrF4ALqylP2C/KCkeS9dpUM3KvYRQhna5vt7IL95+ZQ9w==

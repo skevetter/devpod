@@ -27,7 +27,7 @@
     "@headlessui/react": "1.7.19",
     "@kubernetes/client-node": "1.4.0",
     "@loft-enterprise/client": "https://github.com/loft-sh/loft-javascript-client#v4.3.0-devpod.alpha.11",
-    "@tanstack/react-query": "4.42.1",
+    "@tanstack/react-query": "4.42.2",
     "@tanstack/react-query-devtools": "4.42.0",
     "@tanstack/react-table": "8.21.3",
     "@tauri-apps/api": "2.9.1",
