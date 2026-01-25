@@ -247,70 +247,35 @@ func (cmd *UpCmd) Run(
 	// open ide
 	if cmd.OpenIDE {
 		ideConfig := client.WorkspaceConfig().IDE
+		params := vscode.OpenParams{
+			Workspace: client.Workspace(),
+			Folder:    result.SubstitutionContext.ContainerWorkspaceFolder,
+			NewWindow: vscode.Options.GetValue(ideConfig.Options, vscode.OpenNewWindow) == "true",
+			Log:       log,
+		}
+
 		switch ideConfig.Name {
 		case string(config.IDEVSCode):
-			return vscode.Open(
-				ctx,
-				client.Workspace(),
-				result.SubstitutionContext.ContainerWorkspaceFolder,
-				vscode.Options.GetValue(ideConfig.Options, vscode.OpenNewWindow) == "true",
-				vscode.FlavorStable,
-				log,
-			)
+			params.Flavor = vscode.FlavorStable
+			return vscode.Open(ctx, params)
 		case string(config.IDEVSCodeInsiders):
-			return vscode.Open(
-				ctx,
-				client.Workspace(),
-				result.SubstitutionContext.ContainerWorkspaceFolder,
-				vscode.Options.GetValue(ideConfig.Options, vscode.OpenNewWindow) == "true",
-				vscode.FlavorInsiders,
-				log,
-			)
+			params.Flavor = vscode.FlavorInsiders
+			return vscode.Open(ctx, params)
 		case string(config.IDECursor):
-			return vscode.Open(
-				ctx,
-				client.Workspace(),
-				result.SubstitutionContext.ContainerWorkspaceFolder,
-				vscode.Options.GetValue(ideConfig.Options, vscode.OpenNewWindow) == "true",
-				vscode.FlavorCursor,
-				log,
-			)
+			params.Flavor = vscode.FlavorCursor
+			return vscode.Open(ctx, params)
 		case string(config.IDECodium):
-			return vscode.Open(
-				ctx,
-				client.Workspace(),
-				result.SubstitutionContext.ContainerWorkspaceFolder,
-				vscode.Options.GetValue(ideConfig.Options, vscode.OpenNewWindow) == "true",
-				vscode.FlavorCodium,
-				log,
-			)
+			params.Flavor = vscode.FlavorCodium
+			return vscode.Open(ctx, params)
 		case string(config.IDEPositron):
-			return vscode.Open(
-				ctx,
-				client.Workspace(),
-				result.SubstitutionContext.ContainerWorkspaceFolder,
-				vscode.Options.GetValue(ideConfig.Options, vscode.OpenNewWindow) == "true",
-				vscode.FlavorPositron,
-				log,
-			)
+			params.Flavor = vscode.FlavorPositron
+			return vscode.Open(ctx, params)
 		case string(config.IDEWindsurf):
-			return vscode.Open(
-				ctx,
-				client.Workspace(),
-				result.SubstitutionContext.ContainerWorkspaceFolder,
-				vscode.Options.GetValue(ideConfig.Options, vscode.OpenNewWindow) == "true",
-				vscode.FlavorWindsurf,
-				log,
-			)
+			params.Flavor = vscode.FlavorWindsurf
+			return vscode.Open(ctx, params)
 		case string(config.IDEAntigravity):
-			return vscode.Open(
-				ctx,
-				client.Workspace(),
-				result.SubstitutionContext.ContainerWorkspaceFolder,
-				vscode.Options.GetValue(ideConfig.Options, vscode.OpenNewWindow) == "true",
-				vscode.FlavorAntigravity,
-				log,
-			)
+			params.Flavor = vscode.FlavorAntigravity
+			return vscode.Open(ctx, params)
 		case string(config.IDEOpenVSCode):
 			return startVSCodeInBrowser(
 				cmd.GPGAgentForwarding,
