@@ -522,10 +522,8 @@ func (s *workspaceClient) Command(ctx context.Context, commandOptions client.Com
 	}
 	s.m.Unlock()
 
-	// resolve options
-	return runCommand(runCommandOptions{
+	return RunCommand(RunCommandOptions{
 		Ctx:     ctx,
-		Name:    "command",
 		Command: s.config.Exec.Command,
 		Environ: environ,
 		Stdin:   commandOptions.Stdin,
@@ -661,9 +659,8 @@ func RunCommandWithBinaries(opts CommandOptions) error {
 		return err
 	}
 
-	return runCommand(runCommandOptions{
+	return RunCommand(RunCommandOptions{
 		Ctx:     opts.Ctx,
-		Name:    opts.Name,
 		Command: opts.Command,
 		Environ: environ,
 		Stdin:   opts.Stdin,
@@ -680,11 +677,17 @@ type RunCommandOptions struct {
 	Stdin   io.Reader
 	Stdout  io.Writer
 	Stderr  io.Writer
+	Log     log.Logger // Optional: for debug mode env var
 }
 
 func RunCommand(opts RunCommandOptions) error {
 	if len(opts.Command) == 0 {
 		return nil
+	}
+
+	// Add debug env var if logger provided and in debug mode
+	if opts.Log != nil && opts.Log.GetLevel() == logrus.DebugLevel {
+		opts.Environ = append(opts.Environ, DevPodDebug+"=true")
 	}
 
 	// use shell if command length is equal 1

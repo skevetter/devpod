@@ -19,20 +19,21 @@ import (
 
 func NewMachineClient(devPodConfig *config.Config, provider *provider.ProviderConfig, machine *provider.Machine, log log.Logger) (client.MachineClient, error) {
 	if !provider.IsMachineProvider() {
-		log.WithFields(logrus.Fields{
-			"provider": provider.Name,
-		}).Error("provider is not a machine provider")
+		log.Error("provider is not a machine provider")
 		return nil, fmt.Errorf("Provider is not a machine provider. Use another provider")
 	} else if machine == nil {
 		return nil, fmt.Errorf("Machine does not exist. Perhaps it was deleted without the workspace being deleted")
 	}
 
-	return &machineClient{
+	mc := &machineClient{
 		devPodConfig: devPodConfig,
 		config:       provider,
 		machine:      machine,
 		log:          log,
-	}, nil
+	}
+	mc.executor = &machineExecutor{client: mc}
+
+	return mc, nil
 }
 
 type machineClient struct {
@@ -40,6 +41,84 @@ type machineClient struct {
 	config       *provider.ProviderConfig
 	machine      *provider.Machine
 	log          log.Logger
+	executor     *machineExecutor
+}
+
+// machineExecutor handles command execution with common patterns
+type machineExecutor struct {
+	client *machineClient
+}
+
+// execConfig defines how to execute a machine command
+type execConfig struct {
+	name         string
+	command      types.StrArray
+	stdout       io.Writer
+	stderr       io.Writer
+	extraEnv     map[string]string
+	stdin        io.Reader
+	log          log.Logger
+	withProgress bool
+	startMsg     string
+	doneMsg      string
+}
+
+func (e *machineExecutor) execute(ctx context.Context, cfg execConfig) error {
+	var done chan struct{}
+	if cfg.withProgress {
+		done = scheduleLogMessage("Devpod "+cfg.name+" operation is in progress", e.client.log)
+		defer close(done)
+	}
+
+	if cfg.startMsg != "" {
+		e.client.log.Infof(cfg.startMsg)
+	}
+
+	opts := CommandOptions{
+		Ctx:      ctx,
+		Name:     cfg.name,
+		Command:  cfg.command,
+		Context:  e.client.machine.Context,
+		Machine:  e.client.machine,
+		Options:  e.client.devPodConfig.ProviderOptions(e.client.config.Name),
+		Config:   e.client.config,
+		Stdout:   cfg.stdout,
+		Stderr:   cfg.stderr,
+		ExtraEnv: cfg.extraEnv,
+		Stdin:    cfg.stdin,
+		Log:      cfg.log,
+	}
+
+	if opts.Log == nil {
+		opts.Log = e.client.log
+	}
+
+	err := RunCommandWithBinaries(opts)
+	if err != nil {
+		return err
+	}
+
+	if cfg.doneMsg != "" {
+		e.client.log.Done(cfg.doneMsg)
+	}
+
+	return nil
+}
+
+// lifecycleCommand executes a standard lifecycle operation (create/start/stop)
+func (e *machineExecutor) lifecycleCommand(ctx context.Context, name string, command types.StrArray, verb, pastVerb string) error {
+	writer := e.client.log.Writer(logrus.InfoLevel, false)
+	defer func() { _ = writer.Close() }()
+
+	return e.execute(ctx, execConfig{
+		name:         name,
+		command:      command,
+		stdout:       writer,
+		stderr:       writer,
+		withProgress: true,
+		startMsg:     verb + " machine",
+		doneMsg:      pastVerb + " machine",
+	})
 }
 
 func (s *machineClient) Provider() string {
@@ -86,120 +165,28 @@ func (s *machineClient) Context() string {
 }
 
 func (s *machineClient) Create(ctx context.Context, options client.CreateOptions) error {
-	done := scheduleLogMessage("Devpod create operation is in progress", s.log)
-	defer close(done)
-
-	writer := s.log.Writer(logrus.InfoLevel, false)
-	defer func() { _ = writer.Close() }()
-
-	// create a machine
-	s.log.WithFields(logrus.Fields{
-		"machineId": s.machine.ID,
-		"provider":  s.config.Name,
-	}).Infof("creating machine")
-	err := RunCommandWithBinaries(CommandOptions{
-		Ctx:     ctx,
-		Name:    "create",
-		Command: s.config.Exec.Create,
-		Context: s.machine.Context,
-		Machine: s.machine,
-		Options: s.devPodConfig.ProviderOptions(s.config.Name),
-		Config:  s.config,
-		Stdout:  writer,
-		Stderr:  writer,
-		Log:     s.log,
-	})
-	if err != nil {
-		return err
-	}
-
-	s.log.WithFields(logrus.Fields{
-		"machineId": s.machine.ID,
-		"provider":  s.config.Name,
-	}).Done("created machine")
-	return nil
+	return s.executor.lifecycleCommand(ctx, "create", s.config.Exec.Create, "creating", "created")
 }
 
 func (s *machineClient) Start(ctx context.Context, options client.StartOptions) error {
-	done := scheduleLogMessage("Devpod start operation is in progress", s.log)
-	defer close(done)
-
-	writer := s.log.Writer(logrus.InfoLevel, false)
-	defer func() { _ = writer.Close() }()
-
-	s.log.WithFields(logrus.Fields{
-		"machineId": s.machine.ID,
-	}).Infof("starting machine")
-	err := RunCommandWithBinaries(CommandOptions{
-		Ctx:     ctx,
-		Name:    "start",
-		Command: s.config.Exec.Start,
-		Context: s.machine.Context,
-		Machine: s.machine,
-		Options: s.devPodConfig.ProviderOptions(s.config.Name),
-		Config:  s.config,
-		Stdout:  writer,
-		Stderr:  writer,
-		Log:     s.log,
-	})
-	if err != nil {
-		return err
-	}
-	s.log.WithFields(logrus.Fields{
-		"machineId": s.machine.ID,
-	}).Done("started machine")
-
-	return nil
+	return s.executor.lifecycleCommand(ctx, "start", s.config.Exec.Start, "starting", "started")
 }
 
 func (s *machineClient) Stop(ctx context.Context, options client.StopOptions) error {
-	done := scheduleLogMessage("Devpod stop operation is in progress", s.log)
-	defer close(done)
-
-	writer := s.log.Writer(logrus.InfoLevel, false)
-	defer func() { _ = writer.Close() }()
-
-	s.log.WithFields(logrus.Fields{
-		"machineId": s.machine.ID,
-	}).Infof("stopping machine")
-	err := RunCommandWithBinaries(CommandOptions{
-		Ctx:     ctx,
-		Name:    "stop",
-		Command: s.config.Exec.Stop,
-		Context: s.machine.Context,
-		Machine: s.machine,
-		Options: s.devPodConfig.ProviderOptions(s.config.Name),
-		Config:  s.config,
-		Stdout:  writer,
-		Stderr:  writer,
-		Log:     s.log,
-	})
-	if err != nil {
-		return err
-	}
-	s.log.WithFields(logrus.Fields{
-		"machineId": s.machine.ID,
-	}).Donef("stopped machine")
-
-	return nil
+	return s.executor.lifecycleCommand(ctx, "stop", s.config.Exec.Stop, "stopping", "stopped")
 }
 
 func (s *machineClient) Command(ctx context.Context, commandOptions client.CommandOptions) error {
-	return RunCommandWithBinaries(CommandOptions{
-		Ctx:     ctx,
-		Name:    "command",
-		Command: s.config.Exec.Command,
-		Context: s.machine.Context,
-		Machine: s.machine,
-		Options: s.devPodConfig.ProviderOptions(s.config.Name),
-		Config:  s.config,
-		ExtraEnv: map[string]string{
+	return s.executor.execute(ctx, execConfig{
+		name:    "command",
+		command: s.config.Exec.Command,
+		stdout:  commandOptions.Stdout,
+		stderr:  commandOptions.Stderr,
+		stdin:   commandOptions.Stdin,
+		extraEnv: map[string]string{
 			provider.CommandEnv: commandOptions.Command,
 		},
-		Stdin:  commandOptions.Stdin,
-		Stdout: commandOptions.Stdout,
-		Stderr: commandOptions.Stderr,
-		Log:    s.log.ErrorStreamOnly(),
+		log: s.log.ErrorStreamOnly(),
 	})
 }
 
@@ -207,23 +194,16 @@ func (s *machineClient) Status(ctx context.Context, options client.StatusOptions
 	stdout := &bytes.Buffer{}
 	stderr := &bytes.Buffer{}
 
-	err := RunCommandWithBinaries(CommandOptions{
-		Ctx:     ctx,
-		Name:    "status",
-		Command: s.config.Exec.Status,
-		Context: s.machine.Context,
-		Machine: s.machine,
-		Options: s.devPodConfig.ProviderOptions(s.config.Name),
-		Config:  s.config,
-		Stdout:  stdout,
-		Stderr:  stderr,
-		Log:     s.log,
+	err := s.executor.execute(ctx, execConfig{
+		name:    "status",
+		command: s.config.Exec.Status,
+		stdout:  stdout,
+		stderr:  io.MultiWriter(stderr, s.log.Writer(logrus.InfoLevel, true)),
 	})
 	if err != nil {
 		return client.StatusNotFound, fmt.Errorf("get status: %s%s", strings.TrimSpace(stdout.String()), strings.TrimSpace(stderr.String()))
 	}
 
-	// parse status
 	parsedStatus, err := client.ParseStatus(stdout.String())
 	if err != nil {
 		return client.StatusNotFound, err
@@ -233,95 +213,35 @@ func (s *machineClient) Status(ctx context.Context, options client.StatusOptions
 }
 
 func (s *machineClient) Delete(ctx context.Context, options client.DeleteOptions) error {
-	var gracePeriod *time.Duration
 	if options.GracePeriod != "" {
-		duration, err := time.ParseDuration(options.GracePeriod)
-		if err == nil {
-			gracePeriod = &duration
+		if duration, err := time.ParseDuration(options.GracePeriod); err == nil {
+			var cancel context.CancelFunc
+			ctx, cancel = context.WithTimeout(ctx, duration)
+			defer cancel()
 		}
 	}
-
-	// kill the command after the grace period
-	if gracePeriod != nil {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, *gracePeriod)
-		defer cancel()
-	}
-
-	done := scheduleLogMessage("Devpod delete operation is in progress", s.log)
-	defer close(done)
 
 	writer := s.log.Writer(logrus.InfoLevel, false)
 	defer func() { _ = writer.Close() }()
 
-	s.log.WithFields(logrus.Fields{
-		"machineId": s.machine.ID,
-	}).Infof("deleting machine")
-	err := RunCommandWithBinaries(CommandOptions{
-		Ctx:     ctx,
-		Name:    "delete",
-		Command: s.config.Exec.Delete,
-		Context: s.machine.Context,
-		Machine: s.machine,
-		Options: s.devPodConfig.ProviderOptions(s.config.Name),
-		Config:  s.config,
-		Stdout:  writer,
-		Stderr:  writer,
-		Log:     s.log,
+	err := s.executor.execute(ctx, execConfig{
+		name:         "delete",
+		command:      s.config.Exec.Delete,
+		stdout:       writer,
+		stderr:       writer,
+		withProgress: true,
+		startMsg:     "deleting machine",
+		doneMsg:      "deleted machine",
 	})
-	if err != nil {
-		if !options.Force {
-			return err
-		}
 
-		s.log.WithFields(logrus.Fields{
-			"machineId": s.machine.ID,
-			"err":       err,
-		}).Errorf("failed to delete machine")
-	}
-	s.log.WithFields(logrus.Fields{
-		"machineId": s.machine.ID,
-	}).Done("deleted machine")
-
-	// delete machine folder
-	err = DeleteMachineFolder(s.machine.Context, s.machine.ID)
-	if err != nil {
+	if err != nil && !options.Force {
 		return err
 	}
-
-	return nil
-}
-
-type runCommandOptions struct {
-	Ctx     context.Context
-	Name    string
-	Command types.StrArray
-	Environ []string
-	Stdin   io.Reader
-	Stdout  io.Writer
-	Stderr  io.Writer
-	Log     log.Logger
-}
-
-func runCommand(opts runCommandOptions) error {
-	if len(opts.Command) == 0 {
-		return nil
+	if err != nil {
+		s.log.WithFields(logrus.Fields{"machineId": s.machine.ID, "err": err}).Errorf("failed to delete machine")
 	}
 
-	opts.Log.WithFields(logrus.Fields{"name": opts.Name, "command": strings.Join(opts.Command, " ")}).Debug("run provider command")
-
-	if opts.Log.GetLevel() == logrus.DebugLevel {
-		opts.Environ = append(opts.Environ, DevPodDebug+"=true")
-	}
-
-	return RunCommand(RunCommandOptions{
-		Ctx:     opts.Ctx,
-		Command: opts.Command,
-		Environ: opts.Environ,
-		Stdin:   opts.Stdin,
-		Stdout:  opts.Stdout,
-		Stderr:  opts.Stderr,
-	})
+	return DeleteMachineFolder(s.machine.Context, s.machine.ID)
 }
 
 func scheduleLogMessage(msg string, log log.Logger) chan struct{} {
