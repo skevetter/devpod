@@ -80,12 +80,25 @@ func GetDevPodCustomizations(parsedConfig *DevContainerConfig) *DevPodCustomizat
 }
 
 func GetVSCodeConfiguration(mergedConfig *MergedDevContainerConfig) *VSCodeCustomizations {
+	// NOTE: These defaults will be overridden by the user settings in devcontainer.json
+	// or by the user's settings.
+	defaults := map[string]any{
+		// NOTE: The default remote.SSH.connectTimeout is 15 seconds.
+		// This value has been increased to 30 seconds to help with latency issues
+		// causing SSH connections to timeout intermittently with the AWS provider.
+		//
+		// Example error via the "Remote-SSH" VSCode output panel:
+		// Running ssh connection command: ssh -v -T -D 61240 -o ConnectTimeout=15 <workspace-identifier.devpod>
+		// Resolver error: Error: The connection timed out
+		"remote.SSH.connectTimeout": 30,
+	}
+
 	if mergedConfig.Customizations == nil || mergedConfig.Customizations["vscode"] == nil {
-		return &VSCodeCustomizations{}
+		return &VSCodeCustomizations{Settings: defaults}
 	}
 
 	retVSCodeCustomizations := &VSCodeCustomizations{
-		Settings:   map[string]any{},
+		Settings:   maps.Clone(defaults),
 		Extensions: nil,
 	}
 	for _, customization := range mergedConfig.Customizations["vscode"] {
