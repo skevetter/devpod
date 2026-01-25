@@ -21,7 +21,9 @@ import (
 	"github.com/skevetter/devpod/pkg/options"
 	platformclient "github.com/skevetter/devpod/pkg/platform/client"
 	"github.com/skevetter/devpod/pkg/provider"
+	"github.com/skevetter/devpod/pkg/types"
 	"github.com/skevetter/log"
+	"github.com/skevetter/log/terminal"
 )
 
 var (
@@ -35,13 +37,20 @@ var (
 	DevPodFlagsStatus = "DEVPOD_FLAGS_STATUS"
 )
 
+const (
+	lockTimeout = 5 * time.Minute
+	lockRetry   = time.Second
+)
+
 func NewProxyClient(devPodConfig *config.Config, prov *provider.ProviderConfig, workspace *provider.Workspace, log log.Logger) (client.ProxyClient, error) {
-	return &proxyClient{
+	pc := &proxyClient{
 		devPodConfig: devPodConfig,
 		config:       prov,
 		workspace:    workspace,
 		log:          log,
-	}, nil
+	}
+	pc.executor = &proxyExecutor{client: pc}
+	return pc, nil
 }
 
 type proxyClient struct {
@@ -54,6 +63,49 @@ type proxyClient struct {
 	config       *provider.ProviderConfig
 	workspace    *provider.Workspace
 	log          log.Logger
+	executor     *proxyExecutor
+}
+
+// proxyExecutor handles proxy command execution with common patterns
+type proxyExecutor struct {
+	client *proxyClient
+}
+
+// execParams defines parameters for proxy command execution
+type execParams struct {
+	name     string
+	command  types.StrArray
+	extraEnv map[string]string
+	stdin    io.Reader
+	stdout   io.Writer
+	stderr   io.Writer
+}
+
+// execute runs a proxy command with common settings
+func (e *proxyExecutor) execute(ctx context.Context, params execParams) error {
+	return RunCommandWithBinaries(CommandOptions{
+		Ctx:       ctx,
+		Name:      params.name,
+		Command:   params.command,
+		Context:   e.client.workspace.Context,
+		Workspace: e.client.workspace,
+		Options:   e.client.devPodConfig.ProviderOptions(e.client.config.Name),
+		Config:    e.client.config,
+		ExtraEnv:  params.extraEnv,
+		Stdin:     params.stdin,
+		Stdout:    params.stdout,
+		Stderr:    params.stderr,
+		Log:       e.client.log.ErrorStreamOnly(),
+	})
+}
+
+// executeWithJSONLog runs a command with JSON log streaming
+func (e *proxyExecutor) executeWithJSONLog(ctx context.Context, params execParams) error {
+	writer, _ := devpodlog.PipeJSONStream(e.client.log.ErrorStreamOnly())
+	defer func() { _ = writer.Close() }()
+
+	params.stderr = writer
+	return e.execute(ctx, params)
 }
 
 func (s *proxyClient) Lock(ctx context.Context) error {
@@ -85,7 +137,7 @@ func tryLock(ctx context.Context, lock *flock.Flock, name string, log log.Logger
 	defer close(done)
 
 	now := time.Now()
-	for time.Since(now) < time.Minute*5 {
+	for time.Since(now) < lockTimeout {
 		locked, err := lock.TryLock()
 		if err != nil {
 			return err
@@ -94,7 +146,7 @@ func tryLock(ctx context.Context, lock *flock.Flock, name string, log log.Logger
 		}
 
 		select {
-		case <-time.After(time.Second):
+		case <-time.After(lockRetry):
 			continue
 		case <-ctx.Done():
 			return ctx.Err()
@@ -169,105 +221,84 @@ func (s *proxyClient) RefreshOptions(ctx context.Context, userOptionsRaw []strin
 }
 
 func (s *proxyClient) Create(ctx context.Context, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
-	err := RunCommandWithBinaries(CommandOptions{
-		Ctx:       ctx,
-		Name:      "createWorkspace",
-		Command:   s.config.Exec.Proxy.Create.Workspace,
-		Context:   s.workspace.Context,
-		Workspace: s.workspace,
-		Machine:   nil,
-		Options:   s.devPodConfig.ProviderOptions(s.config.Name),
-		Config:    s.config,
-		ExtraEnv:  nil,
-		Stdin:     stdin,
-		Stdout:    stdout,
-		Stderr:    stderr,
-		Log:       s.log,
+	err := s.executor.execute(ctx, execParams{
+		name:    "createWorkspace",
+		command: s.config.Exec.Proxy.Create.Workspace,
+		stdin:   stdin,
+		stdout:  stdout,
+		stderr:  stderr,
 	})
 	if err != nil {
 		return fmt.Errorf("create remote workspace  %w", err)
 	}
-
 	return nil
 }
 
-func (s *proxyClient) Up(ctx context.Context, opt client.UpOptions) error {
-	writer, _ := devpodlog.PipeJSONStream(s.log.ErrorStreamOnly())
-	defer func() { _ = writer.Close() }()
+func (s *proxyClient) Ssh(ctx context.Context, opt client.SshOptions) error {
+	return s.executor.executeWithJSONLog(ctx, execParams{
+		name:     "ssh",
+		command:  s.config.Exec.Proxy.Ssh,
+		extraEnv: EncodeOptions(opt, DevPodFlagsSsh),
+		stdin:    opt.Stdin,
+		stdout:   opt.Stdout,
+	})
+}
 
+func (s *proxyClient) Stop(ctx context.Context, opt client.StopOptions) error {
+	s.m.Lock()
+	defer s.m.Unlock()
+
+	return s.executor.executeWithJSONLog(ctx, execParams{
+		name:    "stop",
+		command: s.config.Exec.Proxy.Stop,
+		stdout:  io.Discard,
+	})
+}
+
+func (s *proxyClient) Up(ctx context.Context, opt client.UpOptions) error {
 	opts := EncodeOptions(opt.CLIOptions, DevPodFlagsUp)
 	if opt.Debug {
 		opts["DEBUG"] = "true"
 	}
 
-	// check if the provider is outdated
 	providerOptions := s.devPodConfig.ProviderOptions(s.config.Name)
-	if providerOptions["LOFT_CONFIG"].Value != "" {
-		baseClient, err := platformclient.InitClientFromPath(ctx, providerOptions["LOFT_CONFIG"].Value)
-		if err != nil {
-			return fmt.Errorf("error initializing platform client %w", err)
-		}
-
-		version, err := baseClient.Version()
-		if err != nil {
-			return fmt.Errorf("error retrieving platform version %w", err)
-		}
-
-		// check if the version is lower than v4.3.0-devpod.alpha.19
-		parsedVersion, err := semver.Parse(strings.TrimPrefix(version.DevPodVersion, "v"))
-		if err != nil {
-			return fmt.Errorf("error parsing platform version %w", err)
-		}
-
-		// if devpod version is greater than 0.7.0 we error here
-		if parsedVersion.GE(semver.MustParse("0.6.99")) {
-			return fmt.Errorf("you are using an outdated provider version for this platform. Please disconnect and reconnect the platform to update the provider")
-		}
+	if err := s.checkPlatformVersion(ctx, providerOptions); err != nil {
+		return err
 	}
 
-	err := RunCommandWithBinaries(CommandOptions{
-		Ctx:       ctx,
-		Name:      "up",
-		Command:   s.config.Exec.Proxy.Up,
-		Context:   s.workspace.Context,
-		Workspace: s.workspace,
-		Machine:   nil,
-		Options:   providerOptions,
-		Config:    s.config,
-		ExtraEnv:  opts,
-		Stdin:     opt.Stdin,
-		Stdout:    opt.Stdout,
-		Stderr:    writer,
-		Log:       s.log.ErrorStreamOnly(),
+	return s.executor.executeWithJSONLog(ctx, execParams{
+		name:     "up",
+		command:  s.config.Exec.Proxy.Up,
+		extraEnv: opts,
+		stdin:    opt.Stdin,
+		stdout:   opt.Stdout,
 	})
-	if err != nil {
-		return fmt.Errorf("error running devpod up %w", err)
-	}
-
-	return nil
 }
 
-func (s *proxyClient) Ssh(ctx context.Context, opt client.SshOptions) error {
-	writer, _ := devpodlog.PipeJSONStream(s.log.ErrorStreamOnly())
-	defer func() { _ = writer.Close() }()
+// checkPlatformVersion validates the platform provider version compatibility
+func (s *proxyClient) checkPlatformVersion(ctx context.Context, providerOptions map[string]config.OptionValue) error {
+	loftConfig := providerOptions["LOFT_CONFIG"].Value
+	if loftConfig == "" {
+		return nil
+	}
 
-	err := RunCommandWithBinaries(CommandOptions{
-		Ctx:       ctx,
-		Name:      "ssh",
-		Command:   s.config.Exec.Proxy.Ssh,
-		Context:   s.workspace.Context,
-		Workspace: s.workspace,
-		Machine:   nil,
-		Options:   s.devPodConfig.ProviderOptions(s.config.Name),
-		Config:    s.config,
-		ExtraEnv:  EncodeOptions(opt, DevPodFlagsSsh),
-		Stdin:     opt.Stdin,
-		Stdout:    opt.Stdout,
-		Stderr:    writer,
-		Log:       s.log.ErrorStreamOnly(),
-	})
+	baseClient, err := platformclient.InitClientFromPath(ctx, loftConfig)
 	if err != nil {
-		return err
+		return fmt.Errorf("error initializing platform client %w", err)
+	}
+
+	version, err := baseClient.Version()
+	if err != nil {
+		return fmt.Errorf("error retrieving platform version %w", err)
+	}
+
+	parsedVersion, err := semver.Parse(strings.TrimPrefix(version.DevPodVersion, "v"))
+	if err != nil {
+		return fmt.Errorf("error parsing platform version %w", err)
+	}
+
+	if parsedVersion.GE(semver.MustParse("0.6.99")) {
+		return fmt.Errorf("you are using an outdated provider version for this platform. Please disconnect and reconnect the platform to update the provider")
 	}
 
 	return nil
@@ -277,44 +308,24 @@ func (s *proxyClient) Delete(ctx context.Context, opt client.DeleteOptions) erro
 	s.m.Lock()
 	defer s.m.Unlock()
 
-	writer, _ := devpodlog.PipeJSONStream(s.log.ErrorStreamOnly())
-	defer func() { _ = writer.Close() }()
-
-	var gracePeriod *time.Duration
 	if opt.GracePeriod != "" {
-		duration, err := time.ParseDuration(opt.GracePeriod)
-		if err == nil {
-			gracePeriod = &duration
+		if duration, err := time.ParseDuration(opt.GracePeriod); err == nil {
+			var cancel context.CancelFunc
+			ctx, cancel = context.WithTimeout(ctx, duration)
+			defer cancel()
 		}
 	}
 
-	// kill the command after the grace period
-	if gracePeriod != nil {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, *gracePeriod)
-		defer cancel()
-	}
-
-	err := RunCommandWithBinaries(CommandOptions{
-		Ctx:       ctx,
-		Name:      "delete",
-		Command:   s.config.Exec.Proxy.Delete,
-		Context:   s.workspace.Context,
-		Workspace: s.workspace,
-		Machine:   nil,
-		Options:   s.devPodConfig.ProviderOptions(s.config.Name),
-		Config:    s.config,
-		ExtraEnv:  EncodeOptions(opt, DevPodFlagsDelete),
-		Stdin:     nil,
-		Stdout:    writer,
-		Stderr:    writer,
-		Log:       s.log,
+	err := s.executor.executeWithJSONLog(ctx, execParams{
+		name:     "delete",
+		command:  s.config.Exec.Proxy.Delete,
+		extraEnv: EncodeOptions(opt, DevPodFlagsDelete),
+		stdout:   io.Discard,
 	})
+	if err != nil && !opt.Force {
+		return fmt.Errorf("error deleting workspace %w", err)
+	}
 	if err != nil {
-		if !opt.Force {
-			return fmt.Errorf("error deleting workspace %w", err)
-		}
-
 		s.log.Errorf("Error deleting workspace: %v", err)
 	}
 
@@ -324,35 +335,6 @@ func (s *proxyClient) Delete(ctx context.Context, opt client.DeleteOptions) erro
 		SSHConfigPath:        s.workspace.SSHConfigPath,
 		SSHConfigIncludePath: s.workspace.SSHConfigIncludePath,
 	}, s.log)
-}
-
-func (s *proxyClient) Stop(ctx context.Context, opt client.StopOptions) error {
-	s.m.Lock()
-	defer s.m.Unlock()
-
-	writer, _ := devpodlog.PipeJSONStream(s.log.ErrorStreamOnly())
-	defer func() { _ = writer.Close() }()
-
-	err := RunCommandWithBinaries(CommandOptions{
-		Ctx:       ctx,
-		Name:      "stop",
-		Command:   s.config.Exec.Proxy.Stop,
-		Context:   s.workspace.Context,
-		Workspace: s.workspace,
-		Machine:   nil,
-		Options:   s.devPodConfig.ProviderOptions(s.config.Name),
-		Config:    s.config,
-		ExtraEnv:  nil,
-		Stdin:     nil,
-		Stdout:    writer,
-		Stderr:    writer,
-		Log:       s.log,
-	})
-	if err != nil {
-		return fmt.Errorf("error stopping container %w", err)
-	}
-
-	return nil
 }
 
 func (s *proxyClient) Status(ctx context.Context, options client.StatusOptions) (client.Status, error) {
@@ -392,26 +374,17 @@ func (s *proxyClient) Status(ctx context.Context, options client.StatusOptions) 
 }
 
 func (s *proxyClient) updateInstance(ctx context.Context) error {
-	err := RunCommandWithBinaries(CommandOptions{
-		Ctx:       ctx,
-		Name:      "updateWorkspace",
-		Command:   s.config.Exec.Proxy.Update.Workspace,
-		Context:   s.workspace.Context,
-		Workspace: s.workspace,
-		Machine:   nil,
-		Options:   s.devPodConfig.ProviderOptions(s.config.Name),
-		Config:    s.config,
-		ExtraEnv:  nil,
-		Stdin:     os.Stdin,
-		Stdout:    os.Stdout,
-		Stderr:    os.Stderr,
-		Log:       s.log.ErrorStreamOnly(),
-	})
-	if err != nil {
-		return err
+	if !terminal.IsTerminalIn {
+		return fmt.Errorf("unable to update instance through CLI if stdin is not a terminal")
 	}
 
-	return nil
+	return s.executor.execute(ctx, execParams{
+		name:    "updateWorkspace",
+		command: s.config.Exec.Proxy.Update.Workspace,
+		stdin:   os.Stdin,
+		stdout:  os.Stdout,
+		stderr:  os.Stderr,
+	})
 }
 
 func EncodeOptions(options any, name string) map[string]string {
