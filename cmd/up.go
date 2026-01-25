@@ -1009,6 +1009,7 @@ func configureSSH(client client2.BaseWorkspaceClient, params configureSSHParams)
 		Workdir:              params.workdir,
 		GPGAgent:             params.gpgagent,
 		DevPodHome:           params.devPodHome,
+		Provider:             client.Provider(),
 		Log:                  log.Default,
 	})
 	if err != nil {

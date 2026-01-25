@@ -33,6 +33,7 @@ type SSHConfigParams struct {
 	Command              string
 	GPGAgent             bool
 	DevPodHome           string
+	Provider             string
 	Log                  log.Logger
 }
 
@@ -45,7 +46,18 @@ func ConfigureSSHConfig(params SSHConfigParams) error {
 		targetPath = params.SSHConfigIncludePath
 	}
 
-	newFile, err := addHost(targetPath, params.Workspace+"."+"devpod", params.User, params.Context, params.Workspace, params.Workdir, params.Command, params.GPGAgent, params.DevPodHome)
+	newFile, err := addHost(addHostParams{
+		path:       targetPath,
+		host:       params.Workspace + "." + "devpod",
+		user:       params.User,
+		context:    params.Context,
+		workspace:  params.Workspace,
+		workdir:    params.Workdir,
+		command:    params.Command,
+		gpgagent:   params.GPGAgent,
+		devPodHome: params.DevPodHome,
+		provider:   params.Provider,
+	})
 	if err != nil {
 		return fmt.Errorf("parse ssh config %w", err)
 	}
@@ -59,8 +71,21 @@ type DevPodSSHEntry struct {
 	Workspace string
 }
 
-func addHost(path, host, user, context, workspace, workdir, command string, gpgagent bool, devPodHome string) (string, error) {
-	newConfig, err := removeFromConfig(path, host)
+type addHostParams struct {
+	path       string
+	host       string
+	user       string
+	context    string
+	workspace  string
+	workdir    string
+	command    string
+	gpgagent   bool
+	devPodHome string
+	provider   string
+}
+
+func addHost(params addHostParams) (string, error) {
+	newConfig, err := removeFromConfig(params.path, params.host)
 	if err != nil {
 		return "", err
 	}
@@ -71,58 +96,138 @@ func addHost(path, host, user, context, workspace, workdir, command string, gpga
 		return "", err
 	}
 
-	return addHostSection(newConfig, execPath, host, user, context, workspace, workdir, command, gpgagent, devPodHome)
+	return addHostSection(newConfig, execPath, params)
 }
 
-func addHostSection(config, execPath, host, user, context, workspace, workdir, command string, gpgagent bool, devPodHome string) (string, error) {
-	newLines := []string{}
-	// add new section
-	startMarker := MarkerStartPrefix + host
-	endMarker := MarkerEndPrefix + host
-	newLines = append(newLines, startMarker)
-	newLines = append(newLines, "Host "+host)
-	newLines = append(newLines, "  ForwardAgent yes")
-	newLines = append(newLines, "  LogLevel error")
-	newLines = append(newLines, "  StrictHostKeyChecking no")
-	newLines = append(newLines, "  UserKnownHostsFile /dev/null")
-	newLines = append(newLines, "  HostKeyAlgorithms rsa-sha2-256,rsa-sha2-512,ssh-rsa")
+// proxyCommandBuilder builds SSH ProxyCommand strings
+type proxyCommandBuilder struct {
+	baseCommand string
+	options     []string
+}
 
-	proxyCommand := ""
-	if command != "" {
-		proxyCommand = fmt.Sprintf("  ProxyCommand \"%s\"", command)
-	} else {
-		proxyCommand = fmt.Sprintf("  ProxyCommand \"%s\" ssh --stdio --context %s --user %s %s", execPath, context, user, workspace)
+func newProxyCommandBuilder(execPath, context, user, workspace string) *proxyCommandBuilder {
+	return &proxyCommandBuilder{
+		baseCommand: fmt.Sprintf("\"%s\" ssh --stdio --context %s --user %s %s", execPath, context, user, workspace),
 	}
+}
 
-	if devPodHome != "" {
-		proxyCommand = fmt.Sprintf("%s --devpod-home \"%s\"", proxyCommand, devPodHome)
+func (b *proxyCommandBuilder) withDevPodHome(home string) *proxyCommandBuilder {
+	if home != "" {
+		b.options = append(b.options, fmt.Sprintf("--devpod-home \"%s\"", home))
 	}
+	return b
+}
+
+func (b *proxyCommandBuilder) withWorkdir(workdir string) *proxyCommandBuilder {
 	if workdir != "" {
-		proxyCommand = fmt.Sprintf("%s --workdir \"%s\"", proxyCommand, workdir)
+		b.options = append(b.options, fmt.Sprintf("--workdir \"%s\"", workdir))
 	}
-	if gpgagent {
-		proxyCommand = fmt.Sprintf("%s --gpg-agent-forwarding", proxyCommand)
-	}
-	newLines = append(newLines, proxyCommand)
-	newLines = append(newLines, "  User "+user)
-	newLines = append(newLines, endMarker)
+	return b
+}
 
-	// now we append the original config
-	// keep our blocks on top of the hosts for priority reasons, but below any includes
+func (b *proxyCommandBuilder) withGPGAgent(enabled bool) *proxyCommandBuilder {
+	if enabled {
+		b.options = append(b.options, "--gpg-agent-forwarding")
+	}
+	return b
+}
+
+func (b *proxyCommandBuilder) build() string {
+	if len(b.options) == 0 {
+		return "  ProxyCommand " + b.baseCommand
+	}
+	return fmt.Sprintf("  ProxyCommand %s %s", b.baseCommand, strings.Join(b.options, " "))
+}
+
+// sshConfigBuilder builds SSH config entries
+type sshConfigBuilder struct {
+	lines []string
+}
+
+func newSSHConfigBuilder(host string) *sshConfigBuilder {
+	return &sshConfigBuilder{
+		lines: []string{
+			MarkerStartPrefix + host,
+			"Host " + host,
+		},
+	}
+}
+
+func (b *sshConfigBuilder) addSSHOptions(provider string) *sshConfigBuilder {
+	b.lines = append(b.lines,
+		"  ForwardAgent yes",
+		"  LogLevel error",
+		"  StrictHostKeyChecking no",
+		"  UserKnownHostsFile /dev/null",
+		"  HostKeyAlgorithms rsa-sha2-256,rsa-sha2-512,ssh-rsa",
+	)
+
+	// TODO: Make SSH timeout configurable per provider via provider options
+	// The ms-vscode-remote.remote-ssh extension times out after 15s by default
+	// This is insufficient for the aws AWS provider as it needs additional time to
+	// connect to the instance
+	//
+	// The SSH config ConnectTimeout overrides the VSCode Remote-SSH remote.SSH.connectTimeout setting
+	// https://github.com/microsoft/vscode-remote-release/issues/8519
+	if strings.Contains(provider, "aws") {
+		b.lines = append(b.lines, "  ConnectTimeout 60")
+	}
+
+	return b
+}
+
+func (b *sshConfigBuilder) addProxyCommand(proxyCmd string) *sshConfigBuilder {
+	b.lines = append(b.lines, proxyCmd)
+	return b
+}
+
+func (b *sshConfigBuilder) addUser(user, host string) *sshConfigBuilder {
+	b.lines = append(b.lines, "  User "+user, MarkerEndPrefix+host)
+	return b
+}
+
+func (b *sshConfigBuilder) build() []string {
+	return b.lines
+}
+
+// buildProxyCommand creates the ProxyCommand string
+func buildProxyCommand(execPath string, params addHostParams) string {
+	if params.command != "" {
+		return fmt.Sprintf("  ProxyCommand \"%s\"", params.command)
+	}
+
+	return newProxyCommandBuilder(execPath, params.context, params.user, params.workspace).
+		withDevPodHome(params.devPodHome).
+		withWorkdir(params.workdir).
+		withGPGAgent(params.gpgagent).
+		build()
+}
+
+// buildSSHConfigLines creates the SSH config entry lines
+func buildSSHConfigLines(params addHostParams, proxyCmd string) []string {
+	return newSSHConfigBuilder(params.host).
+		addSSHOptions(params.provider).
+		addProxyCommand(proxyCmd).
+		addUser(params.user, params.host).
+		build()
+}
+
+// findInsertPosition finds where to insert new SSH config entry
+func findInsertPosition(config string) (int, []string, error) {
 	lineNumber := 0
 	found := false
 	lines := []string{}
 	commentLines := 0
+
 	scanner := bufio.NewScanner(strings.NewReader(config))
 	for scanner.Scan() {
 		line := scanner.Text()
-		// Check `Host` keyword
+
 		if strings.HasPrefix(strings.TrimSpace(line), "Host") && !found {
 			found = true
 			lineNumber = max(lineNumber-commentLines, 0)
 		}
 
-		// Preserve comments
 		if strings.HasPrefix(strings.TrimSpace(line), "#") {
 			commentLines++
 		} else {
@@ -135,18 +240,36 @@ func addHostSection(config, execPath, host, user, context, workspace, workdir, c
 
 		lines = append(lines, line)
 	}
+
 	if err := scanner.Err(); err != nil {
-		return config, err
+		return 0, nil, err
 	}
 
-	lines = slices.Insert(lines, lineNumber, newLines...)
+	return lineNumber, lines, nil
+}
+
+// mergeSSHConfig inserts new lines into existing config
+func mergeSSHConfig(lines, newLines []string, position int) string {
+	merged := slices.Insert(lines, position, newLines...)
 
 	newLineSep := "\n"
 	if runtime.GOOS == "windows" {
 		newLineSep = "\r\n"
 	}
 
-	return strings.Join(lines, newLineSep), nil
+	return strings.Join(merged, newLineSep)
+}
+
+func addHostSection(config, execPath string, params addHostParams) (string, error) {
+	proxyCmd := buildProxyCommand(execPath, params)
+	newLines := buildSSHConfigLines(params, proxyCmd)
+
+	position, lines, err := findInsertPosition(config)
+	if err != nil {
+		return config, err
+	}
+
+	return mergeSSHConfig(lines, newLines, position), nil
 }
 
 func GetUser(workspaceID string, sshConfigPath string, sshConfigIncludePath string) (string, error) {
