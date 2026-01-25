@@ -165,38 +165,64 @@ func (cmd *UpCmd) Run(
 	args []string,
 	log log.Logger,
 ) error {
-	// a reset implies a recreate
+	cmd.prepareWorkspace(client, log)
+
+	wctx, err := cmd.executeDevPodUp(ctx, devPodConfig, client, log)
+	if err != nil {
+		return err
+	}
+	if wctx == nil {
+		return nil // Platform mode
+	}
+
+	if err := cmd.configureWorkspace(devPodConfig, client, wctx, log); err != nil {
+		return err
+	}
+
+	return cmd.openIDE(ctx, devPodConfig, client, wctx, log)
+}
+
+// workspaceContext holds the result of workspace preparation
+type workspaceContext struct {
+	result  *config2.Result
+	user    string
+	workdir string
+}
+
+// prepareWorkspace handles initial setup and validation
+func (cmd *UpCmd) prepareWorkspace(client client2.BaseWorkspaceClient, log log.Logger) {
 	if cmd.Reset {
 		cmd.Recreate = true
 	}
 
-	// check if we are a browser IDE and need to reuse the SSH_AUTH_SOCK
 	targetIDE := client.WorkspaceConfig().IDE.Name
-	// Check override
 	if cmd.IDE != "" {
 		targetIDE = cmd.IDE
 	}
+
 	if !cmd.Platform.Enabled && ide.ReusesAuthSock(targetIDE) {
 		cmd.SSHAuthSockID = util.RandStringBytes(10)
 		log.Debug("Reusing SSH_AUTH_SOCK", cmd.SSHAuthSockID)
 	} else if cmd.Platform.Enabled && ide.ReusesAuthSock(targetIDE) {
 		log.Debug("Reusing SSH_AUTH_SOCK is not supported with platform mode, consider launching the IDE from the platform UI")
 	}
+}
 
-	// run devpod agent up
+// executeDevPodUp runs the agent and returns workspace context
+func (cmd *UpCmd) executeDevPodUp(ctx context.Context, devPodConfig *config.Config, client client2.BaseWorkspaceClient, log log.Logger) (*workspaceContext, error) {
 	result, err := cmd.devPodUp(ctx, devPodConfig, client, log)
 	if err != nil {
-		return err
-	} else if result == nil {
-		return fmt.Errorf("didn't receive a result back from agent")
-	} else if cmd.Platform.Enabled {
-		return nil
+		return nil, err
+	}
+	if result == nil {
+		return nil, fmt.Errorf("did not receive a result back from agent")
+	}
+	if cmd.Platform.Enabled {
+		return nil, nil
 	}
 
-	// get user from result
 	user := config2.GetRemoteUser(result)
-
-	var workdir string
+	workdir := ""
 	if result.MergedConfig != nil && result.MergedConfig.WorkspaceFolder != "" {
 		workdir = result.MergedConfig.WorkspaceFolder
 	}
@@ -205,139 +231,169 @@ func (cmd *UpCmd) Run(
 		workdir = result.SubstitutionContext.ContainerWorkspaceFolder
 	}
 
-	// configure container ssh
+	return &workspaceContext{result: result, user: user, workdir: workdir}, nil
+}
+
+// configureWorkspace sets up SSH, Git, and dotfiles
+func (cmd *UpCmd) configureWorkspace(devPodConfig *config.Config, client client2.BaseWorkspaceClient, wctx *workspaceContext, log log.Logger) error {
 	if cmd.ConfigureSSH {
 		devPodHome := ""
-		envDevPodHome, ok := os.LookupEnv("DEVPOD_HOME")
-		if ok {
+		if envDevPodHome, ok := os.LookupEnv("DEVPOD_HOME"); ok {
 			devPodHome = envDevPodHome
 		}
 		setupGPGAgentForwarding := cmd.GPGAgentForwarding || devPodConfig.ContextOption(config.ContextOptionGPGAgentForwarding) == "true"
 		sshConfigIncludePath := devPodConfig.ContextOption(config.ContextOptionSSHConfigIncludePath)
 
-		err = configureSSH(client, configureSSHParams{
+		if err := configureSSH(client, configureSSHParams{
 			sshConfigPath:        cmd.SSHConfigPath,
 			sshConfigIncludePath: sshConfigIncludePath,
-			user:                 user,
-			workdir:              workdir,
+			user:                 wctx.user,
+			workdir:              wctx.workdir,
 			gpgagent:             setupGPGAgentForwarding,
 			devPodHome:           devPodHome,
-		})
-		if err != nil {
+		}); err != nil {
 			return err
 		}
 
-		log.WithFields(logrus.Fields{"workspace": client.Workspace()}).Info("SSH command available: ssh " + client.Workspace() + ".devpod")
+		log.Info("SSH configuration completed in workspace")
 	}
 
-	// setup git ssh signature
 	if cmd.GitSSHSigningKey != "" {
-		err = setupGitSSHSignature(cmd.GitSSHSigningKey, client, log)
-		if err != nil {
+		if err := setupGitSSHSignature(cmd.GitSSHSigningKey, client, log); err != nil {
 			return err
 		}
 	}
 
-	// setup dotfiles in the container
-	err = setupDotfiles(cmd.DotfilesSource, cmd.DotfilesScript, cmd.DotfilesScriptEnvFile, cmd.DotfilesScriptEnv, client, devPodConfig, log)
-	if err != nil {
-		return err
+	return setupDotfiles(cmd.DotfilesSource, cmd.DotfilesScript, cmd.DotfilesScriptEnvFile, cmd.DotfilesScriptEnv, client, devPodConfig, log)
+}
+
+// openIDE opens the configured IDE
+func (cmd *UpCmd) openIDE(ctx context.Context, devPodConfig *config.Config, client client2.BaseWorkspaceClient, wctx *workspaceContext, log log.Logger) error {
+	if !cmd.OpenIDE {
+		return nil
 	}
 
-	// open ide
-	if cmd.OpenIDE {
-		ideConfig := client.WorkspaceConfig().IDE
-		params := vscode.OpenParams{
-			Workspace: client.Workspace(),
-			Folder:    result.SubstitutionContext.ContainerWorkspaceFolder,
-			NewWindow: vscode.Options.GetValue(ideConfig.Options, vscode.OpenNewWindow) == "true",
-			Log:       log,
-		}
+	ideConfig := client.WorkspaceConfig().IDE
+	opener := newIDEOpener(cmd, devPodConfig, client, wctx, log)
+	return opener.open(ctx, ideConfig.Name, ideConfig.Options)
+}
 
-		switch ideConfig.Name {
-		case string(config.IDEVSCode):
-			params.Flavor = vscode.FlavorStable
-			return vscode.Open(ctx, params)
-		case string(config.IDEVSCodeInsiders):
-			params.Flavor = vscode.FlavorInsiders
-			return vscode.Open(ctx, params)
-		case string(config.IDECursor):
-			params.Flavor = vscode.FlavorCursor
-			return vscode.Open(ctx, params)
-		case string(config.IDECodium):
-			params.Flavor = vscode.FlavorCodium
-			return vscode.Open(ctx, params)
-		case string(config.IDEPositron):
-			params.Flavor = vscode.FlavorPositron
-			return vscode.Open(ctx, params)
-		case string(config.IDEWindsurf):
-			params.Flavor = vscode.FlavorWindsurf
-			return vscode.Open(ctx, params)
-		case string(config.IDEAntigravity):
-			params.Flavor = vscode.FlavorAntigravity
-			return vscode.Open(ctx, params)
-		case string(config.IDEOpenVSCode):
-			return startVSCodeInBrowser(
-				cmd.GPGAgentForwarding,
-				ctx,
-				devPodConfig,
-				client,
-				result.SubstitutionContext.ContainerWorkspaceFolder,
-				user,
-				ideConfig.Options,
-				cmd.SSHAuthSockID,
-				log,
-			)
-		case string(config.IDERustRover):
-			return jetbrains.NewRustRoverServer(config2.GetRemoteUser(result), ideConfig.Options, log).OpenGateway(result.SubstitutionContext.ContainerWorkspaceFolder, client.Workspace())
-		case string(config.IDEGoland):
-			return jetbrains.NewGolandServer(config2.GetRemoteUser(result), ideConfig.Options, log).OpenGateway(result.SubstitutionContext.ContainerWorkspaceFolder, client.Workspace())
-		case string(config.IDEPyCharm):
-			return jetbrains.NewPyCharmServer(config2.GetRemoteUser(result), ideConfig.Options, log).OpenGateway(result.SubstitutionContext.ContainerWorkspaceFolder, client.Workspace())
-		case string(config.IDEPhpStorm):
-			return jetbrains.NewPhpStorm(config2.GetRemoteUser(result), ideConfig.Options, log).OpenGateway(result.SubstitutionContext.ContainerWorkspaceFolder, client.Workspace())
-		case string(config.IDEIntellij):
-			return jetbrains.NewIntellij(config2.GetRemoteUser(result), ideConfig.Options, log).OpenGateway(result.SubstitutionContext.ContainerWorkspaceFolder, client.Workspace())
-		case string(config.IDECLion):
-			return jetbrains.NewCLionServer(config2.GetRemoteUser(result), ideConfig.Options, log).OpenGateway(result.SubstitutionContext.ContainerWorkspaceFolder, client.Workspace())
-		case string(config.IDERider):
-			return jetbrains.NewRiderServer(config2.GetRemoteUser(result), ideConfig.Options, log).OpenGateway(result.SubstitutionContext.ContainerWorkspaceFolder, client.Workspace())
-		case string(config.IDERubyMine):
-			return jetbrains.NewRubyMineServer(config2.GetRemoteUser(result), ideConfig.Options, log).OpenGateway(result.SubstitutionContext.ContainerWorkspaceFolder, client.Workspace())
-		case string(config.IDEWebStorm):
-			return jetbrains.NewWebStormServer(config2.GetRemoteUser(result), ideConfig.Options, log).OpenGateway(result.SubstitutionContext.ContainerWorkspaceFolder, client.Workspace())
-		case string(config.IDEDataSpell):
-			return jetbrains.NewDataSpellServer(config2.GetRemoteUser(result), ideConfig.Options, log).OpenGateway(result.SubstitutionContext.ContainerWorkspaceFolder, client.Workspace())
-		case string(config.IDEFleet):
-			return startFleet(ctx, client, log)
-		case string(config.IDEZed):
-			return zed.Open(ctx, ideConfig.Options, config2.GetRemoteUser(result), result.SubstitutionContext.ContainerWorkspaceFolder, client.Workspace(), log)
-		case string(config.IDEJupyterNotebook):
-			return startJupyterNotebookInBrowser(
-				cmd.GPGAgentForwarding,
-				ctx,
-				devPodConfig,
-				client,
-				user,
-				ideConfig.Options,
-				cmd.SSHAuthSockID,
-				log,
-			)
-		case string(config.IDERStudio):
-			return startRStudioInBrowser(
-				cmd.GPGAgentForwarding,
-				ctx,
-				devPodConfig,
-				client,
-				user,
-				ideConfig.Options,
-				cmd.SSHAuthSockID,
-				log,
-			)
-		}
+// ideOpener handles opening different IDE types
+type ideOpener struct {
+	cmd          *UpCmd
+	devPodConfig *config.Config
+	client       client2.BaseWorkspaceClient
+	wctx         *workspaceContext
+	log          log.Logger
+}
+
+func newIDEOpener(cmd *UpCmd, devPodConfig *config.Config, client client2.BaseWorkspaceClient, wctx *workspaceContext, log log.Logger) *ideOpener {
+	return &ideOpener{
+		cmd:          cmd,
+		devPodConfig: devPodConfig,
+		client:       client,
+		wctx:         wctx,
+		log:          log,
+	}
+}
+
+func (o *ideOpener) open(ctx context.Context, ideName string, ideOptions map[string]config.OptionValue) error {
+	folder := o.wctx.result.SubstitutionContext.ContainerWorkspaceFolder
+	workspace := o.client.Workspace()
+	user := o.wctx.user
+
+	switch ideName {
+	case string(config.IDEVSCode), string(config.IDEVSCodeInsiders), string(config.IDECursor),
+		string(config.IDECodium), string(config.IDEPositron), string(config.IDEWindsurf), string(config.IDEAntigravity):
+		return o.openVSCodeFlavor(ctx, ideName, folder, ideOptions)
+
+	case string(config.IDERustRover), string(config.IDEGoland), string(config.IDEPyCharm),
+		string(config.IDEPhpStorm), string(config.IDEIntellij), string(config.IDECLion),
+		string(config.IDERider), string(config.IDERubyMine), string(config.IDEWebStorm), string(config.IDEDataSpell):
+		return o.openJetBrains(ideName, folder, workspace, user, ideOptions)
+
+	case string(config.IDEOpenVSCode):
+		return startVSCodeInBrowser(o.cmd.GPGAgentForwarding, ctx, o.devPodConfig, o.client, folder, user, ideOptions, o.cmd.SSHAuthSockID, o.log)
+
+	case string(config.IDEFleet):
+		return startFleet(ctx, o.client, o.log)
+
+	case string(config.IDEZed):
+		return zed.Open(ctx, ideOptions, user, folder, workspace, o.log)
+
+	case string(config.IDEJupyterNotebook):
+		return startJupyterNotebookInBrowser(o.cmd.GPGAgentForwarding, ctx, o.devPodConfig, o.client, user, ideOptions, o.cmd.SSHAuthSockID, o.log)
+
+	case string(config.IDERStudio):
+		return startRStudioInBrowser(o.cmd.GPGAgentForwarding, ctx, o.devPodConfig, o.client, user, ideOptions, o.cmd.SSHAuthSockID, o.log)
+
+	default:
+		return nil
+	}
+}
+
+func (o *ideOpener) openVSCodeFlavor(ctx context.Context, ideName, folder string, ideOptions map[string]config.OptionValue) error {
+	flavorMap := map[string]vscode.Flavor{
+		string(config.IDEVSCode):         vscode.FlavorStable,
+		string(config.IDEVSCodeInsiders): vscode.FlavorInsiders,
+		string(config.IDECursor):         vscode.FlavorCursor,
+		string(config.IDECodium):         vscode.FlavorCodium,
+		string(config.IDEPositron):       vscode.FlavorPositron,
+		string(config.IDEWindsurf):       vscode.FlavorWindsurf,
+		string(config.IDEAntigravity):    vscode.FlavorAntigravity,
 	}
 
-	return nil
+	params := vscode.OpenParams{
+		Workspace: o.client.Workspace(),
+		Folder:    folder,
+		NewWindow: vscode.Options.GetValue(ideOptions, vscode.OpenNewWindow) == "true",
+		Flavor:    flavorMap[ideName],
+		Log:       o.log,
+	}
+
+	return vscode.Open(ctx, params)
+}
+
+func (o *ideOpener) openJetBrains(ideName, folder, workspace, user string, ideOptions map[string]config.OptionValue) error {
+	type jetbrainsFactory func() interface{ OpenGateway(string, string) error }
+
+	jetbrainsMap := map[string]jetbrainsFactory{
+		string(config.IDERustRover): func() interface{ OpenGateway(string, string) error } {
+			return jetbrains.NewRustRoverServer(user, ideOptions, o.log)
+		},
+		string(config.IDEGoland): func() interface{ OpenGateway(string, string) error } {
+			return jetbrains.NewGolandServer(user, ideOptions, o.log)
+		},
+		string(config.IDEPyCharm): func() interface{ OpenGateway(string, string) error } {
+			return jetbrains.NewPyCharmServer(user, ideOptions, o.log)
+		},
+		string(config.IDEPhpStorm): func() interface{ OpenGateway(string, string) error } {
+			return jetbrains.NewPhpStorm(user, ideOptions, o.log)
+		},
+		string(config.IDEIntellij): func() interface{ OpenGateway(string, string) error } {
+			return jetbrains.NewIntellij(user, ideOptions, o.log)
+		},
+		string(config.IDECLion): func() interface{ OpenGateway(string, string) error } {
+			return jetbrains.NewCLionServer(user, ideOptions, o.log)
+		},
+		string(config.IDERider): func() interface{ OpenGateway(string, string) error } {
+			return jetbrains.NewRiderServer(user, ideOptions, o.log)
+		},
+		string(config.IDERubyMine): func() interface{ OpenGateway(string, string) error } {
+			return jetbrains.NewRubyMineServer(user, ideOptions, o.log)
+		},
+		string(config.IDEWebStorm): func() interface{ OpenGateway(string, string) error } {
+			return jetbrains.NewWebStormServer(user, ideOptions, o.log)
+		},
+		string(config.IDEDataSpell): func() interface{ OpenGateway(string, string) error } {
+			return jetbrains.NewDataSpellServer(user, ideOptions, o.log)
+		},
+	}
+
+	if factory, ok := jetbrainsMap[ideName]; ok {
+		return factory().OpenGateway(folder, workspace)
+	}
+	return fmt.Errorf("unknown JetBrains IDE: %s", ideName)
 }
 
 func (cmd *UpCmd) devPodUp(
