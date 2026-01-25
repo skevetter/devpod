@@ -7,7 +7,7 @@ require (
 	github.com/PaesslerAG/jsonpath v0.1.1
 	github.com/awslabs/amazon-ecr-credential-helper/ecr-login v0.11.0
 	github.com/blang/semver/v4 v4.0.0
-	github.com/bmatcuk/doublestar/v4 v4.9.2
+	github.com/bmatcuk/doublestar/v4 v4.10.0
 	github.com/charmbracelet/huh v0.8.0
 	github.com/chrismellard/docker-credential-acr-env v0.0.0-20230304212654-82a0ddb27589
 	github.com/compose-spec/compose-go/v2 v2.10.1
