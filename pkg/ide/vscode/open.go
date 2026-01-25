@@ -122,7 +122,7 @@ func openViaCLI(ctx context.Context, params OpenParams) error {
 		return fmt.Errorf("flavor %s binary is not found", params.Flavor)
 	}
 
-	hasSSHExtension, hasContainersExtension, err := listInstalledExtensions(cliPath, config.sshExtension)
+	hasSSHExtension, hasContainersExtension, err := listInstalledExtensions(ctx, cliPath, config.sshExtension)
 	if err != nil {
 		return err
 	}
@@ -143,8 +143,8 @@ func openViaCLI(ctx context.Context, params OpenParams) error {
 	return nil
 }
 
-func listInstalledExtensions(cliPath, sshExtension string) (hasSSH, hasContainers bool, err error) {
-	out, err := exec.Command(cliPath, "--list-extensions").Output()
+func listInstalledExtensions(ctx context.Context, cliPath, sshExtension string) (hasSSH, hasContainers bool, err error) {
+	out, err := exec.CommandContext(ctx, cliPath, "--list-extensions").CombinedOutput()
 	if err != nil {
 		return false, false, command.WrapCommandError(out, err)
 	}
