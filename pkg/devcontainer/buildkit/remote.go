@@ -12,7 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/docker/cli/cli/config/configfile"
 	"github.com/docker/cli/cli/config/types"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
@@ -137,16 +136,17 @@ func BuildRemote(
 	registry := ref.Context().RegistryStr()
 	session := []session.Attachable{
 		authprovider.NewDockerAuthProvider(authprovider.DockerAuthProviderConfig{
-			ConfigFile: &configfile.ConfigFile{
-				AuthConfigs: map[string]types.AuthConfig{
-					registry: types.AuthConfig{
+			AuthConfigProvider: func(ctx context.Context, host string, scope []string, cacheCheck authprovider.ExpireCachedAuthCheck) (types.AuthConfig, error) {
+				if host == registry {
+					return types.AuthConfig{
 						Username:      authConfig.Username,
 						Auth:          authConfig.Auth,
 						Password:      authConfig.Password,
 						IdentityToken: authConfig.IdentityToken,
 						RegistryToken: authConfig.RegistryToken,
-					},
-				},
+					}, nil
+				}
+				return types.AuthConfig{}, nil
 			},
 		}),
 	}
