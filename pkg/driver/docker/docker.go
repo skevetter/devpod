@@ -587,7 +587,7 @@ func (d *dockerDriver) GetDevContainerLogs(ctx context.Context, workspaceId stri
 }
 
 func (d *dockerDriver) getPodmanArgs(options *driver.RunOptions, parsedConfig *config.DevContainerConfig) ([]string, error) {
-	if !d.Docker.IsPodman() || runtime.GOOS != "linux" {
+	if !d.Docker.IsPodman() {
 		return []string{}, nil
 	}
 
