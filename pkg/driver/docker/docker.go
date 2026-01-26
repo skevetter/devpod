@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/user"
 	"runtime"
-	"slices"
 	"strconv"
 	"strings"
 
@@ -591,10 +590,6 @@ func (d *dockerDriver) getPodmanArgs(options *driver.RunOptions, parsedConfig *c
 		return []string{}, nil
 	}
 
-	if err := validatePodmanOptions(options); err != nil {
-		return nil, err
-	}
-
 	var args []string
 	args = d.addUsernsArgs(args, options)
 	args = d.addIdMappingArgs(args, options)
@@ -661,69 +656,6 @@ func (d *dockerDriver) getRemoteUser(options *driver.RunOptions, parsedConfig *c
 	return "root"
 }
 
-func validatePodmanOptions(options *driver.RunOptions) error {
-	if err := validateUserns(options.Userns); err != nil {
-		return err
-	}
-
-	if err := validateMappings(options.UidMap, "uidmap"); err != nil {
-		return err
-	}
-
-	if err := validateMappings(options.GidMap, "gidmap"); err != nil {
-		return err
-	}
-
-	return validateOptionConflicts(options)
-}
-
-func validateUserns(userns string) error {
-	if userns == "" {
-		return nil
-	}
-
-	validValues := []string{"keep-id", "host", "auto"}
-	if slices.Contains(validValues, userns) {
-		return nil
-	}
-
-	if strings.HasPrefix(userns, "keep-id:") || strings.HasPrefix(userns, "container:") || strings.HasPrefix(userns, "ns:") {
-		return nil
-	}
-
-	return fmt.Errorf("invalid userns value: %s", userns)
-}
-
-func validateMappings(mappings []string, mapType string) error {
-	for _, mapping := range mappings {
-		if !isValidMapping(mapping) {
-			return fmt.Errorf("invalid %s format: %s (expected format: container_id:host_id:amount)", mapType, mapping)
-		}
-	}
-	return nil
-}
-
-func validateOptionConflicts(options *driver.RunOptions) error {
-	if options.Userns != "" && (len(options.UidMap) > 0 || len(options.GidMap) > 0) {
-		if !strings.HasPrefix(options.Userns, "keep-id") {
-			return fmt.Errorf("cannot combine --userns=%s with --uidmap/--gidmap", options.Userns)
-		}
-	}
-	return nil
-}
-
-func isValidMapping(mapping string) bool {
-	parts := strings.Split(mapping, ":")
-	if len(parts) != 3 {
-		return false
-	}
-	for _, part := range parts {
-		if _, err := strconv.Atoi(part); err != nil {
-			return false
-		}
-	}
-	return true
-}
 func (d *dockerDriver) shouldUpdateUserUID(parsedConfig *config.DevContainerConfig) bool {
 	isLinux := runtime.GOOS == "linux"
 	hasUser := parsedConfig.ContainerUser != "" || parsedConfig.RemoteUser != ""
