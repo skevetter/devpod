@@ -68,16 +68,22 @@ func getCredentialConfig(devPodConfig *config.Config, workspace *managementv1.De
 		gitSSHSignature: devPodConfig.ContextOption(config.ContextOptionGitSSHSignatureForwarding) == "true",
 	}
 
+	if workspace == nil || workspace.Status.Instance == nil {
+		return cfg
+	}
+
 	instance := workspace.Status.Instance
+	if instance.CredentialForwarding == nil {
+		return cfg
+	}
+
 	instanceCredentialForwarding := instance.CredentialForwarding
-	if workspace != nil && instance != nil && instanceCredentialForwarding != nil {
-		if instanceCredentialForwarding.Docker != nil {
-			cfg.docker = !instanceCredentialForwarding.Docker.Disabled
-		}
-		if instanceCredentialForwarding.Git != nil {
-			cfg.git = !instanceCredentialForwarding.Git.Disabled
-			cfg.gitSSHSignature = !instanceCredentialForwarding.Git.Disabled
-		}
+	if instanceCredentialForwarding.Docker != nil {
+		cfg.docker = !instanceCredentialForwarding.Docker.Disabled
+	}
+	if instanceCredentialForwarding.Git != nil {
+		cfg.git = !instanceCredentialForwarding.Git.Disabled
+		cfg.gitSSHSignature = !instanceCredentialForwarding.Git.Disabled
 	}
 
 	return cfg

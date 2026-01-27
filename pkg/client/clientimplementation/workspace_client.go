@@ -858,8 +858,10 @@ func BuildAgentClient(ctx context.Context, opts BuildAgentClientOptions) (*confi
 	if err != nil {
 		return nil, err
 	}
-	defer stdoutWriter.Close()
-	defer stdinWriter.Close()
+	defer func() { _ = stdoutWriter.Close() }()
+	defer func() { _ = stdoutReader.Close() }()
+	defer func() { _ = stdinReader.Close() }()
+	defer func() { _ = stdinWriter.Close() }()
 
 	cancelCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -897,8 +899,8 @@ func createPipes() (stdoutReader, stdoutWriter, stdinReader, stdinWriter *os.Fil
 	}
 	stdinReader, stdinWriter, err = os.Pipe()
 	if err != nil {
-		stdoutReader.Close()
-		stdoutWriter.Close()
+		func() { _ = stdoutReader.Close() }()
+		func() { _ = stdoutWriter.Close() }()
 		return nil, nil, nil, nil, err
 	}
 	return stdoutReader, stdoutWriter, stdinReader, stdinWriter, nil
@@ -922,7 +924,7 @@ func runAgentInjection(opts agentInjectionOptions) chan error {
 		defer opts.cancel()
 
 		writer := opts.log.ErrorStreamOnly().Writer(logrus.InfoLevel, false)
-		defer writer.Close()
+		defer func() { _ = writer.Close() }()
 
 		errChan <- agent.InjectAgent(&agent.InjectOptions{
 			Ctx: opts.ctx,
