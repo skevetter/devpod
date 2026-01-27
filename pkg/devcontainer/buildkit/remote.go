@@ -144,7 +144,7 @@ func BuildRemote(ctx context.Context, opts BuildRemoteOptions) (*config.BuildInf
 
 func validateRemoteBuildOptions(options provider.BuildOptions) error {
 	if options.NoBuild {
-		return fmt.Errorf("you cannot build in this mode. Please run 'devpod up' to rebuild the container")
+		return fmt.Errorf("cannot build in this mode, rebuild the container with up command")
 	}
 	if !options.CLIOptions.Platform.Enabled {
 		return errors.New("remote builds are only supported in DevPod Pro")
@@ -154,9 +154,6 @@ func validateRemoteBuildOptions(options provider.BuildOptions) error {
 	}
 	if options.CLIOptions.Platform.Build.RemoteAddress == "" {
 		return errors.New("builder address is required to build image remotely")
-	}
-	if options.CLIOptions.Platform.Build.Repository == "" && !options.SkipPush {
-		return errors.New("remote builds require a registry to be provided")
 	}
 	if options.SkipPush {
 		return errors.New("remote builds require pushing to a registry")
@@ -460,41 +457,39 @@ func getImageDetails(ref name.Reference, targetArch string, keychain authn.Keych
 func ensureCertPaths(buildOpts *devpod.PlatformBuildOptions) (parentDir string, caPath string, keyPath string, certPath string, err error) {
 	parentDir, err = os.MkdirTemp("", "build-certs-*")
 	if err != nil {
-		return parentDir, caPath, keyPath, caPath, fmt.Errorf("create temp dir %w", err)
+		return parentDir, caPath, keyPath, certPath, fmt.Errorf("create temp dir %w", err)
 	}
 
-	// write CA
-	caPath = filepath.Join(parentDir, "ca.pem")
-	caBytes, err := base64.StdEncoding.DecodeString(buildOpts.CertCA)
+	caPath, err = writeCertFile(parentDir, "ca.pem", buildOpts.CertCA, "CA")
 	if err != nil {
-		return parentDir, caPath, keyPath, caPath, fmt.Errorf("decode CA %w", err)
-	}
-	err = os.WriteFile(caPath, caBytes, 0o700)
-	if err != nil {
-		return parentDir, caPath, keyPath, caPath, fmt.Errorf("write CA file %w", err)
+		return parentDir, caPath, keyPath, certPath, err
 	}
 
-	// write key
-	keyPath = filepath.Join(parentDir, "key.pem")
-	keyBytes, err := base64.StdEncoding.DecodeString(buildOpts.CertKey)
+	keyPath, err = writeCertFile(parentDir, "key.pem", buildOpts.CertKey, "private key")
 	if err != nil {
-		return parentDir, caPath, keyPath, caPath, fmt.Errorf("decode private key %w", err)
-	}
-	err = os.WriteFile(keyPath, keyBytes, 0o700)
-	if err != nil {
-		return parentDir, caPath, keyPath, caPath, fmt.Errorf("write private key file %w", err)
+		return parentDir, caPath, keyPath, certPath, err
 	}
 
-	// write cert
-	certPath = filepath.Join(parentDir, "cert.pem")
-	certBytes, err := base64.StdEncoding.DecodeString(buildOpts.Cert)
+	certPath, err = writeCertFile(parentDir, "cert.pem", buildOpts.Cert, "cert")
 	if err != nil {
-		return parentDir, caPath, keyPath, caPath, fmt.Errorf("decode cert %w", err)
-	}
-	err = os.WriteFile(certPath, certBytes, 0o700)
-	if err != nil {
-		return parentDir, caPath, keyPath, caPath, fmt.Errorf("write cert file %w", err)
+		return parentDir, caPath, keyPath, certPath, err
 	}
 
-	return parentDir, caPath, keyPath, caPath, nil
+	return parentDir, caPath, keyPath, certPath, nil
+}
+
+func writeCertFile(parentDir, filename, base64Content, certType string) (string, error) {
+	filePath := filepath.Join(parentDir, filename)
+
+	certBytes, err := base64.StdEncoding.DecodeString(base64Content)
+	if err != nil {
+		return filePath, fmt.Errorf("decode %s %w", certType, err)
+	}
+
+	err = os.WriteFile(filePath, certBytes, 0o700)
+	if err != nil {
+		return filePath, fmt.Errorf("write %s file %w", certType, err)
+	}
+
+	return filePath, nil
 }
