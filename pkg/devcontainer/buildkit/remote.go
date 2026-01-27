@@ -56,7 +56,8 @@ func BuildRemote(ctx context.Context, opts BuildRemoteOptions) (*config.BuildInf
 	defer func() { _ = os.RemoveAll(tmpDir) }()
 	defer func() { _ = c.Close() }()
 
-	imageName := opts.Options.CLIOptions.Platform.Build.Repository + "/" + build.GetImageName(opts.LocalWorkspaceFolder, opts.PrebuildHash)
+	repo := strings.TrimSuffix(opts.Options.CLIOptions.Platform.Build.Repository, "/")
+	imageName := repo + "/" + build.GetImageName(opts.LocalWorkspaceFolder, opts.PrebuildHash)
 	ref, keychain, err := resolveImageReference(ctx, imageName)
 	if err != nil {
 		return nil, err
@@ -188,14 +189,14 @@ func setupBuildKitClient(ctx context.Context, options provider.BuildOptions) (*c
 	)
 	if err != nil {
 		_ = os.RemoveAll(tmpDir)
-		return nil, nil, tmpDir, fmt.Errorf("get client %w", err)
+		return nil, nil, "", fmt.Errorf("get client %w", err)
 	}
 
 	info, err := c.Info(timeoutCtx)
 	if err != nil {
 		_ = c.Close()
 		_ = os.RemoveAll(tmpDir)
-		return nil, nil, tmpDir, fmt.Errorf("get remote builder info %w", err)
+		return nil, nil, "", fmt.Errorf("get remote builder info %w", err)
 	}
 
 	return c, info, tmpDir, nil
