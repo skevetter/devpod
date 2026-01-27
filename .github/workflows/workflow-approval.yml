@@ -2,7 +2,7 @@ name: Automatic Approve Workflow
 
 on:
   workflow_dispatch:
-  pull_request:
+  pull_request_target:
     types: [opened, synchronize, reopened]
 
 jobs:
