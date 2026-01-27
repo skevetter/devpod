@@ -595,7 +595,7 @@ func (cmd *UpCmd) devPodUpMachine(
 	client client2.WorkspaceClient,
 	log log.Logger,
 ) (*config2.Result, error) {
-	err := startWait(ctx, client, true, log)
+	err := clientimplementation.StartWait(ctx, client, true, log)
 	if err != nil {
 		return nil, err
 	}
@@ -612,7 +612,13 @@ func (cmd *UpCmd) devPodUpMachine(
 
 	// if we run on a platform, we need to pass the platform options
 	if cmd.Platform.Enabled {
-		return buildAgentClient(ctx, client, cmd.CLIOptions, "up", log, tunnelserver.WithPlatformOptions(&cmd.Platform))
+		return clientimplementation.BuildAgentClient(ctx, clientimplementation.BuildAgentClientOptions{
+			WorkspaceClient: client,
+			CLIOptions:      cmd.CLIOptions,
+			AgentCommand:    "up",
+			Log:             log,
+			TunnelOptions:   []tunnelserver.Option{tunnelserver.WithPlatformOptions(&cmd.Platform)},
+		})
 	}
 
 	// ssh tunnel command
@@ -992,15 +998,15 @@ func startBrowserTunnel(
 		}
 		defer func() { _ = toolClient.Close() }()
 
-		err = startServicesDaemon(ctx,
-			devPodConfig,
-			daemonClient,
-			toolClient,
-			user,
-			logger,
-			forwardPorts,
-			extraPorts,
-		)
+		err = clientimplementation.StartServicesDaemon(ctx, clientimplementation.StartServicesDaemonOptions{
+			DevPodConfig: devPodConfig,
+			Client:       daemonClient,
+			SSHClient:    toolClient,
+			User:         user,
+			Log:          logger,
+			ForwardPorts: forwardPorts,
+			ExtraPorts:   extraPorts,
+		})
 		if err != nil {
 			return err
 		}

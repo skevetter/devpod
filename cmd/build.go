@@ -3,16 +3,12 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"io"
 	"os"
 
-	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/cmd/flags"
-	"github.com/skevetter/devpod/pkg/agent"
-	"github.com/skevetter/devpod/pkg/agent/tunnelserver"
 	"github.com/skevetter/devpod/pkg/client"
+	"github.com/skevetter/devpod/pkg/client/clientimplementation"
 	"github.com/skevetter/devpod/pkg/config"
-	config2 "github.com/skevetter/devpod/pkg/devcontainer/config"
 	"github.com/skevetter/devpod/pkg/image"
 	"github.com/skevetter/devpod/pkg/provider"
 	workspace2 "github.com/skevetter/devpod/pkg/workspace"
@@ -158,91 +154,18 @@ func (cmd *BuildCmd) build(ctx context.Context, workspaceClient client.Workspace
 	}
 	defer workspaceClient.Unlock()
 
-	err = startWait(ctx, workspaceClient, true, log)
+	err = clientimplementation.StartWait(ctx, workspaceClient, true, log)
 	if err != nil {
 		return err
 	}
 
 	log.Infof("Building devcontainer...")
 	defer log.Debugf("Done building devcontainer")
-	_, err = buildAgentClient(ctx, workspaceClient, cmd.CLIOptions, "build", log)
+	_, err = clientimplementation.BuildAgentClient(ctx, clientimplementation.BuildAgentClientOptions{
+		WorkspaceClient: workspaceClient,
+		CLIOptions:      cmd.CLIOptions,
+		AgentCommand:    "build",
+		Log:             log,
+	})
 	return err
-}
-
-func buildAgentClient(ctx context.Context, workspaceClient client.WorkspaceClient, cliOptions provider.CLIOptions, agentCommand string, log log.Logger, options ...tunnelserver.Option) (*config2.Result, error) {
-	// compress info
-	workspaceInfo, wInfo, err := workspaceClient.AgentInfo(cliOptions)
-	if err != nil {
-		return nil, err
-	}
-
-	// create container etc.
-	command := fmt.Sprintf("'%s' agent workspace %s --workspace-info '%s'", workspaceClient.AgentPath(), agentCommand, workspaceInfo)
-	if log.GetLevel() == logrus.DebugLevel {
-		command += " --debug"
-	}
-
-	// create pipes
-	stdoutReader, stdoutWriter, err := os.Pipe()
-	if err != nil {
-		return nil, err
-	}
-	stdinReader, stdinWriter, err := os.Pipe()
-	if err != nil {
-		return nil, err
-	}
-	defer func() { _ = stdoutWriter.Close() }()
-	defer func() { _ = stdinWriter.Close() }()
-
-	// start machine on stdio
-	cancelCtx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
-	errChan := make(chan error, 1)
-	go func() {
-		defer log.Debugf("Done executing up command")
-		defer cancel()
-
-		writer := log.ErrorStreamOnly().Writer(logrus.InfoLevel, false)
-		defer func() { _ = writer.Close() }()
-
-		errChan <- agent.InjectAgent(&agent.InjectOptions{
-			Ctx: cancelCtx,
-			Exec: func(ctx context.Context, command string, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
-				return workspaceClient.Command(ctx, client.CommandOptions{
-					Command: command,
-					Stdin:   stdin,
-					Stdout:  stdout,
-					Stderr:  stderr,
-				})
-			},
-			IsLocal:         workspaceClient.AgentLocal(),
-			RemoteAgentPath: workspaceClient.AgentPath(),
-			DownloadURL:     workspaceClient.AgentURL(),
-			Command:         command,
-			Stdin:           stdinReader,
-			Stdout:          stdoutWriter,
-			Stderr:          writer,
-			Log:             log.ErrorStreamOnly(),
-			Timeout:         wInfo.InjectTimeout,
-		})
-	}()
-
-	// create container etc.
-	result, err := tunnelserver.RunUpServer(
-		cancelCtx,
-		stdoutReader,
-		stdinWriter,
-		workspaceClient.AgentInjectGitCredentials(cliOptions),
-		workspaceClient.AgentInjectDockerCredentials(cliOptions),
-		workspaceClient.WorkspaceConfig(),
-		log,
-		options...,
-	)
-	if err != nil {
-		return nil, fmt.Errorf("run tunnel machine %w", err)
-	}
-
-	// wait until command finished
-	return result, <-errChan
 }

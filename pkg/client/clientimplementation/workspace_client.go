@@ -15,6 +15,8 @@ import (
 
 	"github.com/gofrs/flock"
 	"github.com/sirupsen/logrus"
+	"github.com/skevetter/devpod/pkg/agent"
+	"github.com/skevetter/devpod/pkg/agent/tunnelserver"
 	"github.com/skevetter/devpod/pkg/binaries"
 	"github.com/skevetter/devpod/pkg/client"
 	"github.com/skevetter/devpod/pkg/compress"
@@ -764,4 +766,201 @@ func DeleteWorkspaceFolder(params DeleteWorkspaceFolderParams, log log.Logger) e
 	}
 
 	return nil
+}
+
+const (
+	pollInterval = 2 * time.Second
+	logThreshold = 10 * time.Second
+)
+
+// StartWait waits for the workspace to be ready, optionally creating/starting it
+func StartWait(
+	ctx context.Context,
+	workspaceClient client.WorkspaceClient,
+	create bool,
+	log log.Logger,
+) error {
+	startWaiting := time.Now()
+	for {
+		instanceStatus, err := workspaceClient.Status(ctx, client.StatusOptions{})
+		if err != nil {
+			return err
+		}
+
+		switch instanceStatus {
+		case client.StatusBusy:
+			if handleBusyStatus(&startWaiting, log) {
+				time.Sleep(pollInterval)
+				continue
+			}
+		case client.StatusStopped:
+			if err := handleStoppedStatus(ctx, workspaceClient, create); err != nil {
+				return err
+			}
+		case client.StatusNotFound:
+			if err := handleNotFoundStatus(ctx, workspaceClient, create); err != nil {
+				return err
+			}
+		default:
+			return nil
+		}
+	}
+}
+
+func handleBusyStatus(startWaiting *time.Time, log log.Logger) bool {
+	if time.Since(*startWaiting) > logThreshold {
+		log.Info("workspace is busy, waiting for workspace to become ready")
+		*startWaiting = time.Now()
+	}
+	return true
+}
+
+func handleStoppedStatus(ctx context.Context, workspaceClient client.WorkspaceClient, create bool) error {
+	if create {
+		err := workspaceClient.Start(ctx, client.StartOptions{})
+		if err != nil {
+			return fmt.Errorf("start workspace %w", err)
+		}
+		return nil
+	}
+	return fmt.Errorf("workspace is stopped")
+}
+
+func handleNotFoundStatus(ctx context.Context, workspaceClient client.WorkspaceClient, create bool) error {
+	if create {
+		err := workspaceClient.Create(ctx, client.CreateOptions{})
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+	return fmt.Errorf("workspace not found")
+}
+
+// BuildAgentClientOptions contains parameters for BuildAgentClient
+type BuildAgentClientOptions struct {
+	WorkspaceClient client.WorkspaceClient
+	CLIOptions      provider.CLIOptions
+	AgentCommand    string
+	Log             log.Logger
+	TunnelOptions   []tunnelserver.Option
+}
+
+// BuildAgentClient builds an agent client for workspace operations
+func BuildAgentClient(ctx context.Context, opts BuildAgentClientOptions) (*config2.Result, error) {
+	workspaceInfo, wInfo, err := opts.WorkspaceClient.AgentInfo(opts.CLIOptions)
+	if err != nil {
+		return nil, err
+	}
+
+	command := buildAgentCommand(opts.WorkspaceClient, opts.AgentCommand, workspaceInfo, opts.Log)
+	stdoutReader, stdoutWriter, stdinReader, stdinWriter, err := createPipes()
+	if err != nil {
+		return nil, err
+	}
+	defer stdoutWriter.Close()
+	defer stdinWriter.Close()
+
+	cancelCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	errChan := runAgentInjection(agentInjectionOptions{
+		ctx:             cancelCtx,
+		workspaceClient: opts.WorkspaceClient,
+		command:         command,
+		stdin:           stdinReader,
+		stdout:          stdoutWriter,
+		timeout:         wInfo.InjectTimeout,
+		log:             opts.Log,
+		cancel:          cancel,
+	})
+	result, err := runTunnelServer(cancelCtx, opts, stdoutReader, stdinWriter)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, <-errChan
+}
+
+func buildAgentCommand(workspaceClient client.WorkspaceClient, agentCommand, workspaceInfo string, log log.Logger) string {
+	command := fmt.Sprintf("'%s' agent workspace %s --workspace-info '%s'", workspaceClient.AgentPath(), agentCommand, workspaceInfo)
+	if log.GetLevel() == logrus.DebugLevel {
+		command += " --debug"
+	}
+	return command
+}
+
+func createPipes() (stdoutReader, stdoutWriter, stdinReader, stdinWriter *os.File, err error) {
+	stdoutReader, stdoutWriter, err = os.Pipe()
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
+	stdinReader, stdinWriter, err = os.Pipe()
+	if err != nil {
+		stdoutReader.Close()
+		stdoutWriter.Close()
+		return nil, nil, nil, nil, err
+	}
+	return stdoutReader, stdoutWriter, stdinReader, stdinWriter, nil
+}
+
+type agentInjectionOptions struct {
+	ctx             context.Context
+	workspaceClient client.WorkspaceClient
+	command         string
+	stdin           *os.File
+	stdout          *os.File
+	timeout         time.Duration
+	log             log.Logger
+	cancel          context.CancelFunc
+}
+
+func runAgentInjection(opts agentInjectionOptions) chan error {
+	errChan := make(chan error, 1)
+	go func() {
+		defer opts.log.Debugf("up command completed")
+		defer opts.cancel()
+
+		writer := opts.log.ErrorStreamOnly().Writer(logrus.InfoLevel, false)
+		defer writer.Close()
+
+		errChan <- agent.InjectAgent(&agent.InjectOptions{
+			Ctx: opts.ctx,
+			Exec: func(ctx context.Context, command string, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
+				return opts.workspaceClient.Command(ctx, client.CommandOptions{
+					Command: command,
+					Stdin:   stdin,
+					Stdout:  stdout,
+					Stderr:  stderr,
+				})
+			},
+			IsLocal:         opts.workspaceClient.AgentLocal(),
+			RemoteAgentPath: opts.workspaceClient.AgentPath(),
+			DownloadURL:     opts.workspaceClient.AgentURL(),
+			Command:         opts.command,
+			Stdin:           opts.stdin,
+			Stdout:          opts.stdout,
+			Stderr:          writer,
+			Log:             opts.log.ErrorStreamOnly(),
+			Timeout:         opts.timeout,
+		})
+	}()
+	return errChan
+}
+
+func runTunnelServer(ctx context.Context, opts BuildAgentClientOptions, stdoutReader, stdinWriter *os.File) (*config2.Result, error) {
+	result, err := tunnelserver.RunUpServer(
+		ctx,
+		stdoutReader,
+		stdinWriter,
+		opts.WorkspaceClient.AgentInjectGitCredentials(opts.CLIOptions),
+		opts.WorkspaceClient.AgentInjectDockerCredentials(opts.CLIOptions),
+		opts.WorkspaceClient.WorkspaceConfig(),
+		opts.Log,
+		opts.TunnelOptions...,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("run tunnel server: %w", err)
+	}
+	return result, nil
 }

@@ -18,8 +18,8 @@ import (
 	"github.com/skevetter/devpod/cmd/machine"
 	"github.com/skevetter/devpod/pkg/agent"
 	client2 "github.com/skevetter/devpod/pkg/client"
+	"github.com/skevetter/devpod/pkg/client/clientimplementation"
 	"github.com/skevetter/devpod/pkg/config"
-	daemon "github.com/skevetter/devpod/pkg/daemon/platform"
 	"github.com/skevetter/devpod/pkg/gpg"
 	"github.com/skevetter/devpod/pkg/port"
 	"github.com/skevetter/devpod/pkg/provider"
@@ -187,15 +187,15 @@ func (cmd *SSHCmd) jumpContainerTailscale(
 
 	if cmd.StartServices {
 		go func() {
-			err = startServicesDaemon(ctx,
-				devPodConfig,
-				client,
-				toolSSHClient,
-				cmd.User,
-				log,
-				false,
-				nil,
-			)
+			err = clientimplementation.StartServicesDaemon(ctx, clientimplementation.StartServicesDaemonOptions{
+				DevPodConfig: devPodConfig,
+				Client:       client,
+				SSHClient:    toolSSHClient,
+				User:         cmd.User,
+				Log:          log,
+				ForwardPorts: false,
+				ExtraPorts:   nil,
+			})
 			if err != nil {
 				log.Errorf("Error starting services: %v", err)
 			}
@@ -252,52 +252,6 @@ func (cmd *SSHCmd) startProxyTunnel(
 	)
 }
 
-func startWait(
-	ctx context.Context,
-	client client2.WorkspaceClient,
-	create bool,
-	log log.Logger,
-) error {
-	startWaiting := time.Now()
-	for {
-		instanceStatus, err := client.Status(ctx, client2.StatusOptions{})
-		if err != nil {
-			return err
-		} else if instanceStatus == client2.StatusBusy {
-			if time.Since(startWaiting) > time.Second*10 {
-				log.Infof("Waiting for workspace to come up...")
-				log.Debugf("Got status %s, expected: Running", instanceStatus)
-				startWaiting = time.Now()
-			}
-
-			time.Sleep(time.Second * 2)
-			continue
-		} else if instanceStatus == client2.StatusStopped {
-			if create {
-				// start environment
-				err = client.Start(ctx, client2.StartOptions{})
-				if err != nil {
-					return fmt.Errorf("start workspace %w", err)
-				}
-			} else {
-				return fmt.Errorf("DevPod workspace is stopped")
-			}
-		} else if instanceStatus == client2.StatusNotFound {
-			if create {
-				// create environment
-				err = client.Create(ctx, client2.CreateOptions{})
-				if err != nil {
-					return err
-				}
-			} else {
-				return fmt.Errorf("DevPod workspace wasn't found")
-			}
-		}
-
-		return nil
-	}
-}
-
 func (cmd *SSHCmd) retrieveEnVars() (map[string]string, error) {
 	envVars := make(map[string]string)
 	for _, envVar := range cmd.SendEnvVars {
@@ -331,7 +285,7 @@ func (cmd *SSHCmd) jumpContainer(
 	defer client.Unlock()
 
 	// start the workspace
-	err = startWait(ctx, client, false, log)
+	err = clientimplementation.StartWait(ctx, client, false, log)
 	if err != nil {
 		return err
 	}
@@ -660,44 +614,4 @@ func startSSHKeepAlive(ctx context.Context, client *ssh.Client, interval time.Du
 			}
 		}
 	}
-}
-
-func startServicesDaemon(ctx context.Context, devPodConfig *config.Config, client client2.DaemonClient, sshClient *ssh.Client, user string, log log.Logger, forwardPorts bool, extraPorts []string) error {
-	workspace, err := daemon.NewLocalClient(client.Provider()).GetWorkspace(ctx, client.WorkspaceConfig().UID)
-	if err != nil {
-		return err
-	}
-
-	configureDockerCredentials := devPodConfig.ContextOption(config.ContextOptionSSHInjectDockerCredentials) == "true"
-	configureGitCredentials := devPodConfig.ContextOption(config.ContextOptionSSHInjectGitCredentials) == "true"
-	configureGitSSHSignatureHelper := devPodConfig.ContextOption(config.ContextOptionGitSSHSignatureForwarding) == "true"
-
-	if workspace != nil && workspace.Status.Instance != nil && workspace.Status.Instance.CredentialForwarding != nil {
-		if workspace.Status.Instance.CredentialForwarding.Docker != nil {
-			configureDockerCredentials = !workspace.Status.Instance.CredentialForwarding.Docker.Disabled
-		}
-		if workspace.Status.Instance.CredentialForwarding.Git != nil {
-			configureGitCredentials = !workspace.Status.Instance.CredentialForwarding.Git.Disabled
-			configureGitSSHSignatureHelper = !workspace.Status.Instance.CredentialForwarding.Git.Disabled
-		}
-	}
-
-	if user != "" {
-		return tunnel.RunServices(
-			ctx,
-			devPodConfig,
-			sshClient,
-			user,
-			forwardPorts,
-			extraPorts,
-			nil,
-			client.WorkspaceConfig(),
-			configureDockerCredentials,
-			configureGitCredentials,
-			configureGitSSHSignatureHelper,
-			log,
-		)
-	}
-
-	return nil
 }
