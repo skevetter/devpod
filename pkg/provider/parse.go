@@ -11,6 +11,7 @@ import (
 
 	"github.com/blang/semver/v4"
 	"github.com/ghodss/yaml"
+	"github.com/skevetter/devpod/pkg/types"
 )
 
 var ProviderNameRegEx = regexp.MustCompile(`[^a-z0-9\-]+`)
@@ -126,137 +127,152 @@ func validate(config *ProviderConfig) error {
 
 func validateProviderType(config *ProviderConfig) error {
 	if config.IsProxyProvider() {
-		if !reflect.DeepEqual(config.Agent, ProviderAgentConfig{}) {
-			return fmt.Errorf("agent config is not allowed for proxy providers")
-		}
-		if len(config.Exec.Command) > 0 {
-			return fmt.Errorf("exec.command is not allowed in proxy providers")
-		}
-		if len(config.Exec.Create) > 0 {
-			return fmt.Errorf("exec.create is not allowed in proxy providers")
-		}
-		if len(config.Exec.Start) > 0 {
-			return fmt.Errorf("exec.create is not allowed in proxy providers")
-		}
-		if len(config.Exec.Stop) > 0 {
-			return fmt.Errorf("exec.create is not allowed in proxy providers")
-		}
-		if len(config.Exec.Status) > 0 {
-			return fmt.Errorf("exec.create is not allowed in proxy providers")
-		}
-		if len(config.Exec.Delete) > 0 {
-			return fmt.Errorf("exec.create is not allowed in proxy providers")
-		}
-		if len(config.Exec.Proxy.Status) == 0 {
-			return fmt.Errorf("exec.proxy.status is required for proxy providers")
-		}
-		if len(config.Exec.Proxy.Stop) == 0 {
-			return fmt.Errorf("exec.proxy.stop is required for proxy providers")
-		}
-		if len(config.Exec.Proxy.Delete) == 0 {
-			return fmt.Errorf("exec.proxy.delete is required for proxy providers")
-		}
-		if len(config.Exec.Proxy.Ssh) == 0 {
-			return fmt.Errorf("exec.proxy.ssh is required for proxy providers")
-		}
-		if len(config.Exec.Proxy.Up) == 0 {
-			return fmt.Errorf("exec.proxy.up is required for proxy providers")
-		}
-
-		return nil
+		return validateProxyProvider(config)
 	}
 
-	// daemon provider
 	if config.IsDaemonProvider() {
-		if !reflect.DeepEqual(config.Agent, ProviderAgentConfig{}) {
-			return fmt.Errorf("agent config is not allowed for daemon providers")
-		}
-		if len(config.Exec.Command) > 0 {
-			return fmt.Errorf("exec.command is not allowed in daemon providers")
-		}
-		if len(config.Exec.Create) > 0 {
-			return fmt.Errorf("exec.create is not allowed in daemon providers")
-		}
-		if len(config.Exec.Start) > 0 {
-			return fmt.Errorf("exec.create is not allowed in daemon providers")
-		}
-		if len(config.Exec.Stop) > 0 {
-			return fmt.Errorf("exec.create is not allowed in daemon providers")
-		}
-		if len(config.Exec.Status) > 0 {
-			return fmt.Errorf("exec.create is not allowed in daemon providers")
-		}
-		if len(config.Exec.Delete) > 0 {
-			return fmt.Errorf("exec.create is not allowed in daemon providers")
-		}
-		if len(config.Exec.Daemon.Start) == 0 {
-			return fmt.Errorf("exec.daemon.start is required for daemon providers")
-		}
-
-		return nil
+		return validateDaemonProvider(config)
 	}
 
-	// validate driver
+	return validateStandardProvider(config)
+}
+
+func validateProxyProvider(config *ProviderConfig) error {
+	if !reflect.DeepEqual(config.Agent, ProviderAgentConfig{}) {
+		return fmt.Errorf("agent config is not allowed for proxy providers")
+	}
+
+	disallowedExecFields := map[string]types.StrArray{
+		"exec.command": config.Exec.Command,
+		"exec.create":  config.Exec.Create,
+		"exec.start":   config.Exec.Start,
+		"exec.stop":    config.Exec.Stop,
+		"exec.status":  config.Exec.Status,
+		"exec.delete":  config.Exec.Delete,
+	}
+	for field, value := range disallowedExecFields {
+		if len(value) > 0 {
+			return fmt.Errorf("%s is not allowed in proxy providers", field)
+		}
+	}
+
+	requiredProxyFields := map[string]types.StrArray{
+		"exec.proxy.status": config.Exec.Proxy.Status,
+		"exec.proxy.stop":   config.Exec.Proxy.Stop,
+		"exec.proxy.delete": config.Exec.Proxy.Delete,
+		"exec.proxy.ssh":    config.Exec.Proxy.Ssh,
+		"exec.proxy.up":     config.Exec.Proxy.Up,
+	}
+	for field, value := range requiredProxyFields {
+		if len(value) == 0 {
+			return fmt.Errorf("%s is required for proxy providers", field)
+		}
+	}
+
+	return nil
+}
+
+func validateDaemonProvider(config *ProviderConfig) error {
+	if !reflect.DeepEqual(config.Agent, ProviderAgentConfig{}) {
+		return fmt.Errorf("agent config is not allowed for daemon providers")
+	}
+
+	disallowedExecFields := map[string]types.StrArray{
+		"exec.command": config.Exec.Command,
+		"exec.create":  config.Exec.Create,
+		"exec.start":   config.Exec.Start,
+		"exec.stop":    config.Exec.Stop,
+		"exec.status":  config.Exec.Status,
+		"exec.delete":  config.Exec.Delete,
+	}
+	for field, value := range disallowedExecFields {
+		if len(value) > 0 {
+			return fmt.Errorf("%s is not allowed in daemon providers", field)
+		}
+	}
+
+	if len(config.Exec.Daemon.Start) == 0 {
+		return fmt.Errorf("exec.daemon.start is required for daemon providers")
+	}
+
+	return nil
+}
+
+func validateStandardProvider(config *ProviderConfig) error {
+	if err := validateAgentDriver(config); err != nil {
+		return err
+	}
+
+	if err := validateBinaries("agent.binaries", config.Agent.Binaries); err != nil {
+		return err
+	}
+
+	return validateExecCommands(config)
+}
+
+func validateAgentDriver(config *ProviderConfig) error {
 	if config.Agent.Driver != "" && config.Agent.Driver != CustomDriver && config.Agent.Driver != DockerDriver && config.Agent.Driver != KubernetesDriver {
 		return fmt.Errorf("agent.driver can only be docker, kubernetes or custom")
 	}
 
-	// validate custom driver
 	if config.Agent.Driver == CustomDriver {
-		if len(config.Agent.Custom.TargetArchitecture) == 0 {
-			return fmt.Errorf("agent.custom.targetArchitecture is required")
-		}
-		if len(config.Agent.Custom.StartDevContainer) == 0 {
-			return fmt.Errorf("agent.custom.startDevContainer is required")
-		}
-		if len(config.Agent.Custom.StopDevContainer) == 0 {
-			return fmt.Errorf("agent.custom.stopDevContainer is required")
-		}
-		if len(config.Agent.Custom.RunDevContainer) == 0 {
-			return fmt.Errorf("agent.custom.runDevContainer is required")
-		}
-		if len(config.Agent.Custom.DeleteDevContainer) == 0 {
-			return fmt.Errorf("agent.custom.deleteDevContainer is required")
-		}
-		if len(config.Agent.Custom.FindDevContainer) == 0 {
-			return fmt.Errorf("agent.custom.findDevContainer is required")
-		}
-		if len(config.Agent.Custom.CommandDevContainer) == 0 {
-			return fmt.Errorf("agent.custom.commandDevContainer is required")
-		}
-		// TODO: Add config.Agent.Custom.GetDevContainerLogs validation
-		// after we released a new version of the kubernetes provider and gave folks a chance to update
+		return validateCustomDriver(config)
 	}
 
-	// agent binaries
-	err := validateBinaries("agent.binaries", config.Agent.Binaries)
-	if err != nil {
-		return err
+	return nil
+}
+
+func validateCustomDriver(config *ProviderConfig) error {
+	requiredFields := map[string]types.StrArray{
+		"agent.custom.targetArchitecture":  config.Agent.Custom.TargetArchitecture,
+		"agent.custom.startDevContainer":   config.Agent.Custom.StartDevContainer,
+		"agent.custom.stopDevContainer":    config.Agent.Custom.StopDevContainer,
+		"agent.custom.runDevContainer":     config.Agent.Custom.RunDevContainer,
+		"agent.custom.deleteDevContainer":  config.Agent.Custom.DeleteDevContainer,
+		"agent.custom.findDevContainer":    config.Agent.Custom.FindDevContainer,
+		"agent.custom.commandDevContainer": config.Agent.Custom.CommandDevContainer,
 	}
 
-	// validate provider type
+	for field, value := range requiredFields {
+		if len(value) == 0 {
+			return fmt.Errorf("%s is required", field)
+		}
+	}
+
+	return nil
+}
+
+func validateExecCommands(config *ProviderConfig) error {
 	if len(config.Exec.Command) == 0 {
 		return fmt.Errorf("exec.command is required")
 	}
-	if len(config.Exec.Create) > 0 && len(config.Exec.Delete) == 0 {
-		return fmt.Errorf("exec.delete is required")
+
+	if err := validateExecPair("exec.create", "exec.delete", config.Exec.Create, config.Exec.Delete); err != nil {
+		return err
 	}
-	if len(config.Exec.Create) == 0 && len(config.Exec.Delete) > 0 {
-		return fmt.Errorf("exec.create is required")
+
+	if err := validateExecPair("exec.start", "exec.stop", config.Exec.Start, config.Exec.Stop); err != nil {
+		return err
 	}
-	if len(config.Exec.Start) == 0 && len(config.Exec.Stop) > 0 {
-		return fmt.Errorf("exec.start is required")
-	}
-	if len(config.Exec.Stop) == 0 && len(config.Exec.Start) > 0 {
-		return fmt.Errorf("exec.start is required")
-	}
+
 	if len(config.Exec.Status) == 0 && len(config.Exec.Start) > 0 {
 		return fmt.Errorf("exec.status is required")
 	}
+
 	if len(config.Exec.Create) == 0 && len(config.Exec.Start) > 0 {
 		return fmt.Errorf("exec.create is required")
 	}
 
+	return nil
+}
+
+func validateExecPair(field1, field2 string, value1, value2 types.StrArray) error {
+	if len(value1) > 0 && len(value2) == 0 {
+		return fmt.Errorf("%s is required", field2)
+	}
+	if len(value1) == 0 && len(value2) > 0 {
+		return fmt.Errorf("%s is required", field1)
+	}
 	return nil
 }
 
