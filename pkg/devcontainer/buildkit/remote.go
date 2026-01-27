@@ -53,8 +53,8 @@ func BuildRemote(ctx context.Context, opts BuildRemoteOptions) (*config.BuildInf
 	if err != nil {
 		return nil, err
 	}
-	defer os.RemoveAll(tmpDir)
-	defer c.Close()
+	defer func() { _ = os.RemoveAll(tmpDir) }()
+	defer func() { _ = c.Close() }()
 
 	imageName := opts.Options.CLIOptions.Platform.Build.Repository + "/" + build.GetImageName(opts.LocalWorkspaceFolder, opts.PrebuildHash)
 	ref, keychain, err := resolveImageReference(ctx, imageName)
@@ -157,6 +157,12 @@ func validateRemoteBuildOptions(options provider.BuildOptions) error {
 	if options.CLIOptions.Platform.Build.Repository == "" && !options.SkipPush {
 		return errors.New("remote builds require a registry to be provided")
 	}
+	if options.SkipPush {
+		return errors.New("remote builds require pushing to a registry")
+	}
+	if options.CLIOptions.Platform.Build.Repository == "" {
+		return errors.New("remote builds require a registry to be provided")
+	}
 	return nil
 }
 
@@ -168,6 +174,7 @@ func setupBuildKitClient(ctx context.Context, options provider.BuildOptions) (*c
 
 	tmpDir, caPath, keyPath, certPath, err := ensureCertPaths(options.CLIOptions.Platform.Build)
 	if err != nil {
+		_ = os.RemoveAll(tmpDir)
 		return nil, nil, "", fmt.Errorf("ensure certificates %w", err)
 	}
 
@@ -180,12 +187,14 @@ func setupBuildKitClient(ctx context.Context, options provider.BuildOptions) (*c
 		client.WithCredentials(certPath, keyPath),
 	)
 	if err != nil {
+		_ = os.RemoveAll(tmpDir)
 		return nil, nil, tmpDir, fmt.Errorf("get client %w", err)
 	}
 
 	info, err := c.Info(timeoutCtx)
 	if err != nil {
-		c.Close()
+		_ = c.Close()
+		_ = os.RemoveAll(tmpDir)
 		return nil, nil, tmpDir, fmt.Errorf("get remote builder info %w", err)
 	}
 
@@ -409,7 +418,7 @@ func executeBuild(params executeBuildParams) error {
 	params.Log.Infof("start building %s using platform builder (%s)", strings.Join(params.BuildOpts.Images, ","), params.Info.BuildkitVersion.Version)
 
 	writer := params.Log.Writer(logrus.InfoLevel, false)
-	defer writer.Close()
+	defer func() { _ = writer.Close() }()
 
 	pw, err := NewPrinter(params.Ctx, writer)
 	if err != nil {
