@@ -32,109 +32,220 @@ import (
 	"github.com/tonistiigi/fsutil"
 )
 
-func BuildRemote(
-	ctx context.Context,
-	prebuildHash string,
-	parsedConfig *config.SubstitutedConfig,
-	extendedBuildInfo *feature.ExtendedBuildInfo,
-	dockerfilePath,
-	dockerfileContent string,
-	localWorkspaceFolder string,
-	options provider.BuildOptions,
-	targetArch string,
-	log log.Logger,
-) (*config.BuildInfo, error) {
-	if options.NoBuild {
-		return nil, fmt.Errorf("you cannot build in this mode. Please run 'devpod up' to rebuild the container")
-	}
-	if !options.CLIOptions.Platform.Enabled {
-		return nil, errors.New("remote builds are only supported in DevPod Pro")
-	}
-	if options.CLIOptions.Platform.Build == nil {
-		return nil, errors.New("build options are required for remote builds")
-	}
-	if options.CLIOptions.Platform.Build.RemoteAddress == "" {
-		return nil, errors.New("builder address is required to build image remotely")
-	}
-	if options.CLIOptions.Platform.Build.Repository == "" && !options.SkipPush {
-		return nil, errors.New("remote builds require a registry to be provided")
+type BuildRemoteOptions struct {
+	PrebuildHash         string
+	ParsedConfig         *config.SubstitutedConfig
+	ExtendedBuildInfo    *feature.ExtendedBuildInfo
+	DockerfilePath       string
+	DockerfileContent    string
+	LocalWorkspaceFolder string
+	Options              provider.BuildOptions
+	TargetArch           string
+	Log                  log.Logger
+}
+
+func BuildRemote(ctx context.Context, opts BuildRemoteOptions) (*config.BuildInfo, error) {
+	if err := validateRemoteBuildOptions(opts.Options); err != nil {
+		return nil, err
 	}
 
-	remoteURL, err := url.Parse(options.CLIOptions.Platform.Build.RemoteAddress)
+	c, info, tmpDir, err := setupBuildKitClient(ctx, opts.Options)
+	if err != nil {
+		return nil, err
+	}
+	defer os.RemoveAll(tmpDir)
+	defer c.Close()
+
+	imageName := opts.Options.CLIOptions.Platform.Build.Repository + "/" + build.GetImageName(opts.LocalWorkspaceFolder, opts.PrebuildHash)
+	ref, keychain, err := resolveImageReference(ctx, imageName)
 	if err != nil {
 		return nil, err
 	}
 
-	// temporarily write certs to disk because buildkit only accepts paths
+	if buildInfo, found := checkExistingImage(checkExistingImageOptions{
+		Ref:               ref,
+		TargetArch:        opts.TargetArch,
+		Keychain:          keychain,
+		ImageName:         imageName,
+		PrebuildHash:      opts.PrebuildHash,
+		ExtendedBuildInfo: opts.ExtendedBuildInfo,
+		Options:           opts.Options,
+		Log:               opts.Log,
+	}); found {
+		return buildInfo, nil
+	}
+
+	if err := remote.CheckPushPermission(ref, keychain, http.DefaultTransport); err != nil {
+		return nil, fmt.Errorf("pushing %s is not allowed %w", ref, err)
+	}
+
+	session, err := setupRegistryAuth(ref, keychain)
+	if err != nil {
+		return nil, err
+	}
+
+	buildOpts, cacheFrom, cacheTo, err := prepareBuildOptions(prepareBuildOptionsParams{
+		DockerfilePath:    opts.DockerfilePath,
+		DockerfileContent: opts.DockerfileContent,
+		ParsedConfig:      opts.ParsedConfig,
+		ExtendedBuildInfo: opts.ExtendedBuildInfo,
+		ImageName:         imageName,
+		Options:           opts.Options,
+		PrebuildHash:      opts.PrebuildHash,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	localMounts, err := setupLocalMounts(buildOpts)
+	if err != nil {
+		return nil, err
+	}
+
+	solveOptions, err := createSolveOptions(createSolveOptionsParams{
+		BuildOpts:   buildOpts,
+		LocalMounts: localMounts,
+		Session:     session,
+		CacheFrom:   cacheFrom,
+		CacheTo:     cacheTo,
+		Options:     opts.Options,
+		TargetArch:  opts.TargetArch,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if err := executeBuild(executeBuildParams{
+		Ctx:       ctx,
+		Client:    c,
+		SolveOpts: solveOptions,
+		Info:      info,
+		BuildOpts: buildOpts,
+		Log:       opts.Log,
+	}); err != nil {
+		return nil, err
+	}
+
+	imageDetails, err := getImageDetails(ref, opts.TargetArch, keychain)
+	if err != nil {
+		return nil, fmt.Errorf("get image details %w", err)
+	}
+
+	return &config.BuildInfo{
+		ImageDetails:  imageDetails,
+		ImageMetadata: opts.ExtendedBuildInfo.MetadataConfig,
+		ImageName:     imageName,
+		PrebuildHash:  opts.PrebuildHash,
+		RegistryCache: opts.Options.RegistryCache,
+		Tags:          opts.Options.Tag,
+	}, nil
+}
+
+func validateRemoteBuildOptions(options provider.BuildOptions) error {
+	if options.NoBuild {
+		return fmt.Errorf("you cannot build in this mode. Please run 'devpod up' to rebuild the container")
+	}
+	if !options.CLIOptions.Platform.Enabled {
+		return errors.New("remote builds are only supported in DevPod Pro")
+	}
+	if options.CLIOptions.Platform.Build == nil {
+		return errors.New("build options are required for remote builds")
+	}
+	if options.CLIOptions.Platform.Build.RemoteAddress == "" {
+		return errors.New("builder address is required to build image remotely")
+	}
+	if options.CLIOptions.Platform.Build.Repository == "" && !options.SkipPush {
+		return errors.New("remote builds require a registry to be provided")
+	}
+	return nil
+}
+
+func setupBuildKitClient(ctx context.Context, options provider.BuildOptions) (*client.Client, *client.Info, string, error) {
+	remoteURL, err := url.Parse(options.CLIOptions.Platform.Build.RemoteAddress)
+	if err != nil {
+		return nil, nil, "", err
+	}
+
 	tmpDir, caPath, keyPath, certPath, err := ensureCertPaths(options.CLIOptions.Platform.Build)
 	if err != nil {
-		return nil, fmt.Errorf("ensure certificates %w", err)
+		return nil, nil, "", fmt.Errorf("ensure certificates %w", err)
 	}
-	defer func() {
-		_ = os.RemoveAll(tmpDir)
-	}()
 
-	// initialize remote buildkit client
 	timeoutCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
+
 	c, err := client.New(timeoutCtx,
 		options.CLIOptions.Platform.Build.RemoteAddress,
 		client.WithServerConfig(remoteURL.Hostname(), caPath),
 		client.WithCredentials(certPath, keyPath),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("get client %w", err)
+		return nil, nil, tmpDir, fmt.Errorf("get client %w", err)
 	}
-	defer func() { _ = c.Close() }()
 
 	info, err := c.Info(timeoutCtx)
 	if err != nil {
-		return nil, fmt.Errorf("get remote builder info %w", err)
+		c.Close()
+		return nil, nil, tmpDir, fmt.Errorf("get remote builder info %w", err)
 	}
 
-	imageName := options.CLIOptions.Platform.Build.Repository + "/" + build.GetImageName(localWorkspaceFolder, prebuildHash)
+	return c, info, tmpDir, nil
+}
+
+func resolveImageReference(ctx context.Context, imageName string) (name.Reference, authn.Keychain, error) {
 	ref, err := name.ParseReference(imageName)
 	if err != nil {
-		return nil, fmt.Errorf("unable to resolve registry %s and image %s %w",
-			options.CLIOptions.Platform.Build.Repository,
-			build.GetImageName(localWorkspaceFolder, prebuildHash), err)
+		return nil, nil, fmt.Errorf("unable to resolve image %s %w", imageName, err)
 	}
+
 	keychain, err := image.GetKeychain(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("get docker auth keychain %w", err)
+		return nil, nil, fmt.Errorf("get docker auth keychain %w", err)
 	}
-	// we can return early if we find an existing image with the exact configuration in the repository
-	imageDetails, err := getImageDetails(ctx, ref, targetArch, keychain)
+
+	return ref, keychain, nil
+}
+
+type checkExistingImageOptions struct {
+	Ref               name.Reference
+	TargetArch        string
+	Keychain          authn.Keychain
+	ImageName         string
+	PrebuildHash      string
+	ExtendedBuildInfo *feature.ExtendedBuildInfo
+	Options           provider.BuildOptions
+	Log               log.Logger
+}
+
+func checkExistingImage(opts checkExistingImageOptions) (*config.BuildInfo, bool) {
+	imageDetails, err := getImageDetails(opts.Ref, opts.TargetArch, opts.Keychain)
 	if err == nil {
-		log.Infof("Found existing image %s, skipping build", imageName)
+		opts.Log.Infof("skipping build because an existing image was found %s", opts.ImageName)
 		return &config.BuildInfo{
 			ImageDetails:  imageDetails,
-			ImageMetadata: extendedBuildInfo.MetadataConfig,
-			ImageName:     imageName,
-			PrebuildHash:  prebuildHash,
-			RegistryCache: options.RegistryCache,
-			Tags:          options.Tag,
-		}, nil
+			ImageMetadata: opts.ExtendedBuildInfo.MetadataConfig,
+			ImageName:     opts.ImageName,
+			PrebuildHash:  opts.PrebuildHash,
+			RegistryCache: opts.Options.RegistryCache,
+			Tags:          opts.Options.Tag,
+		}, true
 	}
+	return nil, false
+}
 
-	// check push permissions early
-	err = remote.CheckPushPermission(ref, keychain, http.DefaultTransport)
-	if err != nil {
-		return nil, fmt.Errorf("pushing %s is not allowed %w", ref, err)
-	}
-
-	// resolve credentials for registry
+func setupRegistryAuth(ref name.Reference, keychain authn.Keychain) ([]session.Attachable, error) {
 	auth, err := keychain.Resolve(ref.Context())
 	if err != nil {
 		return nil, fmt.Errorf("get authentication for %s %w", ref.Context().String(), err)
 	}
+
 	authConfig, err := auth.Authorization()
 	if err != nil {
 		return nil, fmt.Errorf("get auth config for %s %w", ref.Context().String(), err)
 	}
 
 	registry := ref.Context().RegistryStr()
-	session := []session.Attachable{
+	return []session.Attachable{
 		authprovider.NewDockerAuthProvider(authprovider.DockerAuthProviderConfig{
 			AuthConfigProvider: func(ctx context.Context, host string, scope []string, cacheCheck authprovider.ExpireCachedAuthCheck) (types.AuthConfig, error) {
 				if host == registry {
@@ -149,135 +260,167 @@ func BuildRemote(
 				return types.AuthConfig{}, nil
 			},
 		}),
+	}, nil
+}
+
+type prepareBuildOptionsParams struct {
+	DockerfilePath    string
+	DockerfileContent string
+	ParsedConfig      *config.SubstitutedConfig
+	ExtendedBuildInfo *feature.ExtendedBuildInfo
+	ImageName         string
+	Options           provider.BuildOptions
+	PrebuildHash      string
+}
+
+func prepareBuildOptions(params prepareBuildOptionsParams) (*build.BuildOptions, []client.CacheOptionsEntry, []client.CacheOptionsEntry, error) {
+	buildOpts, err := build.NewOptions(params.DockerfilePath, params.DockerfileContent, params.ParsedConfig, params.ExtendedBuildInfo, params.ImageName, params.Options, params.PrebuildHash)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("create build options %w", err)
 	}
 
-	buildOptions, err := build.NewOptions(dockerfilePath, dockerfileContent, parsedConfig, extendedBuildInfo, imageName, options, prebuildHash)
+	cacheFrom, err := ParseCacheEntry(buildOpts.CacheFrom)
 	if err != nil {
-		return nil, fmt.Errorf("create build buildOptions %w", err)
+		return nil, nil, nil, err
 	}
 
-	// cache from
-	cacheFrom, err := ParseCacheEntry(buildOptions.CacheFrom)
+	cacheTo, err := ParseCacheEntry(buildOpts.CacheTo)
 	if err != nil {
-		return nil, err
-	}
-	cacheTo, err := ParseCacheEntry(buildOptions.CacheTo)
-	if err != nil {
-		return nil, err
+		return nil, nil, nil, err
 	}
 
-	dockerfileDir := filepath.Dir(buildOptions.Dockerfile)
+	return buildOpts, cacheFrom, cacheTo, nil
+}
+
+func setupLocalMounts(buildOpts *build.BuildOptions) (map[string]fsutil.FS, error) {
 	localMounts := map[string]fsutil.FS{}
+
+	dockerfileDir := filepath.Dir(buildOpts.Dockerfile)
 	dockerfileMount, err := fsutil.NewFS(dockerfileDir)
 	if err != nil {
 		return nil, fmt.Errorf("create local dockerfile mount %w", err)
 	}
 	localMounts["dockerfile"] = dockerfileMount
-	contextMount, err := fsutil.NewFS(buildOptions.Context)
+
+	contextMount, err := fsutil.NewFS(buildOpts.Context)
 	if err != nil {
 		return nil, fmt.Errorf("create local context mount %w", err)
 	}
 	localMounts["context"] = contextMount
 
-	// create solve options
-	solveOptions := client.SolveOpt{
+	return localMounts, nil
+}
+
+type createSolveOptionsParams struct {
+	BuildOpts   *build.BuildOptions
+	LocalMounts map[string]fsutil.FS
+	Session     []session.Attachable
+	CacheFrom   []client.CacheOptionsEntry
+	CacheTo     []client.CacheOptionsEntry
+	Options     provider.BuildOptions
+	TargetArch  string
+}
+
+func createSolveOptions(params createSolveOptionsParams) (client.SolveOpt, error) {
+	solveOpts := client.SolveOpt{
 		Frontend: "dockerfile.v0",
 		FrontendAttrs: map[string]string{
-			"filename": filepath.Base(buildOptions.Dockerfile),
-			"context":  buildOptions.Context,
+			"filename": filepath.Base(params.BuildOpts.Dockerfile),
+			"context":  params.BuildOpts.Context,
 		},
-		LocalMounts:  localMounts,
-		Session:      session,
-		CacheImports: cacheFrom,
-		CacheExports: cacheTo,
+		LocalMounts:  params.LocalMounts,
+		Session:      params.Session,
+		CacheImports: params.CacheFrom,
+		CacheExports: params.CacheTo,
 	}
 
-	// set buildOptions target
-	if buildOptions.Target != "" {
-		solveOptions.FrontendAttrs["target"] = buildOptions.Target
+	if params.BuildOpts.Target != "" {
+		solveOpts.FrontendAttrs["target"] = params.BuildOpts.Target
 	}
 
-	// add platforms
-	if options.Platform != "" {
-		solveOptions.FrontendAttrs["platform"] = options.Platform
-	} else if targetArch != "" {
-		solveOptions.FrontendAttrs["platform"] = "linux/" + targetArch
+	if params.Options.Platform != "" {
+		solveOpts.FrontendAttrs["platform"] = params.Options.Platform
+	} else if params.TargetArch != "" {
+		solveOpts.FrontendAttrs["platform"] = "linux/" + params.TargetArch
 	}
 
-	// multi contexts
-	for k, v := range buildOptions.Contexts {
-		st, err := os.Stat(v)
-		if err != nil {
-			return nil, fmt.Errorf("get build context %v %w", k, err)
-		}
-		if !st.IsDir() {
-			return nil, fmt.Errorf("build context '%s' is not a directory", v)
-		}
-		localName := k
-		if k == "context" || k == "dockerfile" {
-			localName = "_" + k // underscore to avoid collisions
-		}
-
-		solveOptions.LocalMounts[localName], err = fsutil.NewFS(v)
-		if err != nil {
-			return nil, fmt.Errorf("create local mount for %s at %s %w", localName, v, err)
-		}
-
-		solveOptions.FrontendAttrs["context:"+k] = "local:" + localName
+	if err := addMultiContexts(&solveOpts, params.BuildOpts); err != nil {
+		return client.SolveOpt{}, err
 	}
 
 	push := "true"
-	if options.SkipPush {
+	if params.Options.SkipPush {
 		push = "false"
 	}
-	solveOptions.Exports = append(solveOptions.Exports, client.ExportEntry{
+	solveOpts.Exports = append(solveOpts.Exports, client.ExportEntry{
 		Type: client.ExporterImage,
 		Attrs: map[string]string{
-			string(exptypes.OptKeyName): strings.Join(buildOptions.Images, ","),
+			string(exptypes.OptKeyName): strings.Join(params.BuildOpts.Images, ","),
 			string(exptypes.OptKeyPush): push,
 		},
 	})
 
-	// add labels
-	for k, v := range buildOptions.Labels {
-		solveOptions.FrontendAttrs["label:"+k] = v
+	for k, v := range params.BuildOpts.Labels {
+		solveOpts.FrontendAttrs["label:"+k] = v
 	}
 
-	// add build args
-	for key, value := range buildOptions.BuildArgs {
-		solveOptions.FrontendAttrs["build-arg:"+key] = value
+	for key, value := range params.BuildOpts.BuildArgs {
+		solveOpts.FrontendAttrs["build-arg:"+key] = value
 	}
 
-	log.Infof("Start building %s using platform builder (%s)", strings.Join(buildOptions.Images, ","), info.BuildkitVersion.Version)
-
-	// TODO: Writer should be async to prevent blocking while waiting for tunnel response
-	writer := log.Writer(logrus.InfoLevel, false)
-	defer func() { _ = writer.Close() }()
-	pw, err := NewPrinter(ctx, writer)
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = c.Solve(ctx, nil, solveOptions, pw.Status())
-	if err != nil {
-		return nil, err
-	}
-
-	imageDetails, err = getImageDetails(ctx, ref, targetArch, keychain)
-	if err != nil {
-		return nil, fmt.Errorf("get image details %w", err)
-	}
-	return &config.BuildInfo{
-		ImageDetails:  imageDetails,
-		ImageMetadata: extendedBuildInfo.MetadataConfig,
-		ImageName:     imageName,
-		PrebuildHash:  prebuildHash,
-		RegistryCache: options.RegistryCache,
-		Tags:          options.Tag,
-	}, nil
+	return solveOpts, nil
 }
 
-func getImageDetails(ctx context.Context, ref name.Reference, targetArch string, keychain authn.Keychain) (*config.ImageDetails, error) {
+func addMultiContexts(solveOpts *client.SolveOpt, buildOpts *build.BuildOptions) error {
+	for k, v := range buildOpts.Contexts {
+		st, err := os.Stat(v)
+		if err != nil {
+			return fmt.Errorf("get build context %v %w", k, err)
+		}
+		if !st.IsDir() {
+			return fmt.Errorf("build context '%s' is not a directory", v)
+		}
+
+		localName := k
+		if k == "context" || k == "dockerfile" {
+			localName = "_" + k
+		}
+
+		solveOpts.LocalMounts[localName], err = fsutil.NewFS(v)
+		if err != nil {
+			return fmt.Errorf("create local mount for %s at %s %w", localName, v, err)
+		}
+
+		solveOpts.FrontendAttrs["context:"+k] = "local:" + localName
+	}
+	return nil
+}
+
+type executeBuildParams struct {
+	Ctx       context.Context
+	Client    *client.Client
+	SolveOpts client.SolveOpt
+	Info      *client.Info
+	BuildOpts *build.BuildOptions
+	Log       log.Logger
+}
+
+func executeBuild(params executeBuildParams) error {
+	params.Log.Infof("start building %s using platform builder (%s)", strings.Join(params.BuildOpts.Images, ","), params.Info.BuildkitVersion.Version)
+
+	writer := params.Log.Writer(logrus.InfoLevel, false)
+	defer writer.Close()
+
+	pw, err := NewPrinter(params.Ctx, writer)
+	if err != nil {
+		return err
+	}
+
+	_, err = params.Client.Solve(params.Ctx, nil, params.SolveOpts, pw.Status())
+	return err
+}
+
+func getImageDetails(ref name.Reference, targetArch string, keychain authn.Keychain) (*config.ImageDetails, error) {
 	remoteImage, err := remote.Image(ref,
 		remote.WithAuthFromKeychain(keychain),
 		remote.WithPlatform(v1.Platform{Architecture: targetArch, OS: "linux"}),
