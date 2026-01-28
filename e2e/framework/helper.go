@@ -1,6 +1,13 @@
 package framework
 
-import "github.com/onsi/gomega"
+import (
+	"github.com/onsi/ginkgo/v2"
+	"github.com/onsi/gomega"
+)
+
+func DevPodDescribe(text string, body func()) bool {
+	return ginkgo.Describe(text, body)
+}
 
 // ExpectEqual expects the specified two are the same, otherwise an exception raises
 func ExpectEqual(actual any, extra any, explain ...any) {
