@@ -37,14 +37,17 @@ type BuildOptions struct {
 	Upload bool
 }
 
-func NewOptions(
-	dockerfilePath, dockerfileContent string,
-	parsedConfig *config.SubstitutedConfig,
-	extendedBuildInfo *feature.ExtendedBuildInfo,
-	imageName string,
-	options provider.BuildOptions,
-	prebuildHash string,
-) (*BuildOptions, error) {
+type NewOptionsParams struct {
+	DockerfilePath    string
+	DockerfileContent string
+	ParsedConfig      *config.SubstitutedConfig
+	ExtendedBuildInfo *feature.ExtendedBuildInfo
+	ImageName         string
+	Options           provider.BuildOptions
+	PrebuildHash      string
+}
+
+func NewOptions(params NewOptionsParams) (*BuildOptions, error) {
 	var err error
 
 	// extra args?
@@ -55,35 +58,35 @@ func NewOptions(
 	}
 
 	// get build args and target
-	buildOptions.BuildArgs, buildOptions.Target = GetBuildArgsAndTarget(parsedConfig, extendedBuildInfo)
+	buildOptions.BuildArgs, buildOptions.Target = GetBuildArgsAndTarget(params.ParsedConfig, params.ExtendedBuildInfo)
 
 	// get cli options
-	buildOptions.CliOpts = parsedConfig.Config.GetOptions()
+	buildOptions.CliOpts = params.ParsedConfig.Config.GetOptions()
 
 	// get extended build info
-	buildOptions.Dockerfile, err = RewriteDockerfile(dockerfileContent, extendedBuildInfo)
+	buildOptions.Dockerfile, err = RewriteDockerfile(params.DockerfileContent, params.ExtendedBuildInfo)
 	if err != nil {
 		return nil, err
 	} else if buildOptions.Dockerfile == "" {
-		buildOptions.Dockerfile = dockerfilePath
+		buildOptions.Dockerfile = params.DockerfilePath
 	}
 
 	// add label
-	if extendedBuildInfo != nil && extendedBuildInfo.MetadataLabel != "" {
-		buildOptions.Labels[metadata.ImageMetadataLabel] = extendedBuildInfo.MetadataLabel
+	if params.ExtendedBuildInfo != nil && params.ExtendedBuildInfo.MetadataLabel != "" {
+		buildOptions.Labels[metadata.ImageMetadataLabel] = params.ExtendedBuildInfo.MetadataLabel
 	}
 
 	// other options
-	if imageName != "" {
-		buildOptions.Images = append(buildOptions.Images, imageName)
+	if params.ImageName != "" {
+		buildOptions.Images = append(buildOptions.Images, params.ImageName)
 	}
-	if options.Repository != "" {
-		buildOptions.Images = append(buildOptions.Images, options.Repository+":"+prebuildHash)
+	if params.Options.Repository != "" {
+		buildOptions.Images = append(buildOptions.Images, params.Options.Repository+":"+params.PrebuildHash)
 	}
-	for _, prebuildRepository := range options.PrebuildRepositories {
-		buildOptions.Images = append(buildOptions.Images, prebuildRepository+":"+prebuildHash)
+	for _, prebuildRepository := range params.Options.PrebuildRepositories {
+		buildOptions.Images = append(buildOptions.Images, prebuildRepository+":"+params.PrebuildHash)
 	}
-	buildOptions.Context = config.GetContextPath(parsedConfig.Config)
+	buildOptions.Context = config.GetContextPath(params.ParsedConfig.Config)
 
 	// add build arg
 	if buildOptions.BuildArgs == nil {
@@ -91,11 +94,11 @@ func NewOptions(
 	}
 
 	// define cache args
-	if options.RegistryCache != "" {
-		buildOptions.CacheFrom = []string{fmt.Sprintf("type=registry,ref=%s", options.RegistryCache)}
+	if params.Options.RegistryCache != "" {
+		buildOptions.CacheFrom = []string{fmt.Sprintf("type=registry,ref=%s", params.Options.RegistryCache)}
 		// only export cache on build not up, otherwise we slow down the workspace start time
-		if options.ExportCache {
-			buildOptions.CacheTo = []string{fmt.Sprintf("type=registry,ref=%s,mode=max,image-manifest=true", options.RegistryCache)}
+		if params.Options.ExportCache {
+			buildOptions.CacheTo = []string{fmt.Sprintf("type=registry,ref=%s,mode=max,image-manifest=true", params.Options.RegistryCache)}
 		}
 	} else {
 		buildOptions.BuildArgs["BUILDKIT_INLINE_CACHE"] = "1"

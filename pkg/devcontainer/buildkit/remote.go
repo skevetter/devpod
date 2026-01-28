@@ -63,16 +63,13 @@ func BuildRemote(ctx context.Context, opts BuildRemoteOptions) (*config.BuildInf
 		return nil, err
 	}
 
-	if buildInfo, found := checkExistingImage(checkExistingImageOptions{
-		Ref:               ref,
-		TargetArch:        opts.TargetArch,
-		Keychain:          keychain,
-		ImageName:         imageName,
-		PrebuildHash:      opts.PrebuildHash,
-		ExtendedBuildInfo: opts.ExtendedBuildInfo,
-		Options:           opts.Options,
-		Log:               opts.Log,
-	}); found {
+	if buildInfo := checkExistingImage(checkExistingImageParams{
+		Ref:        ref,
+		TargetArch: opts.TargetArch,
+		Keychain:   keychain,
+		ImageName:  imageName,
+		Opts:       opts,
+	}); buildInfo != nil {
 		return buildInfo, nil
 	}
 
@@ -80,38 +77,7 @@ func BuildRemote(ctx context.Context, opts BuildRemoteOptions) (*config.BuildInf
 		return nil, fmt.Errorf("pushing %s is not allowed %w", ref, err)
 	}
 
-	session, err := setupRegistryAuth(ref, keychain)
-	if err != nil {
-		return nil, err
-	}
-
-	buildOpts, cacheFrom, cacheTo, err := prepareBuildOptions(prepareBuildOptionsParams{
-		DockerfilePath:    opts.DockerfilePath,
-		DockerfileContent: opts.DockerfileContent,
-		ParsedConfig:      opts.ParsedConfig,
-		ExtendedBuildInfo: opts.ExtendedBuildInfo,
-		ImageName:         imageName,
-		Options:           opts.Options,
-		PrebuildHash:      opts.PrebuildHash,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	localMounts, err := setupLocalMounts(buildOpts)
-	if err != nil {
-		return nil, err
-	}
-
-	solveOptions, err := createSolveOptions(createSolveOptionsParams{
-		BuildOpts:   buildOpts,
-		LocalMounts: localMounts,
-		Session:     session,
-		CacheFrom:   cacheFrom,
-		CacheTo:     cacheTo,
-		Options:     opts.Options,
-		TargetArch:  opts.TargetArch,
-	})
+	solveOpts, err := prepareSolveOptions(ref, keychain, imageName, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -119,10 +85,9 @@ func BuildRemote(ctx context.Context, opts BuildRemoteOptions) (*config.BuildInf
 	if err := executeBuild(executeBuildParams{
 		Ctx:       ctx,
 		Client:    c,
-		SolveOpts: solveOptions,
 		Info:      info,
-		BuildOpts: buildOpts,
-		Log:       opts.Log,
+		SolveOpts: solveOpts,
+		Logger:    opts.Log,
 	}); err != nil {
 		return nil, err
 	}
@@ -170,9 +135,8 @@ func setupBuildKitClient(ctx context.Context, options provider.BuildOptions) (*c
 		return nil, nil, "", err
 	}
 
-	tmpDir, caPath, keyPath, certPath, err := ensureCertPaths(options.CLIOptions.Platform.Build)
+	certs, err := ensureCertPaths(options.CLIOptions.Platform.Build)
 	if err != nil {
-		_ = os.RemoveAll(tmpDir)
 		return nil, nil, "", fmt.Errorf("ensure certificates %w", err)
 	}
 
@@ -181,22 +145,22 @@ func setupBuildKitClient(ctx context.Context, options provider.BuildOptions) (*c
 
 	c, err := client.New(timeoutCtx,
 		options.CLIOptions.Platform.Build.RemoteAddress,
-		client.WithServerConfig(remoteURL.Hostname(), caPath),
-		client.WithCredentials(certPath, keyPath),
+		client.WithServerConfig(remoteURL.Hostname(), certs.CAPath),
+		client.WithCredentials(certs.CertPath, certs.KeyPath),
 	)
 	if err != nil {
-		_ = os.RemoveAll(tmpDir)
+		_ = os.RemoveAll(certs.ParentDir)
 		return nil, nil, "", fmt.Errorf("get client %w", err)
 	}
 
 	info, err := c.Info(timeoutCtx)
 	if err != nil {
 		_ = c.Close()
-		_ = os.RemoveAll(tmpDir)
+		_ = os.RemoveAll(certs.ParentDir)
 		return nil, nil, "", fmt.Errorf("get remote builder info %w", err)
 	}
 
-	return c, info, tmpDir, nil
+	return c, info, certs.ParentDir, nil
 }
 
 func resolveImageReference(ctx context.Context, imageName string) (name.Reference, authn.Keychain, error) {
@@ -213,31 +177,30 @@ func resolveImageReference(ctx context.Context, imageName string) (name.Referenc
 	return ref, keychain, nil
 }
 
-type checkExistingImageOptions struct {
-	Ref               name.Reference
-	TargetArch        string
-	Keychain          authn.Keychain
-	ImageName         string
-	PrebuildHash      string
-	ExtendedBuildInfo *feature.ExtendedBuildInfo
-	Options           provider.BuildOptions
-	Log               log.Logger
+type checkExistingImageParams struct {
+	Ref        name.Reference
+	TargetArch string
+	Keychain   authn.Keychain
+	ImageName  string
+	Opts       BuildRemoteOptions
 }
 
-func checkExistingImage(opts checkExistingImageOptions) (*config.BuildInfo, bool) {
-	imageDetails, err := getImageDetails(opts.Ref, opts.TargetArch, opts.Keychain)
-	if err == nil {
-		opts.Log.Infof("skipping build because an existing image was found %s", opts.ImageName)
-		return &config.BuildInfo{
-			ImageDetails:  imageDetails,
-			ImageMetadata: opts.ExtendedBuildInfo.MetadataConfig,
-			ImageName:     opts.ImageName,
-			PrebuildHash:  opts.PrebuildHash,
-			RegistryCache: opts.Options.RegistryCache,
-			Tags:          opts.Options.Tag,
-		}, true
+func checkExistingImage(params checkExistingImageParams) *config.BuildInfo {
+	imageDetails, err := getImageDetails(params.Ref, params.TargetArch, params.Keychain)
+	if err != nil {
+		params.Opts.Log.Debugf("image check failed, continuing with build: %v", err)
+		return nil
 	}
-	return nil, false
+
+	params.Opts.Log.Infof("skipping build because an existing image was found %s", params.ImageName)
+	return &config.BuildInfo{
+		ImageDetails:  imageDetails,
+		ImageMetadata: params.Opts.ExtendedBuildInfo.MetadataConfig,
+		ImageName:     params.ImageName,
+		PrebuildHash:  params.Opts.PrebuildHash,
+		RegistryCache: params.Opts.Options.RegistryCache,
+		Tags:          params.Opts.Options.Tag,
+	}
 }
 
 func setupRegistryAuth(ref name.Reference, keychain authn.Keychain) ([]session.Attachable, error) {
@@ -270,108 +233,94 @@ func setupRegistryAuth(ref name.Reference, keychain authn.Keychain) ([]session.A
 	}, nil
 }
 
-type prepareBuildOptionsParams struct {
-	DockerfilePath    string
-	DockerfileContent string
-	ParsedConfig      *config.SubstitutedConfig
-	ExtendedBuildInfo *feature.ExtendedBuildInfo
-	ImageName         string
-	Options           provider.BuildOptions
-	PrebuildHash      string
-}
-
-func prepareBuildOptions(params prepareBuildOptionsParams) (*build.BuildOptions, []client.CacheOptionsEntry, []client.CacheOptionsEntry, error) {
-	buildOpts, err := build.NewOptions(params.DockerfilePath, params.DockerfileContent, params.ParsedConfig, params.ExtendedBuildInfo, params.ImageName, params.Options, params.PrebuildHash)
+func prepareSolveOptions(ref name.Reference, keychain authn.Keychain, imageName string, opts BuildRemoteOptions) (client.SolveOpt, error) {
+	session, err := setupRegistryAuth(ref, keychain)
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("create build options %w", err)
+		return client.SolveOpt{}, err
+	}
+
+	buildOpts, err := build.NewOptions(build.NewOptionsParams{
+		DockerfilePath:    opts.DockerfilePath,
+		DockerfileContent: opts.DockerfileContent,
+		ParsedConfig:      opts.ParsedConfig,
+		ExtendedBuildInfo: opts.ExtendedBuildInfo,
+		ImageName:         imageName,
+		Options:           opts.Options,
+		PrebuildHash:      opts.PrebuildHash,
+	})
+	if err != nil {
+		return client.SolveOpt{}, fmt.Errorf("create build options %w", err)
 	}
 
 	cacheFrom, err := ParseCacheEntry(buildOpts.CacheFrom)
 	if err != nil {
-		return nil, nil, nil, err
+		return client.SolveOpt{}, err
 	}
 
 	cacheTo, err := ParseCacheEntry(buildOpts.CacheTo)
 	if err != nil {
-		return nil, nil, nil, err
+		return client.SolveOpt{}, err
 	}
-
-	return buildOpts, cacheFrom, cacheTo, nil
-}
-
-func setupLocalMounts(buildOpts *build.BuildOptions) (map[string]fsutil.FS, error) {
-	localMounts := map[string]fsutil.FS{}
 
 	dockerfileDir := filepath.Dir(buildOpts.Dockerfile)
 	dockerfileMount, err := fsutil.NewFS(dockerfileDir)
 	if err != nil {
-		return nil, fmt.Errorf("create local dockerfile mount %w", err)
+		return client.SolveOpt{}, fmt.Errorf("create local dockerfile mount %w", err)
 	}
-	localMounts["dockerfile"] = dockerfileMount
 
 	contextMount, err := fsutil.NewFS(buildOpts.Context)
 	if err != nil {
-		return nil, fmt.Errorf("create local context mount %w", err)
+		return client.SolveOpt{}, fmt.Errorf("create local context mount %w", err)
 	}
-	localMounts["context"] = contextMount
 
-	return localMounts, nil
-}
+	localMounts := map[string]fsutil.FS{
+		"dockerfile": dockerfileMount,
+		"context":    contextMount,
+	}
 
-type createSolveOptionsParams struct {
-	BuildOpts   *build.BuildOptions
-	LocalMounts map[string]fsutil.FS
-	Session     []session.Attachable
-	CacheFrom   []client.CacheOptionsEntry
-	CacheTo     []client.CacheOptionsEntry
-	Options     provider.BuildOptions
-	TargetArch  string
-}
-
-func createSolveOptions(params createSolveOptionsParams) (client.SolveOpt, error) {
 	solveOpts := client.SolveOpt{
 		Frontend: "dockerfile.v0",
 		FrontendAttrs: map[string]string{
-			"filename": filepath.Base(params.BuildOpts.Dockerfile),
-			"context":  params.BuildOpts.Context,
+			"filename": filepath.Base(buildOpts.Dockerfile),
+			"context":  buildOpts.Context,
 		},
-		LocalMounts:  params.LocalMounts,
-		Session:      params.Session,
-		CacheImports: params.CacheFrom,
-		CacheExports: params.CacheTo,
+		LocalMounts:  localMounts,
+		Session:      session,
+		CacheImports: cacheFrom,
+		CacheExports: cacheTo,
 	}
 
-	if params.BuildOpts.Target != "" {
-		solveOpts.FrontendAttrs["target"] = params.BuildOpts.Target
+	if buildOpts.Target != "" {
+		solveOpts.FrontendAttrs["target"] = buildOpts.Target
 	}
 
-	if params.Options.Platform != "" {
-		solveOpts.FrontendAttrs["platform"] = params.Options.Platform
-	} else if params.TargetArch != "" {
-		solveOpts.FrontendAttrs["platform"] = "linux/" + params.TargetArch
+	if opts.Options.Platform != "" {
+		solveOpts.FrontendAttrs["platform"] = opts.Options.Platform
+	} else if opts.TargetArch != "" {
+		solveOpts.FrontendAttrs["platform"] = "linux/" + opts.TargetArch
 	}
 
-	if err := addMultiContexts(&solveOpts, params.BuildOpts); err != nil {
+	if err := addMultiContexts(&solveOpts, buildOpts); err != nil {
 		return client.SolveOpt{}, err
 	}
 
 	push := "true"
-	if params.Options.SkipPush {
+	if opts.Options.SkipPush {
 		push = "false"
 	}
 	solveOpts.Exports = append(solveOpts.Exports, client.ExportEntry{
 		Type: client.ExporterImage,
 		Attrs: map[string]string{
-			string(exptypes.OptKeyName): strings.Join(params.BuildOpts.Images, ","),
+			string(exptypes.OptKeyName): strings.Join(buildOpts.Images, ","),
 			string(exptypes.OptKeyPush): push,
 		},
 	})
 
-	for k, v := range params.BuildOpts.Labels {
+	for k, v := range buildOpts.Labels {
 		solveOpts.FrontendAttrs["label:"+k] = v
 	}
 
-	for key, value := range params.BuildOpts.BuildArgs {
+	for key, value := range buildOpts.BuildArgs {
 		solveOpts.FrontendAttrs["build-arg:"+key] = value
 	}
 
@@ -406,16 +355,15 @@ func addMultiContexts(solveOpts *client.SolveOpt, buildOpts *build.BuildOptions)
 type executeBuildParams struct {
 	Ctx       context.Context
 	Client    *client.Client
-	SolveOpts client.SolveOpt
 	Info      *client.Info
-	BuildOpts *build.BuildOptions
-	Log       log.Logger
+	SolveOpts client.SolveOpt
+	Logger    log.Logger
 }
 
 func executeBuild(params executeBuildParams) error {
-	params.Log.Infof("start building %s using platform builder (%s)", strings.Join(params.BuildOpts.Images, ","), params.Info.BuildkitVersion.Version)
+	params.Logger.Infof("start building %s using platform builder (%s)", params.SolveOpts.Exports[0].Attrs[string(exptypes.OptKeyName)], params.Info.BuildkitVersion.Version)
 
-	writer := params.Log.Writer(logrus.InfoLevel, false)
+	writer := params.Logger.Writer(logrus.InfoLevel, false)
 	defer func() { _ = writer.Close() }()
 
 	pw, err := NewPrinter(params.Ctx, writer)
@@ -454,28 +402,40 @@ func getImageDetails(ref name.Reference, targetArch string, keychain authn.Keych
 	return imageDetails, nil
 }
 
-func ensureCertPaths(buildOpts *devpod.PlatformBuildOptions) (parentDir string, caPath string, keyPath string, certPath string, err error) {
-	parentDir, err = os.MkdirTemp("", "build-certs-*")
+type certPaths struct {
+	ParentDir string
+	CAPath    string
+	KeyPath   string
+	CertPath  string
+}
+
+func ensureCertPaths(buildOpts *devpod.PlatformBuildOptions) (*certPaths, error) {
+	parentDir, err := os.MkdirTemp("", "build-certs-*")
 	if err != nil {
-		return parentDir, caPath, keyPath, certPath, fmt.Errorf("create temp dir %w", err)
+		return nil, fmt.Errorf("create temp dir %w", err)
 	}
 
-	caPath, err = writeCertFile(parentDir, "ca.pem", buildOpts.CertCA, "CA")
+	caPath, err := writeCertFile(parentDir, "ca.pem", buildOpts.CertCA, "CA")
 	if err != nil {
-		return parentDir, caPath, keyPath, certPath, err
+		return nil, err
 	}
 
-	keyPath, err = writeCertFile(parentDir, "key.pem", buildOpts.CertKey, "private key")
+	keyPath, err := writeCertFile(parentDir, "key.pem", buildOpts.CertKey, "private key")
 	if err != nil {
-		return parentDir, caPath, keyPath, certPath, err
+		return nil, err
 	}
 
-	certPath, err = writeCertFile(parentDir, "cert.pem", buildOpts.Cert, "cert")
+	certPath, err := writeCertFile(parentDir, "cert.pem", buildOpts.Cert, "cert")
 	if err != nil {
-		return parentDir, caPath, keyPath, certPath, err
+		return nil, err
 	}
 
-	return parentDir, caPath, keyPath, certPath, nil
+	return &certPaths{
+		ParentDir: parentDir,
+		CAPath:    caPath,
+		KeyPath:   keyPath,
+		CertPath:  certPath,
+	}, nil
 }
 
 func writeCertFile(parentDir, filename, base64Content, certType string) (string, error) {
@@ -486,7 +446,7 @@ func writeCertFile(parentDir, filename, base64Content, certType string) (string,
 		return filePath, fmt.Errorf("decode %s %w", certType, err)
 	}
 
-	err = os.WriteFile(filePath, certBytes, 0o700)
+	err = os.WriteFile(filePath, certBytes, 0o600)
 	if err != nil {
 		return filePath, fmt.Errorf("write %s file %w", certType, err)
 	}
