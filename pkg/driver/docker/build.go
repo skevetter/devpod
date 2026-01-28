@@ -57,7 +57,15 @@ func (d *dockerDriver) BuildDevContainer(
 	}
 
 	// get build options
-	buildOptions, err := build.NewOptions(dockerfilePath, dockerfileContent, parsedConfig, extendedBuildInfo, imageName, options, prebuildHash)
+	buildOptions, err := build.NewOptions(build.NewOptionsParams{
+		DockerfilePath:    dockerfilePath,
+		DockerfileContent: dockerfileContent,
+		ParsedConfig:      parsedConfig,
+		ExtendedBuildInfo: extendedBuildInfo,
+		ImageName:         imageName,
+		Options:           options,
+		PrebuildHash:      prebuildHash,
+	})
 	if err != nil {
 		return nil, err
 	}
