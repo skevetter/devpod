@@ -50,6 +50,11 @@ type NewOptionsParams struct {
 func NewOptions(params NewOptionsParams) (*BuildOptions, error) {
 	var err error
 
+	prebuildHash := params.PrebuildHash
+	if prebuildHash == "" {
+		prebuildHash = "latest"
+	}
+
 	// extra args?
 	buildOptions := &BuildOptions{
 		Labels:   map[string]string{},
@@ -81,10 +86,10 @@ func NewOptions(params NewOptionsParams) (*BuildOptions, error) {
 		buildOptions.Images = append(buildOptions.Images, params.ImageName)
 	}
 	if params.Options.Repository != "" {
-		buildOptions.Images = append(buildOptions.Images, params.Options.Repository+":"+params.PrebuildHash)
+		buildOptions.Images = append(buildOptions.Images, params.Options.Repository+":"+prebuildHash)
 	}
 	for _, prebuildRepository := range params.Options.PrebuildRepositories {
-		buildOptions.Images = append(buildOptions.Images, prebuildRepository+":"+params.PrebuildHash)
+		buildOptions.Images = append(buildOptions.Images, prebuildRepository+":"+prebuildHash)
 	}
 	buildOptions.Context = config.GetContextPath(params.ParsedConfig.Config)
 

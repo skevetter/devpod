@@ -57,13 +57,14 @@ func BuildRemote(ctx context.Context, opts BuildRemoteOptions) (*config.BuildInf
 	defer func() { _ = c.Close() }()
 
 	repo := strings.TrimSuffix(opts.Options.CLIOptions.Platform.Build.Repository, "/")
-	imageName := repo + "/" + build.GetImageName(opts.LocalWorkspaceFolder, opts.PrebuildHash)
+	imageName := filepath.Join(repo, build.GetImageName(opts.LocalWorkspaceFolder, opts.PrebuildHash))
 	ref, keychain, err := resolveImageReference(ctx, imageName)
 	if err != nil {
 		return nil, err
 	}
 
 	if buildInfo := checkExistingImage(checkExistingImageParams{
+		Ctx:        ctx,
 		Ref:        ref,
 		TargetArch: opts.TargetArch,
 		Keychain:   keychain,
@@ -92,14 +93,19 @@ func BuildRemote(ctx context.Context, opts BuildRemoteOptions) (*config.BuildInf
 		return nil, err
 	}
 
-	imageDetails, err := getImageDetails(ref, opts.TargetArch, keychain)
+	imageDetails, err := getImageDetails(ctx, ref, opts.TargetArch, keychain)
 	if err != nil {
 		return nil, fmt.Errorf("get image details %w", err)
 	}
 
+	var imageMetadata *config.ImageMetadataConfig
+	if opts.ExtendedBuildInfo != nil {
+		imageMetadata = opts.ExtendedBuildInfo.MetadataConfig
+	}
+
 	return &config.BuildInfo{
 		ImageDetails:  imageDetails,
-		ImageMetadata: opts.ExtendedBuildInfo.MetadataConfig,
+		ImageMetadata: imageMetadata,
 		ImageName:     imageName,
 		PrebuildHash:  opts.PrebuildHash,
 		RegistryCache: opts.Options.RegistryCache,
@@ -178,6 +184,7 @@ func resolveImageReference(ctx context.Context, imageName string) (name.Referenc
 }
 
 type checkExistingImageParams struct {
+	Ctx        context.Context
 	Ref        name.Reference
 	TargetArch string
 	Keychain   authn.Keychain
@@ -186,16 +193,22 @@ type checkExistingImageParams struct {
 }
 
 func checkExistingImage(params checkExistingImageParams) *config.BuildInfo {
-	imageDetails, err := getImageDetails(params.Ref, params.TargetArch, params.Keychain)
+	imageDetails, err := getImageDetails(params.Ctx, params.Ref, params.TargetArch, params.Keychain)
 	if err != nil {
 		params.Opts.Log.Debugf("image check failed, continuing with build: %v", err)
 		return nil
 	}
 
 	params.Opts.Log.Infof("skipping build because an existing image was found %s", params.ImageName)
+
+	var imageMetadata *config.ImageMetadataConfig
+	if params.Opts.ExtendedBuildInfo != nil {
+		imageMetadata = params.Opts.ExtendedBuildInfo.MetadataConfig
+	}
+
 	return &config.BuildInfo{
 		ImageDetails:  imageDetails,
-		ImageMetadata: params.Opts.ExtendedBuildInfo.MetadataConfig,
+		ImageMetadata: imageMetadata,
 		ImageName:     params.ImageName,
 		PrebuildHash:  params.Opts.PrebuildHash,
 		RegistryCache: params.Opts.Options.RegistryCache,
@@ -252,30 +265,14 @@ func prepareSolveOptions(ref name.Reference, keychain authn.Keychain, imageName 
 		return client.SolveOpt{}, fmt.Errorf("create build options %w", err)
 	}
 
-	cacheFrom, err := ParseCacheEntry(buildOpts.CacheFrom)
+	cacheFrom, cacheTo, err := setupCache(buildOpts)
 	if err != nil {
 		return client.SolveOpt{}, err
 	}
 
-	cacheTo, err := ParseCacheEntry(buildOpts.CacheTo)
+	localMounts, err := setupLocalMounts(buildOpts)
 	if err != nil {
 		return client.SolveOpt{}, err
-	}
-
-	dockerfileDir := filepath.Dir(buildOpts.Dockerfile)
-	dockerfileMount, err := fsutil.NewFS(dockerfileDir)
-	if err != nil {
-		return client.SolveOpt{}, fmt.Errorf("create local dockerfile mount %w", err)
-	}
-
-	contextMount, err := fsutil.NewFS(buildOpts.Context)
-	if err != nil {
-		return client.SolveOpt{}, fmt.Errorf("create local context mount %w", err)
-	}
-
-	localMounts := map[string]fsutil.FS{
-		"dockerfile": dockerfileMount,
-		"context":    contextMount,
 	}
 
 	solveOpts := client.SolveOpt{
@@ -290,6 +287,50 @@ func prepareSolveOptions(ref name.Reference, keychain authn.Keychain, imageName 
 		CacheExports: cacheTo,
 	}
 
+	configurePlatform(&solveOpts, buildOpts, opts)
+
+	if err := addMultiContexts(&solveOpts, buildOpts); err != nil {
+		return client.SolveOpt{}, err
+	}
+
+	addExports(&solveOpts, buildOpts, opts.Options.SkipPush)
+	addFrontendAttrs(&solveOpts, buildOpts)
+
+	return solveOpts, nil
+}
+
+func setupCache(buildOpts *build.BuildOptions) ([]client.CacheOptionsEntry, []client.CacheOptionsEntry, error) {
+	cacheFrom, err := ParseCacheEntry(buildOpts.CacheFrom)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	cacheTo, err := ParseCacheEntry(buildOpts.CacheTo)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return cacheFrom, cacheTo, nil
+}
+
+func setupLocalMounts(buildOpts *build.BuildOptions) (map[string]fsutil.FS, error) {
+	dockerfileMount, err := fsutil.NewFS(filepath.Dir(buildOpts.Dockerfile))
+	if err != nil {
+		return nil, fmt.Errorf("create local dockerfile mount %w", err)
+	}
+
+	contextMount, err := fsutil.NewFS(buildOpts.Context)
+	if err != nil {
+		return nil, fmt.Errorf("create local context mount %w", err)
+	}
+
+	return map[string]fsutil.FS{
+		"dockerfile": dockerfileMount,
+		"context":    contextMount,
+	}, nil
+}
+
+func configurePlatform(solveOpts *client.SolveOpt, buildOpts *build.BuildOptions, opts BuildRemoteOptions) {
 	if buildOpts.Target != "" {
 		solveOpts.FrontendAttrs["target"] = buildOpts.Target
 	}
@@ -299,13 +340,11 @@ func prepareSolveOptions(ref name.Reference, keychain authn.Keychain, imageName 
 	} else if opts.TargetArch != "" {
 		solveOpts.FrontendAttrs["platform"] = "linux/" + opts.TargetArch
 	}
+}
 
-	if err := addMultiContexts(&solveOpts, buildOpts); err != nil {
-		return client.SolveOpt{}, err
-	}
-
+func addExports(solveOpts *client.SolveOpt, buildOpts *build.BuildOptions, skipPush bool) {
 	push := "true"
-	if opts.Options.SkipPush {
+	if skipPush {
 		push = "false"
 	}
 	solveOpts.Exports = append(solveOpts.Exports, client.ExportEntry{
@@ -315,7 +354,9 @@ func prepareSolveOptions(ref name.Reference, keychain authn.Keychain, imageName 
 			string(exptypes.OptKeyPush): push,
 		},
 	})
+}
 
+func addFrontendAttrs(solveOpts *client.SolveOpt, buildOpts *build.BuildOptions) {
 	for k, v := range buildOpts.Labels {
 		solveOpts.FrontendAttrs["label:"+k] = v
 	}
@@ -323,8 +364,6 @@ func prepareSolveOptions(ref name.Reference, keychain authn.Keychain, imageName 
 	for key, value := range buildOpts.BuildArgs {
 		solveOpts.FrontendAttrs["build-arg:"+key] = value
 	}
-
-	return solveOpts, nil
 }
 
 func addMultiContexts(solveOpts *client.SolveOpt, buildOpts *build.BuildOptions) error {
@@ -375,10 +414,11 @@ func executeBuild(params executeBuildParams) error {
 	return err
 }
 
-func getImageDetails(ref name.Reference, targetArch string, keychain authn.Keychain) (*config.ImageDetails, error) {
+func getImageDetails(ctx context.Context, ref name.Reference, targetArch string, keychain authn.Keychain) (*config.ImageDetails, error) {
 	remoteImage, err := remote.Image(ref,
 		remote.WithAuthFromKeychain(keychain),
 		remote.WithPlatform(v1.Platform{Architecture: targetArch, OS: "linux"}),
+		remote.WithContext(ctx),
 	)
 	if err != nil {
 		return nil, err
