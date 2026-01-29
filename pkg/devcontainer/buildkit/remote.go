@@ -458,16 +458,19 @@ func ensureCertPaths(buildOpts *devpod.PlatformBuildOptions) (*certPaths, error)
 
 	caPath, err := writeCertFile(parentDir, "ca.pem", buildOpts.CertCA, "CA")
 	if err != nil {
+		_ = os.RemoveAll(parentDir)
 		return nil, err
 	}
 
 	keyPath, err := writeCertFile(parentDir, "key.pem", buildOpts.CertKey, "private key")
 	if err != nil {
+		_ = os.RemoveAll(parentDir)
 		return nil, err
 	}
 
 	certPath, err := writeCertFile(parentDir, "cert.pem", buildOpts.Cert, "cert")
 	if err != nil {
+		_ = os.RemoveAll(parentDir)
 		return nil, err
 	}
 
