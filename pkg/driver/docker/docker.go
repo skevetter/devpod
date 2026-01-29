@@ -50,9 +50,7 @@ func NewDockerDriver(workspaceInfo *provider2.AgentWorkspaceInfo, log log.Logger
 		return nil, err
 	}
 
-	log.WithFields(logrus.Fields{
-		"command": dockerCommand,
-	}).Debug("using docker command")
+	log.WithFields(logrus.Fields{"command": dockerCommand}).Debug("using docker command")
 	return &dockerDriver{
 		Docker: &docker.DockerHelper{
 			DockerCommand: dockerCommand,
