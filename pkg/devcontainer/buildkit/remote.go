@@ -248,7 +248,7 @@ func setupRegistryAuth(ref name.Reference, keychain authn.Keychain) ([]session.A
 }
 
 func prepareSolveOptions(ref name.Reference, keychain authn.Keychain, imageName string, opts BuildRemoteOptions) (client.SolveOpt, error) {
-	session, err := setupRegistryAuth(ref, keychain)
+	authSession, err := setupRegistryAuth(ref, keychain)
 	if err != nil {
 		return client.SolveOpt{}, err
 	}
@@ -283,7 +283,7 @@ func prepareSolveOptions(ref name.Reference, keychain authn.Keychain, imageName 
 			"context":  buildOpts.Context,
 		},
 		LocalMounts:  localMounts,
-		Session:      session,
+		Session:      authSession,
 		CacheImports: cacheFrom,
 		CacheExports: cacheTo,
 	}
