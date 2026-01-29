@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -57,7 +58,7 @@ func BuildRemote(ctx context.Context, opts BuildRemoteOptions) (*config.BuildInf
 	defer func() { _ = c.Close() }()
 
 	repo := strings.TrimSuffix(opts.Options.CLIOptions.Platform.Build.Repository, "/")
-	imageName := filepath.Join(repo, build.GetImageName(opts.LocalWorkspaceFolder, opts.PrebuildHash))
+	imageName := path.Join(repo, build.GetImageName(opts.LocalWorkspaceFolder, opts.PrebuildHash))
 	ref, keychain, err := resolveImageReference(ctx, imageName)
 	if err != nil {
 		return nil, err
