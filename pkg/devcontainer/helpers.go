@@ -20,6 +20,18 @@ type GetWorkspaceConfigResult struct {
 	ConfigPaths     []string `json:"configPaths"`
 }
 
+type gitRepoFindOptions struct {
+	gitRepository         string
+	gitPRReference        string
+	gitBranch             string
+	gitCommit             string
+	gitSubDir             string
+	tmpDirPath            string
+	strictHostKeyChecking bool
+	maxDepth              int
+	log                   log.Logger
+}
+
 func FindDevcontainerFiles(ctx context.Context, rawSource, tmpDirPath string, maxDepth int, strictHostKeyChecking bool, log log.Logger) (*GetWorkspaceConfigResult, error) {
 	// local path
 	isLocalPath, _ := file.IsLocalDir(rawSource)
@@ -31,7 +43,18 @@ func FindDevcontainerFiles(ctx context.Context, rawSource, tmpDirPath string, ma
 	gitRepository, gitPRReference, gitBranch, gitCommit, gitSubDir := git.NormalizeRepository(rawSource)
 	if strings.HasSuffix(rawSource, ".git") || git.PingRepository(gitRepository, git.GetDefaultExtraEnv(strictHostKeyChecking)) {
 		log.Debug("Git repository detected")
-		return FindFilesInGitRepo(ctx, gitRepository, gitPRReference, gitBranch, gitCommit, gitSubDir, tmpDirPath, strictHostKeyChecking, maxDepth, log)
+		opts := gitRepoFindOptions{
+			gitRepository:         gitRepository,
+			gitPRReference:        gitPRReference,
+			gitBranch:             gitBranch,
+			gitCommit:             gitCommit,
+			gitSubDir:             gitSubDir,
+			tmpDirPath:            tmpDirPath,
+			strictHostKeyChecking: strictHostKeyChecking,
+			maxDepth:              maxDepth,
+			log:                   log,
+		}
+		return findFilesInGitRepo(ctx, opts)
 	}
 
 	result := &GetWorkspaceConfigResult{ConfigPaths: []string{}}
@@ -81,29 +104,29 @@ func FindFilesInLocalDir(rawSource string, maxDepth int, log log.Logger) (*GetWo
 	return result, nil
 }
 
-func FindFilesInGitRepo(ctx context.Context, gitRepository, gitPRReference, gitBranch, gitCommit, gitSubDir, tmpDirPath string, strictHostKeyChecking bool, maxDepth int, log log.Logger) (*GetWorkspaceConfigResult, error) {
+func findFilesInGitRepo(ctx context.Context, opts gitRepoFindOptions) (*GetWorkspaceConfigResult, error) {
 	result := &GetWorkspaceConfigResult{
 		ConfigPaths:     []string{},
 		IsGitRepository: true,
 	}
 
-	gitInfo := git.NewGitInfo(gitRepository, gitBranch, gitCommit, gitPRReference, gitSubDir)
-	log.Debugf("Cloning git repository into %s", tmpDirPath)
-	err := git.CloneRepository(ctx, gitInfo, tmpDirPath, "", strictHostKeyChecking, log, git.WithCloneStrategy(git.BareCloneStrategy))
+	gitInfo := git.NewGitInfo(opts.gitRepository, opts.gitBranch, opts.gitCommit, opts.gitPRReference, opts.gitSubDir)
+	opts.log.Debugf("Cloning git repository into %s", opts.tmpDirPath)
+	err := git.CloneRepository(ctx, gitInfo, opts.tmpDirPath, "", opts.strictHostKeyChecking, opts.log, git.WithCloneStrategy(git.BareCloneStrategy))
 	if err != nil {
 		return nil, err
 	}
 
-	log.Debug("Listing git file tree")
+	opts.log.Debug("Listing git file tree")
 	ref := "HEAD"
 	// checkout on branch if available
-	if gitBranch != "" {
-		ref = gitBranch
+	if opts.gitBranch != "" {
+		ref = opts.gitBranch
 	}
 	// git ls-tree -r --full-name --name-only $REF
 	lsArgs := []string{"ls-tree", "-r", "--full-name", "--name-only", ref}
-	lsCmd := git.CommandContext(ctx, git.GetDefaultExtraEnv(strictHostKeyChecking), lsArgs...)
-	lsCmd.Dir = tmpDirPath
+	lsCmd := git.CommandContext(ctx, git.GetDefaultExtraEnv(opts.strictHostKeyChecking), lsArgs...)
+	lsCmd.Dir = opts.tmpDirPath
 	stdout, err := lsCmd.StdoutPipe()
 	if err != nil {
 		return nil, err
@@ -117,7 +140,7 @@ func FindFilesInGitRepo(ctx context.Context, gitRepository, gitPRReference, gitB
 	for scanner.Scan() {
 		path := scanner.Text()
 		depth := strings.Count(path, string(filepath.Separator))
-		if depth > maxDepth {
+		if depth > opts.maxDepth {
 			continue
 		}
 		if isDevcontainerFilename(path) {
