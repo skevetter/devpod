@@ -56,10 +56,13 @@ func NewOptions(params NewOptionsParams) (*BuildOptions, error) {
 	}
 
 	// extra args?
+	// Only load into Docker daemon if not pushing to registry
+	// If pushing to registry, use --push to skip Docker daemon overhead
 	buildOptions := &BuildOptions{
 		Labels:   map[string]string{},
 		Contexts: map[string]string{},
-		Load:     true,
+		Load:     options.Repository == "",  // Only load if not pushing to registry
+		Push:     options.Repository != "",  // Push directly if repository specified
 	}
 
 	// get build args and target
