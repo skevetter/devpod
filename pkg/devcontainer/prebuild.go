@@ -65,15 +65,15 @@ func (r *runner) Build(ctx context.Context, options provider.BuildOptions) (stri
 		return prebuildImage, nil
 	}
 
-	// if no repository is specified, skip push (mirrors devcontainer CLI behavior)
-	if options.Repository == "" && prebuildRepo == "" {
-		return prebuildImage, nil
-	}
-
 	if isDockerComposeConfig(substitutedConfig.Config) {
 		if err := dockerDriver.TagDevContainer(ctx, buildInfo.ImageName, prebuildImage); err != nil {
 			return "", fmt.Errorf("tag image %w", err)
 		}
+	}
+
+	// if no repository is specified, skip push (mirrors devcontainer CLI behavior)
+	if options.Repository == "" && prebuildRepo == "" {
+		return prebuildImage, nil
 	}
 
 	// check if we can push image

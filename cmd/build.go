@@ -160,8 +160,10 @@ func (cmd *BuildCmd) build(ctx context.Context, workspaceClient client.Workspace
 	}
 
 	log.Infof("building devcontainer")
-	defer log.Debugf("done building devcontainer")
-	defer log.Infof("cleaning up temporary workspace")
+	defer func() {
+		log.Debugf("done building devcontainer")
+		log.Infof("cleaning up temporary workspace")
+	}()
 	_, err = clientimplementation.BuildAgentClient(ctx, clientimplementation.BuildAgentClientOptions{
 		WorkspaceClient: workspaceClient,
 		CLIOptions:      cmd.CLIOptions,
