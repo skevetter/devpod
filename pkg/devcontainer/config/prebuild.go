@@ -76,7 +76,7 @@ func CalculatePrebuildHash(params PrebuildHashParams) (string, error) {
 func normalizeArchitecture(platform, architecture string) string {
 	if platform != "" {
 		parts := strings.Split(platform, "/")
-		if len(parts) == 2 && parts[0] == "linux" {
+		if len(parts) >= 2 && parts[0] == "linux" {
 			return parts[1]
 		}
 	}
@@ -86,6 +86,9 @@ func normalizeArchitecture(platform, architecture string) string {
 // normalizeConfigForHash creates a config with only build-relevant fields.
 // This ensures the hash only changes when build-affecting fields change.
 func normalizeConfigForHash(config *DevContainerConfig) ([]byte, error) {
+	if config == nil {
+		return nil, fmt.Errorf("config is nil")
+	}
 	normalized := CloneDevContainerConfig(config)
 
 	// Clear non-build fields
