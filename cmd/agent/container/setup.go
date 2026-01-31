@@ -135,16 +135,15 @@ func (cmd *SetupContainerCmd) prepareWorkspace(sctx *setupContext) error {
 		return err
 	}
 
-	err := dockerlessBuild(
+	if err := dockerlessBuild(
 		sctx.ctx,
 		sctx.setupInfo,
 		&sctx.workspaceInfo.Dockerless,
 		sctx.tunnelClient,
 		cmd.Debug,
 		sctx.logger,
-	)
-	if err != nil {
-		return fmt.Errorf("dockerless build %w", err)
+	); err != nil {
+		return fmt.Errorf("dockerless build: %w", err)
 	}
 
 	if err := fillContainerEnv(sctx.setupInfo); err != nil {
@@ -156,7 +155,11 @@ func (cmd *SetupContainerCmd) prepareWorkspace(sctx *setupContext) error {
 		sctx.tunnelClient,
 		sctx.logger,
 	)
-	if err == nil && cleanupFunc != nil {
+	if err != nil {
+		return err
+	}
+
+	if cleanupFunc != nil {
 		defer cleanupFunc()
 	}
 
@@ -275,7 +278,10 @@ func (cmd *SetupContainerCmd) cloneRepositoryIfNeeded(
 	logger log.Logger,
 ) error {
 	b, err := workspaceInfo.PullFromInsideContainer.Bool()
-	if err != nil || !b {
+	if err != nil {
+		return fmt.Errorf("parse pullFromInsideContainer: %w", err)
+	}
+	if !b {
 		return nil
 	}
 
