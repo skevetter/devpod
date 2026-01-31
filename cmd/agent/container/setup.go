@@ -262,11 +262,17 @@ func (cmd *SetupContainerCmd) setupGitCredentials(
 		return nil, nil
 	}
 
+	if !command.Exists("git") {
+		logger.Debugf("git not found, skipping git credentials configuration")
+		return nil, nil
+	}
+
 	cancelCtx, cancel := context.WithCancel(ctx)
 	cleanupFunc, err := configureSystemGitCredentials(cancelCtx, cancel, tunnelClient, logger)
 	if err != nil {
 		cancel()
-		return nil, err
+		logger.Errorf("error configuring git credentials: %v", err)
+		return nil, nil
 	}
 
 	return func() {
