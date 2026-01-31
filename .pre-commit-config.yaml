@@ -58,4 +58,5 @@ repos:
       - id: go-fmt
       - id: go-imports
       - id: golangci-lint
-        args: [--new-from-rev=HEAD~1]
+        pass_filenames: false
+        args: [--new-from-rev=HEAD]

@@ -7,6 +7,8 @@ linters:
     - cyclop
     - revive
     - modernize
+    - unparam
+    - unused
   settings:
     cyclop:
       max-complexity: 7
