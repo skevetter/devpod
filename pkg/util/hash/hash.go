@@ -99,10 +99,16 @@ func validateAndPreparePath(srcPath string) (string, error) {
 func collectFiles(srcPath string, pm *patternmatcher.PatternMatcher, includeFiles []string) ([]string, error) {
 	retFiles := []string{}
 
+	// Normalize includeFiles once to forward slashes for consistent matching
+	normalizedIncludes := make([]string, len(includeFiles))
+	for i, f := range includeFiles {
+		normalizedIncludes[i] = filepath.ToSlash(filepath.Clean(strings.TrimRight(f, "/\\")))
+	}
+
 	walker := &fileWalker{
 		srcPath:      srcPath,
 		pm:           pm,
-		includeFiles: includeFiles,
+		includeFiles: normalizedIncludes,
 		retFiles:     &retFiles,
 	}
 
@@ -114,7 +120,7 @@ func collectFiles(srcPath string, pm *patternmatcher.PatternMatcher, includeFile
 				maxFilesToRead, len(retFiles), errFileReadOverLimit,
 			)
 		}
-		return nil, fmt.Errorf("failed to hash %s: %v", srcPath, err)
+		return nil, fmt.Errorf("failed to hash %s: %w", srcPath, err)
 	}
 
 	return retFiles, nil
@@ -185,19 +191,15 @@ func (w *fileWalker) getRelativePath(filePath string) (string, error) {
 }
 
 func (w *fileWalker) shouldIncludeFile(relFilePath string) bool {
-	// If no include filter specified, include all files
 	if len(w.includeFiles) == 0 {
 		return true
 	}
 
 	relFilePath = filepath.Clean(relFilePath)
 
-	// Otherwise, only include files matching the filter
 	for _, f := range w.includeFiles {
-		f = filepath.Clean(strings.TrimRight(f, string(os.PathSeparator)))
-
-		// Exact match or directory prefix match
-		if f == relFilePath || strings.HasPrefix(relFilePath, f+string(os.PathSeparator)) {
+		// includeFiles are already normalized to forward slashes in collectFiles
+		if f == relFilePath || strings.HasPrefix(relFilePath, f+"/") {
 			return true
 		}
 	}
