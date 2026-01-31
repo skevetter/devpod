@@ -21,7 +21,11 @@ repos:
     rev: v0.11.0.1
     hooks:
       - id: shellcheck
-        args: ["-e", "SC1091,SC1103,SC2148,SC2034,SC1090,SC1009,SC1054,SC1056,SC1072,SC1073,SC1083,SC2329"]
+        args:
+          [
+            "-e",
+            "SC1091,SC1103,SC2148,SC2034,SC1090,SC1009,SC1054,SC1056,SC1072,SC1073,SC1083,SC2329",
+          ]
   - repo: https://github.com/scop/pre-commit-shfmt
     rev: v3.12.0-2
     hooks:
@@ -54,4 +58,4 @@ repos:
       - id: go-fmt
       - id: go-imports
       - id: golangci-lint
-        args: [--new-from-rev=HEAD]
+        args: [--new-from-rev=HEAD~1]
