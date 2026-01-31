@@ -102,7 +102,12 @@ func openViaBrowser(params OpenParams) error {
 		return fmt.Errorf("unknown flavor %s", params.Flavor)
 	}
 
-	openURL := path.Join(config.protocol, "vscode-remote", "ssh-remote+"+params.Workspace+".devpod", strings.TrimPrefix(params.Folder, "/"))
+	openURL := path.Join(
+		config.protocol,
+		"vscode-remote",
+		"ssh-remote+"+params.Workspace+".devpod",
+		strings.TrimPrefix(params.Folder, "/"),
+	)
 	if params.NewWindow {
 		openURL += "?windowId=_blank"
 	}
