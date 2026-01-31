@@ -23,6 +23,19 @@ var (
 	errFileReadOverLimit = errors.New("read files over limit")
 )
 
+// DirectoryHash computes a hash of the directory contents based on file paths and checksums.
+// It processes up to maxFilesToRead (5000) files. If this limit is exceeded, it returns
+// a warning error along with a partial hash computed from the first 5000 files.
+// Callers should check for errors to detect incomplete hashes.
+//
+// Parameters:
+//   - srcPath: The directory path to hash
+//   - excludePatterns: Patterns to exclude from hashing (e.g., .dockerignore patterns)
+//   - includeFiles: Specific files to include in the hash
+//
+// Returns:
+//   - hash: SHA256 hash of the directory contents (may be partial if limit exceeded)
+//   - error: nil on success, warning error if file limit exceeded, or actual error on failure
 func DirectoryHash(srcPath string, excludePatterns, includeFiles []string) (string, error) {
 	srcPath, err := validateAndPreparePath(srcPath)
 	if err != nil {
@@ -54,7 +67,7 @@ func validateAndPreparePath(srcPath string) (string, error) {
 	}
 
 	if !fileInfo.IsDir() {
-		return "", nil
+		return "", fmt.Errorf("srcPath is a file, not a directory: %s", srcPath)
 	}
 
 	if runtime.GOOS == "windows" {
@@ -87,7 +100,10 @@ func collectFiles(srcPath string, pm *patternmatcher.PatternMatcher, includeFile
 	}
 
 	err := filepath.Walk(walkRoot, walker.walkFunc)
-	if err != nil && !errors.Is(err, errFileReadOverLimit) {
+	if err != nil {
+		if errors.Is(err, errFileReadOverLimit) {
+			return retFiles, fmt.Errorf("directory hash incomplete: exceeded limit of %d files (partial hash computed from first %d files)", maxFilesToRead, len(retFiles))
+		}
 		return nil, errors.Errorf("Error hashing %s: %v", srcPath, err)
 	}
 
@@ -151,6 +167,12 @@ func (w *fileWalker) handleSkipLogic(relFilePath string, f os.FileInfo) error {
 }
 
 func (w *fileWalker) shouldIncludeFile(relFilePath string) bool {
+	// If no include filter specified, include all files
+	if len(w.includeFiles) == 0 {
+		return true
+	}
+
+	// Otherwise, only include files matching the filter
 	for _, f := range w.includeFiles {
 		if strings.HasPrefix(relFilePath, f) {
 			return true
@@ -181,13 +203,14 @@ func (w *fileWalker) handleDirectorySkip(relFilePath string, f os.FileInfo) erro
 		return filepath.SkipDir
 	}
 
-	dirSlash := relFilePath + string(filepath.Separator)
+	// Use forward slash consistently since relFilePath is normalized with filepath.ToSlash
+	dirSlash := relFilePath + "/"
 	for _, pat := range w.pm.Patterns() {
 		if !pat.Exclusion() {
 			continue
 		}
 
-		if strings.HasPrefix(pat.String()+string(filepath.Separator), dirSlash) {
+		if strings.HasPrefix(pat.String()+"/", dirSlash) {
 			return nil
 		}
 	}
@@ -200,7 +223,7 @@ func (w *fileWalker) processFile(filePath, relFilePath string, f os.FileInfo) er
 	if !f.IsDir() {
 		checksum, err := hashFileCRC32(filePath, 0xedb88320)
 		if err != nil {
-			return nil
+			return fmt.Errorf("failed to hash file %s: %w", relFilePath, err)
 		}
 
 		*w.retFiles = append(*w.retFiles, relFilePath+";"+checksum)
