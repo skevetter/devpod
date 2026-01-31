@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"os/exec"
 	"path"
 	"runtime"
@@ -102,15 +103,17 @@ func openViaBrowser(params OpenParams) error {
 		return fmt.Errorf("unknown flavor %s", params.Flavor)
 	}
 
-	openURL := path.Join(
-		config.protocol,
-		"vscode-remote",
-		"ssh-remote+"+params.Workspace+".devpod",
-		strings.TrimPrefix(params.Folder, "/"),
-	)
-	if params.NewWindow {
-		openURL += "?windowId=_blank"
+	u := &url.URL{
+		Scheme: strings.TrimSuffix(config.protocol, "://"),
+		Host:   "vscode-remote",
+		Path:   fmt.Sprintf("/ssh-remote+%s.devpod%s", params.Workspace, strings.TrimPrefix(params.Folder, "/")),
 	}
+	if params.NewWindow {
+		q := u.Query()
+		q.Set("windowId", "_blank")
+		u.RawQuery = q.Encode()
+	}
+	openURL := u.String()
 
 	err := open.Run(openURL)
 	if err != nil {
@@ -199,8 +202,8 @@ func buildOpenArgs(workspace, folder string, newWindow, hasContainersExtension b
 		args = append(args, "--reuse-window")
 	}
 
-	openURL := path.Join("vscode-remote://ssh-remote+", workspace+".devpod", strings.TrimPrefix(folder, "/"))
-	args = append(args, "--folder-uri", openURL)
+	folderURI := path.Join("vscode-remote://ssh-remote+", workspace+".devpod", strings.TrimPrefix(folder, "/"))
+	args = append(args, "--folder-uri", folderURI)
 
 	return args
 }
