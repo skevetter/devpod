@@ -150,14 +150,11 @@ func (cmd *SetupContainerCmd) prepareWorkspace(sctx *setupContext) error {
 		return err
 	}
 
-	cleanupFunc, err := cmd.setupGitCredentials(
+	cleanupFunc := cmd.setupGitCredentials(
 		sctx.ctx,
 		sctx.tunnelClient,
 		sctx.logger,
 	)
-	if err != nil {
-		return err
-	}
 
 	// Clone repository before cleaning up git credentials
 	cloneErr := cmd.cloneRepositoryIfNeeded(sctx.ctx, sctx.workspaceInfo, sctx.setupInfo, sctx.logger)
@@ -257,14 +254,14 @@ func (cmd *SetupContainerCmd) setupGitCredentials(
 	ctx context.Context,
 	tunnelClient tunnel.TunnelClient,
 	logger log.Logger,
-) (func(), error) {
+) func() {
 	if !cmd.InjectGitCredentials {
-		return nil, nil
+		return nil
 	}
 
 	if !command.Exists("git") {
 		logger.Debugf("git not found, skipping git credentials configuration")
-		return nil, nil
+		return nil
 	}
 
 	cancelCtx, cancel := context.WithCancel(ctx)
@@ -272,13 +269,13 @@ func (cmd *SetupContainerCmd) setupGitCredentials(
 	if err != nil {
 		cancel()
 		logger.Errorf("error configuring git credentials: %v", err)
-		return nil, nil
+		return nil
 	}
 
 	return func() {
 		cleanupFunc()
 		cancel()
-	}, nil
+	}
 }
 
 func (cmd *SetupContainerCmd) cloneRepositoryIfNeeded(
