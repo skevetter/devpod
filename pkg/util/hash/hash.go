@@ -49,6 +49,14 @@ func DirectoryHash(srcPath string, excludePatterns, includeFiles []string) (stri
 
 	retFiles, err := collectFiles(srcPath, pm, includeFiles)
 	if err != nil {
+		// If file limit exceeded, compute partial hash and return with warning
+		if errors.Is(err, errFileReadOverLimit) {
+			hash, hashErr := computeFinalHash(retFiles)
+			if hashErr != nil {
+				return "", hashErr
+			}
+			return hash, err
+		}
 		return "", err
 	}
 
@@ -61,25 +69,16 @@ func validateAndPreparePath(srcPath string) (string, error) {
 		return "", err
 	}
 
+	if runtime.GOOS == "windows" {
+		srcPath = longpath.AddPrefix(srcPath)
+	}
+
 	fileInfo, err := os.Stat(srcPath)
 	if err != nil {
 		return "", err
 	}
 
 	if !fileInfo.IsDir() {
-		return "", fmt.Errorf("srcPath is a file, not a directory: %s", srcPath)
-	}
-
-	if runtime.GOOS == "windows" {
-		srcPath = longpath.AddPrefix(srcPath)
-	}
-
-	stat, err := os.Lstat(srcPath)
-	if err != nil {
-		return "", err
-	}
-
-	if !stat.IsDir() {
 		return "", fmt.Errorf("path %s is not a directory", srcPath)
 	}
 
@@ -102,7 +101,7 @@ func collectFiles(srcPath string, pm *patternmatcher.PatternMatcher, includeFile
 	err := filepath.Walk(walkRoot, walker.walkFunc)
 	if err != nil {
 		if errors.Is(err, errFileReadOverLimit) {
-			return retFiles, fmt.Errorf("directory hash incomplete: exceeded limit of %d files (partial hash computed from first %d files)", maxFilesToRead, len(retFiles))
+			return retFiles, fmt.Errorf("directory hash incomplete: exceeded limit of %d files (partial hash computed from first %d files): %w", maxFilesToRead, len(retFiles), errFileReadOverLimit)
 		}
 		return nil, fmt.Errorf("failed to hash %s: %v", srcPath, err)
 	}
@@ -133,8 +132,16 @@ func (w *fileWalker) walkFunc(filePath string, f os.FileInfo, err error) error {
 	}
 
 	// Check excludes FIRST - skip excluded files regardless of include filter
-	if err := w.handleSkipLogic(relFilePath, f); err != nil {
+	skip, err := w.shouldSkipPath(relFilePath)
+	if err != nil {
 		return err
+	}
+	if skip {
+		if f.IsDir() {
+			return w.handleDirectorySkip(relFilePath, f)
+		}
+		// Skip this file
+		return nil
 	}
 
 	// Then check includes - only process if included (or no filter specified)
@@ -157,26 +164,20 @@ func (w *fileWalker) getRelativePath(filePath string) (string, error) {
 	return filepath.ToSlash(relFilePath), nil
 }
 
-func (w *fileWalker) handleSkipLogic(relFilePath string, f os.FileInfo) error {
-	skip, err := w.shouldSkipPath(relFilePath)
-	if err != nil {
-		return err
-	}
-	if skip {
-		return w.handleDirectorySkip(relFilePath, f)
-	}
-	return nil
-}
-
 func (w *fileWalker) shouldIncludeFile(relFilePath string) bool {
 	// If no include filter specified, include all files
 	if len(w.includeFiles) == 0 {
 		return true
 	}
 
+	relFilePath = filepath.Clean(relFilePath)
+
 	// Otherwise, only include files matching the filter
 	for _, f := range w.includeFiles {
-		if strings.HasPrefix(relFilePath, f) {
+		f = filepath.Clean(strings.TrimRight(f, string(os.PathSeparator)))
+
+		// Exact match or directory prefix match
+		if f == relFilePath || strings.HasPrefix(relFilePath, f+string(os.PathSeparator)) {
 			return true
 		}
 	}
@@ -197,10 +198,6 @@ func (w *fileWalker) shouldSkipPath(relFilePath string) (bool, error) {
 }
 
 func (w *fileWalker) handleDirectorySkip(relFilePath string, f os.FileInfo) error {
-	if !f.IsDir() {
-		return nil
-	}
-
 	if !w.pm.Exclusions() {
 		return filepath.SkipDir
 	}
@@ -222,15 +219,18 @@ func (w *fileWalker) handleDirectorySkip(relFilePath string, f os.FileInfo) erro
 
 func (w *fileWalker) processFile(filePath, relFilePath string, f os.FileInfo) error {
 	w.seen[relFilePath] = true
-	if !f.IsDir() {
-		checksum, err := hashFileCRC32(filePath, 0xedb88320)
-		if err != nil {
-			return fmt.Errorf("failed to hash file %s: %w", relFilePath, err)
-		}
 
-		*w.retFiles = append(*w.retFiles, relFilePath+";"+checksum)
+	// Only hash regular files, not directories
+	if f.IsDir() {
+		return nil
 	}
 
+	checksum, err := hashFileCRC32(filePath, 0xedb88320)
+	if err != nil {
+		return fmt.Errorf("failed to hash file %s: %w", relFilePath, err)
+	}
+
+	*w.retFiles = append(*w.retFiles, relFilePath+";"+checksum)
 	return nil
 }
 
