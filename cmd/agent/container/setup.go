@@ -266,8 +266,8 @@ func (cmd *SetupContainerCmd) setupGitCredentials(
 	}
 
 	return func() {
-		cancel()
 		cleanupFunc()
+		cancel()
 	}, nil
 }
 
