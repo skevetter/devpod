@@ -256,7 +256,16 @@ func (r *runner) buildImage(
 		return nil, err
 	}
 
-	prebuildHash, err := config.CalculatePrebuildHash(parsedConfig.Config, options.Platform, targetArch, config.GetContextPath(parsedConfig.Config), dockerfilePath, dockerfileContent, buildInfo, r.Log)
+	prebuildHash, err := config.CalculatePrebuildHash(config.PrebuildHashParams{
+		Config:            parsedConfig.Config,
+		Platform:          options.Platform,
+		Architecture:      targetArch,
+		ContextPath:       config.GetContextPath(parsedConfig.Config),
+		DockerfilePath:    dockerfilePath,
+		DockerfileContent: dockerfileContent,
+		BuildInfo:         buildInfo,
+		Log:               r.Log,
+	})
 	if err != nil {
 		return nil, err
 	}

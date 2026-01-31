@@ -2,13 +2,13 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/moby/patternmatcher"
 	"github.com/moby/patternmatcher/ignorefile"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	util "github.com/skevetter/devpod/pkg/util/hash"
 
@@ -16,95 +16,98 @@ import (
 	"github.com/skevetter/log/hash"
 )
 
-func CalculatePrebuildHash(
-	originalConfig *DevContainerConfig,
-	platform, architecture, contextPath, dockerfilePath, dockerfileContent string,
-	buildInfo *ImageBuildInfo,
-	log log.Logger) (string, error) {
+// PrebuildHashParams contains all parameters needed to calculate a prebuild hash.
+type PrebuildHashParams struct {
+	Config            *DevContainerConfig
+	Platform          string
+	Architecture      string
+	ContextPath       string
+	DockerfilePath    string
+	DockerfileContent string
+	BuildInfo         *ImageBuildInfo
+	Log               log.Logger
+}
 
-	log.WithFields(logrus.Fields{
-		"platform":       platform,
-		"architecture":   architecture,
-		"contextPath":    contextPath,
-		"dockerfilePath": dockerfilePath,
-	}).Debug("starting prebuild hash calculation")
+// CalculatePrebuildHash computes a deterministic hash for prebuild caching.
+// The hash includes: architecture, normalized config, dockerfile content, and context files.
+// The hash format is "devpod-" followed by 32 hex characters.
+func CalculatePrebuildHash(params PrebuildHashParams) (string, error) {
+	arch := normalizeArchitecture(params.Platform, params.Architecture)
 
-	parsedConfig := CloneDevContainerConfig(originalConfig)
-
-	if platform != "" {
-		splitted := strings.Split(platform, "/")
-		if len(splitted) == 2 && splitted[0] == "linux" {
-			architecture = splitted[1]
-		}
-	}
-
-	// delete all options that are not relevant for the build
-	parsedConfig.Origin = ""
-	parsedConfig.DevContainerActions = DevContainerActions{}
-	parsedConfig.NonComposeBase = NonComposeBase{}
-	parsedConfig.DevContainerConfigBase = DevContainerConfigBase{
-		Name:                        parsedConfig.Name,
-		Features:                    parsedConfig.Features,
-		OverrideFeatureInstallOrder: parsedConfig.OverrideFeatureInstallOrder,
-	}
-	parsedConfig.ImageContainer = ImageContainer{
-		Image: parsedConfig.Image,
-	}
-	parsedConfig.ComposeContainer = ComposeContainer{}
-	parsedConfig.DockerfileContainer = DockerfileContainer{
-		Dockerfile: parsedConfig.Dockerfile,
-		Context:    parsedConfig.Context,
-		Build:      parsedConfig.Build,
-	}
-
-	// marshal the config
-	configStr, err := json.Marshal(parsedConfig)
+	configJSON, err := normalizeConfigForHash(params.Config)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to normalize config: %w", err)
 	}
 
-	// find out excludes from dockerignore
-	excludes, err := readDockerignore(contextPath, dockerfilePath)
+	excludes, err := readDockerignore(params.ContextPath, params.DockerfilePath)
 	if err != nil {
-		log.WithFields(logrus.Fields{"error": err}).Error("failed to read .dockerignore")
-		return "", errors.Errorf("Error reading .dockerignore: %v", err)
+		params.Log.Debugf("failed to read .dockerignore: %v", err)
+		return "", fmt.Errorf("failed to read dockerignore: %w", err)
 	}
 	excludes = append(excludes, DevPodContextFeatureFolder+"/")
 
-	log.WithFields(logrus.Fields{
-		"excludes":    excludes,
-		"contextPath": contextPath,
-	}).Debug("docker ignore patterns loaded")
-
-	// find exact files to hash
-	// todo pass down target or search all
-	// todo update DirectoryHash function
 	var includes []string
-	if buildInfo.Dockerfile != nil {
-		includes = buildInfo.Dockerfile.BuildContextFiles()
+	if params.BuildInfo != nil && params.BuildInfo.Dockerfile != nil {
+		includes = params.BuildInfo.Dockerfile.BuildContextFiles()
 	}
-	log.WithFields(logrus.Fields{
-		"files": includes,
-	}).Debug("build context files to use for hash")
 
-	// get hash of the context directory
-	contextHash, err := util.DirectoryHash(contextPath, excludes, includes)
+	contextHash, err := util.DirectoryHash(params.ContextPath, excludes, includes)
 	if err != nil {
-		log.WithFields(logrus.Fields{"error": err, "contextPath": contextPath}).Error("failed to calculate context hash")
-		return "", err
+		params.Log.Debugf("failed to compute context hash for %s: %v", params.ContextPath, err)
+		return "", fmt.Errorf("failed to compute context hash: %w", err)
 	}
 
-	finalHash := "devpod-" + hash.String(architecture + string(configStr) + dockerfileContent + contextHash)[:32]
+	combined := arch + string(configJSON) + params.DockerfileContent + contextHash
+	finalHash := "devpod-" + hash.String(combined)[:32]
 
-	log.WithFields(logrus.Fields{
-		"arch":              architecture,
-		"config":            string(configStr),
-		"dockerfileContent": dockerfileContent,
-		"contextHash":       contextHash,
-		"finalHash":         finalHash,
-	}).Debug("prebuild hash components")
+	params.Log.WithFields(logrus.Fields{
+		"architecture": arch,
+		"contextHash":  contextHash,
+		"finalHash":    finalHash,
+		"excludeCount": len(excludes),
+		"includeCount": len(includes),
+	}).Debug("prebuild hash calculated")
 
 	return finalHash, nil
+}
+
+// normalizeArchitecture extracts architecture from platform string.
+// Platform format: "linux/amd64" -> architecture: "amd64"
+func normalizeArchitecture(platform, architecture string) string {
+	if platform != "" {
+		parts := strings.Split(platform, "/")
+		if len(parts) == 2 && parts[0] == "linux" {
+			return parts[1]
+		}
+	}
+	return architecture
+}
+
+// normalizeConfigForHash creates a config with only build-relevant fields.
+// This ensures the hash only changes when build-affecting fields change.
+func normalizeConfigForHash(config *DevContainerConfig) ([]byte, error) {
+	normalized := CloneDevContainerConfig(config)
+
+	// Clear non-build fields
+	normalized.Origin = ""
+	normalized.DevContainerActions = DevContainerActions{}
+	normalized.NonComposeBase = NonComposeBase{}
+	normalized.DevContainerConfigBase = DevContainerConfigBase{
+		Name:                        normalized.Name,
+		Features:                    normalized.Features,
+		OverrideFeatureInstallOrder: normalized.OverrideFeatureInstallOrder,
+	}
+	normalized.ImageContainer = ImageContainer{
+		Image: normalized.Image,
+	}
+	normalized.ComposeContainer = ComposeContainer{}
+	normalized.DockerfileContainer = DockerfileContainer{
+		Dockerfile: normalized.Dockerfile,
+		Context:    normalized.Context,
+		Build:      normalized.Build,
+	}
+
+	return json.Marshal(normalized)
 }
 
 // readDockerignore reads the .dockerignore file in the context directory and
