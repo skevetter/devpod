@@ -72,7 +72,7 @@ func CalculatePrebuildHash(params PrebuildHashParams) (string, error) {
 }
 
 // normalizeArchitecture extracts architecture from platform string.
-// Platform format: "linux/amd64" -> architecture: "amd64"
+// Platform format: "linux/amd64" -> architecture: "amd64".
 func normalizeArchitecture(platform, architecture string) string {
 	if platform != "" {
 		parts := strings.Split(platform, "/")
