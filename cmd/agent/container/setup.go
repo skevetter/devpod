@@ -159,11 +159,15 @@ func (cmd *SetupContainerCmd) prepareWorkspace(sctx *setupContext) error {
 		return err
 	}
 
+	// Clone repository before cleaning up git credentials
+	cloneErr := cmd.cloneRepositoryIfNeeded(sctx.ctx, sctx.workspaceInfo, sctx.setupInfo, sctx.logger)
+
+	// Clean up git credentials after cloning
 	if cleanupFunc != nil {
-		defer cleanupFunc()
+		cleanupFunc()
 	}
 
-	return cmd.cloneRepositoryIfNeeded(sctx.ctx, sctx.workspaceInfo, sctx.setupInfo, sctx.logger)
+	return cloneErr
 }
 
 func (cmd *SetupContainerCmd) finalizeSetup(sctx *setupContext) error {
