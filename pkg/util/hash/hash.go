@@ -3,6 +3,7 @@ package hash
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"hash/crc32"
 	"io"
@@ -14,7 +15,6 @@ import (
 
 	"github.com/docker/docker/pkg/longpath"
 	"github.com/moby/patternmatcher"
-	"github.com/pkg/errors"
 )
 
 const maxFilesToRead = 5000
@@ -80,7 +80,7 @@ func validateAndPreparePath(srcPath string) (string, error) {
 	}
 
 	if !stat.IsDir() {
-		return "", errors.Errorf("Path %s is not a directory", srcPath)
+		return "", fmt.Errorf("path %s is not a directory", srcPath)
 	}
 
 	return srcPath, nil
@@ -104,7 +104,7 @@ func collectFiles(srcPath string, pm *patternmatcher.PatternMatcher, includeFile
 		if errors.Is(err, errFileReadOverLimit) {
 			return retFiles, fmt.Errorf("directory hash incomplete: exceeded limit of %d files (partial hash computed from first %d files)", maxFilesToRead, len(retFiles))
 		}
-		return nil, errors.Errorf("Error hashing %s: %v", srcPath, err)
+		return nil, fmt.Errorf("failed to hash %s: %v", srcPath, err)
 	}
 
 	return retFiles, nil
@@ -120,7 +120,7 @@ type fileWalker struct {
 
 func (w *fileWalker) walkFunc(filePath string, f os.FileInfo, err error) error {
 	if err != nil {
-		return errors.Errorf("Hash: Can't stat file %s to hash: %s", w.srcPath, err)
+		return fmt.Errorf("cannot stat file %s to hash: %s", w.srcPath, err)
 	}
 
 	if len(*w.retFiles) >= maxFilesToRead {
@@ -132,12 +132,14 @@ func (w *fileWalker) walkFunc(filePath string, f os.FileInfo, err error) error {
 		return err
 	}
 
-	if !w.shouldIncludeFile(relFilePath) {
-		return nil
-	}
-
+	// Check excludes FIRST - skip excluded files regardless of include filter
 	if err := w.handleSkipLogic(relFilePath, f); err != nil {
 		return err
+	}
+
+	// Then check includes - only process if included (or no filter specified)
+	if !w.shouldIncludeFile(relFilePath) {
+		return nil
 	}
 
 	if w.seen[relFilePath] {
@@ -188,7 +190,7 @@ func (w *fileWalker) shouldSkipPath(relFilePath string) (bool, error) {
 
 	skip, err := w.pm.MatchesOrParentMatches(relFilePath)
 	if err != nil {
-		return false, errors.Errorf("Error matching %s: %v", relFilePath, err)
+		return false, fmt.Errorf("failed to match %s: %v", relFilePath, err)
 	}
 
 	return skip, nil
