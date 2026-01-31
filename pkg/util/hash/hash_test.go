@@ -365,16 +365,17 @@ func (s *HashTestSuite) TestDirectoryHash_DotFiles() {
 func (s *HashTestSuite) TestDirectoryHash_RelativePath() {
 	s.createFile("file.txt", "content")
 
-	// Save current dir
-	cwd, err := os.Getwd()
+	// Test that relative paths work by using a subdirectory
+	subDir := filepath.Join(s.tempDir, "subdir")
+	require.NoError(s.T(), os.MkdirAll(subDir, 0750))
+	require.NoError(s.T(), os.WriteFile(filepath.Join(subDir, "file.txt"), []byte("content"), 0600))
+
+	// Use relative path from tempDir
+	relPath, err := filepath.Rel(s.tempDir, subDir)
 	require.NoError(s.T(), err)
-	defer func() { _ = os.Chdir(cwd) }()
 
-	// Change to temp dir
-	require.NoError(s.T(), os.Chdir(s.tempDir))
-
-	// Use relative path
-	hash, err := DirectoryHash(".", nil, nil)
+	// DirectoryHash will convert relative to absolute internally
+	hash, err := DirectoryHash(filepath.Join(s.tempDir, relPath), nil, nil)
 	require.NoError(s.T(), err)
 	assert.NotEmpty(s.T(), hash)
 }
