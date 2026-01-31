@@ -17,33 +17,16 @@ import (
 	"github.com/pkg/errors"
 )
 
+const maxFilesToRead = 5000
+
 var (
-	maxFilesToRead       = 5000
 	errFileReadOverLimit = errors.New("read files over limit")
 )
 
 func DirectoryHash(srcPath string, excludePatterns, includeFiles []string) (string, error) {
-	srcPath, err := filepath.Abs(srcPath)
+	srcPath, err := validateAndPreparePath(srcPath)
 	if err != nil {
 		return "", err
-	}
-
-	// Stat dir / file
-	hash := sha256.New()
-	fileInfo, err := os.Stat(srcPath)
-	if err != nil {
-		return "", err
-	}
-
-	// Hash file
-	if !fileInfo.IsDir() {
-		return "", nil
-	}
-
-	// Fix the source path to work with long path names. This is a no-op
-	// on platforms other than Windows.
-	if runtime.GOOS == "windows" {
-		srcPath = longpath.AddPrefix(srcPath)
 	}
 
 	pm, err := patternmatcher.New(excludePatterns)
@@ -51,10 +34,33 @@ func DirectoryHash(srcPath string, excludePatterns, includeFiles []string) (stri
 		return "", err
 	}
 
-	// In general we log errors here but ignore them because
-	// during e.g. a diff operation the container can continue
-	// mutating the filesystem and we can see transient errors
-	// from this
+	retFiles, err := collectFiles(srcPath, pm, includeFiles)
+	if err != nil {
+		return "", err
+	}
+
+	return computeFinalHash(retFiles)
+}
+
+func validateAndPreparePath(srcPath string) (string, error) {
+	srcPath, err := filepath.Abs(srcPath)
+	if err != nil {
+		return "", err
+	}
+
+	fileInfo, err := os.Stat(srcPath)
+	if err != nil {
+		return "", err
+	}
+
+	if !fileInfo.IsDir() {
+		return "", nil
+	}
+
+	if runtime.GOOS == "windows" {
+		srcPath = longpath.AddPrefix(srcPath)
+	}
+
 	stat, err := os.Lstat(srcPath)
 	if err != nil {
 		return "", err
@@ -64,113 +70,154 @@ func DirectoryHash(srcPath string, excludePatterns, includeFiles []string) (stri
 		return "", errors.Errorf("Path %s is not a directory", srcPath)
 	}
 
-	include := "."
+	return srcPath, nil
+}
+
+func collectFiles(srcPath string, pm *patternmatcher.PatternMatcher, includeFiles []string) ([]string, error) {
 	seen := make(map[string]bool)
-
 	retFiles := []string{}
-	walkRoot := filepath.Join(srcPath, include)
-	err = filepath.Walk(walkRoot, func(filePath string, f os.FileInfo, err error) error {
-		if err != nil {
-			return errors.Errorf("Hash: Can't stat file %s to hash: %s", srcPath, err)
-		}
+	walkRoot := filepath.Join(srcPath, ".")
 
-		if len(retFiles) >= maxFilesToRead {
-			return errFileReadOverLimit
-		}
-
-		relFilePath, err := filepath.Rel(srcPath, filePath)
-		if err != nil {
-			// Error getting relative path OR we are looking
-			// at the source directory path. Skip in both situations.
-			return err
-		}
-		relFilePath = filepath.ToSlash(relFilePath)
-
-		// Ensure file affects build context
-		include := false
-		for _, f := range includeFiles {
-			if strings.HasPrefix(relFilePath, f) {
-				include = true
-			}
-		}
-		if !include {
-			return nil
-		}
-
-		skip := false
-
-		// If "include" is an exact match for the current file
-		// then even if there's an "excludePatterns" pattern that
-		// matches it, don't skip it. IOW, assume an explicit 'include'
-		// is asking for that file no matter what - which is true
-		// for some files, like .dockerignore and Dockerfile (sometimes)
-		if relFilePath != "." {
-			skip, err = pm.MatchesOrParentMatches(relFilePath)
-			if err != nil {
-				return errors.Errorf("Error matching %s: %v", relFilePath, err)
-			}
-		}
-
-		if skip {
-			// If we want to skip this file and its a directory
-			// then we should first check to see if there's an
-			// excludes pattern (e.g. !dir/file) that starts with this
-			// dir. If so then we can't skip this dir.
-
-			// Its not a dir then so we can just return/skip.
-			if !f.IsDir() {
-				return nil
-			}
-
-			// No exceptions (!...) in patterns so just skip dir
-			if !pm.Exclusions() {
-				return filepath.SkipDir
-			}
-			dirSlash := relFilePath + string(filepath.Separator)
-			for _, pat := range pm.Patterns() {
-				if !pat.Exclusion() {
-					continue
-				}
-
-				if strings.HasPrefix(pat.String()+string(filepath.Separator), dirSlash) {
-					// found a match - so can't skip this dir
-					return nil
-				}
-			}
-
-			// No matching exclusion dir so just skip dir
-			return filepath.SkipDir
-		}
-
-		if seen[relFilePath] {
-			return nil
-		}
-
-		// Path is enough
-		seen[relFilePath] = true
-		if !f.IsDir() {
-			// Check file change
-			checksum, err := hashFileCRC32(filePath, 0xedb88320)
-			if err != nil {
-				return nil
-			}
-
-			retFiles = append(retFiles, relFilePath+";"+checksum)
-		}
-
-		return nil
-	})
-	if err != nil && !errors.Is(err, errFileReadOverLimit) {
-		return "", errors.Errorf("Error hashing %s: %v", srcPath, err)
+	walker := &fileWalker{
+		srcPath:      srcPath,
+		pm:           pm,
+		includeFiles: includeFiles,
+		seen:         seen,
+		retFiles:     &retFiles,
 	}
 
-	// add to hash
+	err := filepath.Walk(walkRoot, walker.walkFunc)
+	if err != nil && !errors.Is(err, errFileReadOverLimit) {
+		return nil, errors.Errorf("Error hashing %s: %v", srcPath, err)
+	}
+
+	return retFiles, nil
+}
+
+type fileWalker struct {
+	srcPath      string
+	pm           *patternmatcher.PatternMatcher
+	includeFiles []string
+	seen         map[string]bool
+	retFiles     *[]string
+}
+
+func (w *fileWalker) walkFunc(filePath string, f os.FileInfo, err error) error {
+	if err != nil {
+		return errors.Errorf("Hash: Can't stat file %s to hash: %s", w.srcPath, err)
+	}
+
+	if len(*w.retFiles) >= maxFilesToRead {
+		return errFileReadOverLimit
+	}
+
+	relFilePath, err := w.getRelativePath(filePath)
+	if err != nil {
+		return err
+	}
+
+	if !w.shouldIncludeFile(relFilePath) {
+		return nil
+	}
+
+	if err := w.handleSkipLogic(relFilePath, f); err != nil {
+		return err
+	}
+
+	if w.seen[relFilePath] {
+		return nil
+	}
+
+	return w.processFile(filePath, relFilePath, f)
+}
+
+func (w *fileWalker) getRelativePath(filePath string) (string, error) {
+	relFilePath, err := filepath.Rel(w.srcPath, filePath)
+	if err != nil {
+		return "", err
+	}
+	return filepath.ToSlash(relFilePath), nil
+}
+
+func (w *fileWalker) handleSkipLogic(relFilePath string, f os.FileInfo) error {
+	skip, err := w.shouldSkipPath(relFilePath)
+	if err != nil {
+		return err
+	}
+	if skip {
+		return w.handleDirectorySkip(relFilePath, f)
+	}
+	return nil
+}
+
+func (w *fileWalker) shouldIncludeFile(relFilePath string) bool {
+	for _, f := range w.includeFiles {
+		if strings.HasPrefix(relFilePath, f) {
+			return true
+		}
+	}
+	return false
+}
+
+func (w *fileWalker) shouldSkipPath(relFilePath string) (bool, error) {
+	if relFilePath == "." {
+		return false, nil
+	}
+
+	skip, err := w.pm.MatchesOrParentMatches(relFilePath)
+	if err != nil {
+		return false, errors.Errorf("Error matching %s: %v", relFilePath, err)
+	}
+
+	return skip, nil
+}
+
+func (w *fileWalker) handleDirectorySkip(relFilePath string, f os.FileInfo) error {
+	if !f.IsDir() {
+		return nil
+	}
+
+	if !w.pm.Exclusions() {
+		return filepath.SkipDir
+	}
+
+	dirSlash := relFilePath + string(filepath.Separator)
+	for _, pat := range w.pm.Patterns() {
+		if !pat.Exclusion() {
+			continue
+		}
+
+		if strings.HasPrefix(pat.String()+string(filepath.Separator), dirSlash) {
+			return nil
+		}
+	}
+
+	return filepath.SkipDir
+}
+
+func (w *fileWalker) processFile(filePath, relFilePath string, f os.FileInfo) error {
+	w.seen[relFilePath] = true
+	if !f.IsDir() {
+		checksum, err := hashFileCRC32(filePath, 0xedb88320)
+		if err != nil {
+			return nil
+		}
+
+		*w.retFiles = append(*w.retFiles, relFilePath+";"+checksum)
+	}
+
+	return nil
+}
+
+func computeFinalHash(retFiles []string) (string, error) {
+	if len(retFiles) == 0 {
+		return "", nil
+	}
+
+	hash := sha256.New()
 	sort.Strings(retFiles)
 	for _, f := range retFiles {
 		_, _ = hash.Write([]byte(f))
-	}
-	if len(retFiles) == 0 {
-		return "", nil
 	}
 
 	return fmt.Sprintf("%x", hash.Sum(nil)), nil
