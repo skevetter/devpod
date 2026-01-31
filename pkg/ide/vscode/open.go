@@ -104,10 +104,6 @@ func openViaBrowser(params OpenParams) error {
 
 	folder := strings.TrimPrefix(params.Folder, "/")
 	pathStr := fmt.Sprintf("/ssh-remote+%s.devpod/%s", params.Workspace, folder)
-	if folder != "" {
-		pathStr += "/" + folder
-	}
-
 	u := &url.URL{
 		Scheme: config.scheme,
 		Host:   "vscode-remote",
