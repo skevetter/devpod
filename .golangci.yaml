@@ -1,4 +1,16 @@
-version: '2'
+version: "2"
 run:
   timeout: 5m
   concurrency: 8
+linters:
+  enable:
+    - cyclop
+    - revive
+    - modernize
+  settings:
+    cyclop:
+      max-complexity: 7
+    revive:
+      rules:
+        - name: argument-limit
+          arguments: [4]
