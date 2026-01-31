@@ -91,144 +91,247 @@ func NewSetupContainerCmd(flags *flags.GlobalFlags) *cobra.Command {
 	return setupContainerCmd
 }
 
+type setupContext struct {
+	ctx           context.Context
+	workspaceInfo *provider2.ContainerWorkspaceInfo
+	setupInfo     *config.Result
+	tunnelClient  tunnel.TunnelClient
+	logger        log.Logger
+}
+
 // Run runs the command logic
 func (cmd *SetupContainerCmd) Run(ctx context.Context) error {
-	// create a grpc client
-	tunnelClient, err := tunnelserver.NewTunnelClient(os.Stdin, os.Stdout, true, 0)
-	if err != nil {
-		return fmt.Errorf("error creating tunnel client %w", err)
-	}
-
-	// create debug logger
-	logger := tunnelserver.NewTunnelLogger(ctx, tunnelClient, cmd.Debug)
-	logger.Debugf("Created logger")
-
-	// this message serves as a ping to the client
-	_, err = tunnelClient.Ping(ctx, &tunnel.Empty{})
-	if err != nil {
-		return fmt.Errorf("ping client %w", err)
-	}
-
-	// start setting up container
-	logger.Debugf("Start setting up container...")
-	workspaceInfo, _, err := agent.DecodeContainerWorkspaceInfo(cmd.ContainerWorkspaceInfo)
+	tunnelClient, logger, err := cmd.initializeTunnelClient(ctx)
 	if err != nil {
 		return err
 	}
 
-	decompressed, err := compress.Decompress(cmd.SetupInfo)
+	workspaceInfo, setupInfo, err := cmd.parseWorkspaceAndSetupInfo(logger)
 	if err != nil {
 		return err
 	}
 
-	setupInfo := &config.Result{}
-	err = json.Unmarshal([]byte(decompressed), setupInfo)
-	if err != nil {
+	sctx := &setupContext{
+		ctx:           ctx,
+		workspaceInfo: workspaceInfo,
+		setupInfo:     setupInfo,
+		tunnelClient:  tunnelClient,
+		logger:        logger,
+	}
+
+	if err := cmd.prepareWorkspace(sctx); err != nil {
 		return err
 	}
 
-	// sync mounts
-	if cmd.StreamMounts {
-		mounts := config.GetMounts(setupInfo)
-		logger.Debug("Syncing mounts... ", mounts)
-		for _, m := range mounts {
-			// If we are resetting the workspace and it's sources, always re stream the mounts
-			if !workspaceInfo.CLIOptions.Reset {
-				files, err := os.ReadDir(m.Target)
-				if err == nil && len(files) > 0 {
-					logger.Debug("Skip stream mount ", m.Target, " because it's not empty")
-					continue
-				}
-			}
-
-			// stream mount
-			err = streamMount(ctx, workspaceInfo, m, tunnelClient, logger)
-			if err != nil {
-				return err
-			}
-		}
+	if err := cmd.finalizeSetup(sctx); err != nil {
+		return err
 	}
 
-	// do dockerless build
-	err = dockerlessBuild(ctx, setupInfo, &workspaceInfo.Dockerless, tunnelClient, cmd.Debug, logger)
+	return cmd.sendSetupResult(ctx, setupInfo, tunnelClient)
+}
+
+func (cmd *SetupContainerCmd) prepareWorkspace(sctx *setupContext) error {
+	if err := cmd.syncMounts(sctx); err != nil {
+		return err
+	}
+
+	err := dockerlessBuild(
+		sctx.ctx,
+		sctx.setupInfo,
+		&sctx.workspaceInfo.Dockerless,
+		sctx.tunnelClient,
+		cmd.Debug,
+		sctx.logger,
+	)
 	if err != nil {
 		return fmt.Errorf("dockerless build %w", err)
 	}
 
-	// fill container env
-	err = fillContainerEnv(setupInfo)
+	if err := fillContainerEnv(sctx.setupInfo); err != nil {
+		return err
+	}
+
+	cleanupFunc, err := cmd.setupGitCredentials(
+		sctx.ctx,
+		sctx.tunnelClient,
+		sctx.logger,
+	)
+	if err == nil && cleanupFunc != nil {
+		defer cleanupFunc()
+	}
+
+	return cmd.cloneRepositoryIfNeeded(sctx.ctx, sctx.workspaceInfo, sctx.setupInfo, sctx.logger)
+}
+
+func (cmd *SetupContainerCmd) finalizeSetup(sctx *setupContext) error {
+	err := setup.SetupContainer(
+		sctx.ctx,
+		sctx.setupInfo,
+		sctx.workspaceInfo.CLIOptions.WorkspaceEnv,
+		cmd.ChownWorkspace,
+		&sctx.workspaceInfo.CLIOptions.Platform,
+		sctx.tunnelClient,
+		sctx.logger,
+	)
 	if err != nil {
 		return err
 	}
 
-	if cmd.InjectGitCredentials {
-		// configure git credentials
-		cancelCtx, cancel := context.WithCancel(ctx)
-		defer cancel()
-		cleanupFunc, err := configureSystemGitCredentials(cancelCtx, cancel, tunnelClient, logger)
-		if err != nil {
-			logger.Errorf("Error configuring git credentials: %v", err)
-		} else {
-			defer cleanupFunc()
-		}
+	if err := cmd.installIDE(sctx.setupInfo, &sctx.workspaceInfo.IDE, sctx.logger); err != nil {
+		return err
 	}
 
-	if b, err := workspaceInfo.PullFromInsideContainer.Bool(); err == nil && b {
-		// check if workspace folder exists and is a git repository.
-		// skip cloning if it does
-		_, err := os.Stat(filepath.Join(setupInfo.SubstitutionContext.ContainerWorkspaceFolder, ".git"))
-		if err == nil && !workspaceInfo.CLIOptions.Recreate {
-			logger.Debugf("Workspace repository already checked out %s, skipping clone", setupInfo.SubstitutionContext.ContainerWorkspaceFolder)
-		} else {
-			if err := agent.CloneRepositoryForWorkspace(ctx,
-				&workspaceInfo.Source,
-				&workspaceInfo.Agent,
-				setupInfo.SubstitutionContext.ContainerWorkspaceFolder,
-				"",
-				workspaceInfo.CLIOptions,
-				true,
-				logger,
-			); err != nil {
-				return err
+	return cmd.startContainerDaemon(sctx.workspaceInfo, sctx.logger)
+}
+
+func (cmd *SetupContainerCmd) initializeTunnelClient(ctx context.Context) (tunnel.TunnelClient, log.Logger, error) {
+	tunnelClient, err := tunnelserver.NewTunnelClient(os.Stdin, os.Stdout, true, 0)
+	if err != nil {
+		return nil, nil, fmt.Errorf("initializing tunnel client: %w", err)
+	}
+
+	logger := tunnelserver.NewTunnelLogger(ctx, tunnelClient, cmd.Debug)
+	logger.Debugf("created logger")
+
+	if _, err := tunnelClient.Ping(ctx, &tunnel.Empty{}); err != nil {
+		return nil, nil, fmt.Errorf("ping client: %w", err)
+	}
+
+	return tunnelClient, logger, nil
+}
+
+func (cmd *SetupContainerCmd) parseWorkspaceAndSetupInfo(
+	logger log.Logger,
+) (*provider2.ContainerWorkspaceInfo, *config.Result, error) {
+	logger.Debugf("begin setting up container")
+	workspaceInfo, _, err := agent.DecodeContainerWorkspaceInfo(cmd.ContainerWorkspaceInfo)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	decompressed, err := compress.Decompress(cmd.SetupInfo)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	setupInfo := &config.Result{}
+	if err := json.Unmarshal([]byte(decompressed), setupInfo); err != nil {
+		return nil, nil, err
+	}
+
+	return workspaceInfo, setupInfo, nil
+}
+
+func (cmd *SetupContainerCmd) syncMounts(sctx *setupContext) error {
+	if !cmd.StreamMounts {
+		return nil
+	}
+
+	mounts := config.GetMounts(sctx.setupInfo)
+	sctx.logger.Debugf("syncing mounts: %v", mounts)
+	for _, m := range mounts {
+		if !sctx.workspaceInfo.CLIOptions.Reset {
+			files, err := os.ReadDir(m.Target)
+			if err == nil && len(files) > 0 {
+				sctx.logger.Debugf("skip stream mount %s because it is not empty", m.Target)
+				continue
 			}
 		}
-	}
 
-	// setup container
-	err = setup.SetupContainer(ctx, setupInfo, workspaceInfo.CLIOptions.WorkspaceEnv, cmd.ChownWorkspace, &workspaceInfo.CLIOptions.Platform, tunnelClient, logger)
-	if err != nil {
-		return err
-	}
-
-	// install IDE
-	err = cmd.installIDE(setupInfo, &workspaceInfo.IDE, logger)
-	if err != nil {
-		return err
-	}
-
-	// start container daemon if necessary
-	if !workspaceInfo.CLIOptions.Platform.Enabled && !workspaceInfo.CLIOptions.DisableDaemon && workspaceInfo.ContainerTimeout != "" {
-		err = single.Single("devpod.daemon.pid", func() (*exec.Cmd, error) {
-			logger.Debugf("Start DevPod Container Daemon with Inactivity Timeout %s", workspaceInfo.ContainerTimeout)
-			binaryPath, err := os.Executable()
-			if err != nil {
-				return nil, err
-			}
-
-			return exec.Command(binaryPath, "agent", "container", "daemon", "--timeout", workspaceInfo.ContainerTimeout), nil
-		})
-		if err != nil {
+		if err := streamMount(sctx.ctx, sctx.workspaceInfo, m, sctx.tunnelClient, sctx.logger); err != nil {
 			return err
 		}
 	}
 
+	return nil
+}
+
+func (cmd *SetupContainerCmd) setupGitCredentials(
+	ctx context.Context,
+	tunnelClient tunnel.TunnelClient,
+	logger log.Logger,
+) (func(), error) {
+	if !cmd.InjectGitCredentials {
+		return nil, nil
+	}
+
+	cancelCtx, cancel := context.WithCancel(ctx)
+	cleanupFunc, err := configureSystemGitCredentials(cancelCtx, cancel, tunnelClient, logger)
+	if err != nil {
+		cancel()
+		return nil, err
+	}
+
+	return func() {
+		cancel()
+		cleanupFunc()
+	}, nil
+}
+
+func (cmd *SetupContainerCmd) cloneRepositoryIfNeeded(
+	ctx context.Context,
+	workspaceInfo *provider2.ContainerWorkspaceInfo,
+	setupInfo *config.Result,
+	logger log.Logger,
+) error {
+	b, err := workspaceInfo.PullFromInsideContainer.Bool()
+	if err != nil || !b {
+		return nil
+	}
+
+	gitPath := filepath.Join(setupInfo.SubstitutionContext.ContainerWorkspaceFolder, ".git")
+	if _, err := os.Stat(gitPath); err == nil && !workspaceInfo.CLIOptions.Recreate {
+		logger.Debugf(
+			"workspace repository already checked out %s, skipping clone",
+			setupInfo.SubstitutionContext.ContainerWorkspaceFolder,
+		)
+		return nil
+	}
+
+	return agent.CloneRepositoryForWorkspace(ctx,
+		&workspaceInfo.Source,
+		&workspaceInfo.Agent,
+		setupInfo.SubstitutionContext.ContainerWorkspaceFolder,
+		"",
+		workspaceInfo.CLIOptions,
+		true,
+		logger,
+	)
+}
+
+func (cmd *SetupContainerCmd) startContainerDaemon(
+	workspaceInfo *provider2.ContainerWorkspaceInfo,
+	logger log.Logger,
+) error {
+	if workspaceInfo.CLIOptions.Platform.Enabled ||
+		workspaceInfo.CLIOptions.DisableDaemon ||
+		workspaceInfo.ContainerTimeout == "" {
+		return nil
+	}
+
+	return single.Single("devpod.daemon.pid", func() (*exec.Cmd, error) {
+		logger.Debugf("start devpod container daemon with inactivity timeout %s", workspaceInfo.ContainerTimeout)
+		binaryPath, err := os.Executable()
+		if err != nil {
+			return nil, err
+		}
+
+		//nolint:gosec // binaryPath is from os.Executable(), not user input
+		return exec.Command(binaryPath, "agent", "container", "daemon", "--timeout", workspaceInfo.ContainerTimeout), nil
+	})
+}
+
+func (cmd *SetupContainerCmd) sendSetupResult(
+	ctx context.Context,
+	setupInfo *config.Result,
+	tunnelClient tunnel.TunnelClient,
+) error {
 	out, err := json.Marshal(setupInfo)
 	if err != nil {
 		return fmt.Errorf("marshal setup info %w", err)
 	}
 
-	_, err = tunnelClient.SendResult(ctx, &tunnel.Message{Message: string(out)})
-	if err != nil {
+	if _, err := tunnelClient.SendResult(ctx, &tunnel.Message{Message: string(out)}); err != nil {
 		return fmt.Errorf("send result %w", err)
 	}
 
@@ -269,13 +372,13 @@ func dockerlessBuild(
 
 	_, err := os.Stat(DockerlessImageConfigOutput)
 	if err == nil {
-		log.Debugf("Skip dockerless build, because container was built already")
+		log.Debugf("skip dockerless build, because container was built already")
 		return nil
 	}
 
 	buildContext := os.Getenv("DOCKERLESS_CONTEXT")
 	if buildContext == "" {
-		log.Debugf("Build context is missing for dockerless build")
+		log.Debugf("build context is missing for dockerless build")
 		return nil
 	}
 
@@ -310,7 +413,7 @@ func dockerlessBuild(
 		// configure the docker credentials
 		dockerCredentialsDir, err := configureDockerCredentials(ctx, cancel, client, log)
 		if err != nil {
-			log.Errorf("Error configuring docker credentials: %v", err)
+			log.Errorf("error configuring docker credentials: %v", err)
 		} else {
 			defer func() {
 				_ = os.Unsetenv("DOCKER_CONFIG")
@@ -325,7 +428,7 @@ func dockerlessBuild(
 	args = append(args, "--build-arg", "TARGETOS="+runtime.GOOS)
 	args = append(args, "--build-arg", "TARGETARCH="+runtime.GOARCH)
 	if dockerlessOptions.RegistryCache != "" {
-		log.Debug("Appending registry cache to dockerless build arguments ", dockerlessOptions.RegistryCache)
+		log.Debugf("appending registry cache to dockerless build arguments: %v", dockerlessOptions.RegistryCache)
 		args = append(args, "--registry-cache", dockerlessOptions.RegistryCache)
 	}
 
@@ -344,7 +447,7 @@ func dockerlessBuild(
 	defer func() { _ = errWriter.Close() }()
 
 	// start building
-	log.Infof("Start dockerless building %s %s", "/.dockerless/dockerless", strings.Join(args, " "))
+	log.Infof("start dockerless building %s %s", "/.dockerless/dockerless", strings.Join(args, " "))
 	cmd := exec.CommandContext(ctx, "/.dockerless/dockerless", args...)
 
 	if debug {
@@ -379,7 +482,7 @@ func dockerlessBuild(
 	_ = os.RemoveAll(fallbackDir)
 	err = copy.RenameDirectory(buildInfoDir, fallbackDir)
 	if err != nil {
-		log.Debugf("Error renaming dir %s: %v", buildInfoDir, err)
+		log.Debugf("error renaming dir %s: %v", buildInfoDir, err)
 		return nil
 	}
 
@@ -476,7 +579,7 @@ func (cmd *SetupContainerCmd) installIDE(setupInfo *config.Result, ide *provider
 func (cmd *SetupContainerCmd) setupVSCode(setupInfo *config.Result, ideOptions map[string]config2.OptionValue, flavor vscode.Flavor, log log.Logger) error {
 	log.Debugf("setup %s", flavor.DisplayName())
 	vsCodeConfiguration := config.GetVSCodeConfiguration(setupInfo.MergedConfig)
-	log.Debug("VSCode settings: ", vsCodeConfiguration.Settings)
+	log.Debugf("vscode settings: %v", vsCodeConfiguration.Settings)
 	settings := ""
 	if len(vsCodeConfiguration.Settings) > 0 {
 		out, err := json.Marshal(vsCodeConfiguration.Settings)
@@ -510,7 +613,7 @@ func (cmd *SetupContainerCmd) setupVSCode(setupInfo *config.Result, ideOptions m
 	}
 
 	return single.Single(fmt.Sprintf("%s-async.pid", flavor), func() (*exec.Cmd, error) {
-		log.Infof("Install extensions '%s' in the background", strings.Join(vsCodeConfiguration.Extensions, ","))
+		log.Infof("installing extensions in the background: %s", strings.Join(vsCodeConfiguration.Extensions, ","))
 		binaryPath, err := os.Executable()
 		if err != nil {
 			return nil, err
@@ -527,7 +630,7 @@ func (cmd *SetupContainerCmd) setupVSCode(setupInfo *config.Result, ideOptions m
 }
 
 func (cmd *SetupContainerCmd) setupOpenVSCode(setupInfo *config.Result, ideOptions map[string]config2.OptionValue, log log.Logger) error {
-	log.Debugf("Setup openvscode...")
+	log.Debugf("setup openvscode")
 	vsCodeConfiguration := config.GetVSCodeConfiguration(setupInfo.MergedConfig)
 	settings := ""
 	if len(vsCodeConfiguration.Settings) > 0 {
@@ -551,7 +654,7 @@ func (cmd *SetupContainerCmd) setupOpenVSCode(setupInfo *config.Result, ideOptio
 	// install extensions in background
 	if len(vsCodeConfiguration.Extensions) > 0 {
 		err = single.Single("openvscode-async.pid", func() (*exec.Cmd, error) {
-			log.Infof("Install extensions '%s' in the background", strings.Join(vsCodeConfiguration.Extensions, ","))
+			log.Infof("installing extensions in the background: %s", strings.Join(vsCodeConfiguration.Extensions, ","))
 			binaryPath, err := os.Executable()
 			if err != nil {
 				return nil, err
@@ -592,7 +695,7 @@ func configureSystemGitCredentials(ctx context.Context, cancel context.CancelFun
 	}
 
 	cleanup := func() {
-		log.Debug("Unset setup system credential helper")
+		log.Debug("unset setup system credential helper")
 		err = git.CommandContext(ctx, git.GetDefaultExtraEnv(false), "config", "--system", "--unset", "credential.helper").Run()
 		if err != nil {
 			log.Errorf("unset system credential helper %v", err)
@@ -685,7 +788,7 @@ func (p *progressReader) Read(b []byte) (n int, err error) {
 	n, err = p.Reader.Read(b)
 	p.bytesRead += int64(n)
 	if time.Since(p.lastMessage) > time.Second*4 {
-		p.Log.Infof("Downloaded %.2f MB", float64(p.bytesRead)/1024/1024)
+		p.Log.Infof("downloaded %.2f MB", float64(p.bytesRead)/1024/1024)
 		p.lastMessage = time.Now()
 	}
 
