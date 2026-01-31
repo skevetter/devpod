@@ -200,7 +200,7 @@ func buildOpenArgs(workspace, folder string, newWindow, hasContainersExtension b
 	}
 
 	openURL := path.Join("vscode-remote://ssh-remote+", workspace+".devpod", strings.TrimPrefix(folder, "/"))
-	args = append(args, openURL)
+	args = append(args, "--folder-uri", openURL)
 
 	return args
 }
