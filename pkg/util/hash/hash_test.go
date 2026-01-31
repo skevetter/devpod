@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -25,32 +24,12 @@ func TestHashSuite(t *testing.T) {
 	suite.Run(t, new(HashTestSuite))
 }
 
-// Helper functions
-
-func (s *HashTestSuite) createFile(relPath, content string) {
-	fullPath := filepath.Join(s.tempDir, relPath)
-	dir := filepath.Dir(fullPath)
-	require.NoError(s.T(), os.MkdirAll(dir, 0755))
-	require.NoError(s.T(), os.WriteFile(fullPath, []byte(content), 0644))
-}
-
-func (s *HashTestSuite) createDir(relPath string) {
-	fullPath := filepath.Join(s.tempDir, relPath)
-	require.NoError(s.T(), os.MkdirAll(fullPath, 0755))
-}
-
-func (s *HashTestSuite) createSymlink(link, target string) {
-	linkPath := filepath.Join(s.tempDir, link)
-	targetPath := filepath.Join(s.tempDir, target)
-	require.NoError(s.T(), os.Symlink(targetPath, linkPath))
-}
-
-// 1. Basic Functionality Tests
-
 func (s *HashTestSuite) TestDirectoryHash_EmptyDirectory() {
 	hash, err := DirectoryHash(s.tempDir, nil, nil)
 	require.NoError(s.T(), err)
-	assert.Empty(s.T(), hash)
+	// dirhash.Hash1 returns a hash even for empty directories (hash of empty input)
+	assert.NotEmpty(s.T(), hash)
+	assert.Equal(s.T(), "h1:47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=", hash)
 }
 
 func (s *HashTestSuite) TestDirectoryHash_SingleFile() {
@@ -60,7 +39,6 @@ func (s *HashTestSuite) TestDirectoryHash_SingleFile() {
 	require.NoError(s.T(), err)
 	assert.NotEmpty(s.T(), hash1)
 
-	// Deterministic
 	hash2, err := DirectoryHash(s.tempDir, nil, nil)
 	require.NoError(s.T(), err)
 	assert.Equal(s.T(), hash1, hash2)
@@ -90,8 +68,6 @@ func (s *HashTestSuite) TestDirectoryHash_NestedDirectories() {
 	require.NoError(s.T(), err)
 	assert.NotEmpty(s.T(), hash)
 }
-
-// 2. Exclude Pattern Tests
 
 func (s *HashTestSuite) TestDirectoryHash_ExcludePatterns_Basic() {
 	s.createFile("file.txt", "content")
@@ -147,8 +123,6 @@ func (s *HashTestSuite) TestDirectoryHash_ExcludePatterns_Precedence() {
 	require.NoError(s.T(), err)
 	assert.NotEqual(s.T(), hash1, hash3)
 }
-
-// 3. Include Filter Tests
 
 func (s *HashTestSuite) TestDirectoryHash_IncludeFiles_Empty() {
 	s.createFile("file1.txt", "content1")
@@ -236,11 +210,9 @@ func (s *HashTestSuite) TestDirectoryHash_IncludeFiles_Multiple() {
 	assert.NotEqual(s.T(), hash1, hash3)
 }
 
-// 4. File Limit Tests
-
 func (s *HashTestSuite) TestDirectoryHash_FileLimitExceeded() {
 	// Create 5001 files
-	for i := 0; i < 5001; i++ {
+	for i := range 5001 {
 		s.createFile(filepath.Join("files", fmt.Sprintf("file%d.txt", i)), "content")
 	}
 
@@ -256,7 +228,7 @@ func (s *HashTestSuite) TestDirectoryHash_FileLimitExceeded() {
 
 func (s *HashTestSuite) TestDirectoryHash_FileLimitExact() {
 	// Create exactly 5000 files
-	for i := 0; i < 5000; i++ {
+	for i := range 5000 {
 		s.createFile(filepath.Join("files", fmt.Sprintf("file%d.txt", i)), "content")
 	}
 
@@ -267,7 +239,7 @@ func (s *HashTestSuite) TestDirectoryHash_FileLimitExact() {
 
 func (s *HashTestSuite) TestDirectoryHash_FileLimitUnder() {
 	// Create 100 files
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		s.createFile(filepath.Join("files", fmt.Sprintf("file%d.txt", i)), "content")
 	}
 
@@ -276,29 +248,16 @@ func (s *HashTestSuite) TestDirectoryHash_FileLimitUnder() {
 	assert.NotEmpty(s.T(), hash)
 }
 
-// 5. Symlink Tests
-
 func (s *HashTestSuite) TestDirectoryHash_SymlinkDirectory() {
-	s.T().Skip("filepath.Walk does not follow directory symlinks - this is expected behavior")
-
-	if runtime.GOOS == "windows" {
-		s.T().Skip("Symlink test requires elevated privileges on Windows")
-	}
-
 	s.createFile("target/file.txt", "content")
 	s.createSymlink("link", "target")
 
-	// Should follow symlink and compute hash
 	hash, err := DirectoryHash(filepath.Join(s.tempDir, "link"), nil, nil)
 	require.NoError(s.T(), err)
 	assert.NotEmpty(s.T(), hash)
 }
 
 func (s *HashTestSuite) TestDirectoryHash_SymlinkFile() {
-	if runtime.GOOS == "windows" {
-		s.T().Skip("Symlink test requires elevated privileges on Windows")
-	}
-
 	s.createFile("target.txt", "content")
 	s.createSymlink("link.txt", "target.txt")
 
@@ -306,8 +265,6 @@ func (s *HashTestSuite) TestDirectoryHash_SymlinkFile() {
 	require.NoError(s.T(), err)
 	assert.NotEmpty(s.T(), hash)
 }
-
-// 6. Error Handling Tests
 
 func (s *HashTestSuite) TestDirectoryHash_NonExistentPath() {
 	hash, err := DirectoryHash(filepath.Join(s.tempDir, "nonexistent"), nil, nil)
@@ -332,8 +289,6 @@ func (s *HashTestSuite) TestDirectoryHash_InvalidExcludePattern() {
 	assert.Empty(s.T(), hash)
 }
 
-// 7. Hash Stability Tests
-
 func (s *HashTestSuite) TestDirectoryHash_Deterministic() {
 	s.createFile("file1.txt", "content1")
 	s.createFile("file2.txt", "content2")
@@ -350,15 +305,15 @@ func (s *HashTestSuite) TestDirectoryHash_Deterministic() {
 func (s *HashTestSuite) TestDirectoryHash_OrderIndependent() {
 	// Create files in one order
 	tempDir1 := s.T().TempDir()
-	require.NoError(s.T(), os.WriteFile(filepath.Join(tempDir1, "a.txt"), []byte("a"), 0644))
-	require.NoError(s.T(), os.WriteFile(filepath.Join(tempDir1, "b.txt"), []byte("b"), 0644))
-	require.NoError(s.T(), os.WriteFile(filepath.Join(tempDir1, "c.txt"), []byte("c"), 0644))
+	require.NoError(s.T(), os.WriteFile(filepath.Join(tempDir1, "a.txt"), []byte("a"), 0600))
+	require.NoError(s.T(), os.WriteFile(filepath.Join(tempDir1, "b.txt"), []byte("b"), 0600))
+	require.NoError(s.T(), os.WriteFile(filepath.Join(tempDir1, "c.txt"), []byte("c"), 0600))
 
 	// Create files in different order
 	tempDir2 := s.T().TempDir()
-	require.NoError(s.T(), os.WriteFile(filepath.Join(tempDir2, "c.txt"), []byte("c"), 0644))
-	require.NoError(s.T(), os.WriteFile(filepath.Join(tempDir2, "a.txt"), []byte("a"), 0644))
-	require.NoError(s.T(), os.WriteFile(filepath.Join(tempDir2, "b.txt"), []byte("b"), 0644))
+	require.NoError(s.T(), os.WriteFile(filepath.Join(tempDir2, "c.txt"), []byte("c"), 0600))
+	require.NoError(s.T(), os.WriteFile(filepath.Join(tempDir2, "a.txt"), []byte("a"), 0600))
+	require.NoError(s.T(), os.WriteFile(filepath.Join(tempDir2, "b.txt"), []byte("b"), 0600))
 
 	hash1, err := DirectoryHash(tempDir1, nil, nil)
 	require.NoError(s.T(), err)
@@ -382,8 +337,6 @@ func (s *HashTestSuite) TestDirectoryHash_ContentSensitive() {
 
 	assert.NotEqual(s.T(), hash1, hash2)
 }
-
-// 8. Edge Cases
 
 func (s *HashTestSuite) TestDirectoryHash_SpecialCharacters() {
 	s.createFile("file (1).txt", "content")
@@ -415,7 +368,7 @@ func (s *HashTestSuite) TestDirectoryHash_RelativePath() {
 	// Save current dir
 	cwd, err := os.Getwd()
 	require.NoError(s.T(), err)
-	defer os.Chdir(cwd)
+	defer func() { _ = os.Chdir(cwd) }()
 
 	// Change to temp dir
 	require.NoError(s.T(), os.Chdir(s.tempDir))
@@ -425,8 +378,6 @@ func (s *HashTestSuite) TestDirectoryHash_RelativePath() {
 	require.NoError(s.T(), err)
 	assert.NotEmpty(s.T(), hash)
 }
-
-// 9. Integration Tests
 
 func (s *HashTestSuite) TestDirectoryHash_RealWorldScenario_NodeProject() {
 	s.createFile("src/index.js", "console.log('hello')")
@@ -473,4 +424,17 @@ func (s *HashTestSuite) TestDirectoryHash_RealWorldScenario_GoProject() {
 	hash3, err := DirectoryHash(s.tempDir, []string{"vendor", "*.test"}, nil)
 	require.NoError(s.T(), err)
 	assert.NotEqual(s.T(), hash1, hash3)
+}
+
+func (s *HashTestSuite) createFile(relPath, content string) {
+	fullPath := filepath.Join(s.tempDir, relPath)
+	dir := filepath.Dir(fullPath)
+	require.NoError(s.T(), os.MkdirAll(dir, 0750))
+	require.NoError(s.T(), os.WriteFile(fullPath, []byte(content), 0600))
+}
+
+func (s *HashTestSuite) createSymlink(link, target string) {
+	linkPath := filepath.Join(s.tempDir, link)
+	targetPath := filepath.Join(s.tempDir, target)
+	require.NoError(s.T(), os.Symlink(targetPath, linkPath))
 }

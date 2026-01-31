@@ -1,20 +1,17 @@
 package hash
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"errors"
 	"fmt"
-	"hash/crc32"
 	"io"
 	"os"
 	"path/filepath"
 	"runtime"
-	"sort"
 	"strings"
 
 	"github.com/docker/docker/pkg/longpath"
 	"github.com/moby/patternmatcher"
+	"golang.org/x/mod/sumdb/dirhash"
 )
 
 const maxFilesToRead = 5000
@@ -23,10 +20,12 @@ var (
 	errFileReadOverLimit = errors.New("read files over limit")
 )
 
-// DirectoryHash computes a hash of the directory contents based on file paths and checksums.
-// It processes up to maxFilesToRead (5000) files. If this limit is exceeded, it returns
+// DirectoryHash computes a hash of the directory contents using the standard dirhash.Hash1 algorithm.
+// It supports filtering via exclude patterns (.dockerignore) and include filters (specific subdirectories).
+// It processes up to maxFilesToRead files. If this limit is exceeded, it returns
 // a warning error along with a partial hash computed from the first 5000 files.
-// Callers should check for errors to detect incomplete hashes.
+//
+// The hash format is "h1:" followed by base64-encoded SHA-256, compatible with go.sum format.
 //
 // Parameters:
 //   - srcPath: The directory path to hash
@@ -34,7 +33,7 @@ var (
 //   - includeFiles: Specific files to include in the hash
 //
 // Returns:
-//   - hash: SHA256 hash of the directory contents (may be partial if limit exceeded)
+//   - hash: "h1:" format hash of the directory contents (may be partial if limit exceeded)
 //   - error: nil on success, warning error if file limit exceeded, or actual error on failure
 func DirectoryHash(srcPath string, excludePatterns, includeFiles []string) (string, error) {
 	srcPath, err := validateAndPreparePath(srcPath)
@@ -47,24 +46,36 @@ func DirectoryHash(srcPath string, excludePatterns, includeFiles []string) (stri
 		return "", err
 	}
 
-	retFiles, err := collectFiles(srcPath, pm, includeFiles)
-	if err != nil {
-		// If file limit exceeded, compute partial hash and return with warning
-		if errors.Is(err, errFileReadOverLimit) {
-			hash, hashErr := computeFinalHash(retFiles)
-			if hashErr != nil {
-				return "", hashErr
-			}
-			return hash, err
-		}
+	files, err := collectFiles(srcPath, pm, includeFiles)
+	if err != nil && !errors.Is(err, errFileReadOverLimit) {
 		return "", err
 	}
 
-	return computeFinalHash(retFiles)
+	// Use dirhash.Hash1 for standard hashing
+	hash, hashErr := dirhash.Hash1(files, func(name string) (io.ReadCloser, error) {
+		// #nosec G304 - file path is constructed from validated srcPath and filtered file list
+		return os.Open(filepath.Join(srcPath, filepath.FromSlash(name)))
+	})
+
+	if hashErr != nil {
+		return "", hashErr
+	}
+
+	// If file limit was exceeded, return hash with warning
+	if err != nil {
+		return hash, err
+	}
+
+	return hash, nil
 }
 
 func validateAndPreparePath(srcPath string) (string, error) {
 	srcPath, err := filepath.Abs(srcPath)
+	if err != nil {
+		return "", err
+	}
+
+	srcPath, err = filepath.EvalSymlinks(srcPath)
 	if err != nil {
 		return "", err
 	}
@@ -86,22 +97,22 @@ func validateAndPreparePath(srcPath string) (string, error) {
 }
 
 func collectFiles(srcPath string, pm *patternmatcher.PatternMatcher, includeFiles []string) ([]string, error) {
-	seen := make(map[string]bool)
 	retFiles := []string{}
-	walkRoot := filepath.Join(srcPath, ".")
 
 	walker := &fileWalker{
 		srcPath:      srcPath,
 		pm:           pm,
 		includeFiles: includeFiles,
-		seen:         seen,
 		retFiles:     &retFiles,
 	}
 
-	err := filepath.Walk(walkRoot, walker.walkFunc)
+	err := filepath.WalkDir(srcPath, walker.walkDirFunc)
 	if err != nil {
 		if errors.Is(err, errFileReadOverLimit) {
-			return retFiles, fmt.Errorf("directory hash incomplete: exceeded limit of %d files (partial hash computed from first %d files): %w", maxFilesToRead, len(retFiles), errFileReadOverLimit)
+			return retFiles, fmt.Errorf(
+				"directory hash incomplete: exceeded limit of %d files (partial hash computed from first %d files): %w",
+				maxFilesToRead, len(retFiles), errFileReadOverLimit,
+			)
 		}
 		return nil, fmt.Errorf("failed to hash %s: %v", srcPath, err)
 	}
@@ -113,13 +124,12 @@ type fileWalker struct {
 	srcPath      string
 	pm           *patternmatcher.PatternMatcher
 	includeFiles []string
-	seen         map[string]bool
 	retFiles     *[]string
 }
 
-func (w *fileWalker) walkFunc(filePath string, f os.FileInfo, err error) error {
+func (w *fileWalker) walkDirFunc(filePath string, d os.DirEntry, err error) error {
 	if err != nil {
-		return fmt.Errorf("cannot stat file %s to hash: %s", w.srcPath, err)
+		return fmt.Errorf("error walking %s: %w", filePath, err)
 	}
 
 	if len(*w.retFiles) >= maxFilesToRead {
@@ -131,29 +141,39 @@ func (w *fileWalker) walkFunc(filePath string, f os.FileInfo, err error) error {
 		return err
 	}
 
-	// Check excludes FIRST - skip excluded files regardless of include filter
-	skip, err := w.shouldSkipPath(relFilePath)
-	if err != nil {
-		return err
-	}
-	if skip {
-		if f.IsDir() {
-			return w.handleDirectorySkip(relFilePath, f)
-		}
-		// Skip this file
+	return w.processEntry(relFilePath, d)
+}
+
+func (w *fileWalker) processEntry(relFilePath string, d os.DirEntry) error {
+	if shouldSkip, skipErr := w.shouldSkip(relFilePath, d); skipErr != nil {
+		return skipErr
+	} else if shouldSkip {
 		return nil
 	}
 
-	// Then check includes - only process if included (or no filter specified)
 	if !w.shouldIncludeFile(relFilePath) {
 		return nil
 	}
 
-	if w.seen[relFilePath] {
-		return nil
+	if !d.IsDir() {
+		*w.retFiles = append(*w.retFiles, relFilePath)
 	}
 
-	return w.processFile(filePath, relFilePath, f)
+	return nil
+}
+
+func (w *fileWalker) shouldSkip(relFilePath string, d os.DirEntry) (bool, error) {
+	skip, err := w.shouldSkipPath(relFilePath)
+	if err != nil {
+		return false, err
+	}
+	if skip {
+		if d.IsDir() {
+			return true, w.handleDirectorySkip(relFilePath)
+		}
+		return true, nil
+	}
+	return false, nil
 }
 
 func (w *fileWalker) getRelativePath(filePath string) (string, error) {
@@ -197,7 +217,7 @@ func (w *fileWalker) shouldSkipPath(relFilePath string) (bool, error) {
 	return skip, nil
 }
 
-func (w *fileWalker) handleDirectorySkip(relFilePath string, f os.FileInfo) error {
+func (w *fileWalker) handleDirectorySkip(relFilePath string) error {
 	if !w.pm.Exclusions() {
 		return filepath.SkipDir
 	}
@@ -215,69 +235,4 @@ func (w *fileWalker) handleDirectorySkip(relFilePath string, f os.FileInfo) erro
 	}
 
 	return filepath.SkipDir
-}
-
-func (w *fileWalker) processFile(filePath, relFilePath string, f os.FileInfo) error {
-	w.seen[relFilePath] = true
-
-	// Only hash regular files, not directories
-	if f.IsDir() {
-		return nil
-	}
-
-	checksum, err := hashFileCRC32(filePath, 0xedb88320)
-	if err != nil {
-		return fmt.Errorf("failed to hash file %s: %w", relFilePath, err)
-	}
-
-	*w.retFiles = append(*w.retFiles, relFilePath+";"+checksum)
-	return nil
-}
-
-func computeFinalHash(retFiles []string) (string, error) {
-	if len(retFiles) == 0 {
-		return "", nil
-	}
-
-	hash := sha256.New()
-	sort.Strings(retFiles)
-	for _, f := range retFiles {
-		_, _ = hash.Write([]byte(f))
-	}
-
-	return fmt.Sprintf("%x", hash.Sum(nil)), nil
-}
-
-func hashFileCRC32(filePath string, polynomial uint32) (string, error) {
-	//Initialize an empty return string now in case an error has to be returned
-	var returnCRC32String string
-
-	//Open the fhe file located at the given path and check for errors
-	file, err := os.Open(filePath)
-	if err != nil {
-		return returnCRC32String, err
-	}
-
-	//Tell the program to close the file when the function returns
-	defer func() { _ = file.Close() }()
-
-	//Create the table with the given polynomial
-	tablePolynomial := crc32.MakeTable(polynomial)
-
-	//Open a new hash interface to write the file to
-	hash := crc32.New(tablePolynomial)
-
-	//Copy the file in the interface
-	if _, err := io.Copy(hash, file); err != nil {
-		return returnCRC32String, err
-	}
-
-	//Generate the hash
-	hashInBytes := hash.Sum(nil)[:]
-
-	//Encode the hash to a string
-	returnCRC32String = hex.EncodeToString(hashInBytes)
-
-	//Return the output
-	return returnCRC32String, nil
 }
