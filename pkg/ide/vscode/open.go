@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/url"
 	"os/exec"
-	"path"
 	"runtime"
 	"strings"
 
@@ -26,7 +25,7 @@ type OpenParams struct {
 }
 
 type openConfig struct {
-	protocol     string
+	scheme       string
 	cliName      string
 	macAppPath   string
 	sshExtension string
@@ -34,43 +33,43 @@ type openConfig struct {
 
 var openConfigs = map[Flavor]openConfig{
 	FlavorStable: {
-		protocol:     "vscode://",
+		scheme:       "vscode",
 		cliName:      "code",
 		macAppPath:   "/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code",
 		sshExtension: "ms-vscode-remote.remote-ssh",
 	},
 	FlavorInsiders: {
-		protocol:     "vscode-insiders://",
+		scheme:       "vscode-insiders",
 		cliName:      "code-insiders",
 		macAppPath:   "/Applications/Visual Studio Code - Insiders.app/Contents/Resources/app/bin/code",
 		sshExtension: "ms-vscode-remote.remote-ssh",
 	},
 	FlavorCursor: {
-		protocol:     "cursor://",
+		scheme:       "cursor",
 		cliName:      "cursor",
 		macAppPath:   "/Applications/Cursor.app/Contents/Resources/app/bin/cursor",
 		sshExtension: "ms-vscode-remote.remote-ssh",
 	},
 	FlavorPositron: {
-		protocol:     "positron://",
+		scheme:       "positron",
 		cliName:      "positron",
 		macAppPath:   "/Applications/Positron.app/Contents/Resources/app/bin/positron",
 		sshExtension: "ms-vscode-remote.remote-ssh",
 	},
 	FlavorCodium: {
-		protocol:     "codium://",
+		scheme:       "codium",
 		cliName:      "codium",
 		macAppPath:   "/Applications/Codium.app/Contents/Resources/app/bin/codium",
 		sshExtension: "jeanp413.open-remote-ssh",
 	},
 	FlavorWindsurf: {
-		protocol:     "windsurf://",
+		scheme:       "windsurf",
 		cliName:      "windsurf",
 		macAppPath:   "/Applications/Windsurf.app/Contents/Resources/app/bin/windsurf",
 		sshExtension: "ms-vscode-remote.remote-ssh",
 	},
 	FlavorAntigravity: {
-		protocol:     "antigravity://",
+		scheme:       "antigravity",
 		cliName:      "agy",
 		macAppPath:   "/Applications/Antigravity.app/Contents/Resources/app/bin/agy",
 		sshExtension: "ms-vscode-remote.remote-ssh",
@@ -103,10 +102,16 @@ func openViaBrowser(params OpenParams) error {
 		return fmt.Errorf("unknown flavor %s", params.Flavor)
 	}
 
+	folder := strings.TrimPrefix(params.Folder, "/")
+	pathStr := fmt.Sprintf("/ssh-remote+%s.devpod/%s", params.Workspace, folder)
+	if folder != "" {
+		pathStr += "/" + folder
+	}
+
 	u := &url.URL{
-		Scheme: strings.TrimSuffix(config.protocol, "://"),
+		Scheme: config.scheme,
 		Host:   "vscode-remote",
-		Path:   fmt.Sprintf("/ssh-remote+%s.devpod%s", params.Workspace, strings.TrimPrefix(params.Folder, "/")),
+		Path:   pathStr,
 	}
 	if params.NewWindow {
 		q := u.Query()
@@ -115,6 +120,7 @@ func openViaBrowser(params OpenParams) error {
 	}
 	openURL := u.String()
 
+	params.Log.Debugf("opening URL %s", openURL)
 	err := open.Run(openURL)
 	if err != nil {
 		params.Log.Errorf("flavor %s is not installed on host device: %v", params.Flavor.DisplayName(), err)
@@ -202,7 +208,12 @@ func buildOpenArgs(workspace, folder string, newWindow, hasContainersExtension b
 		args = append(args, "--reuse-window")
 	}
 
-	folderURI := path.Join("vscode-remote://ssh-remote+", workspace+".devpod", strings.TrimPrefix(folder, "/"))
+	u := &url.URL{
+		Scheme: "vscode-remote",
+		Host:   "ssh-remote+" + workspace + ".devpod",
+		Path:   strings.TrimPrefix(folder, "/"),
+	}
+	folderURI := u.String()
 	args = append(args, "--folder-uri", folderURI)
 
 	return args
