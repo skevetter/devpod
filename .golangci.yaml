@@ -5,10 +5,22 @@ run:
 linters:
   enable:
     - cyclop
-    - revive
+    - fatcontext
+    - forbidigo
+    - funcorder
+    - funlen
+    - goconst
+    - gocritic
+    - godot
+    - gosec
+    - lll
+    - misspell
     - modernize
+    - nestif
+    - revive
     - unparam
     - unused
+    - whitespace
   settings:
     cyclop:
       max-complexity: 7
