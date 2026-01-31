@@ -233,13 +233,22 @@ type CLIOptions struct {
 	GidMap                      []string          `json:"gidMap,omitempty"`
 
 	// build options
-	Repository string   `json:"repository,omitempty"`
-	SkipPush   bool     `json:"skipPush,omitempty"`
-	Platforms  []string `json:"platform,omitempty"`
-	Tag        []string `json:"tag,omitempty"`
+	// Repository specifies the container registry repository to push the built image to (e.g., ghcr.io/user/image).
+	// When set, the image will be tagged and pushed to this repository after building.
+	Repository string `json:"repository,omitempty"`
+	// SkipPush prevents pushing the built image to the repository. Useful for testing builds
+	// without affecting the registry. When true, the image is only built and loaded locally.
+	SkipPush bool `json:"skipPush,omitempty"`
+	// Platforms specifies the target platforms for multi-architecture builds (e.g., linux/amd64,linux/arm64).
+	Platforms []string `json:"platform,omitempty"`
+	// Tag specifies additional image tags to apply to the built image beyond the default prebuild hash tag.
+	Tag []string `json:"tag,omitempty"`
 
-	ForceBuild            bool `json:"forceBuild,omitempty"`
-	ForceDockerless       bool `json:"forceDockerless,omitempty"`
+	// ForceBuild forces a rebuild even if a cached image exists.
+	ForceBuild bool `json:"forceBuild,omitempty"`
+	// ForceDockerless forces the use of a dockerless build approach.
+	ForceDockerless bool `json:"forceDockerless,omitempty"`
+	// ForceInternalBuildKit forces the use of internal BuildKit instead of docker buildx.
 	ForceInternalBuildKit bool `json:"forceInternalBuildKit,omitempty"`
 }
 

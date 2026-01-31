@@ -16,37 +16,64 @@ import (
 	"github.com/skevetter/log/hash"
 )
 
+// BuildOptions contains all configuration for building a dev container image.
 type BuildOptions struct {
+	// BuildArgs are build-time variables passed to the Dockerfile (e.g., VERSION=1.0).
 	BuildArgs map[string]string
-	Labels    map[string]string
+	// Labels are metadata key-value pairs to attach to the built image.
+	Labels map[string]string
 
+	// CliOpts are additional command-line options to pass to the build command.
 	CliOpts []string
 
-	Images    []string
+	// Images are the image names/tags to apply to the built image (e.g., myapp:latest).
+	Images []string
+	// CacheFrom specifies images to use as cache sources for layer reuse.
 	CacheFrom []string
-	CacheTo   []string
+	// CacheTo specifies where to export the build cache (e.g., type=registry,ref=...).
+	CacheTo []string
 
+	// Dockerfile is the path to the Dockerfile to build. May be a rewritten Dockerfile with features.
 	Dockerfile string
-	Context    string
-	Contexts   map[string]string
+	// Context is the build context path (directory containing files needed for the build).
+	Context string
+	// Contexts are additional named build contexts (e.g., for COPY --from=name).
+	Contexts map[string]string
 
+	// Target specifies the target build stage in a multi-stage Dockerfile.
 	Target string
 
-	Load   bool
-	Push   bool
+	// Load controls whether to load the built image into the local Docker daemon.
+	// When true, uses BuildKit's "moby" exporter which creates a tar and imports it.
+	Load bool
+	// Push controls whether to push the built image directly to a registry during build.
+	// When true, uses BuildKit's "image" exporter which streams directly to the registry.
+	// Mutually exclusive with Load.
+	Push bool
+	// Upload controls whether to upload the build context. Used for remote builds.
 	Upload bool
 }
 
+// NewOptionsParams contains the parameters needed to create BuildOptions.
 type NewOptionsParams struct {
-	DockerfilePath    string
+	// DockerfilePath is the path to the original Dockerfile.
+	DockerfilePath string
+	// DockerfileContent is the content of the Dockerfile, potentially modified with features.
 	DockerfileContent string
-	ParsedConfig      *config.SubstitutedConfig
+	// ParsedConfig is the parsed and substituted devcontainer.json configuration.
+	ParsedConfig *config.SubstitutedConfig
+	// ExtendedBuildInfo contains additional build information including features and metadata.
 	ExtendedBuildInfo *feature.ExtendedBuildInfo
-	ImageName         string
-	Options           provider.BuildOptions
-	PrebuildHash      string
+	// ImageName is the name to tag the built image with.
+	ImageName string
+	// Options contains provider-specific build options from the CLI.
+	Options provider.BuildOptions
+	// PrebuildHash is the hash used for prebuild image tagging.
+	PrebuildHash string
 }
 
+// NewOptions creates BuildOptions from the provided parameters, configuring the build
+// based on the devcontainer.json, features, and CLI options.
 func NewOptions(params NewOptionsParams) (*BuildOptions, error) {
 	var err error
 
