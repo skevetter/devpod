@@ -193,7 +193,7 @@ func buildOpenArgs(workspace, folder string, newWindow, hasContainersExtension b
 		args = append(args, "--reuse-window")
 	}
 
-	args = append(args, fmt.Sprintf("--folder-uri=vscode-remote://ssh-remote+%s.devpod/%s", workspace, folder))
+	args = append(args, fmt.Sprintf("--folder-uri=vscode-remote://ssh-remote+%s.devpod/%s", workspace, strings.TrimPrefix(folder, "/")))
 
 	return args
 }
