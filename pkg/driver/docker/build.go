@@ -215,7 +215,10 @@ func (d *dockerDriver) buildxBuild(ctx context.Context, writer io.Writer, platfo
 	args = append(args, options.Context)
 
 	// run command
-	d.Log.WithFields(logrus.Fields{"command": d.Docker.DockerCommand, "args": strings.Join(args, " ")}).Debug("running docker command")
+	d.Log.WithFields(logrus.Fields{
+		"command": d.Docker.DockerCommand,
+		"args":    strings.Join(args, " ")},
+	).Debug("running docker command")
 	stderrBuf := &bytes.Buffer{}
 	multiWriter := io.MultiWriter(writer, stderrBuf)
 	err := d.Docker.Run(ctx, args, nil, writer, multiWriter)
