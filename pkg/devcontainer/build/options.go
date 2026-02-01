@@ -86,7 +86,13 @@ func NewOptions(params NewOptionsParams) (*BuildOptions, error) {
 	buildOptions := &BuildOptions{
 		Labels:   map[string]string{},
 		Contexts: map[string]string{},
-		Load:     true,
+		// Load controls whether the built image is loaded into the local Docker daemon.
+		// When PushDuringBuild is true, this skips loading to avoid the tar export/import overhead.
+		Load: !params.Options.PushDuringBuild,
+		// Push controls whether BuildKit pushes directly to the registry during build.
+		// When true, BuildKit uses the --push flag instead of --load, streaming the image
+		// directly to the registry. This is mutually exclusive with Load.
+		Push: params.Options.PushDuringBuild,
 	}
 
 	// get build args and target

@@ -42,6 +42,17 @@ func NewBuildCmd(flags *flags.GlobalFlags) *cobra.Command {
 				return err
 			}
 
+			// validate flags
+			// PushDuringBuild and SkipPush are mutually exclusive: one enables pushing during
+			// build, the other disables all pushing. Using both together is contradictory.
+			if cmd.PushDuringBuild && cmd.SkipPush {
+				return fmt.Errorf("cannot use --push and --skip-push together")
+			}
+			// PushDuringBuild requires a repository because it pushes directly to a registry.
+			if cmd.PushDuringBuild && cmd.Repository == "" {
+				return fmt.Errorf("--push requires --repository to be specified")
+			}
+
 			// check permissions
 			if !cmd.SkipPush && cmd.Repository != "" {
 				err = image.CheckPushPermissions(cmd.Repository)
@@ -126,6 +137,8 @@ func NewBuildCmd(flags *flags.GlobalFlags) *cobra.Command {
 	buildCmd.Flags().StringSliceVar(&cmd.Tag, "tag", []string{}, "Image Tag(s) in the form of a comma separated list --tag latest,arm64 or multiple flags --tag latest --tag arm64")
 	buildCmd.Flags().StringSliceVar(&cmd.Platforms, "platform", []string{}, "Set target platform for build")
 	buildCmd.Flags().BoolVar(&cmd.SkipPush, "skip-push", false, "If true will not push the image to the repository, useful for testing")
+	buildCmd.Flags().BoolVar(&cmd.PushDuringBuild, "push", false,
+		"Push image directly to registry during build, skipping load to local daemon. Useful for CI/CD workflows and remote build agents.")
 	buildCmd.Flags().Var(&cmd.GitCloneStrategy, "git-clone-strategy", "The git clone strategy DevPod uses to checkout git based workspaces. Can be full (default), blobless, treeless or shallow")
 	buildCmd.Flags().BoolVar(&cmd.GitCloneRecursiveSubmodules, "git-clone-recursive-submodules", false, "If true will clone git submodule repositories recursively")
 
