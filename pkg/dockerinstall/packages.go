@@ -51,7 +51,7 @@ func versionGte(version, target string) bool {
 			// This allows malformed versions to be compared without failing
 			vNum, _ = strconv.Atoi(strings.Split(vParts[i], "-")[0])
 		}
-		tNum, _ := strconv.Atoi(tParts[i])
+		tNum, _ := strconv.Atoi(strings.Split(tParts[i], "-")[0])
 
 		if vNum > tNum {
 			return true
