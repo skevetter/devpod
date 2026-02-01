@@ -12,19 +12,19 @@
 
 DevPod is a client-only tool to create reproducible developer environments based on a [devcontainer.json](https://containers.dev/) on any backend. Each developer environment runs in a container and is specified through a [devcontainer.json](https://containers.dev/). Through DevPod providers, these environments can be created on any backend, such as the local computer, a Kubernetes cluster, any reachable remote machine, or in a VM in the cloud.
 
-<table align="center" width="80%" cellspacing="20">
+<table align="center" width="80%" cellspacing="20" style="border: none;">
 <tr>
-<td width="33%" align="center" valign="top">
+<td width="33%" align="center" valign="top" style="border: none;">
 <img src="https://cdn.prod.website-files.com/645b6806227d4a212e2d01ca/645e0b378e0d30107e68e70d_icons8-open-source%201.svg" loading="lazy" width="64" height="64" alt="" style="margin-bottom: 16px;">
 <h3 style="margin: 12px 0; font-weight: 600;">Open Source</h3>
 <p style="line-height: 1.6;">No vendor lock-in. 100% free and open source built by developers for developers.</p>
 </td>
-<td width="33%" align="center" valign="top">
+<td width="33%" align="center" valign="top" style="border: none;">
 <img src="https://cdn.prod.website-files.com/645b6806227d4a212e2d01ca/645e0b37fe80bc64fc19af0d_focus%201.svg" loading="lazy" width="64" height="64" alt="" style="margin-bottom: 16px;">
 <h3 style="margin: 12px 0; font-weight: 600;">Client Only</h3>
 <p style="line-height: 1.6;">No server side setup needed. Download the desktop app or the CLI to get started.</p>
 </td>
-<td width="33%" align="center" valign="top">
+<td width="33%" align="center" valign="top" style="border: none;">
 <img src="https://cdn.prod.website-files.com/645b6806227d4a212e2d01ca/645e0b38a712b0144abc1e4b_window-code%201.svg" loading="lazy" width="64" height="64" alt="" style="margin-bottom: 16px;">
 <h3 style="margin: 12px 0; font-weight: 600;">Unopinionated</h3>
 <p style="line-height: 1.6;">Repeatable dev environment for any infra, any IDE, and any programming language.</p>
@@ -43,7 +43,7 @@ DevPod is available as both a desktop application with a graphical interface and
 Take a look at the <a href="https://devpod.sh/docs/getting-started/install">DevPod Docs</a> for installation instructions and more information.
 </p>
 
-<table align="center" width="80%">
+<table align="center" width="80%" style="border: none;">
 <tr>
 <td width="50%" valign="top">
 
