@@ -25,7 +25,10 @@ func (i *DebianInstaller) Install(shC string) error {
 		return err
 	}
 
-	pkgVersion, cliPkgVersion := i.findVersions()
+	pkgVersion, cliPkgVersion, err := i.findVersions()
+	if err != nil {
+		return err
+	}
 	pkgs := BuildPackageList(i.opts.version, pkgVersion, cliPkgVersion)
 
 	installCmd := fmt.Sprintf(
@@ -67,19 +70,36 @@ func (i *DebianInstaller) setupRepo(shC string) error {
 	return i.executor.RunCommandsWithRetry(shC, cmds, DefaultTimeout)
 }
 
-func (i *DebianInstaller) findVersions() (string, string) {
+func (i *DebianInstaller) findVersions() (string, string, error) {
 	if i.opts.version == "" || i.opts.dryRun {
 		if i.opts.dryRun {
 			fprintln(i.opts.stdout, "# WARNING: VERSION pinning is not supported in DRY_RUN")
 		}
-		return "", ""
+		return "", "", nil
 	}
 
+	pkgVersion, err := i.findPackageVersion("docker-ce")
+	if err != nil {
+		return "", "", err
+	}
+
+	cliPkgVersion := ""
+	if versionGte(i.opts.version, "18.09") {
+		cliPkgVersion, err = i.findPackageVersion("docker-ce-cli")
+		if err != nil {
+			return "", "", err
+		}
+	}
+
+	return pkgVersion, cliPkgVersion, nil
+}
+
+func (i *DebianInstaller) findPackageVersion(pkgName string) (string, error) {
 	pkgPattern := strings.ReplaceAll(i.opts.version, "-ce-", "~ce~.*")
 	pkgPattern = strings.ReplaceAll(pkgPattern, "-", ".*")
 	searchCmd := fmt.Sprintf(
-		"apt-cache madison 'docker-ce' | grep '%s' | head -1 | awk '{$1=$1};1' | cut -d' ' -f 3",
-		pkgPattern,
+		"apt-cache madison '%s' | grep '%s' | head -1 | awk '{$1=$1};1' | cut -d' ' -f 3",
+		pkgName, pkgPattern,
 	)
 
 	fprintln(i.opts.stdout, "INFO: Searching repository for VERSION '"+i.opts.version+"'")
@@ -88,25 +108,11 @@ func (i *DebianInstaller) findVersions() (string, string) {
 	//nolint:gosec // Intentional shell command for apt repository search
 	cmd := exec.Command("sh", "-c", searchCmd)
 	out, err := cmd.Output()
-	if err != nil || len(out) == 0 {
-		fprintf(i.opts.stderr, `
-ERROR: '%s' not found amongst apt-cache madison results`, i.opts.version)
-		return "", ""
+	if err != nil {
+		return "", fmt.Errorf("apt-cache madison %s failed: %w", pkgName, err)
 	}
-	pkgVersion := "=" + strings.TrimSpace(string(out))
-
-	cliPkgVersion := ""
-	if versionGte(i.opts.version, "18.09") {
-		searchCmd = fmt.Sprintf(
-			"apt-cache madison 'docker-ce-cli' | grep '%s' | head -1 | awk '{$1=$1};1' | cut -d' ' -f 3",
-			pkgPattern,
-		)
-		fprintln(i.opts.stdout, "INFO: "+searchCmd)
-		//nolint:gosec // Intentional shell command for apt repository search
-		cmd = exec.Command("sh", "-c", searchCmd)
-		out, _ = cmd.Output()
-		cliPkgVersion = "=" + strings.TrimSpace(string(out))
+	if len(out) == 0 {
+		return "", fmt.Errorf("version '%s' not found in apt-cache madison results for %s", i.opts.version, pkgName)
 	}
-
-	return pkgVersion, cliPkgVersion
+	return "=" + strings.TrimSpace(string(out)), nil
 }

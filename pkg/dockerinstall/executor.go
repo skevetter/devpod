@@ -19,7 +19,7 @@ func NewExecutor(opts *InstallOptions) *Executor {
 
 func (e *Executor) Run(shC, cmdStr string) error {
 	if !e.opts.dryRun {
-		fprintf(e.opts.stderr, "+ %s\n", cmdStr)
+		fprintln(e.opts.stdout, cmdStr)
 	}
 
 	switch {

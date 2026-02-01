@@ -91,7 +91,7 @@ DEPRECATION WARNING
 
 Press Ctrl+C now to abort this script, or wait for the installation to continue.`,
 		distro.ID, distro.Version, distro.ID)
-	time.Sleep(DeprecationDelay)
+	v.sleep(DeprecationDelay)
 }
 
 func (v *Validator) ValidateDistro(distro *Distro) error {
@@ -117,7 +117,9 @@ ERROR: Unsupported distribution '%s'`, distro.ID)
 }
 
 func (v *Validator) sleep(duration time.Duration) {
-	fprintf(v.opts.stderr, "+ sleep %v\n", duration.Seconds())
+	if v.opts.dryRun {
+		return
+	}
 	time.Sleep(duration)
 }
 

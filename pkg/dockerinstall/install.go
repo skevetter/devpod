@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"strings"
 )
 
 func Install(stdout, stderr io.Writer) (string, error) {
@@ -38,6 +39,9 @@ func Install(stdout, stderr io.Writer) (string, error) {
 	validator.CheckDeprecation(distro)
 
 	shC := getShellCommand(opts)
+	if shC == "" {
+		return "", fmt.Errorf("no shell command available: sudo or su required")
+	}
 
 	installer := createInstaller(distro, opts)
 	if installer == nil {
@@ -63,19 +67,22 @@ func getShellCommand(opts *InstallOptions) string {
 	user := getUser()
 	if user == "root" {
 		if opts.dryRun {
-			return "echo"
+			return ShellEcho
 		}
 		return "sh -c"
 	}
 
 	if commandExists("sudo") {
 		if opts.dryRun {
-			return "echo"
+			return ShellEcho
 		}
 		return "sudo -E sh -c"
 	}
 
 	if commandExists("su") {
+		if opts.dryRun {
+			return ShellEcho
+		}
 		return "su -c"
 	}
 
@@ -89,8 +96,11 @@ func getUser() string {
 		return user
 	}
 	cmd := exec.Command("id", "-un")
-	out, _ := cmd.Output()
-	return string(out)
+	out, err := cmd.Output()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(out))
 }
 
 func findDockerPath() string {

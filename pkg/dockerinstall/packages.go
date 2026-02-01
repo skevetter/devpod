@@ -42,8 +42,11 @@ func versionGte(version, target string) bool {
 	vParts := strings.Split(version, ".")
 	tParts := strings.Split(target, ".")
 
-	for i := 0; i < len(tParts) && i < len(vParts); i++ {
-		vNum, _ := strconv.Atoi(strings.Split(vParts[i], "-")[0])
+	for i := range len(tParts) {
+		vNum := 0
+		if i < len(vParts) {
+			vNum, _ = strconv.Atoi(strings.Split(vParts[i], "-")[0])
+		}
 		tNum, _ := strconv.Atoi(tParts[i])
 
 		if vNum > tNum {
