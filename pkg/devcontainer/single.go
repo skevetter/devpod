@@ -327,12 +327,19 @@ func (r *runner) getRunOptions(
 
 	// build labels & entrypoint
 	entrypoint, cmd := GetContainerEntrypointAndArgs(mergedConfig, buildInfo.ImageDetails)
-	labels := []string{
-		metadata.ImageMetadataLabel + "=" + string(marshalled),
-		config.UserLabel + "=" + buildInfo.ImageDetails.Config.User,
+
+	// Get user from image details if available, otherwise use empty string
+	imageUser := ""
+	if buildInfo.ImageDetails != nil {
+		imageUser = buildInfo.ImageDetails.Config.User
 	}
 
-	user := buildInfo.ImageDetails.Config.User
+	labels := []string{
+		metadata.ImageMetadataLabel + "=" + string(marshalled),
+		config.UserLabel + "=" + imageUser,
+	}
+
+	user := imageUser
 	if mergedConfig.ContainerUser != "" {
 		user = mergedConfig.ContainerUser
 	}
