@@ -113,6 +113,17 @@ func (d *dockerDriver) BuildDevContainer(
 		return nil, fmt.Errorf("invalid docker builder: %s", builder)
 	}
 
+	// When pushing directly to registry, the image is not loaded locally
+	if buildOptions.Push {
+		return &config.BuildInfo{
+			ImageMetadata: extendedBuildInfo.MetadataConfig,
+			ImageName:     imageName,
+			PrebuildHash:  prebuildHash,
+			RegistryCache: options.RegistryCache,
+			Tags:          options.Tag,
+		}, nil
+	}
+
 	// inspect image
 	imageDetails, err := d.Docker.InspectImage(ctx, imageName, false)
 	if err != nil {
