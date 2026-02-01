@@ -12,8 +12,7 @@ import { useCallback, useMemo, useRef, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { Routes } from "@/routes.constants"
 import { TProviderID } from "@/types"
-import { SetupProviderSteps } from "."
-import { TCloneProviderInfo } from "./AddProvider"
+import { SetupProviderSteps, TCloneProviderInfo } from "./AddProvider"
 
 export function useSetupProviderModal() {
   const navigate = useNavigate()

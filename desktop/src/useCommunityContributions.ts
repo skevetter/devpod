@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
-import { client } from "@/client/client"
+import { client } from "@/client"
 import { TCommunityContributions } from "@/types"
 import { QueryKeys } from "@/queryKeys"
 
