@@ -38,10 +38,7 @@ func (e *Executor) Run(shC, cmdStr string) error {
 
 func (e *Executor) RunWithRetry(shC, cmdStr string, timeout time.Duration) error {
 	start := time.Now()
-	attempt := 0
-
 	for {
-		attempt++
 		fprintln(e.opts.stdout, fmt.Sprintf("running command: %s", cmdStr))
 
 		stderrBuf := &strings.Builder{}
@@ -106,7 +103,9 @@ func (e *Executor) runWithStderrCapture(shC, cmdStr string, stderrBuf *strings.B
 		cmd = exec.Command("sh", "-c", cmdStr)
 	}
 
+	cmd.Stdout = e.opts.stdout
 	cmd.Stderr = io.MultiWriter(e.opts.stderr, stderrBuf)
+	cmd.Env = append(os.Environ(), "DEBIAN_FRONTEND=noninteractive")
 	return cmd.Run()
 }
 

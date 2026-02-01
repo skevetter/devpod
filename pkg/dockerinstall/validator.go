@@ -45,9 +45,7 @@ If you installed the current Docker package using this script and are using it
 again to update Docker, you can safely ignore this message.
 
 You may press Ctrl+C now to abort this script.`)
-	if !v.opts.dryRun {
-		v.sleep(ExistingDockerDelay)
-	}
+	v.sleep(ExistingDockerDelay)
 }
 
 func (v *Validator) CheckWSL(isWSL bool) {
@@ -60,9 +58,7 @@ WSL DETECTED: We recommend using Docker Desktop for Windows.
 Please get Docker Desktop from https://www.docker.com/products/docker-desktop`)
 	fprintln(v.opts.stderr, `
 You may press Ctrl+C now to abort this script.`)
-	if !v.opts.dryRun {
-		v.sleep(WSLWarningDelay)
-	}
+	v.sleep(WSLWarningDelay)
 }
 
 func (v *Validator) CheckDeprecation(distro *Distro) {

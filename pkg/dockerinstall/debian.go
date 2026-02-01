@@ -96,6 +96,7 @@ func (i *DebianInstaller) findVersions() (string, string, error) {
 func (i *DebianInstaller) findPackageVersion(pkgName string) (string, error) {
 	pkgPattern := strings.ReplaceAll(i.opts.version, "-ce-", "~ce~.*")
 	pkgPattern = strings.ReplaceAll(pkgPattern, "-", ".*")
+	pkgPattern = strings.ReplaceAll(pkgPattern, ".", "\\.")
 	searchCmd := fmt.Sprintf(
 		"apt-cache madison '%s' | grep '%s' | head -1 | awk '{$1=$1};1' | cut -d' ' -f 3",
 		pkgName, pkgPattern,
