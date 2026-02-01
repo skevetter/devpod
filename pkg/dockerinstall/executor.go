@@ -18,8 +18,10 @@ func NewExecutor(opts *InstallOptions) *Executor {
 }
 
 func (e *Executor) Run(shC, cmdStr string) error {
-	if !e.opts.dryRun {
-		fprintln(e.opts.stdout, cmdStr)
+	fprintln(e.opts.stdout, cmdStr)
+
+	if e.opts.dryRun {
+		return nil
 	}
 
 	switch {
@@ -28,7 +30,6 @@ func (e *Executor) Run(shC, cmdStr string) error {
 	case strings.HasPrefix(shC, "su"):
 		return e.runCommand(exec.Command("su", "-c", cmdStr))
 	case shC == ShellEcho:
-		fprintln(e.opts.stdout, cmdStr)
 		return nil
 	default:
 		return e.runCommand(exec.Command("sh", "-c", cmdStr))
@@ -44,11 +45,7 @@ func (e *Executor) RunWithRetry(shC, cmdStr string, timeout time.Duration) error
 		fprintln(e.opts.stdout, fmt.Sprintf("running command: %s", cmdStr))
 
 		stderrBuf := &strings.Builder{}
-		origStderr := e.opts.stderr
-		e.opts.stderr = io.MultiWriter(origStderr, stderrBuf)
-
-		err := e.Run(shC, cmdStr)
-		e.opts.stderr = origStderr
+		err := e.runWithStderrCapture(shC, cmdStr, stderrBuf)
 
 		if err == nil {
 			fprintln(e.opts.stdout, "command succeeded")
@@ -67,7 +64,7 @@ func (e *Executor) RunWithRetry(shC, cmdStr string, timeout time.Duration) error
 			return fmt.Errorf("timeout waiting for dpkg lock after %v: %w", timeout, err)
 		}
 
-		fprintln(origStderr, "waiting for dpkg lock to be released")
+		fprintln(e.opts.stderr, "waiting for dpkg lock to be released")
 		time.Sleep(RetryDelay)
 	}
 }
@@ -88,6 +85,29 @@ func (e *Executor) RunCommandsWithRetry(shC string, cmds []string, timeout time.
 		}
 	}
 	return nil
+}
+
+func (e *Executor) runWithStderrCapture(shC, cmdStr string, stderrBuf *strings.Builder) error {
+	fprintln(e.opts.stdout, cmdStr)
+
+	if e.opts.dryRun {
+		return nil
+	}
+
+	var cmd *exec.Cmd
+	switch {
+	case strings.HasPrefix(shC, "sudo"):
+		cmd = exec.Command("sudo", "-E", "sh", "-c", cmdStr)
+	case strings.HasPrefix(shC, "su"):
+		cmd = exec.Command("su", "-c", cmdStr)
+	case shC == ShellEcho:
+		return nil
+	default:
+		cmd = exec.Command("sh", "-c", cmdStr)
+	}
+
+	cmd.Stderr = io.MultiWriter(e.opts.stderr, stderrBuf)
+	return cmd.Run()
 }
 
 func (e *Executor) runCommand(cmd *exec.Cmd) error {

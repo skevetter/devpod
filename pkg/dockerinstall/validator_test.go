@@ -113,10 +113,10 @@ func (s *ValidatorTestSuite) TestValidateDistro_EmptyID() {
 }
 
 func (s *ValidatorTestSuite) TestValidateDistro_Supported() {
-	validator := NewValidator(s.opts)
 	supported := []string{"ubuntu", "debian", "raspbian", "centos", "fedora", "rhel", "sles"}
 	for _, id := range supported {
 		s.SetupTest()
+		validator := NewValidator(s.opts)
 		distro := &Distro{ID: id, Version: "1.0"}
 		err := validator.ValidateDistro(distro)
 		s.NoError(err, "Expected %s to be supported", id)

@@ -23,13 +23,15 @@ func BuildPackageList(version, pkgVersion, cliPkgVersion string, extraPkgs ...st
 	// Compose plugin (20.10+)
 	if versionGte(version, "20.10") {
 		pkgs = append(pkgs, PkgDockerCompose)
-		pkgs = append(pkgs, extraPkgs...)
 	}
 
 	// Buildx plugin (23.0+)
 	if versionGte(version, "23.0") {
 		pkgs = append(pkgs, PkgDockerBuildx)
 	}
+
+	// Extra packages (always appended regardless of version)
+	pkgs = append(pkgs, extraPkgs...)
 
 	return strings.Join(pkgs, " ")
 }
@@ -45,6 +47,8 @@ func versionGte(version, target string) bool {
 	for i := range len(tParts) {
 		vNum := 0
 		if i < len(vParts) {
+			// Silently treat non-numeric components as 0 for robustness
+			// This allows malformed versions to be compared without failing
 			vNum, _ = strconv.Atoi(strings.Split(vParts[i], "-")[0])
 		}
 		tNum, _ := strconv.Atoi(tParts[i])

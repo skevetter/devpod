@@ -39,7 +39,6 @@ func (i *DebianInstaller) Install(shC string) error {
 		return err
 	}
 
-	echoDockerAsNonroot(i.opts)
 	return nil
 }
 

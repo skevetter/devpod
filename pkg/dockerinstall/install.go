@@ -51,6 +51,8 @@ func Install(stdout, stderr io.Writer) (string, error) {
 		return "", fmt.Errorf("docker installation failed: %w", err)
 	}
 
+	echoDockerAsNonroot(opts)
+
 	return findDockerPath(), nil
 }
 
@@ -83,6 +85,8 @@ func getShellCommand(opts *InstallOptions) string {
 		if opts.dryRun {
 			return ShellEcho
 		}
+		// Note: su -c does not preserve environment like sudo -E
+		// Environment variables may need to be passed explicitly in commands
 		return "su -c"
 	}
 

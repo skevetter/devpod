@@ -2,6 +2,7 @@ package dockerinstall
 
 import (
 	"bufio"
+	"io"
 	"os"
 	"os/exec"
 	"runtime"
@@ -30,18 +31,7 @@ func (d *Detector) DetectDistro() *Distro {
 	}
 	defer func() { _ = f.Close() }()
 
-	distro := &Distro{}
-	scanner := bufio.NewScanner(f)
-	for scanner.Scan() {
-		line := scanner.Text()
-		if after, ok := strings.CutPrefix(line, "ID="); ok {
-			distro.ID = strings.Trim(after, "\"")
-		} else if after, ok := strings.CutPrefix(line, "VERSION_CODENAME="); ok {
-			distro.Version = strings.Trim(after, "\"")
-		} else if strings.HasPrefix(line, "VERSION_ID=") && distro.Version == "" {
-			distro.Version = strings.Trim(strings.TrimPrefix(line, "VERSION_ID="), "\"")
-		}
-	}
+	distro := d.parseOSRelease(f)
 	distro.ID = strings.ToLower(distro.ID)
 	return distro
 }
@@ -60,6 +50,25 @@ func (d *Detector) IsWSL() bool {
 	}
 	v := strings.ToLower(string(data))
 	return strings.Contains(v, "microsoft") || strings.Contains(v, "wsl")
+}
+
+func (d *Detector) parseOSRelease(r io.Reader) *Distro {
+	distro := &Distro{}
+	scanner := bufio.NewScanner(r)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if after, ok := strings.CutPrefix(line, "ID="); ok {
+			distro.ID = strings.Trim(after, "\"")
+		} else if after, ok := strings.CutPrefix(line, "VERSION_CODENAME="); ok {
+			distro.Version = strings.Trim(after, "\"")
+		} else if strings.HasPrefix(line, "VERSION_ID=") && distro.Version == "" {
+			distro.Version = strings.Trim(strings.TrimPrefix(line, "VERSION_ID="), "\"")
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return &Distro{}
+	}
+	return distro
 }
 
 func (d *Detector) checkDebianFork(distro *Distro) *Distro {
@@ -86,6 +95,8 @@ func (d *Detector) mapDebianVersion(data []byte) string {
 	version = strings.Split(version, ".")[0]
 
 	versionMap := map[string]string{
+		"13": "trixie",
+		"12": "bookworm",
 		"11": "bullseye",
 		"10": "buster",
 		"9":  "stretch",
