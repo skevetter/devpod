@@ -18,7 +18,7 @@ type TAutoCompleteOption = Readonly<{
 }>
 type TAutoCompleteProps = Readonly<{
   options: readonly TAutoCompleteOption[]
-  onChange?: (value: string) => void
+  onChange?: (value: string | null) => void
   onBlur?: () => void
   value?: string
   defaultValue?: string
