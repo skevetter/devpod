@@ -216,7 +216,7 @@ func (g *Graph[T]) String() string {
 	}
 
 	var output strings.Builder
-	output.WriteString(fmt.Sprintf("Graph: %d nodes, %d edges\n", g.NodeCount(), g.EdgeCount()))
+	fmt.Fprintf(&output, "Graph: %d nodes, %d edges\n", g.NodeCount(), g.EdgeCount())
 
 	sortedNodeIDs := make([]string, 0, len(g.nodes))
 	for id := range g.nodes {
@@ -227,9 +227,9 @@ func (g *Graph[T]) String() string {
 	for _, id := range sortedNodeIDs {
 		children := g.GetChildren(id)
 		if len(children) > 0 {
-			output.WriteString(fmt.Sprintf("  %s -> %v\n", id, children))
+			fmt.Fprintf(&output, "  %s -> %v\n", id, children)
 		} else {
-			output.WriteString(fmt.Sprintf("  %s\n", id))
+			fmt.Fprintf(&output, "  %s\n", id)
 		}
 	}
 
