@@ -48,6 +48,13 @@ func (i *DebianInstaller) setupRepo(shC string) error {
 		preReqs += " gnupg"
 	}
 
+	if !i.distro.HasCodename() {
+		return fmt.Errorf(
+			"invalid or missing codename for %s: %s (VERSION_CODENAME not found in /etc/os-release)",
+			i.distro.ID, i.distro.Version,
+		)
+	}
+
 	aptRepo := fmt.Sprintf(
 		"deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] %s/linux/%s %s %s",
 		i.opts.downloadURL, i.distro.ID, i.distro.Version, i.opts.channel,

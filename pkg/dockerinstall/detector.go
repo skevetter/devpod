@@ -9,9 +9,18 @@ import (
 	"strings"
 )
 
+// Distro represents a Linux distribution.
+// ID is the distribution identifier (e.g., "ubuntu", "debian", "fedora").
+// Version should be a codename (e.g., "jammy", "bookworm") for Debian-based distros,
+// or a version number (e.g., "39") for others like Fedora.
 type Distro struct {
 	ID      string
 	Version string
+}
+
+// HasCodename returns true if Version is a valid codename (non-numeric).
+func (d *Distro) HasCodename() bool {
+	return d.Version != "" && !isNumericVersion(d.Version)
 }
 
 type Detector struct{}
@@ -138,4 +147,14 @@ func (d *Detector) checkLSBRelease(distro *Distro) *Distro {
 func commandExists(cmd string) bool {
 	_, err := exec.LookPath(cmd)
 	return err == nil
+}
+
+// isNumericVersion returns true if the version string consists only of digits and dots.
+func isNumericVersion(version string) bool {
+	for _, ch := range version {
+		if ch != '.' && (ch < '0' || ch > '9') {
+			return false
+		}
+	}
+	return len(version) > 0 && version[0] >= '0' && version[0] <= '9'
 }
