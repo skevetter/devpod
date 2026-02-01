@@ -22,7 +22,10 @@ func (d *dockerDriver) BuildDevContainer(
 	req driver.BuildRequest,
 ) (*config.BuildInfo, error) {
 	imageName := build.GetImageName(req.LocalWorkspaceFolder, req.PrebuildHash)
-	orchestrator := newBuildOrchestrator(d)
+	orchestrator := &buildOrchestrator{
+		driver:   d,
+		resolver: &imageResolver{driver: d},
+	}
 
 	if buildInfo, found := orchestrator.resolver.tryResolve(ctx, resolveRequest{
 		imageName:         imageName,
@@ -42,7 +45,8 @@ func (d *dockerDriver) BuildDevContainer(
 		return nil, err
 	}
 
-	if err := d.executeBuild(ctx, orchestrator.strategy, req, buildOptions); err != nil {
+	strategy := orchestrator.selectStrategy(req.Options)
+	if err := d.executeBuild(ctx, strategy, req, buildOptions); err != nil {
 		return nil, err
 	}
 
@@ -55,10 +59,9 @@ type buildStrategy interface {
 	name() string
 }
 
-// dockerBuildStrategy uses docker build with buildkit fallback.
+// dockerBuildStrategy uses docker build.
 type dockerBuildStrategy struct {
-	driver           *dockerDriver
-	buildkitFallback buildStrategy
+	driver *dockerDriver
 }
 
 func (s *dockerBuildStrategy) build(
@@ -68,19 +71,10 @@ func (s *dockerBuildStrategy) build(
 	options *build.BuildOptions,
 ) error {
 	args := buildDockerArgs(options, platform)
-
 	s.driver.Log.Debugf("running docker build with args: %s", strings.Join(args, " "))
 	stderrBuf := &bytes.Buffer{}
 	multiWriter := io.MultiWriter(writer, stderrBuf)
-	err := s.driver.Docker.Run(ctx, args, nil, writer, multiWriter)
-
-	// If docker build fails and we have a fallback, try buildkit
-	if err != nil && s.buildkitFallback != nil {
-		s.driver.Log.Debugf("docker build failed, trying buildkit fallback: %v", err)
-		return s.buildkitFallback.build(ctx, writer, platform, options)
-	}
-
-	if err != nil {
+	if err := s.driver.Docker.Run(ctx, args, nil, writer, multiWriter); err != nil {
 		if stderrBuf.Len() > 0 {
 			return fmt.Errorf("failed to build image: %w: %s", err, strings.TrimSpace(stderrBuf.String()))
 		}
@@ -227,19 +221,19 @@ func (r *imageResolver) tryResolve(ctx context.Context, req resolveRequest) (*co
 type buildOrchestrator struct {
 	driver   *dockerDriver
 	resolver *imageResolver
-	strategy buildStrategy
 }
 
-func newBuildOrchestrator(driver *dockerDriver) *buildOrchestrator {
-	strategy := &dockerBuildStrategy{
-		driver:           driver,
-		buildkitFallback: &buildkitStrategy{driver: driver},
+func (o *buildOrchestrator) selectStrategy(options provider.BuildOptions) buildStrategy {
+	builder := o.driver.Docker.Builder
+
+	// Select docker build if configured and not forcing internal buildkit
+	if (builder == docker.DockerBuilderDefault || builder == docker.DockerBuilderBuildX) &&
+		!options.ForceInternalBuildKit {
+		return &dockerBuildStrategy{driver: o.driver}
 	}
-	return &buildOrchestrator{
-		driver:   driver,
-		resolver: &imageResolver{driver: driver},
-		strategy: strategy,
-	}
+
+	// Otherwise use internal buildkit
+	return &buildkitStrategy{driver: o.driver}
 }
 
 func (d *dockerDriver) prepareBuildOptions(
