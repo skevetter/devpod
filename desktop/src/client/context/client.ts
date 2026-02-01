@@ -1,5 +1,5 @@
-import { Result, ResultError } from "../../lib"
-import { TContextOptionName, TContextOptions } from "../../types"
+import { Result, ResultError } from "@/lib"
+import { TContextOptionName, TContextOptions } from "@/types"
 import { TDebuggable } from "../types"
 import { ContextCommands } from "./contextCommands"
 

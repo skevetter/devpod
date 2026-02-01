@@ -1,7 +1,7 @@
 import { useEffect } from "react"
 import { Location, matchRoutes, useLocation } from "react-router"
-import { client } from "../client"
-import { LocalStorageBackend, Store } from "../lib"
+import { client } from "@/client/client"
+import { LocalStorageBackend, Store } from "@/lib"
 import { Routes } from "@/routes.constants"
 
 const LOCATION_KEY = "location"

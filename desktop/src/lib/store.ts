@@ -1,5 +1,5 @@
 import { LazyStore } from "@tauri-apps/plugin-store"
-import { TUnsubscribeFn } from "../types"
+import { TUnsubscribeFn } from "@/types"
 import { EventManager } from "./eventManager"
 import { exists } from "./helpers"
 

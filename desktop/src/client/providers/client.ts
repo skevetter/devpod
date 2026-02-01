@@ -1,4 +1,4 @@
-import { FileStorageBackend, Result, ResultError, Return, Store, isEmpty } from "../../lib"
+import { FileStorageBackend, Result, ResultError, Return, Store, isEmpty } from "@/lib"
 import {
   TAddProviderConfig,
   TCheckProviderUpdateResult,
@@ -7,7 +7,7 @@ import {
   TProviderOptions,
   TProviderSource,
   TProviders,
-} from "../../types"
+} from "@/types"
 import { TDebuggable } from "../types"
 import { ProviderCommands } from "./providerCommands"
 

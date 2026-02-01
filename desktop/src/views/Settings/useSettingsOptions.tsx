@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from "react"
-import { client } from "../../client"
-import { Command } from "../../client/command"
-import { TSettings, useChangeSettings } from "../../contexts"
+import { client } from "@/client"
+import { Command } from "@/client/command"
+import { TSettings, useChangeSettings } from "@/contexts"
 import { ClearableInput } from "./ClearableInput"
 
 export function useCLIFlagsOption() {

@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useCallback, useState, useEffect } from "react"
-import { client } from "../client"
-import { QueryKeys } from "../queryKeys"
+import { client } from "@/client/client"
+import { QueryKeys } from "@/queryKeys"
 
 export function useUpdate() {
   const queryClient = useQueryClient()

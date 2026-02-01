@@ -1,6 +1,6 @@
 import { TDebuggable } from "../types"
-import { Result, ResultError } from "../../lib"
-import { TIDEs } from "../../types"
+import { Result, ResultError } from "@/lib"
+import { TIDEs } from "@/types"
 import { IDECommands } from "./ideCommands"
 
 export class IDEsClient implements TDebuggable {

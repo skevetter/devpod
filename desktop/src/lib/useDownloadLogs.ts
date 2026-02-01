@@ -1,4 +1,4 @@
-import { client } from "@/client"
+import { client } from "@/client/client"
 import { TActionID } from "@/contexts"
 import { useToast } from "@chakra-ui/react"
 import { useMutation } from "@tanstack/react-query"

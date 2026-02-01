@@ -1,4 +1,4 @@
-import { TComparable, TIdentifiable, TUnsubscribeFn } from "../types"
+import { TComparable, TIdentifiable, TUnsubscribeFn } from "@/types"
 import { exists, isEmpty } from "./helpers"
 import { v4 as uuidv4 } from "uuid"
 

@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useReducer } from "react"
-import { client } from "../../../client"
-import { useProviderManager } from "../../../contexts"
-import { TAction } from "../../../lib"
-import { TProviderID } from "../../../types"
+import { client } from "@/client/client"
+import { useProviderManager } from "@/contexts"
+import { TAction } from "@/lib"
+import { TProviderID } from "@/types"
 
 export type TSetupProviderState = Readonly<
   | {

@@ -2,9 +2,9 @@ import { DaemonClient } from "@/client/pro/client"
 import { Err, Failed } from "@/lib"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useMemo } from "react"
-import { client } from "../../../client"
-import { QueryKeys } from "../../../queryKeys"
-import { TProInstanceLoginConfig, TProInstanceManager, TProvider, TWithProID } from "../../../types"
+import { client } from "@/client"
+import { QueryKeys } from "@/queryKeys"
+import { TProInstanceLoginConfig, TProInstanceManager, TProvider, TWithProID } from "@/types"
 
 const FALLBACK_PROVIDER_NAME = "devpod-pro"
 

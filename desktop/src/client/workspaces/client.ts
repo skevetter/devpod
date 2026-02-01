@@ -1,5 +1,5 @@
-import { TActionID, TActionName, TActionObj } from "../../contexts"
-import { Result, ResultError, Return, THandler, exists, isError, noop } from "../../lib"
+import { TActionID, TActionName, TActionObj } from "@/contexts"
+import { Result, ResultError, Return, THandler, exists, isError, noop } from "@/lib"
 import {
   TDevcontainerSetup,
   TStreamID,
@@ -8,7 +8,7 @@ import {
   TWorkspaceID,
   TWorkspaceStartConfig,
   TWorkspaceWithoutStatus,
-} from "../../types"
+} from "@/types"
 import { TCommand, TStreamEventListenerFn } from "../command"
 import { CommandCache, TCommandCacheInfo } from "../commandCache"
 import { TDebuggable, TStreamEvent } from "../types"

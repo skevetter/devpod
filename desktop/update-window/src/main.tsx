@@ -1,9 +1,9 @@
 import { StrictMode } from "react"
 import ReactDOM from "react-dom/client"
-import { ThemeProvider } from "@/Theme"
+import { ThemeProvider } from "@/Theme/ThemeProvider"
 import { SettingsProvider } from "@/contexts"
 import { Button, ButtonGroup, Grid, Heading, Text } from "@chakra-ui/react"
-import { client } from "@/client"
+import { client } from "@/client/client"
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(<Root />)
 

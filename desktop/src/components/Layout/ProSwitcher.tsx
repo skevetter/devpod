@@ -1,4 +1,4 @@
-import { client } from "@/client"
+import { client } from "@/client/client"
 import { useProInstances, useProviders, useSettings } from "@/contexts"
 import { CheckCircle, CircleWithArrow, DevPodProBadge, ExclamationTriangle } from "@/icons"
 import {

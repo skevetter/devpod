@@ -10,9 +10,9 @@ import {
 } from "@chakra-ui/react"
 import { useCallback, useMemo, useRef, useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { Routes } from "../../routes.constants"
-import { TProviderID } from "../../types"
-import { SetupProviderSteps } from "../Providers"
+import { Routes } from "@/routes.constants"
+import { TProviderID } from "@/types"
+import { SetupProviderSteps } from "."
 import { TCloneProviderInfo } from "./AddProvider"
 
 export function useSetupProviderModal() {

@@ -1,6 +1,6 @@
 import { Box, Heading, Link, ListItem, UnorderedList } from "@chakra-ui/react"
 import Markdown from "markdown-to-jsx"
-import { client } from "../client"
+import { client } from "@/client/client"
 
 export type TLinkClickEvent = React.MouseEvent<HTMLLinkElement> & { target: HTMLLinkElement }
 export type TChangeLogProps = Readonly<{ rawMarkdown: string }>

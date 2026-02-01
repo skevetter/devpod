@@ -1,4 +1,4 @@
-import { client } from "@/client"
+import { client } from "@/client/client"
 import { ChevronDownIcon } from "@chakra-ui/icons"
 import {
   Button,

@@ -26,10 +26,10 @@ import {
 import dayjs from "dayjs"
 import { JSX, ReactNode, useMemo } from "react"
 import { Link as RouterLink, To, useLocation } from "react-router-dom"
-import { client } from "../../client"
-import { TActionObj, useAllWorkspaceActions, useSettings } from "../../contexts"
-import { Bell, CheckCircle, ExclamationCircle, ExclamationTriangle } from "../../icons"
-import { getActionDisplayName, useUpdate } from "../../lib"
+import { client } from "@/client/client"
+import { TActionObj, useAllWorkspaceActions, useSettings } from "@/contexts"
+import { Bell, CheckCircle, ExclamationCircle, ExclamationTriangle } from "@/icons"
+import { getActionDisplayName, useUpdate } from "@/lib"
 import { Ripple } from "../Animation"
 
 type TNotificationsProps = Readonly<{

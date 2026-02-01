@@ -1,6 +1,6 @@
 import { Box, Container, VStack } from "@chakra-ui/react"
 import { RefObject, useCallback, useEffect, useRef } from "react"
-import { TProviderID } from "../../../types"
+import { TProviderID } from "@/types"
 import { SetupClonedProvider } from "./SetupClonedProvider"
 import { ConfigureProviderOptionsForm } from "./ConfigureProviderOptionsForm"
 import { SetupProviderSourceForm } from "./SetupProviderSourceForm"

@@ -1,5 +1,5 @@
 import { Link, Text } from "@chakra-ui/react"
-import { client } from "../client"
+import { client } from "@/client/client"
 
 export function LoftOSSBadge() {
   return (

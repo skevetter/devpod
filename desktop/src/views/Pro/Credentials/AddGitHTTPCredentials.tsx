@@ -1,4 +1,4 @@
-import { client as globalClient } from "@/client"
+import { client as globalClient } from "@/client/client"
 import { DaemonClient } from "@/client/pro/client"
 import { Form } from "@/components"
 import { useProContext } from "@/contexts"

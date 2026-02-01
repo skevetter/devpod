@@ -1,7 +1,7 @@
-import { TIDE, TLogOutput, TProInstance, TProvider } from "../types"
+import { TIDE, TLogOutput, TProInstance, TProvider } from "@/types"
 import { ChildProcess } from "@tauri-apps/plugin-shell"
 import { Err, Failed, Return } from "./result"
-import { TActionObj } from "../contexts"
+import { TActionObj } from "@/contexts"
 import { WORKSPACE_SOURCE_BRANCH_DELIMITER, WORKSPACE_SOURCE_COMMIT_DELIMITER } from "@/constants"
 import { TWorkspace, TIDEs } from "@/types"
 

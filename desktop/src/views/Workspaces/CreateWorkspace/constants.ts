@@ -11,7 +11,7 @@ import {
   RubySvg,
   RustSvg,
   RustSvgDark,
-} from "../../../images"
+} from "@/images"
 
 export const WORKSPACE_EXAMPLES = [
   {

@@ -1,5 +1,5 @@
 import { useContext } from "react"
-import { TProInstanceManager } from "../../../types"
+import { TProInstanceManager } from "@/types"
 import { useProInstanceManager } from "./useProInstanceManager"
 import { ProInstancesContext, TProInstancesContext } from "./context"
 

@@ -18,17 +18,17 @@ import { useQuery } from "@tanstack/react-query"
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow"
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react"
 import { matchPath, useNavigate } from "react-router"
-import { client } from "../client"
-import { ErrorMessageBox } from "../components"
-import { WORKSPACE_SOURCE_BRANCH_DELIMITER, WORKSPACE_SOURCE_COMMIT_DELIMITER } from "../constants"
+import { client } from "@/client/client"
+import { ErrorMessageBox } from "@/components"
+import { WORKSPACE_SOURCE_BRANCH_DELIMITER, WORKSPACE_SOURCE_COMMIT_DELIMITER } from "@/constants"
 import {
   startWorkspaceAction,
   useChangeSettings,
   useProInstances,
   useWorkspaceStore,
-} from "../contexts"
-import { exists, hasCapability, useLoginProModal } from "../lib"
-import { Routes } from "../routes.constants"
+} from "@/contexts"
+import { exists, hasCapability, useLoginProModal } from "@/lib"
+import { Routes } from "@/routes.constants"
 import { useChangelogModal } from "./useChangelogModal"
 
 export function useAppReady() {

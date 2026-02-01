@@ -25,9 +25,11 @@ import {
 import { useMemo, useRef } from "react"
 import { FaBug } from "react-icons/fa"
 import { HiDocumentMagnifyingGlass, HiMagnifyingGlassPlus } from "react-icons/hi2"
-import { client } from "../../client"
-import { useChangeSettings } from "../../contexts"
-import { Debug, useArch, useDebug, usePlatform, useVersion } from "../../lib"
+import { client } from "@/client/client"
+import { useChangeSettings } from "@/contexts"
+import { Debug, useDebug } from "@/lib"
+import { useArch, usePlatform } from "@/lib/systemInfo"
+import { useVersion } from "@/lib/useVersion"
 
 export function StatusBar(boxProps: BoxProps) {
   return (

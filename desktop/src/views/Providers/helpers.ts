@@ -1,5 +1,5 @@
-import { exists } from "../../lib"
-import { TOptionID, TProviderConfig, TProviderOption, TProviderOptions } from "../../types"
+import { exists } from "@/lib"
+import { TOptionID, TProviderConfig, TProviderOption, TProviderOptions } from "@/types"
 
 export type TOptionWithID = Readonly<{
   id: TOptionID

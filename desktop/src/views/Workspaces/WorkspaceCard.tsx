@@ -19,14 +19,9 @@ import {
 import { useCallback, useMemo, useRef, useState } from "react"
 import { HiServerStack } from "react-icons/hi2"
 import { useNavigate } from "react-router"
-import { IconTag, WorkspaceCardHeader } from "../../components"
-import {
-  TActionID,
-  useProvider,
-  useSettings,
-  useWorkspace,
-  useWorkspaceActions,
-} from "../../contexts"
+import { IconTag } from "@/components"
+import { WorkspaceCardHeader } from "@/components/CardHeader/WorkspaceCardHeader"
+import { TActionID, useProvider, useSettings, useWorkspace, useWorkspaceActions } from "@/contexts"
 import {
   getIDEName,
   getWorkspaceSourceName,
@@ -34,13 +29,13 @@ import {
   useRebuildWorkspaceModal,
   useResetWorkspaceModal,
   useStopWorkspaceModal,
-} from "../../lib"
-import { Routes } from "../../routes.constants"
-import { TProvider, TWorkspace, TWorkspaceID } from "../../types"
-import { useIDEs } from "../../useIDEs"
-import { ConfigureProviderOptionsForm } from "../Providers"
-import { processDisplayOptions } from "../Providers/AddProvider/useProviderOptions"
-import { TOptionWithID, mergeOptionDefinitions } from "../Providers/helpers"
+} from "@/lib"
+import { Routes } from "@/routes.constants"
+import { TProvider, TWorkspace, TWorkspaceID } from "@/types"
+import { useIDEs } from "@/useIDEs"
+import { ConfigureProviderOptionsForm } from "@/views/Providers/AddProvider/ConfigureProviderOptionsForm"
+import { processDisplayOptions } from "@/views/Providers/AddProvider/useProviderOptions"
+import { TOptionWithID, mergeOptionDefinitions } from "@/views/Providers/helpers"
 import { WorkspaceControls } from "./WorkspaceControls"
 import { WorkspaceStatusBadge } from "./WorkspaceStatusBadge"
 

@@ -1,5 +1,5 @@
 import { ReactNode, useCallback, useEffect, useMemo, useState } from "react"
-import { client } from "@/client"
+import { client } from "@/client/client"
 import { getKeys, LocalStorageToFileMigrationBackend, Store } from "@/lib"
 import { TUnsubscribeFn } from "@/types"
 import { TSetting, TSettings, TSettingsContext, SettingsContext } from "./useSettings"

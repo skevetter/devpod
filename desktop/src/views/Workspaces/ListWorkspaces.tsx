@@ -28,7 +28,7 @@ import {
 import { useCallback, useEffect, useId, useMemo, useState } from "react"
 import { useNavigate } from "react-router"
 import { WorkspaceCard } from "./WorkspaceCard"
-import { RECOMMENDED_PROVIDER_SOURCES } from "../../constants"
+import { RECOMMENDED_PROVIDER_SOURCES } from "@/constants"
 
 type TWorkspacesInfo = Readonly<{
   workspaceCards: TWorkspace[]

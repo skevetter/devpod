@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { TUnsubscribeFn } from "../types"
+import { TUnsubscribeFn } from "@/types"
 import { LocalStorageBackend, Store } from "./store"
 
 const DEBUG_STORE_KEY = "debug"

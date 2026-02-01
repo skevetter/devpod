@@ -1,10 +1,10 @@
 import { Container, Spinner } from "@chakra-ui/react"
 import { useMemo, useRef } from "react"
 import { useNavigate, useParams } from "react-router"
-import { useProvider } from "../../contexts"
-import { exists } from "../../lib"
-import { Routes } from "../../routes.constants"
-import { ConfigureProviderOptionsForm } from "./AddProvider"
+import { useProvider } from "@/contexts"
+import { exists } from "@/lib"
+import { Routes } from "@/routes.constants"
+import { ConfigureProviderOptionsForm } from "./AddProvider/ConfigureProviderOptionsForm"
 
 export function Provider() {
   const navigate = useNavigate()

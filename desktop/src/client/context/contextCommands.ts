@@ -1,5 +1,5 @@
-import { Result, ResultError, Return, getErrorFromChildProcess } from "../../lib"
-import { TContextOptionName, TContextOptions } from "../../types"
+import { Result, ResultError, Return, getErrorFromChildProcess } from "@/lib"
+import { TContextOptionName, TContextOptions } from "@/types"
 import { Command, isOk, serializeRawOptions } from "../command"
 import {
   DEVPOD_COMMAND_CONTEXT,

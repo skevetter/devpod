@@ -1,8 +1,6 @@
-import {
-  ConfigureProviderOptionsForm,
-  TOptionWithID,
-  useProviderDisplayOptions,
-} from "@/views/Providers"
+import { TOptionWithID } from "@/views/Providers"
+import { ConfigureProviderOptionsForm } from "@/views/Providers/AddProvider/ConfigureProviderOptionsForm"
+import { useProviderDisplayOptions } from "@/views/Providers/AddProvider/useProviderOptions"
 import { mergeOptionDefinitions } from "@/views/Providers/helpers"
 import { ViewIcon } from "@chakra-ui/icons"
 import {
@@ -26,7 +24,7 @@ import {
 } from "@chakra-ui/react"
 import { ReactElement, useCallback, useRef, useState } from "react"
 import { HiPencil } from "react-icons/hi2"
-import { TNamedProvider } from "../../../types"
+import { TNamedProvider } from "@/types"
 
 type TProviderOptionsPopoverProps = Readonly<{ provider: TNamedProvider; trigger: ReactElement }>
 export function ProviderOptionsPopover({ provider, trigger }: TProviderOptionsPopoverProps) {

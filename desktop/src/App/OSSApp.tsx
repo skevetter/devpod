@@ -1,4 +1,4 @@
-import { client } from "@/client"
+import { client } from "@/client/client"
 import { QueryKeys } from "@/queryKeys"
 import {
   Box,
@@ -17,21 +17,16 @@ import {
 import { useQuery } from "@tanstack/react-query"
 import { useEffect, useMemo } from "react"
 import { Outlet, Link as RouterLink, useMatch, useNavigate } from "react-router-dom"
-import { useBorderColor } from "../Theme"
-import {
-  Notifications,
-  ProSwitcher,
-  Sidebar,
-  SidebarMenuItem,
-  StatusBar,
-  Toolbar,
-} from "../components"
-import { SIDEBAR_WIDTH, STATUS_BAR_HEIGHT } from "../constants"
-import { ToolbarProvider, useProviders, useSettings } from "../contexts"
-import { Briefcase, Cog, Stack3D } from "../icons"
-import { isLinux, isMacOS } from "../lib"
-import { Routes } from "../routes.constants"
-import { useWelcomeModal } from "../useWelcomeModal"
+import { useBorderColor } from "@/Theme"
+import { Notifications, ProSwitcher, Sidebar, SidebarMenuItem } from "@/components"
+import { StatusBar } from "@/components/Layout/StatusBar"
+import { Toolbar } from "@/components/Layout/Toolbar"
+import { SIDEBAR_WIDTH, STATUS_BAR_HEIGHT } from "@/constants"
+import { ToolbarProvider, useProviders, useSettings } from "@/contexts"
+import { Briefcase, Cog, Stack3D } from "@/icons"
+import { isLinux, isMacOS } from "@/lib"
+import { Routes } from "@/routes.constants"
+import { useWelcomeModal } from "@/useWelcomeModal"
 import { showTitleBar, titleBarSafeArea } from "./constants"
 import { useAppReady } from "./useAppReady"
 

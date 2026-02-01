@@ -1,7 +1,7 @@
 import { UseMutationOptions, useMutation, useQueryClient } from "@tanstack/react-query"
-import { client } from "../../../client"
-import { QueryKeys } from "../../../queryKeys"
-import { TAddProviderConfig, TProviderID } from "../../../types"
+import { client } from "@/client/client"
+import { QueryKeys } from "@/queryKeys"
+import { TAddProviderConfig, TProviderID } from "@/types"
 
 type TAddUserMutationOptions = UseMutationOptions<
   Readonly<{

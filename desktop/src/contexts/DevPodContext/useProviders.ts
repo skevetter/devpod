@@ -1,5 +1,5 @@
 import { useContext } from "react"
-import { TProviderManager } from "../../types"
+import { TProviderManager } from "@/types"
 import { DevPodContext, TDevpodContext } from "./DevPodProvider"
 import { useProviderManager } from "./useProviderManager"
 

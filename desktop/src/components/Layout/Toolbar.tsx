@@ -1,7 +1,7 @@
 import { Box, BoxProps } from "@chakra-ui/react"
 import { ReactNode, useEffect, useId } from "react"
-import { useBorderColor } from "../../Theme"
-import { useToolbar } from "../../contexts"
+import { useBorderColor } from "@/Theme"
+import { useToolbar } from "@/contexts"
 
 export function Toolbar({ ...boxProps }: BoxProps) {
   const borderColor = useBorderColor()

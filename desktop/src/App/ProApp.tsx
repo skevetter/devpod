@@ -30,7 +30,7 @@ import { ManagementV1Self } from "@loft-enterprise/client/gen/models/managementV
 import { useQuery } from "@tanstack/react-query"
 import { ReactElement, ReactNode, cloneElement, useMemo } from "react"
 import { Outlet, Link as RouterLink, To } from "react-router-dom"
-import { Notifications, ProLayout, StatusBar, Toolbar } from "../components"
+import { Notifications, ProLayout, StatusBar, Toolbar } from "@/components"
 import {
   ProInstancesProvider,
   ProProvider,
@@ -39,7 +39,7 @@ import {
   WorkspaceStoreProvider,
   useProContext,
   useProHost,
-} from "../contexts"
+} from "@/contexts"
 import { DaemonClient } from "@/client/pro/client"
 
 export function ProApp() {

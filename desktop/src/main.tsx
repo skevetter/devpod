@@ -7,10 +7,10 @@ import ReactDOM from "react-dom/client"
 import { Location, RouterProvider } from "react-router"
 import "@xterm/xterm/css/xterm.css"
 import "./assets/fonts.css"
-import { ThemeProvider } from "./Theme"
+import { ThemeProvider } from "./Theme/ThemeProvider"
 import { SettingsProvider } from "./contexts"
 import { router } from "./routes"
-import { client } from "./client"
+import { client } from "./client/client"
 import { ColorModeScript } from "@chakra-ui/react"
 
 dayjs.extend(relativeTime)

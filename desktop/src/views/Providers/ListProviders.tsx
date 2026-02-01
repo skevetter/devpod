@@ -1,9 +1,9 @@
 import { Button, Text, VStack, Wrap, WrapItem } from "@chakra-ui/react"
 import { useMemo } from "react"
-import { useProviders } from "../../contexts"
-import { canHealthCheck, exists } from "../../lib"
-import { TProvider, TProviderID } from "../../types"
-import { useSetupProviderModal } from "../Providers/useSetupProviderModal"
+import { useProviders } from "@/contexts"
+import { canHealthCheck, exists } from "@/lib"
+import { TProvider, TProviderID } from "@/types"
+import { useSetupProviderModal } from "./useSetupProviderModal"
 import { ProviderCard } from "./ProviderCard"
 
 type TProviderInfo = Readonly<{ id: TProviderID; data: TProvider }>

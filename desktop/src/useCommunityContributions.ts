@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
-import { client } from "./client"
-import { TCommunityContributions } from "./types"
-import { QueryKeys } from "./queryKeys"
+import { client } from "@/client/client"
+import { TCommunityContributions } from "@/types"
+import { QueryKeys } from "@/queryKeys"
 
 export function useCommunityContributions(): Readonly<{
   contributions: TCommunityContributions | undefined

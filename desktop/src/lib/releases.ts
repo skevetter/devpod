@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
-import { client } from "../client"
-import { Release } from "../gen"
-import { QueryKeys } from "../queryKeys"
+import { client } from "@/client/client"
+import { Release } from "@/gen"
+import { QueryKeys } from "@/queryKeys"
 
 export function useReleases(): readonly Release[] | undefined {
   const { data: releases } = useQuery({

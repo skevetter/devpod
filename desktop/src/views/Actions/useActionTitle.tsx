@@ -1,11 +1,11 @@
 import { IconButton } from "@chakra-ui/react"
 import { useMemo } from "react"
 import { useLocation, useMatch, useNavigate } from "react-router-dom"
-import { TViewTitle } from "../../components"
-import { getAction, useWorkspaceStore } from "../../contexts"
-import { ArrowLeft } from "../../icons"
-import { exists, getActionDisplayName } from "../../lib"
-import { Routes } from "../../routes.constants"
+import { TViewTitle } from "@/components"
+import { getAction, useWorkspaceStore } from "@/contexts"
+import { ArrowLeft } from "@/icons"
+import { exists, getActionDisplayName } from "@/lib"
+import { Routes } from "@/routes.constants"
 
 export function useActionTitle(): TViewTitle | null {
   const { store } = useWorkspaceStore()

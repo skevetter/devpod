@@ -1,9 +1,9 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useMemo } from "react"
-import { client } from "../../client"
-import { QueryKeys } from "../../queryKeys"
-import { TIDE } from "../../types"
-import { useIDEs } from "../../useIDEs"
+import { client } from "@/client"
+import { QueryKeys } from "@/queryKeys"
+import { TIDE } from "@/types"
+import { useIDEs } from "@/useIDEs"
 
 export function useIDESettings() {
   const queryClient = useQueryClient()

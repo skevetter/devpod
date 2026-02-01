@@ -1,4 +1,4 @@
-import { TProvider, TProviderID, TWithProviderID } from "../../../types"
+import { TProvider, TProviderID, TWithProviderID } from "@/types"
 
 export const FieldName = {
   PROVIDER_SOURCE: "providerSource",

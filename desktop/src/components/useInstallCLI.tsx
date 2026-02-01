@@ -14,10 +14,10 @@ import {
 } from "@chakra-ui/react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useMemo, useRef } from "react"
-import { client } from "../client"
-import { CheckCircle, ExclamationCircle } from "../icons"
-import { Err, Failed, isError, isMacOS, isWindows } from "../lib"
-import { QueryKeys } from "../queryKeys"
+import { client } from "@/client/client"
+import { CheckCircle, ExclamationCircle } from "@/icons"
+import { Err, Failed, isError, isMacOS, isWindows } from "@/lib"
+import { QueryKeys } from "@/queryKeys"
 import { ErrorMessageBox } from "./Error"
 
 export function useInstallCLI() {

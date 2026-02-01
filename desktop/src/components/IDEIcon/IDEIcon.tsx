@@ -36,8 +36,8 @@ import {
   AntigravitySvg,
   ZedDarkSvg,
   ZedSvg,
-} from "../../images"
-import { TIDE } from "../../types"
+} from "@/images"
+import { TIDE } from "@/types"
 import { useMemo } from "react"
 
 const SIZES: Record<NonNullable<TIDEIconProps["size"]>, IconProps> = {

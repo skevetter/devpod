@@ -1,9 +1,9 @@
 import { Code, Link, Switch } from "@chakra-ui/react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useCallback, useMemo } from "react"
-import { client } from "../../client"
-import { QueryKeys } from "../../queryKeys"
-import { TContextOptionName } from "../../types"
+import { client } from "@/client"
+import { QueryKeys } from "@/queryKeys"
+import { TContextOptionName } from "@/types"
 import { ClearableInput } from "./ClearableInput"
 
 const DEFAULT_DEVPOD_AGENT_URL = "https://github.com/skevetter/devpod/releases/latest/download/"

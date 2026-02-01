@@ -1,7 +1,7 @@
 import { useCallback, useId, useMemo, useRef, useSyncExternalStore } from "react"
-import { TStreamEventListenerFn, client } from "../../../client"
-import { exists } from "../../../lib"
-import { TIdentifiable, TStreamID, TWorkspaceID, TWorkspaceStartConfig } from "../../../types"
+import { client, TStreamEventListenerFn } from "@/client"
+import { exists } from "@/lib"
+import { TIdentifiable, TStreamID, TWorkspaceID, TWorkspaceStartConfig } from "@/types"
 import { TActionID, TActionObj, useConnectAction, useReplayAction } from "../action"
 import { IWorkspaceStore, ProWorkspaceStore, useWorkspaceStore } from "../workspaceStore"
 

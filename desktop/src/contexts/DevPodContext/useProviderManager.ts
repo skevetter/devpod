@@ -1,9 +1,9 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useMemo } from "react"
-import { client } from "../../client"
-import { exists } from "../../lib"
-import { QueryKeys } from "../../queryKeys"
-import { TProviderManager, TProviders, TWithProviderID } from "../../types"
+import { client } from "@/client"
+import { exists } from "@/lib"
+import { QueryKeys } from "@/queryKeys"
+import { TProviderManager, TProviders, TWithProviderID } from "@/types"
 
 export function useProviderManager(): TProviderManager {
   const queryClient = useQueryClient()

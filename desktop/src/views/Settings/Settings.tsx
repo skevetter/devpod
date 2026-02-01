@@ -25,19 +25,13 @@ import {
 import { compareVersions } from "compare-versions"
 import { ReactNode, useEffect, useMemo, useState } from "react"
 import { HiMagnifyingGlassPlus } from "react-icons/hi2"
-import { client } from "../../client"
-import { ToolbarTitle, useInstallCLI } from "../../components"
-import { TSettings, useChangeSettings } from "../../contexts"
-import {
-  getIDEDisplayName,
-  isMacOS,
-  useArch,
-  usePlatform,
-  useReleases,
-  useUpdate,
-  useVersion,
-} from "../../lib"
-import { useWelcomeModal } from "../../useWelcomeModal"
+import { client } from "@/client"
+import { ToolbarTitle, useInstallCLI } from "@/components"
+import { TSettings, useChangeSettings } from "@/contexts"
+import { getIDEDisplayName, isMacOS, useReleases, useUpdate } from "@/lib"
+import { useArch, usePlatform } from "@/lib/systemInfo"
+import { useVersion } from "@/lib/useVersion"
+import { useWelcomeModal } from "@/useWelcomeModal"
 import {
   useAgentURLOption,
   useDockerCredentialsForwardingOption,

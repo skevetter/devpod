@@ -21,7 +21,7 @@ import {
 } from "@chakra-ui/react"
 import { useMemo, useCallback, useState } from "react"
 import { HiOutlineCode, HiShare } from "react-icons/hi"
-import { client } from "@/client"
+import { client } from "@/client/client"
 import { IDEGroup, IDEIcon } from "@/components"
 import { TActionID, useProInstances } from "@/contexts"
 import {

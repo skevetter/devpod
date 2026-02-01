@@ -1,4 +1,4 @@
-import { TProviderOptions } from "../../../types"
+import { TProviderOptions } from "@/types"
 
 export const ALLOWED_NAMES_REGEX = /^[a-z0-9\\-]+$/
 

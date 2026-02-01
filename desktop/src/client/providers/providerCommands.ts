@@ -1,4 +1,4 @@
-import { exists, getErrorFromChildProcess, Result, ResultError, Return } from "../../lib"
+import { exists, getErrorFromChildProcess, Result, ResultError, Return } from "@/lib"
 import {
   TAddProviderConfig,
   TCheckProviderUpdateResult,
@@ -6,7 +6,7 @@ import {
   TProviderOptions,
   TProviders,
   TProviderSource,
-} from "../../types"
+} from "@/types"
 import { Command, isOk, serializeRawOptions, toFlagArg } from "../command"
 import {
   DEVPOD_COMMAND_ADD,

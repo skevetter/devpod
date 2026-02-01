@@ -29,7 +29,8 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { SubmitHandler, useForm } from "react-hook-form"
 import { useNavigate } from "react-router"
-import { ConfigureProviderOptionsForm, useSetupProvider } from "@/views/Providers"
+import { ConfigureProviderOptionsForm } from "@/views/Providers/AddProvider/ConfigureProviderOptionsForm"
+import { useSetupProvider } from "@/views/Providers"
 import { To } from "react-router-dom"
 
 type TFormValues = {

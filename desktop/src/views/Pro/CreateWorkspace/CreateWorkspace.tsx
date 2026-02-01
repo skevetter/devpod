@@ -1,4 +1,4 @@
-import { client as globalClient } from "@/client"
+import { client as globalClient } from "@/client/client"
 import {
   ProWorkspaceInstance,
   ProWorkspaceStore,

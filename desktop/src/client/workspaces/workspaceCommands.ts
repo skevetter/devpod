@@ -1,11 +1,11 @@
-import { exists, Result, Return } from "../../lib"
+import { exists, Result, Return } from "@/lib"
 import {
   TWorkspace,
   TWorkspaceID,
   TWorkspaceStartConfig,
   TWorkspaceStatusResult,
   TWorkspaceWithoutStatus,
-} from "../../types"
+} from "@/types"
 import { Command, isOk, serializeRawOptions, toFlagArg } from "../command"
 import {
   DEVPOD_COMMAND_DELETE,

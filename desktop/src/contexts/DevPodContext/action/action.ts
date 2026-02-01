@@ -1,4 +1,4 @@
-import { Result, SingleEventManager, EventManager } from "../../../lib"
+import { Result, SingleEventManager, EventManager } from "@/lib"
 import { v4 as uuidv4 } from "uuid"
 
 export type TActionName = "start" | "stop" | "rebuild" | "reset" | "remove" | "checkStatus"

@@ -21,8 +21,8 @@ import {
 import { useCallback, useMemo, useState } from "react"
 import { ControllerRenderProps } from "react-hook-form"
 import { FiFolder } from "react-icons/fi"
-import { useBorderColor } from "../../../Theme"
-import { client } from "../../../client"
+import { useBorderColor } from "@/Theme"
+import { client } from "@/client"
 import { FieldName, TFormValues } from "./types"
 import { TWorkspaceSourceType } from "@/types"
 

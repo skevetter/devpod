@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query"
 import { useMemo } from "react"
-import { client } from "./client"
-import { useSettings } from "./contexts"
-import { QueryKeys } from "./queryKeys"
+import { client } from "@/client/client"
+import { useSettings } from "@/contexts"
+import { QueryKeys } from "@/queryKeys"
 import { TIDE, TIDEs } from "@/types"
 
 // See pkg/config/ide.go for names

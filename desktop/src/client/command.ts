@@ -4,7 +4,7 @@ import {
   EventEmitter,
   Command as ShellCommand,
 } from "@tauri-apps/plugin-shell"
-import { debug, ErrorTypeCancelled, isError, Result, ResultError, Return, sleep } from "../lib"
+import { debug, ErrorTypeCancelled, isError, Result, ResultError, Return, sleep } from "@/lib"
 import {
   DEVPOD_BINARY,
   DEVPOD_FLAG_OPTION,

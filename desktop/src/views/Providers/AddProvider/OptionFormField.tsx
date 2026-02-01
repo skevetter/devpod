@@ -1,8 +1,8 @@
 import { TOptionWithID } from "../helpers"
 import { Controller, useFormContext } from "react-hook-form"
 import { ReactNode, useMemo } from "react"
-import { exists } from "../../../lib"
-import { AutoComplete } from "../../../components"
+import { exists } from "@/lib"
+import { AutoComplete } from "@/components"
 import {
   Checkbox,
   FormControl,

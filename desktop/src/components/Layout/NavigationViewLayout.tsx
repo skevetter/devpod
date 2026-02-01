@@ -1,6 +1,6 @@
 import { Heading, HStack } from "@chakra-ui/react"
 import { ReactNode } from "react"
-import { exists } from "../../lib"
+import { exists } from "@/lib"
 import { ToolbarTitle } from "./Toolbar"
 import { TViewTitle } from "./types"
 

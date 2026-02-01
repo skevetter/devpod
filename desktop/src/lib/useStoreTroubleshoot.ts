@@ -1,4 +1,4 @@
-import { client } from "@/client"
+import { client } from "@/client/client"
 import { TActionObj } from "@/contexts/DevPodContext/action"
 import { TWorkspace } from "@/types"
 import { useToast } from "@chakra-ui/react"

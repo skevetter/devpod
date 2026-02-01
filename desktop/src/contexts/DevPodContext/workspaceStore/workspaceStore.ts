@@ -1,11 +1,5 @@
-import { debug, EventManager, SingleEventManager } from "../../../lib"
-import {
-  TProID,
-  TUnsubscribeFn,
-  TWorkspace,
-  TWorkspaceID,
-  TWorkspaceWithoutStatus,
-} from "../../../types"
+import { debug, EventManager, SingleEventManager } from "@/lib"
+import { TProID, TUnsubscribeFn, TWorkspace, TWorkspaceID, TWorkspaceWithoutStatus } from "@/types"
 import { ProWorkspaceInstance } from "../Pro"
 import { Action, TActionFn, TActionName, TActionObj } from "../action"
 import { ActionHistory } from "../action/actionHistory" // This is a workaround for how typescript resolves circular dependencies, usually the import should be from "./action"

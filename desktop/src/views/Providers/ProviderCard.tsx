@@ -22,13 +22,13 @@ import { useMemo } from "react"
 import { HiDuplicate } from "react-icons/hi"
 import { HiArrowPath, HiPencil } from "react-icons/hi2"
 import { Link as RouterLink, useNavigate } from "react-router-dom"
-import { client } from "../../client"
-import { IconTag } from "../../components"
-import { useWorkspaces } from "../../contexts"
-import { ProviderPlaceholder, Stack3D, Trash } from "../../icons"
-import { exists } from "../../lib"
-import { QueryKeys } from "../../queryKeys"
-import { Routes } from "../../routes.constants"
+import { client } from "@/client"
+import { IconTag } from "@/components"
+import { useWorkspaces } from "@/contexts"
+import { ProviderPlaceholder, Stack3D, Trash } from "@/icons"
+import { exists } from "@/lib"
+import { QueryKeys } from "@/queryKeys"
+import { Routes } from "@/routes.constants"
 import {
   TProvider,
   TProviderID,
@@ -36,7 +36,7 @@ import {
   TRunnable,
   TWithProviderID,
   TWorkspace,
-} from "../../types"
+} from "@/types"
 import { useSetupProviderModal } from "./useSetupProviderModal"
 import { useDeleteProviderModal } from "./useDeleteProviderModal"
 

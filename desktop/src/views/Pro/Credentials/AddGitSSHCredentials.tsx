@@ -14,7 +14,7 @@ import {
 } from "@chakra-ui/react"
 import { ReactNode } from "react"
 import { FieldError, SubmitHandler, useForm } from "react-hook-form"
-import { client as globalClient } from "../../../client"
+import { client as globalClient } from "@/client/client"
 import { File } from "@/icons"
 
 type TFormValues = {

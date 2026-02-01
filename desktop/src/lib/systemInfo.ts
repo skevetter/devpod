@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
-import { client, TArch, TPlatform } from "../client"
-import { QueryKeys } from "../queryKeys"
+import { client, TArch, TPlatform } from "@/client"
+import { QueryKeys } from "@/queryKeys"
 
 export function usePlatform(): TPlatform | undefined {
   const { data: platform } = useQuery({

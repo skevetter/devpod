@@ -28,11 +28,11 @@ import {
   useState,
 } from "react"
 import { DefaultValues, FormProvider, UseFormReturn, useForm } from "react-hook-form"
-import { useBorderColor } from "../../../Theme"
-import { client } from "../../../client"
-import { useProvider } from "../../../contexts"
-import { exists, useFormErrors } from "../../../lib"
-import { QueryKeys } from "../../../queryKeys"
+import { useBorderColor } from "@/Theme"
+import { client } from "@/client"
+import { useProvider } from "@/contexts"
+import { exists, useFormErrors } from "@/lib"
+import { QueryKeys } from "@/queryKeys"
 import {
   TConfigureProviderConfig,
   TProvider,
@@ -40,7 +40,7 @@ import {
   TProviderOption,
   TProviderOptions,
   TWorkspace,
-} from "../../../types"
+} from "@/types"
 import { canCreateMachine } from "../helpers"
 import { OptionFormField } from "./OptionFormField"
 import { useProviderDisplayOptions } from "./useProviderOptions"

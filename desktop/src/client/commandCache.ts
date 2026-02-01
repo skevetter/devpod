@@ -1,6 +1,6 @@
-import { TActionName } from "../contexts"
-import { exists, isEmpty, noop, ResultError, SingleEventManager, THandler } from "../lib"
-import { TUnsubscribeFn } from "../types"
+import { TActionName } from "@/contexts"
+import { exists, isEmpty, noop, ResultError, SingleEventManager, THandler } from "@/lib"
+import { TUnsubscribeFn } from "@/types"
 import { TCommand, TStreamEventListenerFn } from "./command"
 import { TStreamEvent } from "./types"
 

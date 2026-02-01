@@ -1,6 +1,6 @@
 import { useCallback, useEffect } from "react"
-import { client } from "../../../client"
-import { TWorkspaceID } from "../../../types"
+import { client } from "@/client/client"
+import { TWorkspaceID } from "@/types"
 import { REFETCH_INTERVAL_MS } from "../constants"
 import { WorkspaceStore, useWorkspaceStore } from "../workspaceStore"
 

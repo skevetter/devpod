@@ -1,4 +1,4 @@
-import { useSystemTheme } from "@/lib"
+import { useSystemTheme } from "@/lib/systemInfo"
 import {
   Box,
   BoxProps,
@@ -14,9 +14,9 @@ import {
 } from "@chakra-ui/react"
 import { cloneElement, ReactElement, ReactNode } from "react"
 import { LinkProps, NavLink as RouterLink } from "react-router-dom"
-import { useSettings } from "../../contexts"
-import { DevpodWordmark } from "../../icons"
-import { useBorderColor } from "../../Theme"
+import { useSettings } from "@/contexts"
+import { DevpodWordmark } from "@/icons"
+import { useBorderColor } from "@/Theme"
 import { LoftOSSBadge } from "../LoftOSSBadge"
 
 type TSidebarProps = Readonly<{ children?: readonly ReactElement[] }> & BoxProps

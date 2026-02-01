@@ -1,4 +1,4 @@
-import { TProvider, TProviderID, TProviderManager } from "../../types"
+import { TProvider, TProviderID, TProviderManager } from "@/types"
 import { useProviders } from "./useProviders"
 
 export function useProvider(
