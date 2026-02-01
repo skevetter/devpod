@@ -65,6 +65,14 @@ func (r *runner) Build(ctx context.Context, options provider.BuildOptions) (stri
 		return prebuildImage, nil
 	}
 
+	// if push happened during build, skip the separate push workflow
+	// When PushDuringBuild is enabled, BuildKit already pushed the image directly to the
+	// registry during the build process. Skip the tag/push workflow below to avoid
+	// redundant operations. The image is already in the registry.
+	if options.PushDuringBuild {
+		return prebuildImage, nil
+	}
+
 	if isDockerComposeConfig(substitutedConfig.Config) {
 		if err := dockerDriver.TagDevContainer(ctx, buildInfo.ImageName, prebuildImage); err != nil {
 			return "", fmt.Errorf("tag image %w", err)

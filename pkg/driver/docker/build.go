@@ -113,6 +113,17 @@ func (d *dockerDriver) BuildDevContainer(
 		return nil, fmt.Errorf("invalid docker builder: %s", builder)
 	}
 
+	// When pushing directly to registry, the image is not loaded locally
+	if buildOptions.Push {
+		return &config.BuildInfo{
+			ImageMetadata: extendedBuildInfo.MetadataConfig,
+			ImageName:     imageName,
+			PrebuildHash:  prebuildHash,
+			RegistryCache: options.RegistryCache,
+			Tags:          options.Tag,
+		}, nil
+	}
+
 	// inspect image
 	imageDetails, err := d.Docker.InspectImage(ctx, imageName, false)
 	if err != nil {
@@ -170,6 +181,11 @@ func (d *dockerDriver) buildxBuild(ctx context.Context, writer io.Writer, platfo
 		args = append(args, "--load")
 	}
 
+	// add push
+	if options.Push {
+		args = append(args, "--push")
+	}
+
 	// docker images
 	for _, image := range options.Images {
 		args = append(args, "-t", image)
@@ -212,8 +228,8 @@ func (d *dockerDriver) buildxBuild(ctx context.Context, writer io.Writer, platfo
 	// run command
 	d.Log.WithFields(logrus.Fields{
 		"command": d.Docker.DockerCommand,
-		"args":    strings.Join(args, " "),
-	}).Debug("running docker command")
+		"args":    strings.Join(args, " ")},
+	).Debug("running docker command")
 	stderrBuf := &bytes.Buffer{}
 	multiWriter := io.MultiWriter(writer, stderrBuf)
 	err := d.Docker.Run(ctx, args, nil, writer, multiWriter)

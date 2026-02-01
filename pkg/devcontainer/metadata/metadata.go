@@ -121,6 +121,10 @@ func GetImageMetadataFromContainer(containerDetails *config.ContainerDetails, su
 }
 
 func GetImageMetadata(imageDetails *config.ImageDetails, substituteContext *config.SubstitutionContext, log log.Logger) (*config.ImageMetadataConfig, error) {
+	if imageDetails == nil {
+		return &config.ImageMetadataConfig{}, nil
+	}
+
 	if imageDetails.Config.Labels == nil || imageDetails.Config.Labels[ImageMetadataLabel] == "" {
 		return &config.ImageMetadataConfig{}, nil
 	}
