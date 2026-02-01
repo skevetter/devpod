@@ -321,7 +321,7 @@ class Client {
         return Return.Value(exists)
       }
 
-      const result = await Command.create("run-path-devpod-cli", ["version"]).execute()
+      const result = await Command.create("run-path-devpod", ["version"]).execute()
       if (result.code !== 0) {
         return Return.Value(false)
       }

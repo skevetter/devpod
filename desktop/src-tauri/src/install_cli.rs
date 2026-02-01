@@ -46,7 +46,7 @@ pub fn install_cli(app_handle: AppHandle, force: bool) -> Result<(), InstallCLIE
     }
 }
 
-// The path to the `devpod-cli` binary/executable. If bundled correctly, will be placed next to the desktop app executable.
+// The path to the `devpod` binary/executable. If bundled correctly, will be placed next to the desktop app executable.
 fn get_cli_path() -> Result<PathBuf, std::io::Error> {
     let mut exe_path = env::current_exe()?;
     exe_path.pop();
@@ -64,7 +64,7 @@ fn install(_app_handle: AppHandle, force: bool) -> Result<(), InstallCLIError> {
 
     let cli_path = get_cli_path().map_err(InstallCLIError::NoExePath)?;
 
-    // The binary we ship with is `devpod-cli`, but we want to link it to `devpod` so that users can just run `devpod` in their terminal
+    // The binary we ship with is `devpod`, which users can run directly in their terminal
     let mut target_paths: Vec<PathBuf> = vec![];
 
     // /usr/local/bin/devpod

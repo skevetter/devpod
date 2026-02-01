@@ -4,7 +4,7 @@
 /e2e/bin
 /devpod
 /devpod.exe
-/devpod-cli
+/devpod
 /dist
 # Unit test targets
 /main

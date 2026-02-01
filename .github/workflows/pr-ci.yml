@@ -460,12 +460,12 @@ jobs:
           find "$TEMP_DIR/devpod-bin/" -type f -name "devpod-*" -exec cp {} ./bin \;
           find ./bin -type f -name "devpod-*" -exec chmod +x {} \;
 
-          find ./bin -type f -name "devpod-linux-amd64" -exec mv {} ./bin/devpod-cli-x86_64-unknown-linux-gnu \;
-          find ./bin -type f -name "devpod-linux-arm64" -exec mv {} ./bin/devpod-cli-aarch64-unknown-linux-gnu \;
-          find ./bin -type f -name "devpod-darwin-amd64" -exec mv {} ./bin/devpod-cli-x86_64-apple-darwin \;
-          find ./bin -type f -name "devpod-darwin-arm64" -exec mv {} ./bin/devpod-cli-aarch64-apple-darwin \;
-          find ./bin -type f -name "devpod-windows-amd64.exe" -exec mv {} ./bin/devpod-cli-x86_64-pc-windows-msvc.exe \;
-          find ./bin -type f -name "devpod-windows-arm64.exe" -exec mv {} ./bin/devpod-cli-aarch64-pc-windows-msvc.exe \;
+          find ./bin -type f -name "devpod-linux-amd64" -exec mv {} ./bin/devpod-x86_64-unknown-linux-gnu \;
+          find ./bin -type f -name "devpod-linux-arm64" -exec mv {} ./bin/devpod-aarch64-unknown-linux-gnu \;
+          find ./bin -type f -name "devpod-darwin-amd64" -exec mv {} ./bin/devpod-x86_64-apple-darwin \;
+          find ./bin -type f -name "devpod-darwin-arm64" -exec mv {} ./bin/devpod-aarch64-apple-darwin \;
+          find ./bin -type f -name "devpod-windows-amd64.exe" -exec mv {} ./bin/devpod-x86_64-pc-windows-msvc.exe \;
+          find ./bin -type f -name "devpod-windows-arm64.exe" -exec mv {} ./bin/devpod-aarch64-pc-windows-msvc.exe \;
 
           ls -R ./bin/
 

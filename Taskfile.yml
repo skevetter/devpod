@@ -137,7 +137,7 @@ tasks:
     dir: desktop
     cmds:
       - task: cli:build:dev
-      - cmd: cp ../dist/devpod-dev_linux_amd64_v1/devpod-linux-amd64 ./src-tauri/bin/devpod-cli-x86_64-unknown-linux-gnu
+      - cmd: cp ../dist/devpod-dev_linux_amd64_v1/devpod-linux-amd64 ./src-tauri/bin/devpod-x86_64-unknown-linux-gnu
       - cmd: yarn install --frozen-lockfile
 
   desktop:tauri:generate-types:
