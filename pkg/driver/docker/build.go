@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"sort"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -37,7 +38,7 @@ func (d *dockerDriver) BuildDevContainer(
 	}
 
 	if req.Options.NoBuild {
-		return nil, fmt.Errorf("you cannot build in this mode. Please run 'devpod up' to rebuild the container")
+		return nil, fmt.Errorf("cannot build in no-build mode when the image does not exist")
 	}
 
 	buildOptions, err := d.prepareBuildOptions(req, imageName)
@@ -117,11 +118,25 @@ func appendImageTags(args []string, images []string) []string {
 }
 
 func appendBuildArgsAndContexts(args []string, buildArgs, contexts map[string]string) []string {
-	for k, v := range buildArgs {
-		args = append(args, "--build-arg", k+"="+v)
+	// Sort keys for deterministic output
+	buildArgKeys := make([]string, 0, len(buildArgs))
+	for k := range buildArgs {
+		buildArgKeys = append(buildArgKeys, k)
 	}
-	for k, v := range contexts {
-		args = append(args, "--build-context", k+"="+v)
+	sort.Strings(buildArgKeys)
+
+	for _, k := range buildArgKeys {
+		args = append(args, "--build-arg", k+"="+buildArgs[k])
+	}
+
+	contextKeys := make([]string, 0, len(contexts))
+	for k := range contexts {
+		contextKeys = append(contextKeys, k)
+	}
+	sort.Strings(contextKeys)
+
+	for _, k := range contextKeys {
+		args = append(args, "--build-context", k+"="+contexts[k])
 	}
 	return args
 }
