@@ -20,6 +20,16 @@ type RunDockerDevContainerParams struct {
 	IDEOptions   map[string]config2.OptionValue
 }
 
+type BuildRequest struct {
+	PrebuildHash         string
+	ParsedConfig         *config.SubstitutedConfig
+	ExtendedBuildInfo    *feature.ExtendedBuildInfo
+	DockerfilePath       string
+	DockerfileContent    string
+	LocalWorkspaceFolder string
+	Options              provider.BuildOptions
+}
+
 type DockerDriver interface {
 	Driver
 
@@ -33,16 +43,7 @@ type DockerDriver interface {
 	RunDockerDevContainer(ctx context.Context, params *RunDockerDevContainerParams) error
 
 	// BuildDevContainer builds a devcontainer
-	BuildDevContainer(
-		ctx context.Context,
-		prebuildHash string,
-		parsedConfig *config.SubstitutedConfig,
-		extendedBuildInfo *feature.ExtendedBuildInfo,
-		dockerfilePath,
-		dockerfileContent string,
-		localWorkspaceFolder string,
-		options provider.BuildOptions,
-	) (*config.BuildInfo, error)
+	BuildDevContainer(ctx context.Context, req BuildRequest) (*config.BuildInfo, error)
 
 	// PushDevContainer pushes the given image to a registry
 	PushDevContainer(ctx context.Context, image string) error

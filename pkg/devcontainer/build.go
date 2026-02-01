@@ -336,7 +336,15 @@ func (r *runner) buildImage(
 		return dockerlessFallback(r.LocalWorkspaceFolder, substitutionContext.ContainerWorkspaceFolder, parsedConfig, buildInfo, extendedBuildInfo, dockerfileContent, options)
 	}
 
-	return dockerDriver.BuildDevContainer(ctx, prebuildHash, parsedConfig, extendedBuildInfo, dockerfilePath, dockerfileContent, r.LocalWorkspaceFolder, options)
+	return dockerDriver.BuildDevContainer(ctx, driver.BuildRequest{
+		PrebuildHash:         prebuildHash,
+		ParsedConfig:         parsedConfig,
+		ExtendedBuildInfo:    extendedBuildInfo,
+		DockerfilePath:       dockerfilePath,
+		DockerfileContent:    dockerfileContent,
+		LocalWorkspaceFolder: r.LocalWorkspaceFolder,
+		Options:              options,
+	})
 }
 
 func (r *runner) buildDevImageCompose(
