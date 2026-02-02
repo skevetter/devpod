@@ -192,7 +192,7 @@ func CloneProvider(
 	providerName, providerSourceRaw string,
 	log log.Logger,
 ) (*ProviderWithOptions, error) {
-	providerWithOptions, err := FindProvider(devPodConfig, providerSourceRaw, log)
+	sourceProvider, err := FindProvider(devPodConfig, providerSourceRaw, log)
 	if err != nil {
 		return nil, err
 	}
@@ -201,16 +201,16 @@ func CloneProvider(
 		ProviderParams{
 			DevPodConfig: devPodConfig,
 			ProviderName: providerName,
-			Source:       &providerWithOptions.Config.Source,
+			Source:       &sourceProvider.Config.Source,
 			Log:          log,
 		},
-		providerWithOptions.Config)
+		sourceProvider.Config)
 	if err != nil {
 		return nil, err
 	}
-	providerWithOptions.Config = providerConfig
+	sourceProvider.Config = providerConfig
 
-	return providerWithOptions, nil
+	return sourceProvider, nil
 }
 
 func ResolveProviderSource(devPodConfig *config.Config, providerName string, log log.Logger) (string, error) {
@@ -234,7 +234,10 @@ func ResolveProvider(providerSource string, log log.Logger) ([]byte, *providerpk
 		return out, retSource, nil
 	}
 
-	if out, ok := resolveURLProvider(providerSource, retSource, log); ok {
+	if out, ok, err := resolveURLProvider(providerSource, retSource, log); ok {
+		if err != nil {
+			return nil, nil, err
+		}
 		return out, retSource, nil
 	}
 
@@ -303,7 +306,7 @@ func loadConfiguredProviders(
 
 		providerConfig, err := providerpkg.LoadProviderConfig(devPodConfig.DefaultContext, providerName)
 		if err != nil {
-			log.Warnf("error loading provider %s: %w", providerName, err)
+			log.Warnf("error loading provider %s: %v", providerName, err)
 			continue
 		}
 
@@ -446,7 +449,11 @@ func downloadAndSaveProvider(p ProviderParams, providerConfig *providerpkg.Provi
 		return fmt.Errorf("get binaries dir: %w", err)
 	}
 
-	providerDir, _ := providerpkg.GetProviderDir(p.DevPodConfig.DefaultContext, providerConfig.Name)
+	providerDir, err := providerpkg.GetProviderDir(p.DevPodConfig.DefaultContext, providerConfig.Name)
+	if err != nil {
+		return fmt.Errorf("get provider dir: %w", err)
+	}
+
 	if _, err := binaries.DownloadBinaries(providerConfig.Binaries, binariesDir, p.Log); err != nil {
 		_ = os.RemoveAll(providerDir)
 		return fmt.Errorf("download binaries: %w", err)
@@ -504,18 +511,22 @@ func resolveInternalProvider(providerSource string, retSource *providerpkg.Provi
 	return nil, false
 }
 
-func resolveURLProvider(providerSource string, retSource *providerpkg.ProviderSource, log log.Logger) ([]byte, bool) {
+func resolveURLProvider(
+	providerSource string,
+	retSource *providerpkg.ProviderSource,
+	log log.Logger,
+) ([]byte, bool, error) {
 	if !strings.HasPrefix(providerSource, httpPrefix) && !strings.HasPrefix(providerSource, httpsPrefix) {
-		return nil, false
+		return nil, false, nil
 	}
 
 	log.Infof("downloading provider from %s", providerSource)
 	out, err := downloadProvider(providerSource)
 	if err != nil {
-		return nil, false
+		return nil, true, fmt.Errorf("download provider: %w", err)
 	}
 	retSource.URL = providerSource
-	return out, true
+	return out, true, nil
 }
 
 func resolveFileProvider(providerSource string, retSource *providerpkg.ProviderSource) ([]byte, bool) {
@@ -547,6 +558,10 @@ func downloadProvider(url string) ([]byte, error) {
 		return nil, fmt.Errorf("download binary: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("download failed with status %d", resp.StatusCode)
+	}
 
 	return io.ReadAll(resp.Body)
 }
