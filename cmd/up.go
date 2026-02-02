@@ -1051,17 +1051,19 @@ func startBrowserTunnel(
 			// run in container
 			err := tunnel.RunServices(
 				ctx,
-				devPodConfig,
-				containerClient,
-				user,
-				forwardPorts,
-				extraPorts,
-				nil,
-				client.WorkspaceConfig(),
-				configureDockerCredentials,
-				configureGitCredentials,
-				configureGitSSHSignatureHelper,
-				logger,
+				tunnel.RunServicesOptions{
+					DevPodConfig:                   devPodConfig,
+					ContainerClient:                containerClient,
+					User:                           user,
+					ForwardPorts:                   forwardPorts,
+					ExtraPorts:                     extraPorts,
+					PlatformOptions:                nil,
+					Workspace:                      client.WorkspaceConfig(),
+					ConfigureDockerCredentials:     configureDockerCredentials,
+					ConfigureGitCredentials:        configureGitCredentials,
+					ConfigureGitSSHSignatureHelper: configureGitSSHSignatureHelper,
+					Log:                            logger,
+				},
 			)
 			if err != nil {
 				return fmt.Errorf("run credentials server in browser tunnel %w", err)

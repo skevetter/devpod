@@ -500,17 +500,19 @@ func (cmd *SSHCmd) startServices(
 	if cmd.User != "" {
 		err := tunnel.RunServices(
 			ctx,
-			devPodConfig,
-			containerClient,
-			cmd.User,
-			false,
-			nil,
-			nil,
-			workspace,
-			configureDockerCredentials,
-			configureGitCredentials,
-			configureGitSSHSignatureHelper,
-			log,
+			tunnel.RunServicesOptions{
+				DevPodConfig:                   devPodConfig,
+				ContainerClient:                containerClient,
+				User:                           cmd.User,
+				ForwardPorts:                   false,
+				ExtraPorts:                     nil,
+				PlatformOptions:                nil,
+				Workspace:                      workspace,
+				ConfigureDockerCredentials:     configureDockerCredentials,
+				ConfigureGitCredentials:        configureGitCredentials,
+				ConfigureGitSSHSignatureHelper: configureGitSSHSignatureHelper,
+				Log:                            log,
+			},
 		)
 		if err != nil {
 			log.Debugf("Error running credential server: %v", err)

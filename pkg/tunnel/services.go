@@ -31,27 +31,31 @@ import (
 	"k8s.io/client-go/util/retry"
 )
 
+// RunServicesOptions contains all options for running services
+type RunServicesOptions struct {
+	DevPodConfig                   *config.Config
+	ContainerClient                *ssh.Client
+	User                           string
+	ForwardPorts                   bool
+	ExtraPorts                     []string
+	PlatformOptions                *devpod.PlatformOptions
+	Workspace                      *provider.Workspace
+	ConfigureDockerCredentials     bool
+	ConfigureGitCredentials        bool
+	ConfigureGitSSHSignatureHelper bool
+	Log                            log.Logger
+}
+
 // RunServices forwards the ports for a given workspace and uses it's SSH client to run the credentials server remotely and the services server locally to communicate with the container
-func RunServices(
-	ctx context.Context,
-	devPodConfig *config.Config,
-	containerClient *ssh.Client,
-	user string,
-	forwardPorts bool,
-	extraPorts []string,
-	platformOptions *devpod.PlatformOptions,
-	workspace *provider.Workspace,
-	configureDockerCredentials, configureGitCredentials, configureGitSSHSignatureHelper bool,
-	log log.Logger,
-) error {
+func RunServices(ctx context.Context, opts RunServicesOptions) error {
 	// calculate exit after timeout
 	exitAfterTimeout := time.Second * 5
-	if devPodConfig.ContextOption(config.ContextOptionExitAfterTimeout) != "true" {
+	if opts.DevPodConfig.ContextOption(config.ContextOptionExitAfterTimeout) != "true" {
 		exitAfterTimeout = 0
 	}
 
 	// forward ports
-	forwardedPorts, err := forwardDevContainerPorts(ctx, containerClient, extraPorts, exitAfterTimeout, log)
+	forwardedPorts, err := forwardDevContainerPorts(ctx, opts.ContainerClient, opts.ExtraPorts, exitAfterTimeout, opts.Log)
 	if err != nil {
 		return fmt.Errorf("forward ports %w", err)
 	}
@@ -82,8 +86,9 @@ func RunServices(
 
 		// create a port forwarder
 		var forwarder netstat.Forwarder
-		if forwardPorts {
-			forwarder = newForwarder(containerClient, append(forwardedPorts, fmt.Sprintf("%d", openvscode.DefaultVSCodePort)), log)
+		if opts.ForwardPorts {
+			ports := append(forwardedPorts, fmt.Sprintf("%d", openvscode.DefaultVSCodePort))
+			forwarder = newForwarder(opts.ContainerClient, ports, opts.Log)
 		}
 
 		errChan := make(chan error, 1)
@@ -95,12 +100,12 @@ func RunServices(
 				cancelCtx,
 				stdoutReader,
 				stdinWriter,
-				configureGitCredentials,
-				configureDockerCredentials,
+				opts.ConfigureGitCredentials,
+				opts.ConfigureDockerCredentials,
 				forwarder,
-				workspace,
-				log,
-				tunnelserver.WithPlatformOptions(platformOptions),
+				opts.Workspace,
+				opts.Log,
+				tunnelserver.WithPlatformOptions(opts.PlatformOptions),
 			)
 			if err != nil {
 				errChan <- fmt.Errorf("run tunnel server %w", err)
@@ -109,31 +114,35 @@ func RunServices(
 		}()
 
 		// run credentials server
-		writer := log.ErrorStreamOnly().Writer(logrus.DebugLevel, false)
+		writer := opts.Log.ErrorStreamOnly().Writer(logrus.DebugLevel, false)
 		defer func() { _ = writer.Close() }()
 
-		command := fmt.Sprintf("'%s' agent container credentials-server --user '%s'", agent.ContainerDevPodHelperLocation, user)
-		if configureGitCredentials {
+		command := fmt.Sprintf(
+			"'%s' agent container credentials-server --user '%s'",
+			agent.ContainerDevPodHelperLocation,
+			opts.User,
+		)
+		if opts.ConfigureGitCredentials {
 			command += " --configure-git-helper"
 		}
-		if configureGitSSHSignatureHelper {
+		if opts.ConfigureGitSSHSignatureHelper {
 			format, userSigningKey, err := gitsshsigning.ExtractGitConfiguration()
 			if err == nil && format == gitsshsigning.GPGFormatSSH && userSigningKey != "" {
 				encodedKey := base64.StdEncoding.EncodeToString([]byte(userSigningKey))
 				command += fmt.Sprintf(" --git-user-signing-key %s", encodedKey)
 			}
 		}
-		if configureDockerCredentials {
+		if opts.ConfigureDockerCredentials {
 			command += " --configure-docker-helper"
 		}
-		if forwardPorts {
+		if opts.ForwardPorts {
 			command += " --forward-ports"
 		}
-		if log.GetLevel() == logrus.DebugLevel {
+		if opts.Log.GetLevel() == logrus.DebugLevel {
 			command += " --debug"
 		}
 
-		err = devssh.Run(cancelCtx, containerClient, command, stdinReader, stdoutWriter, writer, nil)
+		err = devssh.Run(cancelCtx, opts.ContainerClient, command, stdinReader, stdoutWriter, writer, nil)
 		if err != nil {
 			return err
 		}

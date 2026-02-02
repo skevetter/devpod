@@ -43,17 +43,19 @@ func StartServicesDaemon(ctx context.Context, opts StartServicesDaemonOptions) e
 
 	return tunnel.RunServices(
 		ctx,
-		opts.DevPodConfig,
-		opts.SSHClient,
-		opts.User,
-		opts.ForwardPorts,
-		opts.ExtraPorts,
-		nil,
-		opts.Client.WorkspaceConfig(),
-		credConfig.docker,
-		credConfig.git,
-		credConfig.gitSSHSignature,
-		opts.Log,
+		tunnel.RunServicesOptions{
+			DevPodConfig:                   opts.DevPodConfig,
+			ContainerClient:                opts.SSHClient,
+			User:                           opts.User,
+			ForwardPorts:                   opts.ForwardPorts,
+			ExtraPorts:                     opts.ExtraPorts,
+			PlatformOptions:                nil,
+			Workspace:                      opts.Client.WorkspaceConfig(),
+			ConfigureDockerCredentials:     credConfig.docker,
+			ConfigureGitCredentials:        credConfig.git,
+			ConfigureGitSSHSignatureHelper: credConfig.gitSSHSignature,
+			Log:                            opts.Log,
+		},
 	)
 }
 
