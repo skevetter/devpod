@@ -34,7 +34,7 @@ func execNonPTY(sess ssh.Session, cmd *exec.Cmd, log log.Logger) (err error) {
 	// start the command
 	err = cmd.Start()
 	if err != nil {
-		return fmt.Errorf("start command %w", err)
+		return fmt.Errorf("start command: %w", err)
 	}
 
 	go func() {
@@ -84,7 +84,7 @@ func execPTY(
 	cmd.Env = append(cmd.Env, fmt.Sprintf("TERM=%s", ptyReq.Term))
 	f, err := startPTY(cmd)
 	if err != nil {
-		return fmt.Errorf("start pty %w", err)
+		return fmt.Errorf("start pty: %w", err)
 	}
 	defer func() { _ = f.Close() }()
 

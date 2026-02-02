@@ -67,7 +67,7 @@ func Projects(ctx context.Context, client client.Client) (*managementv1.ProjectL
 
 	projectList, err := managementClient.Loft().ManagementV1().Projects().List(ctx, metav1.ListOptions{})
 	if err != nil {
-		return projectList, fmt.Errorf("list projects %w", err)
+		return projectList, fmt.Errorf("list projects: %w", err)
 	} else if len(projectList.Items) == 0 {
 		return projectList, fmt.Errorf("you don't have access to any projects, please make sure you have at least access to 1 project")
 	}

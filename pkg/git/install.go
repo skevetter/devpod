@@ -28,14 +28,14 @@ func InstallBinary(log log.Logger) error {
 		cmd.Stderr = errwriter
 		err := cmd.Run()
 		if err != nil {
-			return fmt.Errorf("run apt update %w", err)
+			return fmt.Errorf("run apt update: %w", err)
 		}
 		cmd = exec.Command("apt", "-y", "install", "git")
 		cmd.Stdout = writer
 		cmd.Stderr = errwriter
 		err = cmd.Run()
 		if err != nil {
-			return fmt.Errorf("run apt install git -y %w", err)
+			return fmt.Errorf("run apt install git -y: %w", err)
 		}
 	} else if command.Exists("apk") {
 		log.Infof("Git command is missing, try to install git with apk...")
@@ -44,14 +44,14 @@ func InstallBinary(log log.Logger) error {
 		cmd.Stderr = errwriter
 		err := cmd.Run()
 		if err != nil {
-			return fmt.Errorf("run apk update %w", err)
+			return fmt.Errorf("run apk update: %w", err)
 		}
 		cmd = exec.Command("apk", "add", "git")
 		cmd.Stdout = writer
 		cmd.Stderr = errwriter
 		err = cmd.Run()
 		if err != nil {
-			return fmt.Errorf("run apk add git %w", err)
+			return fmt.Errorf("run apk add git: %w", err)
 		}
 	}
 

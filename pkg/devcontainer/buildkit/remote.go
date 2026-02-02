@@ -76,7 +76,7 @@ func BuildRemote(ctx context.Context, opts BuildRemoteOptions) (*config.BuildInf
 	}
 
 	if err := remote.CheckPushPermission(ref, keychain, http.DefaultTransport); err != nil {
-		return nil, fmt.Errorf("pushing %s is not allowed %w", ref, err)
+		return nil, fmt.Errorf("pushing %s is not allowed: %w", ref, err)
 	}
 
 	solveOpts, err := prepareSolveOptions(ref, keychain, imageName, opts)
@@ -96,7 +96,7 @@ func BuildRemote(ctx context.Context, opts BuildRemoteOptions) (*config.BuildInf
 
 	imageDetails, err := getImageDetails(ctx, ref, opts.TargetArch, keychain)
 	if err != nil {
-		return nil, fmt.Errorf("get image details %w", err)
+		return nil, fmt.Errorf("get image details: %w", err)
 	}
 
 	var imageMetadata *config.ImageMetadataConfig
@@ -144,7 +144,7 @@ func setupBuildKitClient(ctx context.Context, options provider.BuildOptions) (*c
 
 	certs, err := ensureCertPaths(options.CLIOptions.Platform.Build)
 	if err != nil {
-		return nil, nil, "", fmt.Errorf("ensure certificates %w", err)
+		return nil, nil, "", fmt.Errorf("ensure certificates: %w", err)
 	}
 
 	timeoutCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
@@ -157,14 +157,14 @@ func setupBuildKitClient(ctx context.Context, options provider.BuildOptions) (*c
 	)
 	if err != nil {
 		_ = os.RemoveAll(certs.ParentDir)
-		return nil, nil, "", fmt.Errorf("get client %w", err)
+		return nil, nil, "", fmt.Errorf("get client: %w", err)
 	}
 
 	info, err := c.Info(timeoutCtx)
 	if err != nil {
 		_ = c.Close()
 		_ = os.RemoveAll(certs.ParentDir)
-		return nil, nil, "", fmt.Errorf("get remote builder info %w", err)
+		return nil, nil, "", fmt.Errorf("get remote builder info: %w", err)
 	}
 
 	return c, info, certs.ParentDir, nil
@@ -173,12 +173,12 @@ func setupBuildKitClient(ctx context.Context, options provider.BuildOptions) (*c
 func resolveImageReference(ctx context.Context, imageName string) (name.Reference, authn.Keychain, error) {
 	ref, err := name.ParseReference(imageName)
 	if err != nil {
-		return nil, nil, fmt.Errorf("unable to resolve image %s %w", imageName, err)
+		return nil, nil, fmt.Errorf("unable to resolve image %s: %w", imageName, err)
 	}
 
 	keychain, err := image.GetKeychain(ctx)
 	if err != nil {
-		return nil, nil, fmt.Errorf("get docker auth keychain %w", err)
+		return nil, nil, fmt.Errorf("get docker auth keychain: %w", err)
 	}
 
 	return ref, keychain, nil
@@ -220,12 +220,12 @@ func checkExistingImage(params checkExistingImageParams) *config.BuildInfo {
 func setupRegistryAuth(ref name.Reference, keychain authn.Keychain) ([]session.Attachable, error) {
 	auth, err := keychain.Resolve(ref.Context())
 	if err != nil {
-		return nil, fmt.Errorf("get authentication for %s %w", ref.Context().String(), err)
+		return nil, fmt.Errorf("get authentication for %s: %w", ref.Context().String(), err)
 	}
 
 	authConfig, err := auth.Authorization()
 	if err != nil {
-		return nil, fmt.Errorf("get auth config for %s %w", ref.Context().String(), err)
+		return nil, fmt.Errorf("get auth config for %s: %w", ref.Context().String(), err)
 	}
 
 	registry := ref.Context().RegistryStr()
@@ -263,7 +263,7 @@ func prepareSolveOptions(ref name.Reference, keychain authn.Keychain, imageName 
 		PrebuildHash:      opts.PrebuildHash,
 	})
 	if err != nil {
-		return client.SolveOpt{}, fmt.Errorf("create build options %w", err)
+		return client.SolveOpt{}, fmt.Errorf("create build options: %w", err)
 	}
 
 	cacheFrom, cacheTo, err := setupCache(buildOpts)
@@ -317,12 +317,12 @@ func setupCache(buildOpts *build.BuildOptions) ([]client.CacheOptionsEntry, []cl
 func setupLocalMounts(buildOpts *build.BuildOptions) (map[string]fsutil.FS, error) {
 	dockerfileMount, err := fsutil.NewFS(filepath.Dir(buildOpts.Dockerfile))
 	if err != nil {
-		return nil, fmt.Errorf("create local dockerfile mount %w", err)
+		return nil, fmt.Errorf("create local dockerfile mount: %w", err)
 	}
 
 	contextMount, err := fsutil.NewFS(buildOpts.Context)
 	if err != nil {
-		return nil, fmt.Errorf("create local context mount %w", err)
+		return nil, fmt.Errorf("create local context mount: %w", err)
 	}
 
 	return map[string]fsutil.FS{
@@ -371,7 +371,7 @@ func addMultiContexts(solveOpts *client.SolveOpt, buildOpts *build.BuildOptions)
 	for k, v := range buildOpts.Contexts {
 		st, err := os.Stat(v)
 		if err != nil {
-			return fmt.Errorf("get build context %v %w", k, err)
+			return fmt.Errorf("get build context %v: %w", k, err)
 		}
 		if !st.IsDir() {
 			return fmt.Errorf("build context '%s' is not a directory", v)
@@ -384,7 +384,7 @@ func addMultiContexts(solveOpts *client.SolveOpt, buildOpts *build.BuildOptions)
 
 		solveOpts.LocalMounts[localName], err = fsutil.NewFS(v)
 		if err != nil {
-			return fmt.Errorf("create local mount for %s at %s %w", localName, v, err)
+			return fmt.Errorf("create local mount for %s at %s: %w", localName, v, err)
 		}
 
 		solveOpts.FrontendAttrs["context:"+k] = "local:" + localName
@@ -426,7 +426,7 @@ func getImageDetails(ctx context.Context, ref name.Reference, targetArch string,
 	}
 	imageConfig, err := remoteImage.ConfigFile()
 	if err != nil {
-		return nil, fmt.Errorf("get image config file %w", err)
+		return nil, fmt.Errorf("get image config file: %w", err)
 	}
 
 	imageDetails := &config.ImageDetails{
@@ -453,7 +453,7 @@ type certPaths struct {
 func ensureCertPaths(buildOpts *devpod.PlatformBuildOptions) (*certPaths, error) {
 	parentDir, err := os.MkdirTemp("", "build-certs-*")
 	if err != nil {
-		return nil, fmt.Errorf("create temp dir %w", err)
+		return nil, fmt.Errorf("create temp dir: %w", err)
 	}
 
 	caPath, err := writeCertFile(parentDir, "ca.pem", buildOpts.CertCA, "CA")
@@ -487,12 +487,12 @@ func writeCertFile(parentDir, filename, base64Content, certType string) (string,
 
 	certBytes, err := base64.StdEncoding.DecodeString(base64Content)
 	if err != nil {
-		return filePath, fmt.Errorf("decode %s %w", certType, err)
+		return filePath, fmt.Errorf("decode %s: %w", certType, err)
 	}
 
 	err = os.WriteFile(filePath, certBytes, 0o600)
 	if err != nil {
-		return filePath, fmt.Errorf("write %s file %w", certType, err)
+		return filePath, fmt.Errorf("write %s file: %w", certType, err)
 	}
 
 	return filePath, nil

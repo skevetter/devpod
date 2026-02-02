@@ -42,12 +42,12 @@ func NewClient(kubeConfig, kubeContext string) (*Client, string, error) {
 
 	clientConfig, err := config.ClientConfig()
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to load kubernetes config %w", err)
+		return nil, "", fmt.Errorf("failed to load kubernetes config: %w", err)
 	}
 
 	namespace, _, err := config.Namespace()
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to load kubernetes namespace from config %w", err)
+		return nil, "", fmt.Errorf("failed to load kubernetes namespace from config: %w", err)
 	}
 
 	kubeClient, err := kubernetes.NewForConfig(clientConfig)

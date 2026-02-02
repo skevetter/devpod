@@ -54,7 +54,7 @@ func (cmd *LogsDaemonCmd) Run(ctx context.Context) error {
 
 	f, err := os.Open(filepath.Join(logFolder, "agent-daemon.log"))
 	if err != nil {
-		return fmt.Errorf("open agent-daemon.log %w", err)
+		return fmt.Errorf("open agent-daemon.log: %w", err)
 	}
 	defer func() { _ = f.Close() }()
 

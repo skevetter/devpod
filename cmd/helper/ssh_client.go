@@ -74,12 +74,12 @@ func (cmd *SSHClient) getConfig() (*ssh.ClientConfig, error) {
 	if cmd.KeyFile != "" {
 		out, err := os.ReadFile(cmd.KeyFile)
 		if err != nil {
-			return nil, fmt.Errorf("read private ssh key %w", err)
+			return nil, fmt.Errorf("read private ssh key: %w", err)
 		}
 
 		signer, err := ssh.ParsePrivateKey(out)
 		if err != nil {
-			return nil, fmt.Errorf("parse private key %w", err)
+			return nil, fmt.Errorf("parse private key: %w", err)
 		}
 
 		clientConfig.Auth = append(clientConfig.Auth, ssh.PublicKeys(signer))

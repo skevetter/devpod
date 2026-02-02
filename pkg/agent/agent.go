@@ -53,13 +53,13 @@ func DefaultAgentDownloadURL() string {
 func DecodeContainerWorkspaceInfo(workspaceInfoRaw string) (*provider2.ContainerWorkspaceInfo, string, error) {
 	decoded, err := compress.Decompress(workspaceInfoRaw)
 	if err != nil {
-		return nil, "", fmt.Errorf("decode workspace info %w", err)
+		return nil, "", fmt.Errorf("decode workspace info: %w", err)
 	}
 
 	workspaceInfo := &provider2.ContainerWorkspaceInfo{}
 	err = json.Unmarshal([]byte(decoded), workspaceInfo)
 	if err != nil {
-		return nil, "", fmt.Errorf("parse workspace info %w", err)
+		return nil, "", fmt.Errorf("parse workspace info: %w", err)
 	}
 
 	return workspaceInfo, decoded, nil
@@ -68,13 +68,13 @@ func DecodeContainerWorkspaceInfo(workspaceInfoRaw string) (*provider2.Container
 func DecodeWorkspaceInfo(workspaceInfoRaw string) (*provider2.AgentWorkspaceInfo, string, error) {
 	decoded, err := compress.Decompress(workspaceInfoRaw)
 	if err != nil {
-		return nil, "", fmt.Errorf("decode workspace info %w", err)
+		return nil, "", fmt.Errorf("decode workspace info: %w", err)
 	}
 
 	workspaceInfo := &provider2.AgentWorkspaceInfo{}
 	err = json.Unmarshal([]byte(decoded), workspaceInfo)
 	if err != nil {
-		return nil, "", fmt.Errorf("parse workspace info %w", err)
+		return nil, "", fmt.Errorf("parse workspace info: %w", err)
 	}
 
 	return workspaceInfo, decoded, nil
@@ -102,7 +102,7 @@ func ParseAgentWorkspaceInfo(workspaceConfigFile string) (*provider2.AgentWorksp
 	workspaceInfo := &provider2.AgentWorkspaceInfo{}
 	err = json.Unmarshal(out, workspaceInfo)
 	if err != nil {
-		return nil, fmt.Errorf("parse workspace info %w", err)
+		return nil, fmt.Errorf("parse workspace info: %w", err)
 	}
 
 	workspaceInfo.Origin = filepath.Dir(workspaceConfigFile)
@@ -150,7 +150,7 @@ func ReadAgentWorkspaceInfo(agentFolder, context, id string, log log.Logger) (bo
 		log.WithFields(logrus.Fields{
 			"error": err,
 		}).Error("failed to rerun as root")
-		return false, nil, fmt.Errorf("rerun as root %w", err)
+		return false, nil, fmt.Errorf("rerun as root: %w", err)
 	} else if shouldExit {
 		log.Debug("rerunning as root, exiting current process")
 		return true, nil, nil
@@ -211,7 +211,7 @@ func decodeWorkspaceInfoAndWrite(
 		log.WithFields(logrus.Fields{
 			"error": err,
 		}).Error("failed to rerun as root")
-		return false, nil, fmt.Errorf("rerun as root %w", err)
+		return false, nil, fmt.Errorf("rerun as root: %w", err)
 	} else if shouldExit {
 		log.Debug("rerunning as root, exiting current process")
 		return true, nil, nil
@@ -260,7 +260,7 @@ func decodeWorkspaceInfoAndWrite(
 					"error":       err,
 					"workspaceId": oldWorkspaceInfo.Workspace.ID,
 				}).Error("failed to delete old workspace")
-				return false, nil, fmt.Errorf("delete old workspace %w", err)
+				return false, nil, fmt.Errorf("delete old workspace: %w", err)
 			}
 
 			// recreate workspace folder again
@@ -375,7 +375,7 @@ func writeWorkspaceInfo(file string, workspaceInfo *provider2.AgentWorkspaceInfo
 	// write workspace config
 	err = os.WriteFile(file, encoded, 0600)
 	if err != nil {
-		return fmt.Errorf("write workspace config file %w", err)
+		return fmt.Errorf("write workspace config file: %w", err)
 	}
 
 	return nil
@@ -511,7 +511,7 @@ func dockerReachable(dockerOverride string, envs map[string]string) (bool, error
 			}
 		}
 
-		return false, fmt.Errorf("%s ps %w", docker, err)
+		return false, fmt.Errorf("%s ps: %w", docker, err)
 	}
 
 	return false, nil

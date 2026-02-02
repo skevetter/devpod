@@ -194,7 +194,7 @@ func RunSSHSession(ctx context.Context, sshClient *ssh.Client, agentForwarding b
 			width, height = w, h
 		}
 		if err = session.RequestPty(t, height, width, ssh.TerminalModes{}); err != nil {
-			return fmt.Errorf("request pty %w", err)
+			return fmt.Errorf("request pty: %w", err)
 		}
 	}
 
@@ -203,16 +203,16 @@ func RunSSHSession(ctx context.Context, sshClient *ssh.Client, agentForwarding b
 	session.Stderr = stderr
 	if command == "" {
 		if err := session.Shell(); err != nil {
-			return fmt.Errorf("start ssh session with shell %w", err)
+			return fmt.Errorf("start ssh session with shell: %w", err)
 		}
 	} else {
 		if err := session.Start(command); err != nil {
-			return fmt.Errorf("start ssh session with command %s %w", command, err)
+			return fmt.Errorf("start ssh session with command %s: %w", command, err)
 		}
 	}
 
 	if err := session.Wait(); err != nil {
-		return fmt.Errorf("ssh session %w", err)
+		return fmt.Errorf("ssh session: %w", err)
 	}
 
 	return nil

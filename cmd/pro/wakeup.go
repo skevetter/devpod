@@ -120,7 +120,7 @@ func (cmd *WakeupCmd) Run(ctx context.Context, args []string) error {
 		return workspaceInstance.Status.Phase == storagev1.InstanceReady, nil
 	})
 	if err != nil {
-		return fmt.Errorf("error waiting for workspace to wake up %w", err)
+		return fmt.Errorf("error waiting for workspace to wake up: %w", err)
 	}
 
 	cmd.Log.WithFields(logrus.Fields{

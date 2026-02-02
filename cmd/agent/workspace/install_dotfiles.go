@@ -74,7 +74,7 @@ func (cmd *InstallDotfilesCmd) Run(ctx context.Context) error {
 
 		err := ensureExecutable(command)
 		if err != nil {
-			return fmt.Errorf("failed to make install script %s executable %w", command, err)
+			return fmt.Errorf("failed to make install script %s executable: %w", command, err)
 		}
 
 		scriptCmd := exec.Command(command)
@@ -174,13 +174,13 @@ func ensureExecutable(path string) error {
 	checkCmd := exec.Command("test", "-f", path)
 	err := checkCmd.Run()
 	if err != nil {
-		return fmt.Errorf("install script %s not found %w", path, err)
+		return fmt.Errorf("install script %s not found: %w", path, err)
 	}
 
 	chmodCmd := exec.Command("chmod", "+x", path)
 	err = chmodCmd.Run()
 	if err != nil {
-		return fmt.Errorf("failed to make install script %s executable %w", path, err)
+		return fmt.Errorf("failed to make install script %s executable: %w", path, err)
 	}
 
 	return nil

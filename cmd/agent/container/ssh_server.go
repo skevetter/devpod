@@ -54,7 +54,7 @@ func (cmd *SSHServerCmd) Run(_ *cobra.Command, _ []string) error {
 	available, err := port.IsAvailable(cmd.Address)
 	if !available {
 		if err != nil {
-			return fmt.Errorf("address %s already in use %w", cmd.Address, err)
+			return fmt.Errorf("address %s already in use: %w", cmd.Address, err)
 		}
 
 		log.Default.ErrorStreamOnly().Info("address %s already in use", cmd.Address)

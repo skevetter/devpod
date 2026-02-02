@@ -74,7 +74,7 @@ func (cmd *RequestCmd) Run(ctx context.Context, args []string) error {
 
 	_, err = io.Copy(os.Stdout, resp.Body)
 	if err != nil {
-		return fmt.Errorf("read response %w", err)
+		return fmt.Errorf("read response: %w", err)
 	}
 
 	return nil

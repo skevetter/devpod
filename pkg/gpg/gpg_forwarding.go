@@ -72,7 +72,7 @@ func (g *GPGConf) ImportGpgKey() error {
 
 	out, err := gpgImportCmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("import gpg public key: %s %w", out, err)
+		return fmt.Errorf("import gpg public key: %s: %w", out, err)
 	}
 
 	return nil

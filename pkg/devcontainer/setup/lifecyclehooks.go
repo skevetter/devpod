@@ -118,16 +118,16 @@ func run(commands []types.LifecycleHook, remoteUser, dir string, remoteEnv map[s
 			// Create pipes for stdout and stderr
 			stdoutPipe, err := cmd.StdoutPipe()
 			if err != nil {
-				return fmt.Errorf("failed to get stdout pipe %w", err)
+				return fmt.Errorf("failed to get stdout pipe: %w", err)
 			}
 			stderrPipe, err := cmd.StderrPipe()
 			if err != nil {
-				return fmt.Errorf("failed to get stderr pipe %w", err)
+				return fmt.Errorf("failed to get stderr pipe: %w", err)
 			}
 
 			// Start the command
 			if err := cmd.Start(); err != nil {
-				return fmt.Errorf("failed to start command %w", err)
+				return fmt.Errorf("failed to start command: %w", err)
 			}
 
 			// Use WaitGroup to wait for both stdout and stderr processing
@@ -149,7 +149,7 @@ func run(commands []types.LifecycleHook, remoteUser, dir string, remoteEnv map[s
 			err = cmd.Wait()
 			if err != nil {
 				log.WithFields(logrus.Fields{"command": cmd.Args, "error": err}).Debug("failed running postCreateCommand lifecycle script")
-				return fmt.Errorf("failed to run: %s, error %w", strings.Join(c, " "), err)
+				return fmt.Errorf("failed to run: %s, error: %w", strings.Join(c, " "), err)
 			}
 
 			log.WithFields(logrus.Fields{"command": k, "args": strings.Join(c, " ")}).Done("ran command")

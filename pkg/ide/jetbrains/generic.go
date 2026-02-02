@@ -135,7 +135,7 @@ func (o *GenericJetBrainsServer) Install(setupInfo *config.Result) error {
 
 	err = copy2.ChownR(path.Join(baseFolder, ".cache"), o.userName)
 	if err != nil {
-		return fmt.Errorf("chown %w", err)
+		return fmt.Errorf("chown: %w", err)
 	}
 	o.log.WithFields(logrus.Fields{
 		"displayName": o.options.DisplayName,
@@ -240,12 +240,12 @@ func (o *GenericJetBrainsServer) download(targetFolder string, log log.Logger) (
 	}).Info("downloaded archive")
 	resp, err := devpodhttp.GetHTTPClient().Get(downloadURL)
 	if err != nil {
-		return "", fmt.Errorf("download binary %w", err)
+		return "", fmt.Errorf("download binary: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-		return "", fmt.Errorf("download binary returned status code %d %w", resp.StatusCode, err)
+		return "", fmt.Errorf("download binary returned status code %d: %w", resp.StatusCode, err)
 	}
 
 	stat, err := os.Stat(targetPath)
@@ -265,7 +265,7 @@ func (o *GenericJetBrainsServer) download(targetFolder string, log log.Logger) (
 		Log:       log,
 	})
 	if err != nil {
-		return "", fmt.Errorf("download file %w", err)
+		return "", fmt.Errorf("download file: %w", err)
 	}
 
 	return targetPath, nil

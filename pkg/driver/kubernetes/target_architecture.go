@@ -23,7 +23,7 @@ func (k *KubernetesDriver) TargetArchitecture(ctx context.Context, workspaceId s
 			return "", fmt.Errorf("you don't have permission to list nodes in the Kubernetes cluster, please set the cluster architecture manually via provider options")
 		}
 
-		return "", fmt.Errorf("list nodes %w", err)
+		return "", fmt.Errorf("list nodes: %w", err)
 	}
 
 	// check if there are mixed architectures

@@ -102,7 +102,7 @@ func (o *OpenVSCodeServer) InstallExtensions() error {
 	// install extensions
 	err := o.installExtensions()
 	if err != nil {
-		return fmt.Errorf("install extensions %w", err)
+		return fmt.Errorf("install extensions: %w", err)
 	}
 
 	return nil
@@ -134,21 +134,21 @@ func (o *OpenVSCodeServer) Install() error {
 
 	err = extract.Extract(resp.Body, location, extract.StripLevels(1))
 	if err != nil {
-		return fmt.Errorf("extract vscode %w", err)
+		return fmt.Errorf("extract vscode: %w", err)
 	}
 
 	// chown location
 	if o.userName != "" {
 		err = copy2.ChownR(location, o.userName)
 		if err != nil {
-			return fmt.Errorf("chown %w", err)
+			return fmt.Errorf("chown: %w", err)
 		}
 	}
 
 	// paste settings
 	err = o.installSettings()
 	if err != nil {
-		return fmt.Errorf("install settings %w", err)
+		return fmt.Errorf("install settings: %w", err)
 	}
 
 	return nil
@@ -260,7 +260,7 @@ func (o *OpenVSCodeServer) Start() error {
 	binaryPath := filepath.Join(location, "bin", "openvscode-server")
 	_, err = os.Stat(binaryPath)
 	if err != nil {
-		return fmt.Errorf("find binary %w", err)
+		return fmt.Errorf("find binary: %w", err)
 	}
 
 	return single.Single("openvscode.pid", func() (*exec.Cmd, error) {

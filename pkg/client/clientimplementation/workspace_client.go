@@ -109,7 +109,7 @@ func (s *workspaceClient) RefreshOptions(ctx context.Context, userOptionsRaw []s
 
 	userOptions, err := provider.ParseOptions(userOptionsRaw)
 	if err != nil {
-		return fmt.Errorf("parse options %w", err)
+		return fmt.Errorf("parse options: %w", err)
 	}
 
 	if s.isMachineProvider() {
@@ -245,7 +245,7 @@ func (s *workspaceClient) initLock() {
 		// get locks dir
 		workspaceLocksDir, err := provider.GetLocksDir(s.workspace.Context)
 		if err != nil {
-			panic(fmt.Errorf("get workspaces dir %w", err))
+			panic(fmt.Errorf("get workspaces dir: %w", err))
 		}
 		_ = os.MkdirAll(workspaceLocksDir, 0777)
 
@@ -266,7 +266,7 @@ func (s *workspaceClient) Lock(ctx context.Context) error {
 	s.log.Debug("acquire workspace lock")
 	err := tryLock(ctx, s.workspaceLock, "workspace", s.log)
 	if err != nil {
-		return fmt.Errorf("error locking workspace %w", err)
+		return fmt.Errorf("error locking workspace: %w", err)
 	}
 	s.log.Debug("acquired workspace lock")
 
@@ -275,7 +275,7 @@ func (s *workspaceClient) Lock(ctx context.Context) error {
 		s.log.Debug("acquire machine lock")
 		err := tryLock(ctx, s.machineLock, "machine", s.log)
 		if err != nil {
-			return fmt.Errorf("error locking machine %w", err)
+			return fmt.Errorf("error locking machine: %w", err)
 		}
 		s.log.Debug("acquired machine lock")
 	}
@@ -434,7 +434,7 @@ func (s *workspaceClient) isMachineRunning(ctx context.Context) (bool, error) {
 	// retrieve status
 	status, err := machineClient.Status(ctx, client.StatusOptions{})
 	if err != nil {
-		return false, fmt.Errorf("retrieve machine status %w", err)
+		return false, fmt.Errorf("retrieve machine status: %w", err)
 	} else if status == client.StatusRunning {
 		return true, nil
 	}
@@ -819,7 +819,7 @@ func handleStoppedStatus(ctx context.Context, workspaceClient client.WorkspaceCl
 	if create {
 		err := workspaceClient.Start(ctx, client.StartOptions{})
 		if err != nil {
-			return fmt.Errorf("start workspace %w", err)
+			return fmt.Errorf("start workspace: %w", err)
 		}
 		return nil
 	}

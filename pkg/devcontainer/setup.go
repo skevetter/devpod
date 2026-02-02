@@ -46,7 +46,7 @@ func (r *runner) setupContainer(
 		Timeout:                     timeout,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("inject agent %w", err)
+		return nil, fmt.Errorf("inject agent: %w", err)
 	}
 	r.Log.Debugf("Injected into container")
 	defer r.Log.Debugf("Done setting up container")

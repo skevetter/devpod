@@ -79,7 +79,7 @@ func (s *Stream) Read(reader io.Reader) error {
 			_ = s.ws.WriteMessage(websocket.BinaryMessage, newCloseMessage(s.closeType).Bytes())
 			return nil
 		} else if err != nil {
-			return fmt.Errorf("read reader %w", err)
+			return fmt.Errorf("read reader: %w", err)
 		}
 	}
 }

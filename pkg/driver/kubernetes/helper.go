@@ -108,7 +108,7 @@ func parseResource(resourceName string) (string, resource.Quantity, error) {
 
 	quantity, err := resource.ParseQuantity(splittedResource[1])
 	if err != nil {
-		return "", resource.Quantity{}, fmt.Errorf("error parsing resource %s %w", resourceName, err)
+		return "", resource.Quantity{}, fmt.Errorf("error parsing resource %s: %w", resourceName, err)
 	}
 
 	return splittedResource[0], quantity, nil

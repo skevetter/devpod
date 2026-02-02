@@ -64,7 +64,7 @@ func (cmd *ListCmd) Run(ctx context.Context) error {
 		for _, entry := range entries {
 			machineConfig, err := provider.LoadMachineConfig(devPodConfig.DefaultContext, entry.Name())
 			if err != nil {
-				return fmt.Errorf("load machine config %w", err)
+				return fmt.Errorf("load machine config: %w", err)
 			}
 
 			tableEntries = append(tableEntries, []string{
@@ -87,7 +87,7 @@ func (cmd *ListCmd) Run(ctx context.Context) error {
 		for _, entry := range entries {
 			machineConfig, err := provider.LoadMachineConfig(devPodConfig.DefaultContext, entry.Name())
 			if err != nil {
-				return fmt.Errorf("load machine config %w", err)
+				return fmt.Errorf("load machine config: %w", err)
 			}
 
 			tableEntries = append(tableEntries, machineConfig)

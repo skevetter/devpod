@@ -104,10 +104,10 @@ func (cmd *AddCmd) Run(ctx context.Context, devPodConfig *config.Config, args []
 
 			err = DeleteProvider(ctx, devPodConfig, providerConfig.Name, true, true, log.Default)
 			if err != nil {
-				return fmt.Errorf("delete provider %w", err)
+				return fmt.Errorf("delete provider: %w", err)
 			}
 
-			return fmt.Errorf("configure provider %w", configureErr)
+			return fmt.Errorf("configure provider: %w", configureErr)
 		}
 
 		return nil

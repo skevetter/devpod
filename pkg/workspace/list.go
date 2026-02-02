@@ -319,7 +319,7 @@ func listInstancesProxyProvider(ctx context.Context, devPodConfig *config.Config
 		Stderr:  &stderr,
 		Log:     log,
 	}); err != nil {
-		return nil, fmt.Errorf("failed to list pro workspaces: %s %w", stderr.String(), err)
+		return nil, fmt.Errorf("failed to list pro workspaces: %s: %w", stderr.String(), err)
 	}
 	if stdout.Len() == 0 {
 		return nil, nil

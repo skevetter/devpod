@@ -68,7 +68,7 @@ func GetBinariesFrom(config *provider2.ProviderConfig, binariesDir string) (map[
 			targetFolder := filepath.Join(binariesDir, strings.ToLower(binaryName))
 			binaryPath := getBinaryPath(binary, targetFolder)
 			if _, err := os.Stat(binaryPath); err != nil {
-				return nil, fmt.Errorf("error trying to find binary %s %w", binaryName, err)
+				return nil, fmt.Errorf("error trying to find binary %s: %w", binaryName, err)
 			}
 
 			retBinaries[binaryName] = binaryPath
@@ -292,7 +292,7 @@ func downloadBinary(
 	}
 
 	if err := os.MkdirAll(targetFolder, dirPerms); err != nil {
-		return "", fmt.Errorf("create folder %w", err)
+		return "", fmt.Errorf("create folder: %w", err)
 	}
 
 	return downloadRemoteBinary(binaryName, binary, targetFolder, log)
@@ -304,7 +304,7 @@ func handleLocalBinary(binary *provider2.ProviderBinary, targetFolder string) (s
 	}
 
 	if err := os.MkdirAll(targetFolder, dirPerms); err != nil {
-		return "", fmt.Errorf("create folder %w", err)
+		return "", fmt.Errorf("create folder: %w", err)
 	}
 
 	targetPath := localTargetPath(binary, targetFolder)
@@ -383,7 +383,7 @@ func downloadAndSaveFile(
 
 	body, err := download.File(binary.Path, log)
 	if err != nil {
-		return "", fmt.Errorf("download binary %w", err)
+		return "", fmt.Errorf("download binary: %w", err)
 	}
 	defer func() { _ = body.Close() }()
 
@@ -395,7 +395,7 @@ func downloadAndSaveFile(
 	defer func() { _ = file.Close() }()
 
 	if _, err := io.Copy(file, body); err != nil {
-		return targetPath, fmt.Errorf("download file %w", err)
+		return targetPath, fmt.Errorf("download file: %w", err)
 	}
 
 	log.Debugf("downloaded binary %s", binaryName)

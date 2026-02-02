@@ -59,7 +59,7 @@ func GetWorkspaceInfoFromEnv() (*WorkspaceInfo, error) {
 func FindInstance(ctx context.Context, baseClient client.Client, uid string) (*managementv1.DevPodWorkspaceInstance, error) {
 	managementClient, err := baseClient.Management()
 	if err != nil {
-		return nil, fmt.Errorf("create management client %w", err)
+		return nil, fmt.Errorf("create management client: %w", err)
 	}
 
 	workspaceList, err := managementClient.Loft().ManagementV1().DevPodWorkspaceInstances("").List(ctx, metav1.ListOptions{
@@ -76,7 +76,7 @@ func FindInstance(ctx context.Context, baseClient client.Client, uid string) (*m
 func FindInstanceInProject(ctx context.Context, baseClient client.Client, uid, projectName string) (*managementv1.DevPodWorkspaceInstance, error) {
 	managementClient, err := baseClient.Management()
 	if err != nil {
-		return nil, fmt.Errorf("create management client %w", err)
+		return nil, fmt.Errorf("create management client: %w", err)
 	}
 
 	workspaceList, err := managementClient.Loft().ManagementV1().DevPodWorkspaceInstances(project.ProjectNamespace(projectName)).List(ctx, metav1.ListOptions{
@@ -94,7 +94,7 @@ func FindInstanceInProject(ctx context.Context, baseClient client.Client, uid, p
 func FindInstanceByName(ctx context.Context, baseClient client.Client, name, projectName string) (*managementv1.DevPodWorkspaceInstance, error) {
 	managementClient, err := baseClient.Management()
 	if err != nil {
-		return nil, fmt.Errorf("create management client %w", err)
+		return nil, fmt.Errorf("create management client: %w", err)
 	}
 
 	workspace, err := managementClient.Loft().ManagementV1().DevPodWorkspaceInstances(project.ProjectNamespace(projectName)).Get(ctx, name, metav1.GetOptions{})
@@ -158,10 +158,10 @@ func DialInstance(baseClient client.Client, workspace *managementv1.DevPodWorksp
 		if response != nil {
 			out, _ := io.ReadAll(response.Body)
 			headers, _ := json.Marshal(response.Header)
-			return nil, fmt.Errorf("%s: error dialing websocket %s (code %d): headers - %s, error - %w", string(out), loftURL, response.StatusCode, string(headers), err)
+			return nil, fmt.Errorf("%s: error dialing websocket %s (code %d): headers - %s, error -: %w", string(out), loftURL, response.StatusCode, string(headers), err)
 		}
 
-		return nil, fmt.Errorf("error dialing websocket %s %w", loftURL, err)
+		return nil, fmt.Errorf("error dialing websocket %s: %w", loftURL, err)
 	}
 
 	return conn, nil

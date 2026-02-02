@@ -514,7 +514,7 @@ func (cmd *StartCmd) successDocker(ctx context.Context, containerID string) erro
 	err = wait.PollUntilContextTimeout(ctx, time.Second, time.Minute*10, true, func(ctx context.Context) (bool, error) {
 		containerDetails, err := cmd.inspectContainer(ctx, containerID)
 		if err != nil {
-			return false, fmt.Errorf("inspect loft container %w", err)
+			return false, fmt.Errorf("inspect loft container: %w", err)
 		} else if strings.ToLower(containerDetails.State.Status) == "exited" || strings.ToLower(containerDetails.State.Status) == "dead" {
 			logs, _ := cmd.logsContainer(ctx, containerID)
 			return false, fmt.Errorf("container failed (status: %s):\n %s", containerDetails.State.Status, logs)
@@ -523,7 +523,7 @@ func (cmd *StartCmd) successDocker(ctx context.Context, containerID string) erro
 		return isHostReachable(ctx, host)
 	})
 	if err != nil {
-		return fmt.Errorf("error waiting for DevPod Pro %w", err)
+		return fmt.Errorf("error waiting for DevPod Pro: %w", err)
 	}
 
 	// print success message
@@ -583,7 +583,7 @@ func (cmd *StartCmd) waitForLoftDocker(ctx context.Context, containerID string) 
 		return true, nil
 	})
 	if waitErr != nil {
-		return "", fmt.Errorf("error waiting for loft router domain %w", err)
+		return "", fmt.Errorf("error waiting for loft router domain: %w", err)
 	}
 
 	return url, nil
@@ -619,13 +619,13 @@ func (cmd *StartCmd) uninstallDocker(ctx context.Context, id string) error {
 	// stop container
 	out, err := cmd.buildDockerCmd(ctx, "stop", id).Output()
 	if err != nil {
-		return fmt.Errorf("stop container %w", WrapCommandError(out, err))
+		return fmt.Errorf("stop container: %w", WrapCommandError(out, err))
 	}
 
 	// remove container
 	out, err = cmd.buildDockerCmd(ctx, "rm", id).Output()
 	if err != nil {
-		return fmt.Errorf("remove container %w", WrapCommandError(out, err))
+		return fmt.Errorf("remove container: %w", WrapCommandError(out, err))
 	}
 
 	return nil
@@ -679,7 +679,7 @@ func (cmd *StartCmd) logsContainer(ctx context.Context, id string) (string, erro
 	args := []string{"logs", id}
 	out, err := cmd.buildDockerCmd(ctx, args...).CombinedOutput()
 	if err != nil {
-		return "", fmt.Errorf("logs container %w", WrapCommandError(out, err))
+		return "", fmt.Errorf("logs container: %w", WrapCommandError(out, err))
 	}
 
 	return string(out), nil
@@ -689,13 +689,13 @@ func (cmd *StartCmd) inspectContainer(ctx context.Context, id string) (*Containe
 	args := []string{"inspect", "--type", "container", id}
 	out, err := cmd.buildDockerCmd(ctx, args...).Output()
 	if err != nil {
-		return nil, fmt.Errorf("inspect container %w", WrapCommandError(out, err))
+		return nil, fmt.Errorf("inspect container: %w", WrapCommandError(out, err))
 	}
 
 	containerDetails := []*ContainerDetails{}
 	err = json.Unmarshal(out, &containerDetails)
 	if err != nil {
-		return nil, fmt.Errorf("parse inspect output %w", err)
+		return nil, fmt.Errorf("parse inspect output: %w", err)
 	} else if len(containerDetails) == 0 {
 		return nil, fmt.Errorf("coudln't find container %s", id)
 	}
@@ -707,7 +707,7 @@ func (cmd *StartCmd) removeContainer(ctx context.Context, id string) error {
 	args := []string{"rm", id}
 	out, err := cmd.buildDockerCmd(ctx, args...).Output()
 	if err != nil {
-		return fmt.Errorf("remove container %w", WrapCommandError(out, err))
+		return fmt.Errorf("remove container: %w", WrapCommandError(out, err))
 	}
 
 	return nil
@@ -718,7 +718,7 @@ func (cmd *StartCmd) findLoftContainer(ctx context.Context, name string, onlyRun
 	out, err := cmd.buildDockerCmd(ctx, args...).Output()
 	if err != nil {
 		// fallback to manual search
-		return "", fmt.Errorf("error finding container %w", WrapCommandError(out, err))
+		return "", fmt.Errorf("error finding container: %w", WrapCommandError(out, err))
 	}
 
 	arr := []string{}
@@ -913,7 +913,7 @@ func (cmd *StartCmd) handleAlreadyExistingInstallation(ctx context.Context) erro
 			if term.IsTerminal(os.Stdin) {
 				err := ensureIngressController(ctx, cmd.KubeClient, cmd.Context, cmd.Log)
 				if err != nil {
-					return fmt.Errorf("install ingress controller %w", err)
+					return fmt.Errorf("install ingress controller: %w", err)
 				}
 			}
 		}
@@ -960,7 +960,7 @@ func (cmd *StartCmd) pingLoftRouter(ctx context.Context, loftPod *corev1.Pod) (s
 			return "", nil
 		}
 
-		return "", fmt.Errorf("find loft router domain secret %w", err)
+		return "", fmt.Errorf("find loft router domain secret: %w", err)
 	} else if loftRouterSecret.Data == nil || len(loftRouterSecret.Data["domain"]) == 0 {
 		return "", nil
 	}
@@ -1046,7 +1046,7 @@ func (cmd *StartCmd) login(url string) error {
 		// still open the UI
 		err := open.Run(url)
 		if err != nil {
-			return fmt.Errorf("couldn't open the login page in a browser %w", err)
+			return fmt.Errorf("couldn't open the login page in a browser: %w", err)
 		}
 
 		return nil
@@ -1127,7 +1127,7 @@ func (cmd *StartCmd) loginUI(url string) error {
 
 	err := open.Run(loginURL)
 	if err != nil {
-		return fmt.Errorf("couldn't open the login page in a browser %w", err)
+		return fmt.Errorf("couldn't open the login page in a browser: %w", err)
 	}
 
 	cmd.Log.Infof("If the browser does not open automatically, please navigate to %s", loginURL)
@@ -1231,7 +1231,7 @@ func isAlreadyInstalled(ctx context.Context, kubeClient kubernetes.Interface, na
 			return false, nil
 		}
 
-		return false, fmt.Errorf("error accessing kubernetes cluster %w", err)
+		return false, fmt.Errorf("error accessing kubernetes cluster: %w", err)
 	}
 
 	return true, nil
@@ -1448,7 +1448,7 @@ func ensureAdminPassword(ctx context.Context, kubeClient kubernetes.Interface, r
 		secret.Data[key] = []byte(passwordHash)
 		_, err = kubeClient.CoreV1().Secrets(secret.Namespace).Update(ctx, secret, metav1.UpdateOptions{})
 		if err != nil {
-			return false, fmt.Errorf("update admin password secret %w", err)
+			return false, fmt.Errorf("update admin password secret: %w", err)
 		}
 		return false, nil
 	}
@@ -1465,7 +1465,7 @@ func ensureAdminPassword(ctx context.Context, kubeClient kubernetes.Interface, r
 	}
 	_, err = kubeClient.CoreV1().Secrets(secret.Namespace).Create(ctx, secret, metav1.CreateOptions{})
 	if err != nil {
-		return false, fmt.Errorf("create admin password secret %w", err)
+		return false, fmt.Errorf("create admin password secret: %w", err)
 	}
 
 	log.Info("recreated admin password secret")
@@ -1508,7 +1508,7 @@ func isHostReachable(ctx context.Context, host string) (bool, error) {
 	url := "https://" + host + "/version"
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return false, fmt.Errorf("error creating request with context %w", err)
+		return false, fmt.Errorf("error creating request with context: %w", err)
 	}
 	resp, err := client.Do(req)
 	if err == nil && resp.StatusCode == http.StatusOK {

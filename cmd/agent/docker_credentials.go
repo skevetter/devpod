@@ -198,18 +198,18 @@ func getDockerCredentialsFromWorkspaceServer(credentials *dockercredentials.Cred
 func requestDockerCredentials(httpClient *http.Client, credentials *dockercredentials.Credentials, url string) (*dockercredentials.Credentials, error) {
 	rawJSON, err := json.Marshal(credentials)
 	if err != nil {
-		return nil, fmt.Errorf("error marshalling credentials %w", err)
+		return nil, fmt.Errorf("error marshalling credentials: %w", err)
 	}
 
 	response, err := httpClient.Post(url, "application/json", bytes.NewReader(rawJSON))
 	if err != nil {
-		return nil, fmt.Errorf("error retrieving credentials from credentials server %w", err)
+		return nil, fmt.Errorf("error retrieving credentials from credentials server: %w", err)
 	}
 	defer func() { _ = response.Body.Close() }()
 
 	raw, err := io.ReadAll(response.Body)
 	if err != nil {
-		return nil, fmt.Errorf("error reading credentials %w", err)
+		return nil, fmt.Errorf("error reading credentials: %w", err)
 	}
 
 	// has the request succeeded?
@@ -220,7 +220,7 @@ func requestDockerCredentials(httpClient *http.Client, credentials *dockercreden
 	credentials = &dockercredentials.Credentials{}
 	err = json.Unmarshal(raw, credentials)
 	if err != nil {
-		return nil, fmt.Errorf("error decoding credentials %w", err)
+		return nil, fmt.Errorf("error decoding credentials: %w", err)
 	}
 
 	return credentials, nil

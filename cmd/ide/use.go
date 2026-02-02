@@ -69,7 +69,7 @@ func (cmd *UseCmd) Run(ctx context.Context, ide string) error {
 	devPodConfig.Current().DefaultIDE = ide
 	err = config.SaveConfig(devPodConfig)
 	if err != nil {
-		return fmt.Errorf("save config %w", err)
+		return fmt.Errorf("save config: %w", err)
 	}
 
 	return nil

@@ -162,7 +162,7 @@ func (r *runner) Command(
 func (r *runner) Find(ctx context.Context) (*config.ContainerDetails, error) {
 	containerDetails, err := r.Driver.FindDevContainer(ctx, r.ID)
 	if err != nil {
-		return nil, fmt.Errorf("find dev container %w", err)
+		return nil, fmt.Errorf("find dev container: %w", err)
 	}
 
 	return containerDetails, nil

@@ -68,7 +68,7 @@ func (cmd *DeleteCmd) Run(ctx context.Context, context string) error {
 
 	err = config.SaveConfig(devPodConfig)
 	if err != nil {
-		return fmt.Errorf("save config %w", err)
+		return fmt.Errorf("save config: %w", err)
 	}
 
 	return nil

@@ -82,10 +82,10 @@ func WatchNetmap(ctx context.Context, lc *local.Client, netmapChangedFn func(nm 
 	for {
 		n, err := watcher.Next()
 		if err != nil {
-			return fmt.Errorf("watch ipn %w", err)
+			return fmt.Errorf("watch ipn: %w", err)
 		}
 		if n.ErrMessage != nil {
-			return fmt.Errorf("tailscale error %w", errors.New(*n.ErrMessage))
+			return fmt.Errorf("tailscale error: %w", errors.New(*n.ErrMessage))
 		}
 		if n.NetMap != nil {
 			if n.NetMap != netMap {

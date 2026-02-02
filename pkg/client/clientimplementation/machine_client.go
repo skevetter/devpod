@@ -136,7 +136,7 @@ func (s *machineClient) MachineConfig() *provider.Machine {
 func (s *machineClient) RefreshOptions(ctx context.Context, userOptionsRaw []string, reconfigure bool) error {
 	userOptions, err := provider.ParseOptions(userOptionsRaw)
 	if err != nil {
-		return fmt.Errorf("parse options %w", err)
+		return fmt.Errorf("parse options: %w", err)
 	}
 
 	machine, err := options.ResolveAndSaveOptionsMachine(ctx, s.devPodConfig, s.config, s.machine, userOptions, s.log)

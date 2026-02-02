@@ -49,7 +49,7 @@ func (cmd *DeleteCmd) Run(ctx context.Context) error {
 	// get workspace
 	shouldExit, workspaceInfo, err := agent.WorkspaceInfo(cmd.WorkspaceInfo, log.Default.ErrorStreamOnly())
 	if err != nil {
-		return fmt.Errorf("error parsing workspace info %w", err)
+		return fmt.Errorf("error parsing workspace info: %w", err)
 	} else if shouldExit {
 		return nil
 	}
@@ -58,7 +58,7 @@ func (cmd *DeleteCmd) Run(ctx context.Context) error {
 	if cmd.Daemon {
 		err = removeDaemon(workspaceInfo, log.Default)
 		if err != nil {
-			return fmt.Errorf("remove daemon %w", err)
+			return fmt.Errorf("remove daemon: %w", err)
 		}
 	}
 
@@ -66,7 +66,7 @@ func (cmd *DeleteCmd) Run(ctx context.Context) error {
 	if cmd.Container {
 		err = removeContainer(ctx, workspaceInfo, log.Default)
 		if err != nil {
-			return fmt.Errorf("remove container %w", err)
+			return fmt.Errorf("remove container: %w", err)
 		}
 	}
 
@@ -105,7 +105,7 @@ func removeDaemon(workspaceInfo *provider2.AgentWorkspaceInfo, log log.Logger) e
 	log.Debug("removing DevPod daemon from server")
 	err := agentdaemon.RemoveDaemon()
 	if err != nil {
-		return fmt.Errorf("remove daemon %w", err)
+		return fmt.Errorf("remove daemon: %w", err)
 	}
 	log.Debug("removed DevPod daemon from server")
 

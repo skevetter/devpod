@@ -125,7 +125,7 @@ func readGitConfig(gitConfigPath string) (string, error) {
 
 func writeGitConfig(gitConfigPath, content, userName string) error {
 	if err := os.WriteFile(gitConfigPath, []byte(content), 0600); err != nil {
-		return fmt.Errorf("write git config %w", err)
+		return fmt.Errorf("write git config: %w", err)
 	}
 	return file.Chown(userName, gitConfigPath)
 }

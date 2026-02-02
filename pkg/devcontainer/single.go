@@ -60,7 +60,7 @@ func (r *runner) runSingleContainer(
 	if command.Exists(dockerCmd) {
 		containerDetails, err = r.Driver.FindDevContainer(ctx, r.ID)
 		if err != nil {
-			return nil, fmt.Errorf("find dev container %w", err)
+			return nil, fmt.Errorf("find dev container: %w", err)
 		}
 	}
 
@@ -104,20 +104,20 @@ func (r *runner) runSingleContainer(
 
 		mergedConfig, err = config.MergeConfiguration(parsedConfig.Config, imageMetadataConfig.Config)
 		if err != nil {
-			return nil, fmt.Errorf("merge config %w", err)
+			return nil, fmt.Errorf("merge config: %w", err)
 		}
 
 		// If driver can reprovision, rerun the devcontainer and let the driver handle follow-up steps
 		if d, ok := r.Driver.(driver.ReprovisioningDriver); ok && d.CanReprovision() {
 			err = r.Driver.RunDevContainer(ctx, r.ID, nil)
 			if err != nil {
-				return nil, fmt.Errorf("runner driver run dev container %w", err)
+				return nil, fmt.Errorf("runner driver run dev container: %w", err)
 			}
 
 			// get from build info
 			containerDetails, err = r.Driver.FindDevContainer(ctx, r.ID)
 			if err != nil {
-				return nil, fmt.Errorf("find dev container %w", err)
+				return nil, fmt.Errorf("find dev container: %w", err)
 			}
 		}
 	} else {
@@ -134,7 +134,7 @@ func (r *runner) runSingleContainer(
 			ExportCache:   false,
 		})
 		if err != nil {
-			return nil, fmt.Errorf("build image %w", err)
+			return nil, fmt.Errorf("build image: %w", err)
 		}
 
 		// delete container on recreation
@@ -142,12 +142,12 @@ func (r *runner) runSingleContainer(
 			if _, ok := r.Driver.(driver.DockerDriver); ok {
 				err := r.Delete(ctx)
 				if err != nil {
-					return nil, fmt.Errorf("delete devcontainer %w", err)
+					return nil, fmt.Errorf("delete devcontainer: %w", err)
 				}
 			} else {
 				err := r.Driver.StopDevContainer(ctx, r.ID)
 				if err != nil {
-					return nil, fmt.Errorf("stop devcontainer %w", err)
+					return nil, fmt.Errorf("stop devcontainer: %w", err)
 				}
 			}
 		}
@@ -155,7 +155,7 @@ func (r *runner) runSingleContainer(
 		// merge configuration
 		mergedConfig, err = config.MergeConfiguration(parsedConfig.Config, buildInfo.ImageMetadata.Config)
 		if err != nil {
-			return nil, fmt.Errorf("merge config %w", err)
+			return nil, fmt.Errorf("merge config: %w", err)
 		}
 
 		// Inject the daemon entrypoint if platform configuration is provided.
@@ -173,7 +173,7 @@ func (r *runner) runSingleContainer(
 		// run dev container
 		err = r.runContainer(ctx, parsedConfig, substitutionContext, mergedConfig, buildInfo)
 		if err != nil {
-			return nil, fmt.Errorf("runner run container %w", err)
+			return nil, fmt.Errorf("runner run container: %w", err)
 		}
 
 		// TODO: wait here a bit for correct startup?
@@ -181,7 +181,7 @@ func (r *runner) runSingleContainer(
 		// get from build info
 		containerDetails, err = r.Driver.FindDevContainer(ctx, r.ID)
 		if err != nil {
-			return nil, fmt.Errorf("find dev container %w", err)
+			return nil, fmt.Errorf("find dev container: %w", err)
 		}
 	}
 
@@ -203,13 +203,13 @@ func (r *runner) runContainer(
 	if buildInfo.Dockerless != nil {
 		runOptions, err = r.getDockerlessRunOptions(mergedConfig, substitutionContext, buildInfo)
 		if err != nil {
-			return fmt.Errorf("build dockerless run options %w", err)
+			return fmt.Errorf("build dockerless run options: %w", err)
 		}
 	} else {
 		// build run options
 		runOptions, err = r.getRunOptions(mergedConfig, substitutionContext, buildInfo)
 		if err != nil {
-			return fmt.Errorf("build run options %w", err)
+			return fmt.Errorf("build run options: %w", err)
 		}
 	}
 
@@ -242,7 +242,7 @@ func (r *runner) getDockerlessRunOptions(
 	// add metadata as label here
 	marshalled, err := json.Marshal(buildInfo.ImageMetadata.Raw)
 	if err != nil {
-		return nil, fmt.Errorf("marshal config %w", err)
+		return nil, fmt.Errorf("marshal config: %w", err)
 	}
 	env := map[string]string{
 		"DOCKERLESS":            "true",
@@ -257,7 +257,7 @@ func (r *runner) getDockerlessRunOptions(
 	if len(buildInfo.Dockerless.BuildArgs) > 0 {
 		out, err := json.Marshal(config.ObjectToList(buildInfo.Dockerless.BuildArgs))
 		if err != nil {
-			return nil, fmt.Errorf("marshal build args %w", err)
+			return nil, fmt.Errorf("marshal build args: %w", err)
 		}
 
 		env["DOCKERLESS_BUILD_ARGS"] = string(out)
@@ -322,7 +322,7 @@ func (r *runner) getRunOptions(
 	// add metadata as label here
 	marshalled, err := json.Marshal(buildInfo.ImageMetadata.Raw)
 	if err != nil {
-		return nil, fmt.Errorf("marshal config %w", err)
+		return nil, fmt.Errorf("marshal config: %w", err)
 	}
 
 	// build labels & entrypoint

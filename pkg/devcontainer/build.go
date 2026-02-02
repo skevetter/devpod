@@ -66,13 +66,13 @@ func (r *runner) extendImage(
 	imageBase := parsedConfig.Config.Image
 	imageBuildInfo, err := r.getImageBuildInfoFromImage(ctx, substitutionContext, imageBase)
 	if err != nil {
-		return nil, fmt.Errorf("get image build info %w", err)
+		return nil, fmt.Errorf("get image build info: %w", err)
 	}
 
 	// get extend image build info
 	extendedBuildInfo, err := feature.GetExtendedBuildInfo(substitutionContext, imageBuildInfo, imageBase, parsedConfig, r.Log, options.ForceBuild)
 	if err != nil {
-		return nil, fmt.Errorf("get extended build info %w", err)
+		return nil, fmt.Errorf("get extended build info: %w", err)
 	}
 
 	// no need to build here
@@ -124,13 +124,13 @@ func (r *runner) buildAndExtendImage(
 	// get image build info
 	imageBuildInfo, err := r.getImageBuildInfoFromDockerfile(substitutionContext, string(dockerFileContent), parsedConfig.Config.GetArgs(), parsedConfig.Config.GetTarget())
 	if err != nil {
-		return nil, fmt.Errorf("get image build info %w", err)
+		return nil, fmt.Errorf("get image build info: %w", err)
 	}
 
 	// get extend image build info
 	extendedBuildInfo, err := feature.GetExtendedBuildInfo(substitutionContext, imageBuildInfo, imageBase, parsedConfig, r.Log, options.ForceBuild)
 	if err != nil {
-		return nil, fmt.Errorf("get extended build info %w", err)
+		return nil, fmt.Errorf("get extended build info: %w", err)
 	}
 
 	// build the image
@@ -166,7 +166,7 @@ func (r *runner) getDockerfilePath(parsedConfig *config.DevContainerConfig) (str
 
 	_, err := os.Stat(dockerfilePath)
 	if err != nil {
-		return "", fmt.Errorf("dockerfile not found at %s %w", dockerfilePath, err)
+		return "", fmt.Errorf("dockerfile not found at %s: %w", dockerfilePath, err)
 	}
 
 	return dockerfilePath, nil
@@ -185,7 +185,7 @@ func (r *runner) getImageBuildInfoFromImage(ctx context.Context, substitutionCon
 
 	imageMetadata, err := metadata.GetImageMetadata(imageDetails, substitutionContext, r.Log)
 	if err != nil {
-		return nil, fmt.Errorf("get image metadata %w", err)
+		return nil, fmt.Errorf("get image metadata: %w", err)
 	}
 
 	return &config.ImageBuildInfo{
@@ -198,7 +198,7 @@ func (r *runner) getImageBuildInfoFromImage(ctx context.Context, substitutionCon
 func (r *runner) getImageBuildInfoFromDockerfile(substitutionContext *config.SubstitutionContext, dockerFileContent string, buildArgs map[string]string, target string) (*config.ImageBuildInfo, error) {
 	parsedDockerfile, err := dockerfile.Parse(dockerFileContent)
 	if err != nil {
-		return nil, fmt.Errorf("parse dockerfile %w", err)
+		return nil, fmt.Errorf("parse dockerfile: %w", err)
 	}
 
 	// Check that the build target specified in the devcontainer.json exists in the Dockerfile
@@ -216,7 +216,7 @@ func (r *runner) getImageBuildInfoFromDockerfile(substitutionContext *config.Sub
 
 	imageDetails, err := r.inspectImage(context.TODO(), baseImage)
 	if err != nil {
-		return nil, fmt.Errorf("inspect image %s %w", baseImage, err)
+		return nil, fmt.Errorf("inspect image %s: %w", baseImage, err)
 	}
 
 	// find user
@@ -231,7 +231,7 @@ func (r *runner) getImageBuildInfoFromDockerfile(substitutionContext *config.Sub
 	// parse metadata from image details
 	imageMetadataConfig, err := metadata.GetImageMetadata(imageDetails, substitutionContext, r.Log)
 	if err != nil {
-		return nil, fmt.Errorf("get image metadata %w", err)
+		return nil, fmt.Errorf("get image metadata: %w", err)
 	}
 
 	return &config.ImageBuildInfo{
@@ -289,7 +289,7 @@ func (r *runner) buildImage(
 				// inspect image
 				imageDetails, err := r.inspectImage(ctx, prebuildImage)
 				if err != nil {
-					return nil, fmt.Errorf("get image details %w", err)
+					return nil, fmt.Errorf("get image details: %w", err)
 				}
 
 				return &config.BuildInfo{
@@ -319,7 +319,7 @@ func (r *runner) buildImage(
 			Log:                  r.Log,
 		})
 		if err != nil {
-			return nil, fmt.Errorf("(remote) %w", err)
+			return nil, fmt.Errorf("(remote): %w", err)
 		}
 
 		return buildInfo, nil
@@ -355,17 +355,17 @@ func (r *runner) buildDevImageCompose(
 ) (*config.BuildInfo, error) {
 	composeHelper, err := r.composeHelper()
 	if err != nil {
-		return nil, fmt.Errorf("find docker compose %w", err)
+		return nil, fmt.Errorf("find docker compose: %w", err)
 	}
 
 	envFiles, err := r.getEnvFiles()
 	if err != nil {
-		return nil, fmt.Errorf("get env files %w", err)
+		return nil, fmt.Errorf("get env files: %w", err)
 	}
 
 	composeFiles, err := r.getDockerComposeFilePaths(parsedConfig, envFiles)
 	if err != nil {
-		return nil, fmt.Errorf("get docker compose file paths %w", err)
+		return nil, fmt.Errorf("get docker compose file paths: %w", err)
 	}
 
 	var composeGlobalArgs []string
@@ -380,7 +380,7 @@ func (r *runner) buildDevImageCompose(
 	r.Log.Debugf("Loading docker compose project %+v", composeFiles)
 	project, err := compose.LoadDockerComposeProject(ctx, composeFiles, envFiles)
 	if err != nil {
-		return nil, fmt.Errorf("load docker compose project %w", err)
+		return nil, fmt.Errorf("load docker compose project: %w", err)
 	}
 	project.Name = composeHelper.GetProjectName(r.ID)
 	r.Log.Debugf("Loaded project %s", project.Name)
@@ -395,13 +395,13 @@ func (r *runner) buildDevImageCompose(
 	if originalImageName == "" {
 		originalImageName, err = composeHelper.GetDefaultImage(project.Name, service)
 		if err != nil {
-			return nil, fmt.Errorf("get default image %w", err)
+			return nil, fmt.Errorf("get default image: %w", err)
 		}
 	}
 
 	overrideBuildImageName, _, imageMetadata, _, err := r.buildAndExtendDockerCompose(ctx, parsedConfig, substitutionContext, project, composeHelper, &composeService, composeGlobalArgs)
 	if err != nil {
-		return nil, fmt.Errorf("build and extend docker-compose %w", err)
+		return nil, fmt.Errorf("build and extend docker-compose: %w", err)
 	}
 
 	currentImageName := overrideBuildImageName
@@ -411,7 +411,7 @@ func (r *runner) buildDevImageCompose(
 
 	imageDetails, err := r.inspectImage(ctx, currentImageName)
 	if err != nil {
-		return nil, fmt.Errorf("inspect image %w", err)
+		return nil, fmt.Errorf("inspect image: %w", err)
 	}
 
 	// have a fallback value for PrebuildHash
@@ -419,7 +419,7 @@ func (r *runner) buildDevImageCompose(
 	// let's use Images :tag then
 	imageTag, err := r.getImageTag(ctx, imageDetails.ID)
 	if err != nil {
-		return nil, fmt.Errorf("inspect image %w", err)
+		return nil, fmt.Errorf("inspect image: %w", err)
 	}
 
 	return &config.BuildInfo{
@@ -445,18 +445,18 @@ func dockerlessFallback(
 	devPodInternalFolder := filepath.Join(contextPath, config.DevPodContextFeatureFolder)
 	err := os.MkdirAll(devPodInternalFolder, 0755)
 	if err != nil {
-		return nil, fmt.Errorf("create devpod folder %w", err)
+		return nil, fmt.Errorf("create devpod folder: %w", err)
 	}
 
 	// build dockerfile
 	devPodDockerfile, err := build.RewriteDockerfile(dockerfileContent, extendedBuildInfo)
 	if err != nil {
-		return nil, fmt.Errorf("rewrite dockerfile %w", err)
+		return nil, fmt.Errorf("rewrite dockerfile: %w", err)
 	} else if devPodDockerfile == "" {
 		devPodDockerfile = filepath.Join(devPodInternalFolder, "Dockerfile-without-features")
 		err = os.WriteFile(devPodDockerfile, []byte(dockerfileContent), 0600)
 		if err != nil {
-			return nil, fmt.Errorf("write devpod dockerfile %w", err)
+			return nil, fmt.Errorf("write devpod dockerfile: %w", err)
 		}
 	}
 

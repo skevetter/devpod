@@ -97,7 +97,7 @@ func (cmd *GetWorkspaceConfigCommand) Run(ctx context.Context, devPodConfig *con
 
 	select {
 	case err := <-errChan:
-		return fmt.Errorf("unable to find devcontainer files %w", err)
+		return fmt.Errorf("unable to find devcontainer files: %w", err)
 	case <-ctx.Done():
 		return fmt.Errorf("timeout while searching for devcontainer files")
 	case result := <-done:

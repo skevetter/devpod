@@ -160,7 +160,7 @@ func (h *ComposeHelper) Stop(ctx context.Context, projectName string, args []str
 
 	out, err := h.buildCmd(ctx, buildArgs...).CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("%s %w", string(out), err)
+		return fmt.Errorf("%s: %w", string(out), err)
 	}
 
 	return nil
@@ -173,7 +173,7 @@ func (h *ComposeHelper) Remove(ctx context.Context, projectName string, args []s
 
 	out, err := h.buildCmd(ctx, buildArgs...).CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("%s %w", string(out), err)
+		return fmt.Errorf("%s: %w", string(out), err)
 	}
 
 	return nil
@@ -203,7 +203,7 @@ func (h *ComposeHelper) FindProjectFiles(ctx context.Context, projectName string
 
 	rawOut, err := h.buildCmd(ctx, buildArgs...).CombinedOutput()
 	if err != nil {
-		return nil, fmt.Errorf("%s %w", string(rawOut), err)
+		return nil, fmt.Errorf("%s: %w", string(rawOut), err)
 	}
 
 	type composeOutput struct {
@@ -213,7 +213,7 @@ func (h *ComposeHelper) FindProjectFiles(ctx context.Context, projectName string
 	}
 	var composeOutputs []composeOutput
 	if err := json.Unmarshal(rawOut, &composeOutputs); err != nil {
-		return nil, fmt.Errorf("parse compose output %w", err)
+		return nil, fmt.Errorf("parse compose output: %w", err)
 	}
 
 	// no compose project found

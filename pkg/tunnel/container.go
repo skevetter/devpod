@@ -106,7 +106,7 @@ func (c *ContainerTunnel) Run(ctx context.Context, handler Handler, cfg *config.
 		// start ssh client as root / default user
 		sshClient, err := devssh.StdioClient(stdoutReader, stdinWriter, false)
 		if err != nil {
-			containerChan <- fmt.Errorf("create ssh client %w", err)
+			containerChan <- fmt.Errorf("create ssh client: %w", err)
 			return
 		}
 
@@ -124,7 +124,7 @@ func (c *ContainerTunnel) Run(ctx context.Context, handler Handler, cfg *config.
 
 		// wait until we are done
 		if err := c.runInContainer(cancelCtx, sshClient, handler, envVars); err != nil {
-			containerChan <- fmt.Errorf("run in container %w", err)
+			containerChan <- fmt.Errorf("run in container: %w", err)
 		} else {
 			containerChan <- nil
 		}
@@ -134,12 +134,12 @@ func (c *ContainerTunnel) Run(ctx context.Context, handler Handler, cfg *config.
 	select {
 	case err := <-containerChan:
 		if err != nil {
-			return fmt.Errorf("tunnel to container %w", err)
+			return fmt.Errorf("tunnel to container: %w", err)
 		}
 		return nil
 	case err := <-tunnelChan:
 		if err != nil {
-			return fmt.Errorf("connect to server %w", err)
+			return fmt.Errorf("connect to server: %w", err)
 		}
 		return nil
 	}

@@ -62,7 +62,7 @@ func (cmd *SetOptionsCmd) Run(ctx context.Context, ide string) error {
 
 	err = config.SaveConfig(devPodConfig)
 	if err != nil {
-		return fmt.Errorf("save config %w", err)
+		return fmt.Errorf("save config: %w", err)
 	}
 
 	return nil

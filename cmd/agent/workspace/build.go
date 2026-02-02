@@ -89,7 +89,7 @@ func (cmd *BuildCmd) Run(ctx context.Context) error {
 		})
 		if err != nil {
 			logger.Errorf("Error building image: %v", err)
-			return fmt.Errorf("build %w", err)
+			return fmt.Errorf("build: %w", err)
 		}
 
 		if workspaceInfo.CLIOptions.SkipPush {

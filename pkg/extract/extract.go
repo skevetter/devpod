@@ -62,7 +62,7 @@ func Extract(origReader io.Reader, destFolder string, options ...Option) error {
 	for {
 		shouldContinue, err := extractNext(tarReader, destFolder, extractOptions)
 		if err != nil {
-			return fmt.Errorf("decompress %w", err)
+			return fmt.Errorf("decompress: %w", err)
 		} else if !shouldContinue {
 			return nil
 		}
@@ -73,7 +73,7 @@ func extractNext(tarReader *tar.Reader, destFolder string, options *Options) (bo
 	header, err := tarReader.Next()
 	if err != nil {
 		if !errors.Is(err, io.EOF) {
-			return false, fmt.Errorf("tar reader next %w", err)
+			return false, fmt.Errorf("tar reader next: %w", err)
 		}
 
 		return false, nil
@@ -143,16 +143,16 @@ func extractNext(tarReader *tar.Reader, destFolder string, options *Options) (bo
 		time.Sleep(time.Second * 5)
 		outFile, err = os.OpenFile(outFileName, os.O_RDWR|os.O_CREATE|os.O_TRUNC, filePerm)
 		if err != nil {
-			return false, fmt.Errorf("create %s %w", outFileName, err)
+			return false, fmt.Errorf("create %s: %w", outFileName, err)
 		}
 	}
 	defer func() { _ = outFile.Close() }()
 
 	if _, err := io.Copy(outFile, tarReader); err != nil {
-		return false, fmt.Errorf("io copy tar reader %s %w", outFileName, err)
+		return false, fmt.Errorf("io copy tar reader %s: %w", outFileName, err)
 	}
 	if err := outFile.Close(); err != nil {
-		return false, fmt.Errorf("out file close %s %w", outFileName, err)
+		return false, fmt.Errorf("out file close %s: %w", outFileName, err)
 	}
 
 	// Set permissions

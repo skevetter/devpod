@@ -87,12 +87,12 @@ func Upgrade(flagVersion string, log log.Logger) error {
 		Filters: []string{"devpod"},
 	})
 	if err != nil {
-		return fmt.Errorf("failed to initialize updater %w", err)
+		return fmt.Errorf("failed to initialize updater: %w", err)
 	}
 	if flagVersion != "" {
 		release, found, err := updater.DetectVersion(context.Background(), selfupdate.ParseSlug(githubSlug), flagVersion)
 		if err != nil {
-			return fmt.Errorf("find version %w", err)
+			return fmt.Errorf("find version: %w", err)
 		} else if !found {
 			return fmt.Errorf("devpod version %s couldn't be found", flagVersion)
 		}

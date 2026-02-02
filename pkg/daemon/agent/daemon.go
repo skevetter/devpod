@@ -97,7 +97,7 @@ func InstallDaemon(agentDir string, interval string, log log.Logger) error {
 	}
 	_, err = service.Install(args...)
 	if err != nil && !errors.Is(err, daemon.ErrAlreadyInstalled) {
-		return fmt.Errorf("install service %w", err)
+		return fmt.Errorf("install service: %w", err)
 	}
 
 	// make sure daemon is started
@@ -115,7 +115,7 @@ func InstallDaemon(agentDir string, interval string, log log.Logger) error {
 			return exec.Command(executable, args...), nil
 		})
 		if err != nil {
-			return fmt.Errorf("start daemon %w", err)
+			return fmt.Errorf("start daemon: %w", err)
 		}
 	} else if err == nil {
 		log.Infof("installed DevPod daemon into server")

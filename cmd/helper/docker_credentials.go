@@ -34,12 +34,12 @@ func NewDockerCredentialsHelperCmd(flags *flags.GlobalFlags) *cobra.Command {
 func (c *DockerCredentialsHelperCmd) Run(cmd *cobra.Command, _ []string) error {
 	u, err := user.Current()
 	if err != nil {
-		return fmt.Errorf("get current user %w", err)
+		return fmt.Errorf("get current user: %w", err)
 	}
 
 	port, err := credentials.GetPort()
 	if err != nil {
-		return fmt.Errorf("get port %w", err)
+		return fmt.Errorf("get port: %w", err)
 	}
 
 	return dockercredentials.ConfigureCredentialsContainer(u.Name, port, log.Default)

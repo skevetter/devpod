@@ -81,7 +81,7 @@ func DeleteProvider(ctx context.Context, devPodConfig *config.Config, provider s
 		// check if this provider is associated with a pro instance
 		proInstances, err := workspace.ListProInstances(devPodConfig, logpkg.Default)
 		if err != nil {
-			return fmt.Errorf("list pro instances %w", err)
+			return fmt.Errorf("list pro instances: %w", err)
 		}
 		for _, instance := range proInstances {
 			if instance.Provider == provider {
@@ -113,7 +113,7 @@ func DeleteProviderConfig(devPodConfig *config.Config, provider string, ignoreNo
 	delete(devPodConfig.Current().Providers, provider)
 	err := config.SaveConfig(devPodConfig)
 	if err != nil {
-		return fmt.Errorf("save config %w", err)
+		return fmt.Errorf("save config: %w", err)
 	}
 
 	providerDir, err := provider2.GetProviderDir(devPodConfig.DefaultContext, provider)
@@ -134,7 +134,7 @@ func DeleteProviderConfig(devPodConfig *config.Config, provider string, ignoreNo
 	}
 	err = os.RemoveAll(providerDir)
 	if err != nil {
-		return fmt.Errorf("delete provider dir %w", err)
+		return fmt.Errorf("delete provider dir: %w", err)
 	}
 
 	return nil

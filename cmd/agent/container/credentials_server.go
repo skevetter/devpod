@@ -70,13 +70,13 @@ func (cmd *CredentialsServerCmd) Run(ctx context.Context, port int) error {
 	// create a grpc client
 	tunnelClient, err := tunnelserver.NewTunnelClient(os.Stdin, os.Stdout, true, ExitCodeIO)
 	if err != nil {
-		return fmt.Errorf("error creating tunnel client %w", err)
+		return fmt.Errorf("error creating tunnel client: %w", err)
 	}
 
 	// this message serves as a ping to the client
 	_, err = tunnelClient.Ping(ctx, &tunnel.Empty{})
 	if err != nil {
-		return fmt.Errorf("ping client %w", err)
+		return fmt.Errorf("ping client: %w", err)
 	}
 
 	// create debug logger
@@ -122,7 +122,7 @@ func (cmd *CredentialsServerCmd) Run(ctx context.Context, port int) error {
 		}
 		err = gitcredentials.ConfigureHelper(binaryPath, cmd.User, port)
 		if err != nil {
-			return fmt.Errorf("configure git helper %w", err)
+			return fmt.Errorf("configure git helper: %w", err)
 		}
 
 		// cleanup when we are done
@@ -135,11 +135,11 @@ func (cmd *CredentialsServerCmd) Run(ctx context.Context, port int) error {
 	if cmd.GitUserSigningKey != "" {
 		decodedKey, err := base64.StdEncoding.DecodeString(cmd.GitUserSigningKey)
 		if err != nil {
-			return fmt.Errorf("decode git ssh signature key %w", err)
+			return fmt.Errorf("decode git ssh signature key: %w", err)
 		}
 		err = gitsshsigning.ConfigureHelper(cmd.User, string(decodedKey), log)
 		if err != nil {
-			return fmt.Errorf("configure git ssh signature helper %w", err)
+			return fmt.Errorf("configure git ssh signature helper: %w", err)
 		}
 
 		// cleanup when we are done
@@ -163,14 +163,14 @@ func configureGitUserLocally(ctx context.Context, userName string, client tunnel
 	// set user & email if not found
 	response, err := client.GitUser(ctx, &tunnel.Empty{})
 	if err != nil {
-		return fmt.Errorf("retrieve git user %w", err)
+		return fmt.Errorf("retrieve git user: %w", err)
 	}
 
 	// parse git user from response
 	gitUser := &gitcredentials.GitUser{}
 	err = json.Unmarshal([]byte(response.Message), gitUser)
 	if err != nil {
-		return fmt.Errorf("decode git user %w", err)
+		return fmt.Errorf("decode git user: %w", err)
 	}
 
 	// don't override what is already there
@@ -184,7 +184,7 @@ func configureGitUserLocally(ctx context.Context, userName string, client tunnel
 	// set git user
 	err = gitcredentials.SetUser(userName, gitUser)
 	if err != nil {
-		return fmt.Errorf("set git user & email %w", err)
+		return fmt.Errorf("set git user & email: %w", err)
 	}
 
 	return nil

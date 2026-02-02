@@ -57,7 +57,7 @@ func (cmd *WorkspaceCmd) Run(ctx context.Context, stdin io.Reader, stdout io.Wri
 		newInstance := &managementv1.DevPodWorkspaceInstance{}
 		err := json.Unmarshal([]byte(instanceEnv), newInstance)
 		if err != nil {
-			return fmt.Errorf("unmarshal workpace instance %s %w", instanceEnv, err)
+			return fmt.Errorf("unmarshal workpace instance %s: %w", instanceEnv, err)
 		}
 		newInstance.TypeMeta = metav1.TypeMeta{} // ignore
 

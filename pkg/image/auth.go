@@ -51,7 +51,7 @@ func GetKeychain(ctx context.Context) (authn.Keychain, error) {
 			return authn.DefaultKeychain, nil
 		}
 
-		return nil, fmt.Errorf("failed to read kubernetes service account token %w", err)
+		return nil, fmt.Errorf("failed to read kubernetes service account token: %w", err)
 	}
 
 	// in-cluster auth

@@ -36,12 +36,12 @@ func (r *Resolver) resolveOptions(
 
 		err := r.resolveOption(ctx, optionName, resolvedOptionValues)
 		if err != nil {
-			return nil, fmt.Errorf("resolve option %s %w", optionName, err)
+			return nil, fmt.Errorf("resolve option %s: %w", optionName, err)
 		}
 
 		err = r.refreshSubOptions(ctx, optionName, resolvedOptionValues)
 		if err != nil {
-			return nil, fmt.Errorf("refresh sub options for %s %w", optionName, err)
+			return nil, fmt.Errorf("refresh sub options for %s: %w", optionName, err)
 		}
 	}
 
@@ -73,7 +73,7 @@ func (r *Resolver) resolveOption(
 			} else if option.Cache != "" {
 				duration, err := time.ParseDuration(option.Cache)
 				if err != nil {
-					return fmt.Errorf("parse cache duration of option %s %w", optionName, err)
+					return fmt.Errorf("parse cache duration of option %s: %w", optionName, err)
 				}
 
 				// has value expired?
@@ -258,12 +258,12 @@ func (r *Resolver) refreshSubOptions(
 	// add options to graph
 	err = addOptionsToGraph(r.graph, newDynamicOptions, resolvedOptionValues)
 	if err != nil {
-		return fmt.Errorf("add sub options %w", err)
+		return fmt.Errorf("add sub options: %w", err)
 	}
 
 	err = resolveDynamicOptions(ctx, newDynamicOptions, r, resolvedOptionValues)
 	if err != nil {
-		return fmt.Errorf("resolve dynamic sub options %w", err)
+		return fmt.Errorf("resolve dynamic sub options: %w", err)
 	}
 
 	return nil
@@ -319,12 +319,12 @@ func resolveDynamicOptions(ctx context.Context, options config.OptionDefinitions
 
 		err := r.resolveOption(ctx, opt, optionValues)
 		if err != nil {
-			return fmt.Errorf("resolve dynamic option %s %w", opt, err)
+			return fmt.Errorf("resolve dynamic option %s: %w", opt, err)
 		}
 
 		subOptions, err := r.retrieveSubOptions(ctx, opt, optionValues)
 		if err != nil {
-			return fmt.Errorf("get sub options for %s %w", opt, err)
+			return fmt.Errorf("get sub options for %s: %w", opt, err)
 		}
 
 		processed[opt] = true
@@ -379,7 +379,7 @@ func (r *Resolver) retrieveSubOptions(ctx context.Context, optionName string, op
 
 	err = addOptionsToGraph(r.graph, suboptions, options)
 	if err != nil {
-		return nil, fmt.Errorf("add sub options %w", err)
+		return nil, fmt.Errorf("add sub options: %w", err)
 	}
 
 	return suboptions, nil

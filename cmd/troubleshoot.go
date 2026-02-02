@@ -82,7 +82,7 @@ func (cmd *TroubleshootCmd) Run(ctx context.Context, args []string) {
 	var err error
 	info.Config, err = config.LoadConfig(cmd.Context, cmd.Provider)
 	if err != nil {
-		info.Errors = append(info.Errors, PrintableError{fmt.Errorf("load config %w", err)})
+		info.Errors = append(info.Errors, PrintableError{fmt.Errorf("load config: %w", err)})
 		// (ThomasK33): It's fine to return early here, as without the devpod config
 		// we cannot do any further troubleshooting.
 		return
@@ -91,12 +91,12 @@ func (cmd *TroubleshootCmd) Run(ctx context.Context, args []string) {
 	logger := log.Default.ErrorStreamOnly()
 	info.Providers, err = collectProviders(info.Config, logger)
 	if err != nil {
-		info.Errors = append(info.Errors, PrintableError{fmt.Errorf("collect providers %w", err)})
+		info.Errors = append(info.Errors, PrintableError{fmt.Errorf("collect providers: %w", err)})
 	}
 
 	info.DevPodProInstances, err = collectPlatformInfo(info.Config, logger)
 	if err != nil {
-		info.Errors = append(info.Errors, PrintableError{fmt.Errorf("collect platform info %w", err)})
+		info.Errors = append(info.Errors, PrintableError{fmt.Errorf("collect platform info: %w", err)})
 	}
 
 	workspaceClient, err := workspace.Get(ctx, info.Config, args, false, cmd.Owner, false, logger)
@@ -104,7 +104,7 @@ func (cmd *TroubleshootCmd) Run(ctx context.Context, args []string) {
 		info.Workspace = workspaceClient.WorkspaceConfig()
 		info.WorkspaceStatus, err = workspaceClient.Status(ctx, client.StatusOptions{})
 		if err != nil {
-			info.Errors = append(info.Errors, PrintableError{fmt.Errorf("workspace status %w", err)})
+			info.Errors = append(info.Errors, PrintableError{fmt.Errorf("workspace status: %w", err)})
 		}
 
 		if info.Workspace.Pro != nil {
@@ -129,19 +129,19 @@ func (cmd *TroubleshootCmd) Run(ctx context.Context, args []string) {
 					info.Workspace.Pro.Project,
 				)
 				if err != nil {
-					info.Errors = append(info.Errors, PrintableError{fmt.Errorf("collect pro workspace info %w", err)})
+					info.Errors = append(info.Errors, PrintableError{fmt.Errorf("collect pro workspace info: %w", err)})
 				}
 			}
 		}
 	} else {
-		info.Errors = append(info.Errors, PrintableError{fmt.Errorf("get workspace %w", err)})
+		info.Errors = append(info.Errors, PrintableError{fmt.Errorf("get workspace: %w", err)})
 	}
 
 	daemonClient, ok := workspaceClient.(client.DaemonClient)
 	if ok {
 		status, err := daemon.NewLocalClient(daemonClient.Provider()).Status(ctx, true)
 		if err != nil {
-			info.Errors = append(info.Errors, PrintableError{fmt.Errorf("get daemon status %w", err)})
+			info.Errors = append(info.Errors, PrintableError{fmt.Errorf("get daemon status: %w", err)})
 		} else {
 			info.DaemonStatus = &status
 		}
@@ -161,7 +161,7 @@ func collectProWorkspaceInfo(
 ) (*managementv1.DevPodWorkspaceInstanceTroubleshoot, error) {
 	baseClient, err := platform.InitClientFromHost(ctx, devPodConfig, host, logger)
 	if err != nil {
-		return nil, fmt.Errorf("init client from host %w", err)
+		return nil, fmt.Errorf("init client from host: %w", err)
 	}
 
 	workspace, err := platform.FindInstanceInProject(ctx, baseClient, workspaceUID, project)
@@ -173,7 +173,7 @@ func collectProWorkspaceInfo(
 
 	managementClient, err := baseClient.Management()
 	if err != nil {
-		return nil, fmt.Errorf("management %w", err)
+		return nil, fmt.Errorf("management: %w", err)
 	}
 
 	troubleshoot, err := managementClient.
@@ -182,7 +182,7 @@ func collectProWorkspaceInfo(
 		DevPodWorkspaceInstances(workspace.Namespace).
 		Troubleshoot(ctx, workspace.Name, metav1.GetOptions{})
 	if err != nil {
-		return nil, fmt.Errorf("troubleshoot %w", err)
+		return nil, fmt.Errorf("troubleshoot: %w", err)
 	}
 
 	return troubleshoot, nil
@@ -231,7 +231,7 @@ type DevPodProInstance struct {
 func collectPlatformInfo(devPodConfig *config.Config, logger log.Logger) ([]DevPodProInstance, error) {
 	proInstanceList, err := workspace.ListProInstances(devPodConfig, logger)
 	if err != nil {
-		return nil, fmt.Errorf("list pro instances %w", err)
+		return nil, fmt.Errorf("list pro instances: %w", err)
 	}
 
 	var proInstances []DevPodProInstance

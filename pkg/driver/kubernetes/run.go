@@ -130,7 +130,7 @@ func (k *KubernetesDriver) runContainer(
 	// get init containers
 	initContainers, err := k.getInitContainers(options, pod, initialize)
 	if err != nil {
-		return fmt.Errorf("build init container %w", err)
+		return fmt.Errorf("build init container: %w", err)
 	}
 
 	// loop over volume mounts
@@ -176,7 +176,7 @@ func (k *KubernetesDriver) runContainer(
 		// create service account
 		err = k.createServiceAccount(ctx, id, serviceAccount)
 		if err != nil {
-			return fmt.Errorf("create service account %w", err)
+			return fmt.Errorf("create service account: %w", err)
 		}
 	}
 
@@ -244,7 +244,7 @@ func (k *KubernetesDriver) runContainer(
 	// try to get existing pod
 	existingPod, err := k.getPod(ctx, id)
 	if err != nil {
-		return fmt.Errorf("get pod: %s %w", id, err)
+		return fmt.Errorf("get pod: %s: %w", id, err)
 	}
 
 	if existingPod != nil {
@@ -264,7 +264,7 @@ func (k *KubernetesDriver) runContainer(
 		k.Log.Debug("Provider options changed")
 		err = k.waitPodDeleted(ctx, id)
 		if err != nil {
-			return fmt.Errorf("stop devcontainer: %s %w", id, err)
+			return fmt.Errorf("stop devcontainer: %s: %w", id, err)
 		}
 	}
 
@@ -282,7 +282,7 @@ func (k *KubernetesDriver) runPod(ctx context.Context, id string, pod *corev1.Po
 	// set configuration before creating the pod
 	lastAppliedConfigRaw, err := json.Marshal(k.options)
 	if err != nil {
-		return fmt.Errorf("marshal last applied config %w", err)
+		return fmt.Errorf("marshal last applied config: %w", err)
 	}
 
 	if pod.Annotations == nil {
@@ -303,7 +303,7 @@ func (k *KubernetesDriver) runPod(ctx context.Context, id string, pod *corev1.Po
 	k.Log.Infof("Create Pod '%s'", id)
 	_, err = k.client.Client().CoreV1().Pods(k.namespace).Create(ctx, pod, metav1.CreateOptions{})
 	if err != nil {
-		return fmt.Errorf("create pod %w", err)
+		return fmt.Errorf("create pod: %w", err)
 	}
 
 	// wait for pod running
@@ -436,7 +436,7 @@ func getLabels(pod *corev1.Pod, rawLabels string) (map[string]string, error) {
 	if rawLabels != "" {
 		extraLabels, err := parseLabels(rawLabels)
 		if err != nil {
-			return nil, fmt.Errorf("parse labels %w", err)
+			return nil, fmt.Errorf("parse labels: %w", err)
 		}
 		maps.Copy(labels, extraLabels)
 	}
@@ -455,7 +455,7 @@ func getNodeSelector(pod *corev1.Pod, rawNodeSelector string) (map[string]string
 	if rawNodeSelector != "" {
 		selector, err := parseLabels(rawNodeSelector)
 		if err != nil {
-			return nil, fmt.Errorf("parsing node selector %w", err)
+			return nil, fmt.Errorf("parsing node selector: %w", err)
 		}
 		maps.Copy(nodeSelector, selector)
 	}
@@ -521,7 +521,7 @@ func (k *KubernetesDriver) createNamespace(ctx context.Context) error {
 			},
 		}, metav1.CreateOptions{})
 		if err != nil && !kerrors.IsAlreadyExists(err) && !kerrors.IsForbidden(err) {
-			return fmt.Errorf("create namespace %w", err)
+			return fmt.Errorf("create namespace: %w", err)
 		}
 	}
 

@@ -98,13 +98,13 @@ func (cmd *SetOptionsCmd) Run(ctx context.Context, args []string, log log.Logger
 	if !cmd.Dry {
 		err = config.SaveConfig(devPodConfig)
 		if err != nil {
-			return fmt.Errorf("save config %w", err)
+			return fmt.Errorf("save config: %w", err)
 		}
 	} else {
 		// print options to stdout
 		err = printOptions(devPodConfig, providerWithOptions, "json", true)
 		if err != nil {
-			return fmt.Errorf("print options %w", err)
+			return fmt.Errorf("print options: %w", err)
 		}
 	}
 

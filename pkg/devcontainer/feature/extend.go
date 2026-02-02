@@ -53,12 +53,12 @@ type BuildInfo struct {
 func GetExtendedBuildInfo(ctx *config.SubstitutionContext, imageBuildInfo *config.ImageBuildInfo, target string, devContainerConfig *config.SubstitutedConfig, log log.Logger, forceBuild bool) (*ExtendedBuildInfo, error) {
 	features, err := fetchFeatures(devContainerConfig.Config, log, forceBuild)
 	if err != nil {
-		return nil, fmt.Errorf("fetch features %w", err)
+		return nil, fmt.Errorf("fetch features: %w", err)
 	}
 
 	mergedImageMetadataConfig, err := metadata.GetDevContainerMetadata(ctx, imageBuildInfo.Metadata, devContainerConfig, features)
 	if err != nil {
-		return nil, fmt.Errorf("get dev container metadata %w", err)
+		return nil, fmt.Errorf("get dev container metadata: %w", err)
 	}
 
 	marshalled, err := json.Marshal(mergedImageMetadataConfig.Raw)
@@ -140,7 +140,7 @@ func copyFeaturesToDestination(features []*config.FeatureSet, targetDir string) 
 
 		err = copy.Directory(feature.Folder, featureDir)
 		if err != nil {
-			return fmt.Errorf("copy feature %s %w", feature.ConfigID, err)
+			return fmt.Errorf("copy feature %s: %w", feature.ConfigID, err)
 		}
 
 		// copy feature folder
@@ -148,14 +148,14 @@ func copyFeaturesToDestination(features []*config.FeatureSet, targetDir string) 
 		variables := getFeatureEnvVariables(feature.Config, feature.Options)
 		err = os.WriteFile(envPath, []byte(strings.Join(variables, "\n")), 0600)
 		if err != nil {
-			return fmt.Errorf("write variables of feature %s %w", feature.ConfigID, err)
+			return fmt.Errorf("write variables of feature %s: %w", feature.ConfigID, err)
 		}
 
 		installWrapperPath := filepath.Join(featureDir, "devcontainer-features-install.sh")
 		installWrapperContent := getFeatureInstallWrapperScript(feature.ConfigID, feature.Config, variables)
 		err = os.WriteFile(installWrapperPath, []byte(installWrapperContent), 0600)
 		if err != nil {
-			return fmt.Errorf("write install wrapper script for feature %s %w", feature.ConfigID, err)
+			return fmt.Errorf("write install wrapper script for feature %s: %w", feature.ConfigID, err)
 		}
 	}
 
@@ -241,7 +241,7 @@ func fetchFeatures(devContainerConfig *config.DevContainerConfig, log log.Logger
 
 	allFeatures, err := resolveDependencies(processor, userFeatures)
 	if err != nil {
-		return nil, fmt.Errorf("resolve dependencies %w", err)
+		return nil, fmt.Errorf("resolve dependencies: %w", err)
 	}
 
 	featureSets := make([]*config.FeatureSet, 0, len(allFeatures))
@@ -251,7 +251,7 @@ func fetchFeatures(devContainerConfig *config.DevContainerConfig, log log.Logger
 
 	featureSets, err = getSortedFeatureSets(devContainerConfig, featureSets)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get sorted feature sets %w", err)
+		return nil, fmt.Errorf("failed to get sorted feature sets: %w", err)
 	}
 
 	return featureSets, nil
@@ -262,7 +262,7 @@ func getUserFeatures(processor *featureProcessor, devContainerConfig *config.Dev
 	for featureID, featureOptions := range devContainerConfig.Features {
 		featureSet, err := processor.processFeature(featureID, featureOptions)
 		if err != nil {
-			return nil, fmt.Errorf("process feature %s %w", featureID, err)
+			return nil, fmt.Errorf("process feature %s: %w", featureID, err)
 		}
 		userFeatures[featureSet.ConfigID] = featureSet
 	}
@@ -284,7 +284,7 @@ func (p *featureProcessor) processFeature(featureID string, featureOptions any) 
 	p.log.Debugf("parse dev container feature in %s", featureFolder)
 	featureConfig, err := config.ParseDevContainerFeature(featureFolder)
 	if err != nil {
-		return nil, fmt.Errorf("parse feature %w", err)
+		return nil, fmt.Errorf("parse feature: %w", err)
 	}
 
 	return &config.FeatureSet{
@@ -322,7 +322,7 @@ func (r *featureDependencyResolver) resolveFeatureDependency(featureID string, f
 			var err error
 			depFeatureSet, err = r.processor.processFeature(depID, depOptions)
 			if err != nil {
-				return fmt.Errorf("failed to resolve dependency %s %w", depID, err)
+				return fmt.Errorf("failed to resolve dependency %s: %w", depID, err)
 			}
 			r.features[normalizedDepID] = depFeatureSet
 		}

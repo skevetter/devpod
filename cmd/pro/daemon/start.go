@@ -92,7 +92,7 @@ func (cmd *StartCmd) Run(ctx context.Context, devPodConfig *config.Config, provi
 		Debug:          cmd.Debug,
 	})
 	if err != nil {
-		return fmt.Errorf("init daemon %w", err)
+		return fmt.Errorf("init daemon: %w", err)
 	}
 
 	if isDesktopControlled {
@@ -136,12 +136,12 @@ func withGracefulShutdown(ctx context.Context, log log.Logger) (context.Context,
 func ensureDaemonDir(context, providerName string) (string, error) {
 	tsDir, err := providerpkg.GetDaemonDir(context, providerName)
 	if err != nil {
-		return "", fmt.Errorf("get daemon dir %w", err)
+		return "", fmt.Errorf("get daemon dir: %w", err)
 	}
 
 	err = os.MkdirAll(tsDir, 0o700)
 	if err != nil {
-		return tsDir, fmt.Errorf("make daemon dir %w", err)
+		return tsDir, fmt.Errorf("make daemon dir: %w", err)
 	}
 
 	return tsDir, nil

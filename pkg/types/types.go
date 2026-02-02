@@ -21,7 +21,7 @@ func (sa *StrIntArray) UnmarshalJSON(data []byte) error {
 	var jsonObj any
 	err := json.Unmarshal(data, &jsonObj)
 	if err != nil {
-		return fmt.Errorf("unmarshal str int array %w", err)
+		return fmt.Errorf("unmarshal str int array: %w", err)
 	}
 	switch obj := jsonObj.(type) {
 	case string:

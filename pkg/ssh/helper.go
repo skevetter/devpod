@@ -23,7 +23,7 @@ func NewSSHPassClient(user, addr, password string) (*ssh.Client, error) {
 
 	client, err := ssh.Dial("tcp", addr, clientConfig)
 	if err != nil {
-		return nil, fmt.Errorf("dial to %v failed %w", addr, err)
+		return nil, fmt.Errorf("dial to %v failed: %w", addr, err)
 	}
 
 	return client, nil
@@ -41,7 +41,7 @@ func NewSSHClient(user, addr string, keyBytes []byte) (*ssh.Client, error) {
 
 	client, err := ssh.Dial("tcp", addr, sshConfig)
 	if err != nil {
-		return nil, fmt.Errorf("dial to %v failed %w", addr, err)
+		return nil, fmt.Errorf("dial to %v failed: %w", addr, err)
 	}
 
 	return client, nil
@@ -81,7 +81,7 @@ func ConfigFromKeyBytes(keyBytes []byte) (*ssh.ClientConfig, error) {
 	if len(keyBytes) > 0 {
 		signer, err := ssh.ParsePrivateKey(keyBytes)
 		if err != nil {
-			return nil, fmt.Errorf("parse private key %w", err)
+			return nil, fmt.Errorf("parse private key: %w", err)
 		}
 
 		clientConfig.Auth = append(clientConfig.Auth, ssh.PublicKeys(signer))

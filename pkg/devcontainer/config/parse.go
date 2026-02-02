@@ -25,7 +25,7 @@ func ParseDevContainerFeature(folder string) (*FeatureConfig, error) {
 
 	path, err = filepath.Abs(path)
 	if err != nil {
-		return nil, fmt.Errorf("make path absolute %w", err)
+		return nil, fmt.Errorf("make path absolute: %w", err)
 	}
 
 	data, err := os.ReadFile(path)
@@ -71,7 +71,7 @@ func ParseDevContainerJSONFile(jsonFilePath string) (*DevContainerConfig, error)
 	var err error
 	path, err := filepath.Abs(jsonFilePath)
 	if err != nil {
-		return nil, fmt.Errorf("make path absolute %w", err)
+		return nil, fmt.Errorf("make path absolute: %w", err)
 	}
 
 	bytes, err := os.ReadFile(path)
@@ -110,7 +110,7 @@ func resolveDevContainerPath(folder, relativePath string, selector func([]string
 	if relativePath != "" {
 		path := path2.Join(filepath.ToSlash(folder), relativePath)
 		if _, err := os.Stat(path); err != nil {
-			return "", fmt.Errorf("devcontainer path %s doesn't exist %w", path, err)
+			return "", fmt.Errorf("devcontainer path %s doesn't exist: %w", path, err)
 		}
 		return path, nil
 	}

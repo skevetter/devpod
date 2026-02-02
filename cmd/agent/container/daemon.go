@@ -65,7 +65,7 @@ func (cmd *DaemonCmd) Run(c *cobra.Command, args []string) error {
 		var err error
 		timeoutDuration, err = time.ParseDuration(cmd.Config.Timeout)
 		if err != nil {
-			return fmt.Errorf("failed to parse timeout duration %w", err)
+			return fmt.Errorf("failed to parse timeout duration: %w", err)
 		}
 		if timeoutDuration > 0 {
 			if err := setupActivityFile(); err != nil {
@@ -140,7 +140,7 @@ func (cmd *DaemonCmd) loadConfig() error {
 			// check environment variable
 			encodedCfg = os.Getenv(config.WorkspaceDaemonConfigExtraEnvVar)
 		} else {
-			return fmt.Errorf("get daemon config file %s %w", DaemonConfigPath, err)
+			return fmt.Errorf("get daemon config file %s: %w", DaemonConfigPath, err)
 		}
 	} else {
 		encodedCfg = string(configBytes)
@@ -149,11 +149,11 @@ func (cmd *DaemonCmd) loadConfig() error {
 	if strings.TrimSpace(encodedCfg) != "" {
 		decoded, err := base64.StdEncoding.DecodeString(encodedCfg)
 		if err != nil {
-			return fmt.Errorf("error decoding daemon config %w", err)
+			return fmt.Errorf("error decoding daemon config: %w", err)
 		}
 		var cfg agentd.DaemonConfig
 		if err = json.Unmarshal(decoded, &cfg); err != nil {
-			return fmt.Errorf("error unmarshalling daemon config %w", err)
+			return fmt.Errorf("error unmarshalling daemon config: %w", err)
 		}
 		if cmd.Config.Timeout != "" {
 			cfg.Timeout = cmd.Config.Timeout
@@ -227,7 +227,7 @@ func runNetworkServer(ctx context.Context, cmd *DaemonCmd, errChan chan<- error,
 	config.Insecure = true
 	baseClient := client.NewClientFromConfig(config)
 	if err := baseClient.RefreshSelf(ctx); err != nil {
-		errChan <- fmt.Errorf("failed to refresh client %w", err)
+		errChan <- fmt.Errorf("failed to refresh client: %w", err)
 		return
 	}
 	tsServer := ts.NewWorkspaceServer(&ts.WorkspaceServerConfig{
@@ -241,7 +241,7 @@ func runNetworkServer(ctx context.Context, cmd *DaemonCmd, errChan chan<- error,
 		},
 	}, logger)
 	if err := tsServer.Start(ctx); err != nil {
-		errChan <- fmt.Errorf("network server %w", err)
+		errChan <- fmt.Errorf("network server: %w", err)
 	}
 }
 
@@ -267,7 +267,7 @@ func runSshServer(ctx context.Context, cmd *DaemonCmd, errChan chan<- error, wg 
 	sshCmd.Stderr = os.Stderr
 
 	if err := sshCmd.Start(); err != nil {
-		errChan <- fmt.Errorf("failed to start SSH server %w", err)
+		errChan <- fmt.Errorf("failed to start SSH server: %w", err)
 		return
 	}
 
@@ -277,7 +277,7 @@ func runSshServer(ctx context.Context, cmd *DaemonCmd, errChan chan<- error, wg 
 		case <-ctx.Done():
 			if sshCmd.Process != nil {
 				if err := sshCmd.Process.Signal(syscall.SIGTERM); err != nil {
-					errChan <- fmt.Errorf("failed to send SIGTERM to SSH server %w", err)
+					errChan <- fmt.Errorf("failed to send SIGTERM to SSH server: %w", err)
 				}
 			}
 		case <-done:
@@ -285,7 +285,7 @@ func runSshServer(ctx context.Context, cmd *DaemonCmd, errChan chan<- error, wg 
 	}()
 
 	if err := sshCmd.Wait(); err != nil {
-		errChan <- fmt.Errorf("SSH server exited abnormally %w", err)
+		errChan <- fmt.Errorf("SSH server exited abnormally: %w", err)
 		close(done)
 		return
 	}

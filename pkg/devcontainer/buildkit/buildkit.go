@@ -67,7 +67,7 @@ func Build(ctx context.Context, client *buildkit.Client, writer io.Writer, platf
 	for k, v := range options.Contexts {
 		st, err := os.Stat(v)
 		if err != nil {
-			return fmt.Errorf("failed to get build context %v %w", k, err)
+			return fmt.Errorf("failed to get build context %v: %w", k, err)
 		}
 		if !st.IsDir() {
 			return fmt.Errorf("build context '%s' is not a directory", v)

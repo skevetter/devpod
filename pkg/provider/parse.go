@@ -35,12 +35,12 @@ func ParseProvider(reader io.Reader) (*ProviderConfig, error) {
 	parsedConfig := &ProviderConfig{}
 	err = yaml.Unmarshal(payload, parsedConfig)
 	if err != nil {
-		return nil, fmt.Errorf("parse provider config %w", err)
+		return nil, fmt.Errorf("parse provider config: %w", err)
 	}
 
 	err = validate(parsedConfig)
 	if err != nil {
-		return nil, fmt.Errorf("validate %w", err)
+		return nil, fmt.Errorf("validate: %w", err)
 	}
 
 	return parsedConfig, nil
@@ -61,7 +61,7 @@ func validate(config *ProviderConfig) error {
 	if config.Version != "" {
 		_, err := semver.Parse(strings.TrimPrefix(config.Version, "v"))
 		if err != nil {
-			return fmt.Errorf("parse provider version %w", err)
+			return fmt.Errorf("parse provider version: %w", err)
 		}
 	}
 
@@ -75,7 +75,7 @@ func validate(config *ProviderConfig) error {
 		if optionValue.ValidationPattern != "" {
 			_, err := regexp.Compile(optionValue.ValidationPattern)
 			if err != nil {
-				return fmt.Errorf("error parsing validation pattern '%s' for option '%s' %w", optionValue.ValidationPattern, optionName, err)
+				return fmt.Errorf("error parsing validation pattern '%s' for option '%s': %w", optionValue.ValidationPattern, optionName, err)
 			}
 		}
 
@@ -94,7 +94,7 @@ func validate(config *ProviderConfig) error {
 		if optionValue.Cache != "" {
 			_, err := time.ParseDuration(optionValue.Cache)
 			if err != nil {
-				return fmt.Errorf("invalid cache value for option '%s' %w", optionName, err)
+				return fmt.Errorf("invalid cache value for option '%s': %w", optionName, err)
 			}
 		}
 

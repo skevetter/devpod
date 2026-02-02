@@ -89,7 +89,7 @@ func (cmd *UseCmd) Run(ctx context.Context, providerName string) error {
 	// save provider config
 	err = config.SaveConfig(devPodConfig)
 	if err != nil {
-		return fmt.Errorf("save config %w", err)
+		return fmt.Errorf("save config: %w", err)
 	}
 
 	// print success message
@@ -113,7 +113,7 @@ func ConfigureProvider(ctx context.Context, provider *provider2.ProviderConfig, 
 	// save provider config
 	err = config.SaveConfig(devPodConfig)
 	if err != nil {
-		return fmt.Errorf("save config %w", err)
+		return fmt.Errorf("save config: %w", err)
 	}
 
 	log.WithFields(logrus.Fields{
@@ -148,7 +148,7 @@ func setOptions(
 	// parse options
 	options, err := provider2.ParseOptions(userOptions)
 	if err != nil {
-		return nil, fmt.Errorf("parse options %w", err)
+		return nil, fmt.Errorf("parse options: %w", err)
 	}
 
 	// merge with old values
@@ -164,7 +164,7 @@ func setOptions(
 	// fill defaults
 	devPodConfig, err = options2.ResolveOptions(ctx, devPodConfig, provider, options, skipRequired, skipSubOptions, singleMachine, log)
 	if err != nil {
-		return nil, fmt.Errorf("resolve options %w", err)
+		return nil, fmt.Errorf("resolve options: %w", err)
 	}
 
 	// run init command
@@ -198,7 +198,7 @@ func initProvider(ctx context.Context, devPodConfig *config.Config, provider *pr
 		Log:     log.Default,
 	})
 	if err != nil {
-		return fmt.Errorf("init %w", err)
+		return fmt.Errorf("init: %w", err)
 	}
 	if devPodConfig.Current().Providers == nil {
 		devPodConfig.Current().Providers = map[string]*config.ProviderConfig{}

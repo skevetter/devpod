@@ -118,7 +118,7 @@ func deleteSingleMachine(ctx context.Context, client client2.BaseWorkspaceClient
 	// try to find other workspace with same machine
 	workspaces, err := List(ctx, devPodConfig, false, platform.SelfOwnerFilter, log)
 	if err != nil {
-		return false, fmt.Errorf("list workspaces %w", err)
+		return false, fmt.Errorf("list workspaces: %w", err)
 	}
 
 	// loop workspaces
@@ -138,13 +138,13 @@ func deleteSingleMachine(ctx context.Context, client client2.BaseWorkspaceClient
 	// if we haven't found another workspace on this machine, delete the whole machine
 	machineClient, err := GetMachine(devPodConfig, []string{singleMachineName}, log)
 	if err != nil {
-		return false, fmt.Errorf("get machine %w", err)
+		return false, fmt.Errorf("get machine: %w", err)
 	}
 
 	// delete the machine
 	err = machineClient.Delete(ctx, deleteOptions)
 	if err != nil {
-		return false, fmt.Errorf("delete machine %w", err)
+		return false, fmt.Errorf("delete machine: %w", err)
 	}
 
 	// delete workspace folder

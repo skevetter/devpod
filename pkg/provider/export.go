@@ -84,7 +84,7 @@ func ExportWorkspace(context, workspaceID string) (*ExportWorkspaceConfig, error
 	buf := &bytes.Buffer{}
 	err = extract.WriteTarExclude(buf, workspaceDir, true, excludedPaths)
 	if err != nil {
-		return nil, fmt.Errorf("compress workspace dir %w", err)
+		return nil, fmt.Errorf("compress workspace dir: %w", err)
 	}
 
 	return &ExportWorkspaceConfig{
@@ -109,7 +109,7 @@ func ExportMachine(context, machineID string) (*ExportMachineConfig, error) {
 	buf := &bytes.Buffer{}
 	err = extract.WriteTarExclude(buf, machineDir, true, excludedPaths)
 	if err != nil {
-		return nil, fmt.Errorf("compress machine dir %w", err)
+		return nil, fmt.Errorf("compress machine dir: %w", err)
 	}
 
 	return &ExportMachineConfig{
@@ -133,7 +133,7 @@ func ExportProvider(devPodConfig *config.Config, context, providerID string) (*E
 	buf := &bytes.Buffer{}
 	err = extract.WriteTarExclude(buf, providerDir, true, excludedPaths)
 	if err != nil {
-		return nil, fmt.Errorf("compress provider dir %w", err)
+		return nil, fmt.Errorf("compress provider dir: %w", err)
 	}
 
 	var providerConfig *config.ProviderConfig

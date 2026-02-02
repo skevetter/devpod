@@ -55,7 +55,7 @@ func (w *Watcher) runOnce() error {
 			w.log.Debugf("Stop port %s", port)
 			err = w.forwarder.StopForward(port)
 			if err != nil {
-				return fmt.Errorf("error stop forwarding port %s %w", port, err)
+				return fmt.Errorf("error stop forwarding port %s: %w", port, err)
 			}
 		}
 	}
@@ -66,7 +66,7 @@ func (w *Watcher) runOnce() error {
 			w.log.Debugf("Found open port %s ready to forward", port)
 			err = w.forwarder.Forward(port)
 			if err != nil {
-				return fmt.Errorf("error forwarding port %s %w", port, err)
+				return fmt.Errorf("error forwarding port %s: %w", port, err)
 			}
 		}
 	}

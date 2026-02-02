@@ -87,7 +87,7 @@ func (cmd *UpCmd) Run(ctx context.Context) error {
 	}
 
 	if err := cmd.up(ctx, workspaceInfo, tunnelClient, logger); err != nil {
-		return fmt.Errorf("devcontainer up %w", err)
+		return fmt.Errorf("devcontainer up: %w", err)
 	}
 
 	return nil
@@ -102,7 +102,7 @@ func (cmd *UpCmd) loadWorkspaceInfo(ctx context.Context) (*provider2.AgentWorksp
 		log.Default.ErrorStreamOnly(),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("error parsing workspace info %w", err)
+		return nil, fmt.Errorf("error parsing workspace info: %w", err)
 	}
 	if shouldExit {
 		return nil, nil
@@ -129,7 +129,7 @@ func (cmd *UpCmd) handleInitError(err error, workspaceInfo *provider2.AgentWorks
 		SSHConfigIncludePath: workspaceInfo.Workspace.SSHConfigIncludePath,
 	}, logger)
 	if deleteErr != nil {
-		return fmt.Errorf("%s %w", deleteErr.Error(), err)
+		return fmt.Errorf("%s: %w", deleteErr.Error(), err)
 	}
 	return err
 }
@@ -157,7 +157,7 @@ func (cmd *UpCmd) sendResult(ctx context.Context, result *config2.Result, tunnel
 
 	_, err = tunnelClient.SendResult(ctx, &tunnel.Message{Message: string(out)})
 	if err != nil {
-		return fmt.Errorf("send result %w", err)
+		return fmt.Errorf("send result: %w", err)
 	}
 
 	return nil
@@ -222,7 +222,7 @@ func contentFolderExists(path string, log log.Logger) (bool, error) {
 func createContentFolder(path string, log log.Logger) error {
 	log.WithFields(logrus.Fields{"path": path}).Debug("create content folder")
 	if err := os.MkdirAll(path, 0o777); err != nil {
-		return fmt.Errorf("make workspace folder %w", err)
+		return fmt.Errorf("make workspace folder: %w", err)
 	}
 	return nil
 }
@@ -234,12 +234,12 @@ func downloadWorkspaceBinaries(workspaceInfo *provider2.AgentWorkspaceInfo, log 
 		workspaceInfo.Workspace.ID,
 	)
 	if err != nil {
-		return fmt.Errorf("error getting workspace %s binaries dir %w", workspaceInfo.Workspace.ID, err)
+		return fmt.Errorf("error getting workspace %s binaries dir: %w", workspaceInfo.Workspace.ID, err)
 	}
 
 	_, err = binaries.DownloadBinaries(workspaceInfo.Agent.Binaries, binariesDir, log)
 	if err != nil {
-		return fmt.Errorf("error downloading workspace %s binaries %w", workspaceInfo.Workspace.ID, err)
+		return fmt.Errorf("error downloading workspace %s binaries: %w", workspaceInfo.Workspace.ID, err)
 	}
 
 	return nil
@@ -305,14 +305,14 @@ func initWorkspace(ctx context.Context, cancel context.CancelFunc, workspaceInfo
 func (w *workspaceInitializer) initializeTunnel() error {
 	client, err := tunnelserver.NewTunnelClient(os.Stdin, os.Stdout, true, 0)
 	if err != nil {
-		return fmt.Errorf("error creating tunnel client %w", err)
+		return fmt.Errorf("error creating tunnel client: %w", err)
 	}
 	w.tunnelClient = client
 	w.logger = tunnelserver.NewTunnelLogger(w.ctx, w.tunnelClient, w.debug)
 	w.logger.Debugf("created logger")
 
 	if _, err := w.tunnelClient.Ping(w.ctx, &tunnel.Empty{}); err != nil {
-		return fmt.Errorf("ping client %w", err)
+		return fmt.Errorf("ping client: %w", err)
 	}
 
 	return nil
@@ -408,7 +408,7 @@ func (w *workspaceInitializer) waitForDocker(resultChan <-chan dockerInstallResu
 	}
 
 	if result.err != nil {
-		return fmt.Errorf("install docker %w", result.err)
+		return fmt.Errorf("install docker: %w", result.err)
 	}
 
 	return nil
@@ -546,20 +546,20 @@ func ensureLastDevContainerJson(workspaceInfo *provider2.AgentWorkspaceInfo) err
 	if _, err := os.Stat(filePath); err == nil {
 		return nil
 	} else if !os.IsNotExist(err) {
-		return fmt.Errorf("error stating %s %w", filePath, err)
+		return fmt.Errorf("error stating %s: %w", filePath, err)
 	}
 
 	if err := os.MkdirAll(filepath.Dir(filePath), 0o755); err != nil {
-		return fmt.Errorf("create %s %w", filepath.Dir(filePath), err)
+		return fmt.Errorf("create %s: %w", filepath.Dir(filePath), err)
 	}
 
 	raw, err := json.Marshal(workspaceInfo.LastDevContainerConfig.Config)
 	if err != nil {
-		return fmt.Errorf("marshal devcontainer.json %w", err)
+		return fmt.Errorf("marshal devcontainer.json: %w", err)
 	}
 
 	if err := os.WriteFile(filePath, raw, 0o600); err != nil {
-		return fmt.Errorf("write %s %w", filePath, err)
+		return fmt.Errorf("write %s: %w", filePath, err)
 	}
 
 	return nil
@@ -622,7 +622,7 @@ func downloadLocalFolder(ctx context.Context, workspaceDir string, client tunnel
 	log.Infof("Upload folder to server")
 	stream, err := client.StreamWorkspace(ctx, &tunnel.Empty{})
 	if err != nil {
-		return fmt.Errorf("read workspace %w", err)
+		return fmt.Errorf("read workspace: %w", err)
 	}
 
 	return extract.Extract(tunnelserver.NewStreamReader(stream, log), workspaceDir)

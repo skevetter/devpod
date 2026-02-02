@@ -82,7 +82,7 @@ func Resolve(
 
 		err = providerpkg.SaveWorkspaceConfig(workspace)
 		if err != nil {
-			return nil, fmt.Errorf("save workspace %w", err)
+			return nil, fmt.Errorf("save workspace: %w", err)
 		}
 	}
 
@@ -92,7 +92,7 @@ func Resolve(
 
 		err = providerpkg.SaveWorkspaceConfig(workspace)
 		if err != nil {
-			return nil, fmt.Errorf("save workspace %w", err)
+			return nil, fmt.Errorf("save workspace: %w", err)
 		}
 	}
 
@@ -100,7 +100,7 @@ func Resolve(
 	if workspace.Source.Container != "" {
 		err = providerpkg.SaveWorkspaceConfig(workspace)
 		if err != nil {
-			return nil, fmt.Errorf("save workspace %w", err)
+			return nil, fmt.Errorf("save workspace: %w", err)
 		}
 	}
 
@@ -332,7 +332,7 @@ func createWorkspace(
 		// save workspace config
 		err = providerpkg.SaveWorkspaceConfig(workspace)
 		if err != nil {
-			return nil, nil, nil, fmt.Errorf("save config %w", err)
+			return nil, nil, nil, fmt.Errorf("save config: %w", err)
 		}
 
 		// only create machine if it does not exist yet
@@ -369,7 +369,7 @@ func createWorkspace(
 			// load machine config
 			machineConfig, err = providerpkg.LoadMachineConfig(workspace.Context, workspace.Machine.ID)
 			if err != nil {
-				return nil, nil, nil, fmt.Errorf("load machine config %w", err)
+				return nil, nil, nil, fmt.Errorf("load machine config: %w", err)
 			}
 		}
 	} else if provider.Config.IsProxyProvider() || provider.Config.IsDaemonProvider() {
@@ -379,7 +379,7 @@ func createWorkspace(
 		// then we read it again and update to workspace state here
 		err = providerpkg.SaveWorkspaceConfig(workspace)
 		if err != nil {
-			return nil, nil, nil, fmt.Errorf("save config %w", err)
+			return nil, nil, nil, fmt.Errorf("save config: %w", err)
 		}
 
 		err := resolveProInstance(ctx, devPodConfig, provider.Config.Name, workspace, log)
@@ -395,14 +395,14 @@ func createWorkspace(
 		// save workspace config
 		err = providerpkg.SaveWorkspaceConfig(workspace)
 		if err != nil {
-			return nil, nil, nil, fmt.Errorf("save config %w", err)
+			return nil, nil, nil, fmt.Errorf("save config: %w", err)
 		}
 
 		// load machine config
 		if provider.Config.IsMachineProvider() && workspace.Machine.ID != "" {
 			machineConfig, err = providerpkg.LoadMachineConfig(workspace.Context, workspace.Machine.ID)
 			if err != nil {
-				return nil, nil, nil, fmt.Errorf("load machine config %w", err)
+				return nil, nil, nil, fmt.Errorf("load machine config: %w", err)
 			}
 		}
 	}
@@ -590,7 +590,7 @@ func selectWorkspace(ctx context.Context, devPodConfig *config.Config, params se
 
 	workspaces, err := List(ctx, devPodConfig, false, params.owner, log)
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("list workspaces %w", err)
+		return nil, nil, nil, fmt.Errorf("list workspaces: %w", err)
 	}
 
 	// sort by last used
@@ -680,7 +680,7 @@ func loadExistingWorkspace(devPodConfig *config.Config, workspaceID string, chan
 	if workspaceConfig.Machine.ID != "" {
 		machineConfig, err = providerpkg.LoadMachineConfig(workspaceConfig.Context, workspaceConfig.Machine.ID)
 		if err != nil {
-			return nil, nil, nil, fmt.Errorf("load machine config %w", err)
+			return nil, nil, nil, fmt.Errorf("load machine config: %w", err)
 		}
 	}
 

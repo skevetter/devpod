@@ -12,7 +12,7 @@ import (
 func (r *runner) Delete(ctx context.Context) error {
 	containerDetails, err := r.Driver.FindDevContainer(ctx, r.ID)
 	if err != nil {
-		return fmt.Errorf("find dev container %w", err)
+		return fmt.Errorf("find dev container: %w", err)
 	} else if containerDetails == nil {
 		return nil
 	}
@@ -45,7 +45,7 @@ func (r *runner) Delete(ctx context.Context) error {
 func (r *runner) Stop(ctx context.Context) error {
 	containerDetails, err := r.Driver.FindDevContainer(ctx, r.ID)
 	if err != nil {
-		return fmt.Errorf("find dev container %w", err)
+		return fmt.Errorf("find dev container: %w", err)
 	} else if containerDetails == nil {
 		return nil
 	}

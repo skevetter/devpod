@@ -83,7 +83,7 @@ func findProProvider(ctx context.Context, context, provider, host string, log lo
 
 	pCfg, err := workspace.ProviderFromHost(ctx, devPodConfig, host, log)
 	if err != nil {
-		return devPodConfig, nil, fmt.Errorf("load provider %w", err)
+		return devPodConfig, nil, fmt.Errorf("load provider: %w", err)
 	}
 
 	return devPodConfig, pCfg, nil

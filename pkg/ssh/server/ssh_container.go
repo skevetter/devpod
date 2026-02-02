@@ -85,7 +85,7 @@ func (s *containerServer) handler(sess ssh.Session) {
 	ptyReq, winCh, isPty := sess.Pty()
 	cmd, err := s.getCommand(sess, isPty)
 	if err != nil {
-		exitWithError(sess, fmt.Errorf("get command %w", err), s.log)
+		exitWithError(sess, fmt.Errorf("get command: %w", err), s.log)
 		return
 	}
 
@@ -100,7 +100,7 @@ func (s *containerServer) handler(sess ssh.Session) {
 
 		err = chownListener(l.Addr().String(), sess.User())
 		if err != nil {
-			exitWithError(sess, fmt.Errorf("chown listener %w", err), s.log)
+			exitWithError(sess, fmt.Errorf("chown listener: %w", err), s.log)
 			return
 		}
 
@@ -125,7 +125,7 @@ func (s *containerServer) getCommand(sess ssh.Session, isPty bool) (*exec.Cmd, e
 	// get login shell for user
 	shell, err := shellpkg.GetShell(user)
 	if err != nil {
-		return cmd, fmt.Errorf("get shell for user %s %w", user, err)
+		return cmd, fmt.Errorf("get shell for user %s: %w", user, err)
 	}
 
 	args := []string{}
@@ -143,7 +143,7 @@ func (s *containerServer) getCommand(sess ssh.Session, isPty bool) (*exec.Cmd, e
 
 	err = config.PrepareCmdUser(cmd, user)
 	if err != nil {
-		return cmd, fmt.Errorf("prepare cmd env %w", err)
+		return cmd, fmt.Errorf("prepare cmd env: %w", err)
 	}
 	cmd.Dir = findWorkdir(s.workdir, user)
 	cmd.Env = append(cmd.Env, sess.Environ()...)

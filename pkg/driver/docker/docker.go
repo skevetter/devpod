@@ -108,7 +108,7 @@ func (d *dockerDriver) PushDevContainer(ctx context.Context, image string) error
 	}).Debug("running docker push command")
 	err := d.Docker.Run(ctx, args, nil, writer, writer)
 	if err != nil {
-		return fmt.Errorf("push image %w", err)
+		return fmt.Errorf("push image: %w", err)
 	}
 
 	return nil
@@ -133,7 +133,7 @@ func (d *dockerDriver) TagDevContainer(ctx context.Context, image, tag string) e
 	}).Debug("running docker tag command")
 	err := d.Docker.Run(ctx, args, nil, writer, writer)
 	if err != nil {
-		return fmt.Errorf("tag image %w", err)
+		return fmt.Errorf("tag image: %w", err)
 	}
 
 	return nil
@@ -516,7 +516,7 @@ func (d *dockerDriver) startContainer(ctx context.Context, args []string, writer
 	err := d.Docker.Run(ctx, args, nil, writer, writer)
 	if err != nil {
 		d.Log.WithFields(logrus.Fields{"error": err, "command": d.Docker.DockerCommand, "args": strings.Join(args, " ")}).Error("docker container failed to start")
-		return fmt.Errorf("failed to start dev container %w", err)
+		return fmt.Errorf("failed to start dev container: %w", err)
 	}
 	return nil
 }

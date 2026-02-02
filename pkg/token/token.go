@@ -17,13 +17,13 @@ func GetDevPodToken() (string, error) {
 	// get host key
 	hostKey, err := ssh.GetDevPodHostKey()
 	if err != nil {
-		return "", fmt.Errorf("generate host key %w", err)
+		return "", fmt.Errorf("generate host key: %w", err)
 	}
 
 	// get public key
 	publicKey, err := ssh.GetDevPodPublicKey()
 	if err != nil {
-		return "", fmt.Errorf("generate key pair %w", err)
+		return "", fmt.Errorf("generate key pair: %w", err)
 	}
 
 	return buildToken(hostKey, publicKey)

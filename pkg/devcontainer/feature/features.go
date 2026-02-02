@@ -182,29 +182,29 @@ func downloadLayer(img v1.Image, id, destFile string, log log.Logger) error {
 	}).Debug("download feature layer")
 	layer, err := img.LayerByDigest(manifest.Layers[0].Digest)
 	if err != nil {
-		return fmt.Errorf("retrieve layer %w", err)
+		return fmt.Errorf("retrieve layer: %w", err)
 	}
 
 	data, err := layer.Uncompressed()
 	if err != nil {
-		return fmt.Errorf("download %w", err)
+		return fmt.Errorf("download: %w", err)
 	}
 	defer func() { _ = data.Close() }()
 
 	err = os.MkdirAll(filepath.Dir(destFile), 0755)
 	if err != nil {
-		return fmt.Errorf("create target folder %w", err)
+		return fmt.Errorf("create target folder: %w", err)
 	}
 
 	file, err := os.Create(destFile)
 	if err != nil {
-		return fmt.Errorf("create file %w", err)
+		return fmt.Errorf("create file: %w", err)
 	}
 	defer func() { _ = file.Close() }()
 
 	_, err = io.Copy(file, data)
 	if err != nil {
-		return fmt.Errorf("download layer %w", err)
+		return fmt.Errorf("download layer: %w", err)
 	}
 
 	return nil
@@ -249,7 +249,7 @@ func processDirectTarFeature(id string, httpHeaders map[string]string, log log.L
 	if err != nil {
 		log.WithFields(logrus.Fields{"error": err, "destination": featureExtractedFolder}).Error("failed to extract tarball")
 		_ = os.RemoveAll(featureExtractedFolder)
-		return "", fmt.Errorf("extract folder %w", err)
+		return "", fmt.Errorf("extract folder: %w", err)
 	}
 
 	log.WithFields(logrus.Fields{"featureId": id, "path": featureExtractedFolder}).Info("Direct tar feature processed successfully")
@@ -262,7 +262,7 @@ func downloadFeatureFromURL(url string, destFile string, httpHeaders map[string]
 	err := os.MkdirAll(filepath.Dir(destFile), 0755)
 	if err != nil {
 		log.WithFields(logrus.Fields{"error": err, "dir": filepath.Dir(destFile)}).Error("failed to create feature folder")
-		return fmt.Errorf("create feature folder %w", err)
+		return fmt.Errorf("create feature folder: %w", err)
 	}
 
 	attempt := 0
@@ -293,7 +293,7 @@ func downloadFeatureFromURL(url string, destFile string, httpHeaders map[string]
 func tryDownload(url, destFile string, httpHeaders map[string]string) error {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return fmt.Errorf("make request %w", err)
+		return fmt.Errorf("make request: %w", err)
 	}
 	for key, value := range httpHeaders {
 		req.Header.Set(key, value)
@@ -301,7 +301,7 @@ func tryDownload(url, destFile string, httpHeaders map[string]string) error {
 
 	resp, err := devpodhttp.GetHTTPClient().Do(req)
 	if err != nil {
-		return fmt.Errorf("make request %w", err)
+		return fmt.Errorf("make request: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 
@@ -311,13 +311,13 @@ func tryDownload(url, destFile string, httpHeaders map[string]string) error {
 
 	file, err := os.Create(destFile)
 	if err != nil {
-		return fmt.Errorf("create download file %w", err)
+		return fmt.Errorf("create download file: %w", err)
 	}
 	defer func() { _ = file.Close() }()
 
 	_, err = io.Copy(file, resp.Body)
 	if err != nil {
-		return fmt.Errorf("download feature %w", err)
+		return fmt.Errorf("download feature: %w", err)
 	}
 
 	return nil

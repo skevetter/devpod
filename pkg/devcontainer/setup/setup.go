@@ -38,24 +38,24 @@ func SetupContainer(ctx context.Context, setupInfo *config.Result, extraWorkspac
 	// chown user dir
 	err := ChownWorkspace(setupInfo, chownProjects, log)
 	if err != nil {
-		return fmt.Errorf("failed to chown workspace %w", err)
+		return fmt.Errorf("failed to chown workspace: %w", err)
 	}
 
 	// patch remote env
 	log.Debugf("Patch etc environment & profile...")
 	err = PatchEtcEnvironment(setupInfo.MergedConfig, log)
 	if err != nil {
-		return fmt.Errorf("patch etc environment %w", err)
+		return fmt.Errorf("patch etc environment: %w", err)
 	}
 	err = PatchEtcEnvironmentFlags(extraWorkspaceEnv, log)
 	if err != nil {
-		return fmt.Errorf("patch etc environment from flags %w", err)
+		return fmt.Errorf("patch etc environment from flags: %w", err)
 	}
 
 	// patch etc profile
 	err = PatchEtcProfile()
 	if err != nil {
-		return fmt.Errorf("patch etc profile %w", err)
+		return fmt.Errorf("patch etc profile: %w", err)
 	}
 
 	// link /home/root to root if necessary
@@ -67,7 +67,7 @@ func SetupContainer(ctx context.Context, setupInfo *config.Result, extraWorkspac
 	// chown agent sock file
 	err = ChownAgentSock(setupInfo)
 	if err != nil {
-		return fmt.Errorf("chown ssh agent sock file %w", err)
+		return fmt.Errorf("chown ssh agent sock file: %w", err)
 	}
 
 	// setup kube config
@@ -86,7 +86,7 @@ func SetupContainer(ctx context.Context, setupInfo *config.Result, extraWorkspac
 	log.Debugf("Run lifecycle hooks commands...")
 	err = RunLifecycleHooks(ctx, setupInfo, log)
 	if err != nil {
-		return fmt.Errorf("lifecycle hooks %w", err)
+		return fmt.Errorf("lifecycle hooks: %w", err)
 	}
 
 	log.Debugf("Done setting up environment")
@@ -126,7 +126,7 @@ func LinkRootHome(setupInfo *config.Result) error {
 
 	home, err := command.GetHome(user)
 	if err != nil {
-		return fmt.Errorf("find root home %w", err)
+		return fmt.Errorf("find root home: %w", err)
 	} else if home == "/home/root" {
 		return nil
 	}
@@ -139,12 +139,12 @@ func LinkRootHome(setupInfo *config.Result) error {
 	// link /home/root to the root home
 	err = os.MkdirAll("/home", 0777)
 	if err != nil {
-		return fmt.Errorf("create /home folder %w", err)
+		return fmt.Errorf("create /home folder: %w", err)
 	}
 
 	err = os.Symlink(home, "/home/root")
 	if err != nil {
-		return fmt.Errorf("create symlink %w", err)
+		return fmt.Errorf("create symlink: %w", err)
 	}
 
 	return nil
@@ -197,7 +197,7 @@ func PatchEtcProfile() error {
 
 	out, err := exec.Command("sh", "-c", `sed -i -E 's/((^|\s)PATH=)([^\$]*)$/\1${PATH:-\3}/g' /etc/profile || true`).CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("create remote environment: %v %w", string(out), err)
+		return fmt.Errorf("create remote environment: %v: %w", string(out), err)
 	}
 
 	return nil
@@ -344,7 +344,7 @@ func markerFileExists(markerName string, markerContent string) (bool, error) {
 	_ = os.MkdirAll(filepath.Dir(markerName), 0777)
 	err = os.WriteFile(markerName, []byte(markerContent), 0644)
 	if err != nil {
-		return false, fmt.Errorf("write marker %w", err)
+		return false, fmt.Errorf("write marker: %w", err)
 	}
 
 	return false, nil
@@ -366,7 +366,7 @@ func setupPlatformGitCredentials(userName string, platformOptions *devpod.Platfo
 				Email: platformOptions.UserCredentials.GitEmail,
 			})
 			if err != nil {
-				return fmt.Errorf("set git user %w", err)
+				return fmt.Errorf("set git user: %w", err)
 			}
 		}
 	}
@@ -397,7 +397,7 @@ func setupPlatformGitHTTPCredentials(userName string, platformOptions *devpod.Pl
 	}
 	err = gitcredentials.ConfigureHelper(binaryPath, userName, -1)
 	if err != nil {
-		return fmt.Errorf("configure git helper %w", err)
+		return fmt.Errorf("configure git helper: %w", err)
 	}
 
 	return nil

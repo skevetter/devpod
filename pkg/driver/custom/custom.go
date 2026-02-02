@@ -64,7 +64,7 @@ func (c *customDriver) FindDevContainer(ctx context.Context, workspaceId string)
 	containerDetails := &config.ContainerDetails{}
 	err = json.Unmarshal([]byte(strings.TrimSpace(stdout.String())), containerDetails)
 	if err != nil {
-		return nil, fmt.Errorf("error parsing container details %s %w", stdout.String(), err)
+		return nil, fmt.Errorf("error parsing container details %s: %w", stdout.String(), err)
 	}
 
 	return containerDetails, nil
@@ -143,7 +143,7 @@ func (c *customDriver) DeleteDevContainer(ctx context.Context, workspaceId strin
 		c.log,
 	)
 	if err != nil {
-		return fmt.Errorf("error deleting devcontainer %w", err)
+		return fmt.Errorf("error deleting devcontainer: %w", err)
 	}
 
 	return nil
@@ -167,7 +167,7 @@ func (c *customDriver) StartDevContainer(ctx context.Context, workspaceId string
 		c.log,
 	)
 	if err != nil {
-		return fmt.Errorf("error starting devcontainer %w", err)
+		return fmt.Errorf("error starting devcontainer: %w", err)
 	}
 
 	return nil
@@ -191,7 +191,7 @@ func (c *customDriver) StopDevContainer(ctx context.Context, workspaceId string)
 		c.log,
 	)
 	if err != nil {
-		return fmt.Errorf("error stopping devcontainer %w", err)
+		return fmt.Errorf("error stopping devcontainer: %w", err)
 	}
 
 	return nil
@@ -201,7 +201,7 @@ func (c *customDriver) StopDevContainer(ctx context.Context, workspaceId string)
 func (c *customDriver) RunDevContainer(ctx context.Context, workspaceId string, options *driver.RunOptions) error {
 	out, err := json.Marshal(options)
 	if err != nil {
-		return fmt.Errorf("marshal run options %w", err)
+		return fmt.Errorf("marshal run options: %w", err)
 	}
 
 	done := make(chan struct{})
@@ -237,7 +237,7 @@ func (c *customDriver) RunDevContainer(ctx context.Context, workspaceId string, 
 		// forcibly shut down after 1 second
 		case <-time.After(1 * time.Second):
 		}
-		return fmt.Errorf("error running devcontainer %w", err)
+		return fmt.Errorf("error running devcontainer: %w", err)
 	}
 
 	return nil
@@ -257,7 +257,7 @@ func (c *customDriver) GetDevContainerLogs(ctx context.Context, workspaceID stri
 		c.log,
 	)
 	if err != nil {
-		return fmt.Errorf("error getting devcontainer logs %w", err)
+		return fmt.Errorf("error getting devcontainer logs: %w", err)
 	}
 
 	return nil
@@ -315,13 +315,13 @@ func ToEnvironWithBinaries(workspace *provider2.AgentWorkspaceInfo, log log.Logg
 	// get binaries dir
 	binariesDir, err := agent.GetAgentBinariesDirFromWorkspaceDir(workspace.Origin)
 	if err != nil {
-		return nil, fmt.Errorf("error getting workspace %s binaries dir: %s %w", workspace.Workspace.ID, workspace.Origin, err)
+		return nil, fmt.Errorf("error getting workspace %s binaries dir: %s: %w", workspace.Workspace.ID, workspace.Origin, err)
 	}
 
 	// download binaries
 	agentBinaries, err := binaries.DownloadBinaries(workspace.Agent.Binaries, binariesDir, log)
 	if err != nil {
-		return nil, fmt.Errorf("error downloading workspace %s binaries %w", workspace.Workspace.ID, err)
+		return nil, fmt.Errorf("error downloading workspace %s binaries: %w", workspace.Workspace.ID, err)
 	}
 
 	// get environ

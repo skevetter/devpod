@@ -21,7 +21,7 @@ func Head(rawURL string) (int, error) {
 
 	resp, err := devpodhttp.GetHTTPClient().Do(req)
 	if err != nil {
-		return 0, fmt.Errorf("download file %w", err)
+		return 0, fmt.Errorf("download file: %w", err)
 	}
 
 	return resp.StatusCode, nil
@@ -65,7 +65,7 @@ func File(rawURL string, log log.Logger) (io.ReadCloser, error) {
 
 	resp, err := devpodhttp.GetHTTPClient().Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("download file %w", err)
+		return nil, fmt.Errorf("download file: %w", err)
 	} else if resp.StatusCode >= 400 {
 		_ = resp.Body.Close()
 		return nil, fmt.Errorf("received status code %d when trying to download %s", resp.StatusCode, rawURL)

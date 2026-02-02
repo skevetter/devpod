@@ -115,7 +115,7 @@ func (s *proxyClient) Lock(ctx context.Context) error {
 	s.log.Debugf("Acquire workspace lock...")
 	err := tryLock(ctx, s.workspaceLock, "workspace", s.log)
 	if err != nil {
-		return fmt.Errorf("error locking workspace %w", err)
+		return fmt.Errorf("error locking workspace: %w", err)
 	}
 	s.log.Debugf("Acquired workspace lock...")
 
@@ -164,7 +164,7 @@ func (s *proxyClient) initLock() {
 		// get locks dir
 		workspaceLocksDir, err := provider.GetLocksDir(s.workspace.Context)
 		if err != nil {
-			panic(fmt.Errorf("get workspaces dir %w", err))
+			panic(fmt.Errorf("get workspaces dir: %w", err))
 		}
 		_ = os.MkdirAll(workspaceLocksDir, 0777)
 
@@ -201,7 +201,7 @@ func (s *proxyClient) RefreshOptions(ctx context.Context, userOptionsRaw []strin
 
 	userOptions, err := provider.ParseOptions(userOptionsRaw)
 	if err != nil {
-		return fmt.Errorf("parse options %w", err)
+		return fmt.Errorf("parse options: %w", err)
 	}
 
 	workspace, err := options.ResolveAndSaveOptionsProxy(ctx, s.devPodConfig, s.config, s.workspace, userOptions, s.log)
@@ -229,7 +229,7 @@ func (s *proxyClient) Create(ctx context.Context, stdin io.Reader, stdout io.Wri
 		stderr:  stderr,
 	})
 	if err != nil {
-		return fmt.Errorf("create remote workspace  %w", err)
+		return fmt.Errorf("create remote workspace : %w", err)
 	}
 	return nil
 }
@@ -284,17 +284,17 @@ func (s *proxyClient) checkPlatformVersion(ctx context.Context, providerOptions 
 
 	baseClient, err := platformclient.InitClientFromPath(ctx, loftConfig)
 	if err != nil {
-		return fmt.Errorf("error initializing platform client %w", err)
+		return fmt.Errorf("error initializing platform client: %w", err)
 	}
 
 	version, err := baseClient.Version()
 	if err != nil {
-		return fmt.Errorf("error retrieving platform version %w", err)
+		return fmt.Errorf("error retrieving platform version: %w", err)
 	}
 
 	parsedVersion, err := semver.Parse(strings.TrimPrefix(version.DevPodVersion, "v"))
 	if err != nil {
-		return fmt.Errorf("error parsing platform version %w", err)
+		return fmt.Errorf("error parsing platform version: %w", err)
 	}
 
 	if parsedVersion.GE(semver.MustParse("0.6.99")) {
@@ -323,7 +323,7 @@ func (s *proxyClient) Delete(ctx context.Context, opt client.DeleteOptions) erro
 		stdout:   io.Discard,
 	})
 	if err != nil && !opt.Force {
-		return fmt.Errorf("error deleting workspace %w", err)
+		return fmt.Errorf("error deleting workspace: %w", err)
 	}
 	if err != nil {
 		s.log.Errorf("Error deleting workspace: %v", err)

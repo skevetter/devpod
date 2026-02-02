@@ -311,7 +311,7 @@ func (cmd *SSHCmd) forwardTimeout(log log.Logger) (time.Duration, error) {
 	if cmd.ForwardPortsTimeout != "" {
 		timeout, err := time.ParseDuration(cmd.ForwardPortsTimeout)
 		if err != nil {
-			return timeout, fmt.Errorf("parse forward ports timeout %w", err)
+			return timeout, fmt.Errorf("parse forward ports timeout: %w", err)
 		}
 
 		log.Infof("Using port forwarding timeout of %s", cmd.ForwardPortsTimeout)
@@ -327,14 +327,14 @@ func (cmd *SSHCmd) reverseForwardPorts(
 ) error {
 	timeout, err := cmd.forwardTimeout(log)
 	if err != nil {
-		return fmt.Errorf("parse forward ports timeout %w", err)
+		return fmt.Errorf("parse forward ports timeout: %w", err)
 	}
 
 	errChan := make(chan error, len(cmd.ReverseForwardPorts))
 	for _, portMapping := range cmd.ReverseForwardPorts {
 		mapping, err := port.ParsePortSpec(portMapping)
 		if err != nil {
-			return fmt.Errorf("parse port mapping %w", err)
+			return fmt.Errorf("parse port mapping: %w", err)
 		}
 
 		// start the forwarding
@@ -357,7 +357,7 @@ func (cmd *SSHCmd) reverseForwardPorts(
 				log,
 			)
 			if !errors.Is(io.EOF, err) {
-				errChan <- fmt.Errorf("error forwarding %s %w", portMapping, err)
+				errChan <- fmt.Errorf("error forwarding %s: %w", portMapping, err)
 			}
 		}(portMapping)
 	}
@@ -372,14 +372,14 @@ func (cmd *SSHCmd) forwardPorts(
 ) error {
 	timeout, err := cmd.forwardTimeout(log)
 	if err != nil {
-		return fmt.Errorf("parse forward ports timeout %w", err)
+		return fmt.Errorf("parse forward ports timeout: %w", err)
 	}
 
 	errChan := make(chan error, len(cmd.ForwardPorts))
 	for _, portMapping := range cmd.ForwardPorts {
 		mapping, err := port.ParsePortSpec(portMapping)
 		if err != nil {
-			return fmt.Errorf("parse port mapping %w", err)
+			return fmt.Errorf("parse port mapping: %w", err)
 		}
 
 		// start the forwarding
@@ -402,7 +402,7 @@ func (cmd *SSHCmd) forwardPorts(
 				log,
 			)
 			if !errors.Is(io.EOF, err) {
-				errChan <- fmt.Errorf("error forwarding %s %w", portMapping, err)
+				errChan <- fmt.Errorf("error forwarding %s: %w", portMapping, err)
 			}
 		}(portMapping)
 	}
@@ -530,7 +530,7 @@ func (cmd *SSHCmd) setupGPGAgent(
 	log.Debugf("[GPG] exporting gpg owner trust from host")
 	ownerTrustExport, err := gpg.GetHostOwnerTrust()
 	if err != nil {
-		return fmt.Errorf("export local ownertrust from GPG %w", err)
+		return fmt.Errorf("export local ownertrust from GPG: %w", err)
 	}
 	ownerTrustArgument := base64.StdEncoding.EncodeToString(ownerTrustExport)
 
@@ -595,7 +595,7 @@ func (cmd *SSHCmd) setupGPGAgent(
 	defer func() { _ = writer.Close() }()
 	err = devssh.Run(ctx, containerClient, command, nil, writer, writer, nil)
 	if err != nil {
-		return fmt.Errorf("run gpg agent setup command %w", err)
+		return fmt.Errorf("run gpg agent setup command: %w", err)
 	}
 
 	return nil

@@ -78,7 +78,7 @@ func configureCredentials(userName, shebang string, targetDir, configDir string,
 	err = os.WriteFile(credentialHelperPath, fmt.Appendf(nil, shebang+`
 '%s' agent docker-credentials --port '%d' "$@"`, binaryPath, port), 0755)
 	if err != nil {
-		return fmt.Errorf("write credential helper %w", err)
+		return fmt.Errorf("write credential helper: %w", err)
 	}
 
 	dockerConfig.CredentialsStore = "devpod"

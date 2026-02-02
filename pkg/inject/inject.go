@@ -237,7 +237,7 @@ func performMutualHandshake(line string, stdin io.WriteCloser) error {
 	// send our response
 	_, err := stdin.Write([]byte("pong\n"))
 	if err != nil {
-		return fmt.Errorf("write to stdin %w", err)
+		return fmt.Errorf("write to stdin: %w", err)
 	}
 
 	// successful handshake

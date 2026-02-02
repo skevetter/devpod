@@ -325,7 +325,7 @@ func CloneRepositoryForWorkspace(
 		dialer := &net.Dialer{}
 		conn, err := dialer.DialContext(ctx, "unix", options.Platform.RunnerSocket)
 		if err != nil {
-			return fmt.Errorf("dial platform gitcache %w", err)
+			return fmt.Errorf("dial platform gitcache: %w", err)
 		}
 		defer func() { _ = conn.Close() }()
 
@@ -336,7 +336,7 @@ func CloneRepositoryForWorkspace(
 			grpc.WithIdleTimeout(180*time.Minute), // cloning can take a long time for large monorepos
 		)
 		if err != nil {
-			return fmt.Errorf("create platform gitcache client %w", err)
+			return fmt.Errorf("create platform gitcache client: %w", err)
 		}
 
 		// marshal options
@@ -350,7 +350,7 @@ func CloneRepositoryForWorkspace(
 			ExtraEnv:          append(git.GetDefaultExtraEnv(options.StrictHostKeyChecking), extraEnv...),
 		})
 		if err != nil {
-			return fmt.Errorf("marshal git options %w", err)
+			return fmt.Errorf("marshal git options: %w", err)
 		}
 
 		// create client
@@ -368,9 +368,9 @@ func CloneRepositoryForWorkspace(
 
 			// cleanup workspace dir if clone failed, otherwise we won't try to clone again when rebuilding this workspace
 			if cleanupErr := cleanupWorkspaceDir(workspaceDir); cleanupErr != nil {
-				return fmt.Errorf("clone repository (with gitcache): %w, cleanup workspace %w", err, cleanupErr)
+				return fmt.Errorf("clone repository (with gitcache): %w, cleanup workspace: %w", err, cleanupErr)
 			}
-			return fmt.Errorf("clone repository (with gitcache) %w", err)
+			return fmt.Errorf("clone repository (with gitcache): %w", err)
 		}
 	} else {
 		if options.Platform.GitCloneStrategy != "" {
@@ -383,9 +383,9 @@ func CloneRepositoryForWorkspace(
 		if err != nil {
 			// cleanup workspace dir if clone failed, otherwise we won't try to clone again when rebuilding this workspace
 			if cleanupErr := cleanupWorkspaceDir(workspaceDir); cleanupErr != nil {
-				return fmt.Errorf("clone repository: %w, cleanup workspace %w", err, cleanupErr)
+				return fmt.Errorf("clone repository: %w, cleanup workspace: %w", err, cleanupErr)
 			}
-			return fmt.Errorf("clone repository %w", err)
+			return fmt.Errorf("clone repository: %w", err)
 		}
 	}
 

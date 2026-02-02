@@ -254,7 +254,7 @@ func RefreshIDEOptions(devPodConfig *config.Config, workspace *provider.Workspac
 	// get user options
 	values, err := ParseOptions(options, ideOptions)
 	if err != nil {
-		return nil, fmt.Errorf("parse options %w", err)
+		return nil, fmt.Errorf("parse options: %w", err)
 	}
 	maps.Copy(retValues, values)
 
@@ -264,7 +264,7 @@ func RefreshIDEOptions(devPodConfig *config.Config, workspace *provider.Workspac
 		workspace.IDE.Options = retValues
 		err = provider.SaveWorkspaceConfig(workspace)
 		if err != nil {
-			return nil, fmt.Errorf("save workspace %w", err)
+			return nil, fmt.Errorf("save workspace: %w", err)
 		}
 	}
 

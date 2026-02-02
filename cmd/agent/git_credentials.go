@@ -128,18 +128,18 @@ func getCredentialsFromLocalMachine(credentials *gitcredentials.GitCredentials, 
 func doRequest(httpClient *http.Client, credentials *gitcredentials.GitCredentials, url string) (*gitcredentials.GitCredentials, error) {
 	rawJSON, err := json.Marshal(credentials)
 	if err != nil {
-		return nil, fmt.Errorf("error marshalling credentials %w", err)
+		return nil, fmt.Errorf("error marshalling credentials: %w", err)
 	}
 
 	response, err := httpClient.Post(url, "application/json", bytes.NewReader(rawJSON))
 	if err != nil {
-		return nil, fmt.Errorf("error retrieving credentials from credentials server %w", err)
+		return nil, fmt.Errorf("error retrieving credentials from credentials server: %w", err)
 	}
 	defer func() { _ = response.Body.Close() }()
 
 	raw, err := io.ReadAll(response.Body)
 	if err != nil {
-		return nil, fmt.Errorf("error reading credentials %w", err)
+		return nil, fmt.Errorf("error reading credentials: %w", err)
 	}
 
 	// has the request succeeded?
@@ -150,7 +150,7 @@ func doRequest(httpClient *http.Client, credentials *gitcredentials.GitCredentia
 	credentials = &gitcredentials.GitCredentials{}
 	err = json.Unmarshal(raw, credentials)
 	if err != nil {
-		return nil, fmt.Errorf("error decoding credentials %w", err)
+		return nil, fmt.Errorf("error decoding credentials: %w", err)
 	}
 
 	return credentials, nil

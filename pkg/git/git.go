@@ -181,7 +181,7 @@ func checkoutPR(ctx context.Context, gitInfo *GitInfo, extraEnv []string, target
 	fetchCmd := CommandContext(ctx, extraEnv, fetchArgs...)
 	fetchCmd.Dir = targetDir
 	if err := fetchCmd.Run(); err != nil {
-		return fmt.Errorf("fetch pull request reference %w", err)
+		return fmt.Errorf("fetch pull request reference: %w", err)
 	}
 
 	// git switch PR996
@@ -189,7 +189,7 @@ func checkoutPR(ctx context.Context, gitInfo *GitInfo, extraEnv []string, target
 	switchCmd := CommandContext(ctx, extraEnv, switchArgs...)
 	switchCmd.Dir = targetDir
 	if err := switchCmd.Run(); err != nil {
-		return fmt.Errorf("switch to branch %w", err)
+		return fmt.Errorf("switch to branch: %w", err)
 	}
 
 	return nil
@@ -207,7 +207,7 @@ func checkoutCommit(ctx context.Context, gitInfo *GitInfo, extraEnv []string, ta
 	gitCommand.Stdout = stdout
 	gitCommand.Stderr = stderr
 	if err := gitCommand.Run(); err != nil {
-		return fmt.Errorf("reset head to commit %w", err)
+		return fmt.Errorf("reset head to commit: %w", err)
 	}
 
 	return nil

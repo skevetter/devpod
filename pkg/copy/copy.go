@@ -19,7 +19,7 @@ func Chown(path string, userName string) error {
 	uid, _ := parseUserSpec(userName)
 	userID, err := lookupUser(uid)
 	if err != nil {
-		return fmt.Errorf("lookup user %w", err)
+		return fmt.Errorf("lookup user: %w", err)
 	}
 
 	uidInt, _ := strconv.Atoi(userID.Uid)
@@ -35,7 +35,7 @@ func ChownR(path string, userName string) error {
 	uid, _ := parseUserSpec(userName)
 	userID, err := lookupUser(uid)
 	if err != nil {
-		return fmt.Errorf("lookup user %w", err)
+		return fmt.Errorf("lookup user: %w", err)
 	}
 
 	uidInt, _ := strconv.Atoi(userID.Uid)

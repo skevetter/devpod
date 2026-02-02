@@ -19,7 +19,7 @@ func Single(file string, createCommand CreateCommand) error {
 	fileLock := flock.New(file + ".lock")
 	locked, err := fileLock.TryLock()
 	if err != nil {
-		return fmt.Errorf("acquire lock %w", err)
+		return fmt.Errorf("acquire lock: %w", err)
 	} else if !locked {
 		return nil
 	}

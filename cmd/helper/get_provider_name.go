@@ -39,12 +39,12 @@ func (cmd *GetProviderNameCmd) Run(ctx context.Context, args []string) error {
 
 	providerRaw, _, err := workspace.ResolveProvider(args[0], log.Default.ErrorStreamOnly())
 	if err != nil {
-		return fmt.Errorf("resolve provider %w", err)
+		return fmt.Errorf("resolve provider: %w", err)
 	}
 
 	providerConfig, err := provider.ParseProvider(bytes.NewReader(providerRaw))
 	if err != nil {
-		return fmt.Errorf("parse provider %w", err)
+		return fmt.Errorf("parse provider: %w", err)
 	}
 
 	fmt.Print(providerConfig.Name)

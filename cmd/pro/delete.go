@@ -63,12 +63,12 @@ func (cmd *DeleteCmd) Run(ctx context.Context, args []string) error {
 			return nil
 		}
 
-		return fmt.Errorf("load pro instance %s %w", proInstanceName, err)
+		return fmt.Errorf("load pro instance %s: %w", proInstanceName, err)
 	}
 
 	providerConfig, err := provider.LoadProviderConfig(devPodConfig.DefaultContext, proInstanceConfig.Provider)
 	if err != nil {
-		return fmt.Errorf("load provider %w", err)
+		return fmt.Errorf("load provider: %w", err)
 	}
 
 	// stop daemon and clean up local workspaces
@@ -107,7 +107,7 @@ func (cmd *DeleteCmd) Run(ctx context.Context, args []string) error {
 
 	err = os.RemoveAll(proInstanceDir)
 	if err != nil {
-		return fmt.Errorf("delete pro instance dir %w", err)
+		return fmt.Errorf("delete pro instance dir: %w", err)
 	}
 
 	log.WithFields(logrus.Fields{

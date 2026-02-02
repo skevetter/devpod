@@ -103,7 +103,7 @@ func (o *FleetServer) Install(projectDir string) error {
 
 	_, err = io.Copy(f, resp.Body)
 	if err != nil {
-		return fmt.Errorf("download fleet %w", err)
+		return fmt.Errorf("download fleet: %w", err)
 	}
 	_ = f.Close()
 
@@ -111,7 +111,7 @@ func (o *FleetServer) Install(projectDir string) error {
 	if o.userName != "" {
 		err = copy2.ChownR(location, o.userName)
 		if err != nil {
-			return fmt.Errorf("chown %w", err)
+			return fmt.Errorf("chown: %w", err)
 		}
 	}
 

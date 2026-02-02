@@ -26,7 +26,7 @@ func NewKubernetesDriver(workspaceInfo *provider2.AgentWorkspaceInfo, log log.Lo
 
 	client, namespace, err := NewClient(options.KubernetesConfig, options.KubernetesContext)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create kubernetes client %w", err)
+		return nil, fmt.Errorf("failed to create kubernetes client: %w", err)
 	}
 	// Namespace can be defined in many ways, we first check the kube config, then the provider options KUBERNETES_NAMESPACE, then failing that the default "devpod"
 	if namespace == "" || namespace == "default" || options.KubernetesNamespace != "" {
@@ -74,7 +74,7 @@ func (k *KubernetesDriver) getDevContainerPvc(ctx context.Context, id string) (*
 	containerInfo := &DevContainerInfo{}
 	err = json.Unmarshal([]byte(pvc.GetAnnotations()[DevPodInfoAnnotation]), containerInfo)
 	if err != nil {
-		return nil, nil, fmt.Errorf("decode dev container info %w", err)
+		return nil, nil, fmt.Errorf("decode dev container info: %w", err)
 	}
 
 	return pvc, containerInfo, nil
@@ -89,7 +89,7 @@ func (k *KubernetesDriver) StopDevContainer(ctx context.Context, workspaceId str
 	// delete pod
 	err := k.waitPodDeleted(ctx, workspaceId)
 	if err != nil {
-		return fmt.Errorf("delete pod %w", err)
+		return fmt.Errorf("delete pod: %w", err)
 	}
 
 	return nil
@@ -114,7 +114,7 @@ func (k *KubernetesDriver) DeleteDevContainer(ctx context.Context, workspaceId s
 		GracePeriodSeconds: &[]int64{5}[0],
 	})
 	if err != nil && !kerrors.IsNotFound(err) {
-		return fmt.Errorf("delete pvc %w", err)
+		return fmt.Errorf("delete pvc: %w", err)
 	}
 
 	// delete role binding & service account
@@ -122,7 +122,7 @@ func (k *KubernetesDriver) DeleteDevContainer(ctx context.Context, workspaceId s
 		k.Log.Infof("Delete role binding '%s'...", workspaceId)
 		err = k.client.Client().RbacV1().RoleBindings(k.namespace).Delete(ctx, workspaceId, metav1.DeleteOptions{})
 		if err != nil && !kerrors.IsNotFound(err) {
-			return fmt.Errorf("delete role binding %w", err)
+			return fmt.Errorf("delete role binding: %w", err)
 		}
 	}
 
@@ -173,12 +173,12 @@ func (k *KubernetesDriver) GetDevContainerLogs(ctx context.Context, workspaceID 
 
 	logs, err := k.client.Logs(ctx, k.namespace, workspaceID, "devpod", true)
 	if err != nil {
-		return fmt.Errorf("get logs %w", err)
+		return fmt.Errorf("get logs: %w", err)
 	}
 
 	_, err = io.Copy(stdout, logs)
 	if err != nil {
-		return fmt.Errorf("copy logs %w", err)
+		return fmt.Errorf("copy logs: %w", err)
 	}
 
 	return nil

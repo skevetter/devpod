@@ -183,7 +183,7 @@ func CloneConfig(config *Config) *Config {
 	ret := &Config{}
 	err := json.Unmarshal(out, ret)
 	if err != nil {
-		panic(fmt.Errorf("failed to unmarshal config %w", err))
+		panic(fmt.Errorf("failed to unmarshal config: %w", err))
 	}
 	for ctxName, ctx := range ret.Contexts {
 		if ctx.Providers == nil {
@@ -208,7 +208,7 @@ func LoadConfig(contextOverride string, providerOverride string) (*Config, error
 	configBytes, err := os.ReadFile(configOrigin)
 	if err != nil {
 		if !os.IsNotExist(err) {
-			return nil, fmt.Errorf("read config %w", err)
+			return nil, fmt.Errorf("read config: %w", err)
 		}
 
 		context := contextOverride

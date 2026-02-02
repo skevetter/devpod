@@ -59,7 +59,7 @@ func ConfigureSSHConfig(params SSHConfigParams) error {
 		provider:   params.Provider,
 	})
 	if err != nil {
-		return fmt.Errorf("parse ssh config %w", err)
+		return fmt.Errorf("parse ssh config: %w", err)
 	}
 
 	return writeSSHConfig(targetPath, newFile, params.Log)
@@ -275,7 +275,7 @@ func addHostSection(config, execPath string, params addHostParams) (string, erro
 func GetUser(workspaceID string, sshConfigPath string, sshConfigIncludePath string) (string, error) {
 	path, err := ResolveSSHConfigPath(sshConfigPath)
 	if err != nil {
-		return "", fmt.Errorf("invalid ssh config path %w", err)
+		return "", fmt.Errorf("invalid ssh config path: %w", err)
 	}
 	sshConfigPath = path
 
@@ -283,7 +283,7 @@ func GetUser(workspaceID string, sshConfigPath string, sshConfigIncludePath stri
 	if sshConfigIncludePath != "" {
 		includePath, err := ResolveSSHConfigPath(sshConfigIncludePath)
 		if err != nil {
-			return "", fmt.Errorf("invalid ssh config include path %w", err)
+			return "", fmt.Errorf("invalid ssh config include path: %w", err)
 		}
 		targetPath = includePath
 	}
@@ -315,7 +315,7 @@ func RemoveFromConfig(workspaceID string, sshConfigPath string, sshConfigInclude
 
 	newFile, err := removeFromConfig(targetPath, workspaceID+"."+"devpod")
 	if err != nil {
-		return fmt.Errorf("parse ssh config %w", err)
+		return fmt.Errorf("parse ssh config: %w", err)
 	}
 
 	return writeSSHConfig(targetPath, newFile, log)
@@ -329,7 +329,7 @@ func writeSSHConfig(path, content string, log log.Logger) error {
 
 	err = os.WriteFile(path, []byte(content), 0600)
 	if err != nil {
-		return fmt.Errorf("write ssh config %w", err)
+		return fmt.Errorf("write ssh config: %w", err)
 	}
 
 	return nil
@@ -338,7 +338,7 @@ func writeSSHConfig(path, content string, log log.Logger) error {
 func ResolveSSHConfigPath(sshConfigPath string) (string, error) {
 	homeDir, err := util.UserHomeDir()
 	if err != nil {
-		return "", fmt.Errorf("get home dir %w", err)
+		return "", fmt.Errorf("get home dir: %w", err)
 	}
 
 	if sshConfigPath == "" {
@@ -393,7 +393,7 @@ func transformHostSection(path, host string, transform func(line string) string)
 		}
 	}
 	if configScanner.Err() != nil {
-		return "", fmt.Errorf("parse ssh config %w", err)
+		return "", fmt.Errorf("parse ssh config: %w", err)
 	}
 
 	// remove residual empty line at start file

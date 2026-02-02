@@ -56,8 +56,8 @@ func NewTunnel(ctx context.Context, tunnel Tunnel, handler Handler) error {
 	// wait for result
 	select {
 	case err := <-innerTunnelChan:
-		return fmt.Errorf("inner tunnel %w", err)
+		return fmt.Errorf("inner tunnel: %w", err)
 	case err := <-outerTunnelChan:
-		return fmt.Errorf("outer tunnel %w", err)
+		return fmt.Errorf("outer tunnel: %w", err)
 	}
 }

@@ -64,7 +64,7 @@ func (cmd *SelfCmd) Run(ctx context.Context, devPodConfig *config.Config, provid
 		Log:     cmd.Log,
 	})
 	if err != nil {
-		return fmt.Errorf("get self %w", err)
+		return fmt.Errorf("get self: %w", err)
 	}
 
 	fmt.Println(buf.String())

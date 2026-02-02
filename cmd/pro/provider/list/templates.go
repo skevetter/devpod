@@ -80,7 +80,7 @@ func Templates(ctx context.Context, client client.Client, projectName string) (*
 
 	templateList, err := managementClient.Loft().ManagementV1().Projects().ListTemplates(ctx, projectName, metav1.GetOptions{})
 	if err != nil {
-		return templateList, fmt.Errorf("list templates %w", err)
+		return templateList, fmt.Errorf("list templates: %w", err)
 	} else if len(templateList.DevPodWorkspaceTemplates) == 0 {
 		return templateList, fmt.Errorf("seems like there is no template allowed in project %s, please make sure to at least have a single template available", projectName)
 	}
@@ -91,7 +91,7 @@ func Templates(ctx context.Context, client client.Client, projectName string) (*
 func FindTemplate(ctx context.Context, managementClient kube.Interface, projectName, templateName string) (*managementv1.DevPodWorkspaceTemplate, error) {
 	templateList, err := managementClient.Loft().ManagementV1().Projects().ListTemplates(ctx, projectName, metav1.GetOptions{})
 	if err != nil {
-		return nil, fmt.Errorf("list templates %w", err)
+		return nil, fmt.Errorf("list templates: %w", err)
 	} else if len(templateList.DevPodWorkspaceTemplates) == 0 {
 		return nil, fmt.Errorf("seems like there is no DevPod template allowed in project %s, please make sure to at least have a single template available", projectName)
 	}

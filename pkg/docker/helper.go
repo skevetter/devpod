@@ -69,7 +69,7 @@ func (r *DockerHelper) GPUSupportEnabled() (bool, error) {
 func (r *DockerHelper) FindDevContainer(ctx context.Context, labels []string) (*config.ContainerDetails, error) {
 	containers, err := r.FindContainer(ctx, labels)
 	if err != nil {
-		return nil, fmt.Errorf("docker ps %w", err)
+		return nil, fmt.Errorf("docker ps: %w", err)
 	} else if len(containers) == 0 {
 		return nil, nil
 	}
@@ -110,7 +110,7 @@ func (r *DockerHelper) DeleteVolume(ctx context.Context, volume string) error {
 
 	out, err = r.buildCmd(ctx, "volume", "rm", volume).CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("%s %w", string(out), err)
+		return fmt.Errorf("%s: %w", string(out), err)
 	}
 
 	return nil
@@ -119,7 +119,7 @@ func (r *DockerHelper) DeleteVolume(ctx context.Context, volume string) error {
 func (r *DockerHelper) Stop(ctx context.Context, id string) error {
 	out, err := r.buildCmd(ctx, "stop", id).CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("%s %w", string(out), err)
+		return fmt.Errorf("%s: %w", string(out), err)
 	}
 
 	return nil
@@ -136,7 +136,7 @@ func (r *DockerHelper) Pull(ctx context.Context, image string, stdin io.Reader, 
 func (r *DockerHelper) Remove(ctx context.Context, id string) error {
 	out, err := r.buildCmd(ctx, "rm", id).CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("%s %w", string(out), err)
+		return fmt.Errorf("%s: %w", string(out), err)
 	}
 
 	return nil
@@ -182,7 +182,7 @@ func (r *DockerHelper) GetImageTag(ctx context.Context, imageID string) (string,
 	args = append(args, imageID)
 	out, err := r.buildCmd(ctx, args...).Output()
 	if err != nil {
-		return "", fmt.Errorf("inspect container %w", command.WrapCommandError(out, err))
+		return "", fmt.Errorf("inspect container: %w", command.WrapCommandError(out, err))
 	}
 
 	repoTag := string(out)
@@ -206,7 +206,7 @@ func (r *DockerHelper) InspectImage(ctx context.Context, imageName string, tryRe
 
 		imageConfig, _, err := image.GetImageConfig(ctx, imageName, r.Log)
 		if err != nil {
-			return nil, fmt.Errorf("get image config remotely %w", err)
+			return nil, fmt.Errorf("get image config remotely: %w", err)
 		}
 
 		return &config.ImageDetails{
@@ -263,12 +263,12 @@ func (r *DockerHelper) Inspect(ctx context.Context, ids []string, inspectType st
 	args = append(args, ids...)
 	out, err := r.buildCmd(ctx, args...).Output()
 	if err != nil {
-		return fmt.Errorf("inspect container %w", command.WrapCommandError(out, err))
+		return fmt.Errorf("inspect container: %w", command.WrapCommandError(out, err))
 	}
 
 	err = json.Unmarshal(out, obj)
 	if err != nil {
-		return fmt.Errorf("parse inspect output %w", err)
+		return fmt.Errorf("parse inspect output: %w", err)
 	}
 
 	return nil

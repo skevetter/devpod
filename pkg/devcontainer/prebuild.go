@@ -36,7 +36,7 @@ func (r *runner) Build(ctx context.Context, options provider.BuildOptions) (stri
 	// check if we need to build container
 	buildInfo, err := r.build(ctx, substitutedConfig, substitutionContext, options)
 	if err != nil {
-		return "", fmt.Errorf("build image %w", err)
+		return "", fmt.Errorf("build image: %w", err)
 	}
 
 	// have a fallback value for PrebuildHash
@@ -75,7 +75,7 @@ func (r *runner) Build(ctx context.Context, options provider.BuildOptions) (stri
 
 	if isDockerComposeConfig(substitutedConfig.Config) {
 		if err := dockerDriver.TagDevContainer(ctx, buildInfo.ImageName, prebuildImage); err != nil {
-			return "", fmt.Errorf("tag image %w", err)
+			return "", fmt.Errorf("tag image: %w", err)
 		}
 	}
 
@@ -106,14 +106,14 @@ func (r *runner) Build(ctx context.Context, options provider.BuildOptions) (stri
 	// tag the image
 	for _, imageRef := range imageRefs {
 		if err := dockerDriver.TagDevContainer(ctx, prebuildImage, imageRef); err != nil {
-			return "", fmt.Errorf("tag image %w", err)
+			return "", fmt.Errorf("tag image: %w", err)
 		}
 	}
 
 	// push the image to the registry
 	for _, imageRef := range imageRefs {
 		if err := dockerDriver.PushDevContainer(ctx, imageRef); err != nil {
-			return "", fmt.Errorf("push image %w", err)
+			return "", fmt.Errorf("push image: %w", err)
 		}
 	}
 

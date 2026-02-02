@@ -341,11 +341,11 @@ func (cmd *SetupContainerCmd) sendSetupResult(
 ) error {
 	out, err := json.Marshal(setupInfo)
 	if err != nil {
-		return fmt.Errorf("marshal setup info %w", err)
+		return fmt.Errorf("marshal setup info: %w", err)
 	}
 
 	if _, err := tunnelClient.SendResult(ctx, &tunnel.Message{Message: string(out)}); err != nil {
-		return fmt.Errorf("send result %w", err)
+		return fmt.Errorf("send result: %w", err)
 	}
 
 	return nil
@@ -365,7 +365,7 @@ func fillContainerEnv(setupInfo *config.Result) error {
 	newMergedConfig := &config.MergedDevContainerConfig{}
 	err := config.SubstituteContainerEnv(config.ListToObject(os.Environ()), setupInfo.MergedConfig, newMergedConfig)
 	if err != nil {
-		return fmt.Errorf("substitute container env %w", err)
+		return fmt.Errorf("substitute container env: %w", err)
 	}
 	setupInfo.MergedConfig = newMergedConfig
 	return nil
@@ -403,12 +403,12 @@ func dockerlessBuild(
 		// try to rename from fallback dir
 		err = copy.RenameDirectory(fallbackDir, buildInfoDir)
 		if err != nil {
-			return fmt.Errorf("rename dir %w", err)
+			return fmt.Errorf("rename dir: %w", err)
 		}
 
 		_, err = os.Stat(buildInfoDir)
 		if err != nil {
-			return fmt.Errorf("couldn't find build dir %s %w", buildInfoDir, err)
+			return fmt.Errorf("couldn't find build dir %s: %w", buildInfoDir, err)
 		}
 	}
 
@@ -485,7 +485,7 @@ func dockerlessBuild(
 	configFile := &v1.ConfigFile{}
 	err = json.Unmarshal(rawConfig, configFile)
 	if err != nil {
-		return fmt.Errorf("parse container config %w", err)
+		return fmt.Errorf("parse container config: %w", err)
 	}
 
 	// apply env
@@ -676,7 +676,7 @@ func (cmd *SetupContainerCmd) setupOpenVSCode(setupInfo *config.Result, ideOptio
 			return exec.Command(binaryPath, "agent", "container", "openvscode-async", "--setup-info", cmd.SetupInfo), nil
 		})
 		if err != nil {
-			return fmt.Errorf("install extensions %w", err)
+			return fmt.Errorf("install extensions: %w", err)
 		}
 	}
 
@@ -704,7 +704,7 @@ func configureSystemGitCredentials(ctx context.Context, cancel context.CancelFun
 
 	err = git.CommandContext(ctx, git.GetDefaultExtraEnv(false), "config", "--system", "--add", "credential.helper", gitCredentials).Run()
 	if err != nil {
-		return nil, fmt.Errorf("add git credential helper %w", err)
+		return nil, fmt.Errorf("add git credential helper: %w", err)
 	}
 
 	cleanup := func() {
@@ -741,14 +741,14 @@ func streamMount(ctx context.Context, workspaceInfo *provider2.ContainerWorkspac
 		)
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 		if err != nil {
-			return fmt.Errorf("create request %w", err)
+			return fmt.Errorf("create request: %w", err)
 		}
 		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", workspaceInfo.CLIOptions.Platform.AccessKey))
 
 		// send the request
 		resp, err := httpClient.Do(req)
 		if err != nil {
-			return fmt.Errorf("download workspace %w", err)
+			return fmt.Errorf("download workspace: %w", err)
 		}
 		defer func() { _ = resp.Body.Close() }()
 
@@ -767,7 +767,7 @@ func streamMount(ctx context.Context, workspaceInfo *provider2.ContainerWorkspac
 		// target folder
 		err = extract.Extract(progressReader, m.Target)
 		if err != nil {
-			return fmt.Errorf("stream mount %s %w", m.String(), err)
+			return fmt.Errorf("stream mount %s: %w", m.String(), err)
 		}
 
 		return nil
@@ -777,13 +777,13 @@ func streamMount(ctx context.Context, workspaceInfo *provider2.ContainerWorkspac
 	logger.Infof("Copy %s into DevContainer %s", m.Source, m.Target)
 	stream, err := tunnelClient.StreamMount(ctx, &tunnel.StreamMountRequest{Mount: m.String()})
 	if err != nil {
-		return fmt.Errorf("init stream mount %s %w", m.String(), err)
+		return fmt.Errorf("init stream mount %s: %w", m.String(), err)
 	}
 
 	// target folder
 	err = extract.Extract(tunnelserver.NewStreamReader(stream, logger), m.Target)
 	if err != nil {
-		return fmt.Errorf("stream mount %s %w", m.String(), err)
+		return fmt.Errorf("stream mount %s: %w", m.String(), err)
 	}
 
 	return nil
