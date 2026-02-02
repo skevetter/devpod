@@ -107,9 +107,13 @@ func runTunnelServer(p tunnelServerParams) {
 }
 
 // addGitSSHSigningKey adds SSH signing key to command if configured.
-func addGitSSHSigningKey(command string) string {
+func addGitSSHSigningKey(command string, log log.Logger) string {
 	format, userSigningKey, err := gitsshsigning.ExtractGitConfiguration()
-	if err == nil && format == gitsshsigning.GPGFormatSSH && userSigningKey != "" {
+	if err != nil {
+		log.Debugf("failed to extract git configuration: %v", err)
+		return command
+	}
+	if format == gitsshsigning.GPGFormatSSH && userSigningKey != "" {
 		encodedKey := base64.StdEncoding.EncodeToString([]byte(userSigningKey))
 		command += fmt.Sprintf(" --git-user-signing-key %s", encodedKey)
 	}
@@ -127,7 +131,7 @@ func buildCredentialsCommand(opts RunServicesOptions) string {
 		command += " --configure-git-helper"
 	}
 	if opts.ConfigureGitSSHSignatureHelper {
-		command = addGitSSHSigningKey(command)
+		command = addGitSSHSigningKey(command, opts.Log)
 	}
 	if opts.ConfigureDockerCredentials {
 		command += " --configure-docker-helper"
@@ -179,6 +183,11 @@ func runServicesIteration(ctx context.Context, opts RunServicesOptions, forwarde
 
 	err = devssh.Run(cancelCtx, opts.ContainerClient, command, stdinReader, stdoutWriter, writer, nil)
 	if err != nil {
+		// Drain errChan to allow goroutine to exit cleanly
+		select {
+		case <-errChan:
+		default:
+		}
 		return err
 	}
 	return <-errChan
