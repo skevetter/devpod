@@ -149,14 +149,17 @@ func downloadWithRetry(
 	targetFolder string,
 	log log.Logger,
 ) (string, error) {
+	var lastErr error
 	for range retryCount {
 		binaryPath, err := downloadBinary(binaryName, binary, targetFolder, log)
 		if err != nil {
-			return "", fmt.Errorf("downloading binary %s %w", binaryName, err)
+			lastErr = err
+			continue
 		}
 
 		if binary.Checksum != "" {
 			if !verifyDownloadedBinary(binaryPath, binary, binaryName, log) {
+				lastErr = fmt.Errorf("checksum verification failed")
 				continue
 			}
 		}
@@ -164,7 +167,7 @@ func downloadWithRetry(
 		toCache(binary, binaryPath, log)
 		return binaryPath, nil
 	}
-	return "", fmt.Errorf("cannot download provider binary %s, because checksum check has failed", binaryName)
+	return "", fmt.Errorf("failed to download binary %s after %d attempts: %w", binaryName, retryCount, lastErr)
 }
 
 func verifyDownloadedBinary(
@@ -308,7 +311,7 @@ func handleLocalBinary(binary *provider2.ProviderBinary, targetFolder string) (s
 	}
 
 	targetPath := localTargetPath(binary, targetFolder)
-	if err := copyLocal(binary, targetFolder); err != nil {
+	if err := copyLocal(binary, targetPath); err != nil {
 		_ = os.RemoveAll(targetFolder)
 		return "", err
 	}
