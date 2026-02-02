@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/docker/go-connections/nat"
+	"github.com/kballard/go-shellquote"
 	"github.com/loft-sh/api/v4/pkg/devpod"
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/agent"
@@ -31,6 +32,15 @@ import (
 	"k8s.io/client-go/util/retry"
 )
 
+const (
+	debugFlag          = " --debug"
+	defaultExitTimeout = time.Second * 5
+	maxRetrySteps      = math.MaxInt
+	retryDuration      = 500 * time.Millisecond
+	retryFactor        = 1.0
+	retryJitter        = 0.1
+)
+
 // RunServicesOptions contains all options for running services.
 type RunServicesOptions struct {
 	DevPodConfig                   *config.Config
@@ -46,15 +56,15 @@ type RunServicesOptions struct {
 	Log                            log.Logger
 }
 
-// getExitAfterTimeout calculates the timeout value based on configuration
+// getExitAfterTimeout calculates the timeout value based on configuration.
 func getExitAfterTimeout(devPodConfig *config.Config) time.Duration {
 	if devPodConfig.ContextOption(config.ContextOptionExitAfterTimeout) != "true" {
 		return 0
 	}
-	return time.Second * 5
+	return defaultExitTimeout
 }
 
-// createForwarder creates a port forwarder if port forwarding is enabled
+// createForwarder creates a port forwarder if port forwarding is enabled.
 func createForwarder(opts RunServicesOptions, forwardedPorts []string) netstat.Forwarder {
 	if !opts.ForwardPorts {
 		return nil
@@ -64,28 +74,40 @@ func createForwarder(opts RunServicesOptions, forwardedPorts []string) netstat.F
 	return newForwarder(opts.ContainerClient, ports, opts.Log)
 }
 
-// runTunnelServer runs the tunnel server in a goroutine
-func runTunnelServer(ctx context.Context, opts RunServicesOptions, stdoutReader *os.File, stdinWriter *os.File, forwarder netstat.Forwarder, errChan chan error, cancel context.CancelFunc) {
-	defer cancel()
-	defer func() { _ = stdinWriter.Close() }()
-	err := tunnelserver.RunServicesServer(
-		ctx,
-		stdoutReader,
-		stdinWriter,
-		opts.ConfigureGitCredentials,
-		opts.ConfigureDockerCredentials,
-		forwarder,
-		opts.Workspace,
-		opts.Log,
-		tunnelserver.WithPlatformOptions(opts.PlatformOptions),
-	)
-	if err != nil {
-		errChan <- fmt.Errorf("run tunnel server %w", err)
-	}
-	close(errChan)
+// tunnelServerParams contains parameters for running the tunnel server.
+type tunnelServerParams struct {
+	ctx          context.Context
+	opts         RunServicesOptions
+	stdoutReader *os.File
+	stdinWriter  *os.File
+	forwarder    netstat.Forwarder
+	errChan      chan error
+	cancel       context.CancelFunc
 }
 
-// addGitSSHSigningKey adds SSH signing key to command if configured
+// runTunnelServer runs the tunnel server in a goroutine.
+func runTunnelServer(p tunnelServerParams) {
+	defer p.cancel()
+	defer func() { _ = p.stdoutReader.Close() }()
+	defer func() { _ = p.stdinWriter.Close() }()
+	err := tunnelserver.RunServicesServer(
+		p.ctx,
+		p.stdoutReader,
+		p.stdinWriter,
+		p.opts.ConfigureGitCredentials,
+		p.opts.ConfigureDockerCredentials,
+		p.forwarder,
+		p.opts.Workspace,
+		p.opts.Log,
+		tunnelserver.WithPlatformOptions(p.opts.PlatformOptions),
+	)
+	if err != nil {
+		p.errChan <- fmt.Errorf("run tunnel server %w", err)
+	}
+	close(p.errChan)
+}
+
+// addGitSSHSigningKey adds SSH signing key to command if configured.
 func addGitSSHSigningKey(command string) string {
 	format, userSigningKey, err := gitsshsigning.ExtractGitConfiguration()
 	if err == nil && format == gitsshsigning.GPGFormatSSH && userSigningKey != "" {
@@ -95,12 +117,12 @@ func addGitSSHSigningKey(command string) string {
 	return command
 }
 
-// buildCredentialsCommand builds the credentials server command
+// buildCredentialsCommand builds the credentials server command.
 func buildCredentialsCommand(opts RunServicesOptions) string {
 	command := fmt.Sprintf(
-		"'%s' agent container credentials-server --user '%s'",
-		agent.ContainerDevPodHelperLocation,
-		opts.User,
+		"%s agent container credentials-server --user %s",
+		shellquote.Join(agent.ContainerDevPodHelperLocation),
+		shellquote.Join(opts.User),
 	)
 	if opts.ConfigureGitCredentials {
 		command += " --configure-git-helper"
@@ -115,12 +137,12 @@ func buildCredentialsCommand(opts RunServicesOptions) string {
 		command += " --forward-ports"
 	}
 	if opts.Log.GetLevel() == logrus.DebugLevel {
-		command += " --debug"
+		command += debugFlag
 	}
 	return command
 }
 
-// runServicesIteration performs one iteration of the retry loop
+// runServicesIteration performs one iteration of the retry loop.
 func runServicesIteration(ctx context.Context, opts RunServicesOptions, forwardedPorts []string) error {
 	stdoutReader, stdoutWriter, err := os.Pipe()
 	if err != nil {
@@ -132,6 +154,7 @@ func runServicesIteration(ctx context.Context, opts RunServicesOptions, forwarde
 	if err != nil {
 		return err
 	}
+	defer func() { _ = stdinReader.Close() }()
 
 	cancelCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -139,7 +162,15 @@ func runServicesIteration(ctx context.Context, opts RunServicesOptions, forwarde
 	forwarder := createForwarder(opts, forwardedPorts)
 
 	errChan := make(chan error, 1)
-	go runTunnelServer(cancelCtx, opts, stdoutReader, stdinWriter, forwarder, errChan, cancel)
+	go runTunnelServer(tunnelServerParams{
+		ctx:          cancelCtx,
+		opts:         opts,
+		stdoutReader: stdoutReader,
+		stdinWriter:  stdinWriter,
+		forwarder:    forwarder,
+		errChan:      errChan,
+		cancel:       cancel,
+	})
 
 	writer := opts.Log.ErrorStreamOnly().Writer(logrus.DebugLevel, false)
 	defer func() { _ = writer.Close() }()
@@ -157,16 +188,22 @@ func runServicesIteration(ctx context.Context, opts RunServicesOptions, forwarde
 func RunServices(ctx context.Context, opts RunServicesOptions) error {
 	exitAfterTimeout := getExitAfterTimeout(opts.DevPodConfig)
 
-	forwardedPorts, err := forwardDevContainerPorts(ctx, opts.ContainerClient, opts.ExtraPorts, exitAfterTimeout, opts.Log)
+	forwardedPorts, err := forwardDevContainerPorts(portForwardParams{
+		ctx:              ctx,
+		containerClient:  opts.ContainerClient,
+		extraPorts:       opts.ExtraPorts,
+		exitAfterTimeout: exitAfterTimeout,
+		log:              opts.Log,
+	})
 	if err != nil {
 		return fmt.Errorf("forward ports %w", err)
 	}
 
 	return retry.OnError(wait.Backoff{
-		Steps:    math.MaxInt,
-		Duration: 500 * time.Millisecond,
-		Factor:   1,
-		Jitter:   0.1,
+		Steps:    maxRetrySteps,
+		Duration: retryDuration,
+		Factor:   retryFactor,
+		Jitter:   retryJitter,
 	}, func(err error) bool {
 		return true
 	}, func() error {
@@ -174,74 +211,125 @@ func RunServices(ctx context.Context, opts RunServicesOptions) error {
 	})
 }
 
-// forwardDevContainerPorts forwards all the ports defined in the devcontainer.json
-func forwardDevContainerPorts(ctx context.Context, containerClient *ssh.Client, extraPorts []string, exitAfterTimeout time.Duration, log log.Logger) ([]string, error) {
+// portForwardParams contains parameters for port forwarding.
+type portForwardParams struct {
+	ctx              context.Context
+	containerClient  *ssh.Client
+	extraPorts       []string
+	exitAfterTimeout time.Duration
+	log              log.Logger
+}
+
+// forwardDevContainerPorts forwards all the ports defined in the devcontainer.json.
+func forwardDevContainerPorts(p portForwardParams) ([]string, error) {
+	result, err := getContainerResult(p)
+	if err != nil {
+		return nil, err
+	}
+
+	forwardedPorts := []string{}
+	forwardedPorts = append(forwardedPorts, forwardExtraPorts(p)...)
+	forwardedPorts = append(forwardedPorts, forwardAppPorts(p, result)...)
+	forwardedPorts = append(forwardedPorts, forwardConfigPorts(p, result)...)
+
+	return forwardedPorts, nil
+}
+
+// getContainerResult retrieves and parses the container result.
+func getContainerResult(p portForwardParams) (*config2.Result, error) {
 	stdout := &bytes.Buffer{}
 	stderr := &bytes.Buffer{}
-	err := devssh.Run(ctx, containerClient, "cat "+setup.ResultLocation, nil, stdout, stderr, nil)
+	err := devssh.Run(p.ctx, p.containerClient, "cat "+setup.ResultLocation, nil, stdout, stderr, nil)
 	if err != nil {
 		return nil, fmt.Errorf("retrieve container result: %s\n%s%w", stdout.String(), stderr.String(), err)
 	}
 
-	// parse result
 	result := &config2.Result{}
 	err = json.Unmarshal(stdout.Bytes(), result)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing container result %s %w", stdout.String(), err)
 	}
-	log.WithFields(logrus.Fields{
-		"location": setup.ResultLocation,
-	}).Debug("parsed container result")
+	p.log.Debugf("parsed container result from %s", setup.ResultLocation)
 
-	// return forwarded ports
+	return result, nil
+}
+
+// forwardExtraPorts forwards extra ports specified by the user.
+func forwardExtraPorts(p portForwardParams) []string {
 	forwardedPorts := []string{}
-
-	// extra ports
-	for _, port := range extraPorts {
-		forwardedPorts = append(forwardedPorts, forwardPort(ctx, containerClient, port, exitAfterTimeout, log)...)
+	for _, port := range p.extraPorts {
+		forwardedPorts = append(forwardedPorts, forwardPort(singlePortForwardParams{
+			ctx:              p.ctx,
+			containerClient:  p.containerClient,
+			port:             port,
+			exitAfterTimeout: p.exitAfterTimeout,
+			log:              p.log,
+		})...)
 	}
+	return forwardedPorts
+}
 
-	// app ports
+// forwardAppPorts forwards application ports from the devcontainer config.
+func forwardAppPorts(p portForwardParams, result *config2.Result) []string {
+	forwardedPorts := []string{}
 	for _, port := range result.MergedConfig.AppPort {
-		forwardedPorts = append(forwardedPorts, forwardPort(ctx, containerClient, port, 0, log)...)
+		forwardedPorts = append(forwardedPorts, forwardPort(singlePortForwardParams{
+			ctx:              p.ctx,
+			containerClient:  p.containerClient,
+			port:             port,
+			exitAfterTimeout: 0,
+			log:              p.log,
+		})...)
 	}
+	return forwardedPorts
+}
 
-	// forward ports
+// forwardConfigPorts forwards ports from the forwardPorts configuration.
+func forwardConfigPorts(p portForwardParams, result *config2.Result) []string {
+	forwardedPorts := []string{}
 	for _, port := range result.MergedConfig.ForwardPorts {
-		// convert port
 		host, portNumber, err := parseForwardPort(port)
 		if err != nil {
-			log.Debugf("Error parsing forwardPort %s: %v", port, err)
+			p.log.Debugf("error parsing forwardPort %s: %v", port, err)
 		}
 
-		// try to forward
+		// Forward port asynchronously to avoid blocking
 		go func(port string) {
-			log.Debugf("Forward port %s", port)
+			p.log.Debugf("forward port %s", port)
 			err = devssh.PortForward(
-				ctx,
-				containerClient,
+				p.ctx,
+				p.containerClient,
 				"tcp",
 				fmt.Sprintf("localhost:%d", portNumber),
 				"tcp",
 				fmt.Sprintf("%s:%d", host, portNumber),
 				0,
-				log,
+				p.log,
 			)
 			if err != nil {
-				log.Errorf("Error port forwarding %s: %v", port, err)
+				p.log.Errorf("error port forwarding %s: %v", port, err)
 			}
 		}(port)
 
 		forwardedPorts = append(forwardedPorts, port)
 	}
-
-	return forwardedPorts, nil
+	return forwardedPorts
 }
 
-func forwardPort(ctx context.Context, containerClient *ssh.Client, port string, exitAfterTimeout time.Duration, log log.Logger) []string {
-	parsed, err := nat.ParsePortSpec(port)
+// singlePortForwardParams contains parameters for forwarding a single port.
+type singlePortForwardParams struct {
+	ctx              context.Context
+	containerClient  *ssh.Client
+	port             string
+	exitAfterTimeout time.Duration
+	log              log.Logger
+}
+
+// forwardPort forwards a single port specification.
+func forwardPort(p singlePortForwardParams) []string {
+	parsed, err := nat.ParsePortSpec(p.port)
 	if err != nil {
-		log.Debugf("Error parsing appPort %s: %v", port, err)
+		p.log.Debugf("error parsing appPort %s: %v", p.port, err)
 		return nil
 	}
 
@@ -256,10 +344,27 @@ func forwardPort(ctx context.Context, containerClient *ssh.Client, port string, 
 		}
 		go func(parsedPort nat.PortMapping) {
 			// do the forward
-			log.Debugf("Forward port %s:%s", parsedPort.Binding.HostIP+":"+parsedPort.Binding.HostPort, "localhost:"+parsedPort.Port.Port())
-			err = devssh.PortForward(ctx, containerClient, "tcp", parsedPort.Binding.HostIP+":"+parsedPort.Binding.HostPort, "tcp", "localhost:"+parsedPort.Port.Port(), exitAfterTimeout, log)
+			hostAddr := parsedPort.Binding.HostIP + ":" + parsedPort.Binding.HostPort
+			containerAddr := "localhost:" + parsedPort.Port.Port()
+			p.log.Debugf("forward port %s to %s", hostAddr, containerAddr)
+			err = devssh.PortForward(
+				p.ctx,
+				p.containerClient,
+				"tcp",
+				hostAddr,
+				"tcp",
+				containerAddr,
+				p.exitAfterTimeout,
+				p.log,
+			)
 			if err != nil {
-				log.Errorf("Error port forwarding %s:%s:%s: %v", parsedPort.Binding.HostIP, parsedPort.Binding.HostPort, parsedPort.Port.Port(), err)
+				p.log.Errorf(
+					"error port forwarding %s:%s to %s: %v",
+					parsedPort.Binding.HostIP,
+					parsedPort.Binding.HostPort,
+					parsedPort.Port.Port(),
+					err,
+				)
 			}
 		}(parsedPort)
 
@@ -269,6 +374,7 @@ func forwardPort(ctx context.Context, containerClient *ssh.Client, port string, 
 	return forwardedPorts
 }
 
+// parseForwardPort parses a port specification into host and port number.
 func parseForwardPort(port string) (string, int64, error) {
 	tokens := strings.Split(port, ":")
 
