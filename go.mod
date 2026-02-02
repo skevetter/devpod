@@ -304,7 +304,7 @@ require (
 	github.com/containerd/continuity v0.4.5 // indirect
 	github.com/denisbrodbeck/machineid v1.0.1
 	github.com/docker/distribution v2.8.3+incompatible // indirect
-	github.com/docker/docker-credential-helpers v0.9.5 // indirect
+	github.com/docker/docker-credential-helpers v0.9.5
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/go-logr/logr v1.4.3
 	github.com/go-logr/stdr v1.2.2 // indirect

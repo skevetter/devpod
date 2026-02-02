@@ -3,6 +3,7 @@
 package container
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"encoding/json"
@@ -418,21 +419,25 @@ func dockerlessBuild(
 	}
 
 	// configure credentials
+	var dockerCredentialsDir string
 	if dockerlessOptions.DisableDockerCredentials != "true" {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithCancel(ctx)
 		defer cancel()
 
 		// configure the docker credentials
-		dockerCredentialsDir, err := configureDockerCredentials(ctx, cancel, client, log)
+		var err error
+		dockerCredentialsDir, err = configureDockerCredentials(ctx, cancel, client, log)
 		if err != nil {
-			log.Errorf("error configuring docker credentials: %v", err)
+			log.Warnf("failed to configure docker credentials, private registries may not work: %v", err)
 		} else {
 			defer func() {
 				_ = os.Unsetenv("DOCKER_CONFIG")
 				_ = os.RemoveAll(dockerCredentialsDir)
 			}()
 		}
+	} else {
+		log.Debugf("docker credentials disabled via DisableDockerCredentials option")
 	}
 
 	// build args
@@ -455,23 +460,7 @@ func dockerlessBuild(
 		}
 	}
 
-	// write output to log
-	errWriter := log.Writer(logrus.InfoLevel, false)
-	defer func() { _ = errWriter.Close() }()
-
-	// start building
-	log.Infof("start dockerless building %s %s", "/.dockerless/dockerless", strings.Join(args, " "))
-	cmd := exec.CommandContext(ctx, "/.dockerless/dockerless", args...)
-
-	if debug {
-		debugWriter := log.Writer(logrus.DebugLevel, false)
-		defer func() { _ = debugWriter.Close() }()
-		cmd.Stdout = debugWriter
-	}
-	cmd.Stderr = errWriter
-	cmd.Env = os.Environ()
-	err = cmd.Run()
-	if err != nil {
+	if err := runDockerlessBuild(ctx, args, debug, log); err != nil {
 		return err
 	}
 
@@ -514,6 +503,36 @@ func parseIgnorePaths(ignorePaths string) []string {
 	}
 
 	return retPaths
+}
+
+func runDockerlessBuild(ctx context.Context, args []string, debug bool, log log.Logger) error {
+	errWriter := log.Writer(logrus.InfoLevel, false)
+	defer func() { _ = errWriter.Close() }()
+
+	var stderrBuf bytes.Buffer
+	stderrWriter := io.MultiWriter(errWriter, &stderrBuf)
+
+	cmd := exec.CommandContext(ctx, "/.dockerless/dockerless", args...)
+	var debugWriter io.WriteCloser
+	if debug {
+		debugWriter = log.Writer(logrus.DebugLevel, false)
+		defer func() { _ = debugWriter.Close() }()
+		cmd.Stdout = debugWriter
+	}
+
+	cmd.Stderr = stderrWriter
+	cmd.Env = os.Environ()
+
+	log.Infof("starting dockerless build: %s %s", "/.dockerless/dockerless", strings.Join(args, " "))
+	err := cmd.Run()
+	if err != nil {
+		stderrOutput := strings.TrimSpace(stderrBuf.String())
+		log.Errorf("dockerless build failed: %v: stderr output: %s", err, stderrOutput)
+		return err
+	}
+
+	log.Debugf("dockerless build completed")
+	return nil
 }
 
 func configureDockerCredentials(

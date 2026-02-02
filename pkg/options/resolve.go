@@ -272,6 +272,9 @@ func ResolveAgentConfig(devConfig *config.Config, provider *provider2.ProviderCo
 		agentConfig.InjectGitCredentials = types.StrBool(devConfig.ContextOption(config.ContextOptionSSHInjectGitCredentials))
 	}
 	agentConfig.InjectDockerCredentials = types.StrBool(resolver.ResolveDefaultValue(string(agentConfig.InjectDockerCredentials), options))
+	if dockerCredOpt := devConfig.ContextOption(config.ContextOptionSSHInjectDockerCredentials); dockerCredOpt != "" {
+		agentConfig.InjectDockerCredentials = types.StrBool(dockerCredOpt)
+	}
 	return agentConfig
 }
 

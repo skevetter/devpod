@@ -25,11 +25,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const (
-	RootDir          = "/var/devpod"
-	DaemonConfigPath = "/var/run/secrets/devpod/daemon_config"
-)
-
 type DaemonCmd struct {
 	Config *agentd.DaemonConfig
 	Log    log.Logger
@@ -135,13 +130,13 @@ func (cmd *DaemonCmd) Run(c *cobra.Command, args []string) error {
 func (cmd *DaemonCmd) loadConfig() error {
 	// check local file
 	encodedCfg := ""
-	configBytes, err := os.ReadFile(DaemonConfigPath)
+	configBytes, err := os.ReadFile(agent.DaemonConfigPath)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			// check environment variable
 			encodedCfg = os.Getenv(config.WorkspaceDaemonConfigExtraEnvVar)
 		} else {
-			return fmt.Errorf("get daemon config file %s: %w", DaemonConfigPath, err)
+			return fmt.Errorf("get daemon config file %s: %w", agent.DaemonConfigPath, err)
 		}
 	} else {
 		encodedCfg = string(configBytes)
@@ -217,7 +212,7 @@ func runTimeoutMonitor(ctx context.Context, duration time.Duration, errChan chan
 // runNetworkServer starts the network server.
 func runNetworkServer(ctx context.Context, cmd *DaemonCmd, errChan chan<- error, wg *sync.WaitGroup) {
 	defer wg.Done()
-	if err := os.MkdirAll(RootDir, os.ModePerm); err != nil {
+	if err := os.MkdirAll(agent.RootDir, os.ModePerm); err != nil {
 		errChan <- err
 		return
 	}
@@ -236,7 +231,7 @@ func runNetworkServer(ctx context.Context, cmd *DaemonCmd, errChan chan<- error,
 		PlatformHost:  ts.RemoveProtocol(cmd.Config.Platform.PlatformHost),
 		WorkspaceHost: cmd.Config.Platform.WorkspaceHost,
 		Client:        baseClient,
-		RootDir:       RootDir,
+		RootDir:       agent.RootDir,
 		LogF: func(format string, args ...any) {
 			logger.Infof(format, args...)
 		},
