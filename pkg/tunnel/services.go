@@ -205,6 +205,10 @@ func RunServices(ctx context.Context, opts RunServicesOptions) error {
 		Factor:   retryFactor,
 		Jitter:   retryJitter,
 	}, func(err error) bool {
+		// Do not retry on context cancellation or deadline exceeded
+		if ctx.Err() != nil {
+			return false
+		}
 		return true
 	}, func() error {
 		return runServicesIteration(ctx, opts, forwardedPorts)
@@ -291,6 +295,7 @@ func forwardConfigPorts(p portForwardParams, result *config2.Result) []string {
 		host, portNumber, err := parseForwardPort(port)
 		if err != nil {
 			p.log.Debugf("error parsing forwardPort %s: %v", port, err)
+			continue
 		}
 
 		// Forward port asynchronously to avoid blocking
