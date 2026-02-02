@@ -13,7 +13,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/pkg/errors"
+	"errors"
+
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/agent"
 	agentd "github.com/skevetter/devpod/pkg/daemon/agent"

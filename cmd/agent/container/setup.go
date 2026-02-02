@@ -21,7 +21,8 @@ import (
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/skevetter/devpod/cmd/flags"
 
-	"github.com/pkg/errors"
+	"errors"
+
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/agent"
 	"github.com/skevetter/devpod/pkg/agent/tunnel"

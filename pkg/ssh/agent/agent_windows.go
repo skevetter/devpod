@@ -6,8 +6,9 @@ import (
 	"strings"
 	"sync"
 
+	"errors"
+
 	"github.com/Microsoft/go-winio"
-	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 	gosshagent "golang.org/x/crypto/ssh/agent"
 )

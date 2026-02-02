@@ -11,8 +11,6 @@ import (
 	"path"
 	"strings"
 	"time"
-
-	perrors "github.com/pkg/errors"
 )
 
 type Options struct {
@@ -49,7 +47,7 @@ func Extract(origReader io.Reader, destFolder string, options ...Option) error {
 	if testBytes[0] == 31 && testBytes[1] == 139 {
 		gzipReader, err := gzip.NewReader(bufioReader)
 		if err != nil {
-			return perrors.Errorf("error decompressing: %v", err)
+			return fmt.Errorf("error decompressing: %v", err)
 		}
 		defer func() { _ = gzipReader.Close() }()
 

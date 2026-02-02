@@ -13,8 +13,9 @@ import (
 	"strconv"
 	"strings"
 
+	"errors"
+
 	"github.com/loft-sh/api/v4/pkg/devpod"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/agent/tunnel"
 	"github.com/skevetter/devpod/pkg/command"

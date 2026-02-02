@@ -5,7 +5,6 @@ import (
 	"os/exec"
 	"strings"
 
-	perrors "github.com/pkg/errors"
 	"github.com/skevetter/log"
 	"github.com/skevetter/ssh"
 )
@@ -13,7 +12,7 @@ import (
 func exitWithError(sess ssh.Session, err error, log log.Logger) {
 	if err != nil {
 		var exitError *exec.ExitError
-		if !errors.As(perrors.Cause(err), &exitError) {
+		if !errors.As(errors.Unwrap(err), &exitError) {
 			log.Errorf("Exit error: %v", err)
 			msg := strings.TrimPrefix(err.Error(), "exec: ")
 			if _, err := sess.Stderr().Write([]byte(msg)); err != nil {
@@ -30,7 +29,7 @@ func exitWithError(sess ssh.Session, err error, log log.Logger) {
 }
 
 func exitCode(err error) int {
-	err = perrors.Cause(err)
+	err = errors.Unwrap(err)
 	if err == nil {
 		return 0
 	}

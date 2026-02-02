@@ -6,7 +6,6 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/pkg/errors"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	"github.com/skevetter/devpod/pkg/devcontainer/crane"
 	"github.com/skevetter/devpod/pkg/language"
@@ -68,7 +67,7 @@ func (r *runner) getRawConfig(options provider2.CLIOptions) (*config.DevContaine
 						return match, nil
 					}
 				}
-				return "", errors.Errorf("devcontainer with ID '%s' not found", options.DevContainerID)
+				return "", fmt.Errorf("devcontainer with ID '%s' not found", options.DevContainerID)
 			},
 		)
 	} else {
@@ -78,7 +77,7 @@ func (r *runner) getRawConfig(options provider2.CLIOptions) (*config.DevContaine
 			func(matches []string) (string, error) {
 				if len(matches) > 1 {
 					ids, _ := config.ListDevContainerIDs(localWorkspaceFolder)
-					return "", errors.Errorf("multiple devcontainer configurations found. Use --devcontainer-id to select one: %v", ids)
+					return "", fmt.Errorf("multiple devcontainer configurations found. Use --devcontainer-id to select one: %v", ids)
 				}
 				return matches[0], nil
 			},

@@ -2,11 +2,11 @@ package buildkit
 
 import (
 	"encoding/csv"
+	"fmt"
 	"os"
 	"strings"
 
 	"github.com/moby/buildkit/client"
-	"github.com/pkg/errors"
 )
 
 func ParseCacheEntry(in []string) ([]client.CacheOptionsEntry, error) {
@@ -32,7 +32,7 @@ func ParseCacheEntry(in []string) ([]client.CacheOptionsEntry, error) {
 		for _, field := range fields {
 			parts := strings.SplitN(field, "=", 2)
 			if len(parts) != 2 {
-				return nil, errors.Errorf("invalid value %s", field)
+				return nil, fmt.Errorf("invalid value %s", field)
 			}
 			key := strings.ToLower(parts[0])
 			value := parts[1]
@@ -44,7 +44,7 @@ func ParseCacheEntry(in []string) ([]client.CacheOptionsEntry, error) {
 			}
 		}
 		if im.Type == "" {
-			return nil, errors.Errorf("type required form> %q", in)
+			return nil, fmt.Errorf("type required form> %q", in)
 		}
 		if !addGithubToken(&im) {
 			continue

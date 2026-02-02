@@ -15,7 +15,6 @@ import (
 	"github.com/skevetter/devpod/pkg/provider"
 	"github.com/skevetter/devpod/pkg/util"
 
-	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -30,7 +29,7 @@ var keyLock sync.Mutex
 func rsaKeyGen() (privateKey string, publicKey string, err error) {
 	privateKeyRaw, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
-		return "", "", errors.Errorf("generate private key: %v", err)
+		return "", "", fmt.Errorf("generate private key: %v", err)
 	}
 
 	return generateKeys(pem.Block{

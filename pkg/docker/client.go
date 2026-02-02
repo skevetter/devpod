@@ -2,9 +2,9 @@ package docker
 
 import (
 	"context"
+	"fmt"
 
 	dockerclient "github.com/docker/docker/client"
-	"github.com/pkg/errors"
 	"github.com/skevetter/log"
 )
 
@@ -22,7 +22,7 @@ func NewClient(ctx context.Context, log log.Logger) (*Client, error) {
 		// Last try to create it without the environment option
 		cli, err = newDockerClient()
 		if err != nil {
-			return nil, errors.Errorf("Cannot create docker client: %v", err)
+			return nil, fmt.Errorf("cannot create docker client: %v", err)
 		}
 	}
 
@@ -33,7 +33,7 @@ func NewClient(ctx context.Context, log log.Logger) (*Client, error) {
 func newDockerClient() (*Client, error) {
 	cli, err := dockerclient.NewClientWithOpts()
 	if err != nil {
-		return nil, errors.Errorf("Couldn't create docker client: %s", err)
+		return nil, fmt.Errorf("could not create docker client: %s", err)
 	}
 
 	return &Client{
@@ -44,7 +44,7 @@ func newDockerClient() (*Client, error) {
 func newDockerClientFromEnvironment() (*Client, error) {
 	cli, err := dockerclient.NewClientWithOpts(dockerclient.FromEnv)
 	if err != nil {
-		return nil, errors.Errorf("Couldn't create docker client: %s", err)
+		return nil, fmt.Errorf("could not create docker client: %s", err)
 	}
 
 	return &Client{

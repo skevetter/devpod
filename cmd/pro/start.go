@@ -23,10 +23,11 @@ import (
 	"github.com/mgutz/ansi"
 	"github.com/skratchdot/open-golang/open"
 
+	"errors"
+
 	storagev1 "github.com/loft-sh/api/v4/pkg/apis/storage/v1"
 	"github.com/loft-sh/api/v4/pkg/auth"
 	loftclientset "github.com/loft-sh/api/v4/pkg/clientset/versioned"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	proflags "github.com/skevetter/devpod/cmd/pro/flags"
 	"github.com/skevetter/devpod/pkg/platform"

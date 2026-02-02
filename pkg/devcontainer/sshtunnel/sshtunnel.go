@@ -12,7 +12,8 @@ import (
 
 	"github.com/skevetter/log"
 
-	"github.com/pkg/errors"
+	"errors"
+
 	"github.com/sirupsen/logrus"
 	client2 "github.com/skevetter/devpod/pkg/client"
 	config2 "github.com/skevetter/devpod/pkg/devcontainer/config"

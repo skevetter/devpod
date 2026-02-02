@@ -22,7 +22,6 @@ import (
 	"github.com/loft-sh/api/v4/pkg/auth"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	perrors "github.com/pkg/errors"
 	"github.com/skevetter/devpod/pkg/platform/kube"
 	"github.com/skevetter/devpod/pkg/platform/project"
 	"github.com/skevetter/devpod/pkg/util"
@@ -206,7 +205,7 @@ func (c *client) Save() error {
 		return nil
 	}
 	if c.config == nil {
-		return perrors.New("no config to write")
+		return errors.New("no config to write")
 	}
 	if c.config.Kind == "" {
 		c.config.Kind = "Config"
@@ -270,7 +269,8 @@ func (c *client) Version() (*auth.Version, error) {
 
 	raw, err := restClient.CoreV1().RESTClient().Get().RequestURI("/version").DoRaw(context.Background())
 	if err != nil {
-		return nil, perrors.New(fmt.Sprintf("%s\n\nYou may need to login again via `%s login %s --insecure` to allow self-signed certificates\n", err.Error(), os.Args[0], restConfig.Host))
+		// User may need to login using --insecure flag to trust self-signed certificates
+		return nil, fmt.Errorf("get version: %w", err)
 	}
 
 	version := &auth.Version{}
@@ -374,7 +374,7 @@ func (c *client) LoginWithAccessKey(host, accessKey string, insecure bool, force
 			}
 		}
 
-		return perrors.Errorf("error logging in: %v", err)
+		return fmt.Errorf("error logging in: %v", err)
 	}
 
 	return c.Save()
@@ -416,9 +416,9 @@ func VerifyVersion(baseClient Client) error {
 
 func (c *client) restConfig(hostSuffix string) (*rest.Config, error) {
 	if c.config == nil {
-		return nil, perrors.New("no config loaded")
+		return nil, errors.New("no config loaded")
 	} else if c.config.Host == "" || c.config.AccessKey == "" {
-		return nil, perrors.New(fmt.Sprintf("not logged in, please make sure you have run '%s' to create one or '%s [%s]' if one already exists", "devpod pro start", "devpod pro login", "devpod-pro-url"))
+		return nil, errors.New("not logged in, run 'devpod pro start' or 'devpod pro login [devpod-pro-url]'")
 	}
 
 	// build a rest config

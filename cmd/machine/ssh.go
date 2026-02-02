@@ -7,7 +7,6 @@ import (
 	"os"
 
 	"github.com/mattn/go-isatty"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/cmd/flags"
 	devagent "github.com/skevetter/devpod/pkg/agent"
@@ -145,12 +144,12 @@ func RunSSHSession(ctx context.Context, sshClient *ssh.Client, agentForwarding b
 	if agentForwarding && authSock != "" {
 		err = devsshagent.ForwardToRemote(sshClient, authSock)
 		if err != nil {
-			return errors.Errorf("forward agent: %v", err)
+			return fmt.Errorf("forward agent: %v", err)
 		}
 
 		err = devsshagent.RequestAgentForwarding(session)
 		if err != nil {
-			return errors.Errorf("request agent forwarding: %v", err)
+			return fmt.Errorf("request agent forwarding: %v", err)
 		}
 	}
 

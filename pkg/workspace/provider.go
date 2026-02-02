@@ -14,7 +14,8 @@ import (
 	"github.com/skevetter/devpod/pkg/types"
 	"github.com/skevetter/devpod/providers"
 
-	"github.com/pkg/errors"
+	"errors"
+
 	"github.com/skevetter/devpod/pkg/binaries"
 	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/download"

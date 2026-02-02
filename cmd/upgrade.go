@@ -1,7 +1,8 @@
 package cmd
 
 import (
-	"github.com/pkg/errors"
+	"fmt"
+
 	"github.com/skevetter/devpod/pkg/upgrade"
 	"github.com/skevetter/log"
 	"github.com/spf13/cobra"
@@ -31,7 +32,7 @@ func NewUpgradeCmd() *cobra.Command {
 func (cmd *UpgradeCmd) Run(*cobra.Command, []string) error {
 	err := upgrade.Upgrade(cmd.Version, cmd.log)
 	if err != nil {
-		return errors.Errorf("unable to upgrade: %v", err)
+		return fmt.Errorf("unable to upgrade: %v", err)
 	}
 
 	return nil

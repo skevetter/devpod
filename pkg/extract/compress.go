@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
+	"errors"
 )
 
 func WriteTarExclude(writer io.Writer, localPath string, compress bool, excludedPaths []string) error {
