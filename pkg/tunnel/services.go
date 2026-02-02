@@ -31,7 +31,7 @@ import (
 	"k8s.io/client-go/util/retry"
 )
 
-// RunServicesOptions contains all options for running services
+// RunServicesOptions contains all options for running services.
 type RunServicesOptions struct {
 	DevPodConfig                   *config.Config
 	ContainerClient                *ssh.Client
@@ -46,15 +46,117 @@ type RunServicesOptions struct {
 	Log                            log.Logger
 }
 
-// RunServices forwards the ports for a given workspace and uses it's SSH client to run the credentials server remotely and the services server locally to communicate with the container
-func RunServices(ctx context.Context, opts RunServicesOptions) error {
-	// calculate exit after timeout
-	exitAfterTimeout := time.Second * 5
-	if opts.DevPodConfig.ContextOption(config.ContextOptionExitAfterTimeout) != "true" {
-		exitAfterTimeout = 0
+// getExitAfterTimeout calculates the timeout value based on configuration
+func getExitAfterTimeout(devPodConfig *config.Config) time.Duration {
+	if devPodConfig.ContextOption(config.ContextOptionExitAfterTimeout) != "true" {
+		return 0
+	}
+	return time.Second * 5
+}
+
+// createForwarder creates a port forwarder if port forwarding is enabled
+func createForwarder(opts RunServicesOptions, forwardedPorts []string) netstat.Forwarder {
+	if !opts.ForwardPorts {
+		return nil
+	}
+	ports := append([]string{}, forwardedPorts...)
+	ports = append(ports, fmt.Sprintf("%d", openvscode.DefaultVSCodePort))
+	return newForwarder(opts.ContainerClient, ports, opts.Log)
+}
+
+// runTunnelServer runs the tunnel server in a goroutine
+func runTunnelServer(ctx context.Context, opts RunServicesOptions, stdoutReader *os.File, stdinWriter *os.File, forwarder netstat.Forwarder, errChan chan error, cancel context.CancelFunc) {
+	defer cancel()
+	defer func() { _ = stdinWriter.Close() }()
+	err := tunnelserver.RunServicesServer(
+		ctx,
+		stdoutReader,
+		stdinWriter,
+		opts.ConfigureGitCredentials,
+		opts.ConfigureDockerCredentials,
+		forwarder,
+		opts.Workspace,
+		opts.Log,
+		tunnelserver.WithPlatformOptions(opts.PlatformOptions),
+	)
+	if err != nil {
+		errChan <- fmt.Errorf("run tunnel server %w", err)
+	}
+	close(errChan)
+}
+
+// addGitSSHSigningKey adds SSH signing key to command if configured
+func addGitSSHSigningKey(command string) string {
+	format, userSigningKey, err := gitsshsigning.ExtractGitConfiguration()
+	if err == nil && format == gitsshsigning.GPGFormatSSH && userSigningKey != "" {
+		encodedKey := base64.StdEncoding.EncodeToString([]byte(userSigningKey))
+		command += fmt.Sprintf(" --git-user-signing-key %s", encodedKey)
+	}
+	return command
+}
+
+// buildCredentialsCommand builds the credentials server command
+func buildCredentialsCommand(opts RunServicesOptions) string {
+	command := fmt.Sprintf(
+		"'%s' agent container credentials-server --user '%s'",
+		agent.ContainerDevPodHelperLocation,
+		opts.User,
+	)
+	if opts.ConfigureGitCredentials {
+		command += " --configure-git-helper"
+	}
+	if opts.ConfigureGitSSHSignatureHelper {
+		command = addGitSSHSigningKey(command)
+	}
+	if opts.ConfigureDockerCredentials {
+		command += " --configure-docker-helper"
+	}
+	if opts.ForwardPorts {
+		command += " --forward-ports"
+	}
+	if opts.Log.GetLevel() == logrus.DebugLevel {
+		command += " --debug"
+	}
+	return command
+}
+
+// runServicesIteration performs one iteration of the retry loop
+func runServicesIteration(ctx context.Context, opts RunServicesOptions, forwardedPorts []string) error {
+	stdoutReader, stdoutWriter, err := os.Pipe()
+	if err != nil {
+		return err
+	}
+	defer func() { _ = stdoutWriter.Close() }()
+
+	stdinReader, stdinWriter, err := os.Pipe()
+	if err != nil {
+		return err
 	}
 
-	// forward ports
+	cancelCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	forwarder := createForwarder(opts, forwardedPorts)
+
+	errChan := make(chan error, 1)
+	go runTunnelServer(cancelCtx, opts, stdoutReader, stdinWriter, forwarder, errChan, cancel)
+
+	writer := opts.Log.ErrorStreamOnly().Writer(logrus.DebugLevel, false)
+	defer func() { _ = writer.Close() }()
+
+	command := buildCredentialsCommand(opts)
+
+	err = devssh.Run(cancelCtx, opts.ContainerClient, command, stdinReader, stdoutWriter, writer, nil)
+	if err != nil {
+		return err
+	}
+	return <-errChan
+}
+
+// RunServices forwards the ports for a given workspace and uses it's SSH client to run the credentials server remotely and the services server locally to communicate with the container
+func RunServices(ctx context.Context, opts RunServicesOptions) error {
+	exitAfterTimeout := getExitAfterTimeout(opts.DevPodConfig)
+
 	forwardedPorts, err := forwardDevContainerPorts(ctx, opts.ContainerClient, opts.ExtraPorts, exitAfterTimeout, opts.Log)
 	if err != nil {
 		return fmt.Errorf("forward ports %w", err)
@@ -66,92 +168,9 @@ func RunServices(ctx context.Context, opts RunServicesOptions) error {
 		Factor:   1,
 		Jitter:   0.1,
 	}, func(err error) bool {
-		// Always allow to retry. Potentially add exceptions in the future.
 		return true
 	}, func() error {
-		stdoutReader, stdoutWriter, err := os.Pipe()
-		if err != nil {
-			return err
-		}
-		defer func() { _ = stdoutWriter.Close() }()
-
-		stdinReader, stdinWriter, err := os.Pipe()
-		if err != nil {
-			return err
-		}
-
-		// start server on stdio
-		cancelCtx, cancel := context.WithCancel(ctx)
-		defer cancel()
-
-		// create a port forwarder
-		var forwarder netstat.Forwarder
-		if opts.ForwardPorts {
-			ports := append(forwardedPorts, fmt.Sprintf("%d", openvscode.DefaultVSCodePort))
-			forwarder = newForwarder(opts.ContainerClient, ports, opts.Log)
-		}
-
-		errChan := make(chan error, 1)
-		go func() {
-			defer cancel()
-			defer func() { _ = stdinWriter.Close() }()
-			// forward credentials to container
-			err := tunnelserver.RunServicesServer(
-				cancelCtx,
-				stdoutReader,
-				stdinWriter,
-				opts.ConfigureGitCredentials,
-				opts.ConfigureDockerCredentials,
-				forwarder,
-				opts.Workspace,
-				opts.Log,
-				tunnelserver.WithPlatformOptions(opts.PlatformOptions),
-			)
-			if err != nil {
-				errChan <- fmt.Errorf("run tunnel server %w", err)
-			}
-			close(errChan)
-		}()
-
-		// run credentials server
-		writer := opts.Log.ErrorStreamOnly().Writer(logrus.DebugLevel, false)
-		defer func() { _ = writer.Close() }()
-
-		command := fmt.Sprintf(
-			"'%s' agent container credentials-server --user '%s'",
-			agent.ContainerDevPodHelperLocation,
-			opts.User,
-		)
-		if opts.ConfigureGitCredentials {
-			command += " --configure-git-helper"
-		}
-		if opts.ConfigureGitSSHSignatureHelper {
-			format, userSigningKey, err := gitsshsigning.ExtractGitConfiguration()
-			if err == nil && format == gitsshsigning.GPGFormatSSH && userSigningKey != "" {
-				encodedKey := base64.StdEncoding.EncodeToString([]byte(userSigningKey))
-				command += fmt.Sprintf(" --git-user-signing-key %s", encodedKey)
-			}
-		}
-		if opts.ConfigureDockerCredentials {
-			command += " --configure-docker-helper"
-		}
-		if opts.ForwardPorts {
-			command += " --forward-ports"
-		}
-		if opts.Log.GetLevel() == logrus.DebugLevel {
-			command += " --debug"
-		}
-
-		err = devssh.Run(cancelCtx, opts.ContainerClient, command, stdinReader, stdoutWriter, writer, nil)
-		if err != nil {
-			return err
-		}
-		err = <-errChan
-		if err != nil {
-			return err
-		}
-
-		return nil
+		return runServicesIteration(ctx, opts, forwardedPorts)
 	})
 }
 
