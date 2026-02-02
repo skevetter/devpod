@@ -123,14 +123,14 @@ func downloadBinaryForPlatform(
 		}
 
 		// check if binary is correct
-		targetFolder := filepath.Join(targetFolder, strings.ToLower(binaryName))
-		binaryPath := getBinaryPath(binary, targetFolder)
-		if verifyBinary(binaryPath, binary.Checksum) || fromCache(binary, targetFolder, log) {
+		binaryTargetFolder := filepath.Join(targetFolder, strings.ToLower(binaryName))
+		binaryPath := getBinaryPath(binary, binaryTargetFolder)
+		if verifyBinary(binaryPath, binary.Checksum) || fromCache(binary, binaryTargetFolder, log) {
 			return binaryPath, nil
 		}
 
 		// try to download the binary
-		binaryPath, err := downloadWithRetry(binaryName, binary, targetFolder, log)
+		binaryPath, err := downloadWithRetry(binaryName, binary, binaryTargetFolder, log)
 		if err != nil {
 			return "", err
 		}
@@ -199,7 +199,7 @@ func toCache(binary *provider2.ProviderBinary, binaryPath string, log log.Logger
 		return
 	}
 
-	if err := copy.File(binaryPath, cachedBinaryPath, 0755); err != nil {
+	if err := copy.File(binaryPath, cachedBinaryPath, filePerms); err != nil {
 		log.Warnf("error copying binary to cache: %v", err)
 	}
 }
@@ -220,7 +220,7 @@ func fromCache(binary *provider2.ProviderBinary, targetFolder string, log log.Lo
 		return false
 	}
 
-	if err := copy.File(cachedBinaryPath, binaryPath, 0755); err != nil {
+	if err := copy.File(cachedBinaryPath, binaryPath, filePerms); err != nil {
 		log.Warnf("error copying cached binary from %s to %s: %v", cachedBinaryPath, binaryPath, err)
 		return false
 	}
@@ -513,5 +513,5 @@ func copyLocal(binary *provider2.ProviderBinary, targetPath string) error {
 		}
 	}
 
-	return copy.File(binary.Path, targetPath, 0755)
+	return copy.File(binary.Path, targetPath, filePerms)
 }
