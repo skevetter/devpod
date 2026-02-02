@@ -101,7 +101,7 @@ func runTunnelServer(p tunnelServerParams) {
 		tunnelserver.WithPlatformOptions(p.opts.PlatformOptions),
 	)
 	if err != nil {
-		p.errChan <- fmt.Errorf("run tunnel server %w", err)
+		p.errChan <- fmt.Errorf("run tunnel server: %w", err)
 	}
 	close(p.errChan)
 }
@@ -152,7 +152,6 @@ func runServicesIteration(ctx context.Context, opts RunServicesOptions, forwarde
 	stdinReader, stdinWriter, err := os.Pipe()
 	if err != nil {
 		_ = stdoutReader.Close()
-		_ = stdoutWriter.Close()
 		return err
 	}
 	defer func() { _ = stdinReader.Close() }()
@@ -197,7 +196,7 @@ func RunServices(ctx context.Context, opts RunServicesOptions) error {
 		log:              opts.Log,
 	})
 	if err != nil {
-		return fmt.Errorf("forward ports %w", err)
+		return fmt.Errorf("forward ports: %w", err)
 	}
 
 	return retry.OnError(wait.Backoff{
@@ -246,13 +245,13 @@ func getContainerResult(p portForwardParams) (*config2.Result, error) {
 	stderr := &bytes.Buffer{}
 	err := devssh.Run(p.ctx, p.containerClient, "cat "+setup.ResultLocation, nil, stdout, stderr, nil)
 	if err != nil {
-		return nil, fmt.Errorf("retrieve container result: %s\n%s%w", stdout.String(), stderr.String(), err)
+		return nil, fmt.Errorf("retrieve container result: %s\n%s: %w", stdout.String(), stderr.String(), err)
 	}
 
 	result := &config2.Result{}
 	err = json.Unmarshal(stdout.Bytes(), result)
 	if err != nil {
-		return nil, fmt.Errorf("error parsing container result %s %w", stdout.String(), err)
+		return nil, fmt.Errorf("error parsing container result %s: %w", stdout.String(), err)
 	}
 	p.log.Debugf("parsed container result from %s", setup.ResultLocation)
 
@@ -302,7 +301,7 @@ func forwardConfigPorts(p portForwardParams, result *config2.Result) []string {
 		// Forward port asynchronously to avoid blocking
 		go func(port string) {
 			p.log.Debugf("forward port %s", port)
-			err = devssh.PortForward(
+			if err := devssh.PortForward(
 				p.ctx,
 				p.containerClient,
 				"tcp",
@@ -311,8 +310,7 @@ func forwardConfigPorts(p portForwardParams, result *config2.Result) []string {
 				fmt.Sprintf("%s:%d", host, portNumber),
 				0,
 				p.log,
-			)
-			if err != nil {
+			); err != nil {
 				p.log.Errorf("error port forwarding %s: %v", port, err)
 			}
 		}(port)
@@ -353,7 +351,7 @@ func forwardPort(p singlePortForwardParams) []string {
 			hostAddr := parsedPort.Binding.HostIP + ":" + parsedPort.Binding.HostPort
 			containerAddr := "localhost:" + parsedPort.Port.Port()
 			p.log.Debugf("forward port %s to %s", hostAddr, containerAddr)
-			err = devssh.PortForward(
+			if err := devssh.PortForward(
 				p.ctx,
 				p.containerClient,
 				"tcp",
@@ -362,8 +360,7 @@ func forwardPort(p singlePortForwardParams) []string {
 				containerAddr,
 				p.exitAfterTimeout,
 				p.log,
-			)
-			if err != nil {
+			); err != nil {
 				p.log.Errorf(
 					"error port forwarding %s:%s to %s: %v",
 					parsedPort.Binding.HostIP,
