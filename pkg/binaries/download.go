@@ -440,28 +440,34 @@ func extractArchive(params archiveDownloadParams) (string, error) {
 	}
 	defer func() { _ = body.Close() }()
 
-	isGzipOrTar := strings.HasSuffix(params.binary.Path, gzSuffix) ||
-		strings.HasSuffix(params.binary.Path, tarSuffix) ||
-		strings.HasSuffix(params.binary.Path, tgzSuffix)
+	targetPath, err := extractByFormat(body, params)
+	if err != nil {
+		return "", err
+	}
 
-	if isGzipOrTar {
+	params.log.Debugf("extracted and downloaded archive %s", params.binaryName)
+	return targetPath, nil
+}
+
+func extractByFormat(body io.ReadCloser, params archiveDownloadParams) (string, error) {
+	if isGzipOrTar(params.binary.Path) {
 		if err := extract.Extract(body, params.targetFolder); err != nil {
 			return "", err
 		}
-		params.log.Debugf("extracted and downloaded gz or tar archive %s", params.binaryName)
 		return params.targetPath, nil
 	}
 
 	if strings.HasSuffix(params.binary.Path, zipSuffix) {
-		targetPath, err := extractZipArchive(body, params.targetFolder, params.targetPath)
-		if err != nil {
-			return "", err
-		}
-		params.log.Debugf("extracted and downloaded zip archive %s", params.binaryName)
-		return targetPath, nil
+		return extractZipArchive(body, params.targetFolder, params.targetPath)
 	}
 
 	return "", fmt.Errorf("unrecognized archive format %s", params.binary.Path)
+}
+
+func isGzipOrTar(path string) bool {
+	return strings.HasSuffix(path, gzSuffix) ||
+		strings.HasSuffix(path, tarSuffix) ||
+		strings.HasSuffix(path, tgzSuffix)
 }
 
 func extractZipArchive(body io.ReadCloser, targetFolder, targetPath string) (string, error) {
