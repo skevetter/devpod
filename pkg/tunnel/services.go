@@ -193,7 +193,9 @@ func runServicesIteration(ctx context.Context, opts RunServicesOptions, forwarde
 	return <-errChan
 }
 
-// RunServices forwards the ports for a given workspace and uses it's SSH client to run the credentials server remotely and the services server locally to communicate with the container
+// RunServices forwards the ports for a given workspace and uses its SSH client
+// to run the credentials server remotely and the services server locally to
+// communicate with the container.
 func RunServices(ctx context.Context, opts RunServicesOptions) error {
 	exitAfterTimeout := getExitAfterTimeout(opts.DevPodConfig)
 
@@ -285,6 +287,9 @@ func forwardExtraPorts(p portForwardParams) []string {
 // forwardAppPorts forwards application ports from the devcontainer config.
 func forwardAppPorts(p portForwardParams, result *config2.Result) []string {
 	forwardedPorts := []string{}
+	if result == nil || result.MergedConfig == nil {
+		return forwardedPorts
+	}
 	for _, port := range result.MergedConfig.AppPort {
 		forwardedPorts = append(forwardedPorts, forwardPort(singlePortForwardParams{
 			ctx:              p.ctx,
@@ -300,6 +305,9 @@ func forwardAppPorts(p portForwardParams, result *config2.Result) []string {
 // forwardConfigPorts forwards ports from the forwardPorts configuration.
 func forwardConfigPorts(p portForwardParams, result *config2.Result) []string {
 	forwardedPorts := []string{}
+	if result == nil || result.MergedConfig == nil {
+		return forwardedPorts
+	}
 	for _, port := range result.MergedConfig.ForwardPorts {
 		host, portNumber, err := parseForwardPort(port)
 		if err != nil {
