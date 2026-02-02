@@ -390,12 +390,12 @@ func downloadAndSaveFile(
 	// #nosec G304 - targetPath is constructed from validated binary configuration
 	file, err := os.Create(targetPath)
 	if err != nil {
-		return "", err
+		return targetPath, err
 	}
 	defer func() { _ = file.Close() }()
 
 	if _, err := io.Copy(file, body); err != nil {
-		return "", fmt.Errorf("download file %w", err)
+		return targetPath, fmt.Errorf("download file %w", err)
 	}
 
 	log.Debugf("downloaded binary %s", binaryName)
