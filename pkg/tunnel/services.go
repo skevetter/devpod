@@ -6,7 +6,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -34,10 +33,10 @@ import (
 
 const (
 	debugFlag          = " --debug"
-	defaultExitTimeout = time.Second * 5
-	maxRetrySteps      = math.MaxInt
-	retryDuration      = 500 * time.Millisecond
-	retryFactor        = 1.0
+	defaultExitTimeout = 5 * time.Second
+	maxRetrySteps      = 10
+	retryDuration      = 1 * time.Second
+	retryFactor        = 2.0
 	retryJitter        = 0.1
 )
 
@@ -152,6 +151,8 @@ func runServicesIteration(ctx context.Context, opts RunServicesOptions, forwarde
 
 	stdinReader, stdinWriter, err := os.Pipe()
 	if err != nil {
+		_ = stdoutReader.Close()
+		_ = stdoutWriter.Close()
 		return err
 	}
 	defer func() { _ = stdinReader.Close() }()
@@ -384,20 +385,20 @@ func parseForwardPort(port string) (string, int64, error) {
 	tokens := strings.Split(port, ":")
 
 	if len(tokens) == 1 {
-		port, err := strconv.ParseInt(tokens[0], 10, 64)
+		portNum, err := strconv.ParseInt(tokens[0], 10, 64)
 		if err != nil {
-			return "", 0, err
+			return "", 0, fmt.Errorf("invalid port number %q: %w", port, err)
 		}
-		return "localhost", port, nil
+		return "localhost", portNum, nil
 	}
 
 	if len(tokens) == 2 {
-		port, err := strconv.ParseInt(tokens[1], 10, 64)
+		portNum, err := strconv.ParseInt(tokens[1], 10, 64)
 		if err != nil {
-			return "", 0, err
+			return "", 0, fmt.Errorf("invalid port number in %q: %w", port, err)
 		}
-		return tokens[0], port, nil
+		return tokens[0], portNum, nil
 	}
 
-	return "", 0, fmt.Errorf("invalid forwardPorts port")
+	return "", 0, fmt.Errorf("invalid forwardPorts port format %q (expected 'port' or 'host:port')", port)
 }
