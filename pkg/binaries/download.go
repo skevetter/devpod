@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
-	"time"
 
 	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/copy"
@@ -20,19 +19,18 @@ import (
 )
 
 const (
-	retryCount    = 3
-	dirPerms      = 0750
-	filePerms     = 0755
-	windowsOS     = "windows"
-	exeSuffix     = ".exe"
-	httpPrefix    = "http://"
-	httpsPrefix   = "https://"
-	gzSuffix      = ".gz"
-	tarSuffix     = ".tar"
-	tgzSuffix     = ".tgz"
-	zipSuffix     = ".zip"
-	cacheDir      = "devpod-binaries"
-	checksumDelay = 250 * time.Millisecond
+	retryCount  = 3
+	dirPerms    = 0750
+	filePerms   = 0755
+	windowsOS   = "windows"
+	exeSuffix   = ".exe"
+	httpPrefix  = "http://"
+	httpsPrefix = "https://"
+	gzSuffix    = ".gz"
+	tarSuffix   = ".tar"
+	tgzSuffix   = ".tgz"
+	zipSuffix   = ".zip"
+	cacheDir    = "devpod-binaries"
 )
 
 type EnvironmentOptions struct {
@@ -186,7 +184,6 @@ func verifyDownloadedBinary(
 		_ = os.Remove(binaryPath)
 		log.Errorf("unexpected file checksum %s != %s for binary %s",
 			strings.ToLower(fileHash), strings.ToLower(binary.Checksum), binaryName)
-		time.Sleep(checksumDelay)
 		return false
 	}
 	return true
@@ -312,7 +309,7 @@ func handleLocalBinary(binary *provider2.ProviderBinary, targetFolder string) (s
 
 	targetPath := localTargetPath(binary, targetFolder)
 	if err := copyLocal(binary, targetPath); err != nil {
-		_ = os.RemoveAll(targetFolder)
+		_ = os.Remove(targetPath)
 		return "", err
 	}
 
@@ -343,7 +340,7 @@ func downloadRemoteBinary(
 	}
 
 	if err != nil {
-		_ = os.RemoveAll(targetFolder)
+		_ = os.Remove(targetPath)
 		return "", err
 	}
 
