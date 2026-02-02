@@ -220,7 +220,13 @@ func (cmd *LoginCmd) addLoftProvider(devPodConfig *config.Config, url string, lo
 	// is development?
 	if cmd.ProviderSource == providerRepo+"@v0.0.0" {
 		log.Debugf("Add development provider")
-		_, err = workspace.AddProviderRaw(devPodConfig, cmd.Provider, &provider.ProviderSource{}, []byte(fallbackProvider), log)
+		_, err = workspace.AddProviderRaw(workspace.ProviderParams{
+			DevPodConfig: devPodConfig,
+			ProviderName: cmd.Provider,
+			Source:       &provider.ProviderSource{},
+			Raw:          []byte(fallbackProvider),
+			Log:          log,
+		})
 		if err != nil {
 			return err
 		}

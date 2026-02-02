@@ -26,6 +26,10 @@ import (
 	"github.com/skevetter/log/terminal"
 )
 
+var errProvideWorkspaceArg = errors.New(
+	"please provide a workspace name. E.g. 'devpod up ./my-folder', " +
+		"'devpod up github.com/my-org/my-repo' or 'devpod up ubuntu'")
+
 // Resolve takes the `devpod up|build` CLI input and either finds an existing workspace or creates a new one
 type ResolveParams struct {
 	IDE                  string
