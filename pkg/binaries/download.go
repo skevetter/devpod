@@ -22,7 +22,7 @@ import (
 const (
 	retryCount    = 3
 	dirPerms      = 0750
-	filePerms     = 0600
+	filePerms     = 0755
 	windowsOS     = "windows"
 	exeSuffix     = ".exe"
 	httpPrefix    = "http://"
@@ -215,18 +215,13 @@ func fromCache(binary *provider2.ProviderBinary, targetFolder string, log log.Lo
 		return false
 	}
 
-	if err := os.MkdirAll(path.Dir(binaryPath), dirPerms); err != nil {
-		log.Warnf("error creating directory %s: %v", path.Dir(binaryPath), err)
+	if err := os.MkdirAll(filepath.Dir(binaryPath), dirPerms); err != nil {
+		log.Warnf("error creating directory %s: %v", filepath.Dir(binaryPath), err)
 		return false
 	}
 
 	if err := copy.File(cachedBinaryPath, binaryPath, 0755); err != nil {
 		log.Warnf("error copying cached binary from %s to %s: %v", cachedBinaryPath, binaryPath, err)
-		return false
-	}
-
-	if err := os.Chmod(binaryPath, filePerms); err != nil {
-		log.Warnf("error chmod binary %s: %v", binaryPath, err)
 		return false
 	}
 
@@ -275,7 +270,6 @@ func getBinaryPath(binary *provider2.ProviderBinary, targetFolder string) string
 			name += exeSuffix
 		}
 	}
-
 	return path.Join(filepath.ToSlash(targetFolder), name)
 }
 
@@ -363,16 +357,6 @@ func downloadFile(
 	targetFolder string,
 	log log.Logger,
 ) (string, error) {
-	targetPath := getDownloadTargetPath(binary, targetFolder)
-	_, err := os.Stat(targetPath)
-	if err == nil {
-		return targetPath, nil
-	}
-
-	return downloadAndSaveFile(binaryName, binary, targetPath, log)
-}
-
-func getDownloadTargetPath(binary *provider2.ProviderBinary, targetFolder string) string {
 	name := binary.Name
 	if name == "" {
 		name = path.Base(binary.Path)
@@ -380,7 +364,13 @@ func getDownloadTargetPath(binary *provider2.ProviderBinary, targetFolder string
 			name += exeSuffix
 		}
 	}
-	return path.Join(filepath.ToSlash(targetFolder), name)
+	targetPath := path.Join(filepath.ToSlash(targetFolder), name)
+	_, err := os.Stat(targetPath)
+	if err == nil {
+		return targetPath, nil
+	}
+
+	return downloadAndSaveFile(binaryName, binary, targetPath, log)
 }
 
 func downloadAndSaveFile(

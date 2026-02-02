@@ -5,6 +5,9 @@ run:
 linters:
   enable:
     - cyclop
+    - decorder
+    - dupl
+    - errcheck
     - fatcontext
     - forbidigo
     - funcorder
@@ -18,6 +21,7 @@ linters:
     - modernize
     - nestif
     - revive
+    - staticcheck
     - unparam
     - unused
     - whitespace
