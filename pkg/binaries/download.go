@@ -383,7 +383,6 @@ func downloadAndSaveFile(
 	log log.Logger,
 ) (string, error) {
 	log.Infof("downloading binary %s from %s", binaryName, binary.Path)
-	defer log.Debugf("downloaded binary %s", binaryName)
 
 	body, err := download.File(binary.Path, log)
 	if err != nil {
@@ -402,6 +401,7 @@ func downloadAndSaveFile(
 		return "", fmt.Errorf("download file %w", err)
 	}
 
+	log.Debugf("downloaded binary %s", binaryName)
 	return targetPath, nil
 }
 
@@ -436,7 +436,6 @@ type archiveDownloadParams struct {
 
 func extractArchive(params archiveDownloadParams) (string, error) {
 	params.log.Infof("downloading binary %s from %s", params.binaryName, params.binary.Path)
-	defer params.log.Debugf("extracted and downloaded archive %s", params.binaryName)
 
 	body, err := download.File(params.binary.Path, params.log)
 	if err != nil {
@@ -452,11 +451,17 @@ func extractArchive(params archiveDownloadParams) (string, error) {
 		if err := extract.Extract(body, params.targetFolder); err != nil {
 			return "", err
 		}
+		params.log.Debugf("extracted and downloaded gz or tar archive %s", params.binaryName)
 		return params.targetPath, nil
 	}
 
 	if strings.HasSuffix(params.binary.Path, zipSuffix) {
-		return extractZipArchive(body, params.targetFolder, params.targetPath)
+		targetPath, err := extractZipArchive(body, params.targetFolder, params.targetPath)
+		if err != nil {
+			return "", err
+		}
+		params.log.Debugf("extracted and downloaded zip archive %s", params.binaryName)
+		return targetPath, nil
 	}
 
 	return "", fmt.Errorf("unrecognized archive format %s", params.binary.Path)
