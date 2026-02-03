@@ -28,7 +28,11 @@ func StartCredentialsServer(ctx context.Context, client tunnel.TunnelClient, log
 		}
 	}()
 
-	// wait until credentials server is up
+	waitForServer(ctx, port, log)
+	return port, nil
+}
+
+func waitForServer(ctx context.Context, port int, log log.Logger) {
 	maxWait := time.Second * 4
 	now := time.Now()
 Outer:
@@ -50,8 +54,6 @@ Outer:
 			break
 		}
 	}
-
-	return port, nil
 }
 
 func PingURL(ctx context.Context, url string) error {
