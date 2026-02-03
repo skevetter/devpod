@@ -48,7 +48,7 @@ repos:
     hooks:
       - id: gitleaks
   - repo: https://github.com/commitizen-tools/commitizen
-    rev: v4.13.0
+    rev: v4.13.2
     hooks:
       - id: commitizen
         stages: [commit-msg]
