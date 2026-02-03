@@ -86,7 +86,6 @@ func (s *HelperTestSuite) TestGet_AnonymousAccess() {
 }
 
 func (s *HelperTestSuite) TestGet_NotFound_ReturnsEmptyCredentials() {
-
 	username, secret, err := s.helper.Get("unknown.registry.com")
 
 	s.Error(err)
@@ -97,7 +96,6 @@ func (s *HelperTestSuite) TestGet_NotFound_ReturnsEmptyCredentials() {
 }
 
 func (s *HelperTestSuite) TestGet_WhitespaceCredentials_ReturnsCredentials() {
-
 	username, secret, err := s.helper.Get("whitespace.registry.com")
 
 	s.NoError(err)
@@ -106,7 +104,6 @@ func (s *HelperTestSuite) TestGet_WhitespaceCredentials_ReturnsCredentials() {
 }
 
 func (s *HelperTestSuite) TestGetFromCredentialsServer_NotFound_ReturnsEmptyCredentials() {
-
 	creds, err := s.helper.getFromCredentialsServer("nonexistent.registry.com")
 
 	s.Error(err)
@@ -165,8 +162,7 @@ func (s *HelperTestSuite) TestGetFromCredentialsServer_MarshalError() {
 	s.Nil(creds)
 }
 
-func (s *HelperTestSuite) TestGetFromCredentialsServer_ServerError() {
-
+func (s *HelperTestSuite) TestGetFromCredentialsServer_NotFound() {
 	creds, err := s.helper.getFromCredentialsServer("error.registry.com")
 
 	s.Error(err)

@@ -55,14 +55,8 @@ func ImageConfigExists(path string) bool {
 }
 
 func DockerlessBuild(opts DockerlessBuildOptions) error {
-	if !shouldBuild(opts) {
-		return nil
-	}
-	if opts.SetupInfo == nil {
-		return fmt.Errorf("setup info is required for dockerless build")
-	}
-	if opts.DockerlessOptions == nil {
-		return fmt.Errorf("dockerless options are required for dockerless build")
+	if err := validateBuildOptions(opts); err != nil {
+		return err
 	}
 
 	buildContext := GetDockerlessBuildContext()
@@ -91,6 +85,19 @@ func DockerlessBuild(opts DockerlessBuildOptions) error {
 		return err
 	}
 
+	return nil
+}
+
+func validateBuildOptions(opts DockerlessBuildOptions) error {
+	if !shouldBuild(opts) {
+		return nil
+	}
+	if opts.SetupInfo == nil {
+		return fmt.Errorf("setup info is required for dockerless build")
+	}
+	if opts.DockerlessOptions == nil {
+		return fmt.Errorf("dockerless options are required for dockerless build")
+	}
 	return nil
 }
 
@@ -195,7 +202,11 @@ func parseIgnorePaths(ignorePaths string) []string {
 
 	var retPaths []string
 	for s := range strings.SplitSeq(ignorePaths, ",") {
-		retPaths = append(retPaths, "--ignore-path", strings.TrimSpace(s))
+		trimmed := strings.TrimSpace(s)
+		if trimmed == "" {
+			continue
+		}
+		retPaths = append(retPaths, "--ignore-path", trimmed)
 	}
 
 	return retPaths
