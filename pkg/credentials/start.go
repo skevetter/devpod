@@ -28,30 +28,31 @@ func StartCredentialsServer(ctx context.Context, client tunnel.TunnelClient, log
 		}
 	}()
 
-	waitForServer(ctx, port, log)
+	if err := waitForServer(ctx, port, log); err != nil {
+		return 0, err
+	}
 	return port, nil
 }
 
-func waitForServer(ctx context.Context, port int, log log.Logger) {
+func waitForServer(ctx context.Context, port int, log log.Logger) error {
 	maxWait := time.Second * 4
 	now := time.Now()
-Outer:
 	for {
 		err := PingURL(ctx, "http://localhost:"+strconv.Itoa(port))
 		if err != nil {
 			select {
 			case <-ctx.Done():
-				break Outer
+				return ctx.Err()
 			case <-time.After(time.Second):
 			}
 		} else {
 			log.Debug("credentials server started")
-			break
+			return nil
 		}
 
 		if time.Since(now) > maxWait {
 			log.Debug("credentials server did not start in time")
-			break
+			return fmt.Errorf("credentials server did not start in time")
 		}
 	}
 }

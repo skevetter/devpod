@@ -172,7 +172,11 @@ func setupDockerCredentials(opts DockerlessBuildOptions) func() {
 
 	return func() {
 		cancel()
-		_ = os.Unsetenv("DOCKER_CONFIG")
+		if originalDockerConfig != "" {
+			_ = os.Setenv("DOCKER_CONFIG", originalDockerConfig)
+		} else {
+			_ = os.Unsetenv("DOCKER_CONFIG")
+		}
 		_ = os.Setenv("PATH", originalPath)
 		_ = os.RemoveAll(dockerCredentialsDir)
 	}
