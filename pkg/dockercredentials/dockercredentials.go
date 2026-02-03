@@ -84,7 +84,7 @@ func writeCredentialHelper(targetDir string, port int, log log.Logger) error {
 	} else {
 		quotedPath := shellquote.Join(binaryPath)
 		content = fmt.Appendf(nil,
-			"#!/bin/sh\n%s agent docker-credentials --port '%d' \"$@\"\n",
+			"#!/bin/sh\n%s agent docker-credentials --port %d \"$@\"\n",
 			quotedPath, port,
 		)
 	}
@@ -217,12 +217,6 @@ func ConfigureCredentialsMachine(targetFolder string, port int, log log.Logger) 
 		return "", fmt.Errorf("set PATH: %w", err)
 	}
 
-	helperPath := filepath.Join(dockerConfigDir, getCredentialHelperFilename())
-	if _, err := os.Stat(helperPath); err != nil {
-		_ = os.RemoveAll(dockerConfigDir)
-		return "", fmt.Errorf("credential helper not found at %s: %w", helperPath, err)
-	}
-	log.Debugf("credential helper exists at %s", helperPath)
 	log.Debugf("machine credentials configured")
 	return dockerConfigDir, nil
 }

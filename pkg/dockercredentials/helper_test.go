@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
@@ -50,7 +52,9 @@ func (s *HelperTestSuite) SetupTest() {
 	}))
 
 	// Extract port from test server URL
-	s.helper = NewHelper(0) // Port will be overridden in tests
+	serverURL, _ := url.Parse(s.server.URL)
+	port, _ := strconv.Atoi(serverURL.Port())
+	s.helper = NewHelper(port)
 }
 
 func (s *HelperTestSuite) TearDownTest() {
@@ -58,16 +62,14 @@ func (s *HelperTestSuite) TearDownTest() {
 }
 
 func (s *HelperTestSuite) TestGet_WithCredentials() {
-	// This test would need to mock the HTTP client or use the test server
-	// For now, testing the logic flow
+	// Test that Get returns credentials from mock server
 	username, secret, err := s.helper.Get("registry.example.com")
 
-	// Should not return error even if credentials not found
+	// Should not return error
 	s.NoError(err)
-
-	// May be empty for anonymous access
-	s.NotNil(username)
-	s.NotNil(secret)
+	// Should return test credentials from mock server
+	s.Equal("testuser", username)
+	s.Equal("testpass", secret)
 }
 
 func (s *HelperTestSuite) TestGet_AnonymousAccess() {
@@ -76,10 +78,9 @@ func (s *HelperTestSuite) TestGet_AnonymousAccess() {
 
 	// Should not return error - allows anonymous access
 	s.NoError(err)
-
-	// Credentials may be empty
-	_ = username
-	_ = secret
+	// Empty credentials returned for anonymous access
+	s.Equal("", username)
+	s.Equal("", secret)
 }
 
 func (s *HelperTestSuite) TestGet_NotFound_ReturnsEmptyCredentials() {
@@ -110,13 +111,15 @@ func (s *HelperTestSuite) TestGetFromCredentialsServer_NotFound_ReturnsEmptyCred
 
 func (s *HelperTestSuite) TestList_EmptyList() {
 	// List will try to connect to credentials server which isn't running
-	// This is expected to fail gracefully and return empty list
+	// Should return error when server not available
 	list, err := s.helper.List()
 
-	// May return error if server not available, but should not panic
-	// In production, this would fall back gracefully
-	_ = err
-	_ = list
+	// Expect error since credentials server is not available
+	s.Error(err)
+	// List may be nil or empty when error occurs
+	if list != nil {
+		s.Empty(list)
+	}
 }
 
 func (s *HelperTestSuite) TestAdd_NotSupported() {
@@ -187,10 +190,10 @@ func (s *HelperTestSuite) TestNewHelper() {
 }
 
 func (s *HelperTestSuite) TestRequestWorkspaceList_InvalidResponse() {
-	// When workspace server returns invalid response, should handle gracefully
+	// When workspace server socket doesn't exist, should return error
 	listResp, err := s.helper.requestWorkspaceList()
 
-	// May return error or nil, but should not panic
-	_ = err
-	_ = listResp
+	// Expect error since workspace server socket doesn't exist
+	s.Error(err)
+	s.Nil(listResp)
 }

@@ -81,7 +81,7 @@ func (h *Helper) getWorkspaceHTTPClient() *http.Client {
 	return &http.Client{
 		Transport: &http.Transport{
 			DialContext: func(_ context.Context, _, _ string) (net.Conn, error) {
-				return net.Dial("unix", filepath.Join(agent.RootDir, ts.RunnerProxySocket))
+				return net.DialTimeout("unix", filepath.Join(agent.RootDir, ts.RunnerProxySocket), 5*time.Second)
 			},
 		},
 		Timeout: httpClientTimeout,
@@ -117,11 +117,13 @@ func (h *Helper) getFromWorkspaceServer(serverURL string) *Credentials {
 
 	raw, err := io.ReadAll(response.Body)
 	if err != nil {
+		h.logError("read response body: %v", err)
 		return nil
 	}
 
 	creds := &Credentials{}
 	if err := json.Unmarshal(raw, creds); err != nil {
+		h.logError("unmarshal credentials: %v", err)
 		return nil
 	}
 
@@ -182,6 +184,7 @@ func (h *Helper) requestWorkspaceList() (*ListResponse, error) {
 func (h *Helper) getFromCredentialsServer(serverURL string) (*Credentials, error) {
 	rawJSON, err := json.Marshal(&Request{ServerURL: serverURL})
 	if err != nil {
+		h.logError("marshal credentials request: %v", err)
 		return &Credentials{}, nil
 	}
 
@@ -192,6 +195,7 @@ func (h *Helper) getFromCredentialsServer(serverURL string) (*Credentials, error
 		bytes.NewReader(rawJSON),
 	)
 	if err != nil {
+		h.logError("post to credentials server: %v", err)
 		return &Credentials{}, nil
 	}
 	defer func() { _ = response.Body.Close() }()
@@ -202,11 +206,13 @@ func (h *Helper) getFromCredentialsServer(serverURL string) (*Credentials, error
 
 	raw, err := io.ReadAll(response.Body)
 	if err != nil {
+		h.logError("read credentials response: %v", err)
 		return &Credentials{}, nil
 	}
 
 	creds := &Credentials{}
 	if err := json.Unmarshal(raw, creds); err != nil {
+		h.logError("unmarshal credentials: %v", err)
 		return &Credentials{}, nil
 	}
 
