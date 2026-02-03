@@ -182,7 +182,7 @@ func (h *Helper) requestWorkspaceList() (*ListResponse, error) {
 func (h *Helper) getFromCredentialsServer(serverURL string) (*Credentials, error) {
 	rawJSON, err := json.Marshal(&Request{ServerURL: serverURL})
 	if err != nil {
-		return nil, credentials.NewErrCredentialsNotFound()
+		return &Credentials{}, nil
 	}
 
 	url := fmt.Sprintf("http://localhost:%d%s", h.port, credentialsEndpoint)
@@ -192,22 +192,22 @@ func (h *Helper) getFromCredentialsServer(serverURL string) (*Credentials, error
 		bytes.NewReader(rawJSON),
 	)
 	if err != nil {
-		return nil, credentials.NewErrCredentialsNotFound()
+		return &Credentials{}, nil
 	}
 	defer func() { _ = response.Body.Close() }()
 
 	if response.StatusCode != http.StatusOK {
-		return nil, credentials.NewErrCredentialsNotFound()
+		return &Credentials{}, nil
 	}
 
 	raw, err := io.ReadAll(response.Body)
 	if err != nil {
-		return nil, credentials.NewErrCredentialsNotFound()
+		return &Credentials{}, nil
 	}
 
 	creds := &Credentials{}
 	if err := json.Unmarshal(raw, creds); err != nil {
-		return nil, credentials.NewErrCredentialsNotFound()
+		return &Credentials{}, nil
 	}
 
 	return creds, nil
