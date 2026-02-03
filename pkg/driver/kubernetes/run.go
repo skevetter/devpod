@@ -214,7 +214,8 @@ func (k *KubernetesDriver) runContainer(
 
 	// ensure pull secrets
 	pullSecretsCreated := false
-	if k.options.KubernetesPullSecretsEnabled == "true" {
+	// Only create pull secrets if both the provider option AND credential injection are enabled
+	if k.options.KubernetesPullSecretsEnabled == "true" && k.agentConfig.InjectDockerCredentials == "true" {
 		pullSecretsCreated, err = k.EnsurePullSecret(ctx, getPullSecretsName(id), options.Image)
 		if err != nil {
 			return err

@@ -39,7 +39,7 @@ options:
   KUBERNETES_CONFIG:
     description: The kubernetes config to use. E.g. /path/to/my/kube/config.yaml
   KUBERNETES_PULL_SECRETS_ENABLED:
-    description: If true, DevPod will try to use the pull secrets from the current context.
+    description: If true, DevPod will try to create pull secrets for private registries. This setting works in conjunction with the global Docker credentials forwarding setting (SSH_INJECT_DOCKER_CREDENTIALS). If Docker credential injection is disabled globally, pull secrets will not be created regardless of this setting.
     default: "true"
     type: boolean
     global: true

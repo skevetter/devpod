@@ -36,11 +36,11 @@ func NewKubernetesDriver(workspaceInfo *provider2.AgentWorkspaceInfo, log log.Lo
 	log.Debugf("Use Kubernetes Namespace '%s'", namespace)
 
 	return &KubernetesDriver{
-		client:    client,
-		namespace: namespace,
-
-		options: &options,
-		Log:     log,
+		client:      client,
+		namespace:   namespace,
+		options:     &options,
+		agentConfig: &workspaceInfo.Agent,
+		Log:         log,
 	}, nil
 }
 
@@ -49,8 +49,9 @@ type KubernetesDriver struct {
 
 	client *Client
 
-	options *provider2.ProviderKubernetesDriverConfig
-	Log     log.Logger
+	options     *provider2.ProviderKubernetesDriverConfig
+	agentConfig *provider2.ProviderAgentConfig
+	Log         log.Logger
 }
 
 func (k *KubernetesDriver) CanReprovision() bool {

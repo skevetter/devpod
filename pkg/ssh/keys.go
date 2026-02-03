@@ -45,7 +45,7 @@ func generateKeys(block pem.Block, cp crypto.Signer) (privateKey string, publicK
 	publicKeyRaw := cp.Public()
 	p, err := ssh.NewPublicKey(publicKeyRaw)
 	if err != nil {
-		return "", "", err
+		return "", "", fmt.Errorf("create ssh public key: %w", err)
 	}
 	publicKey = string(ssh.MarshalAuthorizedKey(p))
 
@@ -58,7 +58,7 @@ func makeHostKey() (string, error) {
 		return "", err
 	}
 
-	return privKey, err
+	return privKey, nil
 }
 
 func makeSSHKeyPair() (string, string, error) {
@@ -67,7 +67,7 @@ func makeSSHKeyPair() (string, string, error) {
 		return "", "", err
 	}
 
-	return pubKey, privKey, err
+	return pubKey, privKey, nil
 }
 
 func GetPrivateKeyRaw(context, workspaceID string) ([]byte, error) {

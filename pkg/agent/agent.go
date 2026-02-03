@@ -37,6 +37,10 @@ const EnvDevPodAgentPreferDownload = "DEVPOD_AGENT_PREFER_DOWNLOAD"
 
 const WorkspaceBusyFile = "workspace.lock"
 
+const RootDir = "/var/devpod"
+
+const DaemonConfigPath = "/var/run/secrets/devpod/daemon_config"
+
 func DefaultAgentDownloadURL() string {
 	devPodAgentURL := os.Getenv(EnvDevPodAgentURL)
 	if devPodAgentURL != "" {

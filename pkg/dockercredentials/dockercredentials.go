@@ -4,16 +4,19 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/docker/cli/cli/config"
 	"github.com/docker/cli/cli/config/types"
+	"github.com/kballard/go-shellquote"
 	"github.com/skevetter/devpod/pkg/command"
 	"github.com/skevetter/devpod/pkg/docker"
 	"github.com/skevetter/devpod/pkg/file"
 	"github.com/skevetter/devpod/pkg/random"
 	"github.com/skevetter/log"
 
+	"github.com/containers/image/v5/docker/reference"
 	dockerconfig "github.com/containers/image/v5/pkg/docker/config"
 )
 
@@ -40,104 +43,223 @@ func (c *Credentials) AuthToken() string {
 	return c.Secret
 }
 
-func ConfigureCredentialsContainer(userName string, port int, log log.Logger) error {
-	userHome, err := command.GetHome(userName)
-	if err != nil {
-		return err
-	}
+const (
+	AzureContainerRegistryUsername = "00000000-0000-0000-0000-000000000000"
+	windowsOS                      = "windows"
+	// #nosec G101 -- this is a helper name, not a credential
+	credentialHelperName = "docker-credential-devpod"
+)
 
-	configDir := os.Getenv("DOCKER_CONFIG")
-	if configDir == "" {
-		configDir = filepath.Join(userHome, ".docker")
+func getCredentialHelperFilename() string {
+	if runtime.GOOS == windowsOS {
+		return credentialHelperName + ".cmd"
 	}
-
-	return configureCredentials(userName, "#!/bin/sh", "/usr/local/bin", configDir, port, log)
+	return credentialHelperName
 }
 
-const AzureContainerRegistryUsername = "00000000-0000-0000-0000-000000000000"
+func getPathSeparator() string {
+	if runtime.GOOS == windowsOS {
+		return ";"
+	}
+	return ":"
+}
 
-func configureCredentials(userName, shebang string, targetDir, configDir string, port int, log log.Logger) error {
+func validateWindowsExecutablePath(path string) error {
+	// Validate that path does not contain cmd.exe metacharacters that could break quoting
+	unsafeChars := []string{"%", "^", "&", "|", "<", ">", "\"", "\n", "\r", "\t", ";", "(", ")", "!"}
+	for _, char := range unsafeChars {
+		if strings.Contains(path, char) {
+			return fmt.Errorf("executable path contains unsafe character (%s): %s", char, path)
+		}
+	}
+	return nil
+}
+
+func writeCredentialHelper(targetDir string, port int, log log.Logger) error {
 	binaryPath, err := os.Executable()
 	if err != nil {
-		return err
+		return fmt.Errorf("get executable path: %w", err)
 	}
 
-	err = file.MkdirAll(userName, configDir, 0755)
+	helperPath := filepath.Join(targetDir, getCredentialHelperFilename())
+	var content []byte
+
+	if runtime.GOOS == windowsOS {
+		// Validate path does not contain characters that could break cmd.exe quoting
+		if err := validateWindowsExecutablePath(binaryPath); err != nil {
+			return err
+		}
+		content = fmt.Appendf(nil,
+			"@echo off\r\n\"%s\" agent docker-credentials --port %d %%*\r\n",
+			binaryPath, port,
+		)
+	} else {
+		quotedPath := shellquote.Join(binaryPath)
+		content = fmt.Appendf(nil,
+			"#!/bin/sh\n%s agent docker-credentials --port %d \"$@\"\n",
+			quotedPath, port,
+		)
+	}
+
+	// #nosec G306 -- credential helper needs to be executable (0755)
+	if err := os.WriteFile(helperPath, content, 0755); err != nil {
+		return fmt.Errorf("write credential helper: %w", err)
+	}
+
+	log.Debugf("wrote docker credentials helper to %s", helperPath)
+	return nil
+}
+
+func writeCredentialHelperDockerless(targetDir string, port int, log log.Logger) error {
+	binaryPath, err := os.Executable()
 	if err != nil {
-		return err
+		return fmt.Errorf("get executable path: %w", err)
+	}
+
+	helperPath := filepath.Join(targetDir, getCredentialHelperFilename())
+	quotedPath := shellquote.Join(binaryPath)
+	content := fmt.Appendf(nil,
+		"#!/.dockerless/bin/sh\n%s agent docker-credentials --port %d \"$@\"\n",
+		quotedPath, port,
+	)
+
+	// #nosec G306 -- credential helper needs to be executable (0755)
+	if err := os.WriteFile(helperPath, content, 0755); err != nil {
+		return fmt.Errorf("write credential helper: %w", err)
+	}
+
+	log.Debugf("wrote dockerless credentials helper to %s", helperPath)
+	return nil
+}
+
+func configureDockerConfig(configDir, userName string) error {
+	if err := file.MkdirAll(userName, configDir, 0755); err != nil {
+		return fmt.Errorf("create config dir: %w", err)
 	}
 
 	dockerConfig, err := config.Load(configDir)
 	if err != nil {
-		return err
-	}
-
-	// write credentials helper
-	credentialHelperPath := filepath.Join(targetDir, "docker-credential-devpod")
-	log.Debugf("Wrote docker credentials helper to %s", credentialHelperPath)
-	err = os.WriteFile(credentialHelperPath, fmt.Appendf(nil, shebang+`
-'%s' agent docker-credentials --port '%d' "$@"`, binaryPath, port), 0755)
-	if err != nil {
-		return fmt.Errorf("write credential helper: %w", err)
+		return fmt.Errorf("load docker config: %w", err)
 	}
 
 	dockerConfig.CredentialsStore = "devpod"
-	err = dockerConfig.Save()
-	if err != nil {
-		return err
+	if err := dockerConfig.Save(); err != nil {
+		return fmt.Errorf("save docker config: %w", err)
 	}
 
-	err = file.Chown(userName, dockerConfig.Filename)
-	if err != nil {
-		return err
+	if userName != "" {
+		if err := file.Chown(userName, dockerConfig.Filename); err != nil {
+			return fmt.Errorf("chown docker config: %w", err)
+		}
 	}
 
 	return nil
 }
 
+func ConfigureCredentialsContainer(userName string, port int, log log.Logger) error {
+	log.Debugf("configuring container credentials for user %s", userName)
+
+	userHome, err := command.GetHome(userName)
+	if err != nil {
+		return fmt.Errorf("get user home: %w", err)
+	}
+
+	configDir := getDockerConfigDir(userHome)
+	log.Debugf("using docker config directory: %s", configDir)
+
+	if err := setupCredentialHelper(configDir, port, userName, log); err != nil {
+		return err
+	}
+
+	log.Debugf("container credentials configured")
+	return nil
+}
+
+func getDockerConfigDir(userHome string) string {
+	configDir := os.Getenv("DOCKER_CONFIG")
+	if configDir == "" {
+		configDir = filepath.Join(userHome, ".docker")
+	}
+	return configDir
+}
+
+func setupCredentialHelper(configDir string, port int, userName string, log log.Logger) error {
+	if err := writeCredentialHelper(configDir, port, log); err != nil {
+		return err
+	}
+
+	if err := os.Setenv("PATH", os.Getenv("PATH")+getPathSeparator()+configDir); err != nil {
+		return fmt.Errorf("set PATH: %w", err)
+	}
+
+	return configureDockerConfig(configDir, userName)
+}
+
 func ConfigureCredentialsDockerless(targetFolder string, port int, log log.Logger) (string, error) {
 	dockerConfigDir := filepath.Join(targetFolder, ".cache", random.String(6))
-	err := configureCredentials("", "#!/.dockerless/bin/sh", dockerConfigDir, dockerConfigDir, port, log)
-	if err != nil {
+	log.Debugf("configuring dockerless credentials in %s", dockerConfigDir)
+
+	// #nosec G301 -- docker config directory needs to be accessible (0755)
+	if err := os.MkdirAll(dockerConfigDir, 0755); err != nil {
+		return "", fmt.Errorf("create docker config dir: %w", err)
+	}
+	log.Debugf("created docker config directory")
+
+	if err := writeCredentialHelperDockerless(dockerConfigDir, port, log); err != nil {
 		_ = os.RemoveAll(dockerConfigDir)
 		return "", err
 	}
 
-	err = os.Setenv("DOCKER_CONFIG", dockerConfigDir)
-	if err != nil {
+	if err := configureDockerConfig(dockerConfigDir, ""); err != nil {
 		_ = os.RemoveAll(dockerConfigDir)
 		return "", err
 	}
 
-	err = os.Setenv("PATH", os.Getenv("PATH")+":"+dockerConfigDir)
-	if err != nil {
+	if err := os.Setenv("DOCKER_CONFIG", dockerConfigDir); err != nil {
 		_ = os.RemoveAll(dockerConfigDir)
-		return "", err
+		return "", fmt.Errorf("set DOCKER_CONFIG: %w", err)
 	}
 
+	if err := os.Setenv("PATH", os.Getenv("PATH")+getPathSeparator()+dockerConfigDir); err != nil {
+		_ = os.RemoveAll(dockerConfigDir)
+		return "", fmt.Errorf("set PATH: %w", err)
+	}
+
+	log.Debugf("dockerless credentials configured")
 	return dockerConfigDir, nil
 }
 
 func ConfigureCredentialsMachine(targetFolder string, port int, log log.Logger) (string, error) {
 	dockerConfigDir := filepath.Join(targetFolder, ".cache", random.String(12))
-	err := configureCredentials("", "#!/bin/sh", dockerConfigDir, dockerConfigDir, port, log)
-	if err != nil {
+	log.Debugf("configuring machine credentials in %s", dockerConfigDir)
+
+	// #nosec G301 -- docker config directory needs to be accessible (0755)
+	if err := os.MkdirAll(dockerConfigDir, 0755); err != nil {
+		return "", fmt.Errorf("create docker config dir: %w", err)
+	}
+	log.Debugf("created docker config directory")
+
+	if err := writeCredentialHelper(dockerConfigDir, port, log); err != nil {
 		_ = os.RemoveAll(dockerConfigDir)
 		return "", err
 	}
 
-	err = os.Setenv("DOCKER_CONFIG", dockerConfigDir)
-	if err != nil {
+	if err := configureDockerConfig(dockerConfigDir, ""); err != nil {
 		_ = os.RemoveAll(dockerConfigDir)
 		return "", err
 	}
 
-	err = os.Setenv("PATH", os.Getenv("PATH")+":"+dockerConfigDir)
-	if err != nil {
+	if err := os.Setenv("DOCKER_CONFIG", dockerConfigDir); err != nil {
 		_ = os.RemoveAll(dockerConfigDir)
-		return "", err
+		return "", fmt.Errorf("set DOCKER_CONFIG: %w", err)
 	}
 
+	if err := os.Setenv("PATH", os.Getenv("PATH")+getPathSeparator()+dockerConfigDir); err != nil {
+		_ = os.RemoveAll(dockerConfigDir)
+		return "", fmt.Errorf("set PATH: %w", err)
+	}
+
+	log.Debugf("machine credentials configured")
 	return dockerConfigDir, nil
 }
 
@@ -179,47 +301,87 @@ func GetAuthConfig(host string) (*Credentials, error) {
 		return nil, err
 	}
 
-	if host == "registry-1.docker.io" {
-		host = "https://index.docker.io/v1/"
-	}
+	host = normalizeHost(host)
 	ac, err := dockerConfig.GetAuthConfig(host)
 	if err != nil {
 		return nil, err
 	}
 
-	// let's try to query the containers ecosystem
-	// if the credentials the docker SDK returns are empty
-	// Unfortunately docker swallows credentials.errCredentialsNotFound
-	// so we only have the option to compare against an empty types.AuthConfig
-	empty := types.AuthConfig{}
-	if ac == empty {
-		sanitizedHost := strings.TrimPrefix(strings.TrimPrefix(host, "https://"), "http://")
-		dac, err := dockerconfig.GetCredentials(nil, sanitizedHost)
-		if err != nil {
-			return nil, err
-		}
-		ac.Username = dac.Username
-		ac.Password = dac.Password
-		ac.IdentityToken = dac.IdentityToken
-		ac.ServerAddress = host // Best approximation we have to mimic the docker type.
+	// If Docker config has no credentials, try container ecosystem (podman, skopeo, etc.)
+	if isEmptyAuth(ac) {
+		ac = getContainerEcosystemAuth(host)
 	}
 
-	// In case of Azure registry we need to set the azure username to a default, in case it's not set.
-	if ac.Username == "" && strings.HasSuffix(ac.ServerAddress, "azurecr.io") {
+	applyRegistryDefaults(&ac, host)
+
+	return toCredentials(host, ac), nil
+}
+
+func normalizeHost(host string) string {
+	if host == "registry-1.docker.io" {
+		return "https://index.docker.io/v1/"
+	}
+	return host
+}
+
+func isEmptyAuth(ac types.AuthConfig) bool {
+	return ac == types.AuthConfig{}
+}
+
+func getContainerEcosystemAuth(host string) types.AuthConfig {
+	sanitizedHost := strings.TrimPrefix(strings.TrimPrefix(host, "https://"), "http://")
+
+	// Parse as a reference to use the recommended GetCredentialsForRef API
+	ref, err := reference.ParseNormalizedNamed(sanitizedHost)
+	if err != nil {
+		// Fallback to empty auth for invalid references
+		return types.AuthConfig{}
+	}
+
+	dac, err := dockerconfig.GetCredentialsForRef(nil, ref)
+	if err != nil {
+		// No credentials available - return empty for anonymous access
+		return types.AuthConfig{}
+	}
+
+	// Do not return credentials if they are empty (need either username+password OR token)
+	if (dac.Username == "" || dac.Password == "") && dac.IdentityToken == "" {
+		return types.AuthConfig{}
+	}
+
+	return types.AuthConfig{
+		Username:      dac.Username,
+		Password:      dac.Password,
+		IdentityToken: dac.IdentityToken,
+		ServerAddress: host,
+	}
+}
+
+func applyRegistryDefaults(ac *types.AuthConfig, host string) {
+	if ac.Username != "" {
+		return
+	}
+
+	registryAddr := ac.ServerAddress
+	if registryAddr == "" {
+		registryAddr = host
+	}
+
+	registryAddr = strings.TrimPrefix(strings.TrimPrefix(registryAddr, "https://"), "http://")
+	if strings.HasSuffix(registryAddr, "azurecr.io") {
 		ac.Username = AzureContainerRegistryUsername
 	}
+}
 
+func toCredentials(host string, ac types.AuthConfig) *Credentials {
+	secret := ac.Password
 	if ac.IdentityToken != "" {
-		return &Credentials{
-			ServerURL: host,
-			Username:  ac.Username,
-			Secret:    ac.IdentityToken,
-		}, nil
+		secret = ac.IdentityToken
 	}
 
 	return &Credentials{
 		ServerURL: host,
 		Username:  ac.Username,
-		Secret:    ac.Password,
-	}, nil
+		Secret:    secret,
+	}
 }
