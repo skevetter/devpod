@@ -62,7 +62,12 @@ func (h *Helper) Get(serverURL string) (string, string, error) {
 		return "", "", err
 	}
 
-	// Return empty credentials for anonymous access
+	// Return "credentials not found" error for empty credentials
+	// This signals Docker to fall back to anonymous access
+	if creds.Username == "" && creds.Secret == "" {
+		return "", "", credentials.NewErrCredentialsNotFound()
+	}
+
 	return creds.Username, creds.Secret, nil
 }
 
@@ -185,7 +190,7 @@ func (h *Helper) getFromCredentialsServer(serverURL string) (*Credentials, error
 	rawJSON, err := json.Marshal(&Request{ServerURL: serverURL})
 	if err != nil {
 		h.logError("marshal credentials request: %v", err)
-		return &Credentials{}, nil
+		return nil, credentials.NewErrCredentialsNotFound()
 	}
 
 	url := fmt.Sprintf("http://localhost:%d%s", h.port, credentialsEndpoint)
@@ -196,24 +201,24 @@ func (h *Helper) getFromCredentialsServer(serverURL string) (*Credentials, error
 	)
 	if err != nil {
 		h.logError("post to credentials server: %v", err)
-		return &Credentials{}, nil
+		return nil, credentials.NewErrCredentialsNotFound()
 	}
 	defer func() { _ = response.Body.Close() }()
 
 	if response.StatusCode != http.StatusOK {
-		return &Credentials{}, nil
+		return nil, credentials.NewErrCredentialsNotFound()
 	}
 
 	raw, err := io.ReadAll(response.Body)
 	if err != nil {
 		h.logError("read credentials response: %v", err)
-		return &Credentials{}, nil
+		return nil, credentials.NewErrCredentialsNotFound()
 	}
 
 	creds := &Credentials{}
 	if err := json.Unmarshal(raw, creds); err != nil {
 		h.logError("unmarshal credentials: %v", err)
-		return &Credentials{}, nil
+		return nil, credentials.NewErrCredentialsNotFound()
 	}
 
 	return creds, nil
