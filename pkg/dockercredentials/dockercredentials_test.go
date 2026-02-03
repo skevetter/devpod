@@ -61,11 +61,19 @@ func TestConfigureCredentialsDockerless(t *testing.T) {
 	tempDir := t.TempDir()
 	logger := log.Default
 
-	origDockerConfig := os.Getenv("DOCKER_CONFIG")
-	origPath := os.Getenv("PATH")
+	origDockerConfig, dockerConfigSet := os.LookupEnv("DOCKER_CONFIG")
+	origPath, pathSet := os.LookupEnv("PATH")
 	t.Cleanup(func() {
-		os.Setenv("DOCKER_CONFIG", origDockerConfig)
-		os.Setenv("PATH", origPath)
+		if dockerConfigSet {
+			os.Setenv("DOCKER_CONFIG", origDockerConfig)
+		} else {
+			os.Unsetenv("DOCKER_CONFIG")
+		}
+		if pathSet {
+			os.Setenv("PATH", origPath)
+		} else {
+			os.Unsetenv("PATH")
+		}
 	})
 
 	dockerConfigDir, err := ConfigureCredentialsDockerless(tempDir, 12345, logger)

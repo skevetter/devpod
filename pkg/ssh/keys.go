@@ -58,7 +58,7 @@ func makeHostKey() (string, error) {
 		return "", err
 	}
 
-	return privKey, err
+	return privKey, nil
 }
 
 func makeSSHKeyPair() (string, string, error) {
@@ -67,7 +67,7 @@ func makeSSHKeyPair() (string, string, error) {
 		return "", "", err
 	}
 
-	return pubKey, privKey, err
+	return pubKey, privKey, nil
 }
 
 func GetPrivateKeyRaw(context, workspaceID string) ([]byte, error) {

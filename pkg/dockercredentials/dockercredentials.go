@@ -65,7 +65,7 @@ func getPathSeparator() string {
 
 func validateWindowsExecutablePath(path string) error {
 	// Validate that path does not contain cmd.exe metacharacters that could break quoting
-	unsafeChars := []string{"%", "^", "&", "|", "<", ">", "\"", "\n", "\r", "\t", ";"}
+	unsafeChars := []string{"%", "^", "&", "|", "<", ">", "\"", "\n", "\r", "\t", ";", "(", ")", "!"}
 	for _, char := range unsafeChars {
 		if strings.Contains(path, char) {
 			return fmt.Errorf("executable path contains unsafe character (%s): %s", char, path)
@@ -347,12 +347,17 @@ func getContainerEcosystemAuth(host string) types.AuthConfig {
 }
 
 func applyRegistryDefaults(ac *types.AuthConfig, host string) {
-	// Azure Container Registry requires a default username
+	if ac.Username != "" {
+		return
+	}
+
 	registryAddr := ac.ServerAddress
 	if registryAddr == "" {
 		registryAddr = host
 	}
-	if ac.Username == "" && strings.HasSuffix(registryAddr, "azurecr.io") {
+
+	registryAddr = strings.TrimPrefix(strings.TrimPrefix(registryAddr, "https://"), "http://")
+	if strings.HasSuffix(registryAddr, "azurecr.io") {
 		ac.Username = AzureContainerRegistryUsername
 	}
 }
