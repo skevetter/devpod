@@ -6,6 +6,7 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -20,8 +21,6 @@ import (
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/skevetter/devpod/cmd/flags"
-
-	"errors"
 
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/agent"

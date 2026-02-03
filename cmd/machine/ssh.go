@@ -144,12 +144,12 @@ func RunSSHSession(ctx context.Context, sshClient *ssh.Client, agentForwarding b
 	if agentForwarding && authSock != "" {
 		err = devsshagent.ForwardToRemote(sshClient, authSock)
 		if err != nil {
-			return fmt.Errorf("forward agent: %v", err)
+			return fmt.Errorf("forward agent: %w", err)
 		}
 
 		err = devsshagent.RequestAgentForwarding(session)
 		if err != nil {
-			return fmt.Errorf("request agent forwarding: %v", err)
+			return fmt.Errorf("request agent forwarding: %w", err)
 		}
 	}
 

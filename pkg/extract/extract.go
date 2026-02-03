@@ -47,7 +47,7 @@ func Extract(origReader io.Reader, destFolder string, options ...Option) error {
 	if testBytes[0] == 31 && testBytes[1] == 139 {
 		gzipReader, err := gzip.NewReader(bufioReader)
 		if err != nil {
-			return fmt.Errorf("error decompressing: %v", err)
+			return fmt.Errorf("error decompressing: %w", err)
 		}
 		defer func() { _ = gzipReader.Close() }()
 

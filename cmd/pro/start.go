@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -22,8 +23,6 @@ import (
 	jsonpatch "github.com/evanphx/json-patch"
 	"github.com/mgutz/ansi"
 	"github.com/skratchdot/open-golang/open"
-
-	"errors"
 
 	storagev1 "github.com/loft-sh/api/v4/pkg/apis/storage/v1"
 	"github.com/loft-sh/api/v4/pkg/auth"

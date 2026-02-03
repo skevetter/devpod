@@ -4,10 +4,9 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
-
-	"errors"
 
 	"github.com/blang/semver/v4"
 	"github.com/skevetter/devpod/cmd/flags"

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"maps"
 	"os"
@@ -12,8 +13,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-
-	"errors"
 
 	"github.com/loft-sh/api/v4/pkg/devpod"
 	"github.com/sirupsen/logrus"

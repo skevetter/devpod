@@ -32,7 +32,7 @@ func NewUpgradeCmd() *cobra.Command {
 func (cmd *UpgradeCmd) Run(*cobra.Command, []string) error {
 	err := upgrade.Upgrade(cmd.Version, cmd.log)
 	if err != nil {
-		return fmt.Errorf("unable to upgrade: %v", err)
+		return fmt.Errorf("unable to upgrade: %w", err)
 	}
 
 	return nil

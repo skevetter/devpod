@@ -374,7 +374,7 @@ func (c *client) LoginWithAccessKey(host, accessKey string, insecure bool, force
 			}
 		}
 
-		return fmt.Errorf("error logging in: %v", err)
+		return fmt.Errorf("error logging in: %w", err)
 	}
 
 	return c.Save()

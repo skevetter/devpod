@@ -29,7 +29,7 @@ var keyLock sync.Mutex
 func rsaKeyGen() (privateKey string, publicKey string, err error) {
 	privateKeyRaw, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
-		return "", "", fmt.Errorf("generate private key: %v", err)
+		return "", "", fmt.Errorf("generate private key: %w", err)
 	}
 
 	return generateKeys(pem.Block{
