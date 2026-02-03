@@ -90,8 +90,10 @@ func (h *Helper) List() (map[string]string, error) {
 func (h *Helper) getWorkspaceHTTPClient() *http.Client {
 	return &http.Client{
 		Transport: &http.Transport{
-			DialContext: func(_ context.Context, _, _ string) (net.Conn, error) {
-				return net.DialTimeout("unix", filepath.Join(agent.RootDir, ts.RunnerProxySocket), 5*time.Second)
+			DialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {
+				var d net.Dialer
+				d.Timeout = 5 * time.Second
+				return d.DialContext(ctx, "unix", filepath.Join(agent.RootDir, ts.RunnerProxySocket))
 			},
 		},
 		Timeout: httpClientTimeout,

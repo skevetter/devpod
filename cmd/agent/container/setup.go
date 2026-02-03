@@ -45,8 +45,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var DockerlessImageConfigOutput = "/.dockerless/image.json"
-
 // SetupContainerCmd holds the cmd flags
 type SetupContainerCmd struct {
 	*flags.GlobalFlags
@@ -135,7 +133,7 @@ func (cmd *SetupContainerCmd) prepareWorkspace(sctx *setupContext) error {
 		SetupInfo:         sctx.setupInfo,
 		DockerlessOptions: &sctx.workspaceInfo.Dockerless,
 		Client:            sctx.tunnelClient,
-		ImageConfigOutput: DockerlessImageConfigOutput,
+		ImageConfigOutput: agent.DefaultImageConfigPath,
 		Debug:             cmd.Debug,
 		Log:               sctx.logger,
 		ConfigureCredentialsFunc: func(ctx context.Context, cancel context.CancelFunc) (string, error) {

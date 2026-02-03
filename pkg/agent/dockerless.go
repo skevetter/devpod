@@ -58,10 +58,18 @@ func DockerlessBuild(opts DockerlessBuildOptions) error {
 	if !shouldBuild(opts) {
 		return nil
 	}
+	if opts.SetupInfo == nil {
+		return fmt.Errorf("setup info is required for dockerless build")
+	}
+	if opts.DockerlessOptions == nil {
+		return fmt.Errorf("dockerless options are required for dockerless build")
+	}
 
-	if err := prepareBuildDirectory(GetDockerlessBuildContext()); err != nil {
+	buildContext := GetDockerlessBuildContext()
+	if err := prepareBuildDirectory(buildContext); err != nil {
 		return err
 	}
+	defer cleanupBuildDirectory(buildContext, opts.Log)
 
 	binaryPath, err := os.Executable()
 	if err != nil {
@@ -83,7 +91,6 @@ func DockerlessBuild(opts DockerlessBuildOptions) error {
 		return err
 	}
 
-	cleanupBuildDirectory(GetDockerlessBuildContext(), opts.Log)
 	return nil
 }
 
@@ -134,6 +141,7 @@ func setupDockerCredentials(opts DockerlessBuildOptions) func() {
 	}
 
 	ctx, cancel := context.WithCancel(opts.Context)
+	originalPath := os.Getenv("PATH")
 	dockerCredentialsDir, err := opts.ConfigureCredentialsFunc(ctx, cancel)
 	if err != nil {
 		cancel()
@@ -144,6 +152,7 @@ func setupDockerCredentials(opts DockerlessBuildOptions) func() {
 	return func() {
 		cancel()
 		_ = os.Unsetenv("DOCKER_CONFIG")
+		_ = os.Setenv("PATH", originalPath)
 		_ = os.RemoveAll(dockerCredentialsDir)
 	}
 }

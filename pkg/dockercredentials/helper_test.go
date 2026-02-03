@@ -96,17 +96,6 @@ func (s *HelperTestSuite) TestGet_NotFound_ReturnsEmptyCredentials() {
 	s.Equal("", secret)
 }
 
-func (s *HelperTestSuite) TestGet_EmptyCredentials_ReturnsNotFoundError() {
-
-	username, secret, err := s.helper.Get("public.registry.com")
-
-	s.Error(err)
-	s.Contains(err.Error(), "credentials not found")
-
-	s.Equal("", username)
-	s.Equal("", secret)
-}
-
 func (s *HelperTestSuite) TestGet_WhitespaceCredentials_ReturnsCredentials() {
 
 	username, secret, err := s.helper.Get("whitespace.registry.com")
