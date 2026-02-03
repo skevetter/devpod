@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/skevetter/devpod/pkg/version"
 	"github.com/spf13/cobra"
@@ -26,6 +27,6 @@ func NewVersionCmd() *cobra.Command {
 
 // Run runs the command logic
 func (cmd *VersionCmd) Run(_ *cobra.Command, _ []string) error {
-	fmt.Print(version.GetVersion())
+	_, _ := fmt.Fprintln(os.Stdout, version.GetVersion())
 	return nil
 }
