@@ -163,33 +163,35 @@ func ConfigureCredentialsContainer(userName string, port int, log log.Logger) er
 		return fmt.Errorf("get user home: %w", err)
 	}
 
-	configDir := os.Getenv("DOCKER_CONFIG")
-	if configDir == "" {
-		configDir = filepath.Join(userHome, ".docker")
-	}
+	configDir := getDockerConfigDir(userHome)
 	log.Debugf("using docker config directory: %s", configDir)
 
-	targetDir := "/usr/local/bin"
-	if runtime.GOOS == windowsOS {
-		targetDir = configDir
-	}
-
-	if err := writeCredentialHelper(targetDir, port, log); err != nil {
-		return err
-	}
-
-	if runtime.GOOS == windowsOS {
-		if err := os.Setenv("PATH", os.Getenv("PATH")+getPathSeparator()+targetDir); err != nil {
-			return fmt.Errorf("set PATH: %w", err)
-		}
-	}
-
-	if err := configureDockerConfig(configDir, userName); err != nil {
+	if err := setupCredentialHelper(configDir, port, userName, log); err != nil {
 		return err
 	}
 
 	log.Debugf("container credentials configured")
 	return nil
+}
+
+func getDockerConfigDir(userHome string) string {
+	configDir := os.Getenv("DOCKER_CONFIG")
+	if configDir == "" {
+		configDir = filepath.Join(userHome, ".docker")
+	}
+	return configDir
+}
+
+func setupCredentialHelper(configDir string, port int, userName string, log log.Logger) error {
+	if err := writeCredentialHelper(configDir, port, log); err != nil {
+		return err
+	}
+
+	if err := os.Setenv("PATH", os.Getenv("PATH")+getPathSeparator()+configDir); err != nil {
+		return fmt.Errorf("set PATH: %w", err)
+	}
+
+	return configureDockerConfig(configDir, userName)
 }
 
 func ConfigureCredentialsDockerless(targetFolder string, port int, log log.Logger) (string, error) {

@@ -45,6 +45,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// #nosec G101 -- not a credential
 const dockerlessCredentialsPath = "/.dockerless/.docker"
 
 // SetupContainerCmd holds the cmd flags

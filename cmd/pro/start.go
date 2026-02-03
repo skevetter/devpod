@@ -233,7 +233,8 @@ func (cmd *StartCmd) upgrade() error {
 	err := upgradeRelease(chartName, chartRepo, cmd.Context, cmd.Namespace, extraArgs, cmd.Log)
 	if err != nil {
 		if !cmd.Reset {
-			return fmt.Errorf("%w\n\nIf want to purge and reinstall DevPod Pro, run: %s", err, ansi.Color("devpod pro start --reset", "green+b"))
+			resetCmd := ansi.Color("devpod pro start --reset", "green+b")
+			return fmt.Errorf("%w\n\nIf want to purge and reinstall DevPod Pro, run: %s", err, resetCmd)
 		}
 
 		// Try to purge Loft and retry install

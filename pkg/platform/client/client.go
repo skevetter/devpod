@@ -273,7 +273,10 @@ func (c *client) Version() (*auth.Version, error) {
 		if errors.As(err, &urlError) {
 			var certErr x509.UnknownAuthorityError
 			if errors.As(urlError.Err, &certErr) {
-				return nil, fmt.Errorf("get version: %w. If using self-signed certificates, try logging in with the '--insecure' flag", err)
+				return nil, fmt.Errorf(
+					"get version: %w. If using self-signed certificates, try logging in with the '--insecure' flag",
+					err,
+				)
 			}
 		}
 		return nil, fmt.Errorf("get version: %w", err)

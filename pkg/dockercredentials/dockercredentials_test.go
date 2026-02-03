@@ -19,6 +19,7 @@ func TestWriteCredentialHelperDockerless(t *testing.T) {
 	require.NoError(t, err)
 
 	helperPath := filepath.Join(tempDir, getCredentialHelperFilename())
+	// #nosec G304 -- test file path is controlled by test
 	content, err := os.ReadFile(helperPath)
 	require.NoError(t, err)
 
@@ -42,6 +43,7 @@ func TestWriteCredentialHelper(t *testing.T) {
 	require.NoError(t, err)
 
 	helperPath := filepath.Join(tempDir, getCredentialHelperFilename())
+	// #nosec G304 -- test file path is controlled by test
 	content, err := os.ReadFile(helperPath)
 	require.NoError(t, err)
 
@@ -65,14 +67,14 @@ func TestConfigureCredentialsDockerless(t *testing.T) {
 	origPath, pathSet := os.LookupEnv("PATH")
 	t.Cleanup(func() {
 		if dockerConfigSet {
-			os.Setenv("DOCKER_CONFIG", origDockerConfig)
+			_ = os.Setenv("DOCKER_CONFIG", origDockerConfig)
 		} else {
-			os.Unsetenv("DOCKER_CONFIG")
+			_ = os.Unsetenv("DOCKER_CONFIG")
 		}
 		if pathSet {
-			os.Setenv("PATH", origPath)
+			_ = os.Setenv("PATH", origPath)
 		} else {
-			os.Unsetenv("PATH")
+			_ = os.Unsetenv("PATH")
 		}
 	})
 
@@ -83,6 +85,7 @@ func TestConfigureCredentialsDockerless(t *testing.T) {
 	require.NoError(t, err)
 
 	helperPath := filepath.Join(dockerConfigDir, getCredentialHelperFilename())
+	// #nosec G304 -- test file path is controlled by test
 	content, err := os.ReadFile(helperPath)
 	require.NoError(t, err)
 

@@ -137,21 +137,18 @@ func (s *HelperTestSuite) TestDelete_NotSupported() {
 }
 
 func (s *HelperTestSuite) TestGetFromWorkspaceServer_SocketNotExists() {
-
 	creds := s.helper.getFromWorkspaceServer("registry.example.com")
 
 	s.Nil(creds)
 }
 
 func (s *HelperTestSuite) TestListFromWorkspaceServer_SocketNotExists() {
-
 	list := s.helper.listFromWorkspaceServer()
 
 	s.Nil(list)
 }
 
 func (s *HelperTestSuite) TestGetFromCredentialsServer_MarshalError() {
-
 	creds, err := s.helper.getFromCredentialsServer("")
 
 	s.Error(err)

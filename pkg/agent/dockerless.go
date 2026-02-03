@@ -61,6 +61,10 @@ func DockerlessBuild(opts DockerlessBuildOptions) error {
 		return nil
 	}
 
+	return executeBuild(opts)
+}
+
+func executeBuild(opts DockerlessBuildOptions) error {
 	buildContext := GetDockerlessBuildContext()
 	if err := prepareBuildDirectory(buildContext); err != nil {
 		return err
@@ -83,11 +87,7 @@ func DockerlessBuild(opts DockerlessBuildOptions) error {
 		return err
 	}
 
-	if err := applyContainerEnv(opts.ImageConfigOutput, opts.Log); err != nil {
-		return err
-	}
-
-	return nil
+	return applyContainerEnv(opts.ImageConfigOutput, opts.Log)
 }
 
 func validateBuildOptions(opts DockerlessBuildOptions) error {
