@@ -44,7 +44,7 @@ func ParseCacheEntry(in []string) ([]client.CacheOptionsEntry, error) {
 			}
 		}
 		if im.Type == "" {
-			return nil, fmt.Errorf("type required form> %q", in)
+			return nil, fmt.Errorf("type required from: %q", in)
 		}
 		if !addGithubToken(&im) {
 			continue

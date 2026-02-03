@@ -12,7 +12,7 @@ import (
 func exitWithError(sess ssh.Session, err error, log log.Logger) {
 	if err != nil {
 		var exitError *exec.ExitError
-		if !errors.As(errors.Unwrap(err), &exitError) {
+		if !errors.As(err, &exitError) {
 			log.Errorf("Exit error: %v", err)
 			msg := strings.TrimPrefix(err.Error(), "exec: ")
 			if _, err := sess.Stderr().Write([]byte(msg)); err != nil {
