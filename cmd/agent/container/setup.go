@@ -44,9 +44,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// #nosec G101 -- not a credential
-const dockerlessCredentialsPath = "/.dockerless/.docker"
-
 // SetupContainerCmd holds the cmd flags
 type SetupContainerCmd struct {
 	*flags.GlobalFlags
@@ -142,7 +139,7 @@ func (cmd *SetupContainerCmd) prepareWorkspace(sctx *setupContext) error {
 			if err != nil {
 				return "", err
 			}
-			return dockercredentials.ConfigureCredentialsDockerless(dockerlessCredentialsPath, serverPort, sctx.logger)
+			return dockercredentials.ConfigureCredentialsDockerless(agent.DockerlessCredentialsPath, serverPort, sctx.logger)
 		},
 	}); err != nil {
 		return fmt.Errorf("dockerless build: %w", err)

@@ -22,10 +22,11 @@ import (
 )
 
 const (
-	DockerlessEnvVar        = "DOCKERLESS"
-	DockerlessContextEnvVar = "DOCKERLESS_CONTEXT"
-	DefaultImageConfigPath  = "/.dockerless/image.json"
-	trueValue               = "true"
+	DockerlessEnvVar          = "DOCKERLESS"
+	DockerlessContextEnvVar   = "DOCKERLESS_CONTEXT"
+	DefaultImageConfigPath    = "/.dockerless/image.json"
+	DockerlessCredentialsPath = "/.dockerless/.docker" // #nosec G101 -- not a credential
+	trueValue                 = "true"
 )
 
 type ConfigureCredentialsFunc func(context.Context) (string, error)
