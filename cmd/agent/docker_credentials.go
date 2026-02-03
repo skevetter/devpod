@@ -47,6 +47,10 @@ func (cmd *DockerCredentialsCmd) Run(args []string, log log.Logger) error {
 	if err != nil {
 		log.Debugf("docker credentials command: %v", err)
 	}
+
+	// Ensure stdout is flushed before exit
+	_ = os.Stdout.Sync()
+
 	// Always return nil to allow Docker to fall back to anonymous access
 	// The HandleCommand function writes the expected response to stdout
 	return nil
