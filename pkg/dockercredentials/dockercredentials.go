@@ -73,6 +73,10 @@ func writeCredentialHelper(targetDir string, port int, log log.Logger) error {
 	var content []byte
 
 	if runtime.GOOS == windowsOS {
+		// Validate path does not contain characters that could break cmd.exe quoting
+		if strings.Contains(binaryPath, "\"") {
+			return fmt.Errorf("executable path contains unsafe characters: %s", binaryPath)
+		}
 		content = fmt.Appendf(nil,
 			"@echo off\r\n\"%s\" agent docker-credentials --port %d %%*\r\n",
 			binaryPath, port,

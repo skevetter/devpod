@@ -136,33 +136,8 @@ func (h *Helper) listFromWorkspaceServer() map[string]string {
 		return nil
 	}
 
-	httpClient := h.getWorkspaceHTTPClient()
-
-	rawJSON, err := json.Marshal(&Request{})
+	listResp, err := h.requestWorkspaceList()
 	if err != nil {
-		return nil
-	}
-	response, err := httpClient.Post(
-		workspaceServerURL,
-		contentTypeJSON,
-		bytes.NewReader(rawJSON),
-	)
-	if err != nil {
-		return nil
-	}
-	defer func() { _ = response.Body.Close() }()
-
-	if response.StatusCode != http.StatusOK {
-		return nil
-	}
-
-	raw, err := io.ReadAll(response.Body)
-	if err != nil {
-		return nil
-	}
-
-	listResp := &ListResponse{}
-	if err := json.Unmarshal(raw, listResp); err != nil {
 		return nil
 	}
 
@@ -171,6 +146,40 @@ func (h *Helper) listFromWorkspaceServer() map[string]string {
 	}
 
 	return listResp.Registries
+}
+
+func (h *Helper) requestWorkspaceList() (*ListResponse, error) {
+	httpClient := h.getWorkspaceHTTPClient()
+
+	rawJSON, err := json.Marshal(&Request{})
+	if err != nil {
+		return nil, err
+	}
+	response, err := httpClient.Post(
+		workspaceServerURL,
+		contentTypeJSON,
+		bytes.NewReader(rawJSON),
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = response.Body.Close() }()
+
+	if response.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("status %d", response.StatusCode)
+	}
+
+	raw, err := io.ReadAll(response.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	listResp := &ListResponse{}
+	if err := json.Unmarshal(raw, listResp); err != nil {
+		return nil, err
+	}
+
+	return listResp, nil
 }
 
 func (h *Helper) getFromCredentialsServer(serverURL string) (*Credentials, error) {
@@ -225,7 +234,7 @@ func (h *Helper) listFromCredentialsServer() (map[string]string, error) {
 	defer func() { _ = response.Body.Close() }()
 
 	if response.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to list credentials")
+		return nil, fmt.Errorf("failed to list credentials: status %d", response.StatusCode)
 	}
 
 	raw, err := io.ReadAll(response.Body)
