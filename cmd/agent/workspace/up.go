@@ -322,7 +322,6 @@ func (w *workspaceInitializer) initializeTunnel() error {
 func (w *workspaceInitializer) setupCredentials() error {
 	dockerCredentialsDir, gitCredentialsHelper, err := configureCredentials(credentialsConfig{
 		ctx:           w.ctx,
-		cancel:        w.cancel,
 		workspaceInfo: w.workspaceInfo,
 		client:        w.tunnelClient,
 		log:           w.logger,
@@ -568,7 +567,6 @@ func ensureLastDevContainerJson(workspaceInfo *provider2.AgentWorkspaceInfo) err
 
 type credentialsConfig struct {
 	ctx           context.Context
-	cancel        context.CancelFunc
 	workspaceInfo *provider2.AgentWorkspaceInfo
 	client        tunnel.TunnelClient
 	log           log.Logger

@@ -267,7 +267,7 @@ func (cmd *SetupContainerCmd) setupGitCredentials(
 	}
 
 	cancelCtx, cancel := context.WithCancel(ctx)
-	cleanupFunc, err := configureSystemGitCredentials(cancelCtx, cancel, tunnelClient, logger)
+	cleanupFunc, err := configureSystemGitCredentials(cancelCtx, tunnelClient, logger)
 	if err != nil {
 		cancel()
 		logger.Errorf("error configuring git credentials: %v", err)
@@ -522,7 +522,7 @@ func (cmd *SetupContainerCmd) setupOpenVSCode(setupInfo *config.Result, ideOptio
 	return openVSCode.Start()
 }
 
-func configureSystemGitCredentials(ctx context.Context, cancel context.CancelFunc, client tunnel.TunnelClient, log log.Logger) (func(), error) {
+func configureSystemGitCredentials(ctx context.Context, client tunnel.TunnelClient, log log.Logger) (func(), error) {
 	if !command.Exists("git") {
 		return nil, errors.New("git not found")
 	}
