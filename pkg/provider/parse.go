@@ -75,7 +75,10 @@ func validate(config *ProviderConfig) error {
 		if optionValue.ValidationPattern != "" {
 			_, err := regexp.Compile(optionValue.ValidationPattern)
 			if err != nil {
-				return fmt.Errorf("error parsing validation pattern '%s' for option '%s': %w", optionValue.ValidationPattern, optionName, err)
+				return fmt.Errorf(
+					"error parsing validation pattern '%s' for option '%s': %w",
+					optionValue.ValidationPattern, optionName, err,
+				)
 			}
 		}
 
