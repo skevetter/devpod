@@ -14,7 +14,6 @@ import (
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/sirupsen/logrus"
-	"github.com/skevetter/devpod/pkg/agent/tunnel"
 	"github.com/skevetter/devpod/pkg/copy"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	"github.com/skevetter/devpod/pkg/envfile"
@@ -34,7 +33,6 @@ type DockerlessBuildOptions struct {
 	Context                  context.Context
 	SetupInfo                *config.Result
 	DockerlessOptions        *provider2.ProviderDockerlessOptions
-	Client                   tunnel.TunnelClient
 	ImageConfigOutput        string
 	Debug                    bool
 	Log                      log.Logger
@@ -55,12 +53,12 @@ func ImageConfigExists(path string) bool {
 }
 
 func DockerlessBuild(opts DockerlessBuildOptions) error {
-	if !shouldBuild(opts) {
-		return nil
-	}
-
 	if err := validateBuildOptions(opts); err != nil {
 		return err
+	}
+
+	if !shouldBuild(opts) {
+		return nil
 	}
 
 	buildContext := GetDockerlessBuildContext()
@@ -98,6 +96,9 @@ func validateBuildOptions(opts DockerlessBuildOptions) error {
 	}
 	if opts.DockerlessOptions == nil {
 		return fmt.Errorf("dockerless options are required for dockerless build")
+	}
+	if opts.Log == nil {
+		return fmt.Errorf("log is required for dockerless build")
 	}
 	return nil
 }

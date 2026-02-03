@@ -63,6 +63,17 @@ func getPathSeparator() string {
 	return ":"
 }
 
+func validateWindowsExecutablePath(path string) error {
+	// Validate that path does not contain cmd.exe metacharacters that could break quoting
+	unsafeChars := []string{"%", "^", "&", "|", "<", ">", "\"", "\n", "\r", "\t", ";"}
+	for _, char := range unsafeChars {
+		if strings.Contains(path, char) {
+			return fmt.Errorf("executable path contains unsafe character (%s): %s", char, path)
+		}
+	}
+	return nil
+}
+
 func writeCredentialHelper(targetDir string, port int, log log.Logger) error {
 	binaryPath, err := os.Executable()
 	if err != nil {
@@ -74,8 +85,8 @@ func writeCredentialHelper(targetDir string, port int, log log.Logger) error {
 
 	if runtime.GOOS == windowsOS {
 		// Validate path does not contain characters that could break cmd.exe quoting
-		if strings.Contains(binaryPath, "\"") {
-			return fmt.Errorf("executable path contains unsafe characters: %s", binaryPath)
+		if err := validateWindowsExecutablePath(binaryPath); err != nil {
+			return err
 		}
 		content = fmt.Appendf(nil,
 			"@echo off\r\n\"%s\" agent docker-credentials --port %d %%*\r\n",
@@ -165,6 +176,12 @@ func ConfigureCredentialsContainer(userName string, port int, log log.Logger) er
 
 	if err := writeCredentialHelper(targetDir, port, log); err != nil {
 		return err
+	}
+
+	if runtime.GOOS == windowsOS {
+		if err := os.Setenv("PATH", os.Getenv("PATH")+getPathSeparator()+targetDir); err != nil {
+			return fmt.Errorf("set PATH: %w", err)
+		}
 	}
 
 	if err := configureDockerConfig(configDir, userName); err != nil {
@@ -292,7 +309,7 @@ func GetAuthConfig(host string) (*Credentials, error) {
 		ac = getContainerEcosystemAuth(host)
 	}
 
-	applyRegistryDefaults(&ac)
+	applyRegistryDefaults(&ac, host)
 
 	return toCredentials(host, ac), nil
 }
@@ -329,9 +346,13 @@ func getContainerEcosystemAuth(host string) types.AuthConfig {
 	}
 }
 
-func applyRegistryDefaults(ac *types.AuthConfig) {
+func applyRegistryDefaults(ac *types.AuthConfig, host string) {
 	// Azure Container Registry requires a default username
-	if ac.Username == "" && strings.HasSuffix(ac.ServerAddress, "azurecr.io") {
+	registryAddr := ac.ServerAddress
+	if registryAddr == "" {
+		registryAddr = host
+	}
+	if ac.Username == "" && strings.HasSuffix(registryAddr, "azurecr.io") {
 		ac.Username = AzureContainerRegistryUsername
 	}
 }

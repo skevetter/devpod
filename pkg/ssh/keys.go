@@ -45,7 +45,7 @@ func generateKeys(block pem.Block, cp crypto.Signer) (privateKey string, publicK
 	publicKeyRaw := cp.Public()
 	p, err := ssh.NewPublicKey(publicKeyRaw)
 	if err != nil {
-		return "", "", err
+		return "", "", fmt.Errorf("create ssh public key: %w", err)
 	}
 	publicKey = string(ssh.MarshalAuthorizedKey(p))
 

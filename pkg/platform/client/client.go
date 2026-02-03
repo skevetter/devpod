@@ -269,7 +269,13 @@ func (c *client) Version() (*auth.Version, error) {
 
 	raw, err := restClient.CoreV1().RESTClient().Get().RequestURI("/version").DoRaw(context.Background())
 	if err != nil {
-		// User may need to login using --insecure flag to trust self-signed certificates
+		var urlError *url.Error
+		if errors.As(err, &urlError) {
+			var certErr x509.UnknownAuthorityError
+			if errors.As(urlError.Err, &certErr) {
+				return nil, fmt.Errorf("get version: %w. If using self-signed certificates, try logging in with the '--insecure' flag", err)
+			}
+		}
 		return nil, fmt.Errorf("get version: %w", err)
 	}
 

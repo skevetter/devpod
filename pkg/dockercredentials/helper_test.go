@@ -57,8 +57,10 @@ func (s *HelperTestSuite) SetupTest() {
 		}
 	}))
 
-	serverURL, _ := url.Parse(s.server.URL)
-	port, _ := strconv.Atoi(serverURL.Port())
+	serverURL, err := url.Parse(s.server.URL)
+	s.Require().NoError(err)
+	port, err := strconv.Atoi(serverURL.Port())
+	s.Require().NoError(err)
 	s.helper = NewHelper(port)
 }
 
@@ -113,18 +115,14 @@ func (s *HelperTestSuite) TestGetFromCredentialsServer_NotFound_ReturnsEmptyCred
 }
 
 func (s *HelperTestSuite) TestList_EmptyList() {
-
 	list, err := s.helper.List()
 
 	s.Error(err)
 
-	if list != nil {
-		s.Empty(list)
-	}
+	s.Nil(list)
 }
 
 func (s *HelperTestSuite) TestAdd_NotSupported() {
-
 	err := s.helper.Add(nil)
 
 	s.Error(err)
@@ -132,7 +130,6 @@ func (s *HelperTestSuite) TestAdd_NotSupported() {
 }
 
 func (s *HelperTestSuite) TestDelete_NotSupported() {
-
 	err := s.helper.Delete("registry.example.com")
 
 	s.Error(err)
@@ -197,7 +194,7 @@ func (s *HelperTestSuite) TestRequestWorkspaceList_InvalidResponse() {
 }
 
 func (s *HelperTestSuite) TestGet_BothServersUnavailable() {
-	h := NewHelper(99999)
+	h := NewHelper(65535)
 
 	username, secret, err := h.Get("registry.example.com")
 

@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"time"
 
 	"github.com/skevetter/devpod/cmd/flags"
 	"github.com/skevetter/devpod/pkg/agent"
@@ -85,6 +86,7 @@ func getCredentialsFromWorkspaceServer(credentials *gitcredentials.GitCredential
 	}
 
 	httpClient := &http.Client{
+		Timeout: 10 * time.Second,
 		Transport: &http.Transport{
 			DialContext: func(_ context.Context, _, _ string) (net.Conn, error) {
 				return net.Dial("unix", filepath.Join(agent.RootDir, ts.RunnerProxySocket))

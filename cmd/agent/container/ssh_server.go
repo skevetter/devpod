@@ -72,6 +72,9 @@ func getFileLogger(remoteUser string, debug bool) log.Logger {
 
 	targetFolder := filepath.Join(os.TempDir(), ".devpod")
 	if remoteUser != "" {
+		if filepath.Base(remoteUser) != remoteUser || remoteUser == "." || remoteUser == ".." {
+			return fallback
+		}
 		targetFolder = filepath.Join(agent.RootDir, remoteUser)
 	}
 	err := os.MkdirAll(targetFolder, 0o755)

@@ -124,6 +124,7 @@ func (h *Helper) getFromWorkspaceServer(serverURL string) *Credentials {
 	defer func() { _ = response.Body.Close() }()
 
 	if response.StatusCode != http.StatusOK {
+		h.logError("workspace server returned status %d", response.StatusCode)
 		return nil
 	}
 
@@ -197,7 +198,7 @@ func (h *Helper) getFromCredentialsServer(serverURL string) (*Credentials, error
 	rawJSON, err := json.Marshal(&Request{ServerURL: serverURL})
 	if err != nil {
 		h.logError("marshal credentials request: %v", err)
-		return nil, credentials.NewErrCredentialsNotFound()
+		return nil, fmt.Errorf("marshal credentials request: %w", err)
 	}
 
 	url := fmt.Sprintf("http://localhost:%d%s", h.port, credentialsEndpoint)

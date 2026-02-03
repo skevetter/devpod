@@ -32,7 +32,7 @@ func ParseCacheEntry(in []string) ([]client.CacheOptionsEntry, error) {
 		for _, field := range fields {
 			parts := strings.SplitN(field, "=", 2)
 			if len(parts) != 2 {
-				return nil, fmt.Errorf("invalid value %s", field)
+				return nil, fmt.Errorf("invalid value %q", field)
 			}
 			key := strings.ToLower(parts[0])
 			value := parts[1]

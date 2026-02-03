@@ -45,6 +45,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const dockerlessCredentialsPath = "/.dockerless/.docker"
+
 // SetupContainerCmd holds the cmd flags
 type SetupContainerCmd struct {
 	*flags.GlobalFlags
@@ -132,7 +134,6 @@ func (cmd *SetupContainerCmd) prepareWorkspace(sctx *setupContext) error {
 		Context:           sctx.ctx,
 		SetupInfo:         sctx.setupInfo,
 		DockerlessOptions: &sctx.workspaceInfo.Dockerless,
-		Client:            sctx.tunnelClient,
 		ImageConfigOutput: agent.DefaultImageConfigPath,
 		Debug:             cmd.Debug,
 		Log:               sctx.logger,
@@ -141,7 +142,7 @@ func (cmd *SetupContainerCmd) prepareWorkspace(sctx *setupContext) error {
 			if err != nil {
 				return "", err
 			}
-			return dockercredentials.ConfigureCredentialsDockerless("/.dockerless/.docker", serverPort, sctx.logger)
+			return dockercredentials.ConfigureCredentialsDockerless(dockerlessCredentialsPath, serverPort, sctx.logger)
 		},
 	}); err != nil {
 		return fmt.Errorf("dockerless build: %w", err)

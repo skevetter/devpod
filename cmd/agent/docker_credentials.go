@@ -43,5 +43,9 @@ func (cmd *DockerCredentialsCmd) Run(args []string, log log.Logger) error {
 		action = args[0]
 	}
 
-	return dockercredhelpers.HandleCommand(helper, action, os.Stdin, os.Stdout)
+	if err := dockercredhelpers.HandleCommand(helper, action, os.Stdin, os.Stdout); err != nil {
+		log.Errorf("docker credentials command failed: %v", err)
+		return err
+	}
+	return nil
 }
