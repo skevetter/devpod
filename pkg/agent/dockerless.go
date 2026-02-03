@@ -28,7 +28,7 @@ const (
 	trueValue               = "true"
 )
 
-type ConfigureCredentialsFunc func(context.Context, context.CancelFunc) (string, error)
+type ConfigureCredentialsFunc func(context.Context) (string, error)
 
 type DockerlessBuildOptions struct {
 	Context                  context.Context
@@ -130,7 +130,7 @@ func prepareBuildDirectory(buildContext string) error {
 	fallbackDir := filepath.Join(config.DevPodDockerlessBuildInfoFolder, config.DevPodContextFeatureFolder)
 	buildInfoDir := filepath.Join(buildContext, config.DevPodContextFeatureFolder)
 
-	if _, err := os.Stat(buildInfoDir); err != nil {
+	if _, err := os.Stat(buildInfoDir); os.IsNotExist(err) {
 		if err := copy.RenameDirectory(fallbackDir, buildInfoDir); err != nil {
 			return fmt.Errorf("rename dir: %w", err)
 		}
@@ -155,9 +155,16 @@ func setupDockerCredentials(opts DockerlessBuildOptions) func() {
 
 	ctx, cancel := context.WithCancel(opts.Context)
 	originalPath := os.Getenv("PATH")
-	dockerCredentialsDir, err := opts.ConfigureCredentialsFunc(ctx, cancel)
+	originalDockerConfig := os.Getenv("DOCKER_CONFIG")
+	dockerCredentialsDir, err := opts.ConfigureCredentialsFunc(ctx)
 	if err != nil {
 		cancel()
+		_ = os.Setenv("PATH", originalPath)
+		if originalDockerConfig != "" {
+			_ = os.Setenv("DOCKER_CONFIG", originalDockerConfig)
+		} else {
+			_ = os.Unsetenv("DOCKER_CONFIG")
+		}
 		opts.Log.Warnf("failed to configure docker credentials, private registries may not work: %v", err)
 		return nil
 	}

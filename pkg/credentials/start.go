@@ -15,15 +15,13 @@ import (
 	"github.com/skevetter/log"
 )
 
-func StartCredentialsServer(ctx context.Context, cancel context.CancelFunc, client tunnel.TunnelClient, log log.Logger) (int, error) {
+func StartCredentialsServer(ctx context.Context, client tunnel.TunnelClient, log log.Logger) (int, error) {
 	port, err := portpkg.FindAvailablePort(random.InRange(13000, 17000))
 	if err != nil {
 		return 0, err
 	}
 
 	go func() {
-		defer cancel()
-
 		err := RunCredentialsServer(ctx, port, client, log)
 		if err != nil {
 			log.WithFields(logrus.Fields{"error": err}).Error("error running git credentials server")

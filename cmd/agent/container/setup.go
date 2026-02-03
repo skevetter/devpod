@@ -137,8 +137,8 @@ func (cmd *SetupContainerCmd) prepareWorkspace(sctx *setupContext) error {
 		ImageConfigOutput: agent.DefaultImageConfigPath,
 		Debug:             cmd.Debug,
 		Log:               sctx.logger,
-		ConfigureCredentialsFunc: func(ctx context.Context, cancel context.CancelFunc) (string, error) {
-			serverPort, err := credentials.StartCredentialsServer(ctx, cancel, sctx.tunnelClient, sctx.logger)
+		ConfigureCredentialsFunc: func(ctx context.Context) (string, error) {
+			serverPort, err := credentials.StartCredentialsServer(ctx, sctx.tunnelClient, sctx.logger)
 			if err != nil {
 				return "", err
 			}
@@ -527,7 +527,7 @@ func configureSystemGitCredentials(ctx context.Context, cancel context.CancelFun
 		return nil, errors.New("git not found")
 	}
 
-	serverPort, err := credentials.StartCredentialsServer(ctx, cancel, client, log)
+	serverPort, err := credentials.StartCredentialsServer(ctx, client, log)
 	if err != nil {
 		return nil, err
 	}

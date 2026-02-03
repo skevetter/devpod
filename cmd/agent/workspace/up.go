@@ -579,7 +579,7 @@ func configureCredentials(cfg credentialsConfig) (string, string, error) {
 		return "", "", nil
 	}
 
-	serverPort, err := credentials.StartCredentialsServer(cfg.ctx, cfg.cancel, cfg.client, cfg.log)
+	serverPort, err := credentials.StartCredentialsServer(cfg.ctx, cfg.client, cfg.log)
 	if err != nil {
 		return "", "", err
 	}
