@@ -62,10 +62,7 @@ func (h *Helper) Get(serverURL string) (string, string, error) {
 		return "", "", err
 	}
 
-	if creds.Username == "" && creds.Secret == "" {
-		return "", "", credentials.NewErrCredentialsNotFound()
-	}
-
+	// Return empty credentials for anonymous access
 	return creds.Username, creds.Secret, nil
 }
 
