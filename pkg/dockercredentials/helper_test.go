@@ -165,7 +165,6 @@ func (s *HelperTestSuite) TestGetFromCredentialsServer_NotFound() {
 }
 
 func (s *HelperTestSuite) TestGet_EmptyServerURL() {
-
 	username, secret, err := s.helper.Get("")
 
 	s.Error(err)
@@ -175,7 +174,6 @@ func (s *HelperTestSuite) TestGet_EmptyServerURL() {
 }
 
 func (s *HelperTestSuite) TestNewHelper() {
-
 	h := NewHelper(8080)
 
 	s.NotNil(h)
@@ -183,7 +181,6 @@ func (s *HelperTestSuite) TestNewHelper() {
 }
 
 func (s *HelperTestSuite) TestRequestWorkspaceList_InvalidResponse() {
-
 	listResp, err := s.helper.requestWorkspaceList()
 
 	s.Error(err)

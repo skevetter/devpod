@@ -25,6 +25,7 @@ const (
 	DockerlessEnvVar        = "DOCKERLESS"
 	DockerlessContextEnvVar = "DOCKERLESS_CONTEXT"
 	DefaultImageConfigPath  = "/.dockerless/image.json"
+	trueValue               = "true"
 )
 
 type ConfigureCredentialsFunc func(context.Context, context.CancelFunc) (string, error)
@@ -40,7 +41,7 @@ type DockerlessBuildOptions struct {
 }
 
 func IsDockerlessEnabled() bool {
-	return os.Getenv(DockerlessEnvVar) == "true"
+	return os.Getenv(DockerlessEnvVar) == trueValue
 }
 
 func GetDockerlessBuildContext() string {
@@ -140,7 +141,7 @@ func prepareBuildDirectory(buildContext string) error {
 }
 
 func setupDockerCredentials(opts DockerlessBuildOptions) func() {
-	if opts.DockerlessOptions.DisableDockerCredentials == "true" {
+	if opts.DockerlessOptions.DisableDockerCredentials == trueValue {
 		opts.Log.Debugf("docker credentials disabled via DisableDockerCredentials option")
 		return nil
 	}
