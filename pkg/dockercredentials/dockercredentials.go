@@ -9,6 +9,7 @@ import (
 
 	"github.com/docker/cli/cli/config"
 	"github.com/docker/cli/cli/config/types"
+	"github.com/kballard/go-shellquote"
 	"github.com/skevetter/devpod/pkg/command"
 	"github.com/skevetter/devpod/pkg/docker"
 	"github.com/skevetter/devpod/pkg/file"
@@ -77,9 +78,10 @@ func writeCredentialHelper(targetDir string, port int, log log.Logger) error {
 			binaryPath, port,
 		)
 	} else {
+		quotedPath := shellquote.Join(binaryPath)
 		content = fmt.Appendf(nil,
-			"#!/bin/sh\n'%s' agent docker-credentials --port '%d' \"$@\"\n",
-			binaryPath, port,
+			"#!/bin/sh\n%s agent docker-credentials --port '%d' \"$@\"\n",
+			quotedPath, port,
 		)
 	}
 

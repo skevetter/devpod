@@ -1,7 +1,6 @@
 package agent
 
 import (
-	"context"
 	"os"
 
 	dockercredhelpers "github.com/docker/docker-credential-helpers/credentials"
@@ -27,7 +26,7 @@ func NewDockerCredentialsCmd(flags *flags.GlobalFlags) *cobra.Command {
 		Use:   "docker-credentials",
 		Short: "Retrieves docker-credentials from the local machine",
 		RunE: func(_ *cobra.Command, args []string) error {
-			return cmd.Run(context.Background(), args, log.Default.ErrorStreamOnly())
+			return cmd.Run(args, log.Default.ErrorStreamOnly())
 		},
 	}
 	dockerCredentialsCmd.Flags().IntVar(&cmd.Port, "port", 0, "If specified, will use the given port")
@@ -35,7 +34,7 @@ func NewDockerCredentialsCmd(flags *flags.GlobalFlags) *cobra.Command {
 	return dockerCredentialsCmd
 }
 
-func (cmd *DockerCredentialsCmd) Run(ctx context.Context, args []string, log log.Logger) error {
+func (cmd *DockerCredentialsCmd) Run(args []string, log log.Logger) error {
 	helper := dockercredentials.NewHelper(cmd.Port)
 
 	// Get action from args or stdin

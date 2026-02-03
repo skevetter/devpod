@@ -80,12 +80,8 @@ func (h *Helper) List() (map[string]string, error) {
 	return h.listFromCredentialsServer()
 }
 
-func (h *Helper) getFromWorkspaceServer(serverURL string) *Credentials {
-	if _, err := os.Stat(filepath.Join(agent.RootDir, ts.RunnerProxySocket)); err != nil {
-		return nil
-	}
-
-	httpClient := &http.Client{
+func (h *Helper) getWorkspaceHTTPClient() *http.Client {
+	return &http.Client{
 		Transport: &http.Transport{
 			DialContext: func(_ context.Context, _, _ string) (net.Conn, error) {
 				return net.Dial("unix", filepath.Join(agent.RootDir, ts.RunnerProxySocket))
@@ -93,8 +89,20 @@ func (h *Helper) getFromWorkspaceServer(serverURL string) *Credentials {
 		},
 		Timeout: httpClientTimeout,
 	}
+}
 
-	rawJSON, _ := json.Marshal(&Request{ServerURL: serverURL})
+func (h *Helper) getFromWorkspaceServer(serverURL string) *Credentials {
+	if _, err := os.Stat(filepath.Join(agent.RootDir, ts.RunnerProxySocket)); err != nil {
+		return nil
+	}
+
+	httpClient := h.getWorkspaceHTTPClient()
+
+	rawJSON, err := json.Marshal(&Request{ServerURL: serverURL})
+	if err != nil {
+		h.logError("marshal request: %v", err)
+		return nil
+	}
 	response, err := httpClient.Post(
 		workspaceServerURL,
 		contentTypeJSON,
@@ -128,16 +136,12 @@ func (h *Helper) listFromWorkspaceServer() map[string]string {
 		return nil
 	}
 
-	httpClient := &http.Client{
-		Transport: &http.Transport{
-			DialContext: func(_ context.Context, _, _ string) (net.Conn, error) {
-				return net.Dial("unix", filepath.Join(agent.RootDir, ts.RunnerProxySocket))
-			},
-		},
-		Timeout: httpClientTimeout,
-	}
+	httpClient := h.getWorkspaceHTTPClient()
 
-	rawJSON, _ := json.Marshal(&Request{})
+	rawJSON, err := json.Marshal(&Request{})
+	if err != nil {
+		return nil
+	}
 	response, err := httpClient.Post(
 		workspaceServerURL,
 		contentTypeJSON,
