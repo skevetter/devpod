@@ -22,7 +22,6 @@ func TestHelperTestSuite(t *testing.T) {
 }
 
 func (s *HelperTestSuite) SetupTest() {
-
 	s.server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req Request
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -44,6 +43,14 @@ func (s *HelperTestSuite) SetupTest() {
 			creds := Credentials{}
 			w.WriteHeader(http.StatusOK)
 			_ = json.NewEncoder(w).Encode(creds)
+		case "whitespace.registry.com":
+
+			creds := Credentials{
+				Username: "  ",
+				Secret:   "  ",
+			}
+			w.WriteHeader(http.StatusOK)
+			_ = json.NewEncoder(w).Encode(creds)
 		default:
 
 			w.WriteHeader(http.StatusNotFound)
@@ -60,7 +67,6 @@ func (s *HelperTestSuite) TearDownTest() {
 }
 
 func (s *HelperTestSuite) TestGet_WithCredentials() {
-
 	username, secret, err := s.helper.Get("registry.example.com")
 
 	s.NoError(err)
@@ -70,7 +76,6 @@ func (s *HelperTestSuite) TestGet_WithCredentials() {
 }
 
 func (s *HelperTestSuite) TestGet_AnonymousAccess() {
-
 	username, secret, err := s.helper.Get("public.registry.com")
 
 	s.Error(err)
@@ -89,6 +94,26 @@ func (s *HelperTestSuite) TestGet_NotFound_ReturnsEmptyCredentials() {
 
 	s.Equal("", username)
 	s.Equal("", secret)
+}
+
+func (s *HelperTestSuite) TestGet_EmptyCredentials_ReturnsNotFoundError() {
+
+	username, secret, err := s.helper.Get("public.registry.com")
+
+	s.Error(err)
+	s.Contains(err.Error(), "credentials not found")
+
+	s.Equal("", username)
+	s.Equal("", secret)
+}
+
+func (s *HelperTestSuite) TestGet_WhitespaceCredentials_ReturnsCredentials() {
+
+	username, secret, err := s.helper.Get("whitespace.registry.com")
+
+	s.NoError(err)
+	s.Equal("  ", username)
+	s.Equal("  ", secret)
 }
 
 func (s *HelperTestSuite) TestGetFromCredentialsServer_NotFound_ReturnsEmptyCredentials() {

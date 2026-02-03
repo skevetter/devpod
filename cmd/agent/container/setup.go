@@ -3,7 +3,6 @@
 package container
 
 import (
-	"bytes"
 	"context"
 	"crypto/tls"
 	"encoding/json"
@@ -15,27 +14,22 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"strings"
 	"time"
 
-	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/skevetter/devpod/cmd/flags"
 
-	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/agent"
 	"github.com/skevetter/devpod/pkg/agent/tunnel"
 	"github.com/skevetter/devpod/pkg/agent/tunnelserver"
 	"github.com/skevetter/devpod/pkg/command"
 	"github.com/skevetter/devpod/pkg/compress"
 	config2 "github.com/skevetter/devpod/pkg/config"
-	"github.com/skevetter/devpod/pkg/copy"
 	"github.com/skevetter/devpod/pkg/credentials"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	"github.com/skevetter/devpod/pkg/devcontainer/setup"
 	"github.com/skevetter/devpod/pkg/dockercredentials"
-	"github.com/skevetter/devpod/pkg/envfile"
 	"github.com/skevetter/devpod/pkg/extract"
 	"github.com/skevetter/devpod/pkg/git"
 	"github.com/skevetter/devpod/pkg/ide/fleet"
@@ -136,14 +130,22 @@ func (cmd *SetupContainerCmd) prepareWorkspace(sctx *setupContext) error {
 		return err
 	}
 
-	if err := dockerlessBuild(
-		sctx.ctx,
-		sctx.setupInfo,
-		&sctx.workspaceInfo.Dockerless,
-		sctx.tunnelClient,
-		cmd.Debug,
-		sctx.logger,
-	); err != nil {
+	if err := agent.DockerlessBuild(agent.DockerlessBuildOptions{
+		Context:           sctx.ctx,
+		SetupInfo:         sctx.setupInfo,
+		DockerlessOptions: &sctx.workspaceInfo.Dockerless,
+		Client:            sctx.tunnelClient,
+		ImageConfigOutput: DockerlessImageConfigOutput,
+		Debug:             cmd.Debug,
+		Log:               sctx.logger,
+		ConfigureCredentialsFunc: func(ctx context.Context, cancel context.CancelFunc) (string, error) {
+			serverPort, err := credentials.StartCredentialsServer(ctx, cancel, sctx.tunnelClient, sctx.logger)
+			if err != nil {
+				return "", err
+			}
+			return dockercredentials.ConfigureCredentialsDockerless("/.dockerless/.docker", serverPort, sctx.logger)
+		},
+	}); err != nil {
 		return fmt.Errorf("dockerless build: %w", err)
 	}
 
@@ -370,188 +372,6 @@ func fillContainerEnv(setupInfo *config.Result) error {
 	}
 	setupInfo.MergedConfig = newMergedConfig
 	return nil
-}
-
-func dockerlessBuild(
-	ctx context.Context,
-	setupInfo *config.Result,
-	dockerlessOptions *provider2.ProviderDockerlessOptions,
-	client tunnel.TunnelClient,
-	debug bool,
-	log log.Logger,
-) error {
-	if os.Getenv("DOCKERLESS") != "true" {
-		return nil
-	}
-
-	_, err := os.Stat(DockerlessImageConfigOutput)
-	if err == nil {
-		log.Debugf("skip dockerless build, because container was built already")
-		return nil
-	}
-
-	buildContext := os.Getenv("DOCKERLESS_CONTEXT")
-	if buildContext == "" {
-		log.Debugf("build context is missing for dockerless build")
-		return nil
-	}
-
-	// check if build info is there
-	fallbackDir := filepath.Join(config.DevPodDockerlessBuildInfoFolder, config.DevPodContextFeatureFolder)
-	buildInfoDir := filepath.Join(buildContext, config.DevPodContextFeatureFolder)
-	_, err = os.Stat(buildInfoDir)
-	if err != nil {
-		// try to rename from fallback dir
-		err = copy.RenameDirectory(fallbackDir, buildInfoDir)
-		if err != nil {
-			return fmt.Errorf("rename dir: %w", err)
-		}
-
-		_, err = os.Stat(buildInfoDir)
-		if err != nil {
-			return fmt.Errorf("couldn't find build dir %s: %w", buildInfoDir, err)
-		}
-	}
-
-	binaryPath, err := os.Executable()
-	if err != nil {
-		return err
-	}
-
-	// configure credentials
-	var dockerCredentialsDir string
-	if dockerlessOptions.DisableDockerCredentials != "true" {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithCancel(ctx)
-		defer cancel()
-
-		// configure the docker credentials
-		var err error
-		dockerCredentialsDir, err = configureDockerCredentials(ctx, cancel, client, log)
-		if err != nil {
-			log.Warnf("failed to configure docker credentials, private registries may not work: %v", err)
-		} else {
-			defer func() {
-				_ = os.Unsetenv("DOCKER_CONFIG")
-				_ = os.RemoveAll(dockerCredentialsDir)
-			}()
-		}
-	} else {
-		log.Debugf("docker credentials disabled via DisableDockerCredentials option")
-	}
-
-	// build args
-	args := []string{"build", "--ignore-path", binaryPath}
-	args = append(args, parseIgnorePaths(dockerlessOptions.IgnorePaths)...)
-	args = append(args, "--build-arg", "TARGETOS="+runtime.GOOS)
-	args = append(args, "--build-arg", "TARGETARCH="+runtime.GOARCH)
-	if dockerlessOptions.RegistryCache != "" {
-		log.Debugf("appending registry cache to dockerless build arguments: %v", dockerlessOptions.RegistryCache)
-		args = append(args, "--registry-cache", dockerlessOptions.RegistryCache)
-	}
-
-	// ignore mounts
-	args = append(args, "--ignore-path", setupInfo.SubstitutionContext.ContainerWorkspaceFolder)
-	for _, m := range setupInfo.MergedConfig.Mounts {
-		// check if there already, then we don't touch it
-		files, err := os.ReadDir(m.Target)
-		if err == nil && len(files) > 0 {
-			args = append(args, "--ignore-path", m.Target)
-		}
-	}
-
-	if err := runDockerlessBuild(ctx, args, debug, log); err != nil {
-		return err
-	}
-
-	// add container env to envfile.json
-	rawConfig, err := os.ReadFile(DockerlessImageConfigOutput)
-	if err != nil {
-		return err
-	}
-
-	// parse config file
-	configFile := &v1.ConfigFile{}
-	err = json.Unmarshal(rawConfig, configFile)
-	if err != nil {
-		return fmt.Errorf("parse container config: %w", err)
-	}
-
-	// apply env
-	envfile.MergeAndApply(config.ListToObject(configFile.Config.Env), log)
-
-	// rename build path
-	_ = os.RemoveAll(fallbackDir)
-	err = copy.RenameDirectory(buildInfoDir, fallbackDir)
-	if err != nil {
-		log.Debugf("error renaming dir %s: %v", buildInfoDir, err)
-		return nil
-	}
-
-	return nil
-}
-
-func parseIgnorePaths(ignorePaths string) []string {
-	if strings.TrimSpace(ignorePaths) == "" {
-		return nil
-	}
-
-	retPaths := []string{}
-	splitted := strings.SplitSeq(ignorePaths, ",")
-	for s := range splitted {
-		retPaths = append(retPaths, "--ignore-path", strings.TrimSpace(s))
-	}
-
-	return retPaths
-}
-
-func runDockerlessBuild(ctx context.Context, args []string, debug bool, log log.Logger) error {
-	errWriter := log.Writer(logrus.InfoLevel, false)
-	defer func() { _ = errWriter.Close() }()
-
-	var stderrBuf bytes.Buffer
-	stderrWriter := io.MultiWriter(errWriter, &stderrBuf)
-
-	cmd := exec.CommandContext(ctx, "/.dockerless/dockerless", args...)
-	var debugWriter io.WriteCloser
-	if debug {
-		debugWriter = log.Writer(logrus.DebugLevel, false)
-		defer func() { _ = debugWriter.Close() }()
-		cmd.Stdout = debugWriter
-	}
-
-	cmd.Stderr = stderrWriter
-	cmd.Env = os.Environ()
-
-	log.Infof("starting dockerless build: %s %s", "/.dockerless/dockerless", strings.Join(args, " "))
-	err := cmd.Run()
-	if err != nil {
-		stderrOutput := strings.TrimSpace(stderrBuf.String())
-		log.Errorf("dockerless build failed: %v: stderr output: %s", err, stderrOutput)
-		return err
-	}
-
-	log.Debugf("dockerless build completed")
-	return nil
-}
-
-func configureDockerCredentials(
-	ctx context.Context,
-	cancel context.CancelFunc,
-	client tunnel.TunnelClient,
-	log log.Logger,
-) (string, error) {
-	serverPort, err := credentials.StartCredentialsServer(ctx, cancel, client, log)
-	if err != nil {
-		return "", err
-	}
-
-	dockerCredentials, err := dockercredentials.ConfigureCredentialsDockerless("/.dockerless/.docker", serverPort, log)
-	if err != nil {
-		return "", err
-	}
-
-	return dockerCredentials, nil
 }
 
 func (cmd *SetupContainerCmd) installIDE(setupInfo *config.Result, ide *provider2.WorkspaceIDEConfig, log log.Logger) error {

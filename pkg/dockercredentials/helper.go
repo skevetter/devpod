@@ -52,7 +52,12 @@ func (h *Helper) Delete(_ string) error {
 // Get retrieves credentials for a server.
 func (h *Helper) Get(serverURL string) (string, string, error) {
 	// Try workspace server first
-	if creds := h.getFromWorkspaceServer(serverURL); creds != nil {
+	creds := h.getFromWorkspaceServer(serverURL)
+	if creds != nil {
+		// If workspace server returned empty credentials, treat as not found
+		if creds.Username == "" && creds.Secret == "" {
+			return "", "", credentials.NewErrCredentialsNotFound()
+		}
 		return creds.Username, creds.Secret, nil
 	}
 
