@@ -101,6 +101,9 @@ func validateBuildOptions(opts DockerlessBuildOptions) error {
 	if opts.Log == nil {
 		return fmt.Errorf("log is required for dockerless build")
 	}
+	if opts.Context == nil {
+		return fmt.Errorf("context is required for dockerless build")
+	}
 	return nil
 }
 

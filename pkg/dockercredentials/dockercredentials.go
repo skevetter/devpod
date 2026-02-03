@@ -16,6 +16,7 @@ import (
 	"github.com/skevetter/devpod/pkg/random"
 	"github.com/skevetter/log"
 
+	"github.com/containers/image/v5/docker/reference"
 	dockerconfig "github.com/containers/image/v5/pkg/docker/config"
 )
 
@@ -329,7 +330,15 @@ func isEmptyAuth(ac types.AuthConfig) bool {
 
 func getContainerEcosystemAuth(host string) types.AuthConfig {
 	sanitizedHost := strings.TrimPrefix(strings.TrimPrefix(host, "https://"), "http://")
-	dac, err := dockerconfig.GetCredentials(nil, sanitizedHost)
+
+	// Parse as a reference to use the recommended GetCredentialsForRef API
+	ref, err := reference.ParseNormalizedNamed(sanitizedHost)
+	if err != nil {
+		// Fallback to empty auth for invalid references
+		return types.AuthConfig{}
+	}
+
+	dac, err := dockerconfig.GetCredentialsForRef(nil, ref)
 	if err != nil {
 		// No credentials available - return empty for anonymous access
 		return types.AuthConfig{}

@@ -29,7 +29,7 @@ func GetImage(ctx context.Context, image string) (v1.Image, error) {
 		return nil, fmt.Errorf("create authentication keychain: %w", err)
 	}
 
-	img, err := remote.Image(ref, remote.WithAuthFromKeychain(keychain))
+	img, err := remote.Image(ref, remote.WithAuthFromKeychain(keychain), remote.WithContext(ctx))
 	if err != nil {
 		return nil, fmt.Errorf("retrieve image %s: %w", image, err)
 	}
@@ -51,6 +51,7 @@ func GetImageForArch(ctx context.Context, image, arch string) (v1.Image, error) 
 	remoteOptions := []remote.Option{
 		remote.WithAuthFromKeychain(keychain),
 		remote.WithPlatform(v1.Platform{Architecture: arch, OS: "linux"}),
+		remote.WithContext(ctx),
 	}
 
 	img, err := remote.Image(ref, remoteOptions...)
