@@ -98,6 +98,28 @@ func writeCredentialHelper(targetDir string, port int, log log.Logger) error {
 	return nil
 }
 
+func writeCredentialHelperDockerless(targetDir string, port int, log log.Logger) error {
+	binaryPath, err := os.Executable()
+	if err != nil {
+		return fmt.Errorf("get executable path: %w", err)
+	}
+
+	helperPath := filepath.Join(targetDir, getCredentialHelperFilename())
+	quotedPath := shellquote.Join(binaryPath)
+	content := fmt.Appendf(nil,
+		"#!/.dockerless/bin/sh\n%s agent docker-credentials --port %d \"$@\"\n",
+		quotedPath, port,
+	)
+
+	// #nosec G306 -- credential helper needs to be executable (0755)
+	if err := os.WriteFile(helperPath, content, 0755); err != nil {
+		return fmt.Errorf("write credential helper: %w", err)
+	}
+
+	log.Debugf("wrote dockerless credentials helper to %s", helperPath)
+	return nil
+}
+
 func configureDockerConfig(configDir, userName string) error {
 	if err := file.MkdirAll(userName, configDir, 0755); err != nil {
 		return fmt.Errorf("create config dir: %w", err)
@@ -163,7 +185,7 @@ func ConfigureCredentialsDockerless(targetFolder string, port int, log log.Logge
 	}
 	log.Debugf("created docker config directory")
 
-	if err := writeCredentialHelper(dockerConfigDir, port, log); err != nil {
+	if err := writeCredentialHelperDockerless(dockerConfigDir, port, log); err != nil {
 		_ = os.RemoveAll(dockerConfigDir)
 		return "", err
 	}

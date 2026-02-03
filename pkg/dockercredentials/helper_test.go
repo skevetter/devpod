@@ -195,3 +195,14 @@ func (s *HelperTestSuite) TestRequestWorkspaceList_InvalidResponse() {
 	s.Error(err)
 	s.Nil(listResp)
 }
+
+func (s *HelperTestSuite) TestGet_BothServersUnavailable() {
+	h := NewHelper(99999)
+
+	username, secret, err := h.Get("registry.example.com")
+
+	s.Error(err)
+	s.Contains(err.Error(), "credentials not found")
+	s.Equal("", username)
+	s.Equal("", secret)
+}

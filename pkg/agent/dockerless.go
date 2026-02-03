@@ -55,6 +55,10 @@ func ImageConfigExists(path string) bool {
 }
 
 func DockerlessBuild(opts DockerlessBuildOptions) error {
+	if !shouldBuild(opts) {
+		return nil
+	}
+
 	if err := validateBuildOptions(opts); err != nil {
 		return err
 	}
@@ -89,9 +93,6 @@ func DockerlessBuild(opts DockerlessBuildOptions) error {
 }
 
 func validateBuildOptions(opts DockerlessBuildOptions) error {
-	if !shouldBuild(opts) {
-		return nil
-	}
 	if opts.SetupInfo == nil {
 		return fmt.Errorf("setup info is required for dockerless build")
 	}
@@ -185,10 +186,14 @@ func buildDockerlessArgs(binaryPath string, opts DockerlessBuildOptions) []strin
 		args = append(args, "--registry-cache", opts.DockerlessOptions.RegistryCache)
 	}
 
-	args = append(args, "--ignore-path", opts.SetupInfo.SubstitutionContext.ContainerWorkspaceFolder)
+	if opts.SetupInfo.SubstitutionContext.ContainerWorkspaceFolder != "" {
+		args = append(args, "--ignore-path", opts.SetupInfo.SubstitutionContext.ContainerWorkspaceFolder)
+	}
 	for _, m := range opts.SetupInfo.MergedConfig.Mounts {
-		if files, err := os.ReadDir(m.Target); err == nil && len(files) > 0 {
-			args = append(args, "--ignore-path", m.Target)
+		if m.Target != "" {
+			if files, err := os.ReadDir(m.Target); err == nil && len(files) > 0 {
+				args = append(args, "--ignore-path", m.Target)
+			}
 		}
 	}
 
