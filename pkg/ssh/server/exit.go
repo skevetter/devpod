@@ -29,7 +29,6 @@ func exitWithError(sess ssh.Session, err error, log log.Logger) {
 }
 
 func exitCode(err error) int {
-	err = errors.Unwrap(err)
 	if err == nil {
 		return 0
 	}
