@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/docker/cli/cli/config"
 	"github.com/docker/cli/cli/config/types"
+	"github.com/kballard/go-shellquote"
 	"github.com/skevetter/devpod/pkg/command"
 	"github.com/skevetter/devpod/pkg/docker"
 	"github.com/skevetter/devpod/pkg/file"
@@ -15,6 +17,10 @@ import (
 	"github.com/skevetter/log"
 
 	dockerconfig "github.com/containers/image/v5/pkg/docker/config"
+)
+
+const (
+	windowsOS = "windows"
 )
 
 type Request struct {
@@ -73,10 +79,29 @@ func configureCredentials(userName, shebang string, targetDir, configDir string,
 	}
 
 	// write credentials helper
-	credentialHelperPath := filepath.Join(targetDir, "docker-credential-devpod")
+	helperName := "docker-credential-devpod"
+	if runtime.GOOS == windowsOS {
+		helperName += ".exe"
+	}
+	credentialHelperPath := filepath.Join(targetDir, helperName)
+
+	var helperContent []byte
+	if runtime.GOOS == windowsOS {
+		// On Windows, copy the devpod binary as the credential helper
+		// #nosec G304 -- binaryPath is from os.Executable(), not user input
+		helperContent, err = os.ReadFile(binaryPath)
+		if err != nil {
+			return fmt.Errorf("read devpod binary: %w", err)
+		}
+	} else {
+		// On Unix, create a shell script wrapper
+		cmd := shellquote.Join(binaryPath, "agent", "docker-credentials", "--port", fmt.Sprintf("%d", port))
+		helperContent = []byte(shebang + "\n" + cmd + ` "$@"` + "\n")
+	}
+
 	log.Debugf("Wrote docker credentials helper to %s", credentialHelperPath)
-	err = os.WriteFile(credentialHelperPath, fmt.Appendf(nil, shebang+`
-'%s' agent docker-credentials --port '%d' "$@"`, binaryPath, port), 0755)
+	// #nosec G306 -- executable file needs 0755 permissions
+	err = os.WriteFile(credentialHelperPath, helperContent, 0755)
 	if err != nil {
 		return fmt.Errorf("write credential helper: %w", err)
 	}
@@ -109,7 +134,11 @@ func ConfigureCredentialsDockerless(targetFolder string, port int, log log.Logge
 		return "", err
 	}
 
-	err = os.Setenv("PATH", os.Getenv("PATH")+":"+dockerConfigDir)
+	pathSep := ":"
+	if runtime.GOOS == windowsOS {
+		pathSep = ";"
+	}
+	err = os.Setenv("PATH", os.Getenv("PATH")+pathSep+dockerConfigDir)
 	if err != nil {
 		_ = os.RemoveAll(dockerConfigDir)
 		return "", err
@@ -132,7 +161,11 @@ func ConfigureCredentialsMachine(targetFolder string, port int, log log.Logger) 
 		return "", err
 	}
 
-	err = os.Setenv("PATH", os.Getenv("PATH")+":"+dockerConfigDir)
+	pathSep := ":"
+	if runtime.GOOS == windowsOS {
+		pathSep = ";"
+	}
+	err = os.Setenv("PATH", os.Getenv("PATH")+pathSep+dockerConfigDir)
 	if err != nil {
 		_ = os.RemoveAll(dockerConfigDir)
 		return "", err
