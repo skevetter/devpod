@@ -33,12 +33,12 @@ func (h *Helper) Add(*credentials.Credentials) error {
 	return credentials.NewErrCredentialsNotFound()
 }
 
-// Delete is not supported (read-only helper)
+// Delete is not supported (read-only helper).
 func (h *Helper) Delete(string) error {
 	return credentials.NewErrCredentialsNotFound()
 }
 
-// Get retrieves credentials for the given server URL
+// Get retrieves credentials for the given server URL.
 func (h *Helper) Get(serverURL string) (string, string, error) {
 	serverURL = sanitizeServerURL(serverURL)
 
@@ -58,7 +58,7 @@ func (h *Helper) Get(serverURL string) (string, string, error) {
 	return "", "", nil
 }
 
-// List returns all configured registries
+// List returns all configured registries.
 func (h *Helper) List() (map[string]string, error) {
 	client := &http.Client{Timeout: credentialsTimeout}
 	resp, err := client.Get(fmt.Sprintf("http://localhost:%d/list", h.port))
