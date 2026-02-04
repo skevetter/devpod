@@ -195,8 +195,9 @@ func isRetriableError(err error) bool {
 	return true
 }
 
+// isRetriableHTTPStatus checks if the HTTP status code is retriable.
+// 4xx codes are not retriable except for 408 and 429.
 func isRetriableHTTPStatus(statusCode int) bool {
-	// Skip retry on 4xx client errors (except 408 and 429)
 	if statusCode >= http.StatusBadRequest && statusCode < http.StatusInternalServerError {
 		return statusCode == http.StatusRequestTimeout || statusCode == http.StatusTooManyRequests
 	}
