@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -82,7 +83,16 @@ func (h *Helper) List() (map[string]string, error) {
 
 func (h *Helper) getFromCredentialsServer(serverURL string) (string, string, error) {
 	client := &http.Client{Timeout: credentialsTimeout}
-	resp, err := client.Get(fmt.Sprintf("http://localhost:%d/credentials?registry=%s", h.port, serverURL))
+	u := url.URL{
+		Scheme: "http",
+		Host:   fmt.Sprintf("localhost:%d", h.port),
+		Path:   "/credentials",
+		RawQuery: url.Values{
+			"registry": []string{serverURL},
+		}.Encode(),
+	}
+	reqURL := u.String()
+	resp, err := client.Get(reqURL)
 	if err != nil {
 		return "", "", err
 	}

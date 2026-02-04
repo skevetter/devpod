@@ -47,5 +47,6 @@ func (cmd *DockerCredentialsCmd) Run(ctx context.Context, args []string, log log
 		log.Debugf("docker credentials command: %v", err)
 	}
 
+	// Always return nil to fallback to anonymous access for public registries.
 	return nil
 }
