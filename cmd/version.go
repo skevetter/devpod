@@ -27,6 +27,6 @@ func NewVersionCmd() *cobra.Command {
 
 // Run runs the command logic
 func (cmd *VersionCmd) Run(_ *cobra.Command, _ []string) error {
-	_, _ := fmt.Fprintln(os.Stdout, version.GetVersion())
+	_, _ = fmt.Fprintln(os.Stdout, version.GetVersion())
 	return nil
 }
