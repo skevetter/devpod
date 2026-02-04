@@ -116,7 +116,7 @@ func downloadGithubRelease(org, repo, release, file, token string) (io.ReadClose
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode >= 400 {
 		return nil, &HTTPStatusError{
