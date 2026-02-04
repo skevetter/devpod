@@ -17,7 +17,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/agent"
 	"github.com/skevetter/devpod/pkg/agent/tunnelserver"
-	"github.com/skevetter/devpod/pkg/binaries"
 	"github.com/skevetter/devpod/pkg/client"
 	"github.com/skevetter/devpod/pkg/compress"
 	"github.com/skevetter/devpod/pkg/config"
@@ -508,7 +507,7 @@ func (s *workspaceClient) Stop(ctx context.Context, opt client.StopOptions) erro
 func (s *workspaceClient) Command(ctx context.Context, commandOptions client.CommandOptions) (err error) {
 	// get environment variables
 	s.m.Lock()
-	environ, err := binaries.ToEnvironmentWithBinaries(binaries.EnvironmentOptions{
+	environ, err := provider.ToEnvironmentWithBinaries(provider.EnvironmentOptions{
 		Context:   s.workspace.Context,
 		Workspace: s.workspace,
 		Machine:   s.machine,
@@ -648,7 +647,7 @@ type CommandOptions struct {
 }
 
 func RunCommandWithBinaries(opts CommandOptions) error {
-	environ, err := binaries.ToEnvironmentWithBinaries(binaries.EnvironmentOptions{
+	environ, err := provider.ToEnvironmentWithBinaries(provider.EnvironmentOptions{
 		Context:   opts.Context,
 		Workspace: opts.Workspace,
 		Machine:   opts.Machine,

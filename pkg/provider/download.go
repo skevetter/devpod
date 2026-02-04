@@ -1,4 +1,4 @@
-package binaries
+package provider
 
 import (
 	"fmt"
@@ -13,7 +13,6 @@ import (
 	"github.com/skevetter/devpod/pkg/copy"
 	"github.com/skevetter/devpod/pkg/download"
 	"github.com/skevetter/devpod/pkg/extract"
-	provider2 "github.com/skevetter/devpod/pkg/provider"
 	"github.com/skevetter/log"
 	"github.com/skevetter/log/hash"
 )
@@ -35,16 +34,16 @@ const (
 
 type EnvironmentOptions struct {
 	Context   string
-	Workspace *provider2.Workspace
-	Machine   *provider2.Machine
+	Workspace *Workspace
+	Machine   *Machine
 	Options   map[string]config.OptionValue
-	Config    *provider2.ProviderConfig
+	Config    *ProviderConfig
 	ExtraEnv  map[string]string
 	Log       log.Logger
 }
 
 func ToEnvironmentWithBinaries(opts EnvironmentOptions) ([]string, error) {
-	environ := provider2.ToEnvironment(opts.Workspace, opts.Machine, opts.Options, opts.ExtraEnv)
+	environ := ToEnvironment(opts.Workspace, opts.Machine, opts.Options, opts.ExtraEnv)
 	binariesMap, err := GetBinaries(opts.Context, opts.Config)
 	if err != nil {
 		return nil, err
@@ -56,7 +55,7 @@ func ToEnvironmentWithBinaries(opts EnvironmentOptions) ([]string, error) {
 	return environ, nil
 }
 
-func GetBinariesFrom(config *provider2.ProviderConfig, binariesDir string) (map[string]string, error) {
+func GetBinariesFrom(config *ProviderConfig, binariesDir string) (map[string]string, error) {
 	retBinaries := map[string]string{}
 	for binaryName, binaryLocations := range config.Binaries {
 		found := false
@@ -85,8 +84,8 @@ func GetBinariesFrom(config *provider2.ProviderConfig, binariesDir string) (map[
 	return retBinaries, nil
 }
 
-func GetBinaries(context string, config *provider2.ProviderConfig) (map[string]string, error) {
-	binariesDir, err := provider2.GetProviderBinariesDir(context, config.Name)
+func GetBinaries(context string, config *ProviderConfig) (map[string]string, error) {
+	binariesDir, err := GetProviderBinariesDir(context, config.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +94,7 @@ func GetBinaries(context string, config *provider2.ProviderConfig) (map[string]s
 }
 
 func DownloadBinaries(
-	binaries map[string][]*provider2.ProviderBinary,
+	binaries map[string][]*ProviderBinary,
 	targetFolder string,
 	log log.Logger,
 ) (map[string]string, error) {
@@ -113,7 +112,7 @@ func DownloadBinaries(
 
 func downloadBinaryForPlatform(
 	binaryName string,
-	binaryLocations []*provider2.ProviderBinary,
+	binaryLocations []*ProviderBinary,
 	targetFolder string,
 	log log.Logger,
 ) (string, error) {
@@ -143,7 +142,7 @@ func downloadBinaryForPlatform(
 
 func downloadWithRetry(
 	binaryName string,
-	binary *provider2.ProviderBinary,
+	binary *ProviderBinary,
 	targetFolder string,
 	log log.Logger,
 ) (string, error) {
@@ -170,7 +169,7 @@ func downloadWithRetry(
 
 func verifyDownloadedBinary(
 	binaryPath string,
-	binary *provider2.ProviderBinary,
+	binary *ProviderBinary,
 	binaryName string,
 	log log.Logger,
 ) bool {
@@ -189,7 +188,7 @@ func verifyDownloadedBinary(
 	return true
 }
 
-func toCache(binary *provider2.ProviderBinary, binaryPath string, log log.Logger) {
+func toCache(binary *ProviderBinary, binaryPath string, log log.Logger) {
 	if !isRemotePath(binary.Path) {
 		return
 	}
@@ -204,7 +203,7 @@ func toCache(binary *provider2.ProviderBinary, binaryPath string, log log.Logger
 	}
 }
 
-func fromCache(binary *provider2.ProviderBinary, targetFolder string, log log.Logger) bool {
+func fromCache(binary *ProviderBinary, targetFolder string, log log.Logger) bool {
 	if !isRemotePath(binary.Path) {
 		return false
 	}
@@ -250,7 +249,7 @@ func verifyBinary(binaryPath, checksum string) bool {
 	return true
 }
 
-func getBinaryPath(binary *provider2.ProviderBinary, targetFolder string) string {
+func getBinaryPath(binary *ProviderBinary, targetFolder string) string {
 	if filepath.IsAbs(binary.Path) {
 		return binary.Path
 	}
@@ -279,7 +278,7 @@ func isRemotePath(p string) bool {
 
 func downloadBinary(
 	binaryName string,
-	binary *provider2.ProviderBinary,
+	binary *ProviderBinary,
 	targetFolder string,
 	log log.Logger,
 ) (string, error) {
@@ -298,7 +297,7 @@ func downloadBinary(
 	return downloadRemoteBinary(binaryName, binary, targetFolder, log)
 }
 
-func handleLocalBinary(binary *provider2.ProviderBinary, targetFolder string) (string, error) {
+func handleLocalBinary(binary *ProviderBinary, targetFolder string) (string, error) {
 	if filepath.IsAbs(binary.Path) {
 		return binary.Path, nil
 	}
@@ -316,7 +315,7 @@ func handleLocalBinary(binary *provider2.ProviderBinary, targetFolder string) (s
 	return targetPath, nil
 }
 
-func handleNonHTTPBinary(binary *provider2.ProviderBinary, targetFolder string) (string, error) {
+func handleNonHTTPBinary(binary *ProviderBinary, targetFolder string) (string, error) {
 	targetPath := localTargetPath(binary, targetFolder)
 	if _, err := os.Stat(targetPath); err == nil {
 		return targetPath, nil
@@ -326,7 +325,7 @@ func handleNonHTTPBinary(binary *provider2.ProviderBinary, targetFolder string) 
 
 func downloadRemoteBinary(
 	binaryName string,
-	binary *provider2.ProviderBinary,
+	binary *ProviderBinary,
 	targetFolder string,
 	log log.Logger,
 ) (string, error) {
@@ -353,7 +352,7 @@ func downloadRemoteBinary(
 
 func downloadFile(
 	binaryName string,
-	binary *provider2.ProviderBinary,
+	binary *ProviderBinary,
 	targetFolder string,
 	log log.Logger,
 ) (string, error) {
@@ -375,7 +374,7 @@ func downloadFile(
 
 func downloadAndSaveFile(
 	binaryName string,
-	binary *provider2.ProviderBinary,
+	binary *ProviderBinary,
 	targetPath string,
 	log log.Logger,
 ) (string, error) {
@@ -404,7 +403,7 @@ func downloadAndSaveFile(
 
 func downloadArchive(
 	binaryName string,
-	binary *provider2.ProviderBinary,
+	binary *ProviderBinary,
 	targetFolder string,
 	log log.Logger,
 ) (string, error) {
@@ -425,7 +424,7 @@ func downloadArchive(
 
 type archiveDownloadParams struct {
 	binaryName   string
-	binary       *provider2.ProviderBinary
+	binary       *ProviderBinary
 	targetFolder string
 	targetPath   string
 	log          log.Logger
@@ -499,7 +498,7 @@ func downloadToTempFile(reader io.Reader) (string, error) {
 	return tempFile.Name(), nil
 }
 
-func localTargetPath(binary *provider2.ProviderBinary, targetFolder string) string {
+func localTargetPath(binary *ProviderBinary, targetFolder string) string {
 	name := binary.Name
 	if name == "" {
 		name = path.Base(binary.Path)
@@ -507,7 +506,7 @@ func localTargetPath(binary *provider2.ProviderBinary, targetFolder string) stri
 	return filepath.Join(targetFolder, name)
 }
 
-func copyLocal(binary *provider2.ProviderBinary, targetPath string) error {
+func copyLocal(binary *ProviderBinary, targetPath string) error {
 	targetPathStat, err := os.Stat(targetPath)
 	if err == nil {
 		binaryStat, err := os.Stat(binary.Path)

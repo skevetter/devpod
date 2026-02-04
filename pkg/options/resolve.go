@@ -8,11 +8,10 @@ import (
 	"strings"
 
 	"github.com/skevetter/devpod/pkg/agent"
-	"github.com/skevetter/devpod/pkg/binaries"
 	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/options/resolver"
 
-	provider2 "github.com/skevetter/devpod/pkg/provider"
+	"github.com/skevetter/devpod/pkg/provider"
 	"github.com/skevetter/devpod/pkg/types"
 	"github.com/skevetter/log"
 )
@@ -20,13 +19,13 @@ import (
 func ResolveAndSaveOptionsMachine(
 	ctx context.Context,
 	devConfig *config.Config,
-	provider *provider2.ProviderConfig,
-	originalMachine *provider2.Machine,
+	providerConfig *provider.ProviderConfig,
+	originalMachine *provider.Machine,
 	userOptions map[string]string,
 	log log.Logger,
-) (*provider2.Machine, error) {
+) (*provider.Machine, error) {
 	// reload config
-	machine, err := provider2.LoadMachineConfig(originalMachine.Context, originalMachine.ID)
+	machine, err := provider.LoadMachineConfig(originalMachine.Context, originalMachine.ID)
 	if err != nil {
 		return originalMachine, err
 	}
@@ -38,7 +37,7 @@ func ResolveAndSaveOptionsMachine(
 	}
 
 	// get binary paths
-	binaryPaths, err := binaries.GetBinaries(devConfig.DefaultContext, provider)
+	binaryPaths, err := provider.GetBinaries(devConfig.DefaultContext, providerConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -46,28 +45,28 @@ func ResolveAndSaveOptionsMachine(
 	// resolve options
 	resolvedOptions, _, err := resolver.New(
 		userOptions,
-		provider2.Merge(provider2.ToOptionsMachine(machine), binaryPaths),
+		provider.Merge(provider.ToOptionsMachine(machine), binaryPaths),
 		log,
 		resolver.WithResolveLocal(),
 	).Resolve(
 		ctx,
-		devConfig.DynamicProviderOptionDefinitions(provider.Name),
-		provider.Options,
-		provider2.CombineOptions(nil, machine, devConfig.ProviderOptions(provider.Name)),
+		devConfig.DynamicProviderOptionDefinitions(providerConfig.Name),
+		providerConfig.Options,
+		provider.CombineOptions(nil, machine, devConfig.ProviderOptions(providerConfig.Name)),
 	)
 	if err != nil {
 		return nil, err
 	}
 
 	// remove global options
-	filterResolvedOptions(resolvedOptions, beforeConfigOptions, devConfig.ProviderOptions(provider.Name), provider.Options, userOptions)
+	filterResolvedOptions(resolvedOptions, beforeConfigOptions, devConfig.ProviderOptions(providerConfig.Name), providerConfig.Options, userOptions)
 
 	// save machine config
 	if machine != nil {
 		machine.Provider.Options = resolvedOptions
 
 		if !reflect.DeepEqual(beforeConfigOptions, machine.Provider.Options) {
-			err = provider2.SaveMachineConfig(machine)
+			err = provider.SaveMachineConfig(machine)
 			if err != nil {
 				return machine, err
 			}
@@ -80,14 +79,14 @@ func ResolveAndSaveOptionsMachine(
 func ResolveAndSaveOptionsWorkspace(
 	ctx context.Context,
 	devConfig *config.Config,
-	provider *provider2.ProviderConfig,
-	originalWorkspace *provider2.Workspace,
+	providerConfig *provider.ProviderConfig,
+	originalWorkspace *provider.Workspace,
 	userOptions map[string]string,
 	log log.Logger,
 	options ...resolver.Option,
-) (*provider2.Workspace, error) {
+) (*provider.Workspace, error) {
 	// reload config
-	workspace, err := provider2.LoadWorkspaceConfig(originalWorkspace.Context, originalWorkspace.ID)
+	workspace, err := provider.LoadWorkspaceConfig(originalWorkspace.Context, originalWorkspace.ID)
 	if err != nil {
 		return originalWorkspace, err
 	}
@@ -99,7 +98,7 @@ func ResolveAndSaveOptionsWorkspace(
 	}
 
 	// get binary paths
-	binaryPaths, err := binaries.GetBinaries(devConfig.DefaultContext, provider)
+	binaryPaths, err := provider.GetBinaries(devConfig.DefaultContext, providerConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -108,28 +107,28 @@ func ResolveAndSaveOptionsWorkspace(
 	// resolve options
 	resolvedOptions, _, err := resolver.New(
 		userOptions,
-		provider2.Merge(provider2.ToOptionsWorkspace(workspace), binaryPaths),
+		provider.Merge(provider.ToOptionsWorkspace(workspace), binaryPaths),
 		log,
 		options...,
 	).Resolve(
 		ctx,
-		devConfig.DynamicProviderOptionDefinitions(provider.Name),
-		provider.Options,
-		provider2.CombineOptions(workspace, nil, devConfig.ProviderOptions(provider.Name)),
+		devConfig.DynamicProviderOptionDefinitions(providerConfig.Name),
+		providerConfig.Options,
+		provider.CombineOptions(workspace, nil, devConfig.ProviderOptions(providerConfig.Name)),
 	)
 	if err != nil {
 		return nil, err
 	}
 
 	// remove global options
-	filterResolvedOptions(resolvedOptions, beforeConfigOptions, devConfig.ProviderOptions(provider.Name), provider.Options, userOptions)
+	filterResolvedOptions(resolvedOptions, beforeConfigOptions, devConfig.ProviderOptions(providerConfig.Name), providerConfig.Options, userOptions)
 
 	// save workspace config
 	if workspace != nil {
 		workspace.Provider.Options = resolvedOptions
 
 		if !reflect.DeepEqual(beforeConfigOptions, workspace.Provider.Options) {
-			err = provider2.SaveWorkspaceConfig(workspace)
+			err = provider.SaveWorkspaceConfig(workspace)
 			if err != nil {
 				return workspace, err
 			}
@@ -142,18 +141,18 @@ func ResolveAndSaveOptionsWorkspace(
 func ResolveAndSaveOptionsProxy(
 	ctx context.Context,
 	devConfig *config.Config,
-	provider *provider2.ProviderConfig,
-	originalWorkspace *provider2.Workspace,
+	providerConfig *provider.ProviderConfig,
+	originalWorkspace *provider.Workspace,
 	userOptions map[string]string,
 	log log.Logger,
-) (*provider2.Workspace, error) {
-	return ResolveAndSaveOptionsWorkspace(ctx, devConfig, provider, originalWorkspace, userOptions, log, resolver.WithResolveSubOptions())
+) (*provider.Workspace, error) {
+	return ResolveAndSaveOptionsWorkspace(ctx, devConfig, providerConfig, originalWorkspace, userOptions, log, resolver.WithResolveSubOptions())
 }
 
 func ResolveOptions(
 	ctx context.Context,
 	devConfig *config.Config,
-	provider *provider2.ProviderConfig,
+	providerConfig *provider.ProviderConfig,
 	userOptions map[string]string,
 	skipRequired bool,
 	skipSubOptions bool,
@@ -161,7 +160,7 @@ func ResolveOptions(
 	log log.Logger,
 ) (*config.Config, error) {
 	// get binary paths
-	binaryPaths, err := binaries.GetBinaries(devConfig.DefaultContext, provider)
+	binaryPaths, err := provider.GetBinaries(devConfig.DefaultContext, providerConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -177,7 +176,7 @@ func ResolveOptions(
 	// create new resolver
 	resolve := resolver.New(
 		userOptions,
-		provider2.Merge(provider2.GetBaseEnvironment(devConfig.DefaultContext, provider.Name), binaryPaths),
+		provider.Merge(provider.GetBaseEnvironment(devConfig.DefaultContext, providerConfig.Name), binaryPaths),
 		log,
 		resolverOpts...,
 	)
@@ -186,8 +185,8 @@ func ResolveOptions(
 	resolvedOptionValues, dynamicOptionDefinitions, err := resolve.Resolve(
 		ctx,
 		nil,
-		provider.Options,
-		devConfig.ProviderOptions(provider.Name),
+		providerConfig.Options,
+		devConfig.ProviderOptions(providerConfig.Name),
 	)
 	if err != nil {
 		return nil, err
@@ -199,26 +198,26 @@ func ResolveOptions(
 		if devConfig.Current().Providers == nil {
 			devConfig.Current().Providers = map[string]*config.ProviderConfig{}
 		}
-		if devConfig.Current().Providers[provider.Name] == nil {
-			devConfig.Current().Providers[provider.Name] = &config.ProviderConfig{}
+		if devConfig.Current().Providers[providerConfig.Name] == nil {
+			devConfig.Current().Providers[providerConfig.Name] = &config.ProviderConfig{}
 		}
-		devConfig.Current().Providers[provider.Name].Options = map[string]config.OptionValue{}
-		maps.Copy(devConfig.Current().Providers[provider.Name].Options, resolvedOptionValues)
+		devConfig.Current().Providers[providerConfig.Name].Options = map[string]config.OptionValue{}
+		maps.Copy(devConfig.Current().Providers[providerConfig.Name].Options, resolvedOptionValues)
 
-		devConfig.Current().Providers[provider.Name].DynamicOptions = config.OptionDefinitions{}
-		maps.Copy(devConfig.Current().Providers[provider.Name].DynamicOptions, dynamicOptionDefinitions)
+		devConfig.Current().Providers[providerConfig.Name].DynamicOptions = config.OptionDefinitions{}
+		maps.Copy(devConfig.Current().Providers[providerConfig.Name].DynamicOptions, dynamicOptionDefinitions)
 		if singleMachine != nil {
-			devConfig.Current().Providers[provider.Name].SingleMachine = *singleMachine
+			devConfig.Current().Providers[providerConfig.Name].SingleMachine = *singleMachine
 		}
 	}
 
 	return devConfig, nil
 }
 
-func ResolveAgentConfig(devConfig *config.Config, provider *provider2.ProviderConfig, workspace *provider2.Workspace, machine *provider2.Machine) provider2.ProviderAgentConfig {
+func ResolveAgentConfig(devConfig *config.Config, providerConfig *provider.ProviderConfig, workspace *provider.Workspace, machine *provider.Machine) provider.ProviderAgentConfig {
 	// fill in agent config
-	options := provider2.ToOptions(workspace, machine, devConfig.ProviderOptions(provider.Name))
-	agentConfig := provider.Agent
+	options := provider.ToOptions(workspace, machine, devConfig.ProviderOptions(providerConfig.Name))
+	agentConfig := providerConfig.Agent
 	agentConfig.Dockerless.Image = resolver.ResolveDefaultValue(agentConfig.Dockerless.Image, options)
 	agentConfig.Dockerless.Disabled = types.StrBool(resolver.ResolveDefaultValue(string(agentConfig.Dockerless.Disabled), options))
 	agentConfig.Dockerless.IgnorePaths = resolver.ResolveDefaultValue(agentConfig.Dockerless.IgnorePaths, options)

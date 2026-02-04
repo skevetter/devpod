@@ -16,7 +16,6 @@ import (
 	"github.com/skevetter/devpod/pkg/agent"
 	"github.com/skevetter/devpod/pkg/agent/tunnel"
 	"github.com/skevetter/devpod/pkg/agent/tunnelserver"
-	"github.com/skevetter/devpod/pkg/binaries"
 	"github.com/skevetter/devpod/pkg/client/clientimplementation"
 	"github.com/skevetter/devpod/pkg/command"
 	"github.com/skevetter/devpod/pkg/credentials"
@@ -27,7 +26,7 @@ import (
 	"github.com/skevetter/devpod/pkg/dockercredentials"
 	"github.com/skevetter/devpod/pkg/dockerinstall"
 	"github.com/skevetter/devpod/pkg/extract"
-	provider2 "github.com/skevetter/devpod/pkg/provider"
+	"github.com/skevetter/devpod/pkg/provider"
 	"github.com/skevetter/devpod/pkg/util"
 	"github.com/skevetter/log"
 	"github.com/spf13/cobra"
@@ -94,10 +93,10 @@ func (cmd *UpCmd) Run(ctx context.Context) error {
 	return nil
 }
 
-func (cmd *UpCmd) loadWorkspaceInfo(ctx context.Context) (*provider2.AgentWorkspaceInfo, error) {
+func (cmd *UpCmd) loadWorkspaceInfo(ctx context.Context) (*provider.AgentWorkspaceInfo, error) {
 	shouldExit, workspaceInfo, err := agent.WriteWorkspaceInfoAndDeleteOld(
 		cmd.WorkspaceInfo,
-		func(workspaceInfo *provider2.AgentWorkspaceInfo, log log.Logger) error {
+		func(workspaceInfo *provider.AgentWorkspaceInfo, log log.Logger) error {
 			return deleteWorkspace(ctx, workspaceInfo, log)
 		},
 		log.Default.ErrorStreamOnly(),
@@ -111,15 +110,15 @@ func (cmd *UpCmd) loadWorkspaceInfo(ctx context.Context) (*provider2.AgentWorksp
 	return workspaceInfo, nil
 }
 
-func (cmd *UpCmd) shouldPreventDaemonShutdown(workspaceInfo *provider2.AgentWorkspaceInfo) bool {
+func (cmd *UpCmd) shouldPreventDaemonShutdown(workspaceInfo *provider.AgentWorkspaceInfo) bool {
 	return !workspaceInfo.CLIOptions.Platform.Enabled
 }
 
-func (cmd *UpCmd) shouldInstallDaemon(workspaceInfo *provider2.AgentWorkspaceInfo) bool {
+func (cmd *UpCmd) shouldInstallDaemon(workspaceInfo *provider.AgentWorkspaceInfo) bool {
 	return !workspaceInfo.CLIOptions.Platform.Enabled && !workspaceInfo.CLIOptions.DisableDaemon
 }
 
-func (cmd *UpCmd) handleInitError(err error, workspaceInfo *provider2.AgentWorkspaceInfo, logger log.Logger) error {
+func (cmd *UpCmd) handleInitError(err error, workspaceInfo *provider.AgentWorkspaceInfo, logger log.Logger) error {
 	if logger == nil {
 		logger = log.Discard
 	}
@@ -141,7 +140,7 @@ func (cmd *UpCmd) cleanupCredentials(credentialsDir string) {
 	}
 }
 
-func (cmd *UpCmd) up(ctx context.Context, workspaceInfo *provider2.AgentWorkspaceInfo, tunnelClient tunnel.TunnelClient, logger log.Logger) error {
+func (cmd *UpCmd) up(ctx context.Context, workspaceInfo *provider.AgentWorkspaceInfo, tunnelClient tunnel.TunnelClient, logger log.Logger) error {
 	result, err := cmd.devPodUp(ctx, workspaceInfo, logger)
 	if err != nil {
 		return err
@@ -164,7 +163,7 @@ func (cmd *UpCmd) sendResult(ctx context.Context, result *config2.Result, tunnel
 	return nil
 }
 
-func (cmd *UpCmd) devPodUp(ctx context.Context, workspaceInfo *provider2.AgentWorkspaceInfo, log log.Logger) (*config2.Result, error) {
+func (cmd *UpCmd) devPodUp(ctx context.Context, workspaceInfo *provider.AgentWorkspaceInfo, log log.Logger) (*config2.Result, error) {
 	runner, err := CreateRunner(workspaceInfo, log)
 	if err != nil {
 		return nil, err
@@ -176,11 +175,11 @@ func (cmd *UpCmd) devPodUp(ctx context.Context, workspaceInfo *provider2.AgentWo
 	}, workspaceInfo.InjectTimeout)
 }
 
-func CreateRunner(workspaceInfo *provider2.AgentWorkspaceInfo, log log.Logger) (devcontainer.Runner, error) {
+func CreateRunner(workspaceInfo *provider.AgentWorkspaceInfo, log log.Logger) (devcontainer.Runner, error) {
 	return devcontainer.NewRunner(agent.ContainerDevPodHelperLocation, agent.DefaultAgentDownloadURL(), workspaceInfo, log)
 }
 
-func InitContentFolder(workspaceInfo *provider2.AgentWorkspaceInfo, log log.Logger) (bool, error) {
+func InitContentFolder(workspaceInfo *provider.AgentWorkspaceInfo, log log.Logger) (bool, error) {
 	exists, err := contentFolderExists(workspaceInfo.ContentFolder, log)
 	if err != nil {
 		return false, err
@@ -228,7 +227,7 @@ func createContentFolder(path string, log log.Logger) error {
 	return nil
 }
 
-func downloadWorkspaceBinaries(workspaceInfo *provider2.AgentWorkspaceInfo, log log.Logger) error {
+func downloadWorkspaceBinaries(workspaceInfo *provider.AgentWorkspaceInfo, log log.Logger) error {
 	binariesDir, err := agent.GetAgentBinariesDir(
 		workspaceInfo.Agent.DataPath,
 		workspaceInfo.Workspace.Context,
@@ -238,7 +237,7 @@ func downloadWorkspaceBinaries(workspaceInfo *provider2.AgentWorkspaceInfo, log 
 		return fmt.Errorf("error getting workspace %s binaries dir: %w", workspaceInfo.Workspace.ID, err)
 	}
 
-	_, err = binaries.DownloadBinaries(workspaceInfo.Agent.Binaries, binariesDir, log)
+	_, err = provider.DownloadBinaries(workspaceInfo.Agent.Binaries, binariesDir, log)
 	if err != nil {
 		return fmt.Errorf("error downloading workspace %s binaries: %w", workspaceInfo.Workspace.ID, err)
 	}
@@ -249,7 +248,7 @@ func downloadWorkspaceBinaries(workspaceInfo *provider2.AgentWorkspaceInfo, log 
 type workspaceInitializer struct {
 	ctx                  context.Context
 	cancel               context.CancelFunc
-	workspaceInfo        *provider2.AgentWorkspaceInfo
+	workspaceInfo        *provider.AgentWorkspaceInfo
 	debug                bool
 	shouldInstallDaemon  bool
 	tunnelClient         tunnel.TunnelClient
@@ -258,7 +257,7 @@ type workspaceInitializer struct {
 	gitCredentialsHelper string
 }
 
-func initWorkspace(ctx context.Context, cancel context.CancelFunc, workspaceInfo *provider2.AgentWorkspaceInfo, debug, shouldInstallDaemon bool) (tunnel.TunnelClient, log.Logger, string, error) {
+func initWorkspace(ctx context.Context, cancel context.CancelFunc, workspaceInfo *provider.AgentWorkspaceInfo, debug, shouldInstallDaemon bool) (tunnel.TunnelClient, log.Logger, string, error) {
 	init := &workspaceInitializer{
 		ctx:                 ctx,
 		cancel:              cancel,
@@ -445,7 +444,7 @@ func (w *workspaceInitializer) shouldConfigureDockerDaemon() bool {
 
 type prepareWorkspaceParams struct {
 	ctx           context.Context
-	workspaceInfo *provider2.AgentWorkspaceInfo
+	workspaceInfo *provider.AgentWorkspaceInfo
 	client        tunnel.TunnelClient
 	gitHelper     string
 	log           log.Logger
@@ -494,7 +493,7 @@ func prepareWorkspace(params prepareWorkspaceParams) error {
 
 type prepareGitWorkspaceParams struct {
 	ctx           context.Context
-	workspaceInfo *provider2.AgentWorkspaceInfo
+	workspaceInfo *provider.AgentWorkspaceInfo
 	gitHelper     string
 	exists        bool
 	log           log.Logger
@@ -530,7 +529,7 @@ func prepareGitWorkspace(params prepareGitWorkspaceParams) error {
 	)
 }
 
-func prepareLocalWorkspace(ctx context.Context, workspaceInfo *provider2.AgentWorkspaceInfo, client tunnel.TunnelClient, log log.Logger) error {
+func prepareLocalWorkspace(ctx context.Context, workspaceInfo *provider.AgentWorkspaceInfo, client tunnel.TunnelClient, log log.Logger) error {
 	if workspaceInfo.ContentFolder == workspaceInfo.Workspace.Source.LocalFolder {
 		log.Debugf("local folder %s with local provider; skip downloading", workspaceInfo.ContentFolder)
 		return nil
@@ -540,7 +539,7 @@ func prepareLocalWorkspace(ctx context.Context, workspaceInfo *provider2.AgentWo
 	return downloadLocalFolder(ctx, workspaceInfo.ContentFolder, client, log)
 }
 
-func ensureLastDevContainerJson(workspaceInfo *provider2.AgentWorkspaceInfo) error {
+func ensureLastDevContainerJson(workspaceInfo *provider.AgentWorkspaceInfo) error {
 	filePath := filepath.Join(workspaceInfo.ContentFolder, filepath.FromSlash(workspaceInfo.LastDevContainerConfig.Path))
 
 	if _, err := os.Stat(filePath); err == nil {
@@ -567,7 +566,7 @@ func ensureLastDevContainerJson(workspaceInfo *provider2.AgentWorkspaceInfo) err
 
 type credentialsConfig struct {
 	ctx           context.Context
-	workspaceInfo *provider2.AgentWorkspaceInfo
+	workspaceInfo *provider.AgentWorkspaceInfo
 	client        tunnel.TunnelClient
 	log           log.Logger
 }
@@ -608,7 +607,7 @@ func configureCredentials(cfg credentialsConfig) (string, string, error) {
 	return dockerCredentials, gitCredentials, nil
 }
 
-func installDaemon(workspaceInfo *provider2.AgentWorkspaceInfo, log log.Logger) error {
+func installDaemon(workspaceInfo *provider.AgentWorkspaceInfo, log log.Logger) error {
 	if len(workspaceInfo.Agent.Exec.Shutdown) == 0 {
 		return nil
 	}

@@ -11,17 +11,16 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/agent"
-	"github.com/skevetter/devpod/pkg/binaries"
 	"github.com/skevetter/devpod/pkg/client/clientimplementation"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	"github.com/skevetter/devpod/pkg/driver"
-	provider2 "github.com/skevetter/devpod/pkg/provider"
+	"github.com/skevetter/devpod/pkg/provider"
 	"github.com/skevetter/devpod/pkg/types"
 	"github.com/skevetter/log"
 	"github.com/skevetter/log/scanner"
 )
 
-func NewCustomDriver(workspaceInfo *provider2.AgentWorkspaceInfo, log log.Logger) driver.Driver {
+func NewCustomDriver(workspaceInfo *provider.AgentWorkspaceInfo, log log.Logger) driver.Driver {
 	return &customDriver{
 		log:           log,
 		workspaceInfo: workspaceInfo,
@@ -33,7 +32,7 @@ var _ driver.Driver = (*customDriver)(nil)
 type customDriver struct {
 	log log.Logger
 
-	workspaceInfo *provider2.AgentWorkspaceInfo
+	workspaceInfo *provider.AgentWorkspaceInfo
 }
 
 // FindDevContainer returns a running devcontainer details
@@ -292,7 +291,7 @@ func (c *customDriver) runCommand(
 	if err != nil {
 		return err
 	}
-	environ = append(environ, provider2.DEVCONTAINER_ID+"="+workspaceId)
+	environ = append(environ, provider.DEVCONTAINER_ID+"="+workspaceId)
 	environ = append(environ, extraEnv...)
 
 	// set debug level
@@ -311,7 +310,7 @@ func (c *customDriver) runCommand(
 	})
 }
 
-func ToEnvironWithBinaries(workspace *provider2.AgentWorkspaceInfo, log log.Logger) ([]string, error) {
+func ToEnvironWithBinaries(workspace *provider.AgentWorkspaceInfo, log log.Logger) ([]string, error) {
 	// get binaries dir
 	binariesDir, err := agent.GetAgentBinariesDirFromWorkspaceDir(workspace.Origin)
 	if err != nil {
@@ -322,13 +321,13 @@ func ToEnvironWithBinaries(workspace *provider2.AgentWorkspaceInfo, log log.Logg
 	}
 
 	// download binaries
-	agentBinaries, err := binaries.DownloadBinaries(workspace.Agent.Binaries, binariesDir, log)
+	agentBinaries, err := provider.DownloadBinaries(workspace.Agent.Binaries, binariesDir, log)
 	if err != nil {
 		return nil, fmt.Errorf("error downloading workspace %s binaries: %w", workspace.Workspace.ID, err)
 	}
 
 	// get environ
-	environ := provider2.ToEnvironment(workspace.Workspace, workspace.Machine, workspace.Options, nil)
+	environ := provider.ToEnvironment(workspace.Workspace, workspace.Machine, workspace.Options, nil)
 	for k, v := range agentBinaries {
 		environ = append(environ, k+"="+v)
 	}
