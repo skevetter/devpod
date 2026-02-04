@@ -95,7 +95,8 @@ func configureCredentials(userName, shebang string, targetDir, configDir string,
 
 	var helperContent []byte
 	if runtime.GOOS == windowsOS {
-		script := fmt.Sprintf("@echo off\r\n\"%s\" agent docker-credentials --port %d %%*\r\n", binaryPath, port)
+		escapedPath := strings.ReplaceAll(binaryPath, "%", "%%")
+		script := fmt.Sprintf("@echo off\r\n\"%s\" agent docker-credentials --port %d %%*\r\n", escapedPath, port)
 		helperContent = []byte(script)
 	} else {
 		cmd := shellquote.Join(binaryPath, "agent", "docker-credentials", "--port", fmt.Sprintf("%d", port))
