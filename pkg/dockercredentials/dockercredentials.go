@@ -23,6 +23,14 @@ const (
 	windowsOS = "windows"
 )
 
+func appendToPath(dir string) error {
+	pathSep := ":"
+	if runtime.GOOS == windowsOS {
+		pathSep = ";"
+	}
+	return os.Setenv("PATH", os.Getenv("PATH")+pathSep+dir)
+}
+
 type Request struct {
 	// If ServerURL is empty its a list request
 	ServerURL string
@@ -81,20 +89,15 @@ func configureCredentials(userName, shebang string, targetDir, configDir string,
 	// write credentials helper
 	helperName := "docker-credential-devpod"
 	if runtime.GOOS == windowsOS {
-		helperName += ".exe"
+		helperName += ".cmd"
 	}
 	credentialHelperPath := filepath.Join(targetDir, helperName)
 
 	var helperContent []byte
 	if runtime.GOOS == windowsOS {
-		// On Windows, copy the devpod binary as the credential helper
-		// #nosec G304 -- binaryPath is from os.Executable(), not user input
-		helperContent, err = os.ReadFile(binaryPath)
-		if err != nil {
-			return fmt.Errorf("read devpod binary: %w", err)
-		}
+		script := fmt.Sprintf("@echo off\r\n\"%s\" agent docker-credentials --port %d %%*\r\n", binaryPath, port)
+		helperContent = []byte(script)
 	} else {
-		// On Unix, create a shell script wrapper
 		cmd := shellquote.Join(binaryPath, "agent", "docker-credentials", "--port", fmt.Sprintf("%d", port))
 		helperContent = []byte(shebang + "\n" + cmd + ` "$@"` + "\n")
 	}
@@ -134,11 +137,7 @@ func ConfigureCredentialsDockerless(targetFolder string, port int, log log.Logge
 		return "", err
 	}
 
-	pathSep := ":"
-	if runtime.GOOS == windowsOS {
-		pathSep = ";"
-	}
-	err = os.Setenv("PATH", os.Getenv("PATH")+pathSep+dockerConfigDir)
+	err = appendToPath(dockerConfigDir)
 	if err != nil {
 		_ = os.RemoveAll(dockerConfigDir)
 		return "", err
@@ -161,11 +160,7 @@ func ConfigureCredentialsMachine(targetFolder string, port int, log log.Logger) 
 		return "", err
 	}
 
-	pathSep := ":"
-	if runtime.GOOS == windowsOS {
-		pathSep = ";"
-	}
-	err = os.Setenv("PATH", os.Getenv("PATH")+pathSep+dockerConfigDir)
+	err = appendToPath(dockerConfigDir)
 	if err != nil {
 		_ = os.RemoveAll(dockerConfigDir)
 		return "", err
