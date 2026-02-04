@@ -19,6 +19,7 @@ import (
 	"github.com/skevetter/devpod/pkg/config"
 	devpodlog "github.com/skevetter/devpod/pkg/log"
 	"github.com/skevetter/devpod/pkg/options"
+	"github.com/skevetter/devpod/pkg/options/resolver"
 	platformclient "github.com/skevetter/devpod/pkg/platform/client"
 	"github.com/skevetter/devpod/pkg/provider"
 	"github.com/skevetter/devpod/pkg/types"
@@ -204,7 +205,15 @@ func (s *proxyClient) RefreshOptions(ctx context.Context, userOptionsRaw []strin
 		return fmt.Errorf("parse options: %w", err)
 	}
 
-	workspace, err := options.ResolveAndSaveOptionsProxy(ctx, s.devPodConfig, s.config, s.workspace, userOptions, s.log)
+	workspace, err := options.ResolveAndSaveOptionsWorkspace(
+		ctx,
+		s.devPodConfig,
+		s.config,
+		s.workspace,
+		userOptions,
+		s.log,
+		resolver.WithResolveSubOptions(),
+	)
 	if err != nil {
 		return err
 	}

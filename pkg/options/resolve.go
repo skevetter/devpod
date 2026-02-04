@@ -59,7 +59,13 @@ func ResolveAndSaveOptionsMachine(
 	}
 
 	// remove global options
-	filterResolvedOptions(resolvedOptions, beforeConfigOptions, devConfig.ProviderOptions(providerConfig.Name), providerConfig.Options, userOptions)
+	filterResolvedOptions(
+		resolvedOptions,
+		beforeConfigOptions,
+		devConfig.ProviderOptions(providerConfig.Name),
+		providerConfig.Options,
+		userOptions,
+	)
 
 	// save machine config
 	if machine != nil {
@@ -121,7 +127,13 @@ func ResolveAndSaveOptionsWorkspace(
 	}
 
 	// remove global options
-	filterResolvedOptions(resolvedOptions, beforeConfigOptions, devConfig.ProviderOptions(providerConfig.Name), providerConfig.Options, userOptions)
+	filterResolvedOptions(
+		resolvedOptions,
+		beforeConfigOptions,
+		devConfig.ProviderOptions(providerConfig.Name),
+		providerConfig.Options,
+		userOptions,
+	)
 
 	// save workspace config
 	if workspace != nil {
@@ -136,17 +148,6 @@ func ResolveAndSaveOptionsWorkspace(
 	}
 
 	return workspace, nil
-}
-
-func ResolveAndSaveOptionsProxy(
-	ctx context.Context,
-	devConfig *config.Config,
-	providerConfig *provider.ProviderConfig,
-	originalWorkspace *provider.Workspace,
-	userOptions map[string]string,
-	log log.Logger,
-) (*provider.Workspace, error) {
-	return ResolveAndSaveOptionsWorkspace(ctx, devConfig, providerConfig, originalWorkspace, userOptions, log, resolver.WithResolveSubOptions())
 }
 
 func ResolveOptions(
@@ -214,45 +215,78 @@ func ResolveOptions(
 	return devConfig, nil
 }
 
-func ResolveAgentConfig(devConfig *config.Config, providerConfig *provider.ProviderConfig, workspace *provider.Workspace, machine *provider.Machine) provider.ProviderAgentConfig {
-	// fill in agent config
+func ResolveAgentConfig(
+	devConfig *config.Config,
+	providerConfig *provider.ProviderConfig,
+	workspace *provider.Workspace,
+	machine *provider.Machine,
+) provider.ProviderAgentConfig {
 	options := provider.ToOptions(workspace, machine, devConfig.ProviderOptions(providerConfig.Name))
 	agentConfig := providerConfig.Agent
+
+	resolveAgentBaseConfig(&agentConfig, options, devConfig)
+	resolveAgentDockerConfig(&agentConfig, options)
+	resolveAgentKubernetesConfig(&agentConfig, options)
+	resolveAgentPathAndURL(&agentConfig, options, devConfig)
+	resolveAgentCredentials(&agentConfig, options, devConfig)
+
+	return agentConfig
+}
+
+func resolveAgentBaseConfig(
+	agentConfig *provider.ProviderAgentConfig,
+	options map[string]string,
+	devConfig *config.Config,
+) {
 	agentConfig.Dockerless.Image = resolver.ResolveDefaultValue(agentConfig.Dockerless.Image, options)
-	agentConfig.Dockerless.Disabled = types.StrBool(resolver.ResolveDefaultValue(string(agentConfig.Dockerless.Disabled), options))
+	agentConfig.Dockerless.Disabled = types.StrBool(
+		resolver.ResolveDefaultValue(string(agentConfig.Dockerless.Disabled), options),
+	)
 	agentConfig.Dockerless.IgnorePaths = resolver.ResolveDefaultValue(agentConfig.Dockerless.IgnorePaths, options)
 	agentConfig.Dockerless.RegistryCache = devConfig.ContextOption(config.ContextOptionRegistryCache)
 	agentConfig.Driver = resolver.ResolveDefaultValue(agentConfig.Driver, options)
 	agentConfig.Local = types.StrBool(resolver.ResolveDefaultValue(string(agentConfig.Local), options))
+}
 
-	// docker driver
+func resolveAgentDockerConfig(agentConfig *provider.ProviderAgentConfig, options map[string]string) {
 	agentConfig.Docker.Path = resolver.ResolveDefaultValue(agentConfig.Docker.Path, options)
 	agentConfig.Docker.Builder = resolver.ResolveDefaultValue(agentConfig.Docker.Builder, options)
-	agentConfig.Docker.Install = types.StrBool(resolver.ResolveDefaultValue(string(agentConfig.Docker.Install), options))
+	agentConfig.Docker.Install = types.StrBool(
+		resolver.ResolveDefaultValue(string(agentConfig.Docker.Install), options),
+	)
 	agentConfig.Docker.Env = resolver.ResolveDefaultValues(agentConfig.Docker.Env, options)
+}
 
-	// kubernetes driver
-	agentConfig.Kubernetes.KubernetesContext = resolver.ResolveDefaultValue(agentConfig.Kubernetes.KubernetesContext, options)
-	agentConfig.Kubernetes.KubernetesConfig = resolver.ResolveDefaultValue(agentConfig.Kubernetes.KubernetesConfig, options)
-	agentConfig.Kubernetes.KubernetesNamespace = resolver.ResolveDefaultValue(agentConfig.Kubernetes.KubernetesNamespace, options)
-	agentConfig.Kubernetes.Architecture = resolver.ResolveDefaultValue(agentConfig.Kubernetes.Architecture, options)
-	agentConfig.Kubernetes.InactivityTimeout = resolver.ResolveDefaultValue(agentConfig.Kubernetes.InactivityTimeout, options)
-	agentConfig.Kubernetes.StorageClass = resolver.ResolveDefaultValue(agentConfig.Kubernetes.StorageClass, options)
-	agentConfig.Kubernetes.PvcAccessMode = resolver.ResolveDefaultValue(agentConfig.Kubernetes.PvcAccessMode, options)
-	agentConfig.Kubernetes.PvcAnnotations = resolver.ResolveDefaultValue(agentConfig.Kubernetes.PvcAnnotations, options)
-	agentConfig.Kubernetes.NodeSelector = resolver.ResolveDefaultValue(agentConfig.Kubernetes.NodeSelector, options)
-	agentConfig.Kubernetes.Resources = resolver.ResolveDefaultValue(agentConfig.Kubernetes.Resources, options)
-	agentConfig.Kubernetes.WorkspaceVolumeMount = resolver.ResolveDefaultValue(agentConfig.Kubernetes.WorkspaceVolumeMount, options)
-	agentConfig.Kubernetes.PodManifestTemplate = resolver.ResolveDefaultValue(agentConfig.Kubernetes.PodManifestTemplate, options)
-	agentConfig.Kubernetes.Labels = resolver.ResolveDefaultValue(agentConfig.Kubernetes.Labels, options)
-	agentConfig.Kubernetes.StrictSecurity = resolver.ResolveDefaultValue(agentConfig.Kubernetes.StrictSecurity, options)
-	agentConfig.Kubernetes.CreateNamespace = resolver.ResolveDefaultValue(agentConfig.Kubernetes.CreateNamespace, options)
-	agentConfig.Kubernetes.ClusterRole = resolver.ResolveDefaultValue(agentConfig.Kubernetes.ClusterRole, options)
-	agentConfig.Kubernetes.ServiceAccount = resolver.ResolveDefaultValue(agentConfig.Kubernetes.ServiceAccount, options)
-	agentConfig.Kubernetes.PodTimeout = resolver.ResolveDefaultValue(agentConfig.Kubernetes.PodTimeout, options)
-	agentConfig.Kubernetes.KubernetesPullSecretsEnabled = resolver.ResolveDefaultValue(agentConfig.Kubernetes.KubernetesPullSecretsEnabled, options)
-	agentConfig.Kubernetes.DiskSize = resolver.ResolveDefaultValue(agentConfig.Kubernetes.DiskSize, options)
+func resolveAgentKubernetesConfig(agentConfig *provider.ProviderAgentConfig, options map[string]string) {
+	k8s := &agentConfig.Kubernetes
+	k8s.KubernetesContext = resolver.ResolveDefaultValue(k8s.KubernetesContext, options)
+	k8s.KubernetesConfig = resolver.ResolveDefaultValue(k8s.KubernetesConfig, options)
+	k8s.KubernetesNamespace = resolver.ResolveDefaultValue(k8s.KubernetesNamespace, options)
+	k8s.Architecture = resolver.ResolveDefaultValue(k8s.Architecture, options)
+	k8s.InactivityTimeout = resolver.ResolveDefaultValue(k8s.InactivityTimeout, options)
+	k8s.StorageClass = resolver.ResolveDefaultValue(k8s.StorageClass, options)
+	k8s.PvcAccessMode = resolver.ResolveDefaultValue(k8s.PvcAccessMode, options)
+	k8s.PvcAnnotations = resolver.ResolveDefaultValue(k8s.PvcAnnotations, options)
+	k8s.NodeSelector = resolver.ResolveDefaultValue(k8s.NodeSelector, options)
+	k8s.Resources = resolver.ResolveDefaultValue(k8s.Resources, options)
+	k8s.WorkspaceVolumeMount = resolver.ResolveDefaultValue(k8s.WorkspaceVolumeMount, options)
+	k8s.WorkspaceVolumeMount = resolver.ResolveDefaultValue(k8s.WorkspaceVolumeMount, options)
+	k8s.PodManifestTemplate = resolver.ResolveDefaultValue(k8s.PodManifestTemplate, options)
+	k8s.Labels = resolver.ResolveDefaultValue(k8s.Labels, options)
+	k8s.StrictSecurity = resolver.ResolveDefaultValue(k8s.StrictSecurity, options)
+	k8s.CreateNamespace = resolver.ResolveDefaultValue(k8s.CreateNamespace, options)
+	k8s.ClusterRole = resolver.ResolveDefaultValue(k8s.ClusterRole, options)
+	k8s.ServiceAccount = resolver.ResolveDefaultValue(k8s.ServiceAccount, options)
+	k8s.PodTimeout = resolver.ResolveDefaultValue(k8s.PodTimeout, options)
+	k8s.KubernetesPullSecretsEnabled = resolver.ResolveDefaultValue(k8s.KubernetesPullSecretsEnabled, options)
+	k8s.DiskSize = resolver.ResolveDefaultValue(k8s.DiskSize, options)
+}
 
+func resolveAgentPathAndURL(
+	agentConfig *provider.ProviderAgentConfig,
+	options map[string]string,
+	devConfig *config.Config,
+) {
 	agentConfig.DataPath = resolver.ResolveDefaultValue(agentConfig.DataPath, options)
 	agentConfig.Path = resolver.ResolveDefaultValue(agentConfig.Path, options)
 	if agentConfig.Path == "" && agentConfig.Local == "true" {
@@ -266,15 +300,27 @@ func ResolveAgentConfig(devConfig *config.Config, providerConfig *provider.Provi
 	}
 	agentConfig.Timeout = resolver.ResolveDefaultValue(agentConfig.Timeout, options)
 	agentConfig.ContainerTimeout = resolver.ResolveDefaultValue(agentConfig.ContainerTimeout, options)
-	agentConfig.InjectGitCredentials = types.StrBool(resolver.ResolveDefaultValue(string(agentConfig.InjectGitCredentials), options))
+}
+
+func resolveAgentCredentials(
+	agentConfig *provider.ProviderAgentConfig,
+	options map[string]string,
+	devConfig *config.Config,
+) {
+	agentConfig.InjectGitCredentials = types.StrBool(
+		resolver.ResolveDefaultValue(string(agentConfig.InjectGitCredentials), options),
+	)
 	if devConfig.ContextOption(config.ContextOptionSSHInjectGitCredentials) != "" {
-		agentConfig.InjectGitCredentials = types.StrBool(devConfig.ContextOption(config.ContextOptionSSHInjectGitCredentials))
+		agentConfig.InjectGitCredentials = types.StrBool(
+			devConfig.ContextOption(config.ContextOptionSSHInjectGitCredentials),
+		)
 	}
-	agentConfig.InjectDockerCredentials = types.StrBool(resolver.ResolveDefaultValue(string(agentConfig.InjectDockerCredentials), options))
+	agentConfig.InjectDockerCredentials = types.StrBool(
+		resolver.ResolveDefaultValue(string(agentConfig.InjectDockerCredentials), options),
+	)
 	if dockerCredOpt := devConfig.ContextOption(config.ContextOptionSSHInjectDockerCredentials); dockerCredOpt != "" {
 		agentConfig.InjectDockerCredentials = types.StrBool(dockerCredOpt)
 	}
-	return agentConfig
 }
 
 // resolveAgentDownloadURL resolves the agent download URL (env -> context -> default)

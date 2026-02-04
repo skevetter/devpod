@@ -74,13 +74,13 @@ func (cmd *UpCmd) Run(ctx context.Context) error {
 	cancelCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	tunnelClient, logger, credentialsDir, err := initWorkspace(
-		cancelCtx,
-		cancel,
-		workspaceInfo,
-		cmd.Debug,
-		cmd.shouldInstallDaemon(workspaceInfo),
-	)
+	tunnelClient, logger, credentialsDir, err := initWorkspace(initWorkspaceParams{
+		ctx:                 cancelCtx,
+		cancel:              cancel,
+		workspaceInfo:       workspaceInfo,
+		debug:               cmd.Debug,
+		shouldInstallDaemon: cmd.shouldInstallDaemon(workspaceInfo),
+	})
 	defer cmd.cleanupCredentials(credentialsDir)
 	if err != nil {
 		return cmd.handleInitError(err, workspaceInfo, logger)
@@ -140,7 +140,12 @@ func (cmd *UpCmd) cleanupCredentials(credentialsDir string) {
 	}
 }
 
-func (cmd *UpCmd) up(ctx context.Context, workspaceInfo *provider.AgentWorkspaceInfo, tunnelClient tunnel.TunnelClient, logger log.Logger) error {
+func (cmd *UpCmd) up(
+	ctx context.Context,
+	workspaceInfo *provider.AgentWorkspaceInfo,
+	tunnelClient tunnel.TunnelClient,
+	logger log.Logger,
+) error {
 	result, err := cmd.devPodUp(ctx, workspaceInfo, logger)
 	if err != nil {
 		return err
@@ -163,7 +168,11 @@ func (cmd *UpCmd) sendResult(ctx context.Context, result *config2.Result, tunnel
 	return nil
 }
 
-func (cmd *UpCmd) devPodUp(ctx context.Context, workspaceInfo *provider.AgentWorkspaceInfo, log log.Logger) (*config2.Result, error) {
+func (cmd *UpCmd) devPodUp(
+	ctx context.Context,
+	workspaceInfo *provider.AgentWorkspaceInfo,
+	log log.Logger,
+) (*config2.Result, error) {
 	runner, err := CreateRunner(workspaceInfo, log)
 	if err != nil {
 		return nil, err
@@ -257,49 +266,72 @@ type workspaceInitializer struct {
 	gitCredentialsHelper string
 }
 
-func initWorkspace(ctx context.Context, cancel context.CancelFunc, workspaceInfo *provider.AgentWorkspaceInfo, debug, shouldInstallDaemon bool) (tunnel.TunnelClient, log.Logger, string, error) {
+type initWorkspaceParams struct {
+	ctx                 context.Context
+	cancel              context.CancelFunc
+	workspaceInfo       *provider.AgentWorkspaceInfo
+	debug               bool
+	shouldInstallDaemon bool
+}
+
+func initWorkspace(params initWorkspaceParams) (tunnel.TunnelClient, log.Logger, string, error) {
 	init := &workspaceInitializer{
-		ctx:                 ctx,
-		cancel:              cancel,
-		workspaceInfo:       workspaceInfo,
-		debug:               debug,
-		shouldInstallDaemon: shouldInstallDaemon,
+		ctx:                 params.ctx,
+		cancel:              params.cancel,
+		workspaceInfo:       params.workspaceInfo,
+		debug:               params.debug,
+		shouldInstallDaemon: params.shouldInstallDaemon,
 	}
 
-	if err := init.initializeTunnel(); err != nil {
-		return nil, nil, "", err
-	}
-
-	if err := init.setupCredentials(); err != nil {
-		init.logger.Errorf("error retrieving docker / git credentials: %v", err)
-	}
-
-	dockerErrChan := init.installDockerAsync()
-
-	if err := init.prepareWorkspaceContent(); err != nil {
+	if err := init.initialize(); err != nil {
 		return nil, init.logger, init.dockerCredentialsDir, err
 	}
 
-	if init.shouldInstallDaemon {
-		if err := installDaemon(init.workspaceInfo, init.logger); err != nil {
-			init.logger.Errorf("install DevPod daemon: %v", err)
+	return init.tunnelClient, init.logger, init.dockerCredentialsDir, nil
+}
+
+func (w *workspaceInitializer) initialize() error {
+	if err := w.initializeTunnel(); err != nil {
+		return err
+	}
+
+	if err := w.setupCredentials(); err != nil {
+		w.logger.Errorf("error retrieving docker / git credentials: %v", err)
+	}
+
+	dockerErrChan := w.installDockerAsync()
+
+	if err := w.prepareWorkspaceContent(); err != nil {
+		return err
+	}
+
+	w.setupDaemonIfNeeded()
+
+	if err := w.waitForDocker(dockerErrChan); err != nil {
+		return err
+	}
+
+	w.configureDockerDaemon()
+	return nil
+}
+
+func (w *workspaceInitializer) setupDaemonIfNeeded() {
+	if w.shouldInstallDaemon {
+		if err := installDaemon(w.workspaceInfo, w.logger); err != nil {
+			w.logger.Errorf("install DevPod daemon: %v", err)
 		}
 	}
+}
 
-	if err := init.waitForDocker(dockerErrChan); err != nil {
-		return nil, nil, init.dockerCredentialsDir, err
-	}
-
-	daemonErrChan := init.configureDockerDaemonAsync()
+func (w *workspaceInitializer) configureDockerDaemon() {
+	daemonErrChan := w.configureDockerDaemonAsync()
 	if err := <-daemonErrChan; err != nil {
-		init.logger.Warn(
+		w.logger.Warn(
 			"could not find docker daemon config file, if using the registry cache, " +
 				"please ensure the daemon is configured with containerd-snapshotter=true, " +
 				"more info at https://docs.docker.com/engine/storage/containerd/",
 		)
 	}
-
-	return init.tunnelClient, init.logger, init.dockerCredentialsDir, nil
 }
 
 func (w *workspaceInitializer) initializeTunnel() error {
@@ -529,7 +561,12 @@ func prepareGitWorkspace(params prepareGitWorkspaceParams) error {
 	)
 }
 
-func prepareLocalWorkspace(ctx context.Context, workspaceInfo *provider.AgentWorkspaceInfo, client tunnel.TunnelClient, log log.Logger) error {
+func prepareLocalWorkspace(
+	ctx context.Context,
+	workspaceInfo *provider.AgentWorkspaceInfo,
+	client tunnel.TunnelClient,
+	log log.Logger,
+) error {
 	if workspaceInfo.ContentFolder == workspaceInfo.Workspace.Source.LocalFolder {
 		log.Debugf("local folder %s with local provider; skip downloading", workspaceInfo.ContentFolder)
 		return nil
