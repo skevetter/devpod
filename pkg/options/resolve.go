@@ -289,8 +289,11 @@ func resolveAgentPathAndURL(
 	agentConfig.DataPath = resolver.ResolveDefaultValue(agentConfig.DataPath, options)
 	agentConfig.Path = resolver.ResolveDefaultValue(agentConfig.Path, options)
 	if agentConfig.Path == "" && agentConfig.Local == "true" {
-		agentConfig.Path, _ = os.Executable()
-	} else if agentConfig.Path == "" {
+		if execPath, err := os.Executable(); err == nil {
+			agentConfig.Path = execPath
+		}
+	}
+	if agentConfig.Path == "" {
 		agentConfig.Path = agent.RemoteDevPodHelperLocation
 	}
 	agentConfig.DownloadURL = resolver.ResolveDefaultValue(agentConfig.DownloadURL, options)

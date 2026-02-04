@@ -1,8 +1,10 @@
 package provider
 
 import (
+	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path"
 	"path/filepath"
@@ -126,7 +128,8 @@ func downloadBinaryForPlatform(
 		// check if binary is correct
 		binaryTargetFolder := filepath.Join(targetFolder, strings.ToLower(binaryName))
 		binaryPath := getBinaryPath(binary, binaryTargetFolder)
-		if verifyBinary(binaryPath, binary.Checksum) || fromCache(binary, binaryTargetFolder, log) {
+		if verifyOrRemoveBinary(binaryPath, binary.Checksum) ||
+			fromCache(binary, binaryTargetFolder, log) {
 			return binaryPath, nil
 		}
 
@@ -184,14 +187,16 @@ func isRetriableError(err error) bool {
 		return false
 	}
 
-	// Check for HTTP status codes
-	if strings.Contains(errStr, "status code ") {
-		var statusCode int
-		if _, err := fmt.Sscanf(errStr, "received status code %d", &statusCode); err == nil {
-			// Skip retry on 4xx client errors (except 408 Request Timeout and 429 Too Many Requests)
-			if statusCode >= 400 && statusCode < 500 && statusCode != 408 && statusCode != 429 {
-				return false
-			}
+	// Check for HTTP status codes using typed error
+	var httpErr *download.HTTPStatusError
+	if errors.As(err, &httpErr) {
+		// Skip retry on 4xx client errors
+		// (except 408 Request Timeout and 429 Too Many Requests)
+		if httpErr.StatusCode >= http.StatusBadRequest &&
+			httpErr.StatusCode < http.StatusInternalServerError &&
+			httpErr.StatusCode != http.StatusRequestTimeout &&
+			httpErr.StatusCode != http.StatusTooManyRequests {
+			return false
 		}
 	}
 
@@ -243,7 +248,7 @@ func fromCache(binary *ProviderBinary, targetFolder string, log log.Logger) bool
 
 	binaryPath := getBinaryPath(binary, targetFolder)
 	cachedBinaryPath := getCachedBinaryPath(binary.Path)
-	if !verifyBinary(cachedBinaryPath, binary.Checksum) {
+	if !verifyOrRemoveBinary(cachedBinaryPath, binary.Checksum) {
 		return false
 	}
 
@@ -264,7 +269,7 @@ func getCachedBinaryPath(url string) string {
 	return filepath.Join(os.TempDir(), cacheDir, hash.String(url)[:16])
 }
 
-func verifyBinary(binaryPath, checksum string) bool {
+func verifyOrRemoveBinary(binaryPath, checksum string) bool {
 	_, err := os.Stat(binaryPath)
 	if err != nil {
 		return false
@@ -546,7 +551,8 @@ func copyLocal(binary *ProviderBinary, targetPath string) error {
 		if err != nil {
 			return err
 		}
-		if targetPathStat.Size() == binaryStat.Size() {
+		if targetPathStat.Size() == binaryStat.Size() &&
+			!binaryStat.ModTime().After(targetPathStat.ModTime()) {
 			return nil
 		}
 	}

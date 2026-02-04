@@ -13,6 +13,20 @@ import (
 	"github.com/skevetter/log"
 )
 
+// HTTPStatusError wraps HTTP status code errors for better error handling.
+type HTTPStatusError struct {
+	StatusCode int
+	URL        string
+}
+
+func (e *HTTPStatusError) Error() string {
+	return fmt.Sprintf(
+		"received status code %d when trying to download %s",
+		e.StatusCode,
+		e.URL,
+	)
+}
+
 func Head(rawURL string) (int, error) {
 	req, err := http.NewRequest("HEAD", rawURL, nil)
 	if err != nil {
@@ -68,7 +82,7 @@ func File(rawURL string, log log.Logger) (io.ReadCloser, error) {
 		return nil, fmt.Errorf("download file: %w", err)
 	} else if resp.StatusCode >= 400 {
 		_ = resp.Body.Close()
-		return nil, fmt.Errorf("received status code %d when trying to download %s", resp.StatusCode, rawURL)
+		return nil, &HTTPStatusError{StatusCode: resp.StatusCode, URL: rawURL}
 	}
 
 	return resp.Body, nil
@@ -102,7 +116,10 @@ func downloadGithubRelease(org, repo, release, file, token string) (io.ReadClose
 		return nil, err
 	} else if resp.StatusCode >= 400 {
 		_ = resp.Body.Close()
-		return nil, fmt.Errorf("received status code %d when trying to reach %s", resp.StatusCode, releaseURL)
+		return nil, &HTTPStatusError{
+			StatusCode: resp.StatusCode,
+			URL:        releaseURL,
+		}
 	}
 
 	raw, err := io.ReadAll(resp.Body)
@@ -138,7 +155,10 @@ func downloadGithubRelease(org, repo, release, file, token string) (io.ReadClose
 		return nil, err
 	} else if downloadResp.StatusCode >= 400 {
 		_ = downloadResp.Body.Close()
-		return nil, fmt.Errorf("received status code %d when trying to reach %s", downloadResp.StatusCode, releaseURL)
+		return nil, &HTTPStatusError{
+			StatusCode: downloadResp.StatusCode,
+			URL:        releaseURL,
+		}
 	}
 
 	return downloadResp.Body, nil
