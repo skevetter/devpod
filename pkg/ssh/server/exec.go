@@ -14,9 +14,7 @@ import (
 )
 
 func execNonPTY(sess ssh.Session, cmd *exec.Cmd, log log.Logger) (err error) {
-	log.WithFields(logrus.Fields{
-		"command": strings.Join(cmd.Args, " "),
-	}).Debug("execute SSH server command")
+	log.WithFields(logrus.Fields{"command": strings.Join(cmd.Args, " ")}).Debug("execute SSH server command")
 	// init pipes
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
@@ -37,30 +35,19 @@ func execNonPTY(sess ssh.Session, cmd *exec.Cmd, log log.Logger) (err error) {
 		return fmt.Errorf("start command: %w", err)
 	}
 
-	go func() {
-		defer func() { _ = stdin.Close() }()
-
-		_, err := io.Copy(stdin, sess)
-		if err != nil {
-			log.Debugf("Error piping stdin: %v", err)
-		}
-	}()
-
 	waitGroup := sync.WaitGroup{}
-	waitGroup.Go(func() {
 
-		_, err := io.Copy(sess, stdout)
-		if err != nil {
-			log.Debugf("Error piping stdout: %v", err)
-		}
+	waitGroup.Go(func() {
+		defer func() { _ = stdin.Close() }()
+		_, _ = io.Copy(stdin, sess)
 	})
 
 	waitGroup.Go(func() {
+		_, _ = io.Copy(sess, stdout)
+	})
 
-		_, err := io.Copy(sess.Stderr(), stderr)
-		if err != nil {
-			log.Debugf("Error piping stderr: %v", err)
-		}
+	waitGroup.Go(func() {
+		_, _ = io.Copy(sess.Stderr(), stderr)
 	})
 
 	waitGroup.Wait()
