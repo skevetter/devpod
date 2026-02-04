@@ -324,8 +324,11 @@ func (w *workspaceInitializer) setupDaemonIfNeeded() {
 }
 
 func (w *workspaceInitializer) configureDockerDaemon() {
-	daemonErrChan := w.configureDockerDaemonAsync()
-	if err := <-daemonErrChan; err != nil {
+	if !w.shouldConfigureDockerDaemon() {
+		w.logger.Debug("skipping configuring docker daemon")
+		return
+	}
+	if err := configureDockerDaemon(w.ctx, w.logger); err != nil {
 		w.logger.Warn(
 			"could not find docker daemon config file, if using the registry cache, " +
 				"please ensure the daemon is configured with containerd-snapshotter=true, " +
@@ -443,22 +446,6 @@ func (w *workspaceInitializer) waitForDocker(resultChan <-chan dockerInstallResu
 	}
 
 	return nil
-}
-
-func (w *workspaceInitializer) configureDockerDaemonAsync() <-chan error {
-	errChan := make(chan error, 1)
-
-	if !w.shouldConfigureDockerDaemon() {
-		w.logger.Debug("skipping configuring docker daemon")
-		errChan <- nil
-		return errChan
-	}
-
-	go func() {
-		errChan <- configureDockerDaemon(w.ctx, w.logger)
-	}()
-
-	return errChan
 }
 
 func (w *workspaceInitializer) shouldConfigureDockerDaemon() bool {

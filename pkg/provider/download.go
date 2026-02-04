@@ -15,10 +15,10 @@ import (
 	"github.com/skevetter/devpod/pkg/extract"
 	"github.com/skevetter/log"
 	"github.com/skevetter/log/hash"
+	"k8s.io/client-go/util/retry"
 )
 
 const (
-	retryCount  = 3
 	dirPerms    = 0750
 	filePerms   = 0755
 	windowsOS   = "windows"
@@ -31,6 +31,8 @@ const (
 	zipSuffix   = ".zip"
 	cacheDir    = "devpod-binaries"
 )
+
+var downloadBackoff = retry.DefaultBackoff
 
 type EnvironmentOptions struct {
 	Context   string
@@ -146,25 +148,30 @@ func downloadWithRetry(
 	targetFolder string,
 	log log.Logger,
 ) (string, error) {
-	var lastErr error
-	for range retryCount {
-		binaryPath, err := downloadBinary(binaryName, binary, targetFolder, log)
+	var binaryPath string
+	err := retry.OnError(downloadBackoff, func(err error) bool {
+		return true // retry on all errors
+	}, func() error {
+		path, err := downloadBinary(binaryName, binary, targetFolder, log)
 		if err != nil {
-			lastErr = err
-			continue
+			return err
 		}
 
 		if binary.Checksum != "" {
-			if !verifyDownloadedBinary(binaryPath, binary, binaryName, log) {
-				lastErr = fmt.Errorf("checksum verification failed")
-				continue
+			if !verifyDownloadedBinary(path, binary, binaryName, log) {
+				return fmt.Errorf("checksum verification failed")
 			}
 		}
 
-		toCache(binary, binaryPath, log)
-		return binaryPath, nil
+		binaryPath = path
+		return nil
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to download binary %s: %w", binaryName, err)
 	}
-	return "", fmt.Errorf("failed to download binary %s after %d attempts: %w", binaryName, retryCount, lastErr)
+
+	toCache(binary, binaryPath, log)
+	return binaryPath, nil
 }
 
 func verifyDownloadedBinary(
@@ -259,7 +266,7 @@ func getBinaryPath(binary *ProviderBinary, targetFolder string) string {
 	}
 
 	if binary.ArchivePath != "" {
-		return path.Join(filepath.ToSlash(targetFolder), binary.ArchivePath)
+		return filepath.Join(targetFolder, binary.ArchivePath)
 	}
 
 	name := binary.Name
@@ -269,7 +276,7 @@ func getBinaryPath(binary *ProviderBinary, targetFolder string) string {
 			name += exeSuffix
 		}
 	}
-	return path.Join(filepath.ToSlash(targetFolder), name)
+	return filepath.Join(targetFolder, name)
 }
 
 func isRemotePath(p string) bool {

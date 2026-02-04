@@ -270,7 +270,6 @@ func resolveAgentKubernetesConfig(agentConfig *provider.ProviderAgentConfig, opt
 	k8s.NodeSelector = resolver.ResolveDefaultValue(k8s.NodeSelector, options)
 	k8s.Resources = resolver.ResolveDefaultValue(k8s.Resources, options)
 	k8s.WorkspaceVolumeMount = resolver.ResolveDefaultValue(k8s.WorkspaceVolumeMount, options)
-	k8s.WorkspaceVolumeMount = resolver.ResolveDefaultValue(k8s.WorkspaceVolumeMount, options)
 	k8s.PodManifestTemplate = resolver.ResolveDefaultValue(k8s.PodManifestTemplate, options)
 	k8s.Labels = resolver.ResolveDefaultValue(k8s.Labels, options)
 	k8s.StrictSecurity = resolver.ResolveDefaultValue(k8s.StrictSecurity, options)
