@@ -47,7 +47,7 @@ func File(rawURL string, log log.Logger) (io.ReadCloser, error) {
 		return nil, err
 	}
 
-	req, err := http.NewRequest("GET", rawURL, nil)
+	req, err := http.NewRequest(http.MethodGet, rawURL, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +105,7 @@ func downloadGithubRelease(org, repo, release, file, token string) (io.ReadClose
 		releaseURL = fmt.Sprintf("https://api.github.com/repos/%s/%s/releases/tags/%s", org, repo, release)
 	}
 
-	req, err := http.NewRequest("GET", releaseURL, nil)
+	req, err := http.NewRequest(http.MethodGet, releaseURL, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +144,13 @@ func downloadGithubRelease(org, repo, release, file, token string) (io.ReadClose
 		return nil, fmt.Errorf("couldn't find asset %s in github release (%s)", file, releaseURL)
 	}
 
-	req, err = http.NewRequest("GET", fmt.Sprintf("https://api.github.com/repos/%s/%s/releases/assets/%d", org, repo, releaseAsset.ID), nil)
+	assetURL := fmt.Sprintf(
+		"https://api.github.com/repos/%s/%s/releases/assets/%d",
+		org,
+		repo,
+		releaseAsset.ID,
+	)
+	req, err = http.NewRequest(http.MethodGet, assetURL, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -157,7 +163,7 @@ func downloadGithubRelease(org, repo, release, file, token string) (io.ReadClose
 		_ = downloadResp.Body.Close()
 		return nil, &HTTPStatusError{
 			StatusCode: downloadResp.StatusCode,
-			URL:        releaseURL,
+			URL:        assetURL,
 		}
 	}
 
