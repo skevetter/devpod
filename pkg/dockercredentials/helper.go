@@ -120,7 +120,13 @@ func (h *Helper) getFromWorkspaceServer(serverURL string) (string, string, error
 	}
 
 	client := &http.Client{Timeout: credentialsTimeout}
-	resp, err := client.Get(fmt.Sprintf("http://localhost:%s/credentials?registry=%s", workspacePort, serverURL))
+	u := url.URL{
+		Scheme:   "http",
+		Host:     fmt.Sprintf("localhost:%s", workspacePort),
+		Path:     "/credentials",
+		RawQuery: url.Values{"registry": []string{serverURL}}.Encode(),
+	}
+	resp, err := client.Get(u.String())
 	if err != nil {
 		return "", "", err
 	}
