@@ -36,7 +36,7 @@ var (
 
 type ProviderWithOptions struct {
 	Config *provider.ProviderConfig `json:"config,omitempty"`
-	State  *config.ProviderConfig      `json:"state,omitempty"`
+	State  *config.ProviderConfig   `json:"state,omitempty"`
 }
 
 type ProviderParams struct {

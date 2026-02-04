@@ -35,7 +35,7 @@ const (
 )
 
 var (
-	downloadBackoff                = retry.DefaultBackoff
+	downloadBackoff               = retry.DefaultBackoff
 	errChecksumVerificationFailed = errors.New("checksum verification failed")
 )
 
