@@ -3,6 +3,7 @@ package dockercredentials
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/skevetter/log"
@@ -35,13 +36,17 @@ func (s *ConfigTestSuite) TestConfigureCredentialsDockerless() {
 	s.NoError(err)
 
 	// Verify correct shebang for dockerless
-	s.Contains(string(content), "#!/.dockerless/bin/sh")
+	s.True(strings.HasPrefix(string(content), "#!/.dockerless/bin/sh"), "shebang must be at start of file")
 	s.Contains(string(content), "agent docker-credentials")
 	s.Contains(string(content), "--port '12345'")
 
 	// Verify environment variables were set
-	s.Equal(dockerConfigDir, os.Getenv("DOCKER_CONFIG"))
-	s.Contains(os.Getenv("PATH"), dockerConfigDir)
+	dockerConfig := os.Getenv("DOCKER_CONFIG")
+	path := os.Getenv("PATH")
+	s.T().Setenv("DOCKER_CONFIG", dockerConfig)
+	s.T().Setenv("PATH", path)
+	s.Equal(dockerConfigDir, dockerConfig)
+	s.Contains(path, dockerConfigDir)
 
 	// Cleanup
 	_ = os.RemoveAll(dockerConfigDir)
@@ -65,13 +70,17 @@ func (s *ConfigTestSuite) TestConfigureCredentialsMachine() {
 	s.NoError(err)
 
 	// Verify correct shebang for machine (standard shell)
-	s.Contains(string(content), "#!/bin/sh")
+	s.True(strings.HasPrefix(string(content), "#!/bin/sh"), "shebang must be at start of file")
 	s.Contains(string(content), "agent docker-credentials")
 	s.Contains(string(content), "--port '54321'")
 
 	// Verify environment variables were set
-	s.Equal(dockerConfigDir, os.Getenv("DOCKER_CONFIG"))
-	s.Contains(os.Getenv("PATH"), dockerConfigDir)
+	dockerConfig := os.Getenv("DOCKER_CONFIG")
+	path := os.Getenv("PATH")
+	s.T().Setenv("DOCKER_CONFIG", dockerConfig)
+	s.T().Setenv("PATH", path)
+	s.Equal(dockerConfigDir, dockerConfig)
+	s.Contains(path, dockerConfigDir)
 
 	// Cleanup
 	_ = os.RemoveAll(dockerConfigDir)
