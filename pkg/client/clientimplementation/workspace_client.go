@@ -505,8 +505,9 @@ func (s *workspaceClient) Stop(ctx context.Context, opt client.StopOptions) erro
 }
 
 func (s *workspaceClient) Command(ctx context.Context, commandOptions client.CommandOptions) (err error) {
-	// get environment variables
 	s.m.Lock()
+	defer s.m.Unlock()
+
 	environ, err := provider.ToEnvironmentWithBinaries(provider.EnvironmentOptions{
 		Context:   s.workspace.Context,
 		Workspace: s.workspace,
@@ -521,7 +522,6 @@ func (s *workspaceClient) Command(ctx context.Context, commandOptions client.Com
 	if err != nil {
 		return err
 	}
-	s.m.Unlock()
 
 	return RunCommand(RunCommandOptions{
 		Ctx:     ctx,

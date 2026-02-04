@@ -37,6 +37,7 @@ func Head(rawURL string) (int, error) {
 	if err != nil {
 		return 0, fmt.Errorf("download file: %w", err)
 	}
+	defer func() { _ = resp.Body.Close() }()
 
 	return resp.StatusCode, nil
 }
@@ -114,8 +115,10 @@ func downloadGithubRelease(org, repo, release, file, token string) (io.ReadClose
 	resp, err := devpodhttp.GetHTTPClient().Do(req)
 	if err != nil {
 		return nil, err
-	} else if resp.StatusCode >= 400 {
-		_ = resp.Body.Close()
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
 		return nil, &HTTPStatusError{
 			StatusCode: resp.StatusCode,
 			URL:        releaseURL,
