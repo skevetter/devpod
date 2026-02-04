@@ -28,7 +28,7 @@ func (e *HTTPStatusError) Error() string {
 }
 
 func Head(rawURL string) (int, error) {
-	req, err := http.NewRequest("HEAD", rawURL, nil)
+	req, err := http.NewRequest(http.MethodHead, rawURL, nil)
 	if err != nil {
 		return 0, err
 	}

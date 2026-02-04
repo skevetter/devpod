@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"sort"
 	"strings"
@@ -699,12 +700,15 @@ func resolveProInstance(ctx context.Context, devPodConfig *config.Config, provid
 		return err
 	}
 
-	switch c := workspaceClient.(type) {
-	case client.ProxyClient:
-		return c.Create(ctx, os.Stdin, os.Stdout, os.Stderr)
-	case client.DaemonClient:
-		return c.Create(ctx, os.Stdin, os.Stdout, os.Stderr)
-	default:
-		return fmt.Errorf("client does not support remote workspaces")
+	type remoteCreator interface {
+		Create(
+			ctx context.Context,
+			stdin io.Reader,
+			stdout, stderr io.Writer,
+		) error
 	}
+	if c, ok := workspaceClient.(remoteCreator); ok {
+		return c.Create(ctx, os.Stdin, os.Stdout, os.Stderr)
+	}
+	return errors.New("client does not support remote workspaces")
 }

@@ -34,7 +34,10 @@ const (
 	cacheDir    = "devpod-binaries"
 )
 
-var downloadBackoff = retry.DefaultBackoff
+var (
+	downloadBackoff                = retry.DefaultBackoff
+	errChecksumVerificationFailed = errors.New("checksum verification failed")
+)
 
 type EnvironmentOptions struct {
 	Context   string
@@ -160,7 +163,7 @@ func downloadWithRetry(
 
 		if binary.Checksum != "" {
 			if !verifyDownloadedBinary(path, binary, binaryName, log) {
-				return fmt.Errorf("checksum verification failed")
+				return errChecksumVerificationFailed
 			}
 		}
 
@@ -180,10 +183,8 @@ func isRetriableError(err error) bool {
 		return false
 	}
 
-	errStr := err.Error()
-
 	// Skip retry on checksum verification failures
-	if strings.Contains(errStr, "checksum verification failed") {
+	if errors.Is(err, errChecksumVerificationFailed) {
 		return false
 	}
 
@@ -266,7 +267,7 @@ func fromCache(binary *ProviderBinary, targetFolder string, log log.Logger) bool
 }
 
 func getCachedBinaryPath(url string) string {
-	return filepath.Join(os.TempDir(), cacheDir, hash.String(url)[:16])
+	return filepath.Join(os.TempDir(), cacheDir, hash.String(url)[:32])
 }
 
 func verifyOrRemoveBinary(binaryPath, checksum string) bool {
