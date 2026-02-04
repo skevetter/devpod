@@ -149,9 +149,7 @@ func downloadWithRetry(
 	log log.Logger,
 ) (string, error) {
 	var binaryPath string
-	err := retry.OnError(downloadBackoff, func(err error) bool {
-		return true // retry on all errors
-	}, func() error {
+	err := retry.OnError(downloadBackoff, isRetriableError, func() error {
 		path, err := downloadBinary(binaryName, binary, targetFolder, log)
 		if err != nil {
 			return err
@@ -172,6 +170,33 @@ func downloadWithRetry(
 
 	toCache(binary, binaryPath, log)
 	return binaryPath, nil
+}
+
+func isRetriableError(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	errStr := err.Error()
+
+	// Skip retry on checksum verification failures
+	if strings.Contains(errStr, "checksum verification failed") {
+		return false
+	}
+
+	// Check for HTTP status codes
+	if strings.Contains(errStr, "status code ") {
+		var statusCode int
+		if _, err := fmt.Sscanf(errStr, "received status code %d", &statusCode); err == nil {
+			// Skip retry on 4xx client errors (except 408 Request Timeout and 429 Too Many Requests)
+			if statusCode >= 400 && statusCode < 500 && statusCode != 408 && statusCode != 429 {
+				return false
+			}
+		}
+	}
+
+	// Retry on network errors, timeouts, and 5xx errors
+	return true
 }
 
 func verifyDownloadedBinary(
@@ -202,6 +227,7 @@ func toCache(binary *ProviderBinary, binaryPath string, log log.Logger) {
 
 	cachedBinaryPath := getCachedBinaryPath(binary.Path)
 	if err := os.MkdirAll(filepath.Dir(cachedBinaryPath), dirPerms); err != nil {
+		log.Warnf("error creating cache directory: %v", err)
 		return
 	}
 
