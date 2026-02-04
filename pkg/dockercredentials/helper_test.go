@@ -23,7 +23,7 @@ func TestHelperSuite(t *testing.T) {
 func (s *HelperTestSuite) TestGet_Success() {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/credentials" {
-			json.NewEncoder(w).Encode(map[string]string{
+			_ = json.NewEncoder(w).Encode(map[string]string{
 				"username": "testuser",
 				"secret":   "testpass",
 			})
@@ -74,15 +74,15 @@ func (s *HelperTestSuite) TestGet_WorkspaceServerFallback() {
 	defer primaryServer.Close()
 
 	workspaceServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]string{
+		_ = json.NewEncoder(w).Encode(map[string]string{
 			"username": "workspaceuser",
 			"secret":   "workspacepass",
 		})
 	}))
 	defer workspaceServer.Close()
 
-	os.Setenv("DEVPOD_WORKSPACE_CREDENTIALS_PORT", parsePortString(workspaceServer.URL))
-	defer os.Unsetenv("DEVPOD_WORKSPACE_CREDENTIALS_PORT")
+	_ = os.Setenv("DEVPOD_WORKSPACE_CREDENTIALS_PORT", parsePortString(workspaceServer.URL))
+	defer func() { _ = os.Unsetenv("DEVPOD_WORKSPACE_CREDENTIALS_PORT") }()
 
 	helper := NewHelper(parsePort(primaryServer.URL))
 	username, secret, err := helper.Get("docker.io")
@@ -95,7 +95,7 @@ func (s *HelperTestSuite) TestGet_WorkspaceServerFallback() {
 func (s *HelperTestSuite) TestList_Success() {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/list" {
-			json.NewEncoder(w).Encode(map[string]string{
+			_ = json.NewEncoder(w).Encode(map[string]string{
 				"docker.io": "testuser",
 				"gcr.io":    "gcpuser",
 			})
@@ -156,7 +156,7 @@ func (s *HelperTestSuite) TestSanitizeServerURL() {
 
 func parsePort(url string) int {
 	var port int
-	fmt.Sscanf(url, "http://127.0.0.1:%d", &port)
+	_, _ = fmt.Sscanf(url, "http://127.0.0.1:%d", &port)
 	return port
 }
 

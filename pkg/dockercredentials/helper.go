@@ -18,17 +18,17 @@ const (
 	logFileName        = "credential-helper.log"
 )
 
-// Helper implements the Docker credential helper interface
+// Helper implements the Docker credential helper interface.
 type Helper struct {
 	port int
 }
 
-// NewHelper creates a new credential helper
+// NewHelper creates a new credential helper.
 func NewHelper(port int) *Helper {
 	return &Helper{port: port}
 }
 
-// Add is not supported (read-only helper)
+// Add is not supported (read-only helper).
 func (h *Helper) Add(*credentials.Credentials) error {
 	return credentials.NewErrCredentialsNotFound()
 }
@@ -66,7 +66,7 @@ func (h *Helper) List() (map[string]string, error) {
 		h.logError("list registries", err)
 		return map[string]string{}, nil
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return map[string]string{}, nil
@@ -96,7 +96,7 @@ func (h *Helper) getFromCredentialsServer(serverURL string) (string, string, err
 	if err != nil {
 		return "", "", err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return "", "", fmt.Errorf("status %d", resp.StatusCode)
@@ -130,7 +130,7 @@ func (h *Helper) getFromWorkspaceServer(serverURL string) (string, string, error
 	if err != nil {
 		return "", "", err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return "", "", fmt.Errorf("status %d", resp.StatusCode)
@@ -156,12 +156,13 @@ func sanitizeServerURL(serverURL string) string {
 
 func (h *Helper) logError(operation string, err error) {
 	logPath := filepath.Join(os.TempDir(), logFileName)
+	// #nosec G304 -- log file path is controlled and in temp directory
 	f, ferr := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 	if ferr != nil {
 		return
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	timestamp := time.Now().Format(time.RFC3339)
-	fmt.Fprintf(f, "[%s] %s: %v\n", timestamp, operation, err)
+	_, _ = fmt.Fprintf(f, "[%s] %s: %v\n", timestamp, operation, err)
 }
