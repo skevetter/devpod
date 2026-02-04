@@ -214,7 +214,7 @@ func (k *KubernetesDriver) runContainer(
 
 	// ensure pull secrets
 	pullSecretsCreated := false
-	if k.options.KubernetesPullSecretsEnabled == "true" {
+	if k.options.KubernetesPullSecretsEnabled == "true" && k.agentConfig.InjectDockerCredentials == "true" {
 		pullSecretsCreated, err = k.EnsurePullSecret(ctx, getPullSecretsName(id), options.Image)
 		if err != nil {
 			return err
