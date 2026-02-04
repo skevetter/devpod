@@ -191,17 +191,19 @@ func isRetriableError(err error) bool {
 	// Check for HTTP status codes using typed error
 	var httpErr *download.HTTPStatusError
 	if errors.As(err, &httpErr) {
-		// Skip retry on 4xx client errors
-		// (except 408 Request Timeout and 429 Too Many Requests)
-		if httpErr.StatusCode >= http.StatusBadRequest &&
-			httpErr.StatusCode < http.StatusInternalServerError &&
-			httpErr.StatusCode != http.StatusRequestTimeout &&
-			httpErr.StatusCode != http.StatusTooManyRequests {
-			return false
-		}
+		return isRetriableHTTPStatus(httpErr.StatusCode)
 	}
 
 	// Retry on network errors, timeouts, and 5xx errors
+	return true
+}
+
+func isRetriableHTTPStatus(statusCode int) bool {
+	// Skip retry on 4xx client errors (except 408 and 429)
+	if statusCode >= http.StatusBadRequest && statusCode < http.StatusInternalServerError {
+		return statusCode == http.StatusRequestTimeout || statusCode == http.StatusTooManyRequests
+	}
+	// Retry on all other status codes (5xx, etc.)
 	return true
 }
 
