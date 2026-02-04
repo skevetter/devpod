@@ -689,12 +689,12 @@ func loadExistingWorkspace(devPodConfig *config.Config, workspaceID string, chan
 }
 
 func resolveProInstance(ctx context.Context, devPodConfig *config.Config, providerName string, workspace *providerpkg.Workspace, log log.Logger) error {
-	provider, err := FindProvider(devPodConfig, providerName, log)
+	foundProvider, err := FindProvider(devPodConfig, providerName, log)
 	if err != nil {
 		return err
 	}
 
-	workspaceClient, err := getWorkspaceClient(devPodConfig, provider.Config, workspace, nil, log)
+	workspaceClient, err := getWorkspaceClient(devPodConfig, foundProvider.Config, workspace, nil, log)
 	if err != nil {
 		return err
 	}

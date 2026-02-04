@@ -76,7 +76,6 @@ func (cmd *UpCmd) Run(ctx context.Context) error {
 
 	tunnelClient, logger, credentialsDir, err := initWorkspace(initWorkspaceParams{
 		ctx:                 cancelCtx,
-		cancel:              cancel,
 		workspaceInfo:       workspaceInfo,
 		debug:               cmd.Debug,
 		shouldInstallDaemon: cmd.shouldInstallDaemon(workspaceInfo),
@@ -256,7 +255,6 @@ func downloadWorkspaceBinaries(workspaceInfo *provider.AgentWorkspaceInfo, log l
 
 type workspaceInitializer struct {
 	ctx                  context.Context
-	cancel               context.CancelFunc
 	workspaceInfo        *provider.AgentWorkspaceInfo
 	debug                bool
 	shouldInstallDaemon  bool
@@ -268,7 +266,6 @@ type workspaceInitializer struct {
 
 type initWorkspaceParams struct {
 	ctx                 context.Context
-	cancel              context.CancelFunc
 	workspaceInfo       *provider.AgentWorkspaceInfo
 	debug               bool
 	shouldInstallDaemon bool
@@ -277,7 +274,6 @@ type initWorkspaceParams struct {
 func initWorkspace(params initWorkspaceParams) (tunnel.TunnelClient, log.Logger, string, error) {
 	init := &workspaceInitializer{
 		ctx:                 params.ctx,
-		cancel:              params.cancel,
 		workspaceInfo:       params.workspaceInfo,
 		debug:               params.debug,
 		shouldInstallDaemon: params.shouldInstallDaemon,
@@ -296,7 +292,7 @@ func (w *workspaceInitializer) initialize() error {
 	}
 
 	if err := w.setupCredentials(); err != nil {
-		w.logger.Errorf("error retrieving docker / git credentials: %v", err)
+		w.logger.Warnf("failed to set up docker/git credentials (continuing without them): %v", err)
 	}
 
 	dockerErrChan := w.installDockerAsync()
@@ -688,11 +684,18 @@ func configureDockerDaemon(ctx context.Context, log log.Logger) error {
 }
 
 func writeDockerDaemonConfig(config []byte) error {
-	if err := tryWriteRootlessDockerConfig(config); err == nil {
+	rootlessErr := tryWriteRootlessDockerConfig(config)
+	if rootlessErr == nil {
 		return nil
 	}
 
-	return os.WriteFile("/etc/docker/daemon.json", config, 0644)
+	// #nosec G306 -- daemon.json needs to be readable by docker daemon
+	rootErr := os.WriteFile("/etc/docker/daemon.json", config, 0644)
+	if rootErr == nil {
+		return nil
+	}
+
+	return fmt.Errorf("failed to write docker daemon config (rootless: %v, root: %v)", rootlessErr, rootErr)
 }
 
 func tryWriteRootlessDockerConfig(config []byte) error {
@@ -706,6 +709,7 @@ func tryWriteRootlessDockerConfig(config []byte) error {
 		return err
 	}
 
+	// #nosec G306 -- daemon.json needs to be readable by docker daemon
 	return os.WriteFile(filepath.Join(dockerConfigDir, "daemon.json"), config, 0644)
 }
 

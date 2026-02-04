@@ -103,15 +103,15 @@ func ProviderFromHost(
 		return nil, fmt.Errorf("load pro instance %s: %w", proHost, err)
 	}
 
-	provider, err := FindProvider(devPodConfig, proInstanceConfig.Provider, log)
+	foundProvider, err := FindProvider(devPodConfig, proInstanceConfig.Provider, log)
 	if err != nil {
 		return nil, fmt.Errorf("find provider: %w", err)
 	}
-	if !provider.Config.IsProxyProvider() && !provider.Config.IsDaemonProvider() {
+	if !foundProvider.Config.IsProxyProvider() && !foundProvider.Config.IsDaemonProvider() {
 		return nil, fmt.Errorf("provider is not a pro provider")
 	}
 
-	return provider.Config, nil
+	return foundProvider.Config, nil
 }
 
 func AddProvider(

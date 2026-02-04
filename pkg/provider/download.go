@@ -370,7 +370,7 @@ func downloadFile(
 			name += exeSuffix
 		}
 	}
-	targetPath := path.Join(filepath.ToSlash(targetFolder), name)
+	targetPath := filepath.Join(targetFolder, name)
 	_, err := os.Stat(targetPath)
 	if err == nil {
 		return targetPath, nil
@@ -414,7 +414,7 @@ func downloadArchive(
 	targetFolder string,
 	log log.Logger,
 ) (string, error) {
-	targetPath := path.Join(filepath.ToSlash(targetFolder), binary.ArchivePath)
+	targetPath := filepath.Join(targetFolder, binary.ArchivePath)
 	_, err := os.Stat(targetPath)
 	if err == nil {
 		return targetPath, nil

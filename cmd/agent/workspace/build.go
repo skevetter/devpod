@@ -59,7 +59,6 @@ func (cmd *BuildCmd) Run(ctx context.Context) error {
 	defer cancel()
 	_, logger, credentialsDir, err := initWorkspace(initWorkspaceParams{
 		ctx:                 cancelCtx,
-		cancel:              cancel,
 		workspaceInfo:       workspaceInfo,
 		debug:               cmd.Debug,
 		shouldInstallDaemon: false,
