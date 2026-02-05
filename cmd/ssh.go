@@ -472,7 +472,15 @@ func (cmd *SSHCmd) startTunnel(ctx context.Context, devPodConfig *config.Config,
 
 	// Traffic is coming in from the outside, we need to forward it to the container
 	if cmd.Stdio {
-		return devssh.Run(ctx, containerClient, command, os.Stdin, os.Stdout, writer, envVars)
+		return devssh.Run(devssh.RunOptions{
+			Context: ctx,
+			Client:  containerClient,
+			Command: command,
+			Stdin:   os.Stdin,
+			Stdout:  os.Stdout,
+			Stderr:  writer,
+			EnvVars: envVars,
+		})
 	}
 
 	return machine.StartSSHSession(
@@ -484,7 +492,15 @@ func (cmd *SSHCmd) startTunnel(ctx context.Context, devPodConfig *config.Config,
 			if cmd.SSHKeepAliveInterval != DisableSSHKeepAlive {
 				go startSSHKeepAlive(ctx, containerClient, cmd.SSHKeepAliveInterval, log)
 			}
-			return devssh.Run(ctx, containerClient, command, stdin, stdout, stderr, envVars)
+			return devssh.Run(devssh.RunOptions{
+				Context: ctx,
+				Client:  containerClient,
+				Command: command,
+				Stdin:   stdin,
+				Stdout:  stdout,
+				Stderr:  stderr,
+				EnvVars: envVars,
+			})
 		},
 		writer,
 	)
@@ -594,7 +610,13 @@ func (cmd *SSHCmd) setupGPGAgent(
 
 	writer := log.ErrorStreamOnly().Writer(logrus.InfoLevel, false)
 	defer func() { _ = writer.Close() }()
-	err = devssh.Run(ctx, containerClient, command, nil, writer, writer, nil)
+	err = devssh.Run(devssh.RunOptions{
+		Context: ctx,
+		Client:  containerClient,
+		Command: command,
+		Stdout:  writer,
+		Stderr:  writer,
+	})
 	if err != nil {
 		return fmt.Errorf("run gpg agent setup command: %w", err)
 	}

@@ -158,7 +158,14 @@ func ExecuteCommand(
 		defer func() { _ = streamer.Close() }()
 
 		log.WithFields(logrus.Fields{"command": command}).Debug("running agent command in SSH tunnel")
-		err = devssh.Run(ctx, sshClient, command, gRPCConnStdinReader, gRPCConnStdoutWriter, streamer, nil)
+		err = devssh.Run(devssh.RunOptions{
+			Context: ctx,
+			Client:  sshClient,
+			Command: command,
+			Stdin:   gRPCConnStdinReader,
+			Stdout:  gRPCConnStdoutWriter,
+			Stderr:  streamer,
+		})
 		if err != nil {
 			_ = streamer.Close()
 			if out := streamer.ErrorOutput(); out != "" {

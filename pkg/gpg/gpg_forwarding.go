@@ -40,7 +40,13 @@ func IsGpgTunnelRunning(
 
 	// capture the output, if it's empty it means we don't have gpg-forwarding
 	var out bytes.Buffer
-	err := devssh.Run(ctx, client, command, nil, &out, writer, nil)
+	err := devssh.Run(devssh.RunOptions{
+		Context: ctx,
+		Client:  client,
+		Command: command,
+		Stdout:  &out,
+		Stderr:  writer,
+	})
 
 	return err == nil && len(out.Bytes()) > 1
 }

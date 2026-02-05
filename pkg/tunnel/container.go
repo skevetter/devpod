@@ -176,7 +176,13 @@ func (c *ContainerTunnel) updateConfig(ctx context.Context, sshClient *ssh.Clien
 			}
 
 			c.log.Debugf("Run command in container: %s", command)
-			err = devssh.Run(ctx, sshClient, command, nil, buf, buf, nil)
+			err = devssh.Run(devssh.RunOptions{
+				Context: ctx,
+				Client:  sshClient,
+				Command: command,
+				Stdout:  buf,
+				Stderr:  buf,
+			})
 			if err != nil {
 				c.log.Errorf("Error updating remote workspace: %s%v", buf.String(), err)
 			} else {
@@ -224,7 +230,15 @@ func (c *ContainerTunnel) runInContainer(ctx context.Context, sshClient *ssh.Cli
 		if c.log.GetLevel() == logrus.DebugLevel {
 			command += " --debug"
 		}
-		err = devssh.Run(cancelCtx, sshClient, command, stdinReader, stdoutWriter, writer, envVars)
+		err = devssh.Run(devssh.RunOptions{
+			Context: cancelCtx,
+			Client:  sshClient,
+			Command: command,
+			Stdin:   stdinReader,
+			Stdout:  stdoutWriter,
+			Stderr:  writer,
+			EnvVars: envVars,
+		})
 		if err != nil {
 			c.log.Errorf("Error tunneling to container: %v", err)
 			return

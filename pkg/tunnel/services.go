@@ -181,7 +181,14 @@ func runServicesIteration(ctx context.Context, opts RunServicesOptions, forwarde
 
 	command := buildCredentialsCommand(opts)
 
-	err = devssh.Run(cancelCtx, opts.ContainerClient, command, stdinReader, stdoutWriter, writer, nil)
+	err = devssh.Run(devssh.RunOptions{
+		Context: cancelCtx,
+		Client:  opts.ContainerClient,
+		Command: command,
+		Stdin:   stdinReader,
+		Stdout:  stdoutWriter,
+		Stderr:  writer,
+	})
 	if err != nil {
 		// Drain errChan to allow goroutine to exit cleanly
 		select {
@@ -254,7 +261,13 @@ func forwardDevContainerPorts(p portForwardParams) ([]string, error) {
 func getContainerResult(p portForwardParams) (*config2.Result, error) {
 	stdout := &bytes.Buffer{}
 	stderr := &bytes.Buffer{}
-	err := devssh.Run(p.ctx, p.containerClient, "cat "+setup.ResultLocation, nil, stdout, stderr, nil)
+	err := devssh.Run(devssh.RunOptions{
+		Context: p.ctx,
+		Client:  p.containerClient,
+		Command: "cat " + setup.ResultLocation,
+		Stdout:  stdout,
+		Stderr:  stderr,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("retrieve container result: %s\n%s: %w", stdout.String(), stderr.String(), err)
 	}

@@ -2,6 +2,7 @@ package ssh
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 
@@ -89,38 +90,107 @@ func ConfigFromKeyBytes(keyBytes []byte) (*ssh.ClientConfig, error) {
 	return clientConfig, nil
 }
 
-func Run(ctx context.Context, client *ssh.Client, command string, stdin io.Reader, stdout io.Writer, stderr io.Writer, envVars map[string]string) error {
-	sess, err := client.NewSession()
-	if err != nil {
+type RunOptions struct {
+	Context context.Context
+	Client  *ssh.Client
+	Command string
+	Stdin   io.Reader
+	Stdout  io.Writer
+	Stderr  io.Writer
+	EnvVars map[string]string
+}
+
+// ExitError wraps an SSH exit error with the exit code
+type ExitError struct {
+	ExitCode int
+	Err      error
+}
+
+func (e *ExitError) Error() string {
+	return fmt.Sprintf("exit status %d", e.ExitCode)
+}
+
+func (e *ExitError) Unwrap() error {
+	return e.Err
+}
+
+func (opts *RunOptions) validate() error {
+	if opts.Context == nil {
+		return fmt.Errorf("context is required")
+	}
+	if opts.Client == nil {
+		return fmt.Errorf("SSH client is required")
+	}
+	if opts.Command == "" {
+		return fmt.Errorf("command is required")
+	}
+	return nil
+}
+
+func Run(opts RunOptions) error {
+	if err := opts.validate(); err != nil {
 		return err
+	}
+
+	sess, err := opts.Client.NewSession()
+	if err != nil {
+		return fmt.Errorf("failed to create SSH session: %w", err)
 	}
 	defer func() { _ = sess.Close() }()
 
-	for k, v := range envVars {
-		err = sess.Setenv(k, v)
-		if err != nil {
-			return err
-		}
+	// Set environment variables (best effort - SSH servers may reject env vars or not support them)
+	for k, v := range opts.EnvVars {
+		_ = sess.Setenv(k, v) // Ignore errors - command should work without env vars
 	}
 
+	// Handle context cancellation
 	exit := make(chan struct{})
 	defer close(exit)
 	go func() {
 		select {
-		case <-ctx.Done():
-			_ = sess.Signal(ssh.SIGINT)
-			_ = sess.Close()
+		case <-opts.Context.Done():
+			_ = sess.Signal(ssh.SIGINT) // Send interrupt, let defer handle close
 		case <-exit:
 		}
 	}()
 
-	sess.Stdin = stdin
-	sess.Stdout = stdout
-	sess.Stderr = stderr
-	err = sess.Run(command)
+	sess.Stdin = opts.Stdin
+	sess.Stdout = opts.Stdout
+	sess.Stderr = opts.Stderr
+
+	err = sess.Run(opts.Command)
 	if err != nil {
-		return err
+		return handleRunError(err, opts.Command)
 	}
 
 	return nil
+}
+
+func handleRunError(err error, command string) error {
+	// Check for exit errors with exit codes
+	if exitErr, ok := err.(*ssh.ExitError); ok {
+		exitCode := exitErr.ExitStatus()
+
+		// Exit codes 128+N indicate death by signal N
+		// 130 = 128 + 2 (SIGINT) - Ctrl+C (user interrupted)
+		// 129 = 128 + 1 (SIGHUP) - hangup (terminal closed)
+		// 143 = 128 + 15 (SIGTERM) - graceful termination
+		// These are "normal" ways to exit an interactive session
+		if exitCode == 130 || exitCode == 129 || exitCode == 143 {
+			return nil // Don't treat user interrupts as errors
+		}
+
+		// Return exit code for all other cases
+		return &ExitError{
+			ExitCode: exitCode,
+			Err:      exitErr,
+		}
+	}
+
+	// Provide context for common errors
+	if errors.Is(err, io.EOF) {
+		return fmt.Errorf("SSH session closed unexpectedly (EOF) while running: %s", command)
+	}
+
+	return fmt.Errorf("SSH command failed: %w (command: %s)", err, command)
 }
