@@ -22,7 +22,7 @@ func NewHealthCmd() *cobra.Command {
 }
 
 func (cmd *HealthCmd) Run(c *cobra.Command, args []string) error {
-	pidBytes, err := os.ReadFile("/tmp/devpod-daemon.pid")
+	pidBytes, err := os.ReadFile(pidFilePath)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return fmt.Errorf("daemon not running: pid file not found")
@@ -33,13 +33,18 @@ func (cmd *HealthCmd) Run(c *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("invalid pid file content: %w", err)
 	}
-	process, err := os.FindProcess(pid)
-	if err != nil {
-		return fmt.Errorf("daemon not running: %w", err)
-	}
+	process, _ := os.FindProcess(pid)
 	// Signal 0 checks if process exists without sending an actual signal
 	if err := process.Signal(syscall.Signal(0)); err != nil {
 		return fmt.Errorf("daemon not running (pid %d): %w", pid, err)
+	}
+	// Verify process is the devpod daemon by checking cmdline
+	cmdline, err := os.ReadFile(fmt.Sprintf("/proc/%d/cmdline", pid))
+	if err != nil {
+		return fmt.Errorf("failed to verify daemon process: %w", err)
+	}
+	if !strings.Contains(string(cmdline), "devpod") {
+		return fmt.Errorf("pid %d is not devpod daemon", pid)
 	}
 	return nil
 }

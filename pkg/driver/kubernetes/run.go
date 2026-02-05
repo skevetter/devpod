@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/skevetter/devpod/pkg/agent"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	"github.com/skevetter/devpod/pkg/driver"
 	provider2 "github.com/skevetter/devpod/pkg/provider"
@@ -114,11 +115,7 @@ func (k *KubernetesDriver) runContainer(
 	}
 
 	// read pod template
-	pod := &corev1.Pod{
-		Spec: corev1.PodSpec{
-			RestartPolicy: corev1.RestartPolicyAlways,
-		},
-	}
+	pod := &corev1.Pod{}
 	if len(k.options.PodManifestTemplate) > 0 {
 		k.Log.Debugf("trying to get pod template manifest from %s", k.options.PodManifestTemplate)
 		pod, err = getPodTemplate(k.options.PodManifestTemplate)
@@ -353,10 +350,10 @@ func getContainers(
 		LivenessProbe: &corev1.Probe{
 			ProbeHandler: corev1.ProbeHandler{
 				Exec: &corev1.ExecAction{
-					Command: []string{"/usr/local/bin/devpod", "agent", "container", "health"},
+					Command: []string{agent.ContainerDevPodHelperLocation, "agent", "container", "health"},
 				},
 			},
-			InitialDelaySeconds: 30,
+			InitialDelaySeconds: 60,
 			PeriodSeconds:       10,
 			TimeoutSeconds:      5,
 			FailureThreshold:    3,
@@ -364,10 +361,10 @@ func getContainers(
 		ReadinessProbe: &corev1.Probe{
 			ProbeHandler: corev1.ProbeHandler{
 				Exec: &corev1.ExecAction{
-					Command: []string{"/usr/local/bin/devpod", "agent", "container", "health"},
+					Command: []string{agent.ContainerDevPodHelperLocation, "agent", "container", "health"},
 				},
 			},
-			InitialDelaySeconds: 10,
+			InitialDelaySeconds: 30,
 			PeriodSeconds:       5,
 			TimeoutSeconds:      5,
 			FailureThreshold:    2,
