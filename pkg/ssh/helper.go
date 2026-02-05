@@ -107,6 +107,9 @@ type ExitError struct {
 }
 
 func (e *ExitError) Error() string {
+	if e.Err != nil {
+		return fmt.Sprintf("exit status %d: %v", e.ExitCode, e.Err)
+	}
 	return fmt.Sprintf("exit status %d", e.ExitCode)
 }
 
@@ -144,6 +147,9 @@ func Run(opts RunOptions) error {
 	}
 
 	// Handle context cancellation
+	if err := opts.Context.Err(); err != nil {
+		return fmt.Errorf("context already cancelled: %w", err)
+	}
 	exit := make(chan struct{})
 	defer close(exit)
 	go func() {
@@ -168,7 +174,8 @@ func Run(opts RunOptions) error {
 
 func handleRunError(err error, command string) error {
 	// Check for exit errors with exit codes
-	if exitErr, ok := err.(*ssh.ExitError); ok {
+	var exitErr *ssh.ExitError
+	if errors.As(err, &exitErr) {
 		exitCode := exitErr.ExitStatus()
 
 		// Exit codes 128+N indicate death by signal N
