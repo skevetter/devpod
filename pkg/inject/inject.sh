@@ -1,157 +1,143 @@
 #!/bin/sh
 set -e
 
-# Compatibility fix for zsh shells
 setopt SH_WORD_SPLIT 2>/dev/null || :
 
 INSTALL_DIR="{{ .InstallDir }}"
 INSTALL_FILENAME="{{ .InstallFilename }}"
-
 INSTALL_PATH="$INSTALL_DIR/$INSTALL_FILENAME"
 PREFER_DOWNLOAD="{{ .PreferDownload }}"
 CHMOD_PATH="{{ .ChmodPath }}"
+DOWNLOAD_AMD="{{ .DownloadAmd }}"
+DOWNLOAD_ARM="{{ .DownloadArm }}"
+DOWNLOAD_BASE="{{ .DownloadBase }}"
+COMMAND="{{ .Command }}"
+EXISTS_CHECK="{{ .ExistsCheck }}"
+TEMP_PATH="$INSTALL_PATH.$$"
 
-# start marker
-echo "ping"
-
-# we don't want the script to do anything without us
-IFS='$\n' read -r DEVPOD_PING
-if [ "$DEVPOD_PING" != "pong" ]; then
-    >&2 echo "Received wrong answer for ping request $DEVPOD_PING"
-    exit 1
-fi
-
-command_exists() {
-    command -v "$@" >/dev/null 2>&1
-}
+command_exists() { command -v "$@" >/dev/null 2>&1; }
+fail() { echo >&2 "Error: $1"; return 1; }
 
 is_arm() {
     case "$(uname -a)" in
-        *arm*) true ;;
-        *arm64*) true ;;
-        *aarch*) true ;;
-        *aarch64*) true ;;
-        *) false ;;
+        *arm*|*aarch*) return 0 ;;
+        *) return 1 ;;
     esac
 }
 
-# Detect if install_dir is noexec
-# We use this method instead of findmnt, as that command might not be present
-# on minimal images, like alpine
+detect_architecture() { is_arm && echo "true" || echo "false"; }
+select_download_url() { is_arm && echo "$DOWNLOAD_ARM" || echo "$DOWNLOAD_AMD"; }
+
+find_download_tool() {
+    command_exists curl && echo "curl" && return 0
+    command_exists wget && echo "wget" && return 0
+    return 1
+}
+
+handshake() {
+    echo "ping"
+    IFS= read -r response
+    [ "$response" = "pong" ] || fail "received wrong answer for ping request: $response"
+}
+
 check_noexec() {
-    # Find mountpoint of the install path
-    mount_path="$(df "${INSTALL_DIR}" | tail -n +2 | rev | cut -d' ' -f1 | rev)"
-
-    # Check if mountpoint is noexec, fail early
-    if mount | grep "on ${mount_path} " | grep -q noexec; then
-        echo >&2 "ERROR: installation directory $INSTALL_DIR is noexec, please choose another location"
-        return 1
-    fi
-
+    mount_path="$(df "$INSTALL_DIR" | tail -n +2 | rev | cut -d' ' -f1 | rev)"
+    mount | grep "on ${mount_path} " | grep -q noexec && \
+        fail "installation directory $INSTALL_DIR is noexec, please choose another location"
     return 0
 }
 
-inject() {
-    echo "ARM-$(is_arm && echo -n 'true' || echo -n 'false')"
-    $sh_c "cat > $INSTALL_PATH.$$"
-    $sh_c "mv $INSTALL_PATH.$$ $INSTALL_PATH"
+can_write_without_privilege() {
+    mkdir -p "$INSTALL_DIR" 2>/dev/null && \
+    touch "$INSTALL_PATH" 2>/dev/null && \
+    chmod +x "$INSTALL_PATH" 2>/dev/null && \
+    rm -f "$INSTALL_PATH" 2>/dev/null
+}
 
-    if [ "$CHMOD_PATH" = "true" ]; then
-        $sh_c "chmod +x $INSTALL_PATH"
+detect_privilege_command() {
+    if can_write_without_privilege; then
+        echo "sh -c"
+    elif command_exists sudo; then
+        sudo -nl >/dev/null 2>&1 || \
+            fail "sudo requires a password and no password is available. Please ensure your user account is configured with NOPASSWD"
+        echo "sudo -E sh -c"
+    elif command_exists su; then
+        echo "su -c"
+    else
+        fail "this installer needs the ability to run commands as root. We are unable to find either \"sudo\" or \"su\" available to make this happen"
     fi
+}
+
+setup_install_directory() {
+    $1 "mkdir -p $INSTALL_DIR" || fail "failed to create install directory"
+}
+
+receive_binary() {
+    echo "ARM-$(detect_architecture)"
+    $1 "cat > $TEMP_PATH" || return 1
+    $1 "mv $TEMP_PATH $INSTALL_PATH" || return 1
+    [ "$CHMOD_PATH" = "true" ] && $1 "chmod +x $INSTALL_PATH"
+}
+
+download_file() {
+    case "$3" in
+        curl) $1 "curl -fsSL $2 -o $TEMP_PATH" ;;
+        wget) $1 "wget -q $2 -O $TEMP_PATH" ;;
+        *) return 1 ;;
+    esac
+}
+
+download_with_retry() {
+    attempt=1
+    while [ "$attempt" -le 3 ]; do
+        download_file "$1" "$2" "$3" && return 0
+        if [ "$attempt" -lt 3 ]; then
+            echo >&2 "error: download failed (attempt $attempt/3)"
+            echo >&2 "trying again in 10 seconds"
+            sleep 10
+        fi
+        attempt=$((attempt + 1))
+    done
+    return 1
+}
+
+download_binary() {
+    url="$(select_download_url)"
+    tool="$(find_download_tool)" || fail "no download tool found, please install curl or wget"
+    download_with_retry "$1" "$url" "$tool" || return 1
+    $1 "mv $TEMP_PATH $INSTALL_PATH" || return 1
+    [ "$CHMOD_PATH" = "true" ] && $1 "chmod +x $INSTALL_PATH"
+}
+
+install_binary() {
+    $1 "rm -f $INSTALL_PATH 2>/dev/null || true"
+    if [ "$PREFER_DOWNLOAD" = "true" ]; then
+        download_binary "$1" || receive_binary "$1" || return 1
+    else
+        receive_binary "$1" || download_binary "$1" || return 1
+    fi
+}
+
+main() {
+    handshake || return 1
+
+    if ! eval "$EXISTS_CHECK"; then
+        echo "done"
+        export DEVPOD_AGENT_URL="$DOWNLOAD_BASE"
+        eval "$COMMAND"
+        return 0
+    fi
+
+    sh_c="$(detect_privilege_command)" || return 1
+    setup_install_directory "$sh_c" || return 1
+    check_noexec || return 1
+    install_binary "$sh_c" || return 1
+    eval "$EXISTS_CHECK" && fail "failed to install devpod"
 
     echo "done"
-    exit 0
+    export DEVPOD_AGENT_URL="$DOWNLOAD_BASE"
+    eval "$COMMAND"
 }
 
-download() {
-    DOWNLOAD_URL="{{ .DownloadAmd }}"
-    if is_arm; then
-        DOWNLOAD_URL="{{ .DownloadArm }}"
-    fi
-    iteration=1
-    max_iteration=3
-
-    while :; do
-        if [ "$iteration" -gt "$max_iteration" ]; then
-            >&2 echo "error: failed to download devpod"
-            exit 1
-        fi
-
-        cmd_status=""
-        if command_exists curl; then
-            $sh_c "curl -fsSL $DOWNLOAD_URL -o $INSTALL_PATH.$$" && break
-            cmd_status=$?
-        elif command_exists wget; then
-            $sh_c "wget -q $DOWNLOAD_URL -O $INSTALL_PATH.$$" && break
-            cmd_status=$?
-        else
-            echo "error: no download tool found, please install curl or wget"
-            exit 127
-        fi
-        >&2 echo "error: failed to download devpod"
-        >&2 echo "       command returned: ${cmd_status}"
-        >&2 echo "Trying again in 10 seconds..."
-        iteration=$((iteration + 1))
-        sleep 10
-    done
-
-    $sh_c "mv $INSTALL_PATH.$$ $INSTALL_PATH"
-}
-
-if {{ .ExistsCheck }}; then
-    user="$(id -un || true)"
-    sh_c='sh -c'
-
-    # Try to create the install dir, if we fail, we search for sudo
-    # else let's continue without sudo, we don't need it.
-    if (! mkdir -p $INSTALL_DIR 2>/dev/null || ! touch $INSTALL_PATH 2>/dev/null || ! chmod +x $INSTALL_PATH 2>/dev/null || ! rm -f $INSTALL_PATH 2>/dev/null); then
-        if command_exists sudo; then
-            # check if sudo requires a password
-            if ! sudo -nl >/dev/null 2>&1; then
-                >&2 echo Error: sudo requires a password and no password is available. Please ensure your user account is configured with NOPASSWD.
-                exit 1
-            fi
-            sh_c='sudo -E sh -c'
-        elif command_exists su; then
-            sh_c='su -c'
-        else
-            >&2 echo Error: this installer needs the ability to run commands as root.
-            >&2 echo We are unable to find either "sudo" or "su" available to make this happen.
-            exit 1
-        fi
-
-        # Now that we're sudo, try again
-        $sh_c "mkdir -p $INSTALL_DIR"
-    fi
-
-    if ! check_noexec; then
-        echo >&2 Error: failed to install devpod, noexec filesystem detected
-        exit 1
-    fi
-
-    $sh_c "rm -f $INSTALL_PATH 2>/dev/null || true"
-    if [ "$PREFER_DOWNLOAD" = "true" ]; then
-        download || inject
-    else
-        inject || download
-    fi
-
-    if [ "$CHMOD_PATH" = "true" ]; then
-        $sh_c "chmod +x $INSTALL_PATH"
-    fi
-
-    if {{ .ExistsCheck }}; then
-        >&2 echo Error: failed to install devpod
-        exit 1
-    fi
-fi
-
-# send parent done stream
-echo "done"
-
-# set download url
-export DEVPOD_AGENT_URL={{ .DownloadBase }}
-
-# Execute command
-{{ .Command }}
+main
+exit $?
