@@ -229,7 +229,7 @@ func contentFolderExists(path string, log log.Logger) (bool, error) {
 
 func createContentFolder(path string, log log.Logger) error {
 	log.WithFields(logrus.Fields{"path": path}).Debug("create content folder")
-	if err := os.MkdirAll(path, 0o755); err != nil {
+	if err := os.MkdirAll(path, 0o750); err != nil {
 		return fmt.Errorf("make workspace folder: %w", err)
 	}
 	return nil
@@ -575,7 +575,7 @@ func ensureLastDevContainerJson(workspaceInfo *provider.AgentWorkspaceInfo) erro
 		return fmt.Errorf("error stating %s: %w", filePath, err)
 	}
 
-	if err := os.MkdirAll(filepath.Dir(filePath), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(filePath), 0o750); err != nil {
 		return fmt.Errorf("create %s: %w", filepath.Dir(filePath), err)
 	}
 

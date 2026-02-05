@@ -233,23 +233,24 @@ func ResolveProvider(providerSource string, log log.Logger) ([]byte, *provider.P
 		return out, retSource, nil
 	}
 
-	if out, err := tryResolveURLProvider(providerSource, retSource, log); out != nil || err != nil {
+	if out, err := tryResolveURLProvider(providerSource, retSource, log); hasOutputOrError(out, err) {
 		return out, retSource, err
 	}
 
-	if out, err := tryResolveFileProvider(providerSource, retSource); out != nil || err != nil {
+	if out, err := tryResolveFileProvider(providerSource, retSource); hasOutputOrError(out, err) {
 		return out, retSource, err
 	}
 
 	out, source, err := downloadProviderGithub(providerSource, log)
-	if err != nil {
-		return nil, nil, fmt.Errorf("download github: %w", err)
-	}
-	if len(out) > 0 {
-		return out, source, nil
+	if len(out) > 0 || err != nil {
+		return out, source, err
 	}
 
 	return nil, nil, fmt.Errorf("provider type not recognized: specify a local file, url, or github repository")
+}
+
+func hasOutputOrError(out []byte, err error) bool {
+	return out != nil || err != nil
 }
 
 func tryResolveURLProvider(providerSource string, retSource *provider.ProviderSource, log log.Logger) ([]byte, error) {
@@ -500,20 +501,6 @@ func cleanupOldOptions(devPodConfig *config.Config, providerConfig *provider.Pro
 			delete(providerState.Options, optionName)
 		}
 	}
-}
-
-func downloadProviderBinaries(p ProviderParams, providerConfig *provider.ProviderConfig) error {
-	binariesDir, err := provider.GetProviderBinariesDir(p.DevPodConfig.DefaultContext, providerConfig.Name)
-	if err != nil {
-		return fmt.Errorf("get binaries dir: %w", err)
-	}
-
-	if _, err := provider.DownloadBinaries(providerConfig.Binaries, binariesDir, p.Log); err != nil {
-		_ = os.RemoveAll(binariesDir)
-		return fmt.Errorf("download binaries: %w", err)
-	}
-
-	return nil
 }
 
 func getProviderSource(src provider.ProviderSource, configName string) string {
