@@ -8,7 +8,7 @@ PREFER_DOWNLOAD="{{ .PreferDownload }}"
 CHMOD_PATH="{{ .ChmodPath }}"
 
 command_exists() {
-    command -v "$@" > /dev/null 2>&1
+    command -v "$@" >/dev/null 2>&1
 }
 
 is_arm() {
@@ -39,7 +39,7 @@ handshake() {
 inject_binary() {
     echo "ARM-$(is_arm && echo -n 'true' || echo -n 'false')"
 
-    temp_file="$(mktemp "$INSTALL_PATH.XXXXXX" 2> /dev/null || echo "$INSTALL_PATH.$$")"
+    temp_file="$(mktemp "$INSTALL_PATH.XXXXXX" 2>/dev/null || echo "$INSTALL_PATH.$$")"
 
     if ! $sh_c "cat > \"$temp_file\""; then
         >&2 echo "Error: Failed to write binary to $temp_file"
@@ -73,7 +73,7 @@ download_binary() {
     max_iteration=3
 
     while [ "$iteration" -le "$max_iteration" ]; do
-        temp_file="$(mktemp "$INSTALL_PATH.XXXXXX" 2> /dev/null || echo "$INSTALL_PATH.$$")"
+        temp_file="$(mktemp "$INSTALL_PATH.XXXXXX" 2>/dev/null || echo "$INSTALL_PATH.$$")"
 
         if command_exists curl; then
             if $sh_c "curl -fsSL \"$DOWNLOAD_URL\" -o \"$temp_file\""; then
@@ -117,13 +117,13 @@ download_binary() {
 }
 
 setup_sudo() {
-    if ! mkdir -p "$INSTALL_DIR" 2> /dev/null \
-        || ! touch "$INSTALL_PATH" 2> /dev/null \
-        || ! chmod +x "$INSTALL_PATH" 2> /dev/null \
-        || ! rm -f "$INSTALL_PATH" 2> /dev/null; then
+    if ! mkdir -p "$INSTALL_DIR" 2>/dev/null ||
+        ! touch "$INSTALL_PATH" 2>/dev/null ||
+        ! chmod +x "$INSTALL_PATH" 2>/dev/null ||
+        ! rm -f "$INSTALL_PATH" 2>/dev/null; then
 
         if command_exists sudo; then
-            if ! sudo -nl > /dev/null 2>&1; then
+            if ! sudo -nl >/dev/null 2>&1; then
                 >&2 echo "Error: sudo requires a password. Please configure NOPASSWD"
                 exit 1
             fi
