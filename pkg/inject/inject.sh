@@ -60,8 +60,7 @@ inject_binary() {
         }
     fi
 
-    echo "done"
-    exit 0
+    return 0
 }
 
 download_binary() {
@@ -118,10 +117,10 @@ download_binary() {
 }
 
 setup_sudo() {
-    if ! mkdir -p $INSTALL_DIR 2> /dev/null \
-        || ! touch $INSTALL_PATH 2> /dev/null \
-        || ! chmod +x $INSTALL_PATH 2> /dev/null \
-        || ! rm -f $INSTALL_PATH 2> /dev/null; then
+    if ! mkdir -p "$INSTALL_DIR" 2> /dev/null \
+        || ! touch "$INSTALL_PATH" 2> /dev/null \
+        || ! chmod +x "$INSTALL_PATH" 2> /dev/null \
+        || ! rm -f "$INSTALL_PATH" 2> /dev/null; then
 
         if command_exists sudo; then
             if ! sudo -nl > /dev/null 2>&1; then
@@ -136,7 +135,7 @@ setup_sudo() {
             exit 1
         fi
 
-        $sh_c "mkdir -p $INSTALL_DIR"
+        $sh_c "mkdir -p \"$INSTALL_DIR\""
     fi
 }
 
@@ -180,7 +179,7 @@ main() {
         sh_c='sh -c'
         setup_sudo
         check_noexec || exit 1
-        $sh_c "rm -f $INSTALL_PATH 2>/dev/null || true"
+        $sh_c "rm -f \"$INSTALL_PATH\" 2>/dev/null || true"
         install_agent
     fi
 
