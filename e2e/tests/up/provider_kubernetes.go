@@ -46,6 +46,8 @@ var _ = ginkgo.Describe("testing up command for kubernetes provider", ginkgo.Lab
 		_ = f.DevPodProviderDelete(ctx, "kubernetes")
 		err = f.DevPodProviderAdd(ctx, "kubernetes", "-o", "KUBERNETES_NAMESPACE=devpod")
 		framework.ExpectNoError(err)
+		err = f.DevPodProviderUse(ctx, "kubernetes")
+		framework.ExpectNoError(err)
 		ginkgo.DeferCleanup(func() {
 			err = f.DevPodProviderDelete(context.Background(), "kubernetes")
 			framework.ExpectNoError(err)
