@@ -181,7 +181,10 @@ func InjectAgent(opts *InjectOptions) error {
 	opts.Ctx = timeoutCtx
 
 	return retry.OnError(backoff, func(err error) bool {
-		return true // retry all errors
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			return false
+		}
+		return true
 	}, func() error {
 		return injectAgent(opts, bm, vc, metrics)
 	})
