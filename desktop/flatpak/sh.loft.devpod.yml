@@ -18,6 +18,7 @@ finish-args:
   - --talk-name=org.freedesktop.Notifications
   - --talk-name=org.kde.StatusNotifierWatcher
   - --filesystem=xdg-run/keyring
+  - --filesystem=xdg-run/podman
 
 modules:
   - shared-modules/libayatana-appindicator/libayatana-appindicator-gtk3.json
