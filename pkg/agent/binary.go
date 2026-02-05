@@ -335,7 +335,7 @@ func (s *HTTPDownloadSource) cacheAndReturn(arch string, body io.ReadCloser) (io
 			}
 		}()
 
-		if !s.prepareCacheDir(arch, body, pw) {
+		if !s.prepareCacheDir(arch, body, pw, &streamErr) {
 			return
 		}
 
@@ -345,10 +345,17 @@ func (s *HTTPDownloadSource) cacheAndReturn(arch string, body io.ReadCloser) (io
 	return pr, nil
 }
 
-func (s *HTTPDownloadSource) prepareCacheDir(arch string, body io.ReadCloser, pw *io.PipeWriter) bool {
+func (s *HTTPDownloadSource) prepareCacheDir(
+	arch string,
+	body io.ReadCloser,
+	pw *io.PipeWriter,
+	streamErr *error,
+) bool {
 	cachePath := s.Cache.pathFor(arch)
 	if err := os.MkdirAll(filepath.Dir(cachePath), 0750); err != nil { // #nosec G301
-		_, _ = io.Copy(pw, body)
+		if _, copyErr := io.Copy(pw, body); copyErr != nil {
+			*streamErr = copyErr
+		}
 		return false
 	}
 	return true
@@ -364,30 +371,47 @@ func (s *HTTPDownloadSource) streamAndCache(arch string, body io.ReadCloser, pw 
 	tmpPath := file.Name()
 
 	success := false
+	closed := false
 	defer func() {
-		_ = file.Close()
+		if !closed {
+			_ = file.Close()
+		}
 		if !success {
 			_ = os.Remove(tmpPath)
 		}
 	}()
 
-	mw := io.MultiWriter(file, pw)
-	if _, err := io.Copy(mw, body); err != nil {
-		*streamErr = err
+	if !s.writeToFile(file, body, pw, streamErr) {
 		return
 	}
 
-	if err := file.Chmod(0755); err != nil {
+	if err := file.Close(); err != nil {
 		*streamErr = err
 		return
 	}
-
-	if err := file.Sync(); err != nil {
-		*streamErr = err
-		return
-	}
+	closed = true
 
 	if err := os.Rename(tmpPath, cachePath); err == nil {
 		success = true
 	}
+}
+
+func (s *HTTPDownloadSource) writeToFile(file *os.File, body io.ReadCloser, pw *io.PipeWriter, streamErr *error) bool {
+	mw := io.MultiWriter(file, pw)
+	if _, err := io.Copy(mw, body); err != nil {
+		*streamErr = err
+		return false
+	}
+
+	if err := file.Chmod(0755); err != nil {
+		*streamErr = err
+		return false
+	}
+
+	if err := file.Sync(); err != nil {
+		*streamErr = err
+		return false
+	}
+
+	return true
 }
