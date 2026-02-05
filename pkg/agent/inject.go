@@ -16,6 +16,8 @@ import (
 	"github.com/skevetter/devpod/pkg/shell"
 	"github.com/skevetter/devpod/pkg/version"
 	"github.com/skevetter/log"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/util/retry"
 )
 
 var (
@@ -185,25 +187,32 @@ func InjectAgent(opts *InjectOptions) error {
 
 	vc := newVersionChecker(opts)
 	bm := NewBinaryManager(opts.Log, opts.DownloadURL)
-	return RetryWithDeadline(
-		opts.Ctx,
-		opts.Log,
-		RetryConfig{
-			MaxAttempts:  30,
-			InitialDelay: 10 * time.Second,
-			MaxDelay:     60 * time.Second,
-			Deadline:     time.Now().Add(opts.Timeout),
-		},
-		func(attempt int) error {
-			return injectAgent(&injectContext{
-				attempt: attempt,
-				opts:    opts,
-				bm:      bm,
-				vc:      vc,
-				metrics: metrics,
-			})
-		},
-	)
+
+	backoff := wait.Backoff{
+		Steps:    30,
+		Duration: 10 * time.Second,
+		Factor:   1.5,
+		Jitter:   0.1,
+		Cap:      60 * time.Second,
+	}
+
+	attempt := 0
+	return retry.OnError(backoff, func(err error) bool {
+		if opts.Ctx.Err() != nil {
+			return false
+		}
+		opts.Log.Debugf("retrying attempt %d: %v", attempt, err)
+		return true
+	}, func() error {
+		attempt++
+		return injectAgent(&injectContext{
+			attempt: attempt,
+			opts:    opts,
+			bm:      bm,
+			vc:      vc,
+			metrics: metrics,
+		})
+	})
 }
 
 func injectLocally(opts *InjectOptions) error {
