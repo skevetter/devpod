@@ -325,16 +325,21 @@ func (s *HTTPDownloadSource) cacheAndReturn(arch string, body io.ReadCloser) (io
 	pr, pw := io.Pipe()
 
 	go func() {
+		var streamErr error
 		defer func() {
 			_ = body.Close()
-			_ = pw.Close()
+			if streamErr != nil {
+				_ = pw.CloseWithError(streamErr)
+			} else {
+				_ = pw.Close()
+			}
 		}()
 
 		if !s.prepareCacheDir(arch, body, pw) {
 			return
 		}
 
-		s.streamAndCache(arch, body, pw)
+		s.streamAndCache(arch, body, pw, &streamErr)
 	}()
 
 	return pr, nil
@@ -349,7 +354,7 @@ func (s *HTTPDownloadSource) prepareCacheDir(arch string, body io.ReadCloser, pw
 	return true
 }
 
-func (s *HTTPDownloadSource) streamAndCache(arch string, body io.ReadCloser, pw *io.PipeWriter) {
+func (s *HTTPDownloadSource) streamAndCache(arch string, body io.ReadCloser, pw *io.PipeWriter, streamErr *error) {
 	cachePath := s.Cache.pathFor(arch)
 	file, err := os.CreateTemp(filepath.Dir(cachePath), "devpod-agent-*.tmp")
 	if err != nil {
@@ -368,14 +373,17 @@ func (s *HTTPDownloadSource) streamAndCache(arch string, body io.ReadCloser, pw 
 
 	mw := io.MultiWriter(file, pw)
 	if _, err := io.Copy(mw, body); err != nil {
+		*streamErr = err
 		return
 	}
 
 	if err := file.Chmod(0755); err != nil {
+		*streamErr = err
 		return
 	}
 
 	if err := file.Sync(); err != nil {
+		*streamErr = err
 		return
 	}
 
