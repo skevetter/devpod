@@ -12,6 +12,8 @@ DOWNLOAD_AMD="{{ .DownloadAmd }}"
 DOWNLOAD_ARM="{{ .DownloadArm }}"
 DOWNLOAD_BASE="{{ .DownloadBase }}"
 COMMAND="{{ .Command }}"
+# EXISTS_CHECK returns 0 (true) when installation is NEEDED
+# i.e., when agent does not exist or has wrong version
 EXISTS_CHECK="{{ .ExistsCheck }}"
 TEMP_PATH="$INSTALL_PATH.$$"
 
@@ -36,13 +38,18 @@ find_download_tool() {
 
 handshake() {
     echo "ping"
-    IFS= read -r response
+    # shellcheck disable=SC3045
+    if ! IFS= read -r -t 30 response 2>/dev/null; then
+        # Fallback for shells without -t support
+        IFS= read -r response || fail "failed to read handshake response"
+    fi
     [ "$response" = "pong" ] || fail "received wrong answer for ping request: $response"
 }
 
 check_noexec() {
-    mount_path="$(df "$INSTALL_DIR" | tail -n +2 | rev | cut -d' ' -f1 | rev)"
-    mount | grep "on ${mount_path} " | grep -q noexec && \
+    mount_path="$(df -P "$INSTALL_DIR" 2>/dev/null | tail -n 1 | awk '{print $NF}')"
+    [ -z "$mount_path" ] && return 0
+    mount | grep -F "on ${mount_path} " | grep -q noexec && \
         fail "installation directory $INSTALL_DIR is noexec, please choose another location"
     return 0
 }
@@ -61,28 +68,27 @@ detect_privilege_command() {
         sudo -nl >/dev/null 2>&1 || \
             fail "sudo requires a password and no password is available. Please ensure your user account is configured with NOPASSWD"
         echo "sudo -E sh -c"
-    elif command_exists su; then
-        echo "su -c"
     else
-        fail "this installer needs the ability to run commands as root. We are unable to find either \"sudo\" or \"su\" available to make this happen"
+        fail "this installer needs the ability to run commands as root. No passwordless sudo or writable install directory found"
     fi
 }
 
 setup_install_directory() {
-    $1 "mkdir -p $INSTALL_DIR" || fail "failed to create install directory"
+    $1 "mkdir -p '$INSTALL_DIR'" || fail "failed to create install directory"
 }
 
 receive_binary() {
     echo "ARM-$(detect_architecture)"
-    $1 "cat > $TEMP_PATH" || return 1
-    $1 "mv $TEMP_PATH $INSTALL_PATH" || return 1
-    [ "$CHMOD_PATH" = "true" ] && $1 "chmod +x $INSTALL_PATH"
+    $1 "cat > '$TEMP_PATH'" || return 1
+    $1 "mv '$TEMP_PATH' '$INSTALL_PATH'" || return 1
+    [ "$CHMOD_PATH" = "true" ] && { $1 "chmod +x '$INSTALL_PATH'" || return 1; }
+    return 0
 }
 
 download_file() {
     case "$3" in
-        curl) $1 "curl -fsSL $2 -o $TEMP_PATH" ;;
-        wget) $1 "wget -q $2 -O $TEMP_PATH" ;;
+        curl) $1 "curl -fsSL '$2' -o '$TEMP_PATH'" ;;
+        wget) $1 "wget -q '$2' -O '$TEMP_PATH'" ;;
         *) return 1 ;;
     esac
 }
@@ -105,12 +111,13 @@ download_binary() {
     url="$(select_download_url)"
     tool="$(find_download_tool)" || fail "no download tool found, please install curl or wget"
     download_with_retry "$1" "$url" "$tool" || return 1
-    $1 "mv $TEMP_PATH $INSTALL_PATH" || return 1
-    [ "$CHMOD_PATH" = "true" ] && $1 "chmod +x $INSTALL_PATH"
+    $1 "mv '$TEMP_PATH' '$INSTALL_PATH'" || return 1
+    [ "$CHMOD_PATH" = "true" ] && { $1 "chmod +x '$INSTALL_PATH'" || return 1; }
+    return 0
 }
 
 install_binary() {
-    $1 "rm -f $INSTALL_PATH 2>/dev/null || true"
+    $1 "rm -f '$INSTALL_PATH' 2>/dev/null || true"
     if [ "$PREFER_DOWNLOAD" = "true" ]; then
         download_binary "$1" || receive_binary "$1" || return 1
     else
