@@ -41,20 +41,20 @@ inject_binary() {
 
     temp_file="$(mktemp "$INSTALL_PATH.XXXXXX" 2> /dev/null || echo "$INSTALL_PATH.$$")"
 
-    if ! $sh_c "cat > $temp_file"; then
+    if ! $sh_c "cat > \"$temp_file\""; then
         >&2 echo "Error: Failed to write binary to $temp_file"
-        $sh_c "rm -f $temp_file"
+        $sh_c "rm -f \"$temp_file\""
         return 1
     fi
 
-    if ! $sh_c "mv $temp_file $INSTALL_PATH"; then
+    if ! $sh_c "mv \"$temp_file\" \"$INSTALL_PATH\""; then
         >&2 echo "Error: Failed to move binary to $INSTALL_PATH"
-        $sh_c "rm -f $temp_file"
+        $sh_c "rm -f \"$temp_file\""
         return 1
     fi
 
     if [ "$CHMOD_PATH" = "true" ]; then
-        $sh_c "chmod +x $INSTALL_PATH" || {
+        $sh_c "chmod +x \"$INSTALL_PATH\"" || {
             >&2 echo "Error: Failed to chmod $INSTALL_PATH"
             return 1
         }
@@ -76,12 +76,12 @@ download_binary() {
         temp_file="$(mktemp "$INSTALL_PATH.XXXXXX" 2> /dev/null || echo "$INSTALL_PATH.$$")"
 
         if command_exists curl; then
-            if $sh_c "curl -fsSL $DOWNLOAD_URL -o $temp_file"; then
+            if $sh_c "curl -fsSL \"$DOWNLOAD_URL\" -o \"$temp_file\""; then
                 break
             fi
             cmd_status=$?
         elif command_exists wget; then
-            if $sh_c "wget -q $DOWNLOAD_URL -O $temp_file"; then
+            if $sh_c "wget -q \"$DOWNLOAD_URL\" -O \"$temp_file\""; then
                 break
             fi
             cmd_status=$?
@@ -90,7 +90,7 @@ download_binary() {
             return 127
         fi
 
-        $sh_c "rm -f $temp_file"
+        $sh_c "rm -f \"$temp_file\""
 
         >&2 echo "Error: Download attempt $iteration failed (exit code: ${cmd_status})"
         >&2 echo "       URL: $DOWNLOAD_URL"
@@ -107,9 +107,9 @@ download_binary() {
         return 1
     fi
 
-    if ! $sh_c "mv $temp_file $INSTALL_PATH"; then
+    if ! $sh_c "mv \"$temp_file\" \"$INSTALL_PATH\""; then
         >&2 echo "Error: Failed to move downloaded binary to $INSTALL_PATH"
-        $sh_c "rm -f $temp_file"
+        $sh_c "rm -f \"$temp_file\""
         return 1
     fi
 
@@ -159,7 +159,7 @@ install_agent() {
     fi
 
     if [ "$CHMOD_PATH" = "true" ]; then
-        $sh_c "chmod +x $INSTALL_PATH" || {
+        $sh_c "chmod +x \"$INSTALL_PATH\"" || {
             >&2 echo "Error: Failed to make $INSTALL_PATH executable"
             exit 1
         }
