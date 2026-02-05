@@ -7,14 +7,12 @@ import (
 	"os/exec"
 
 	"github.com/onsi/ginkgo/v2"
-	"github.com/onsi/gomega"
 	"github.com/skevetter/devpod/e2e/framework"
 )
 
 var _ = ginkgo.Describe("[integration]: devpod provider ssh test suite", ginkgo.Ordered, func() {
 	ginkgo.Context("testing provider integration", ginkgo.Label("integration"), ginkgo.Ordered, func() {
 		var initialDir string
-		ctx := context.Background()
 
 		ginkgo.BeforeEach(func() {
 			var err error
@@ -22,7 +20,7 @@ var _ = ginkgo.Describe("[integration]: devpod provider ssh test suite", ginkgo.
 			framework.ExpectNoError(err)
 		})
 
-		ginkgo.It("should generate ssh keypairs", func() {
+		ginkgo.It("should generate ssh keypairs", func(ctx context.Context) {
 			sshDir := os.Getenv("HOME") + "/.ssh"
 			if _, err := os.Stat(sshDir); os.IsNotExist(err) {
 				err = os.MkdirAll(sshDir, 0700)
@@ -32,11 +30,11 @@ var _ = ginkgo.Describe("[integration]: devpod provider ssh test suite", ginkgo.
 			_, err := os.Stat(os.Getenv("HOME") + "/.ssh/id_rsa")
 			if err != nil {
 				fmt.Println("generating ssh keys")
-				cmd := exec.Command("ssh-keygen", "-q", "-t", "rsa", "-N", "", "-f", os.Getenv("HOME")+"/.ssh/id_rsa")
+				cmd := exec.CommandContext(ctx, "ssh-keygen", "-q", "-t", "rsa", "-N", "", "-f", os.Getenv("HOME")+"/.ssh/id_rsa")
 				err = cmd.Run()
 				framework.ExpectNoError(err)
 
-				cmd = exec.Command("ssh-keygen", "-y", "-f", os.Getenv("HOME")+"/.ssh/id_rsa")
+				cmd = exec.CommandContext(ctx, "ssh-keygen", "-y", "-f", os.Getenv("HOME")+"/.ssh/id_rsa")
 				output, err := cmd.Output()
 				framework.ExpectNoError(err)
 
@@ -44,7 +42,7 @@ var _ = ginkgo.Describe("[integration]: devpod provider ssh test suite", ginkgo.
 				framework.ExpectNoError(err)
 			}
 
-			cmd := exec.Command("ssh-keygen", "-y", "-f", os.Getenv("HOME")+"/.ssh/id_rsa")
+			cmd := exec.CommandContext(ctx, "ssh-keygen", "-y", "-f", os.Getenv("HOME")+"/.ssh/id_rsa")
 			publicKey, err := cmd.Output()
 			framework.ExpectNoError(err)
 
@@ -63,7 +61,7 @@ var _ = ginkgo.Describe("[integration]: devpod provider ssh test suite", ginkgo.
 			}
 		})
 
-		ginkgo.It("should add provider to devpod", func() {
+		ginkgo.It("should add provider to devpod", func(ctx context.Context) {
 			f := framework.NewDefaultFramework(initialDir + "/bin")
 			// ensure we don't have the ssh provider present
 			err := f.DevPodProviderDelete(ctx, "ssh")
@@ -81,12 +79,11 @@ var _ = ginkgo.Describe("[integration]: devpod provider ssh test suite", ginkgo.
 			framework.ExpectNoError(err)
 		})
 
-		ginkgo.It("should run commands to workspace via ssh", func() {
-			cmd := exec.Command("ssh", "testdata.devpod", "echo", "test")
-			output, err := cmd.Output()
+		ginkgo.It("should run commands to workspace via ssh", func(ctx context.Context) {
+			f := framework.NewDefaultFramework(initialDir + "/bin")
+			out, err := f.DevPodSSH(ctx, "testdata", "echo test")
 			framework.ExpectNoError(err)
-
-			gomega.Expect(output).To(gomega.Equal([]byte("test\n")))
+			framework.ExpectEqual(out, "test\n")
 		})
 
 		ginkgo.It("should cleanup devpod workspace", func(ctx context.Context) {

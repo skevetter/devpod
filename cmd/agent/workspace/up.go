@@ -229,7 +229,7 @@ func contentFolderExists(path string, log log.Logger) (bool, error) {
 
 func createContentFolder(path string, log log.Logger) error {
 	log.WithFields(logrus.Fields{"path": path}).Debug("create content folder")
-	if err := os.MkdirAll(path, 0o777); err != nil {
+	if err := os.MkdirAll(path, 0o750); err != nil {
 		return fmt.Errorf("make workspace folder: %w", err)
 	}
 	return nil
@@ -307,7 +307,7 @@ func (w *workspaceInitializer) initialize() error {
 		return err
 	}
 
-	w.configureDockerDaemon()
+	w.tryConfigureDockerDaemon()
 	return nil
 }
 
@@ -319,7 +319,7 @@ func (w *workspaceInitializer) setupDaemonIfNeeded() {
 	}
 }
 
-func (w *workspaceInitializer) configureDockerDaemon() {
+func (w *workspaceInitializer) tryConfigureDockerDaemon() {
 	if !w.shouldConfigureDockerDaemon() {
 		w.logger.Debug("skipping configuring docker daemon")
 		return
@@ -392,8 +392,11 @@ func (w *workspaceInitializer) ensureDockerInstalled() (string, error) {
 	}
 
 	if dockerCmd != "docker" {
-		_, err := exec.LookPath(dockerCmd)
-		return "", err
+		path, err := exec.LookPath(dockerCmd)
+		if err != nil {
+			return "", fmt.Errorf("custom docker path %q not found: %w", dockerCmd, err)
+		}
+		return path, nil
 	}
 
 	if w.isDockerInstallDisabled() {
@@ -429,6 +432,8 @@ func (w *workspaceInitializer) prepareWorkspaceContent() error {
 	})
 }
 
+// waitForDocker waits for the Docker installation to complete.
+// Note: This function modifies workspaceInfo.Agent.Docker.Path if Docker was installed.
 func (w *workspaceInitializer) waitForDocker(resultChan <-chan dockerInstallResult) error {
 	result := <-resultChan
 
@@ -465,6 +470,8 @@ type prepareWorkspaceParams struct {
 	log           log.Logger
 }
 
+// prepareWorkspace initializes the workspace content folder and downloads/prepares the workspace source.
+// Note: This function modifies params.workspaceInfo.ContentFolder when platform is enabled with a local folder.
 func prepareWorkspace(params prepareWorkspaceParams) error {
 	if params.workspaceInfo.CLIOptions.Platform.Enabled && params.workspaceInfo.Workspace.Source.LocalFolder != "" {
 		params.workspaceInfo.ContentFolder = agent.GetAgentWorkspaceContentDir(params.workspaceInfo.Origin)
@@ -653,44 +660,32 @@ func prepareImage(workspaceDir, image string) error {
 	return os.WriteFile(filepath.Join(workspaceDir, ".devcontainer.json"), devcontainerConfig, 0o600)
 }
 
+// installDocker installs Docker and returns the path to the docker binary.
+// This function assumes docker does not already exist - the caller should check first.
 func installDocker(log log.Logger) (dockerPath string, err error) {
-	if !command.Exists("docker") {
-		writer := log.Writer(logrus.InfoLevel, false)
-		defer func() { _ = writer.Close() }()
-
-		log.Debug("Installing Docker")
-
-		dockerPath, err = dockerinstall.Install(writer, writer)
-	} else {
-		dockerPath = "docker"
-	}
-	return dockerPath, err
+	writer := log.Writer(logrus.InfoLevel, false)
+	defer func() { _ = writer.Close() }()
+	log.Debug("installing Docker")
+	return dockerinstall.Install(writer, writer)
 }
 
 func configureDockerDaemon(ctx context.Context, log log.Logger) error {
 	log.Info("configuring docker daemon")
 
-	daemonConfig := []byte(`{
-		"features": {
-			"containerd-snapshotter": true
-		}
-	}`)
-
-	if err := writeDockerDaemonConfig(daemonConfig); err != nil {
+	if err := mergeDockerDaemonConfig(); err != nil {
 		return err
 	}
 
 	return reloadDockerDaemon(ctx)
 }
 
-func writeDockerDaemonConfig(config []byte) error {
-	rootlessErr := tryWriteRootlessDockerConfig(config)
+func mergeDockerDaemonConfig() error {
+	rootlessErr := tryMergeRootlessDockerConfig()
 	if rootlessErr == nil {
 		return nil
 	}
 
-	// #nosec G306 -- daemon.json needs to be readable by docker daemon
-	rootErr := os.WriteFile("/etc/docker/daemon.json", config, 0644)
+	rootErr := tryMergeRootDockerConfig()
 	if rootErr == nil {
 		return nil
 	}
@@ -698,7 +693,7 @@ func writeDockerDaemonConfig(config []byte) error {
 	return fmt.Errorf("failed to write docker daemon config (rootless: %v, root: %v)", rootlessErr, rootErr)
 }
 
-func tryWriteRootlessDockerConfig(config []byte) error {
+func tryMergeRootlessDockerConfig() error {
 	homeDir, err := util.UserHomeDir()
 	if err != nil {
 		return err
@@ -709,10 +704,60 @@ func tryWriteRootlessDockerConfig(config []byte) error {
 		return err
 	}
 
+	configPath := filepath.Join(dockerConfigDir, "daemon.json")
+	return mergeContainerdSnapshotterConfig(configPath)
+}
+
+func tryMergeRootDockerConfig() error {
+	return mergeContainerdSnapshotterConfig("/etc/docker/daemon.json")
+}
+
+func mergeContainerdSnapshotterConfig(configPath string) error {
+	existingConfig := make(map[string]any)
+	data, err := os.ReadFile(configPath)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("read existing config: %w", err)
+	}
+
+	if len(data) > 0 {
+		if err := json.Unmarshal(data, &existingConfig); err != nil {
+			return fmt.Errorf("parse existing config: %w", err)
+		}
+	}
+
+	features, ok := existingConfig["features"].(map[string]any)
+	if !ok {
+		features = make(map[string]any)
+		existingConfig["features"] = features
+	}
+	features["containerd-snapshotter"] = true
+
+	mergedData, err := json.MarshalIndent(existingConfig, "", "  ")
+	if err != nil {
+		return fmt.Errorf("marshal config: %w", err)
+	}
+
+	if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil {
+		return fmt.Errorf("create config directory: %w", err)
+	}
+
 	// #nosec G306 -- daemon.json needs to be readable by docker daemon
-	return os.WriteFile(filepath.Join(dockerConfigDir, "daemon.json"), config, 0644)
+	if err := os.WriteFile(configPath, mergedData, 0644); err != nil {
+		return fmt.Errorf("write config: %w", err)
+	}
+
+	return nil
 }
 
 func reloadDockerDaemon(ctx context.Context) error {
-	return exec.CommandContext(ctx, "pkill", "-HUP", "dockerd").Run()
+	err := exec.CommandContext(ctx, "pkill", "-HUP", "dockerd").Run()
+	if err != nil {
+		// pkill returns exit code 1 if no processes matched
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 {
+			return nil // No dockerd process found, nothing to reload
+		}
+		return err
+	}
+	return nil
 }

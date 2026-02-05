@@ -505,20 +505,7 @@ func (s *workspaceClient) Stop(ctx context.Context, opt client.StopOptions) erro
 }
 
 func (s *workspaceClient) Command(ctx context.Context, commandOptions client.CommandOptions) (err error) {
-	s.m.Lock()
-	defer s.m.Unlock()
-
-	environ, err := provider.ToEnvironmentWithBinaries(provider.EnvironmentOptions{
-		Context:   s.workspace.Context,
-		Workspace: s.workspace,
-		Machine:   s.machine,
-		Options:   s.devPodConfig.ProviderOptions(s.config.Name),
-		Config:    s.config,
-		ExtraEnv: map[string]string{
-			provider.CommandEnv: commandOptions.Command,
-		},
-		Log: s.log,
-	})
+	environ, err := s.buildEnvironment(commandOptions.Command)
 	if err != nil {
 		return err
 	}
@@ -531,6 +518,23 @@ func (s *workspaceClient) Command(ctx context.Context, commandOptions client.Com
 		Stdout:  commandOptions.Stdout,
 		Stderr:  commandOptions.Stderr,
 		Log:     s.log.ErrorStreamOnly(),
+	})
+}
+
+func (s *workspaceClient) buildEnvironment(command string) ([]string, error) {
+	s.m.Lock()
+	defer s.m.Unlock()
+
+	return provider.ToEnvironmentWithBinaries(provider.EnvironmentOptions{
+		Context:   s.workspace.Context,
+		Workspace: s.workspace,
+		Machine:   s.machine,
+		Options:   s.devPodConfig.ProviderOptions(s.config.Name),
+		Config:    s.config,
+		ExtraEnv: map[string]string{
+			provider.CommandEnv: command,
+		},
+		Log: s.log,
 	})
 }
 

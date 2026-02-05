@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"os"
 	"path"
@@ -192,16 +193,33 @@ func isRetriableError(err error) bool {
 		return isRetriableHTTPStatus(httpErr.StatusCode)
 	}
 
-	return true
+	var netErr net.Error
+	if errors.As(err, &netErr) {
+		return netErr.Timeout()
+	}
+
+	var opErr *net.OpError
+	if errors.As(err, &opErr) {
+		return true
+	}
+
+	if errors.Is(err, io.ErrUnexpectedEOF) {
+		return true
+	}
+
+	return false
 }
 
 // isRetriableHTTPStatus checks if the HTTP status code is retriable.
-// 4xx codes are not retriable except for 408 and 429.
+// 408 (Request Timeout) and 429 (Too Many Requests) are retriable.
+// 5xx server errors are retriable, 4xx client errors are not.
 func isRetriableHTTPStatus(statusCode int) bool {
-	if statusCode >= http.StatusBadRequest && statusCode < http.StatusInternalServerError {
-		return statusCode == http.StatusRequestTimeout || statusCode == http.StatusTooManyRequests
+	switch statusCode {
+	case http.StatusRequestTimeout, http.StatusTooManyRequests:
+		return true
+	default:
+		return statusCode >= http.StatusInternalServerError
 	}
-	return true
 }
 
 func verifyDownloadedBinary(
@@ -266,7 +284,12 @@ func fromCache(binary *ProviderBinary, targetFolder string, log log.Logger) bool
 }
 
 func getCachedBinaryPath(url string) string {
-	return filepath.Join(os.TempDir(), cacheDir, hash.String(url)[:32])
+	h := hash.String(url)
+	cacheBase := os.TempDir()
+	if userCache, err := os.UserCacheDir(); err == nil {
+		cacheBase = userCache
+	}
+	return filepath.Join(cacheBase, cacheDir, h)
 }
 
 func verifyOrRemoveBinary(binaryPath, checksum string) bool {
@@ -287,6 +310,20 @@ func verifyOrRemoveBinary(binaryPath, checksum string) bool {
 	return true
 }
 
+// getBinaryFileName extracts or constructs the binary filename from the ProviderBinary.
+// If Name is set, it uses that. Otherwise, it derives the filename from Path and adds
+// .exe suffix on Windows if needed.
+func getBinaryFileName(binary *ProviderBinary) string {
+	if binary.Name != "" {
+		return binary.Name
+	}
+	name := path.Base(binary.Path)
+	if runtime.GOOS == windowsOS && !strings.HasSuffix(name, exeSuffix) {
+		name += exeSuffix
+	}
+	return name
+}
+
 func getBinaryPath(binary *ProviderBinary, targetFolder string) string {
 	if filepath.IsAbs(binary.Path) {
 		return binary.Path
@@ -297,17 +334,40 @@ func getBinaryPath(binary *ProviderBinary, targetFolder string) string {
 	}
 
 	if binary.ArchivePath != "" {
-		return filepath.Join(targetFolder, binary.ArchivePath)
+		safePath, err := securePath(targetFolder, binary.ArchivePath)
+		if err != nil {
+			return filepath.Join(targetFolder, filepath.Base(binary.ArchivePath))
+		}
+		return safePath
 	}
 
-	name := binary.Name
-	if name == "" {
-		name = path.Base(binary.Path)
-		if runtime.GOOS == windowsOS && !strings.HasSuffix(name, exeSuffix) {
-			name += exeSuffix
-		}
+	name := getBinaryFileName(binary)
+	safePath, err := securePath(targetFolder, name)
+	if err != nil {
+		return filepath.Join(targetFolder, filepath.Base(name))
 	}
-	return filepath.Join(targetFolder, name)
+	return safePath
+}
+
+// securePath ensures that the resolved path stays within the base directory.
+// It protects against path traversal attacks using ../ sequences.
+func securePath(baseDir, unsafePath string) (string, error) {
+	fullPath := filepath.Join(baseDir, filepath.Clean(unsafePath))
+	absBase, err := filepath.Abs(baseDir)
+	if err != nil {
+		return "", fmt.Errorf("failed to resolve base directory: %w", err)
+	}
+
+	absPath, err := filepath.Abs(fullPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to resolve path: %w", err)
+	}
+
+	if !strings.HasPrefix(absPath, absBase+string(filepath.Separator)) && absPath != absBase {
+		return "", fmt.Errorf("path %q escapes base directory", unsafePath)
+	}
+
+	return absPath, nil
 }
 
 func isRemotePath(p string) bool {
@@ -320,19 +380,18 @@ func downloadBinary(
 	targetFolder string,
 	log log.Logger,
 ) (string, error) {
+	if isRemotePath(binary.Path) {
+		if err := os.MkdirAll(targetFolder, dirPerms); err != nil {
+			return "", fmt.Errorf("create folder: %w", err)
+		}
+		return downloadRemoteBinary(binaryName, binary, targetFolder, log)
+	}
+
 	if _, err := os.Stat(binary.Path); err == nil {
 		return handleLocalBinary(binary, targetFolder)
 	}
 
-	if !isRemotePath(binary.Path) {
-		return handleNonHTTPBinary(binary, targetFolder)
-	}
-
-	if err := os.MkdirAll(targetFolder, dirPerms); err != nil {
-		return "", fmt.Errorf("create folder: %w", err)
-	}
-
-	return downloadRemoteBinary(binaryName, binary, targetFolder, log)
+	return handleNonHTTPBinary(binary, targetFolder)
 }
 
 func handleLocalBinary(binary *ProviderBinary, targetFolder string) (string, error) {
@@ -377,7 +436,9 @@ func downloadRemoteBinary(
 	}
 
 	if err != nil {
-		_ = os.Remove(targetPath)
+		if targetPath != "" {
+			_ = os.Remove(targetPath)
+		}
 		return "", err
 	}
 
@@ -394,18 +455,12 @@ func downloadFile(
 	targetFolder string,
 	log log.Logger,
 ) (string, error) {
-	name := binary.Name
-	if name == "" {
-		name = path.Base(binary.Path)
-		if runtime.GOOS == windowsOS && !strings.HasSuffix(name, exeSuffix) {
-			name += exeSuffix
-		}
-	}
+	name := getBinaryFileName(binary)
 	targetPath := filepath.Join(targetFolder, name)
-	_, err := os.Stat(targetPath)
-	if err == nil {
-		return targetPath, nil
-	}
+
+	// Remove any existing file to ensure clean download
+	// (could be partial download from previous failed attempt)
+	_ = os.Remove(targetPath)
 
 	return downloadAndSaveFile(binaryName, binary, targetPath, log)
 }
@@ -445,11 +500,14 @@ func downloadArchive(
 	targetFolder string,
 	log log.Logger,
 ) (string, error) {
-	targetPath := filepath.Join(targetFolder, binary.ArchivePath)
-	_, err := os.Stat(targetPath)
-	if err == nil {
-		return targetPath, nil
+	targetPath, err := securePath(targetFolder, binary.ArchivePath)
+	if err != nil {
+		return "", fmt.Errorf("invalid archive path %q: %w", binary.ArchivePath, err)
 	}
+
+	// Remove any existing file to ensure clean download
+	// (could be partial download from previous failed attempt)
+	_ = os.Remove(targetPath)
 
 	return extractArchive(archiveDownloadParams{
 		binaryName:   binaryName,
@@ -522,7 +580,7 @@ func extractZipArchive(body io.ReadCloser, targetFolder, targetPath string) (str
 }
 
 func downloadToTempFile(reader io.Reader) (string, error) {
-	tempFile, err := os.CreateTemp("", "")
+	tempFile, err := os.CreateTemp("", "devpod-archive-*")
 	if err != nil {
 		return "", err
 	}
@@ -536,6 +594,8 @@ func downloadToTempFile(reader io.Reader) (string, error) {
 	return tempFile.Name(), nil
 }
 
+// localTargetPath constructs the target path for a local binary.
+// Note: Does not add .exe suffix as local paths already have correct extensions.
 func localTargetPath(binary *ProviderBinary, targetFolder string) string {
 	name := binary.Name
 	if name == "" {

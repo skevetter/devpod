@@ -257,8 +257,8 @@ func (c *client) Ping(ctx context.Context, writer io.Writer) error {
 
 	for range 10 {
 		timeoutCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
-		defer cancel()
 		result, err := c.tsClient.Ping(timeoutCtx, *ip, tailcfg.PingDisco)
+		cancel()
 		if err != nil {
 			return err
 		}

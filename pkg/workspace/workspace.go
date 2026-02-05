@@ -31,6 +31,13 @@ var errProvideWorkspaceArg = errors.New(
 	"please provide a workspace name. E.g. 'devpod up ./my-folder', " +
 		"'devpod up github.com/my-org/my-repo' or 'devpod up ubuntu'")
 
+// RemoteCreator defines the interface for clients that support remote workspace creation.
+// This interface is implemented by ProxyClient and DaemonClient to enable workspace
+// creation on remote platforms.
+type RemoteCreator interface {
+	Create(ctx context.Context, stdin io.Reader, stdout, stderr io.Writer) error
+}
+
 // Resolve takes the `devpod up|build` CLI input and either finds an existing workspace or creates a new one
 type ResolveParams struct {
 	IDE                  string
@@ -383,7 +390,16 @@ func createWorkspace(
 			return nil, nil, nil, fmt.Errorf("save config: %w", err)
 		}
 
-		err := resolveProInstance(ctx, devPodConfig, provider.Config.Name, workspace, log)
+		err := resolveProInstance(proInstanceParams{
+			ctx:          ctx,
+			devPodConfig: devPodConfig,
+			providerName: provider.Config.Name,
+			workspace:    workspace,
+			stdin:        os.Stdin,
+			stdout:       os.Stdout,
+			stderr:       os.Stderr,
+			log:          log,
+		})
 		if err != nil {
 			return nil, nil, nil, err
 		}
@@ -689,26 +705,43 @@ func loadExistingWorkspace(devPodConfig *config.Config, workspaceID string, chan
 	return providerWithOptions.Config, workspaceConfig, machineConfig, nil
 }
 
-func resolveProInstance(ctx context.Context, devPodConfig *config.Config, providerName string, workspace *providerpkg.Workspace, log log.Logger) error {
-	foundProvider, err := FindProvider(devPodConfig, providerName, log)
+type proInstanceParams struct {
+	ctx          context.Context
+	devPodConfig *config.Config
+	providerName string
+	workspace    *providerpkg.Workspace
+	stdin        io.Reader
+	stdout       io.Writer
+	stderr       io.Writer
+	log          log.Logger
+}
+
+func resolveProInstance(params proInstanceParams) error {
+	foundProvider, err := FindProvider(params.devPodConfig, params.providerName, params.log)
 	if err != nil {
 		return err
 	}
 
-	workspaceClient, err := getWorkspaceClient(devPodConfig, foundProvider.Config, workspace, nil, log)
+	workspaceClient, err := getWorkspaceClient(
+		params.devPodConfig,
+		foundProvider.Config,
+		params.workspace,
+		nil,
+		params.log,
+	)
 	if err != nil {
 		return err
 	}
 
-	type remoteCreator interface {
-		Create(
-			ctx context.Context,
-			stdin io.Reader,
-			stdout, stderr io.Writer,
-		) error
+	if c, ok := workspaceClient.(RemoteCreator); ok {
+		return c.Create(params.ctx, params.stdin, params.stdout, params.stderr)
 	}
-	if c, ok := workspaceClient.(remoteCreator); ok {
-		return c.Create(ctx, os.Stdin, os.Stdout, os.Stderr)
-	}
-	return errors.New("client does not support remote workspaces")
+
+	// This should never happen - indicates a programming error where a proxy/daemon provider
+	// client does not implement the RemoteCreator interface
+	return fmt.Errorf(
+		"internal error: client %T for provider %q does not implement RemoteCreator interface",
+		workspaceClient,
+		params.providerName,
+	)
 }

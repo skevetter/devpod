@@ -17,9 +17,18 @@ import (
 type HTTPStatusError struct {
 	StatusCode int
 	URL        string
+	Body       string
 }
 
 func (e *HTTPStatusError) Error() string {
+	if e.Body != "" {
+		return fmt.Sprintf(
+			"received status code %d when trying to download %s: %s",
+			e.StatusCode,
+			e.URL,
+			e.Body,
+		)
+	}
 	return fmt.Sprintf(
 		"received status code %d when trying to download %s",
 		e.StatusCode,
@@ -82,8 +91,9 @@ func File(rawURL string, log log.Logger) (io.ReadCloser, error) {
 	if err != nil {
 		return nil, fmt.Errorf("download file: %w", err)
 	} else if resp.StatusCode >= 400 {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
 		_ = resp.Body.Close()
-		return nil, &HTTPStatusError{StatusCode: resp.StatusCode, URL: rawURL}
+		return nil, &HTTPStatusError{StatusCode: resp.StatusCode, URL: rawURL, Body: string(body)}
 	}
 
 	return resp.Body, nil
@@ -99,12 +109,27 @@ type GithubReleaseAsset struct {
 }
 
 func downloadGithubRelease(org, repo, release, file, token string) (io.ReadCloser, error) {
-	releaseURL := ""
+	var releasePath string
 	if release == "" {
-		releaseURL = fmt.Sprintf("https://api.github.com/repos/%s/%s/releases/latest", org, repo)
+		releasePath = fmt.Sprintf(
+			"/repos/%s/%s/releases/latest",
+			url.PathEscape(org),
+			url.PathEscape(repo),
+		)
 	} else {
-		releaseURL = fmt.Sprintf("https://api.github.com/repos/%s/%s/releases/tags/%s", org, repo, release)
+		releasePath = fmt.Sprintf(
+			"/repos/%s/%s/releases/tags/%s",
+			url.PathEscape(org),
+			url.PathEscape(repo),
+			url.PathEscape(release),
+		)
 	}
+
+	releaseURL := (&url.URL{
+		Scheme: "https",
+		Host:   "api.github.com",
+		Path:   releasePath,
+	}).String()
 
 	req, err := http.NewRequest(http.MethodGet, releaseURL, nil)
 	if err != nil {
@@ -119,9 +144,11 @@ func downloadGithubRelease(org, repo, release, file, token string) (io.ReadClose
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode >= 400 {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
 		return nil, &HTTPStatusError{
 			StatusCode: resp.StatusCode,
 			URL:        releaseURL,
+			Body:       string(body),
 		}
 	}
 
@@ -147,12 +174,13 @@ func downloadGithubRelease(org, repo, release, file, token string) (io.ReadClose
 		return nil, fmt.Errorf("couldn't find asset %s in github release (%s)", file, releaseURL)
 	}
 
-	assetURL := fmt.Sprintf(
-		"https://api.github.com/repos/%s/%s/releases/assets/%d",
-		org,
-		repo,
-		releaseAsset.ID,
-	)
+	assetPath := fmt.Sprintf("/repos/%s/%s/releases/assets/%d", url.PathEscape(org), url.PathEscape(repo), releaseAsset.ID)
+	assetURL := (&url.URL{
+		Scheme: "https",
+		Host:   "api.github.com",
+		Path:   assetPath,
+	}).String()
+
 	req, err = http.NewRequest(http.MethodGet, assetURL, nil)
 	if err != nil {
 		return nil, err
@@ -163,10 +191,12 @@ func downloadGithubRelease(org, repo, release, file, token string) (io.ReadClose
 	if err != nil {
 		return nil, err
 	} else if downloadResp.StatusCode >= 400 {
+		body, _ := io.ReadAll(io.LimitReader(downloadResp.Body, 1024))
 		_ = downloadResp.Body.Close()
 		return nil, &HTTPStatusError{
 			StatusCode: downloadResp.StatusCode,
 			URL:        assetURL,
+			Body:       string(body),
 		}
 	}
 

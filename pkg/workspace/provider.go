@@ -240,7 +240,10 @@ func ResolveProvider(providerSource string, log log.Logger) ([]byte, *provider.P
 		return out, retSource, nil
 	}
 
-	if out, ok := resolveFileProvider(providerSource, retSource); ok {
+	if out, ok, err := resolveFileProvider(providerSource, retSource); ok {
+		if err != nil {
+			return nil, nil, err
+		}
 		return out, retSource, nil
 	}
 
@@ -269,7 +272,8 @@ func downloadProviderGithub(originalPath string, log log.Logger) ([]byte, *provi
 	if len(splitted) == 1 {
 		path = providerPrefix + path
 	} else if len(splitted) != 2 {
-		return nil, nil, nil
+		// Invalid GitHub path format - expected 'owner/repo' or 'provider-name'
+		return nil, nil, fmt.Errorf("invalid github path format: expected 'owner/repo' or 'provider-name', got %q", originalPath)
 	}
 
 	requestURL := buildGithubURL(path, release)
@@ -378,6 +382,10 @@ func installProvider(
 	p ProviderParams,
 	providerConfig *provider.ProviderConfig,
 ) (*provider.ProviderConfig, error) {
+	if p.Source == nil {
+		return nil, fmt.Errorf("provider source is required")
+	}
+
 	providerConfig.Source = *p.Source
 	if p.ProviderName != "" {
 		providerConfig.Name = p.ProviderName
@@ -398,6 +406,9 @@ func updateProvider(p ProviderParams) (*provider.ProviderConfig, error) {
 	providerConfig, err := provider.ParseProvider(bytes.NewReader(p.Raw))
 	if err != nil {
 		return nil, err
+	}
+	if p.Source == nil {
+		return nil, fmt.Errorf("provider source is required")
 	}
 
 	providerConfig.Source = *p.Source
@@ -462,9 +473,14 @@ func downloadAndSaveProvider(p ProviderParams, providerConfig *provider.Provider
 }
 
 func cleanupOldOptions(devPodConfig *config.Config, providerConfig *provider.ProviderConfig) {
-	for optionName := range devPodConfig.Current().Providers[providerConfig.Name].Options {
+	providerState := devPodConfig.Current().Providers[providerConfig.Name]
+	if providerState == nil || providerState.Options == nil {
+		return
+	}
+
+	for optionName := range providerState.Options {
 		if _, ok := providerConfig.Options[optionName]; !ok {
-			delete(devPodConfig.Current().Providers[providerConfig.Name].Options, optionName)
+			delete(providerState.Options, optionName)
 		}
 	}
 }
@@ -528,27 +544,30 @@ func resolveURLProvider(
 	return out, true, nil
 }
 
-func resolveFileProvider(providerSource string, retSource *provider.ProviderSource) ([]byte, bool) {
+func resolveFileProvider(providerSource string, retSource *provider.ProviderSource) ([]byte, bool, error) {
 	if !strings.HasSuffix(providerSource, yamlExt) && !strings.HasSuffix(providerSource, ymlExt) {
-		return nil, false
+		return nil, false, nil
 	}
 
 	if _, err := os.Stat(providerSource); err != nil {
-		return nil, false
+		if os.IsNotExist(err) {
+			return nil, false, nil
+		}
+		return nil, true, fmt.Errorf("stat provider file %q: %w", providerSource, err)
 	}
 
 	// #nosec G304 - providerSource is user-provided path for loading provider config
 	out, err := os.ReadFile(providerSource)
 	if err != nil {
-		return nil, false
+		return nil, true, fmt.Errorf("read provider file %q: %w", providerSource, err)
 	}
 
 	absPath, err := filepath.Abs(providerSource)
 	if err != nil {
-		return nil, false
+		return nil, true, fmt.Errorf("resolve absolute path for %q: %w", providerSource, err)
 	}
 	retSource.File = absPath
-	return out, true
+	return out, true, nil
 }
 
 func downloadProvider(url string) ([]byte, error) {

@@ -2,6 +2,7 @@ package options
 
 import (
 	"context"
+	"fmt"
 	"maps"
 	"os"
 	"reflect"
@@ -24,6 +25,9 @@ func ResolveAndSaveOptionsMachine(
 	userOptions map[string]string,
 	log log.Logger,
 ) (*provider.Machine, error) {
+	if originalMachine == nil {
+		return nil, fmt.Errorf("originalMachine cannot be nil")
+	}
 	// reload config
 	machine, err := provider.LoadMachineConfig(originalMachine.Context, originalMachine.ID)
 	if err != nil {
@@ -91,17 +95,20 @@ func ResolveAndSaveOptionsWorkspace(
 	log log.Logger,
 	options ...resolver.Option,
 ) (*provider.Workspace, error) {
+	if originalWorkspace == nil {
+		return nil, fmt.Errorf("originalWorkspace cannot be nil")
+	}
 	// reload config
 	workspace, err := provider.LoadWorkspaceConfig(originalWorkspace.Context, originalWorkspace.ID)
 	if err != nil {
 		return originalWorkspace, err
 	}
+	if workspace == nil {
+		return nil, fmt.Errorf("failed to load workspace config: workspace not found")
+	}
 
 	// resolve devconfig options
-	var beforeConfigOptions map[string]config.OptionValue
-	if workspace != nil {
-		beforeConfigOptions = workspace.Provider.Options
-	}
+	beforeConfigOptions := workspace.Provider.Options
 
 	// get binary paths
 	binaryPaths, err := provider.GetBinaries(devConfig.DefaultContext, providerConfig)
@@ -136,14 +143,11 @@ func ResolveAndSaveOptionsWorkspace(
 	)
 
 	// save workspace config
-	if workspace != nil {
-		workspace.Provider.Options = resolvedOptions
-
-		if !reflect.DeepEqual(beforeConfigOptions, workspace.Provider.Options) {
-			err = provider.SaveWorkspaceConfig(workspace)
-			if err != nil {
-				return workspace, err
-			}
+	workspace.Provider.Options = resolvedOptions
+	if !reflect.DeepEqual(beforeConfigOptions, workspace.Provider.Options) {
+		err = provider.SaveWorkspaceConfig(workspace)
+		if err != nil {
+			return workspace, err
 		}
 	}
 
@@ -202,25 +206,42 @@ func ResolveOptions(
 		if devConfig.Current().Providers[providerConfig.Name] == nil {
 			devConfig.Current().Providers[providerConfig.Name] = &config.ProviderConfig{}
 		}
-		devConfig.Current().Providers[providerConfig.Name].Options = map[string]config.OptionValue{}
-		maps.Copy(devConfig.Current().Providers[providerConfig.Name].Options, resolvedOptionValues)
 
-		devConfig.Current().Providers[providerConfig.Name].DynamicOptions = config.OptionDefinitions{}
-		maps.Copy(devConfig.Current().Providers[providerConfig.Name].DynamicOptions, dynamicOptionDefinitions)
+		providerCfg := devConfig.Current().Providers[providerConfig.Name]
+		providerCfg.Options = map[string]config.OptionValue{}
+		maps.Copy(providerCfg.Options, resolvedOptionValues)
+
+		providerCfg.DynamicOptions = config.OptionDefinitions{}
+		maps.Copy(providerCfg.DynamicOptions, dynamicOptionDefinitions)
 		if singleMachine != nil {
-			devConfig.Current().Providers[providerConfig.Name].SingleMachine = *singleMachine
+			providerCfg.SingleMachine = *singleMachine
 		}
 	}
 
 	return devConfig, nil
 }
 
+// ResolveAgentConfig resolves and returns the complete agent configuration for a provider.
+// It merges configuration from the provider, workspace, machine, and devConfig, resolving
+// all dynamic values and setting appropriate defaults for agent paths, Docker settings,
+// Kubernetes settings, and credentials.
+//
+// Parameters:
+//   - devConfig: The DevPod configuration containing global settings
+//   - providerConfig: The provider's configuration
+//   - workspace: The workspace configuration (can be nil for machine-only operations)
+//   - machine: The machine configuration (can be nil for workspace-only operations)
+//
+// Returns a fully resolved ProviderAgentConfig ready for use by the agent.
 func ResolveAgentConfig(
 	devConfig *config.Config,
 	providerConfig *provider.ProviderConfig,
 	workspace *provider.Workspace,
 	machine *provider.Machine,
 ) provider.ProviderAgentConfig {
+	if providerConfig == nil || devConfig == nil {
+		return provider.ProviderAgentConfig{}
+	}
 	options := provider.ToOptions(workspace, machine, devConfig.ProviderOptions(providerConfig.Name))
 	agentConfig := providerConfig.Agent
 
@@ -288,7 +309,9 @@ func resolveAgentPathAndURL(
 ) {
 	agentConfig.DataPath = resolver.ResolveDefaultValue(agentConfig.DataPath, options)
 	agentConfig.Path = resolver.ResolveDefaultValue(agentConfig.Path, options)
-	if agentConfig.Path == "" && agentConfig.Local == "true" {
+	if agentConfig.Path == "" && strings.EqualFold(string(agentConfig.Local), "true") {
+		// Try to use the current executable path for local agent
+		// Error is silently handled as we have a fallback to RemoteDevPodHelperLocation
 		if execPath, err := os.Executable(); err == nil {
 			agentConfig.Path = execPath
 		}
@@ -325,7 +348,7 @@ func resolveAgentCredentials(
 	}
 }
 
-// resolveAgentDownloadURL resolves the agent download URL (env -> context -> default)
+// resolveAgentDownloadURL resolves the agent download URL (env -> context -> default).
 func resolveAgentDownloadURL(devConfig *config.Config) string {
 	devPodAgentURL := os.Getenv(agent.EnvDevPodAgentURL)
 	if devPodAgentURL != "" {
