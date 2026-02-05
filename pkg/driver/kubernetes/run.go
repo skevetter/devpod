@@ -358,17 +358,6 @@ func getContainers(
 			TimeoutSeconds:      5,
 			FailureThreshold:    3,
 		},
-		ReadinessProbe: &corev1.Probe{
-			ProbeHandler: corev1.ProbeHandler{
-				Exec: &corev1.ExecAction{
-					Command: []string{agent.ContainerDevPodHelperLocation, "agent", "container", "health"},
-				},
-			},
-			InitialDelaySeconds: 30,
-			PeriodSeconds:       5,
-			TimeoutSeconds:      5,
-			FailureThreshold:    2,
-		},
 	}
 
 	if strictSecurity == "true" {
