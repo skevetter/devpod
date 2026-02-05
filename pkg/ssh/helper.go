@@ -100,7 +100,7 @@ type RunOptions struct {
 	EnvVars map[string]string
 }
 
-// ExitError wraps an SSH exit error with the exit code
+// ExitError wraps an SSH exit error with the exit code.
 type ExitError struct {
 	ExitCode int
 	Err      error
@@ -146,19 +146,9 @@ func Run(opts RunOptions) error {
 		_ = sess.Setenv(k, v) // Ignore errors - command should work without env vars
 	}
 
-	// Handle context cancellation
-	if err := opts.Context.Err(); err != nil {
-		return fmt.Errorf("context already cancelled: %w", err)
+	if err := setupContextCancellation(opts.Context, sess); err != nil {
+		return err
 	}
-	exit := make(chan struct{})
-	defer close(exit)
-	go func() {
-		select {
-		case <-opts.Context.Done():
-			_ = sess.Signal(ssh.SIGINT) // Send interrupt, let defer handle close
-		case <-exit:
-		}
-	}()
 
 	sess.Stdin = opts.Stdin
 	sess.Stdout = opts.Stdout
@@ -169,6 +159,22 @@ func Run(opts RunOptions) error {
 		return handleRunError(err, opts.Command)
 	}
 
+	return nil
+}
+
+func setupContextCancellation(ctx context.Context, sess *ssh.Session) error {
+	if err := ctx.Err(); err != nil {
+		return fmt.Errorf("context already cancelled: %w", err)
+	}
+	exit := make(chan struct{})
+	go func() {
+		defer close(exit)
+		select {
+		case <-ctx.Done():
+			_ = sess.Signal(ssh.SIGINT) // Send interrupt, let defer handle close
+		case <-exit:
+		}
+	}()
 	return nil
 }
 
