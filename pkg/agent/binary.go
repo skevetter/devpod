@@ -218,7 +218,12 @@ func (c *BinaryCache) atomicWrite(path string, data io.Reader) error {
 		_ = os.Remove(temp)
 		return err
 	}
-	return os.Rename(temp, path)
+
+	if err := os.Rename(temp, path); err != nil {
+		_ = os.Remove(temp)
+		return err
+	}
+	return nil
 }
 
 type InjectSource struct{}
@@ -364,12 +369,10 @@ func (s *HTTPDownloadSource) prepareCacheDir(
 
 func (s *HTTPDownloadSource) streamAndCache(arch string, body io.ReadCloser, pw *io.PipeWriter, streamErr *error) {
 	cachePath := s.Cache.pathFor(arch)
-	file, err := os.CreateTemp(filepath.Dir(cachePath), "devpod-agent-*.tmp")
+	file, tmpPath, err := s.createTempFile(cachePath, body, pw, streamErr)
 	if err != nil {
-		_, _ = io.Copy(pw, body)
 		return
 	}
-	tmpPath := file.Name()
 
 	success := false
 	closed := false
@@ -396,6 +399,22 @@ func (s *HTTPDownloadSource) streamAndCache(arch string, body io.ReadCloser, pw 
 	if err := os.Rename(tmpPath, cachePath); err == nil {
 		success = true
 	}
+}
+
+func (s *HTTPDownloadSource) createTempFile(
+	cachePath string,
+	body io.ReadCloser,
+	pw *io.PipeWriter,
+	streamErr *error,
+) (*os.File, string, error) {
+	file, err := os.CreateTemp(filepath.Dir(cachePath), "devpod-agent-*.tmp")
+	if err != nil {
+		if _, copyErr := io.Copy(pw, body); copyErr != nil {
+			*streamErr = copyErr
+		}
+		return nil, "", err
+	}
+	return file, file.Name(), nil
 }
 
 func (s *HTTPDownloadSource) writeToFile(file *os.File, body io.ReadCloser, pw *io.PipeWriter, streamErr *error) bool {
