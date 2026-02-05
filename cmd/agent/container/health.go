@@ -3,20 +3,43 @@ package container
 import (
 	"fmt"
 	"os"
+	"strconv"
+	"strings"
+	"syscall"
 
 	"github.com/spf13/cobra"
 )
+
+type HealthCmd struct{}
 
 func NewHealthCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "health",
 		Short: "Check if the agent daemon is healthy",
 		Args:  cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			if _, err := os.Stat("/tmp/devpod-daemon.pid"); err != nil {
-				return fmt.Errorf("daemon not running")
-			}
-			return nil
-		},
+		RunE:  (&HealthCmd{}).Run,
 	}
+}
+
+func (cmd *HealthCmd) Run(c *cobra.Command, args []string) error {
+	pidBytes, err := os.ReadFile("/tmp/devpod-daemon.pid")
+	if err != nil {
+		if os.IsNotExist(err) {
+			return fmt.Errorf("daemon not running: pid file not found")
+		}
+		return fmt.Errorf("failed to read pid file: %w", err)
+	}
+	pid, err := strconv.Atoi(strings.TrimSpace(string(pidBytes)))
+	if err != nil {
+		return fmt.Errorf("invalid pid file content: %w", err)
+	}
+	process, err := os.FindProcess(pid)
+	if err != nil {
+		return fmt.Errorf("daemon not running: %w", err)
+	}
+	// Signal 0 checks if process exists without sending an actual signal
+	if err := process.Signal(syscall.Signal(0)); err != nil {
+		return fmt.Errorf("daemon not running (pid %d): %w", pid, err)
+	}
+	return nil
 }

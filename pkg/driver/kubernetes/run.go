@@ -116,7 +116,7 @@ func (k *KubernetesDriver) runContainer(
 	// read pod template
 	pod := &corev1.Pod{
 		Spec: corev1.PodSpec{
-			RestartPolicy: corev1.RestartPolicyNever,
+			RestartPolicy: corev1.RestartPolicyAlways,
 		},
 	}
 	if len(k.options.PodManifestTemplate) > 0 {
@@ -240,7 +240,7 @@ func (k *KubernetesDriver) runContainer(
 	if k.options.KubernetesPullSecretsEnabled == "true" && pullSecretsCreated {
 		pod.Spec.ImagePullSecrets = []corev1.LocalObjectReference{{Name: getPullSecretsName(id)}}
 	}
-	pod.Spec.RestartPolicy = corev1.RestartPolicyNever
+	pod.Spec.RestartPolicy = corev1.RestartPolicyAlways
 	// try to get existing pod
 	existingPod, err := k.getPod(ctx, id)
 	if err != nil {
@@ -358,6 +358,7 @@ func getContainers(
 			},
 			InitialDelaySeconds: 30,
 			PeriodSeconds:       10,
+			TimeoutSeconds:      5,
 			FailureThreshold:    3,
 		},
 		ReadinessProbe: &corev1.Probe{
@@ -368,6 +369,7 @@ func getContainers(
 			},
 			InitialDelaySeconds: 10,
 			PeriodSeconds:       5,
+			TimeoutSeconds:      5,
 			FailureThreshold:    2,
 		},
 	}
@@ -398,6 +400,13 @@ func getContainers(
 
 		if devPodContainer.SecurityContext == nil && existingDevPodContainer.SecurityContext != nil {
 			devPodContainer.SecurityContext = existingDevPodContainer.SecurityContext
+		}
+
+		if existingDevPodContainer.LivenessProbe != nil {
+			devPodContainer.LivenessProbe = existingDevPodContainer.LivenessProbe
+		}
+		if existingDevPodContainer.ReadinessProbe != nil {
+			devPodContainer.ReadinessProbe = existingDevPodContainer.ReadinessProbe
 		}
 	}
 	retContainers = append(retContainers, devPodContainer)
