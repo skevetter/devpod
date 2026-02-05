@@ -353,8 +353,9 @@ func (s *HTTPDownloadSource) prepareCacheDir(
 ) bool {
 	cachePath := s.Cache.pathFor(arch)
 	if err := os.MkdirAll(filepath.Dir(cachePath), 0750); err != nil { // #nosec G301
+		// Cache directory creation failed; fall back to direct streaming
 		if _, copyErr := io.Copy(pw, body); copyErr != nil {
-			*streamErr = copyErr
+			*streamErr = fmt.Errorf("mkdir failed (%v), fallback copy failed: %w", err, copyErr)
 		}
 		return false
 	}
@@ -385,11 +386,12 @@ func (s *HTTPDownloadSource) streamAndCache(arch string, body io.ReadCloser, pw 
 		return
 	}
 
-	if err := file.Close(); err != nil {
-		*streamErr = err
+	closeErr := file.Close()
+	closed = true
+	if closeErr != nil {
+		*streamErr = closeErr
 		return
 	}
-	closed = true
 
 	if err := os.Rename(tmpPath, cachePath); err == nil {
 		success = true
