@@ -41,7 +41,12 @@ handshake() {
     # shellcheck disable=SC3045
     if ! IFS= read -r -t 30 response 2>/dev/null; then
         # Fallback for shells without -t support
-        IFS= read -r response || fail "failed to read handshake response"
+        if command_exists timeout; then
+            # shellcheck disable=SC2016
+            response="$(timeout 30 sh -c 'IFS= read -r line && printf %s "$line"')" || fail "handshake timeout"
+        else
+            IFS= read -r response || fail "failed to read handshake response"
+        fi
     fi
     [ "$response" = "pong" ] || fail "received wrong answer for ping request: $response"
 }
