@@ -56,6 +56,13 @@ func (cmd *DaemonCmd) Run(c *cobra.Command, args []string) error {
 	errChan := make(chan error, 4)
 	var wg sync.WaitGroup
 
+	// Create PID file for health checks
+	// #nosec G303 -- PID file must be in /tmp for container health checks
+	if err := os.WriteFile("/tmp/devpod-daemon.pid", fmt.Appendf(nil, "%d", os.Getpid()), 0600); err != nil {
+		cmd.Log.Warnf("failed to create PID file: %v", err)
+	}
+	defer func() { _ = os.Remove("/tmp/devpod-daemon.pid") }()
+
 	if err := cmd.loadConfig(); err != nil {
 		return err
 	}

@@ -350,6 +350,26 @@ func getContainers(
 			RunAsGroup:   &[]int64{0}[0],
 			RunAsNonRoot: &[]bool{false}[0],
 		},
+		LivenessProbe: &corev1.Probe{
+			ProbeHandler: corev1.ProbeHandler{
+				Exec: &corev1.ExecAction{
+					Command: []string{"/usr/local/bin/devpod", "agent", "container", "health"},
+				},
+			},
+			InitialDelaySeconds: 30,
+			PeriodSeconds:       10,
+			FailureThreshold:    3,
+		},
+		ReadinessProbe: &corev1.Probe{
+			ProbeHandler: corev1.ProbeHandler{
+				Exec: &corev1.ExecAction{
+					Command: []string{"/usr/local/bin/devpod", "agent", "container", "health"},
+				},
+			},
+			InitialDelaySeconds: 10,
+			PeriodSeconds:       5,
+			FailureThreshold:    2,
+		},
 	}
 
 	if strictSecurity == "true" {
