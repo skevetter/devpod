@@ -233,18 +233,12 @@ func ResolveProvider(providerSource string, log log.Logger) ([]byte, *provider.P
 		return out, retSource, nil
 	}
 
-	if out, ok, err := resolveURLProvider(providerSource, retSource, log); ok {
-		if err != nil {
-			return nil, nil, err
-		}
-		return out, retSource, nil
+	if out, err := tryResolveURLProvider(providerSource, retSource, log); out != nil || err != nil {
+		return out, retSource, err
 	}
 
-	if out, ok, err := resolveFileProvider(providerSource, retSource); ok {
-		if err != nil {
-			return nil, nil, err
-		}
-		return out, retSource, nil
+	if out, err := tryResolveFileProvider(providerSource, retSource); out != nil || err != nil {
+		return out, retSource, err
 	}
 
 	out, source, err := downloadProviderGithub(providerSource, log)
@@ -256,6 +250,22 @@ func ResolveProvider(providerSource string, log log.Logger) ([]byte, *provider.P
 	}
 
 	return nil, nil, fmt.Errorf("provider type not recognized: specify a local file, url, or github repository")
+}
+
+func tryResolveURLProvider(providerSource string, retSource *provider.ProviderSource, log log.Logger) ([]byte, error) {
+	out, ok, err := resolveURLProvider(providerSource, retSource, log)
+	if !ok {
+		return nil, nil
+	}
+	return out, err
+}
+
+func tryResolveFileProvider(providerSource string, retSource *provider.ProviderSource) ([]byte, error) {
+	out, ok, err := resolveFileProvider(providerSource, retSource)
+	if !ok {
+		return nil, nil
+	}
+	return out, err
 }
 
 func downloadProviderGithub(originalPath string, log log.Logger) ([]byte, *provider.ProviderSource, error) {
@@ -272,8 +282,10 @@ func downloadProviderGithub(originalPath string, log log.Logger) ([]byte, *provi
 	if len(splitted) == 1 {
 		path = providerPrefix + path
 	} else if len(splitted) != 2 {
-		// Invalid GitHub path format - expected 'owner/repo' or 'provider-name'
-		return nil, nil, fmt.Errorf("invalid github path format: expected 'owner/repo' or 'provider-name', got %q", originalPath)
+		return nil, nil, fmt.Errorf(
+			"invalid github path format: expected 'owner/repo' or 'provider-name', got %q",
+			originalPath,
+		)
 	}
 
 	requestURL := buildGithubURL(path, release)
@@ -403,6 +415,25 @@ func installProvider(
 }
 
 func updateProvider(p ProviderParams) (*provider.ProviderConfig, error) {
+	providerConfig, err := parseAndValidateProvider(p)
+	if err != nil {
+		return nil, err
+	}
+
+	cleanupOldOptions(p.DevPodConfig, providerConfig)
+
+	if err := config.SaveConfig(p.DevPodConfig); err != nil {
+		return nil, err
+	}
+
+	if err := downloadAndSaveProvider(p, providerConfig); err != nil {
+		return nil, err
+	}
+
+	return providerConfig, nil
+}
+
+func parseAndValidateProvider(p ProviderParams) (*provider.ProviderConfig, error) {
 	providerConfig, err := provider.ParseProvider(bytes.NewReader(p.Raw))
 	if err != nil {
 		return nil, err
@@ -417,20 +448,6 @@ func updateProvider(p ProviderParams) (*provider.ProviderConfig, error) {
 	}
 	if providerConfig.Options == nil {
 		providerConfig.Options = map[string]*types.Option{}
-	}
-
-	cleanupOldOptions(p.DevPodConfig, providerConfig)
-
-	if err := config.SaveConfig(p.DevPodConfig); err != nil {
-		return nil, err
-	}
-
-	if err := downloadProviderBinaries(p, providerConfig); err != nil {
-		return nil, err
-	}
-
-	if err := provider.SaveProviderConfig(p.DevPodConfig.DefaultContext, providerConfig); err != nil {
-		return nil, err
 	}
 
 	return providerConfig, nil

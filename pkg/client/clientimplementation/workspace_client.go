@@ -521,23 +521,6 @@ func (s *workspaceClient) Command(ctx context.Context, commandOptions client.Com
 	})
 }
 
-func (s *workspaceClient) buildEnvironment(command string) ([]string, error) {
-	s.m.Lock()
-	defer s.m.Unlock()
-
-	return provider.ToEnvironmentWithBinaries(provider.EnvironmentOptions{
-		Context:   s.workspace.Context,
-		Workspace: s.workspace,
-		Machine:   s.machine,
-		Options:   s.devPodConfig.ProviderOptions(s.config.Name),
-		Config:    s.config,
-		ExtraEnv: map[string]string{
-			provider.CommandEnv: command,
-		},
-		Log: s.log,
-	})
-}
-
 func (s *workspaceClient) Status(ctx context.Context, options client.StatusOptions) (client.Status, error) {
 	s.m.Lock()
 	defer s.m.Unlock()
@@ -648,6 +631,23 @@ type CommandOptions struct {
 	Stdout    io.Writer
 	Stderr    io.Writer
 	Log       log.Logger
+}
+
+func (s *workspaceClient) buildEnvironment(command string) ([]string, error) {
+	s.m.Lock()
+	defer s.m.Unlock()
+
+	return provider.ToEnvironmentWithBinaries(provider.EnvironmentOptions{
+		Context:   s.workspace.Context,
+		Workspace: s.workspace,
+		Machine:   s.machine,
+		Options:   s.devPodConfig.ProviderOptions(s.config.Name),
+		Config:    s.config,
+		ExtraEnv: map[string]string{
+			provider.CommandEnv: command,
+		},
+		Log: s.log,
+	})
 }
 
 func RunCommandWithBinaries(opts CommandOptions) error {

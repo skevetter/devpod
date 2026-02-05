@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 
 	"github.com/onsi/ginkgo/v2"
 	"github.com/skevetter/devpod/e2e/framework"
@@ -27,28 +28,36 @@ var _ = ginkgo.Describe("[integration]: devpod provider ssh test suite", ginkgo.
 				framework.ExpectNoError(err)
 			}
 
-			_, err := os.Stat(os.Getenv("HOME") + "/.ssh/id_rsa")
+			homeDir := os.Getenv("HOME")
+			sshKeyPath := filepath.Join(homeDir, ".ssh", "id_rsa")
+			sshPubKeyPath := filepath.Join(homeDir, ".ssh", "id_rsa.pub")
+
+			_, err := os.Stat(sshKeyPath)
 			if err != nil {
 				fmt.Println("generating ssh keys")
-				cmd := exec.CommandContext(ctx, "ssh-keygen", "-q", "-t", "rsa", "-N", "", "-f", os.Getenv("HOME")+"/.ssh/id_rsa")
+				// #nosec G204 -- ssh-keygen with fixed arguments for test setup
+				cmd := exec.CommandContext(ctx, "ssh-keygen", "-q", "-t", "rsa", "-N", "", "-f", sshKeyPath)
 				err = cmd.Run()
 				framework.ExpectNoError(err)
 
-				cmd = exec.CommandContext(ctx, "ssh-keygen", "-y", "-f", os.Getenv("HOME")+"/.ssh/id_rsa")
+				// #nosec G204 -- ssh-keygen with fixed arguments for test setup
+				cmd = exec.CommandContext(ctx, "ssh-keygen", "-y", "-f", sshKeyPath)
 				output, err := cmd.Output()
 				framework.ExpectNoError(err)
 
-				err = os.WriteFile(os.Getenv("HOME")+"/.ssh/id_rsa.pub", output, 0600)
+				err = os.WriteFile(sshPubKeyPath, output, 0600)
 				framework.ExpectNoError(err)
 			}
 
-			cmd := exec.CommandContext(ctx, "ssh-keygen", "-y", "-f", os.Getenv("HOME")+"/.ssh/id_rsa")
+			// #nosec G204 -- ssh-keygen with fixed arguments for test setup
+			cmd := exec.CommandContext(ctx, "ssh-keygen", "-y", "-f", sshKeyPath)
 			publicKey, err := cmd.Output()
 			framework.ExpectNoError(err)
 
-			_, err = os.Stat(os.Getenv("HOME") + "/.ssh/authorized_keys")
+			authorizedKeysPath := filepath.Join(homeDir, ".ssh", "authorized_keys")
+			_, err = os.Stat(authorizedKeysPath)
 			if err != nil {
-				err = os.WriteFile(os.Getenv("HOME")+"/.ssh/authorized_keys", publicKey, 0600)
+				err = os.WriteFile(authorizedKeysPath, publicKey, 0600)
 				framework.ExpectNoError(err)
 			} else {
 				f, err := os.OpenFile(os.Getenv("HOME")+"/.ssh/authorized_keys",

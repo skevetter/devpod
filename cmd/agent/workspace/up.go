@@ -229,7 +229,7 @@ func contentFolderExists(path string, log log.Logger) (bool, error) {
 
 func createContentFolder(path string, log log.Logger) error {
 	log.WithFields(logrus.Fields{"path": path}).Debug("create content folder")
-	if err := os.MkdirAll(path, 0o750); err != nil {
+	if err := os.MkdirAll(path, 0o755); err != nil {
 		return fmt.Errorf("make workspace folder: %w", err)
 	}
 	return nil
@@ -713,30 +713,49 @@ func tryMergeRootDockerConfig() error {
 }
 
 func mergeContainerdSnapshotterConfig(configPath string) error {
+	existingConfig, err := readExistingConfig(configPath)
+	if err != nil {
+		return err
+	}
+
+	features := ensureFeaturesMap(existingConfig)
+	features["containerd-snapshotter"] = true
+
+	return writeConfig(configPath, existingConfig)
+}
+
+func readExistingConfig(configPath string) (map[string]any, error) {
 	existingConfig := make(map[string]any)
+	// #nosec G304 -- configPath is controlled by the application
 	data, err := os.ReadFile(configPath)
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
-		return fmt.Errorf("read existing config: %w", err)
+		return nil, fmt.Errorf("read existing config: %w", err)
 	}
 
 	if len(data) > 0 {
 		if err := json.Unmarshal(data, &existingConfig); err != nil {
-			return fmt.Errorf("parse existing config: %w", err)
+			return nil, fmt.Errorf("parse existing config: %w", err)
 		}
 	}
+	return existingConfig, nil
+}
 
-	features, ok := existingConfig["features"].(map[string]any)
+func ensureFeaturesMap(config map[string]any) map[string]any {
+	features, ok := config["features"].(map[string]any)
 	if !ok {
 		features = make(map[string]any)
-		existingConfig["features"] = features
+		config["features"] = features
 	}
-	features["containerd-snapshotter"] = true
+	return features
+}
 
-	mergedData, err := json.MarshalIndent(existingConfig, "", "  ")
+func writeConfig(configPath string, config map[string]any) error {
+	mergedData, err := json.MarshalIndent(config, "", "  ")
 	if err != nil {
 		return fmt.Errorf("marshal config: %w", err)
 	}
 
+	// #nosec G301 -- directory needs to be accessible by docker daemon
 	if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil {
 		return fmt.Errorf("create config directory: %w", err)
 	}
