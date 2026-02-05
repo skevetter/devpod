@@ -178,16 +178,30 @@ func InjectAgent(opts *InjectOptions) error {
 
 	timeoutCtx, cancel := context.WithTimeout(opts.Ctx, opts.Timeout)
 	defer cancel()
-	opts.Ctx = timeoutCtx
 
-	return retry.OnError(backoff, func(err error) bool {
-		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
-			return false
-		}
-		return true
-	}, func() error {
-		return injectAgent(opts, bm, vc, metrics)
-	})
+	errChan := make(chan error, 1)
+	go func() {
+		errChan <- retry.OnError(backoff, func(err error) bool {
+			select {
+			case <-timeoutCtx.Done():
+				return false
+			default:
+			}
+			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+				return false
+			}
+			return true
+		}, func() error {
+			return injectAgent(opts, bm, vc, metrics)
+		})
+	}()
+
+	select {
+	case err := <-errChan:
+		return err
+	case <-timeoutCtx.Done():
+		return fmt.Errorf("injection timeout after %v: %w", opts.Timeout, timeoutCtx.Err())
+	}
 }
 
 func injectLocally(opts *InjectOptions) error {
