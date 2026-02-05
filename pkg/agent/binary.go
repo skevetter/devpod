@@ -15,7 +15,6 @@ import (
 	"github.com/skevetter/log"
 )
 
-
 type BinarySource interface {
 	GetBinary(ctx context.Context, arch string) (io.ReadCloser, error)
 	SourceName() string
