@@ -98,6 +98,9 @@ func (cfg *RetryConfig) applyDefaults() {
 	if cfg.InitialDelay <= 0 {
 		cfg.InitialDelay = time.Second
 	}
+	if cfg.MaxDelay <= 0 {
+		cfg.MaxDelay = 30 * time.Second
+	}
 }
 
 func (cfg *RetryConfig) checkDeadline(attemptsCompleted int) error {
@@ -316,57 +319,67 @@ func (s *HTTPDownloadSource) downloadFile(ctx context.Context, downloadURL strin
 	return resp, nil
 }
 
+// cacheAndReturn streams the binary to the caller while simultaneously caching it.
+// The caller MUST fully read or close the returned reader to avoid goroutine leaks.
 func (s *HTTPDownloadSource) cacheAndReturn(arch string, body io.ReadCloser) (io.ReadCloser, error) {
 	pr, pw := io.Pipe()
 
 	go func() {
 		defer func() {
 			_ = body.Close()
+			_ = pw.Close()
 		}()
 
-		streamOnly := func() {
-			if _, err := io.Copy(pw, body); err != nil {
-				_ = pw.CloseWithError(err)
-			} else {
-				_ = pw.Close()
-			}
-		}
-
-		cachePath := s.Cache.pathFor(arch)
-		if err := os.MkdirAll(filepath.Dir(cachePath), 0750); err != nil { // #nosec G301
-			streamOnly()
+		if !s.prepareCacheDir(arch, body, pw) {
 			return
 		}
 
-		file, err := os.CreateTemp(filepath.Dir(cachePath), "devpod-agent-*.tmp")
-		if err != nil {
-			streamOnly()
-			return
-		}
-		tmpPath := file.Name()
-
-		success := false
-		defer func() {
-			if !success {
-				_ = os.Remove(tmpPath)
-			}
-		}()
-
-		mw := io.MultiWriter(file, pw)
-		if _, err := io.Copy(mw, body); err != nil {
-			_ = file.Close()
-			_ = pw.CloseWithError(err)
-			return
-		}
-
-		_ = pw.Close()
-		_ = file.Sync()
-		_ = file.Close()
-
-		if err := os.Rename(tmpPath, cachePath); err == nil {
-			success = true
-		}
+		s.streamAndCache(arch, body, pw)
 	}()
 
 	return pr, nil
+}
+
+func (s *HTTPDownloadSource) prepareCacheDir(arch string, body io.ReadCloser, pw *io.PipeWriter) bool {
+	cachePath := s.Cache.pathFor(arch)
+	if err := os.MkdirAll(filepath.Dir(cachePath), 0750); err != nil { // #nosec G301
+		_, _ = io.Copy(pw, body)
+		return false
+	}
+	return true
+}
+
+func (s *HTTPDownloadSource) streamAndCache(arch string, body io.ReadCloser, pw *io.PipeWriter) {
+	cachePath := s.Cache.pathFor(arch)
+	file, err := os.CreateTemp(filepath.Dir(cachePath), "devpod-agent-*.tmp")
+	if err != nil {
+		_, _ = io.Copy(pw, body)
+		return
+	}
+	tmpPath := file.Name()
+
+	success := false
+	defer func() {
+		_ = file.Close()
+		if !success {
+			_ = os.Remove(tmpPath)
+		}
+	}()
+
+	mw := io.MultiWriter(file, pw)
+	if _, err := io.Copy(mw, body); err != nil {
+		return
+	}
+
+	if err := file.Chmod(0755); err != nil {
+		return
+	}
+
+	if err := file.Sync(); err != nil {
+		return
+	}
+
+	if err := os.Rename(tmpPath, cachePath); err == nil {
+		success = true
+	}
 }
