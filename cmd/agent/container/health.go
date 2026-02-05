@@ -38,12 +38,15 @@ func (cmd *HealthCmd) Run(c *cobra.Command, args []string) error {
 	if err := process.Signal(syscall.Signal(0)); err != nil {
 		return fmt.Errorf("daemon not running (pid %d): %w", pid, err)
 	}
-	// Verify process is the devpod daemon by checking cmdline
+	// Verify process is the devpod daemon by checking cmdline (Linux-specific)
+	// /proc/*/cmdline uses null bytes as argument separators
 	cmdline, err := os.ReadFile(fmt.Sprintf("/proc/%d/cmdline", pid))
 	if err != nil {
 		return fmt.Errorf("failed to verify daemon process: %w", err)
 	}
-	if !strings.Contains(string(cmdline), "devpod") {
+	// Extract the executable (first argument before null byte)
+	parts := strings.Split(string(cmdline), "\x00")
+	if len(parts) == 0 || !strings.Contains(parts[0], "devpod") {
 		return fmt.Errorf("pid %d is not devpod daemon", pid)
 	}
 	return nil
