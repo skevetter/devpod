@@ -71,8 +71,6 @@ type InjectOptions struct {
 	// SkipVersionCheck disables the validation of the remote agent's version.
 	// Defaults to false, unless DEVPOD_AGENT_URL is set.
 	SkipVersionCheck bool
-	// MetricsCollector handles the recording of injection metrics. Defaults to LogMetricsCollector.
-	MetricsCollector MetricsCollector
 }
 
 func (o *InjectOptions) ApplyDefaults() {
@@ -164,26 +162,9 @@ func InjectAgent(opts *InjectOptions) error {
 		return err
 	}
 
-	if opts.MetricsCollector == nil {
-		opts.MetricsCollector = &LogMetricsCollector{Log: opts.Log}
-	}
-	metrics := &InjectionMetrics{StartTime: time.Now(), BinarySource: "existing"}
-	defer func() {
-		metrics.EndTime = time.Now()
-		opts.MetricsCollector.RecordInjection(metrics)
-	}()
-
 	if opts.IsLocal {
 		return injectLocally(opts)
 	}
-
-	opts.Log.WithFields(logrus.Fields{
-		"localVersion":   opts.LocalVersion,
-		"remoteVersion":  opts.RemoteVersion,
-		"skipCheck":      opts.SkipVersionCheck,
-		"preferDownload": strconv.FormatBool(*opts.PreferDownloadFromRemoteUrl),
-		"timeout":        opts.Timeout,
-	}).Debug("starting agent injection")
 
 	vc := newVersionChecker(opts)
 	bm := NewBinaryManager(opts.Log, opts.DownloadURL)
@@ -196,21 +177,18 @@ func InjectAgent(opts *InjectOptions) error {
 		Cap:      60 * time.Second,
 	}
 
-	attempt := 0
+	opts.Log.Debug("starting agent injection")
 	return retry.OnError(backoff, func(err error) bool {
 		if opts.Ctx.Err() != nil {
 			return false
 		}
-		opts.Log.Debugf("retrying attempt %d: %v", attempt, err)
+		opts.Log.Debugf("retrying injection: %v", err)
 		return true
 	}, func() error {
-		attempt++
 		return injectAgent(&injectContext{
-			attempt: attempt,
-			opts:    opts,
-			bm:      bm,
-			vc:      vc,
-			metrics: metrics,
+			opts: opts,
+			bm:   bm,
+			vc:   vc,
 		})
 	})
 }
@@ -224,17 +202,13 @@ func injectLocally(opts *InjectOptions) error {
 }
 
 type injectContext struct {
-	attempt int
-	opts    *InjectOptions
-	bm      *BinaryManager
-	vc      *versionChecker
-	metrics *InjectionMetrics
+	opts *InjectOptions
+	bm   *BinaryManager
+	vc   *versionChecker
 }
 
 func injectAgent(ctx *injectContext) error {
 	opts := ctx.opts
-	metrics := ctx.metrics
-	metrics.Attempts = ctx.attempt
 
 	buf := &bytes.Buffer{}
 	stderr := setupStderr(opts, buf)
@@ -254,7 +228,7 @@ func injectAgent(ctx *injectContext) error {
 	})
 
 	if err != nil {
-		return handleInjectError(err, wasExecuted, buf, metrics)
+		return handleInjectError(err, wasExecuted, buf)
 	}
 
 	return performVersionCheck(ctx)
@@ -273,12 +247,7 @@ func createBinaryLoader(ctx *injectContext) func(bool) (io.ReadCloser, error) {
 		if arm {
 			arch = "arm64"
 		}
-		stream, source, err := ctx.bm.AcquireBinary(ctx.opts.Ctx, arch)
-		if err != nil {
-			return nil, err
-		}
-		ctx.metrics.BinarySource = source
-		return stream, nil
+		return ctx.bm.AcquireBinary(ctx.opts.Ctx, arch)
 	}
 }
 
@@ -294,40 +263,44 @@ func buildScriptParams(ctx *injectContext) *inject.Params {
 	}
 }
 
-func handleInjectError(err error, wasExecuted bool, buf *bytes.Buffer, metrics *InjectionMetrics) error {
-	metrics.Error = err
+func handleInjectError(err error, wasExecuted bool, buf *bytes.Buffer) error {
 	if wasExecuted {
 		return &InjectError{
-			Stage: "command_exec",
+			Stage: InjectStageCommandExecution,
 			Cause: fmt.Errorf("%w: %s", err, buf.String()),
 		}
 	}
-	return &InjectError{Stage: "inject", Cause: err}
+	return &InjectError{Stage: InjectStageInject, Cause: err}
 }
 
 func performVersionCheck(ctx *injectContext) error {
 	opts := ctx.opts
-	metrics := ctx.metrics
 
 	detectedVersion, err := ctx.vc.detectRemoteAgentVersion(opts.Ctx, opts.Exec, opts.RemoteAgentPath, opts.Log)
-	if detectedVersion != "" {
-		metrics.AgentVersion = detectedVersion
-	}
 
 	if !opts.SkipVersionCheck {
 		if err != nil {
-			metrics.VersionCheck = false
-			return &InjectError{Stage: "version_check", Cause: err}
+			return &InjectError{Stage: InjectStageVersionCheck, Cause: err}
 		}
-		metrics.VersionCheck = true
 	}
 
-	metrics.Success = true
+	if detectedVersion != "" {
+		opts.Log.Debugf("detected remote agent version: %s", detectedVersion)
+	}
+
 	return nil
 }
 
+type InjectStage string
+
+const (
+	InjectStageInject           InjectStage = "inject"
+	InjectStageCommandExecution InjectStage = "command execution"
+	InjectStageVersionCheck     InjectStage = "version check"
+)
+
 type InjectError struct {
-	Stage string
+	Stage InjectStage
 	Cause error
 }
 
@@ -340,36 +313,6 @@ func (e *InjectError) Error() string {
 
 func (e *InjectError) Unwrap() error {
 	return e.Cause
-}
-
-type InjectionMetrics struct {
-	StartTime    time.Time
-	EndTime      time.Time
-	Attempts     int
-	BinarySource string
-	AgentVersion string
-	VersionCheck bool
-	Success      bool
-	Error        error
-}
-
-type MetricsCollector interface {
-	RecordInjection(metrics *InjectionMetrics)
-}
-
-type LogMetricsCollector struct {
-	Log log.Logger
-}
-
-func (c *LogMetricsCollector) RecordInjection(metrics *InjectionMetrics) {
-	c.Log.WithFields(logrus.Fields{
-		"duration":           metrics.EndTime.Sub(metrics.StartTime),
-		"attempts":           metrics.Attempts,
-		"binarySource":       metrics.BinarySource,
-		"remoteAgentVersion": metrics.AgentVersion,
-		"versionCheck":       metrics.VersionCheck,
-		"success":            metrics.Success,
-	}).Debug("agent injection metrics")
 }
 
 type versionChecker struct {
@@ -423,11 +366,7 @@ func (vc *versionChecker) detectRemoteAgentVersion(
 			"If your workspace fails to deploy, you may need to manually remove " +
 			"the existing agent and redeploy.")
 	} else {
-		log.WithFields(logrus.Fields{
-			"expected":  vc.remoteVersion,
-			"actual":    actualVersion,
-			"agentPath": agentPath,
-		}).Debug("remote agent version validated")
+		log.Debug("remote agent version matches expected version")
 	}
 
 	return actualVersion, nil

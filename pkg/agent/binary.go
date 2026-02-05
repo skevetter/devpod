@@ -39,16 +39,16 @@ func NewBinaryManager(logger log.Logger, downloadURL string) *BinaryManager {
 	}
 }
 
-func (m *BinaryManager) AcquireBinary(ctx context.Context, arch string) (io.ReadCloser, string, error) {
+func (m *BinaryManager) AcquireBinary(ctx context.Context, arch string) (io.ReadCloser, error) {
 	for _, source := range m.sources {
 		binary, err := source.GetBinary(ctx, arch)
 		if err == nil {
 			m.logger.Debugf("acquired binary from %s", source.SourceName())
-			return binary, source.SourceName(), nil
+			return binary, nil
 		}
 		m.logger.Debugf("source %s failed: %v", source.SourceName(), err)
 	}
-	return nil, "", ErrBinaryNotFound
+	return nil, ErrBinaryNotFound
 }
 
 type BinaryCache struct {
