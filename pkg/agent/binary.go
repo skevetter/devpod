@@ -1,0 +1,372 @@
+package agent
+
+import (
+	"context"
+	"fmt"
+	"io"
+	"net/http"
+	"net/url"
+	"os"
+	"path/filepath"
+	"runtime"
+	"strings"
+	"time"
+
+	devpodhttp "github.com/skevetter/devpod/pkg/http"
+	"github.com/skevetter/log"
+)
+
+type RetryConfig struct {
+	MaxAttempts  int
+	InitialDelay time.Duration
+	MaxDelay     time.Duration
+	Deadline     time.Time
+}
+
+type RetryFunc func(attempt int) error
+
+func RetryWithDeadline(
+	ctx context.Context,
+	log log.Logger,
+	cfg RetryConfig,
+	fn RetryFunc,
+) error {
+	cfg.applyDefaults()
+	delay := cfg.InitialDelay
+
+	for attempt := 1; attempt <= cfg.MaxAttempts; attempt++ {
+		if err := cfg.checkPreConditions(ctx, attempt-1); err != nil {
+			return err
+		}
+
+		err := fn(attempt)
+		if err == nil {
+			return nil
+		}
+
+		if attempt == cfg.MaxAttempts {
+			return fmt.Errorf("agent injection failed after %d attempts: %w", attempt, err)
+		}
+
+		delay = cfg.handleRetry(&retryContext{
+			ctx:     ctx,
+			log:     log,
+			attempt: attempt,
+			err:     err,
+			delay:   delay,
+		})
+		if delay == 0 {
+			return ctx.Err()
+		}
+	}
+
+	return fmt.Errorf("retry loop exited unexpectedly")
+}
+
+func (cfg *RetryConfig) checkPreConditions(ctx context.Context, attemptsCompleted int) error {
+	if err := cfg.checkDeadline(attemptsCompleted); err != nil {
+		return err
+	}
+	return checkContextCancelled(ctx)
+}
+
+type retryContext struct {
+	ctx     context.Context
+	log     log.Logger
+	attempt int
+	err     error
+	delay   time.Duration
+}
+
+func (cfg *RetryConfig) handleRetry(rctx *retryContext) time.Duration {
+	sleep := calculateSleep(rctx.delay, cfg)
+
+	rctx.log.Debugf("retrying attempt %d after %v: %v", rctx.attempt, sleep, rctx.err)
+
+	if err := sleepWithContext(rctx.ctx, sleep); err != nil {
+		return 0
+	}
+
+	newDelay := rctx.delay * 2
+	return min(newDelay, cfg.MaxDelay)
+}
+
+func (cfg *RetryConfig) applyDefaults() {
+	if cfg.MaxAttempts <= 0 {
+		cfg.MaxAttempts = 1
+	}
+	if cfg.InitialDelay <= 0 {
+		cfg.InitialDelay = time.Second
+	}
+}
+
+func (cfg *RetryConfig) checkDeadline(attemptsCompleted int) error {
+	if cfg.Deadline.IsZero() || !time.Now().After(cfg.Deadline) {
+		return nil
+	}
+	return fmt.Errorf("%w after %d attempts", ErrInjectTimeout, attemptsCompleted)
+}
+
+func checkContextCancelled(ctx context.Context) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+		return nil
+	}
+}
+
+func calculateSleep(delay time.Duration, cfg *RetryConfig) time.Duration {
+	sleep := delay
+	if !cfg.Deadline.IsZero() {
+		remaining := time.Until(cfg.Deadline)
+		if remaining > 0 && sleep > remaining {
+			sleep = remaining
+		}
+	}
+	return sleep
+}
+
+func sleepWithContext(ctx context.Context, duration time.Duration) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-time.After(duration):
+		return nil
+	}
+}
+
+type BinarySource interface {
+	GetBinary(ctx context.Context, arch string) (io.ReadCloser, error)
+	SourceName() string
+}
+
+type BinaryManager struct {
+	sources []BinarySource
+	logger  log.Logger
+}
+
+func NewBinaryManager(logger log.Logger, downloadURL string) *BinaryManager {
+	cachePath := filepath.Join(os.TempDir(), "devpod-cache")
+	cache := &BinaryCache{BaseDir: cachePath}
+
+	return &BinaryManager{
+		sources: []BinarySource{
+			&InjectSource{},
+			&FileCacheSource{Cache: cache},
+			&HTTPDownloadSource{BaseURL: downloadURL, Cache: cache},
+		},
+		logger: logger,
+	}
+}
+
+func (m *BinaryManager) AcquireBinary(ctx context.Context, arch string) (io.ReadCloser, string, error) {
+	for _, source := range m.sources {
+		binary, err := source.GetBinary(ctx, arch)
+		if err == nil {
+			m.logger.Debugf("acquired binary from %s", source.SourceName())
+			return binary, source.SourceName(), nil
+		}
+		m.logger.Debugf("source %s failed: %v", source.SourceName(), err)
+	}
+	return nil, "", ErrBinaryNotFound
+}
+
+type BinaryCache struct {
+	BaseDir string
+}
+
+func (c *BinaryCache) Get(arch string) (io.ReadCloser, error) {
+	return os.Open(c.pathFor(arch))
+}
+
+func (c *BinaryCache) Set(arch string, data io.Reader) error {
+	return c.atomicWrite(c.pathFor(arch), data)
+}
+
+func (c *BinaryCache) pathFor(arch string) string {
+	return filepath.Join(c.BaseDir, "devpod-"+osLinux+"-"+arch)
+}
+
+func (c *BinaryCache) atomicWrite(path string, data io.Reader) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0750); err != nil { // #nosec G301
+		return err
+	}
+
+	file, err := os.CreateTemp(filepath.Dir(path), "devpod-*.tmp")
+	if err != nil {
+		return err
+	}
+	temp := file.Name()
+
+	if _, err := io.Copy(file, data); err != nil {
+		_ = file.Close()
+		_ = os.Remove(temp)
+		return err
+	}
+
+	if err := file.Chmod(0755); err != nil {
+		_ = file.Close()
+		_ = os.Remove(temp)
+		return err
+	}
+
+	if err := file.Close(); err != nil {
+		_ = os.Remove(temp)
+		return err
+	}
+	return os.Rename(temp, path)
+}
+
+type InjectSource struct{}
+
+func (s *InjectSource) GetBinary(ctx context.Context, arch string) (io.ReadCloser, error) {
+	if !s.matchesCurrentRuntime(arch) {
+		return nil, ErrArchMismatch
+	}
+	return s.openCurrentExecutable()
+}
+
+func (s *InjectSource) SourceName() string {
+	return "local executable"
+}
+
+func (s *InjectSource) matchesCurrentRuntime(arch string) bool {
+	return runtime.GOOS == osLinux && runtime.GOARCH == arch
+}
+
+func (s *InjectSource) openCurrentExecutable() (io.ReadCloser, error) {
+	path, err := os.Executable()
+	if err != nil {
+		return nil, err
+	}
+	return os.Open(path) // #nosec G304
+}
+
+type FileCacheSource struct {
+	Cache *BinaryCache
+}
+
+func (s *FileCacheSource) GetBinary(ctx context.Context, arch string) (io.ReadCloser, error) {
+	return s.Cache.Get(arch)
+}
+
+func (s *FileCacheSource) SourceName() string {
+	return "local cache"
+}
+
+type HTTPDownloadSource struct {
+	BaseURL string
+	Cache   *BinaryCache
+}
+
+func (s *HTTPDownloadSource) GetBinary(ctx context.Context, arch string) (io.ReadCloser, error) {
+	downloadURL, err := s.buildDownloadURL(arch)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := s.downloadFile(ctx, downloadURL)
+	if err != nil {
+		return nil, err
+	}
+
+	if s.Cache != nil {
+		return s.cacheAndReturn(arch, resp.Body)
+	}
+
+	return resp.Body, nil
+}
+
+func (s *HTTPDownloadSource) SourceName() string {
+	return "http download"
+}
+
+func (s *HTTPDownloadSource) buildDownloadURL(arch string) (string, error) {
+	binaryName := "devpod-" + osLinux + "-" + arch
+	downloadURL, err := url.JoinPath(s.BaseURL, binaryName)
+	if err != nil {
+		return "", fmt.Errorf("failed to construct download URL: %w", err)
+	}
+	return downloadURL, nil
+}
+
+func (s *HTTPDownloadSource) downloadFile(ctx context.Context, downloadURL string) (*http.Response, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, downloadURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	resp, err := devpodhttp.GetHTTPClient().Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to download binary: %w", err)
+	}
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		_ = resp.Body.Close()
+		return nil, fmt.Errorf("bad status: %s", resp.Status)
+	}
+
+	contentType := resp.Header.Get("Content-Type")
+	if strings.Contains(contentType, "text/html") {
+		_ = resp.Body.Close()
+		return nil, fmt.Errorf("received HTML instead of binary from %s (check if the download URL is correct)", downloadURL)
+	}
+
+	return resp, nil
+}
+
+func (s *HTTPDownloadSource) cacheAndReturn(arch string, body io.ReadCloser) (io.ReadCloser, error) {
+	pr, pw := io.Pipe()
+
+	go func() {
+		defer func() {
+			_ = body.Close()
+		}()
+
+		streamOnly := func() {
+			if _, err := io.Copy(pw, body); err != nil {
+				_ = pw.CloseWithError(err)
+			} else {
+				_ = pw.Close()
+			}
+		}
+
+		cachePath := s.Cache.pathFor(arch)
+		if err := os.MkdirAll(filepath.Dir(cachePath), 0750); err != nil { // #nosec G301
+			streamOnly()
+			return
+		}
+
+		file, err := os.CreateTemp(filepath.Dir(cachePath), "devpod-agent-*.tmp")
+		if err != nil {
+			streamOnly()
+			return
+		}
+		tmpPath := file.Name()
+
+		success := false
+		defer func() {
+			if !success {
+				_ = os.Remove(tmpPath)
+			}
+		}()
+
+		mw := io.MultiWriter(file, pw)
+		if _, err := io.Copy(mw, body); err != nil {
+			_ = file.Close()
+			_ = pw.CloseWithError(err)
+			return
+		}
+
+		_ = pw.Close()
+		_ = file.Sync()
+		_ = file.Close()
+
+		if err := os.Rename(tmpPath, cachePath); err == nil {
+			success = true
+		}
+	}()
+
+	return pr, nil
+}
