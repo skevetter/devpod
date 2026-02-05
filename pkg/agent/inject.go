@@ -29,6 +29,10 @@ var (
 	ErrArchMismatch   = errors.New("architecture mismatch")
 )
 
+const (
+	osLinux = "linux"
+)
+
 var waitForInstanceConnectionTimeout = time.Minute * 5
 
 // InjectOptions defines the parameters for injecting the DevPod agent into a remote environment.
@@ -37,12 +41,14 @@ type InjectOptions struct {
 	Ctx context.Context
 	// Exec is the function used to execute commands on the remote machine. Required.
 	Exec inject.ExecFunc
-	// Log is the logger for capturing injection output. Required.
+	// Log is the logger for capturing injection output.
+	// Required.
 	Log log.Logger
 
 	// IsLocal indicates if the injection target is the local machine.
 	IsLocal bool
-	// RemoteAgentPath is the path where the agent binary should be placed on the remote machine. Defaults to RemoteDevPodHelperLocation.
+	// RemoteAgentPath is the path where the agent binary should be placed on the remote machine.
+	// Defaults to RemoteDevPodHelperLocation.
 	RemoteAgentPath string
 	// DownloadURL is the base URL to download the agent binary from. Defaults to DefaultAgentDownloadURL().
 	DownloadURL string
@@ -59,64 +65,23 @@ type InjectOptions struct {
 	Stdout io.Writer
 	Stderr io.Writer
 
-	// LocalVersion is the version of the local DevPod binary. Defaults to version.GetVersion().
+	// LocalVersion is the version of the local DevPod binary.
+	// Defaults to version.GetVersion().
 	LocalVersion string
-	// RemoteVersion is the expected version of the remote agent. Defaults to LocalVersion.
+	// RemoteVersion is the expected version of the remote agent.
+	// Defaults to LocalVersion.
 	RemoteVersion string
-	// SkipVersionCheck disables the validation of the remote agent's version. Defaults to false, unless DEVPOD_AGENT_URL is set.
+	// SkipVersionCheck disables the validation of the remote agent's version.
+	// Defaults to false, unless DEVPOD_AGENT_URL is set.
 	SkipVersionCheck bool
 	// MetricsCollector handles the recording of injection metrics. Defaults to LogMetricsCollector.
 	MetricsCollector MetricsCollector
 }
 
 func (o *InjectOptions) ApplyDefaults() {
-	if o.RemoteAgentPath == "" {
-		o.RemoteAgentPath = RemoteDevPodHelperLocation
-	}
-	if o.DownloadURL == "" {
-		o.DownloadURL = DefaultAgentDownloadURL()
-	}
-	if o.Timeout == 0 {
-		o.Timeout = waitForInstanceConnectionTimeout
-	}
-	if o.LocalVersion == "" {
-		o.LocalVersion = version.GetVersion()
-	}
-	if o.RemoteVersion == "" {
-		o.RemoteVersion = o.LocalVersion
-	}
-
-	if strings.Contains(o.DownloadURL, "github.com") && strings.Contains(o.DownloadURL, "/releases/tag/") {
-		normalizedDownloadUrl := strings.Replace(o.DownloadURL, "/releases/tag/", "/releases/download/", 1)
-		o.Log.Warnf("download URL %s is a tag URL, normalizing to download URL %s", o.DownloadURL, normalizedDownloadUrl)
-		o.DownloadURL = normalizedDownloadUrl
-	}
-
-	isDefaultURL := o.DownloadURL == DefaultAgentDownloadURL()
-	hasCustomAgentURL := os.Getenv(EnvDevPodAgentURL) != "" || !isDefaultURL
-
-	if o.PreferDownloadFromRemoteUrl != nil {
-		return
-	}
-
-	preferDownloadEnv := os.Getenv(EnvDevPodAgentPreferDownload)
-	if preferDownloadEnv != "" {
-		pref, err := strconv.ParseBool(preferDownloadEnv)
-		if err != nil {
-			o.Log.Warnf("failed to parse %s, using default", EnvDevPodAgentPreferDownload)
-			pref = true
-		}
-		o.PreferDownloadFromRemoteUrl = Bool(pref)
-		o.SkipVersionCheck = true
-	} else if hasCustomAgentURL {
-		o.PreferDownloadFromRemoteUrl = Bool(true)
-		o.SkipVersionCheck = true
-	} else if version.GetVersion() == version.DevVersion {
-		o.PreferDownloadFromRemoteUrl = Bool(false)
-		o.SkipVersionCheck = true
-	} else {
-		o.PreferDownloadFromRemoteUrl = Bool(true)
-	}
+	o.applyPathDefaults()
+	o.applyURLDefaults()
+	o.applyPreferDownloadDefaults()
 }
 
 func Bool(b bool) *bool {
@@ -134,6 +99,66 @@ func (o *InjectOptions) Validate() error {
 		return fmt.Errorf("logger is required")
 	}
 	return nil
+}
+
+func (o *InjectOptions) applyPathDefaults() {
+	if o.RemoteAgentPath == "" {
+		o.RemoteAgentPath = RemoteDevPodHelperLocation
+	}
+	if o.Timeout == 0 {
+		o.Timeout = waitForInstanceConnectionTimeout
+	}
+	if o.LocalVersion == "" {
+		o.LocalVersion = version.GetVersion()
+	}
+	if o.RemoteVersion == "" {
+		o.RemoteVersion = o.LocalVersion
+	}
+}
+
+func (o *InjectOptions) applyURLDefaults() {
+	if o.DownloadURL == "" {
+		o.DownloadURL = DefaultAgentDownloadURL()
+	}
+
+	if strings.Contains(o.DownloadURL, "github.com") && strings.Contains(o.DownloadURL, "/releases/tag/") {
+		normalizedDownloadUrl := strings.Replace(o.DownloadURL, "/releases/tag/", "/releases/download/", 1)
+		o.Log.Warnf("download URL %s is a tag URL, normalizing to download URL %s", o.DownloadURL, normalizedDownloadUrl)
+		o.DownloadURL = normalizedDownloadUrl
+	}
+}
+
+func (o *InjectOptions) applyPreferDownloadDefaults() {
+	if o.PreferDownloadFromRemoteUrl != nil {
+		return
+	}
+
+	isDefaultURL := o.DownloadURL == DefaultAgentDownloadURL()
+	hasCustomAgentURL := os.Getenv(EnvDevPodAgentURL) != "" || !isDefaultURL
+
+	preferDownloadEnv := os.Getenv(EnvDevPodAgentPreferDownload)
+	switch {
+	case preferDownloadEnv != "":
+		o.applyEnvPreference(preferDownloadEnv)
+	case hasCustomAgentURL:
+		o.PreferDownloadFromRemoteUrl = Bool(true)
+		o.SkipVersionCheck = true
+	case version.GetVersion() == version.DevVersion:
+		o.PreferDownloadFromRemoteUrl = Bool(false)
+		o.SkipVersionCheck = true
+	default:
+		o.PreferDownloadFromRemoteUrl = Bool(true)
+	}
+}
+
+func (o *InjectOptions) applyEnvPreference(preferDownloadEnv string) {
+	pref, err := strconv.ParseBool(preferDownloadEnv)
+	if err != nil {
+		o.Log.Warnf("failed to parse %s, using default", EnvDevPodAgentPreferDownload)
+		pref = true
+	}
+	o.PreferDownloadFromRemoteUrl = Bool(pref)
+	o.SkipVersionCheck = true
 }
 
 func InjectAgent(opts *InjectOptions) error {
@@ -175,7 +200,13 @@ func InjectAgent(opts *InjectOptions) error {
 			Deadline:     time.Now().Add(opts.Timeout),
 		},
 		func(attempt int) error {
-			return injectAgent(attempt, opts, bm, vc, metrics)
+			return injectAgent(&injectContext{
+				attempt: attempt,
+				opts:    opts,
+				bm:      bm,
+				vc:      vc,
+				metrics: metrics,
+			})
 		},
 	)
 }
@@ -188,42 +219,23 @@ func injectLocally(opts *InjectOptions) error {
 	return shell.RunEmulatedShell(opts.Ctx, opts.Command, opts.Stdin, opts.Stdout, opts.Stderr, nil)
 }
 
-func injectAgent(
-	attempt int,
-	opts *InjectOptions,
-	bm *BinaryManager,
-	vc *versionChecker,
-	metrics *InjectionMetrics,
-) error {
-	metrics.Attempts = attempt
+type injectContext struct {
+	attempt int
+	opts    *InjectOptions
+	bm      *BinaryManager
+	vc      *versionChecker
+	metrics *InjectionMetrics
+}
+
+func injectAgent(ctx *injectContext) error {
+	opts := ctx.opts
+	metrics := ctx.metrics
+	metrics.Attempts = ctx.attempt
 
 	buf := &bytes.Buffer{}
-	var stderr io.Writer = buf
-	if opts.Stderr != nil {
-		stderr = io.MultiWriter(opts.Stderr, buf)
-	}
-
-	binaryLoader := func(arm bool) (io.ReadCloser, error) {
-		arch := "amd64"
-		if arm {
-			arch = "arm64"
-		}
-		stream, source, err := bm.AcquireBinary(opts.Ctx, arch)
-		if err != nil {
-			return nil, err
-		}
-		metrics.BinarySource = source
-		return stream, nil
-	}
-
-	scriptParams := &inject.Params{
-		Command:             opts.Command,
-		AgentRemotePath:     opts.RemoteAgentPath,
-		DownloadURLs:        inject.NewDownloadURLs(opts.DownloadURL),
-		ExistsCheck:         vc.buildExistsCheck(opts.RemoteAgentPath),
-		PreferAgentDownload: *opts.PreferDownloadFromRemoteUrl,
-		ShouldChmodPath:     true,
-	}
+	stderr := setupStderr(opts, buf)
+	binaryLoader := createBinaryLoader(ctx)
+	scriptParams := buildScriptParams(ctx)
 
 	wasExecuted, err := inject.Inject(inject.InjectOptions{
 		Ctx:          opts.Ctx,
@@ -238,17 +250,62 @@ func injectAgent(
 	})
 
 	if err != nil {
-		metrics.Error = err
-		if wasExecuted {
-			return &InjectError{
-				Stage: "command_exec",
-				Cause: fmt.Errorf("%w: %s", err, buf.String()),
-			}
-		}
-		return &InjectError{Stage: "inject", Cause: err}
+		return handleInjectError(err, wasExecuted, buf, metrics)
 	}
 
-	detectedVersion, err := vc.detectRemoteAgentVersion(opts.Ctx, opts.Exec, opts.RemoteAgentPath, opts.Log)
+	return performVersionCheck(ctx)
+}
+
+func setupStderr(opts *InjectOptions, buf *bytes.Buffer) io.Writer {
+	if opts.Stderr != nil {
+		return io.MultiWriter(opts.Stderr, buf)
+	}
+	return buf
+}
+
+func createBinaryLoader(ctx *injectContext) func(bool) (io.ReadCloser, error) {
+	return func(arm bool) (io.ReadCloser, error) {
+		arch := "amd64"
+		if arm {
+			arch = "arm64"
+		}
+		stream, source, err := ctx.bm.AcquireBinary(ctx.opts.Ctx, arch)
+		if err != nil {
+			return nil, err
+		}
+		ctx.metrics.BinarySource = source
+		return stream, nil
+	}
+}
+
+func buildScriptParams(ctx *injectContext) *inject.Params {
+	opts := ctx.opts
+	return &inject.Params{
+		Command:             opts.Command,
+		AgentRemotePath:     opts.RemoteAgentPath,
+		DownloadURLs:        inject.NewDownloadURLs(opts.DownloadURL),
+		ExistsCheck:         ctx.vc.buildExistsCheck(opts.RemoteAgentPath),
+		PreferAgentDownload: *opts.PreferDownloadFromRemoteUrl,
+		ShouldChmodPath:     true,
+	}
+}
+
+func handleInjectError(err error, wasExecuted bool, buf *bytes.Buffer, metrics *InjectionMetrics) error {
+	metrics.Error = err
+	if wasExecuted {
+		return &InjectError{
+			Stage: "command_exec",
+			Cause: fmt.Errorf("%w: %s", err, buf.String()),
+		}
+	}
+	return &InjectError{Stage: "inject", Cause: err}
+}
+
+func performVersionCheck(ctx *injectContext) error {
+	opts := ctx.opts
+	metrics := ctx.metrics
+
+	detectedVersion, err := ctx.vc.detectRemoteAgentVersion(opts.Ctx, opts.Exec, opts.RemoteAgentPath, opts.Log)
 	if detectedVersion != "" {
 		metrics.AgentVersion = detectedVersion
 	}
@@ -328,11 +385,9 @@ func RetryWithDeadline(
 ) error {
 	cfg.applyDefaults()
 	delay := cfg.InitialDelay
+
 	for attempt := 1; attempt <= cfg.MaxAttempts; attempt++ {
-		if err := cfg.checkDeadline(attempt - 1); err != nil {
-			return err
-		}
-		if err := checkContextCancelled(ctx); err != nil {
+		if err := cfg.checkPreConditions(ctx, attempt-1); err != nil {
 			return err
 		}
 
@@ -340,33 +395,59 @@ func RetryWithDeadline(
 		if err == nil {
 			return nil
 		}
+
 		if attempt == cfg.MaxAttempts {
 			return fmt.Errorf("agent injection failed after %d attempts: %w", attempt, err)
 		}
 
-		sleep := calculateSleep(delay, &cfg)
-
-		log.WithFields(logrus.Fields{
-			"attempt": attempt,
-			"delay":   sleep,
-			"error":   err,
-		}).Debug("retrying")
-
-		if err := sleepWithContext(ctx, sleep); err != nil {
-			return err
-		}
-
-		delay *= 2
-		if delay > cfg.MaxDelay {
-			delay = cfg.MaxDelay
+		delay = cfg.handleRetry(&retryContext{
+			ctx:     ctx,
+			log:     log,
+			attempt: attempt,
+			err:     err,
+			delay:   delay,
+		})
+		if delay == 0 {
+			return ctx.Err()
 		}
 	}
 
-	// This should not be reachable because a return should occur in the loop
 	return fmt.Errorf("retry loop exited unexpectedly")
 }
 
-// applyDefaults sets default values for retry configuration
+func (cfg *RetryConfig) checkPreConditions(ctx context.Context, attemptsCompleted int) error {
+	if err := cfg.checkDeadline(attemptsCompleted); err != nil {
+		return err
+	}
+	return checkContextCancelled(ctx)
+}
+
+type retryContext struct {
+	ctx     context.Context
+	log     log.Logger
+	attempt int
+	err     error
+	delay   time.Duration
+}
+
+func (cfg *RetryConfig) handleRetry(rctx *retryContext) time.Duration {
+	sleep := calculateSleep(rctx.delay, cfg)
+
+	rctx.log.WithFields(logrus.Fields{
+		"attempt": rctx.attempt,
+		"delay":   sleep,
+		"error":   rctx.err,
+	}).Debug("retrying")
+
+	if err := sleepWithContext(rctx.ctx, sleep); err != nil {
+		return 0
+	}
+
+	newDelay := rctx.delay * 2
+	return min(newDelay, cfg.MaxDelay)
+}
+
+// applyDefaults sets default values for retry configuration.
 func (cfg *RetryConfig) applyDefaults() {
 	if cfg.MaxAttempts <= 0 {
 		cfg.MaxAttempts = 1
@@ -376,7 +457,7 @@ func (cfg *RetryConfig) applyDefaults() {
 	}
 }
 
-// checkDeadline returns an error if the deadline has been exceeded
+// checkDeadline returns an error if the deadline has been exceeded.
 func (cfg *RetryConfig) checkDeadline(attemptsCompleted int) error {
 	if cfg.Deadline.IsZero() || !time.Now().After(cfg.Deadline) {
 		return nil
@@ -384,7 +465,7 @@ func (cfg *RetryConfig) checkDeadline(attemptsCompleted int) error {
 	return fmt.Errorf("%w after %d attempts", ErrInjectTimeout, attemptsCompleted)
 }
 
-// checkContextCancelled returns an error if the context has been cancelled
+// checkContextCancelled returns an error if the context has been cancelled.
 func checkContextCancelled(ctx context.Context) error {
 	select {
 	case <-ctx.Done():
@@ -394,7 +475,7 @@ func checkContextCancelled(ctx context.Context) error {
 	}
 }
 
-// calculateSleep determines the sleep duration respecting deadline and max delay
+// calculateSleep determines the sleep duration respecting deadline and max delay.
 func calculateSleep(delay time.Duration, cfg *RetryConfig) time.Duration {
 	sleep := delay
 	if !cfg.Deadline.IsZero() {
@@ -406,7 +487,7 @@ func calculateSleep(delay time.Duration, cfg *RetryConfig) time.Duration {
 	return sleep
 }
 
-// sleepWithContext sleeps for the specified duration with context cancellation support
+// sleepWithContext sleeps for the specified duration with context cancellation support.
 func sleepWithContext(ctx context.Context, duration time.Duration) error {
 	select {
 	case <-ctx.Done():
@@ -526,11 +607,11 @@ func (c *BinaryCache) Set(arch string, data io.Reader) error {
 }
 
 func (c *BinaryCache) pathFor(arch string) string {
-	return filepath.Join(c.BaseDir, "devpod-linux-"+arch)
+	return filepath.Join(c.BaseDir, "devpod-"+osLinux+"-"+arch)
 }
 
 func (c *BinaryCache) atomicWrite(path string, data io.Reader) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0750); err != nil { // #nosec G301
 		return err
 	}
 
@@ -568,8 +649,12 @@ func (s *InjectSource) GetBinary(ctx context.Context, arch string) (io.ReadClose
 	return s.openCurrentExecutable()
 }
 
+func (s *InjectSource) SourceName() string {
+	return "local_executable"
+}
+
 func (s *InjectSource) matchesCurrentRuntime(arch string) bool {
-	return runtime.GOOS == "linux" && runtime.GOARCH == arch
+	return runtime.GOOS == osLinux && runtime.GOARCH == arch
 }
 
 func (s *InjectSource) openCurrentExecutable() (io.ReadCloser, error) {
@@ -577,11 +662,7 @@ func (s *InjectSource) openCurrentExecutable() (io.ReadCloser, error) {
 	if err != nil {
 		return nil, err
 	}
-	return os.Open(path)
-}
-
-func (s *InjectSource) SourceName() string {
-	return "local_executable"
+	return os.Open(path) // #nosec G304
 }
 
 type FileCacheSource struct {
@@ -602,12 +683,37 @@ type HTTPDownloadSource struct {
 }
 
 func (s *HTTPDownloadSource) GetBinary(ctx context.Context, arch string) (io.ReadCloser, error) {
-	binaryName := "devpod-linux-" + arch
-	downloadURL, err := url.JoinPath(s.BaseURL, binaryName)
+	downloadURL, err := s.buildDownloadURL(arch)
 	if err != nil {
-		return nil, fmt.Errorf("failed to construct download URL: %w", err)
+		return nil, err
 	}
 
+	resp, err := s.downloadFile(ctx, downloadURL)
+	if err != nil {
+		return nil, err
+	}
+
+	if s.Cache != nil {
+		return s.cacheAndReturn(arch, resp.Body)
+	}
+
+	return resp.Body, nil
+}
+
+func (s *HTTPDownloadSource) SourceName() string {
+	return "http_download"
+}
+
+func (s *HTTPDownloadSource) buildDownloadURL(arch string) (string, error) {
+	binaryName := "devpod-" + osLinux + "-" + arch
+	downloadURL, err := url.JoinPath(s.BaseURL, binaryName)
+	if err != nil {
+		return "", fmt.Errorf("failed to construct download URL: %w", err)
+	}
+	return downloadURL, nil
+}
+
+func (s *HTTPDownloadSource) downloadFile(ctx context.Context, downloadURL string) (*http.Response, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, downloadURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
@@ -629,11 +735,7 @@ func (s *HTTPDownloadSource) GetBinary(ctx context.Context, arch string) (io.Rea
 		return nil, fmt.Errorf("received HTML instead of binary from %s (check if the download URL is correct)", downloadURL)
 	}
 
-	if s.Cache != nil {
-		return s.cacheAndReturn(arch, resp.Body)
-	}
-
-	return resp.Body, nil
+	return resp, nil
 }
 
 func (s *HTTPDownloadSource) cacheAndReturn(arch string, body io.ReadCloser) (io.ReadCloser, error) {
@@ -653,7 +755,7 @@ func (s *HTTPDownloadSource) cacheAndReturn(arch string, body io.ReadCloser) (io
 		}
 
 		cachePath := s.Cache.pathFor(arch)
-		if err := os.MkdirAll(filepath.Dir(cachePath), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(cachePath), 0750); err != nil { // #nosec G301
 			streamOnly()
 			return
 		}
@@ -689,8 +791,4 @@ func (s *HTTPDownloadSource) cacheAndReturn(arch string, body io.ReadCloser) (io
 	}()
 
 	return pr, nil
-}
-
-func (s *HTTPDownloadSource) SourceName() string {
-	return "http_download"
 }
