@@ -284,7 +284,7 @@ func performVersionCheck(ctx *injectContext) error {
 		}
 	}
 
-	if detectedVersion != "" {
+	if detectedVersion != "" && !opts.SkipVersionCheck {
 		opts.Log.Debugf("detected remote agent version: %s", detectedVersion)
 	}
 
