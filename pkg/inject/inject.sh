@@ -43,13 +43,13 @@ inject_binary() {
 
     if ! $sh_c "cat > \"$temp_file\""; then
         >&2 echo "Error: Failed to write binary to $temp_file"
-        $sh_c "rm -f \"$temp_file\""
+        $sh_c "rm -f \"$temp_file\"" 2>/dev/null || true
         return 1
     fi
 
     if ! $sh_c "mv \"$temp_file\" \"$INSTALL_PATH\""; then
         >&2 echo "Error: Failed to move binary to $INSTALL_PATH"
-        $sh_c "rm -f \"$temp_file\""
+        $sh_c "rm -f \"$temp_file\"" 2>/dev/null || true
         return 1
     fi
 
@@ -67,6 +67,7 @@ download_binary() {
 
     while [ "$iteration" -le "$max_iteration" ]; do
         temp_file="$(mktemp "$INSTALL_PATH.XXXXXX" 2>/dev/null || echo "$INSTALL_PATH.$$-$(date +%s)")"
+        trap 'rm -f "$temp_file"' EXIT
 
         if command_exists curl; then
             $sh_c "curl -fsSL \"$DOWNLOAD_URL\" -o \"$temp_file\"" && break
@@ -79,7 +80,7 @@ download_binary() {
             return 127
         fi
 
-        $sh_c "rm -f \"$temp_file\""
+        $sh_c "rm -f \"$temp_file\"" 2>/dev/null || true
 
         >&2 echo "Error: Download attempt $iteration failed (exit code: ${cmd_status})"
         >&2 echo "       URL: $DOWNLOAD_URL"
@@ -98,7 +99,7 @@ download_binary() {
 
     if ! $sh_c "mv \"$temp_file\" \"$INSTALL_PATH\""; then
         >&2 echo "Error: Failed to move downloaded binary to $INSTALL_PATH"
-        $sh_c "rm -f \"$temp_file\""
+        $sh_c "rm -f \"$temp_file\"" 2>/dev/null || true
         return 1
     fi
 
