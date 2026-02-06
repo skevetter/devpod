@@ -32,3 +32,5 @@ linters:
       rules:
         - name: argument-limit
           arguments: [4]
+        - name: function-result-limit
+          arguments: [3]

@@ -249,16 +249,16 @@ func (r *runner) executeSetup(ctx context.Context, result *config.Result, setupC
 		)
 	}
 
-	return sshtunnel.ExecuteCommand(
-		ctx,
-		nil,
-		false,
-		agentInjectFunc,
-		sshTunnelCmd,
-		setupCommand,
-		r.Log,
-		runSetupServer,
-	)
+	return sshtunnel.ExecuteCommand(sshtunnel.ExecuteCommandOptions{
+		Ctx:              ctx,
+		Client:           nil,
+		AddPrivateKeys:   false,
+		AgentInject:      agentInjectFunc,
+		SSHCommand:       sshTunnelCmd,
+		Command:          setupCommand,
+		Log:              r.Log,
+		TunnelServerFunc: runSetupServer,
+	})
 }
 
 func (r *runner) buildSSHTunnelCommand() string {
