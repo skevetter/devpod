@@ -87,8 +87,6 @@ func ExecuteCommand(opts ExecuteCommandOptions) (*config2.Result, error) {
 	})
 
 	result, err := waitForTunnelCompletion(tc)
-
-	// Wait for goroutines to complete
 	wg.Wait()
 
 	return result, err
@@ -134,7 +132,6 @@ func waitForTunnelCompletion(tc *tunnelContext) (*config2.Result, error) {
 
 	tc.opts.Log.Debug("awaiting tunnel server command completion")
 
-	// Collect both errors to handle race condition
 	var errs []error
 	err1 := <-tc.errChan
 	if err1 != nil {
@@ -147,7 +144,6 @@ func waitForTunnelCompletion(tc *tunnelContext) (*config2.Result, error) {
 
 	tc.opts.Log.Debug("SSH tunnel execution completed")
 
-	// Return first error or combine multiple errors
 	if len(errs) == 0 {
 		return result, nil
 	}
@@ -163,16 +159,16 @@ type pipePair struct {
 
 func (p *pipePair) Close() {
 	if p.stdoutReader != nil {
-		p.stdoutReader.Close()
+		_ = p.stdoutReader.Close()
 	}
 	if p.stdoutWriter != nil {
-		p.stdoutWriter.Close()
+		_ = p.stdoutWriter.Close()
 	}
 	if p.stdinReader != nil {
-		p.stdinReader.Close()
+		_ = p.stdinReader.Close()
 	}
 	if p.stdinWriter != nil {
-		p.stdinWriter.Close()
+		_ = p.stdinWriter.Close()
 	}
 }
 
@@ -211,7 +207,7 @@ func isExpectedError(err error) bool {
 	var exitErr *exec.ExitError
 	if errors.As(err, &exitErr) {
 		// Process was terminated by a signal
-		return exitErr.ProcessState != nil && !exitErr.ProcessState.Exited()
+		return exitErr.ProcessState != nil && !exitErr.Exited()
 	}
 	return false
 }
