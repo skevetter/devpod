@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/skevetter/devpod/pkg/agent"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	"github.com/skevetter/devpod/pkg/driver"
 	provider2 "github.com/skevetter/devpod/pkg/provider"
@@ -114,11 +115,7 @@ func (k *KubernetesDriver) runContainer(
 	}
 
 	// read pod template
-	pod := &corev1.Pod{
-		Spec: corev1.PodSpec{
-			RestartPolicy: corev1.RestartPolicyNever,
-		},
-	}
+	pod := &corev1.Pod{}
 	if len(k.options.PodManifestTemplate) > 0 {
 		k.Log.Debugf("trying to get pod template manifest from %s", k.options.PodManifestTemplate)
 		pod, err = getPodTemplate(k.options.PodManifestTemplate)
@@ -240,7 +237,7 @@ func (k *KubernetesDriver) runContainer(
 	if k.options.KubernetesPullSecretsEnabled == "true" && pullSecretsCreated {
 		pod.Spec.ImagePullSecrets = []corev1.LocalObjectReference{{Name: getPullSecretsName(id)}}
 	}
-	pod.Spec.RestartPolicy = corev1.RestartPolicyNever
+	pod.Spec.RestartPolicy = corev1.RestartPolicyAlways
 	// try to get existing pod
 	existingPod, err := k.getPod(ctx, id)
 	if err != nil {
@@ -350,6 +347,17 @@ func getContainers(
 			RunAsGroup:   &[]int64{0}[0],
 			RunAsNonRoot: &[]bool{false}[0],
 		},
+		LivenessProbe: &corev1.Probe{
+			ProbeHandler: corev1.ProbeHandler{
+				Exec: &corev1.ExecAction{
+					Command: []string{agent.ContainerDevPodHelperLocation, "agent", "container", "health"},
+				},
+			},
+			InitialDelaySeconds: 60,
+			PeriodSeconds:       10,
+			TimeoutSeconds:      5,
+			FailureThreshold:    3,
+		},
 	}
 
 	if strictSecurity == "true" {
@@ -378,6 +386,13 @@ func getContainers(
 
 		if devPodContainer.SecurityContext == nil && existingDevPodContainer.SecurityContext != nil {
 			devPodContainer.SecurityContext = existingDevPodContainer.SecurityContext
+		}
+
+		if existingDevPodContainer.LivenessProbe != nil {
+			devPodContainer.LivenessProbe = existingDevPodContainer.LivenessProbe
+		}
+		if existingDevPodContainer.ReadinessProbe != nil {
+			devPodContainer.ReadinessProbe = existingDevPodContainer.ReadinessProbe
 		}
 	}
 	retContainers = append(retContainers, devPodContainer)
