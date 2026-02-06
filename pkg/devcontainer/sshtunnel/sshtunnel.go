@@ -132,7 +132,7 @@ func waitForTunnelCompletion(tc *tunnelContext) (*config2.Result, error) {
 		return nil, fmt.Errorf("start tunnel server: %w", err)
 	}
 
-	tc.opts.Log.Debug("tunnel server started, waiting for command completion")
+	tc.opts.Log.Debug("awaiting tunnel server command completion")
 
 	// Collect both errors to handle race condition
 	var errs []error
@@ -246,7 +246,7 @@ func runSSHTunnel(tc *tunnelContext) {
 	tc.opts.Log.Debug("creating SSH client")
 	sshClient, err := devssh.StdioClient(tc.sshPipes.stdoutReader, tc.sshPipes.stdinWriter, false)
 	if err != nil {
-		tc.errChan <- fmt.Errorf("failed to create SSH client (check network and SSH server): %w", err)
+		tc.errChan <- fmt.Errorf("failed to create SSH client: %w", err)
 		return
 	}
 	tc.opts.Log.Debug("SSH client created")
@@ -288,9 +288,6 @@ func getSSHBackoff(opts ExecuteCommandOptions) wait.Backoff {
 		timeout = 60 * time.Second
 	}
 
-	// Calculate steps to reach timeout with exponential backoff
-	// Factor 1.5, starting at 500ms: 500ms, 750ms, 1125ms, 1687ms, 2531ms...
-	// ~20 steps reaches ~60s total
 	steps := max(10, int(timeout/duration*2))
 
 	return wait.Backoff{
@@ -469,7 +466,7 @@ func (l *TunnelLogStreamer) extractLogLevel(line string) (bool, logrus.Level) {
 		return false, logrus.DebugLevel
 	}
 
-	level, ok := logLevelMap[parts[1]]
+	level, ok := logLevelMap[strings.ToLower(parts[1])]
 
 	return ok, level
 }
