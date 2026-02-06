@@ -204,15 +204,19 @@ func (r *runner) addDriverFlags(sb *strings.Builder, isDockerDriver bool) {
 	}
 }
 
+func shellEscape(s string) string {
+	return strings.ReplaceAll(s, "'", "'\\''")
+}
+
 func (r *runner) addPlatformFlags(sb *strings.Builder) {
 	if r.WorkspaceConfig.CLIOptions.Platform.AccessKey != "" &&
 		r.WorkspaceConfig.CLIOptions.Platform.WorkspaceHost != "" &&
 		r.WorkspaceConfig.CLIOptions.Platform.PlatformHost != "" {
 		fmt.Fprintf(sb,
 			" --access-key '%s' --workspace-host '%s' --platform-host '%s'",
-			r.WorkspaceConfig.CLIOptions.Platform.AccessKey,
-			r.WorkspaceConfig.CLIOptions.Platform.WorkspaceHost,
-			r.WorkspaceConfig.CLIOptions.Platform.PlatformHost,
+			shellEscape(r.WorkspaceConfig.CLIOptions.Platform.AccessKey),
+			shellEscape(r.WorkspaceConfig.CLIOptions.Platform.WorkspaceHost),
+			shellEscape(r.WorkspaceConfig.CLIOptions.Platform.PlatformHost),
 		)
 	}
 }
@@ -293,7 +297,7 @@ func (r *runner) buildSSHTunnelCommand() string {
 
 	if ide.ReusesAuthSock(r.WorkspaceConfig.Workspace.IDE.Name) {
 		fmt.Fprintf(&sb,
-			" --reuse-ssh-auth-sock=%s",
+			" --reuse-ssh-auth-sock='%s'",
 			r.WorkspaceConfig.CLIOptions.SSHAuthSockID,
 		)
 	}
