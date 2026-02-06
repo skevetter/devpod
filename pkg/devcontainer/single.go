@@ -186,7 +186,13 @@ func (r *runner) runSingleContainer(
 	}
 
 	// setup container
-	return r.setupContainer(ctx, parsedConfig.Raw, containerDetails, mergedConfig, substitutionContext, timeout)
+	return r.setupContainer(ctx, &setupContainerParams{
+		rawConfig:           parsedConfig.Raw,
+		containerDetails:    containerDetails,
+		mergedConfig:        mergedConfig,
+		substitutionContext: substitutionContext,
+		timeout:             timeout,
+	})
 }
 
 func (r *runner) runContainer(

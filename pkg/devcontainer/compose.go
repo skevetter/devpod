@@ -224,7 +224,13 @@ func (r *runner) runDockerCompose(
 	}
 
 	// setup container
-	return r.setupContainer(ctx, parsedConfig.Raw, containerDetails, mergedConfig, substitutionContext, timeout)
+	return r.setupContainer(ctx, &setupContainerParams{
+		rawConfig:           parsedConfig.Raw,
+		containerDetails:    containerDetails,
+		mergedConfig:        mergedConfig,
+		substitutionContext: substitutionContext,
+		timeout:             timeout,
+	})
 }
 
 // onlyRunServices appends the services defined in .devcontainer.json runServices to the upArgs

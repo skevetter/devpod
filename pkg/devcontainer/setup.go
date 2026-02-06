@@ -24,19 +24,48 @@ import (
 	"github.com/skevetter/log"
 )
 
-func (r *runner) setupContainer(
-	ctx context.Context,
-	rawConfig *config.DevContainerConfig,
-	containerDetails *config.ContainerDetails,
-	mergedConfig *config.MergedDevContainerConfig,
-	substitutionContext *config.SubstitutionContext,
-	timeout time.Duration,
-) (*config.Result, error) {
-	// inject agent
+const (
+	stringTrue        = "true"
+	stringFalse       = "false"
+	containerRootUser = "root"
+)
+
+type setupContainerParams struct {
+	rawConfig           *config.DevContainerConfig
+	containerDetails    *config.ContainerDetails
+	mergedConfig        *config.MergedDevContainerConfig
+	substitutionContext *config.SubstitutionContext
+	timeout             time.Duration
+}
+
+type setupInfo struct {
+	result                    *config.Result
+	compressed                string
+	workspaceConfigCompressed string
+}
+
+func (r *runner) setupContainer(ctx context.Context, params *setupContainerParams) (*config.Result, error) {
+	if err := r.injectAgentIntoContainer(ctx, params.timeout); err != nil {
+		return nil, err
+	}
+	r.Log.Debugf("injected into container")
+	defer r.Log.Debugf("done setting up container")
+
+	info, err := r.prepareSetupInfo(params)
+	if err != nil {
+		return nil, err
+	}
+
+	setupCommand := r.buildSetupCommand(info.compressed, info.workspaceConfigCompressed)
+
+	return r.executeSetup(ctx, info.result, setupCommand)
+}
+
+func (r *runner) injectAgentIntoContainer(ctx context.Context, timeout time.Duration) error {
 	err := agent.InjectAgent(&agent.InjectOptions{
 		Ctx: ctx,
 		Exec: func(ctx context.Context, command string, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
-			return r.Driver.CommandDevContainer(ctx, r.ID, "root", command, stdin, stdout, stderr)
+			return r.Driver.CommandDevContainer(ctx, r.ID, containerRootUser, command, stdin, stdout, stderr)
 		},
 		IsLocal:                     false,
 		RemoteAgentPath:             agent.ContainerDevPodHelperLocation,
@@ -46,39 +75,62 @@ func (r *runner) setupContainer(
 		Timeout:                     timeout,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("inject agent: %w", err)
+		return fmt.Errorf("inject agent: %w", err)
 	}
-	r.Log.Debugf("Injected into container")
-	defer r.Log.Debugf("Done setting up container")
+	return nil
+}
 
-	// compress info
+func (r *runner) prepareSetupInfo(params *setupContainerParams) (*setupInfo, error) {
+	result := r.buildResult(params)
+
+	compressed, err := r.compressResult(result)
+	if err != nil {
+		return nil, err
+	}
+
+	workspaceConfigCompressed, err := r.compressWorkspaceConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	return &setupInfo{
+		result:                    result,
+		compressed:                compressed,
+		workspaceConfigCompressed: workspaceConfigCompressed,
+	}, nil
+}
+
+func (r *runner) buildResult(params *setupContainerParams) *config.Result {
 	result := &config.Result{
 		DevContainerConfigWithPath: &config.DevContainerConfigWithPath{
-			Config: rawConfig,
-			Path:   getRelativeDevContainerJson(rawConfig.Origin, r.LocalWorkspaceFolder),
+			Config: params.rawConfig,
+			Path:   getRelativeDevContainerJson(params.rawConfig.Origin, r.LocalWorkspaceFolder),
 		},
-
-		MergedConfig:        mergedConfig,
-		SubstitutionContext: substitutionContext,
-		ContainerDetails:    containerDetails,
+		MergedConfig:        params.mergedConfig,
+		SubstitutionContext: params.substitutionContext,
+		ContainerDetails:    params.containerDetails,
 	}
 
-	// Ensure workspace mounts cannot escape their content folder for local agents in proxy mode.
-	// There _might_ be a use-case that requires an allowlist for certain directories
-	// when running as a standalone runner with docker-in-docker set up. Let's add it when/if the time comes.
-	if r.WorkspaceConfig.Agent.Local == "true" && r.WorkspaceConfig.CLIOptions.Platform.Enabled {
+	if r.WorkspaceConfig.Agent.Local == stringTrue && r.WorkspaceConfig.CLIOptions.Platform.Enabled {
 		result.MergedConfig.Mounts = filterWorkspaceMounts(result.MergedConfig.Mounts, r.WorkspaceConfig.ContentFolder, r.Log)
 	}
 
+	return result
+}
+
+func (r *runner) compressResult(result *config.Result) (string, error) {
 	marshalled, err := json.Marshal(result)
 	if err != nil {
-		return nil, err
+		return "", fmt.Errorf("marshal result: %w", err)
 	}
 	compressed, err := compress.Compress(string(marshalled))
 	if err != nil {
-		return nil, err
+		return "", fmt.Errorf("compress result: %w", err)
 	}
+	return compressed, nil
+}
 
+func (r *runner) compressWorkspaceConfig() (string, error) {
 	workspaceConfig := &provider2.ContainerWorkspaceInfo{
 		IDE:              r.WorkspaceConfig.Workspace.IDE,
 		CLIOptions:       r.WorkspaceConfig.CLIOptions,
@@ -89,74 +141,140 @@ func (r *runner) setupContainer(
 		ContentFolder:    r.WorkspaceConfig.ContentFolder,
 	}
 	if crane.ShouldUse(&r.WorkspaceConfig.CLIOptions) && r.WorkspaceConfig.Workspace.Source.GitRepository != "" {
-		workspaceConfig.PullFromInsideContainer = "true"
+		workspaceConfig.PullFromInsideContainer = stringTrue
 	}
-	// compress container workspace info
+
 	workspaceConfigRaw, err := json.Marshal(workspaceConfig)
 	if err != nil {
-		return nil, err
+		return "", fmt.Errorf("marshal workspace config: %w", err)
 	}
-	workspaceConfigCompressed, err := compress.Compress(string(workspaceConfigRaw))
+	compressed, err := compress.Compress(string(workspaceConfigRaw))
 	if err != nil {
-		return nil, err
+		return "", fmt.Errorf("compress workspace config: %w", err)
 	}
+	return compressed, nil
+}
 
-	// check if docker driver
-	_, isDockerDriver := r.Driver.(driver.DockerDriver)
+func (r *runner) buildSetupCommand(compressed, workspaceConfigCompressed string) string {
+	r.Log.Infof("setting up container")
 
-	// setup container
-	r.Log.Infof("Setup container...")
-
-	setupCommand := fmt.Sprintf(
+	var sb strings.Builder
+	fmt.Fprintf(&sb,
 		"'%s' agent container setup --setup-info '%s' --container-workspace-info '%s'",
 		agent.ContainerDevPodHelperLocation,
 		compressed,
 		workspaceConfigCompressed,
 	)
-	if runtime.GOOS == "linux" || !isDockerDriver {
-		setupCommand += " --chown-workspace"
+
+	r.addSetupFlags(&sb)
+	return sb.String()
+}
+
+func (r *runner) addSetupFlags(sb *strings.Builder) {
+	_, isDockerDriver := r.Driver.(driver.DockerDriver)
+	isPodman := r.isPodman()
+
+	r.addChownFlag(sb, isDockerDriver, isPodman)
+	r.addDriverFlags(sb, isDockerDriver)
+	r.addPlatformFlags(sb)
+	r.addDebugFlag(sb)
+}
+
+func (r *runner) isPodman() bool {
+	path := r.WorkspaceConfig.Agent.Docker.Path
+	if path == "" {
+		return false
 	}
+	base := filepath.Base(path)
+	return base == "podman" || strings.HasPrefix(base, "podman-")
+}
+
+func (r *runner) addChownFlag(sb *strings.Builder, isDockerDriver, isPodman bool) {
+	if r.shouldAddChownFlag(isDockerDriver, isPodman) {
+		sb.WriteString(" --chown-workspace")
+	}
+}
+
+func (r *runner) addDriverFlags(sb *strings.Builder, isDockerDriver bool) {
 	if !isDockerDriver {
-		setupCommand += " --stream-mounts"
+		sb.WriteString(" --stream-mounts")
 	}
-	if r.WorkspaceConfig.Agent.InjectGitCredentials != "false" {
-		setupCommand += " --inject-git-credentials"
+	if r.WorkspaceConfig.Agent.InjectGitCredentials != stringFalse {
+		sb.WriteString(" --inject-git-credentials")
 	}
+}
+
+func (r *runner) addPlatformFlags(sb *strings.Builder) {
 	if r.WorkspaceConfig.CLIOptions.Platform.AccessKey != "" &&
 		r.WorkspaceConfig.CLIOptions.Platform.WorkspaceHost != "" &&
 		r.WorkspaceConfig.CLIOptions.Platform.PlatformHost != "" {
-		setupCommand += fmt.Sprintf(" --access-key '%s' --workspace-host '%s' --platform-host '%s'", r.WorkspaceConfig.CLIOptions.Platform.AccessKey, r.WorkspaceConfig.CLIOptions.Platform.WorkspaceHost, r.WorkspaceConfig.CLIOptions.Platform.PlatformHost)
+		fmt.Fprintf(sb,
+			" --access-key '%s' --workspace-host '%s' --platform-host '%s'",
+			r.WorkspaceConfig.CLIOptions.Platform.AccessKey,
+			r.WorkspaceConfig.CLIOptions.Platform.WorkspaceHost,
+			r.WorkspaceConfig.CLIOptions.Platform.PlatformHost,
+		)
 	}
-	if r.Log.GetLevel() == logrus.DebugLevel {
-		setupCommand += " --debug"
-	}
+}
 
-	// run setup server
+func (r *runner) addDebugFlag(sb *strings.Builder) {
+	if r.isDebugMode() {
+		sb.WriteString(" --debug")
+	}
+}
+
+func (r *runner) isDebugMode() bool {
+	return r.Log.GetLevel() == logrus.DebugLevel
+}
+
+func (r *runner) shouldAddChownFlag(isDockerDriver, isPodman bool) bool {
+	if runtime.GOOS == "linux" || !isDockerDriver {
+		return true
+	}
+	if runtime.GOOS == "darwin" && isDockerDriver && isPodman {
+		// Change ownership of mounted workspace to the container user on macOS when using Podman
+		// Reference: https://github.com/containers/podman/issues/17560
+		// "the volume mounted on the container get permission denied when
+		// trying to write, even with --userns=keep-id"
+		r.Log.Debugf("enabling chown for Podman on macOS")
+		return true
+	}
+	return false
+}
+
+func (r *runner) executeSetup(ctx context.Context, result *config.Result, setupCommand string) (*config.Result, error) {
 	runSetupServer := func(ctx context.Context, stdin io.WriteCloser, stdout io.Reader) (*config.Result, error) {
 		return tunnelserver.RunSetupServer(
 			ctx,
 			stdout,
 			stdin,
-			r.WorkspaceConfig.Agent.InjectGitCredentials != "false",
-			r.WorkspaceConfig.Agent.InjectDockerCredentials != "false",
+			r.WorkspaceConfig.Agent.InjectGitCredentials != stringFalse,
+			r.WorkspaceConfig.Agent.InjectDockerCredentials != stringFalse,
 			config.GetMounts(result),
 			r.Log,
 			tunnelserver.WithPlatformOptions(&r.WorkspaceConfig.CLIOptions.Platform),
 		)
 	}
 
-	// ssh tunnel
-	sshTunnelCmd := fmt.Sprintf("'%s' helper ssh-server --stdio", agent.ContainerDevPodHelperLocation)
-	if ide.ReusesAuthSock(r.WorkspaceConfig.Workspace.IDE.Name) {
-		sshTunnelCmd += fmt.Sprintf(" --reuse-ssh-auth-sock=%s", r.WorkspaceConfig.CLIOptions.SSHAuthSockID)
-	}
-	if r.Log.GetLevel() == logrus.DebugLevel {
-		sshTunnelCmd += " --debug"
+	sshTunnelCmd := r.buildSSHTunnelCommand()
+
+	agentInjectFunc := func(
+		cancelCtx context.Context,
+		sshCmd string,
+		sshTunnelStdinReader, sshTunnelStdoutWriter *os.File,
+		writer io.WriteCloser,
+	) error {
+		return r.Driver.CommandDevContainer(
+			cancelCtx,
+			r.ID,
+			containerRootUser,
+			sshCmd,
+			sshTunnelStdinReader,
+			sshTunnelStdoutWriter,
+			writer,
+		)
 	}
 
-	agentInjectFunc := func(cancelCtx context.Context, sshCmd string, sshTunnelStdinReader, sshTunnelStdoutWriter *os.File, writer io.WriteCloser) error {
-		return r.Driver.CommandDevContainer(cancelCtx, r.ID, "root", sshCmd, sshTunnelStdinReader, sshTunnelStdoutWriter, writer)
-	}
 	return sshtunnel.ExecuteCommand(
 		ctx,
 		nil,
@@ -169,6 +287,22 @@ func (r *runner) setupContainer(
 	)
 }
 
+func (r *runner) buildSSHTunnelCommand() string {
+	var sb strings.Builder
+	fmt.Fprintf(&sb, "'%s' helper ssh-server --stdio", agent.ContainerDevPodHelperLocation)
+
+	if ide.ReusesAuthSock(r.WorkspaceConfig.Workspace.IDE.Name) {
+		fmt.Fprintf(&sb,
+			" --reuse-ssh-auth-sock=%s",
+			r.WorkspaceConfig.CLIOptions.SSHAuthSockID,
+		)
+	}
+	if r.isDebugMode() {
+		sb.WriteString(" --debug")
+	}
+	return sb.String()
+}
+
 func getRelativeDevContainerJson(origin, localWorkspaceFolder string) string {
 	relativePath := strings.TrimPrefix(filepath.ToSlash(origin), filepath.ToSlash(localWorkspaceFolder))
 	return strings.TrimPrefix(relativePath, "/")
@@ -179,7 +313,10 @@ func filterWorkspaceMounts(mounts []*config.Mount, baseFolder string, log log.Lo
 	for _, mount := range mounts {
 		rel, err := filepath.Rel(baseFolder, mount.Source)
 		if err != nil || strings.Contains(rel, "..") {
-			log.Infof("Dropping workspace mount %s because it possibly accesses data outside of it's content directory", mount.Source)
+			log.Infof(
+				"dropping workspace mount %s because it possibly accesses data outside of its content directory",
+				mount.Source,
+			)
 			continue
 		}
 
