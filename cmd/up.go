@@ -661,15 +661,15 @@ func (cmd *UpCmd) devPodUpMachine(
 		})
 	}
 
-	return sshtunnel.ExecuteCommand(
-		ctx,
-		client,
-		devPodConfig.ContextOption(config.ContextOptionSSHAddPrivateKeys) == "true",
-		agentInjectFunc,
-		sshTunnelCmd,
-		agentCommand,
-		log,
-		func(ctx context.Context, stdin io.WriteCloser, stdout io.Reader) (*config2.Result, error) {
+	return sshtunnel.ExecuteCommand(sshtunnel.ExecuteCommandOptions{
+		Ctx:            ctx,
+		Client:         client,
+		AddPrivateKeys: devPodConfig.ContextOption(config.ContextOptionSSHAddPrivateKeys) == "true",
+		AgentInject:    agentInjectFunc,
+		SSHCommand:     sshTunnelCmd,
+		Command:        agentCommand,
+		Log:            log,
+		TunnelServerFunc: func(ctx context.Context, stdin io.WriteCloser, stdout io.Reader) (*config2.Result, error) {
 			return tunnelserver.RunUpServer(
 				ctx,
 				stdout,
@@ -680,7 +680,7 @@ func (cmd *UpCmd) devPodUpMachine(
 				log,
 			)
 		},
-	)
+	})
 }
 
 func startJupyterNotebookInBrowser(
