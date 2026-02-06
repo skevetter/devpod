@@ -39,7 +39,7 @@ handshake() {
 inject_binary() {
     echo "ARM-$(is_arm && echo -n 'true' || echo -n 'false')"
 
-    temp_file="$(mktemp "$INSTALL_PATH.XXXXXX" 2>/dev/null || echo "$INSTALL_PATH.$$")"
+    temp_file="$(mktemp "$INSTALL_PATH.XXXXXX" 2>/dev/null || echo "$INSTALL_PATH.$$-$(date +%s)")"
 
     if ! $sh_c "cat > \"$temp_file\""; then
         >&2 echo "Error: Failed to write binary to $temp_file"
@@ -51,13 +51,6 @@ inject_binary() {
         >&2 echo "Error: Failed to move binary to $INSTALL_PATH"
         $sh_c "rm -f \"$temp_file\""
         return 1
-    fi
-
-    if [ "$CHMOD_PATH" = "true" ]; then
-        $sh_c "chmod +x \"$INSTALL_PATH\"" || {
-            >&2 echo "Error: Failed to chmod $INSTALL_PATH"
-            return 1
-        }
     fi
 
     return 0
@@ -73,17 +66,13 @@ download_binary() {
     max_iteration=3
 
     while [ "$iteration" -le "$max_iteration" ]; do
-        temp_file="$(mktemp "$INSTALL_PATH.XXXXXX" 2>/dev/null || echo "$INSTALL_PATH.$$")"
+        temp_file="$(mktemp "$INSTALL_PATH.XXXXXX" 2>/dev/null || echo "$INSTALL_PATH.$$-$(date +%s)")"
 
         if command_exists curl; then
-            if $sh_c "curl -fsSL \"$DOWNLOAD_URL\" -o \"$temp_file\""; then
-                break
-            fi
+            $sh_c "curl -fsSL \"$DOWNLOAD_URL\" -o \"$temp_file\"" && break
             cmd_status=$?
         elif command_exists wget; then
-            if $sh_c "wget -q \"$DOWNLOAD_URL\" -O \"$temp_file\""; then
-                break
-            fi
+            $sh_c "wget -q \"$DOWNLOAD_URL\" -O \"$temp_file\"" && break
             cmd_status=$?
         else
             >&2 echo "Error: No download tool found (curl or wget required)"
