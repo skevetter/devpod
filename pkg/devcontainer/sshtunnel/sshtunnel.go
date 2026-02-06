@@ -3,28 +3,35 @@ package sshtunnel
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/skevetter/log"
-
-	"errors"
 
 	"github.com/sirupsen/logrus"
 	client2 "github.com/skevetter/devpod/pkg/client"
 	config2 "github.com/skevetter/devpod/pkg/devcontainer/config"
 	devssh "github.com/skevetter/devpod/pkg/ssh"
 	devsshagent "github.com/skevetter/devpod/pkg/ssh/agent"
+	"github.com/skevetter/log"
 	"golang.org/x/crypto/ssh"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 type AgentInjectFunc func(context.Context, string, *os.File, *os.File, io.WriteCloser) error
 type TunnelServerFunc func(ctx context.Context, stdin io.WriteCloser, stdout io.Reader) (*config2.Result, error)
+
+var logLevelMap = map[string]logrus.Level{
+	"debug": logrus.DebugLevel,
+	"info":  logrus.InfoLevel,
+	"warn":  logrus.WarnLevel,
+	"error": logrus.ErrorLevel,
+	"fatal": logrus.FatalLevel,
+}
 
 type ExecuteCommandOptions struct {
 	Ctx              context.Context
@@ -40,18 +47,12 @@ type ExecuteCommandOptions struct {
 }
 
 type tunnelContext struct {
-	opts             ExecuteCommandOptions
-	cancelCtx        context.Context
-	cancel           context.CancelFunc
-	errChan          chan error
-	sshStdoutReader  *os.File
-	sshStdoutWriter  *os.File
-	sshStdinReader   *os.File
-	sshStdinWriter   *os.File
-	grpcStdoutReader *os.File
-	grpcStdoutWriter *os.File
-	grpcStdinReader  *os.File
-	grpcStdinWriter  *os.File
+	opts      ExecuteCommandOptions
+	cancelCtx context.Context
+	cancel    context.CancelFunc
+	errChan   chan error
+	sshPipes  *pipePair
+	grpcPipes *pipePair
 }
 
 // ExecuteCommand runs the command in an SSH Tunnel and returns the result.
@@ -71,8 +72,8 @@ func ExecuteCommand(opts ExecuteCommandOptions) (*config2.Result, error) {
 		executeSSHServerHelper(&sshServerHelperParams{
 			opts:         opts,
 			cancel:       tc.cancel,
-			stdinReader:  tc.sshStdinReader,
-			stdoutWriter: tc.sshStdoutWriter,
+			stdinReader:  tc.sshPipes.stdinReader,
+			stdoutWriter: tc.sshPipes.stdoutWriter,
 			errChan:      tc.errChan,
 		})
 	})
@@ -104,40 +105,29 @@ func setupTunnelContext(opts ExecuteCommandOptions) (*tunnelContext, error) {
 
 	grpcPipes, err := createPipes()
 	if err != nil {
+		sshPipes.Close()
 		cancel()
 		return nil, err
 	}
 
 	return &tunnelContext{
-		opts:             opts,
-		cancelCtx:        cancelCtx,
-		cancel:           cancel,
-		errChan:          errChan,
-		sshStdoutReader:  sshPipes.stdoutReader,
-		sshStdoutWriter:  sshPipes.stdoutWriter,
-		sshStdinReader:   sshPipes.stdinReader,
-		sshStdinWriter:   sshPipes.stdinWriter,
-		grpcStdoutReader: grpcPipes.stdoutReader,
-		grpcStdoutWriter: grpcPipes.stdoutWriter,
-		grpcStdinReader:  grpcPipes.stdinReader,
-		grpcStdinWriter:  grpcPipes.stdinWriter,
+		opts:      opts,
+		cancelCtx: cancelCtx,
+		cancel:    cancel,
+		errChan:   errChan,
+		sshPipes:  sshPipes,
+		grpcPipes: grpcPipes,
 	}, nil
 }
 
 func (tc *tunnelContext) cleanup() {
-	_ = tc.sshStdoutReader.Close()
-	_ = tc.sshStdoutWriter.Close()
-	_ = tc.sshStdinReader.Close()
-	_ = tc.sshStdinWriter.Close()
-	_ = tc.grpcStdoutReader.Close()
-	_ = tc.grpcStdoutWriter.Close()
-	_ = tc.grpcStdinReader.Close()
-	_ = tc.grpcStdinWriter.Close()
+	tc.sshPipes.Close()
+	tc.grpcPipes.Close()
 	tc.cancel()
 }
 
 func waitForTunnelCompletion(tc *tunnelContext) (*config2.Result, error) {
-	result, err := tc.opts.TunnelServerFunc(tc.cancelCtx, tc.grpcStdinWriter, tc.grpcStdoutReader)
+	result, err := tc.opts.TunnelServerFunc(tc.cancelCtx, tc.grpcPipes.stdinWriter, tc.grpcPipes.stdoutReader)
 	if err != nil {
 		return nil, fmt.Errorf("start tunnel server: %w", err)
 	}
@@ -161,10 +151,7 @@ func waitForTunnelCompletion(tc *tunnelContext) (*config2.Result, error) {
 	if len(errs) == 0 {
 		return result, nil
 	}
-	if len(errs) == 1 {
-		return result, errs[0]
-	}
-	return result, fmt.Errorf("multiple errors: %w; %v", errs[0], errs[1])
+	return result, errors.Join(errs...)
 }
 
 type pipePair struct {
@@ -172,6 +159,21 @@ type pipePair struct {
 	stdoutWriter *os.File
 	stdinReader  *os.File
 	stdinWriter  *os.File
+}
+
+func (p *pipePair) Close() {
+	if p.stdoutReader != nil {
+		p.stdoutReader.Close()
+	}
+	if p.stdoutWriter != nil {
+		p.stdoutWriter.Close()
+	}
+	if p.stdinReader != nil {
+		p.stdinReader.Close()
+	}
+	if p.stdinWriter != nil {
+		p.stdinWriter.Close()
+	}
 }
 
 func createPipes() (*pipePair, error) {
@@ -205,8 +207,13 @@ func isExpectedError(err error) bool {
 	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 		return true
 	}
-	// Check for signal/termination errors
-	return strings.Contains(err.Error(), "signal:")
+	// Check for process killed by signal
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) {
+		// Process was terminated by a signal
+		return exitErr.ProcessState != nil && !exitErr.ProcessState.Exited()
+	}
+	return false
 }
 
 func executeSSHServerHelper(p *sshServerHelperParams) {
@@ -237,7 +244,7 @@ func runSSHTunnel(tc *tunnelContext) {
 	defer tc.cancel()
 
 	tc.opts.Log.Debug("creating SSH client")
-	sshClient, err := devssh.StdioClient(tc.sshStdoutReader, tc.sshStdinWriter, false)
+	sshClient, err := devssh.StdioClient(tc.sshPipes.stdoutReader, tc.sshPipes.stdinWriter, false)
 	if err != nil {
 		tc.errChan <- fmt.Errorf("failed to create SSH client (check network and SSH server): %w", err)
 		return
@@ -249,17 +256,18 @@ func runSSHTunnel(tc *tunnelContext) {
 	}()
 
 	sess, err := waitForSSHSession(tc, sshClient)
-	if err == nil {
-		defer func() {
-			_ = sess.Close()
-			tc.opts.Log.Debug("SSH session closed")
-		}()
-
-		err = setupSSHAgentForwarding(tc, sshClient, sess)
-		if err == nil {
-			runCommandInSSHTunnel(tc, sshClient)
-		}
+	if err != nil {
+		return
 	}
+	defer func() {
+		_ = sess.Close()
+		tc.opts.Log.Debug("SSH session closed")
+	}()
+
+	if err = setupSSHAgentForwarding(tc, sshClient, sess); err != nil {
+		return
+	}
+	runCommandInSSHTunnel(tc, sshClient)
 }
 
 func getSSHTimeout(opts ExecuteCommandOptions) time.Duration {
@@ -356,8 +364,8 @@ func runCommandInSSHTunnel(tc *tunnelContext, sshClient *ssh.Client) {
 		Context: tc.opts.Ctx,
 		Client:  sshClient,
 		Command: tc.opts.Command,
-		Stdin:   tc.grpcStdinReader,
-		Stdout:  tc.grpcStdoutWriter,
+		Stdin:   tc.grpcPipes.stdinReader,
+		Stdout:  tc.grpcPipes.stdoutWriter,
 		Stderr:  streamer,
 	}); err != nil {
 		_ = streamer.Close()
@@ -461,13 +469,7 @@ func (l *TunnelLogStreamer) extractLogLevel(line string) (bool, logrus.Level) {
 		return false, logrus.DebugLevel
 	}
 
-	level, ok := map[string]logrus.Level{
-		"debug": logrus.DebugLevel,
-		"info":  logrus.InfoLevel,
-		"warn":  logrus.WarnLevel,
-		"error": logrus.ErrorLevel,
-		"fatal": logrus.FatalLevel,
-	}[parts[1]]
+	level, ok := logLevelMap[parts[1]]
 
 	return ok, level
 }
