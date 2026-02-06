@@ -158,7 +158,6 @@ func (r *runner) compressWorkspaceConfig() (string, error) {
 
 func (r *runner) buildSetupCommand(compressed, workspaceConfigCompressed string) string {
 	r.Log.Infof("setting up container")
-
 	args := []string{
 		shellescape.Quote(agent.ContainerDevPodHelperLocation),
 		"agent", "container", "setup",
@@ -195,14 +194,15 @@ func (r *runner) addDriverFlags(args *[]string, isDockerDriver bool) {
 }
 
 func (r *runner) addPlatformFlags(args *[]string) {
-	if r.WorkspaceConfig.CLIOptions.Platform.AccessKey != "" &&
-		r.WorkspaceConfig.CLIOptions.Platform.WorkspaceHost != "" &&
-		r.WorkspaceConfig.CLIOptions.Platform.PlatformHost != "" {
-		*args = append(*args,
-			"--access-key", shellescape.Quote(r.WorkspaceConfig.CLIOptions.Platform.AccessKey),
-			"--workspace-host", shellescape.Quote(r.WorkspaceConfig.CLIOptions.Platform.WorkspaceHost),
-			"--platform-host", shellescape.Quote(r.WorkspaceConfig.CLIOptions.Platform.PlatformHost),
-		)
+	platform := r.WorkspaceConfig.CLIOptions.Platform
+	if platform.AccessKey != "" {
+		*args = append(*args, "--access-key", shellescape.Quote(platform.AccessKey))
+	}
+	if platform.WorkspaceHost != "" {
+		*args = append(*args, "--workspace-host", shellescape.Quote(platform.WorkspaceHost))
+	}
+	if platform.PlatformHost != "" {
+		*args = append(*args, "--platform-host", shellescape.Quote(platform.PlatformHost))
 	}
 }
 
