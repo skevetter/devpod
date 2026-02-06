@@ -162,8 +162,8 @@ func (r *runner) buildSetupCommand(compressed, workspaceConfigCompressed string)
 	fmt.Fprintf(&sb,
 		"'%s' agent container setup --setup-info '%s' --container-workspace-info '%s'",
 		agent.ContainerDevPodHelperLocation,
-		compressed,
-		workspaceConfigCompressed,
+		shellEscape(compressed),
+		shellEscape(workspaceConfigCompressed),
 	)
 
 	r.addSetupFlags(&sb)
@@ -172,25 +172,15 @@ func (r *runner) buildSetupCommand(compressed, workspaceConfigCompressed string)
 
 func (r *runner) addSetupFlags(sb *strings.Builder) {
 	_, isDockerDriver := r.Driver.(driver.DockerDriver)
-	isPodman := r.isPodman()
 
-	r.addChownFlag(sb, isDockerDriver, isPodman)
+	r.addChownFlag(sb, isDockerDriver)
 	r.addDriverFlags(sb, isDockerDriver)
 	r.addPlatformFlags(sb)
 	r.addDebugFlag(sb)
 }
 
-func (r *runner) isPodman() bool {
-	path := r.WorkspaceConfig.Agent.Docker.Path
-	if path == "" {
-		return false
-	}
-	base := filepath.Base(path)
-	return base == "podman" || strings.HasPrefix(base, "podman-")
-}
-
-func (r *runner) addChownFlag(sb *strings.Builder, isDockerDriver, isPodman bool) {
-	if r.shouldAddChownFlag(isDockerDriver, isPodman) {
+func (r *runner) addChownFlag(sb *strings.Builder, isDockerDriver bool) {
+	if runtime.GOOS == "linux" || !isDockerDriver {
 		sb.WriteString(" --chown-workspace")
 	}
 }
@@ -229,21 +219,6 @@ func (r *runner) addDebugFlag(sb *strings.Builder) {
 
 func (r *runner) isDebugMode() bool {
 	return r.Log.GetLevel() == logrus.DebugLevel
-}
-
-func (r *runner) shouldAddChownFlag(isDockerDriver, isPodman bool) bool {
-	if runtime.GOOS == "linux" || !isDockerDriver {
-		return true
-	}
-	if runtime.GOOS == "darwin" && isDockerDriver && isPodman {
-		// Change ownership of mounted workspace to the container user on macOS when using Podman
-		// Reference: https://github.com/containers/podman/issues/17560
-		// "the volume mounted on the container get permission denied when
-		// trying to write, even with --userns=keep-id"
-		r.Log.Debugf("enabling chown for Podman on macOS")
-		return true
-	}
-	return false
 }
 
 func (r *runner) executeSetup(ctx context.Context, result *config.Result, setupCommand string) (*config.Result, error) {
@@ -298,7 +273,7 @@ func (r *runner) buildSSHTunnelCommand() string {
 	if ide.ReusesAuthSock(r.WorkspaceConfig.Workspace.IDE.Name) {
 		fmt.Fprintf(&sb,
 			" --reuse-ssh-auth-sock='%s'",
-			r.WorkspaceConfig.CLIOptions.SSHAuthSockID,
+			shellEscape(r.WorkspaceConfig.CLIOptions.SSHAuthSockID),
 		)
 	}
 	if r.isDebugMode() {
