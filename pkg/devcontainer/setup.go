@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"al.essio.dev/pkg/shellescape"
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/agent"
 	"github.com/skevetter/devpod/pkg/agent/tunnelserver"
@@ -158,62 +159,56 @@ func (r *runner) compressWorkspaceConfig() (string, error) {
 func (r *runner) buildSetupCommand(compressed, workspaceConfigCompressed string) string {
 	r.Log.Infof("setting up container")
 
-	var sb strings.Builder
-	fmt.Fprintf(&sb,
-		"'%s' agent container setup --setup-info '%s' --container-workspace-info '%s'",
-		agent.ContainerDevPodHelperLocation,
-		shellEscape(compressed),
-		shellEscape(workspaceConfigCompressed),
-	)
+	args := []string{
+		shellescape.Quote(agent.ContainerDevPodHelperLocation),
+		"agent", "container", "setup",
+		"--setup-info", shellescape.Quote(compressed),
+		"--container-workspace-info", shellescape.Quote(workspaceConfigCompressed),
+	}
 
-	r.addSetupFlags(&sb)
-	return sb.String()
+	r.addSetupFlags(&args)
+	return strings.Join(args, " ")
 }
 
-func (r *runner) addSetupFlags(sb *strings.Builder) {
+func (r *runner) addSetupFlags(args *[]string) {
 	_, isDockerDriver := r.Driver.(driver.DockerDriver)
 
-	r.addChownFlag(sb, isDockerDriver)
-	r.addDriverFlags(sb, isDockerDriver)
-	r.addPlatformFlags(sb)
-	r.addDebugFlag(sb)
+	r.addChownFlag(args, isDockerDriver)
+	r.addDriverFlags(args, isDockerDriver)
+	r.addPlatformFlags(args)
+	r.addDebugFlag(args)
 }
 
-func (r *runner) addChownFlag(sb *strings.Builder, isDockerDriver bool) {
+func (r *runner) addChownFlag(args *[]string, isDockerDriver bool) {
 	if runtime.GOOS == "linux" || !isDockerDriver {
-		sb.WriteString(" --chown-workspace")
+		*args = append(*args, "--chown-workspace")
 	}
 }
 
-func (r *runner) addDriverFlags(sb *strings.Builder, isDockerDriver bool) {
+func (r *runner) addDriverFlags(args *[]string, isDockerDriver bool) {
 	if !isDockerDriver {
-		sb.WriteString(" --stream-mounts")
+		*args = append(*args, "--stream-mounts")
 	}
 	if r.WorkspaceConfig.Agent.InjectGitCredentials != stringFalse {
-		sb.WriteString(" --inject-git-credentials")
+		*args = append(*args, "--inject-git-credentials")
 	}
 }
 
-func shellEscape(s string) string {
-	return strings.ReplaceAll(s, "'", "'\\''")
-}
-
-func (r *runner) addPlatformFlags(sb *strings.Builder) {
+func (r *runner) addPlatformFlags(args *[]string) {
 	if r.WorkspaceConfig.CLIOptions.Platform.AccessKey != "" &&
 		r.WorkspaceConfig.CLIOptions.Platform.WorkspaceHost != "" &&
 		r.WorkspaceConfig.CLIOptions.Platform.PlatformHost != "" {
-		fmt.Fprintf(sb,
-			" --access-key '%s' --workspace-host '%s' --platform-host '%s'",
-			shellEscape(r.WorkspaceConfig.CLIOptions.Platform.AccessKey),
-			shellEscape(r.WorkspaceConfig.CLIOptions.Platform.WorkspaceHost),
-			shellEscape(r.WorkspaceConfig.CLIOptions.Platform.PlatformHost),
+		*args = append(*args,
+			"--access-key", shellescape.Quote(r.WorkspaceConfig.CLIOptions.Platform.AccessKey),
+			"--workspace-host", shellescape.Quote(r.WorkspaceConfig.CLIOptions.Platform.WorkspaceHost),
+			"--platform-host", shellescape.Quote(r.WorkspaceConfig.CLIOptions.Platform.PlatformHost),
 		)
 	}
 }
 
-func (r *runner) addDebugFlag(sb *strings.Builder) {
+func (r *runner) addDebugFlag(args *[]string) {
 	if r.isDebugMode() {
-		sb.WriteString(" --debug")
+		*args = append(*args, "--debug")
 	}
 }
 
@@ -267,19 +262,18 @@ func (r *runner) executeSetup(ctx context.Context, result *config.Result, setupC
 }
 
 func (r *runner) buildSSHTunnelCommand() string {
-	var sb strings.Builder
-	fmt.Fprintf(&sb, "'%s' helper ssh-server --stdio", agent.ContainerDevPodHelperLocation)
+	args := []string{
+		shellescape.Quote(agent.ContainerDevPodHelperLocation),
+		"helper", "ssh-server", "--stdio",
+	}
 
 	if ide.ReusesAuthSock(r.WorkspaceConfig.Workspace.IDE.Name) {
-		fmt.Fprintf(&sb,
-			" --reuse-ssh-auth-sock='%s'",
-			shellEscape(r.WorkspaceConfig.CLIOptions.SSHAuthSockID),
-		)
+		args = append(args, "--reuse-ssh-auth-sock", shellescape.Quote(r.WorkspaceConfig.CLIOptions.SSHAuthSockID))
 	}
 	if r.isDebugMode() {
-		sb.WriteString(" --debug")
+		args = append(args, "--debug")
 	}
-	return sb.String()
+	return strings.Join(args, " ")
 }
 
 func getRelativeDevContainerJson(origin, localWorkspaceFolder string) string {
