@@ -15,6 +15,7 @@ import {
   DEVPOD_COMMAND_LIST,
   DEVPOD_COMMAND_OPTIONS,
   DEVPOD_COMMAND_PROVIDER,
+  DEVPOD_COMMAND_RENAME,
   DEVPOD_COMMAND_SET_OPTIONS,
   DEVPOD_COMMAND_UPDATE,
   DEVPOD_COMMAND_USE,
@@ -232,6 +233,25 @@ export class ProviderCommands {
       source.raw ?? source.github ?? source.url ?? source.file ?? "",
       DEVPOD_FLAG_JSON_LOG_OUTPUT,
       useFlag,
+    ]).run()
+    if (result.err) {
+      return result
+    }
+
+    if (!isOk(result.val)) {
+      return getErrorFromChildProcess(result.val)
+    }
+
+    return Return.Ok()
+  }
+
+  static async RenameProvider(oldName: TProviderID, newName: string) {
+    const result = await ProviderCommands.newCommand([
+      DEVPOD_COMMAND_PROVIDER,
+      DEVPOD_COMMAND_RENAME,
+      oldName,
+      newName,
+      DEVPOD_FLAG_JSON_LOG_OUTPUT,
     ]).run()
     if (result.err) {
       return result

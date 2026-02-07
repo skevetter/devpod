@@ -1,6 +1,6 @@
 import { TProviderOptions } from "@/types"
 
-export const ALLOWED_NAMES_REGEX = /^[a-z0-9\\-]+$/
+export const ALLOWED_NAMES_REGEX = /^[a-z0-9-]+$/
 
 export function mergeProviderOptions(
   old: TProviderOptions | undefined | null,
