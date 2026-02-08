@@ -34,7 +34,8 @@ The rename operation performs the following steps:
 2.  Automatically rebinds all workspaces associated with the old provider to use the new provider name
 3.  If all workspace rebinding succeeds and the provider being renamed is the default provider, updates the default provider setting to the new name
 4.  Cleans up the old provider after successful rebinding and default provider update (if applicable)
-5.  If any workspace rebinding or default provider update fails, the operation rolls back by reverting the workspace configurations, restoring the default provider setting (if it was changed), and deleting the cloned provider
+5.  If any workspace rebinding or default provider update fails, the operation rolls back by reverting the workspace configurations, restoring the default provider setting (if it was changed), and deleting the cloned provider if all workspaces were successfully reverted
+6. If workspace rebinding on rollback fails, the cloned provider will remain to avoid orphaned workspaces
 
 ## GUI
 
