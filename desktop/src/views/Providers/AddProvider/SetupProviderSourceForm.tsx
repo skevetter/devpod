@@ -26,7 +26,6 @@ import {
   useColorModeValue,
 } from "@chakra-ui/react"
 import { useQueryClient } from "@tanstack/react-query"
-import { AnimatePresence, motion } from "framer-motion"
 import { useCallback, useEffect, useRef, useState } from "react"
 import {
   Controller,
@@ -49,8 +48,7 @@ import { useCommunityContributions } from "@/useCommunityContributions"
 import { LoadingProviderIndicator } from "./LoadingProviderIndicator"
 import { FieldName, TFormValues, TSetupProviderResult } from "./types"
 import { useAddProvider } from "./useAddProvider"
-
-const ALLOWED_NAMES_REGEX = /^[a-z0-9\\-]+$/
+import { PROVIDER_NAME_REGEX } from "../../../lib/validation"
 const DEFAULT_VAL_OPTS: SetValueConfig = {
   shouldDirty: true,
   shouldValidate: true,
@@ -345,29 +343,68 @@ export function SetupProviderSourceForm({
 
           <Container color="gray.700" _dark={{ color: "gray.200" }} maxWidth="container.md">
             {showCustom.manual && (
-              <FormControl isRequired isInvalid={exists(providerSourceError)}>
-                <FormLabel>Source</FormLabel>
-                <Controller
-                  name={FieldName.PROVIDER_SOURCE}
-                  rules={{ required: true }}
-                  control={control}
-                  render={({ field }) => (
-                    <CustomProviderInput
-                      field={field}
-                      isInvalid={exists(providerSourceError)}
-                      onAccept={handleSubmit(onSubmit)}
-                    />
+              <>
+                <FormControl isRequired isInvalid={exists(providerSourceError)}>
+                  <FormLabel>Source</FormLabel>
+                  <Controller
+                    name={FieldName.PROVIDER_SOURCE}
+                    rules={{ required: true }}
+                    control={control}
+                    render={({ field }) => (
+                      <CustomProviderInput
+                        field={field}
+                        isInvalid={exists(providerSourceError)}
+                        onAccept={handleSubmit(onSubmit)}
+                      />
+                    )}
+                  />
+                  {providerSourceError && providerSourceError.message ? (
+                    <FormErrorMessage>{providerSourceError.message}</FormErrorMessage>
+                  ) : (
+                    <FormHelperText>
+                      Can either be a URL or local path to a <Code>provider</Code> file, or a github
+                      repo in the form of <Code>my-org/my-repo</Code>
+                    </FormHelperText>
                   )}
-                />
-                {providerSourceError && providerSourceError.message ? (
-                  <FormErrorMessage>{providerSourceError.message}</FormErrorMessage>
-                ) : (
-                  <FormHelperText>
-                    Can either be a URL or local path to a <Code>provider</Code> file, or a github
-                    repo in the form of <Code>my-org/my-repo</Code>
-                  </FormHelperText>
-                )}
-              </FormControl>
+                </FormControl>
+                <FormControl isInvalid={exists(providerNameError)} mt={4}>
+                  <FormLabel>Name (Optional)</FormLabel>
+                  <Controller
+                    name={FieldName.PROVIDER_NAME}
+                    control={control}
+                    rules={{
+                      pattern: {
+                        value: PROVIDER_NAME_REGEX,
+                        message: "Name can only contain lowercase letters, numbers and hyphens",
+                      },
+                      validate: {
+                        unique: (value) => {
+                          if (value === undefined || value === "") return true
+
+                          return providers?.[value] === undefined ? true : "Name must be unique"
+                        },
+                      },
+                      maxLength: { value: 32, message: "Name cannot be longer than 32 characters" },
+                    }}
+                    render={({ field }) => (
+                      <Input
+                        {...field}
+                        size="md"
+                        type="text"
+                        placeholder="my-custom-provider"
+                        spellCheck={false}
+                        value={field.value ?? ""}
+                        onChange={(e) => field.onChange(e.target.value)}
+                      />
+                    )}
+                  />
+                  {exists(providerNameError) ? (
+                    <FormErrorMessage>{providerNameError.message ?? "Error"}</FormErrorMessage>
+                  ) : (
+                    <FormHelperText>Give your provider a custom name.</FormHelperText>
+                  )}
+                </FormControl>
+              </>
             )}
 
             {!formState.isDirty && (
@@ -381,54 +418,6 @@ export function SetupProviderSourceForm({
               </>
             )}
           </Container>
-
-          <AnimatePresence>
-            {exists(providerName) && (
-              <FormControl
-                maxWidth={{ base: "3xl", xl: "4xl" }}
-                as={motion.div}
-                initial={{ height: 0, overflow: "hidden" }}
-                animate={{ height: "auto", overflow: "revert" }}
-                exit={{ height: 0, overflow: "hidden" }}
-                isInvalid={exists(providerNameError)}>
-                <FormLabel>Name</FormLabel>
-                <Controller
-                  name={FieldName.PROVIDER_NAME}
-                  control={control}
-                  rules={{
-                    pattern: {
-                      value: ALLOWED_NAMES_REGEX,
-                      message: "Name can only contain letters, numbers and -",
-                    },
-                    validate: {
-                      unique: (value) => {
-                        if (value === undefined) return true
-                        if (value === "") return "Name cannot be empty"
-
-                        return providers?.[value] === undefined ? true : "Name must be unique"
-                      },
-                    },
-                    maxLength: { value: 48, message: "Name cannot be longer than 48 characters" },
-                  }}
-                  render={({ field }) => (
-                    <CustomNameInput
-                      field={field}
-                      onAccept={handleSubmit(onSubmit)}
-                      isInvalid={exists(providerNameError)}
-                    />
-                  )}
-                />
-                {exists(providerNameError) ? (
-                  <FormErrorMessage>{providerNameError.message ?? "Error"}</FormErrorMessage>
-                ) : (
-                  <FormHelperText>
-                    Please give your provider a different name from the one specified in its{" "}
-                    <Code>provider.yaml</Code>
-                  </FormHelperText>
-                )}
-              </FormControl>
-            )}
-          </AnimatePresence>
 
           {status === "error" && isError(error) && <ErrorMessageBox error={error} />}
           {isLoading && (

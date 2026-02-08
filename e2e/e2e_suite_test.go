@@ -22,6 +22,7 @@ import (
 	_ "github.com/skevetter/devpod/e2e/tests/up"
 	_ "github.com/skevetter/devpod/e2e/tests/up-features"
 	_ "github.com/skevetter/devpod/e2e/tests/upgrade"
+	_ "github.com/skevetter/devpod/e2e/tests/workspace"
 )
 
 // TestRunE2ETests checks configuration parameters (specified through flags) and then runs
