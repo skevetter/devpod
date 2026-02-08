@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	client2 "github.com/skevetter/devpod/pkg/client"
 	devpodhttp "github.com/skevetter/devpod/pkg/http"
 	"github.com/skevetter/devpod/pkg/provider"
 	"github.com/skevetter/devpod/pkg/types"
@@ -17,6 +18,7 @@ import (
 
 	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/download"
+	"github.com/skevetter/devpod/pkg/platform"
 	"github.com/skevetter/log"
 )
 
@@ -593,4 +595,44 @@ func buildGithubURL(path, release string) string {
 		return fmt.Sprintf("https://github.com/%s/releases/latest/download/provider.yaml", path)
 	}
 	return fmt.Sprintf("https://github.com/%s/releases/download/%s/provider.yaml", path, release)
+}
+
+// SwitchProvider updates the provider name for the given workspace with client locking.
+func SwitchProvider(
+	ctx context.Context,
+	devPodConfig *config.Config,
+	workspace *provider.Workspace,
+	newProviderName string,
+) error {
+	client, err := Get(ctx, devPodConfig, []string{workspace.ID}, false, platform.AllOwnerFilter, false, log.Default)
+	if err != nil {
+		return fmt.Errorf("failed to get client for workspace %s: %w", workspace.ID, err)
+	}
+
+	err = client.Lock(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to lock workspace %s: %w", workspace.ID, err)
+	}
+
+	defer client.Unlock()
+	status, err := client.Status(ctx, client2.StatusOptions{ContainerStatus: true})
+	if err != nil {
+		return fmt.Errorf("failed to get status for workspace %s: %w", workspace.ID, err)
+	}
+
+	if status != client2.StatusStopped && status != client2.StatusNotFound {
+		return fmt.Errorf("workspace %s is in state %s and cannot be switched. Allowed only Stopped or NotFound",
+			workspace.ID, status)
+	}
+
+	oldProviderName := workspace.Provider.Name
+	workspace.Provider.Name = newProviderName
+
+	err = provider.SaveWorkspaceConfig(workspace)
+	if err != nil {
+		workspace.Provider.Name = oldProviderName
+		return fmt.Errorf("failed to save workspace config: %w", err)
+	}
+
+	return nil
 }

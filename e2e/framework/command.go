@@ -219,6 +219,17 @@ func (f *Framework) DevPodProviderDelete(ctx context.Context, args ...string) er
 	return nil
 }
 
+func (f *Framework) DevPodProviderRename(ctx context.Context, oldName, newName string, args ...string) error {
+	baseArgs := []string{"provider", "rename", oldName, newName}
+	baseArgs = append(baseArgs, args...)
+	err := f.ExecCommand(ctx, false, false, "", baseArgs)
+	if err != nil {
+		return fmt.Errorf("devpod provider rename failed: %s", err.Error())
+	}
+
+	return nil
+}
+
 func (f *Framework) DevPodProviderUpdate(ctx context.Context, args ...string) error {
 	baseArgs := []string{"provider", "update"}
 	baseArgs = append(baseArgs, args...)
@@ -375,4 +386,18 @@ func (f *Framework) DevPodIDEUse(ctx context.Context, ide string, extraArgs ...s
 func (f *Framework) DevPodIDEList(ctx context.Context, extraArgs ...string) (string, error) {
 	baseArgs := []string{"ide", "list"}
 	return f.ExecCommandOutput(ctx, append(baseArgs, extraArgs...))
+}
+
+func (f *Framework) DevPodWorkspaceRebind(
+	ctx context.Context,
+	workspaceName,
+	newProvider string,
+	extraArgs ...string) error {
+	args := []string{"workspace", "rebind", workspaceName, newProvider}
+	args = append(args, extraArgs...)
+	_, stderr, err := f.ExecCommandCapture(ctx, args)
+	if err != nil {
+		return fmt.Errorf("devpod workspace rebind failed: %s", stderr)
+	}
+	return nil
 }

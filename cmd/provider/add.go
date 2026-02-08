@@ -53,7 +53,8 @@ func NewAddCmd(f *flags.GlobalFlags) *cobra.Command {
 	}
 
 	addCmd.Flags().BoolVar(&cmd.SingleMachine, "single-machine", false, "If enabled will use a single machine for all workspaces")
-	addCmd.Flags().StringVar(&cmd.Name, "name", "", "The name to use for this provider. If empty will use the name within the loaded config")
+	addCmd.Flags().StringVar(&cmd.Name, "name", "",
+		"The name for the new provider. If not specified, the name from the provider's configuration file will be used.")
 	addCmd.Flags().StringVar(&cmd.FromExisting, "from-existing", "", "The name of an existing provider to use as a template. Needs to be used in conjunction with the --name flag")
 	addCmd.Flags().BoolVar(&cmd.Use, "use", true, "If enabled will automatically activate the provider")
 	addCmd.Flags().StringArrayVarP(&cmd.Options, "option", "o", []string{}, "Provider option in the form KEY=VALUE")
