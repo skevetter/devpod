@@ -163,16 +163,16 @@ type pipePair struct {
 
 func (p *pipePair) Close() {
 	if p.stdoutReader != nil {
-		p.stdoutReader.Close()
+		_ = p.stdoutReader.Close()
 	}
 	if p.stdoutWriter != nil {
-		p.stdoutWriter.Close()
+		_ = p.stdoutWriter.Close()
 	}
 	if p.stdinReader != nil {
-		p.stdinReader.Close()
+		_ = p.stdinReader.Close()
 	}
 	if p.stdinWriter != nil {
-		p.stdinWriter.Close()
+		_ = p.stdinWriter.Close()
 	}
 }
 
@@ -211,7 +211,7 @@ func isExpectedError(err error) bool {
 	var exitErr *exec.ExitError
 	if errors.As(err, &exitErr) {
 		// Process was terminated by a signal
-		return exitErr.ProcessState != nil && !exitErr.ProcessState.Exited()
+		return exitErr != nil && !exitErr.Exited()
 	}
 	return false
 }
