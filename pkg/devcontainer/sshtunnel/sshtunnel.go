@@ -162,18 +162,16 @@ type pipePair struct {
 }
 
 func (p *pipePair) Close() {
-	if p.stdoutReader != nil {
-		_ = p.stdoutReader.Close()
+	closeFile := func(fp **os.File) {
+		if *fp != nil {
+			_ = (*fp).Close()
+			*fp = nil
+		}
 	}
-	if p.stdoutWriter != nil {
-		_ = p.stdoutWriter.Close()
-	}
-	if p.stdinReader != nil {
-		_ = p.stdinReader.Close()
-	}
-	if p.stdinWriter != nil {
-		_ = p.stdinWriter.Close()
-	}
+	closeFile(&p.stdoutReader)
+	closeFile(&p.stdoutWriter)
+	closeFile(&p.stdinReader)
+	closeFile(&p.stdinWriter)
 }
 
 func createPipes() (*pipePair, error) {
