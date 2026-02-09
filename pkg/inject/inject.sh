@@ -158,7 +158,7 @@ install_agent() {
 
 execute_command() {
     echo "done"
-    export DEVPOD_AGENT_URL={{ .DownloadBase }}
+    export DEVPOD_AGENT_URL="{{ .DownloadBase }}"
     {{ .Command }}
 }
 
