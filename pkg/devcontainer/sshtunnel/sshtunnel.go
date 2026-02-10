@@ -42,8 +42,6 @@ type ExecuteCommandOptions struct {
 	Command          string
 	Log              log.Logger
 	TunnelServerFunc TunnelServerFunc
-	SSHTimeout       time.Duration // Default: 60s
-	SSHRetryInterval time.Duration // Default: 500ms
 }
 
 type tunnelContext struct {
@@ -253,7 +251,7 @@ func runSSHTunnel(tc *tunnelContext) {
 		tc.opts.Log.Debug("SSH client closed")
 	}()
 
-	sess, err := waitForSSHSession(tc, sshClient)
+	sess, err := establishSSHSession(tc, sshClient)
 	if err != nil {
 		return
 	}
@@ -268,39 +266,16 @@ func runSSHTunnel(tc *tunnelContext) {
 	runCommandInSSHTunnel(tc, sshClient)
 }
 
-func getSSHTimeout(opts ExecuteCommandOptions) time.Duration {
-	if opts.SSHTimeout == 0 {
-		return 60 * time.Second
-	}
-	return opts.SSHTimeout
-}
-
-func getSSHBackoff(opts ExecuteCommandOptions) wait.Backoff {
-	duration := opts.SSHRetryInterval
-	if duration == 0 {
-		duration = 500 * time.Millisecond
-	}
-
-	timeout := opts.SSHTimeout
-	if timeout == 0 {
-		timeout = 60 * time.Second
-	}
-
-	steps := max(10, int(timeout/duration*2))
-
-	return wait.Backoff{
-		Duration: duration,
-		Factor:   1.5,
-		Jitter:   0.1,
-		Steps:    steps,
-	}
-}
-
-func waitForSSHSession(
+func establishSSHSession(
 	tc *tunnelContext,
 	sshClient *ssh.Client,
 ) (*ssh.Session, error) {
-	backoff := getSSHBackoff(tc.opts)
+	backoff := wait.Backoff{
+		Duration: 500 * time.Millisecond,
+		Factor:   1.5,
+		Jitter:   0.1,
+		Steps:    20,
+	}
 
 	var session *ssh.Session
 	if err := wait.ExponentialBackoffWithContext(tc.cancelCtx, backoff, func(ctx context.Context) (bool, error) {
@@ -318,7 +293,7 @@ func waitForSSHSession(
 			return nil, err
 		}
 		// Timeout from backoff
-		timeoutErr := fmt.Errorf("SSH server timeout after %v", getSSHTimeout(tc.opts))
+		timeoutErr := fmt.Errorf("SSH server timeout: %w", err)
 		tc.errChan <- timeoutErr
 		return nil, timeoutErr
 	}
@@ -356,7 +331,7 @@ func runCommandInSSHTunnel(tc *tunnelContext, sshClient *ssh.Client) {
 
 	tc.opts.Log.Debugf("running agent command in SSH tunnel: %q", tc.opts.Command)
 	if err := devssh.Run(devssh.RunOptions{
-		Context: tc.opts.Ctx,
+		Context: tc.cancelCtx,
 		Client:  sshClient,
 		Command: tc.opts.Command,
 		Stdin:   tc.grpcPipes.stdinReader,
