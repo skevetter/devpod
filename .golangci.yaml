@@ -34,3 +34,6 @@ linters:
           arguments: [4]
         - name: function-result-limit
           arguments: [3]
+        - name: file-length-limit
+          arguments:
+            - max: 850
