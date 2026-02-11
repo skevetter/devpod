@@ -396,8 +396,7 @@ func (r *runner) startProjectWithFiles(
 	upArgs = r.onlyRunServices(upArgs, params.parsedConfig)
 
 	writer := r.Log.Writer(logrus.InfoLevel, false)
-	err := params.composeHelper.Run(ctx, upArgs, nil, writer, writer)
-	if err != nil {
+	if err := params.composeHelper.Run(ctx, upArgs, nil, writer, writer); err != nil {
 		r.Log.Errorf("error starting project: %s", err)
 		return false, nil
 	}
