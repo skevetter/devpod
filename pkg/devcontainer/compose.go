@@ -629,6 +629,9 @@ func (r *runner) extendedDockerComposeBuild(composeService *composetypes.Service
 			Context:    filepath.Dir(featuresBuildInfo.FeaturesFolder),
 		},
 	}
+	if composeService.Image != "" {
+		service.Image = stripDigestFromImageRef(composeService.Image)
+	}
 
 	if composeService.Build != nil && composeService.Build.Target != "" {
 		service.Build.Target = featuresBuildInfo.OverrideTarget
@@ -669,6 +672,15 @@ func (r *runner) extendedDockerComposeBuild(composeService *composetypes.Service
 	}
 
 	return dockerComposePath, nil
+}
+
+func stripDigestFromImageRef(imageRef string) string {
+	baseRef, _, found := strings.Cut(imageRef, "@")
+	if !found {
+		return imageRef
+	}
+
+	return baseRef
 }
 
 func (r *runner) extendedDockerComposeUp(
