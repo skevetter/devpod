@@ -149,8 +149,19 @@ func (h *ComposeHelper) Run(ctx context.Context, args []string, stdin io.Reader,
 	cmd := h.buildCmd(ctx, args...)
 	cmd.Stdin = stdin
 	cmd.Stdout = stdout
-	cmd.Stderr = stderr
-	return cmd.Run()
+
+	var stderrBuf strings.Builder
+	if stderr != nil {
+		cmd.Stderr = io.MultiWriter(stderr, &stderrBuf)
+	} else {
+		cmd.Stderr = &stderrBuf
+	}
+
+	err := cmd.Run()
+	if err != nil && stderrBuf.Len() > 0 {
+		return fmt.Errorf("%s: %w", strings.TrimSpace(stderrBuf.String()), err)
+	}
+	return err
 }
 
 func (h *ComposeHelper) Stop(ctx context.Context, projectName string, args []string) error {
