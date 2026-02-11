@@ -582,7 +582,9 @@ func (r *runner) mergeExtraConfig(
 	}
 
 	extraConfig, err := config.ParseDevContainerJSONFile(options.ExtraDevContainerPath)
-	if err == nil {
+	if err != nil {
+		r.Log.Warnf("failed to parse extra devcontainer config %s: %v", options.ExtraDevContainerPath, err)
+	} else {
 		config.AddConfigToImageMetadata(extraConfig, imageMetadata)
 	}
 
@@ -813,7 +815,8 @@ func (r *runner) buildAndExtendDockerCompose(
 		return nil, err
 	}
 
-	dockerComposeFilePath, err = r.handleFeaturesBuild(
+	var extendedDockerfilePath string
+	dockerComposeFilePath, extendedDockerfilePath, err = r.handleFeaturesBuild(
 		params, extendImageBuildInfo, featuresBuildContext{
 			dockerFilePath:     dockerFilePath,
 			dockerfileContents: dockerfileContents,
@@ -830,6 +833,9 @@ func (r *runner) buildAndExtendDockerCompose(
 	defer func() { _ = writer.Close() }()
 	r.Log.Debugf("Run %s %s", params.composeHelper.Command, strings.Join(buildArgs, " "))
 	err = params.composeHelper.Run(ctx, buildArgs, nil, writer, writer)
+	if extendedDockerfilePath != "" {
+		_ = os.RemoveAll(filepath.Dir(extendedDockerfilePath))
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -867,9 +873,9 @@ func (r *runner) handleFeaturesBuild(
 	params buildExtendParams,
 	extendImageBuildInfo *feature.ExtendedBuildInfo,
 	buildCtx featuresBuildContext,
-) (string, error) {
+) (string, string, error) {
 	if extendImageBuildInfo == nil || extendImageBuildInfo.FeaturesBuildInfo == nil {
-		return "", nil
+		return "", "", nil
 	}
 
 	dockerfileContents := buildCtx.dockerfileContents
@@ -892,18 +898,18 @@ func (r *runner) handleFeaturesBuild(
 		extendedDockerfileContent,
 	)
 
-	defer func() { _ = os.RemoveAll(filepath.Dir(extendedDockerfilePath)) }()
 	err := os.WriteFile(extendedDockerfilePath, []byte(extendedDockerfileContent), 0600)
 	if err != nil {
-		return "", fmt.Errorf("write Dockerfile with features: %w", err)
+		return "", "", fmt.Errorf("write Dockerfile with features: %w", err)
 	}
 
 	// Write the final docker-compose referencing the modified Dockerfile or Image
-	return r.extendedDockerComposeBuild(
+	composeFilePath, err := r.extendedDockerComposeBuild(
 		params.composeService,
 		extendedDockerfilePath,
 		extendImageBuildInfo.FeaturesBuildInfo,
 	)
+	return composeFilePath, extendedDockerfilePath, err
 }
 
 func (r *runner) prepareBuildArgs(
@@ -1007,7 +1013,7 @@ func (r *runner) writeBuildComposeFile(project *composetypes.Project) (string, e
 	}
 
 	dockerComposePath := filepath.Join(
-		dockerComposeFolder, fmt.Sprintf("%s-%d.yml", FeaturesBuildOverrideFilePrefix, time.Now().Second()))
+		dockerComposeFolder, fmt.Sprintf("%s-%d.yml", FeaturesBuildOverrideFilePrefix, time.Now().UnixNano()))
 
 	r.Log.Debugf(
 		"Creating docker-compose build %s with content:\n %s",
