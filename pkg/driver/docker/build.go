@@ -60,19 +60,19 @@ type buildStrategy interface {
 	name() string
 }
 
-// dockerBuildStrategy uses docker build.
-type dockerBuildStrategy struct {
+// dockerBuildxStrategy uses docker buildx build.
+type dockerBuildxStrategy struct {
 	driver *dockerDriver
 }
 
-func (s *dockerBuildStrategy) build(
+func (s *dockerBuildxStrategy) build(
 	ctx context.Context,
 	writer io.Writer,
 	platform string,
 	options *build.BuildOptions,
 ) error {
-	args := buildDockerArgs(options, platform)
-	s.driver.Log.Debugf("running docker build with args: %s", strings.Join(args, " "))
+	args := buildDockerBuildxArgs(options, platform)
+	s.driver.Log.Debugf("running docker buildx build with args: %s", strings.Join(args, " "))
 	stderrBuf := &bytes.Buffer{}
 	multiWriter := io.MultiWriter(writer, stderrBuf)
 	if err := s.driver.Docker.Run(ctx, args, nil, writer, multiWriter); err != nil {
@@ -84,12 +84,12 @@ func (s *dockerBuildStrategy) build(
 	return nil
 }
 
-func (s *dockerBuildStrategy) name() string {
-	return "docker build"
+func (s *dockerBuildxStrategy) name() string {
+	return "docker buildx build"
 }
 
-func buildDockerArgs(options *build.BuildOptions, platform string) []string {
-	args := []string{"build", "-f", options.Dockerfile}
+func buildDockerBuildxArgs(options *build.BuildOptions, platform string) []string {
+	args := []string{"buildx", "build", "-f", options.Dockerfile}
 	args = appendBuildFlags(args, options.Load, options.Push)
 	args = appendImageTags(args, options.Images)
 	args = appendBuildArgsAndContexts(args, options.BuildArgs, options.Contexts)
@@ -241,14 +241,20 @@ type buildOrchestrator struct {
 func (o *buildOrchestrator) selectStrategy(options provider.BuildOptions) buildStrategy {
 	builder := o.driver.Docker.Builder
 
-	// Select docker build if configured and not forcing internal buildkit
+	// Select docker buildx if configured and not forcing internal buildkit
 	if (builder == docker.DockerBuilderDefault || builder == docker.DockerBuilderBuildX) &&
-		!options.ForceInternalBuildKit {
-		return &dockerBuildStrategy{driver: o.driver}
+		!options.ForceInternalBuildKit && o.buildxExists(context.Background()) {
+		return &dockerBuildxStrategy{driver: o.driver}
 	}
 
 	// Otherwise use internal buildkit
 	return &buildkitStrategy{driver: o.driver}
+}
+
+func (o *buildOrchestrator) buildxExists(ctx context.Context) bool {
+	buf := &bytes.Buffer{}
+	err := o.driver.Docker.Run(ctx, []string{"buildx", "version"}, nil, buf, buf)
+	return err == nil
 }
 
 func (d *dockerDriver) prepareBuildOptions(
