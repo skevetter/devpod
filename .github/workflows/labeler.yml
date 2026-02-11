@@ -1,0 +1,39 @@
+name: Pull Request Labeler
+
+on:
+  pull_request_target:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+jobs:
+  labeler:
+    name: Label Pull Request Size
+    permissions:
+      pull-requests: write
+      contents: read
+      issues: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: codelytv/pr-size-labeler@v1
+        with:
+          xs_label: "size/xs"
+          xs_max_size: "10"
+          s_label: "size/s"
+          s_max_size: "50"
+          m_label: "size/m"
+          m_max_size: "150"
+          l_label: "size/l"
+          l_max_size: "500"
+          xl_label: "size/xl"
+          fail_if_xl: "false"
+          message_if_xl: >
+            This PR exceeds the recommended size of 500 lines.
+            Please make sure you are NOT addressing multiple issues with one PR.
+            Consider splitting this PR into smaller ones.
+          github_api_url: "https://api.github.com"
+          files_to_ignore: |
+            "*.lock"
+            "docs/*"
+            "go.mod"
+            "go.sum"
+            "package-lock.json"
