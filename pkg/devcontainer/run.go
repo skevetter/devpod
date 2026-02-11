@@ -118,7 +118,12 @@ func (r *runner) Up(ctx context.Context, options UpOptions, timeout time.Duratio
 			timeout,
 		)
 	case isDockerComposeConfig(substitutedConfig.Config):
-		return r.runDockerCompose(ctx, substitutedConfig, substitutionContext, options, timeout)
+		return r.runDockerCompose(ctx, runComposeParams{
+			parsedConfig:        substitutedConfig,
+			substitutionContext: substitutionContext,
+			options:             options,
+			timeout:             timeout,
+		})
 	default:
 		return r.runDefaultContainer(ctx, options, substitutedConfig, substitutionContext, timeout)
 	}

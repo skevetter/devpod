@@ -358,15 +358,9 @@ func (r *runner) buildDevImageCompose(
 		return nil, fmt.Errorf("find docker compose: %w", err)
 	}
 
-	envFiles, err := r.getEnvFiles()
-	if err != nil {
-		return nil, fmt.Errorf("get env files: %w", err)
-	}
+	envFiles := r.getEnvFiles()
 
-	composeFiles, err := r.getDockerComposeFilePaths(parsedConfig, envFiles)
-	if err != nil {
-		return nil, fmt.Errorf("get docker compose file paths: %w", err)
-	}
+	composeFiles := r.getDockerComposeFilePaths(parsedConfig, envFiles)
 
 	var composeGlobalArgs []string
 	for _, configFile := range composeFiles {
@@ -399,12 +393,19 @@ func (r *runner) buildDevImageCompose(
 		}
 	}
 
-	overrideBuildImageName, _, imageMetadata, _, err := r.buildAndExtendDockerCompose(ctx, parsedConfig, substitutionContext, project, composeHelper, &composeService, composeGlobalArgs)
+	result, err := r.buildAndExtendDockerCompose(ctx, buildExtendParams{
+		parsedConfig:        parsedConfig,
+		substitutionContext: substitutionContext,
+		project:             project,
+		composeHelper:       composeHelper,
+		composeService:      &composeService,
+		globalArgs:          composeGlobalArgs,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("build and extend docker-compose: %w", err)
 	}
 
-	currentImageName := overrideBuildImageName
+	currentImageName := result.buildImageName
 	if currentImageName == "" {
 		currentImageName = originalImageName
 	}
@@ -424,8 +425,8 @@ func (r *runner) buildDevImageCompose(
 
 	return &config.BuildInfo{
 		ImageDetails:  imageDetails,
-		ImageMetadata: imageMetadata,
-		ImageName:     overrideBuildImageName,
+		ImageMetadata: result.imageMetadata,
+		ImageName:     result.buildImageName,
 		PrebuildHash:  imageTag,
 		RegistryCache: options.RegistryCache,
 		Tags:          options.Tag,
