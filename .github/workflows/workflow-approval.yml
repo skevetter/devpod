@@ -9,6 +9,8 @@ jobs:
   automatic-approve:
     name: Approve Workflows
     runs-on: ubuntu-latest
+    permissions:
+      actions: write
     steps:
       - uses: mheap/automatic-approve-action@v1
         with:
