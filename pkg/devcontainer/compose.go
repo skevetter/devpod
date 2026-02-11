@@ -29,6 +29,51 @@ const (
 	FeaturesStartOverrideFilePrefix = "docker-compose.devcontainer.containerFeatures"
 )
 
+type ensureContainerParams struct {
+	parsedConfig        *config.SubstitutedConfig
+	substitutionContext *config.SubstitutionContext
+	project             *composetypes.Project
+	composeHelper       *compose.ComposeHelper
+	composeGlobalArgs   []string
+	containerDetails    *config.ContainerDetails
+	options             UpOptions
+}
+
+type buildPrepareParams struct {
+	parsedConfig        *config.SubstitutedConfig
+	substitutionContext *config.SubstitutionContext
+	project             *composetypes.Project
+	composeHelper       *compose.ComposeHelper
+	composeService      *composetypes.ServiceConfig
+	originalImageName   string
+	composeGlobalArgs   *[]string
+	options             UpOptions
+}
+
+type startContainerParams struct {
+	parsedConfig        *config.SubstitutedConfig
+	substitutionContext *config.SubstitutionContext
+	project             *composetypes.Project
+	composeHelper       *compose.ComposeHelper
+	composeGlobalArgs   []string
+	container           *config.ContainerDetails
+	options             UpOptions
+}
+
+type tryStartProjectParams struct {
+	parsedConfig  *config.SubstitutedConfig
+	project       *composetypes.Project
+	composeHelper *compose.ComposeHelper
+	options       UpOptions
+}
+
+type buildInfoResult struct {
+	imageBuildInfo     *config.ImageBuildInfo
+	dockerfileContents string
+	buildTarget        string
+	err                error
+}
+
 func (r *runner) composeHelper() (*compose.ComposeHelper, error) {
 	dockerDriver, ok := r.Driver.(driver.DockerDriver)
 	if !ok {
@@ -141,56 +186,19 @@ func (r *runner) runDockerCompose(
 
 	// does the container already exist or is it not running?
 	if containerDetails == nil || containerDetails.State.Status != "running" || options.Recreate {
-		didStartProject := false
-		// Try to find existing project first
-		existingProjectFiles, err := composeHelper.FindProjectFiles(ctx, project.Name)
-		if err != nil {
-			r.Log.Errorf("Error finding project files: %s", err)
-		} else if len(existingProjectFiles) > 0 && !options.Recreate {
-			r.Log.Debugf("Found existing project files: %s", existingProjectFiles)
-			// make sure all project files are still available
-			for _, file := range existingProjectFiles {
-				if _, err := os.Stat(file); err != nil {
-					r.Log.Warnf("Project file %s does not exist anymore, recreating project", file)
-					containerDetails = nil
-					break
-				}
-			}
-
-			// If project is found, we can call `up` with the project name
-			// If it fails, fall back to rebuilding
-			upArgs := []string{"--project-name", project.Name}
-			for _, existingProjectFiles := range existingProjectFiles {
-				upArgs = append(upArgs, "-f", existingProjectFiles)
-			}
-			upArgs = append(upArgs, "up", "-d")
-			upArgs = r.onlyRunServices(upArgs, parsedConfig)
-
-			// Run docker-compose
-			writer := r.Log.Writer(logrus.InfoLevel, false)
-			err = composeHelper.Run(ctx, upArgs, nil, writer, writer)
-			if err != nil {
-				r.Log.Errorf("Error starting project: %s", err)
-			} else {
-				// wait for running and get container details
-				details, err := composeHelper.FindDevContainer(ctx, project.Name, parsedConfig.Config.Service)
-				if err != nil {
-					r.Log.Errorf("Error finding dev container: %s", err)
-				} else {
-					containerDetails = details
-					didStartProject = true
-				}
-			}
+		params := ensureContainerParams{
+			parsedConfig:        parsedConfig,
+			substitutionContext: substitutionContext,
+			project:             project,
+			composeHelper:       composeHelper,
+			composeGlobalArgs:   composeGlobalArgs,
+			containerDetails:    containerDetails,
+			options:             options,
 		}
-
-		// Start container if not running
-		if !didStartProject {
-			containerDetails, err = r.startContainer(ctx, parsedConfig, substitutionContext, project, composeHelper, composeGlobalArgs, containerDetails, options)
-			if err != nil {
-				return nil, fmt.Errorf("start container: %w", err)
-			} else if containerDetails == nil {
-				return nil, fmt.Errorf("couldn't find container after start")
-			}
+		var err error
+		containerDetails, err = r.ensureContainerRunning(ctx, params)
+		if err != nil {
+			return nil, err
 		}
 	}
 
@@ -301,140 +309,279 @@ func (r *runner) getEnvFiles() ([]string, error) {
 	return envFiles, nil
 }
 
-func (r *runner) startContainer(
+func (r *runner) ensureContainerRunning(
 	ctx context.Context,
-	parsedConfig *config.SubstitutedConfig,
-	substitutionContext *config.SubstitutionContext,
-	project *composetypes.Project,
-	composeHelper *compose.ComposeHelper,
-	composeGlobalArgs []string,
-	container *config.ContainerDetails,
-	options UpOptions,
+	params ensureContainerParams,
 ) (*config.ContainerDetails, error) {
-	service := parsedConfig.Config.Service
-	composeService, err := project.GetService(service)
+	tryParams := tryStartProjectParams{
+		parsedConfig:  params.parsedConfig,
+		project:       params.project,
+		composeHelper: params.composeHelper,
+		options:       params.options,
+	}
+	didStartProject, updatedDetails := r.tryStartExistingProject(ctx, tryParams)
+	if didStartProject {
+		return updatedDetails, nil
+	}
+
+	startParams := startContainerParams{
+		parsedConfig:        params.parsedConfig,
+		substitutionContext: params.substitutionContext,
+		project:             params.project,
+		composeHelper:       params.composeHelper,
+		composeGlobalArgs:   params.composeGlobalArgs,
+		container:           params.containerDetails,
+		options:             params.options,
+	}
+	containerDetails, err := r.startContainer(ctx, startParams)
 	if err != nil {
-		return nil, fmt.Errorf("service '%s' configured in devcontainer.json not found in Docker Compose configuration", service)
+		return nil, fmt.Errorf("start container: %w", err)
+	}
+	if containerDetails == nil {
+		return nil, fmt.Errorf("container not found after start")
+	}
+	return containerDetails, nil
+}
+
+func (r *runner) tryStartExistingProject(
+	ctx context.Context,
+	params tryStartProjectParams,
+) (bool, *config.ContainerDetails) {
+	existingProjectFiles, err := params.composeHelper.FindProjectFiles(ctx, params.project.Name)
+	if err != nil {
+		r.Log.Errorf("error finding project files: %s", err)
+		return false, nil
+	}
+
+	if len(existingProjectFiles) == 0 || params.options.Recreate {
+		return false, nil
+	}
+
+	r.Log.Debugf("found existing project files: %s", existingProjectFiles)
+	for _, file := range existingProjectFiles {
+		if _, err := os.Stat(file); err != nil {
+			r.Log.Warnf("project file %s does not exist anymore, recreating project", file)
+			return false, nil
+		}
+	}
+
+	upArgs := []string{"--project-name", params.project.Name}
+	for _, file := range existingProjectFiles {
+		upArgs = append(upArgs, "-f", file)
+	}
+	upArgs = append(upArgs, "up", "-d")
+	upArgs = r.onlyRunServices(upArgs, params.parsedConfig)
+
+	writer := r.Log.Writer(logrus.InfoLevel, false)
+	err = params.composeHelper.Run(ctx, upArgs, nil, writer, writer)
+	if err != nil {
+		r.Log.Errorf("error starting project: %s", err)
+		return false, nil
+	}
+
+	details, err := params.composeHelper.FindDevContainer(
+		ctx, params.project.Name, params.parsedConfig.Config.Service)
+	if err != nil {
+		r.Log.Errorf("error finding dev container: %s", err)
+		return false, nil
+	}
+
+	return true, details
+}
+
+func (r *runner) tryRestorePersistedFiles(
+	container *config.ContainerDetails,
+	composeGlobalArgs *[]string,
+) (bool, error) {
+	labels := container.Config.Labels
+	if labels[ConfigFilesLabel] == "" {
+		return false, nil
+	}
+
+	configFiles := strings.Split(labels[ConfigFilesLabel], ",")
+
+	persistedBuildFileFound, persistedBuildFileExists, persistedBuildFile, err := checkForPersistedFile(
+		configFiles, FeaturesBuildOverrideFilePrefix)
+	if err != nil {
+		return false, fmt.Errorf("check for persisted build override: %w", err)
+	}
+
+	_, persistedStartFileExists, persistedStartFile, err := checkForPersistedFile(
+		configFiles, FeaturesStartOverrideFilePrefix)
+	if err != nil {
+		return false, fmt.Errorf("check for persisted start override: %w", err)
+	}
+
+	if !persistedBuildFileExists && persistedBuildFileFound || !persistedStartFileExists {
+		return false, nil
+	}
+
+	if persistedBuildFileExists {
+		*composeGlobalArgs = append(*composeGlobalArgs, "-f", persistedBuildFile)
+	}
+	if persistedStartFileExists {
+		*composeGlobalArgs = append(*composeGlobalArgs, "-f", persistedStartFile)
+	}
+
+	return true, nil
+}
+
+func (r *runner) buildAndPrepareCompose(
+	ctx context.Context,
+	params buildPrepareParams,
+) error {
+	overrideBuildImageName, overrideComposeBuildFilePath, imageMetadata, metadataLabel, err :=
+		r.buildAndExtendDockerCompose(
+			ctx, params.parsedConfig, params.substitutionContext, params.project, params.composeHelper,
+			params.composeService, *params.composeGlobalArgs)
+	if err != nil {
+		return fmt.Errorf("build and extend docker-compose: %w", err)
+	}
+
+	if overrideComposeBuildFilePath != "" {
+		*params.composeGlobalArgs = append(*params.composeGlobalArgs, "-f", overrideComposeBuildFilePath)
+	}
+
+	currentImageName := overrideBuildImageName
+	if currentImageName == "" {
+		currentImageName = params.originalImageName
+	}
+
+	imageDetails, err := r.inspectImage(ctx, currentImageName)
+	if err != nil {
+		return fmt.Errorf("inspect image: %w", err)
+	}
+
+	if params.options.ExtraDevContainerPath != "" {
+		if imageMetadata == nil {
+			imageMetadata = &config.ImageMetadataConfig{}
+		}
+		extraConfig, err := config.ParseDevContainerJSONFile(params.options.ExtraDevContainerPath)
+		if err == nil {
+			config.AddConfigToImageMetadata(extraConfig, imageMetadata)
+		}
+	}
+
+	mergedConfig, err := config.MergeConfiguration(params.parsedConfig.Config, imageMetadata.Config)
+	if err != nil {
+		return fmt.Errorf("merge configuration: %w", err)
+	}
+
+	additionalLabels := map[string]string{
+		metadata.ImageMetadataLabel: metadataLabel,
+		config.UserLabel:            imageDetails.Config.User,
+	}
+	overrideComposeUpFilePath, err := r.extendedDockerComposeUp(
+		params.parsedConfig, mergedConfig, params.composeHelper, params.composeService,
+		params.originalImageName, overrideBuildImageName, imageDetails, additionalLabels)
+	if err != nil {
+		return fmt.Errorf("extend docker-compose up: %w", err)
+	}
+
+	if overrideComposeUpFilePath != "" {
+		*params.composeGlobalArgs = append(*params.composeGlobalArgs, "-f", overrideComposeUpFilePath)
+	}
+
+	return nil
+}
+
+func (r *runner) startContainer(ctx context.Context, params startContainerParams) (*config.ContainerDetails, error) {
+	service := params.parsedConfig.Config.Service
+	composeService, err := params.project.GetService(service)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"service %q configured in devcontainer.json not found in Docker Compose configuration",
+			service)
 	}
 
 	originalImageName := composeService.Image
 	if originalImageName == "" {
-		originalImageName, err = composeHelper.GetDefaultImage(project.Name, service)
+		originalImageName, err = params.composeHelper.GetDefaultImage(params.project.Name, service)
 		if err != nil {
 			return nil, fmt.Errorf("get default image: %w", err)
 		}
 	}
 
-	var didRestoreFromPersistedShare bool
-	if container != nil {
-		labels := container.Config.Labels
-		if labels[ConfigFilesLabel] != "" {
-			configFiles := strings.Split(labels[ConfigFilesLabel], ",")
+	if err := r.prepareContainer(ctx, params, composeService, originalImageName); err != nil {
+		return nil, err
+	}
 
-			persistedBuildFileFound, persistedBuildFileExists, persistedBuildFile, err := checkForPersistedFile(configFiles, FeaturesBuildOverrideFilePrefix)
-			if err != nil {
-				return nil, fmt.Errorf("check for persisted build override: %w", err)
-			}
+	if err := r.recreateContainerIfNeeded(ctx, params); err != nil {
+		return nil, err
+	}
 
-			_, persistedStartFileExists, persistedStartFile, err := checkForPersistedFile(configFiles, FeaturesStartOverrideFilePrefix)
-			if err != nil {
-				return nil, fmt.Errorf("check for persisted start override: %w", err)
-			}
+	return r.runComposeUp(ctx, params, composeService)
+}
 
-			if (persistedBuildFileExists || !persistedBuildFileFound) && persistedStartFileExists {
-				didRestoreFromPersistedShare = true
-
-				if persistedBuildFileExists {
-					composeGlobalArgs = append(composeGlobalArgs, "-f", persistedBuildFile)
-				}
-
-				if persistedStartFileExists {
-					composeGlobalArgs = append(composeGlobalArgs, "-f", persistedStartFile)
-				}
-			}
+func (r *runner) prepareContainer(
+	ctx context.Context,
+	params startContainerParams,
+	composeService composetypes.ServiceConfig,
+	originalImageName string,
+) error {
+	if params.container != nil {
+		didRestoreFromPersistedShare, err := r.tryRestorePersistedFiles(params.container, &params.composeGlobalArgs)
+		if err != nil {
+			return err
+		}
+		if didRestoreFromPersistedShare {
+			return nil
 		}
 	}
 
-	if container == nil || !didRestoreFromPersistedShare {
-		overrideBuildImageName, overrideComposeBuildFilePath, imageMetadata, metadataLabel, err := r.buildAndExtendDockerCompose(ctx, parsedConfig, substitutionContext, project, composeHelper, &composeService, composeGlobalArgs)
-		if err != nil {
-			return nil, fmt.Errorf("build and extend docker-compose: %w", err)
-		}
+	buildParams := buildPrepareParams{
+		parsedConfig:        params.parsedConfig,
+		substitutionContext: params.substitutionContext,
+		project:             params.project,
+		composeHelper:       params.composeHelper,
+		composeService:      &composeService,
+		originalImageName:   originalImageName,
+		composeGlobalArgs:   &params.composeGlobalArgs,
+		options:             params.options,
+	}
+	return r.buildAndPrepareCompose(ctx, buildParams)
+}
 
-		if overrideComposeBuildFilePath != "" {
-			composeGlobalArgs = append(composeGlobalArgs, "-f", overrideComposeBuildFilePath)
-		}
-
-		currentImageName := overrideBuildImageName
-		if currentImageName == "" {
-			currentImageName = originalImageName
-		}
-
-		imageDetails, err := r.inspectImage(ctx, currentImageName)
-		if err != nil {
-			return nil, fmt.Errorf("inspect image: %w", err)
-		}
-
-		if options.ExtraDevContainerPath != "" {
-			if imageMetadata == nil {
-				imageMetadata = &config.ImageMetadataConfig{}
-			}
-			extraConfig, err := config.ParseDevContainerJSONFile(options.ExtraDevContainerPath)
-			if err != nil {
-				return nil, err
-			}
-			config.AddConfigToImageMetadata(extraConfig, imageMetadata)
-		}
-
-		mergedConfig, err := config.MergeConfiguration(parsedConfig.Config, imageMetadata.Config)
-		if err != nil {
-			return nil, fmt.Errorf("merge configuration: %w", err)
-		}
-
-		additionalLabels := map[string]string{
-			metadata.ImageMetadataLabel: metadataLabel,
-			config.UserLabel:            imageDetails.Config.User,
-		}
-		overrideComposeUpFilePath, err := r.extendedDockerComposeUp(parsedConfig, mergedConfig, composeHelper, &composeService, originalImageName, overrideBuildImageName, imageDetails, additionalLabels)
-		if err != nil {
-			return nil, fmt.Errorf("extend docker-compose up: %w", err)
-		}
-
-		if overrideComposeUpFilePath != "" {
-			composeGlobalArgs = append(composeGlobalArgs, "-f", overrideComposeUpFilePath)
-		}
+func (r *runner) recreateContainerIfNeeded(ctx context.Context, params startContainerParams) error {
+	if params.container == nil || !params.options.Recreate {
+		return nil
 	}
 
-	if container != nil && options.Recreate {
-		r.Log.Debugf("Deleting dev container %s due to --recreate", container.ID)
+	r.Log.Debugf("deleting dev container %s due to --recreate", params.container.ID)
 
-		if err := r.Driver.StopDevContainer(ctx, r.ID); err != nil {
-			return nil, fmt.Errorf("stop dev container: %w", err)
-		}
-
-		if err := r.Driver.DeleteDevContainer(ctx, r.ID); err != nil {
-			return nil, fmt.Errorf("delete dev container: %w", err)
-		}
+	if err := r.Driver.StopDevContainer(ctx, r.ID); err != nil {
+		return fmt.Errorf("stop dev container: %w", err)
 	}
 
-	upArgs := []string{"--project-name", project.Name}
-	upArgs = append(upArgs, composeGlobalArgs...)
+	if err := r.Driver.DeleteDevContainer(ctx, r.ID); err != nil {
+		return fmt.Errorf("delete dev container: %w", err)
+	}
+
+	return nil
+}
+
+func (r *runner) runComposeUp(
+	ctx context.Context,
+	params startContainerParams,
+	composeService composetypes.ServiceConfig,
+) (*config.ContainerDetails, error) {
+	upArgs := []string{"--project-name", params.project.Name}
+	upArgs = append(upArgs, params.composeGlobalArgs...)
 	upArgs = append(upArgs, "up", "-d")
-	if container != nil {
+	if params.container != nil {
 		upArgs = append(upArgs, "--no-recreate")
 	}
-	upArgs = r.onlyRunServices(upArgs, parsedConfig)
+	upArgs = r.onlyRunServices(upArgs, params.parsedConfig)
 
-	// start compose
 	writer := r.Log.Writer(logrus.InfoLevel, false)
 	defer func() { _ = writer.Close() }()
-	err = composeHelper.Run(ctx, upArgs, nil, writer, writer)
+	err := params.composeHelper.Run(ctx, upArgs, nil, writer, writer)
 	if err != nil {
 		return nil, fmt.Errorf("docker-compose run: %w", err)
 	}
 
-	// TODO wait for started event?
-	containerDetails, err := composeHelper.FindDevContainer(ctx, project.Name, composeService.Name)
+	containerDetails, err := params.composeHelper.FindDevContainer(
+		ctx, params.project.Name, composeService.Name)
 	if err != nil {
 		return nil, fmt.Errorf("find dev container: %w", err)
 	}
@@ -445,51 +592,60 @@ func (r *runner) startContainer(
 // prepareComposeBuildInfo modifies a compose project's devcontainer Dockerfile to ensure it can be extended with features
 // If an Image is specified instead of a Build, the metadata from the Image is used to populate the build info
 func (r *runner) prepareComposeBuildInfo(ctx context.Context, subCtx *config.SubstitutionContext, composeService *composetypes.ServiceConfig, buildTarget string) (*config.ImageBuildInfo, string, string, error) {
-	var dockerFilePath, dockerfileContents string
-	var imageBuildInfo *config.ImageBuildInfo
-	var err error
 	if composeService.Build != nil {
-		// Read Dockerfile
-		if path.IsAbs(composeService.Build.Dockerfile) {
-			dockerFilePath = composeService.Build.Dockerfile
-		} else {
-			dockerFilePath = filepath.Join(composeService.Build.Context, composeService.Build.Dockerfile)
-		}
+		result := r.prepareBuildFromDockerfile(subCtx, composeService)
+		return result.imageBuildInfo, result.dockerfileContents, result.buildTarget, result.err
+	}
+	imageBuildInfo, err := r.getImageBuildInfoFromImage(ctx, subCtx, composeService.Image)
+	return imageBuildInfo, "", "", err
+}
 
-		originalDockerfile, err := os.ReadFile(dockerFilePath)
-		if err != nil {
-			return nil, "", "", err
-		}
+func (r *runner) prepareBuildFromDockerfile(
+	subCtx *config.SubstitutionContext,
+	composeService *composetypes.ServiceConfig,
+) buildInfoResult {
+	dockerFilePath := composeService.Build.Dockerfile
+	if !path.IsAbs(dockerFilePath) {
+		dockerFilePath = filepath.Join(composeService.Build.Context, composeService.Build.Dockerfile)
+	}
 
-		// Determine build target, if a multi stage build ensure it is valid and modify the Dockerfile if necessary
-		originalTarget := composeService.Build.Target
-		if originalTarget != "" {
-			buildTarget = originalTarget
-		} else {
-			lastStageName, modifiedDockerfile, err := dockerfile.EnsureFinalStageName(string(originalDockerfile), config.DockerfileDefaultTarget)
-			if err != nil {
-				return nil, "", "", err
-			}
+	originalDockerfile, err := os.ReadFile(dockerFilePath) // #nosec G304
+	if err != nil {
+		return buildInfoResult{err: err}
+	}
 
-			buildTarget = lastStageName
-			// Override Dockerfile if it was modified, otherwise use the original
-			if modifiedDockerfile != "" {
-				dockerfileContents = modifiedDockerfile
-			} else {
-				dockerfileContents = string(originalDockerfile)
-			}
-		}
-		imageBuildInfo, err = r.getImageBuildInfoFromDockerfile(subCtx, string(originalDockerfile), mappingToMap(composeService.Build.Args), originalTarget)
-		if err != nil {
-			return nil, "", "", err
-		}
-	} else {
-		imageBuildInfo, err = r.getImageBuildInfoFromImage(ctx, subCtx, composeService.Image)
-		if err != nil {
-			return nil, "", "", err
+	originalTarget := composeService.Build.Target
+	if originalTarget != "" {
+		imageBuildInfo, err := r.getImageBuildInfoFromDockerfile(
+			subCtx, string(originalDockerfile),
+			mappingToMap(composeService.Build.Args), originalTarget)
+		return buildInfoResult{
+			imageBuildInfo: imageBuildInfo,
+			buildTarget:    originalTarget,
+			err:            err,
 		}
 	}
-	return imageBuildInfo, dockerfileContents, buildTarget, nil
+
+	lastStageName, modifiedDockerfile, err := dockerfile.EnsureFinalStageName(
+		string(originalDockerfile), config.DockerfileDefaultTarget)
+	if err != nil {
+		return buildInfoResult{err: err}
+	}
+
+	dockerfileContents := string(originalDockerfile)
+	if modifiedDockerfile != "" {
+		dockerfileContents = modifiedDockerfile
+	}
+
+	imageBuildInfo, err := r.getImageBuildInfoFromDockerfile(
+		subCtx, string(originalDockerfile),
+		mappingToMap(composeService.Build.Args), originalTarget)
+	return buildInfoResult{
+		imageBuildInfo:     imageBuildInfo,
+		dockerfileContents: dockerfileContents,
+		buildTarget:        lastStageName,
+		err:                err,
+	}
 }
 
 // This extends the build information for docker compose containers
