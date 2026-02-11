@@ -664,28 +664,35 @@ func (r *runner) prepareContainer(
 	composeService composetypes.ServiceConfig,
 	originalImageName string,
 ) error {
-	// Don't restore persisted files if we're recreating the container
+	// Try to restore persisted files if container exists and we're not recreating
+	shouldBuild := true
 	if params.container != nil && !params.options.Recreate {
 		didRestoreFromPersistedShare, err := r.tryRestorePersistedFiles(params.container, &params.composeGlobalArgs)
 		if err != nil {
 			return err
 		}
 		if didRestoreFromPersistedShare {
-			return nil
+			// Successfully restored, skip build
+			shouldBuild = false
 		}
 	}
 
-	buildParams := buildPrepareParams{
-		parsedConfig:        params.parsedConfig,
-		substitutionContext: params.substitutionContext,
-		project:             params.project,
-		composeHelper:       params.composeHelper,
-		composeService:      &composeService,
-		originalImageName:   originalImageName,
-		composeGlobalArgs:   &params.composeGlobalArgs,
-		options:             params.options,
+	// Build if we didn't restore from persisted files
+	if shouldBuild {
+		buildParams := buildPrepareParams{
+			parsedConfig:        params.parsedConfig,
+			substitutionContext: params.substitutionContext,
+			project:             params.project,
+			composeHelper:       params.composeHelper,
+			composeService:      &composeService,
+			originalImageName:   originalImageName,
+			composeGlobalArgs:   &params.composeGlobalArgs,
+			options:             params.options,
+		}
+		return r.buildAndPrepareCompose(ctx, buildParams)
 	}
-	return r.buildAndPrepareCompose(ctx, buildParams)
+
+	return nil
 }
 
 func (r *runner) recreateContainerIfNeeded(ctx context.Context, params startContainerParams) error {
@@ -714,7 +721,8 @@ func (r *runner) runComposeUp(
 	upArgs := []string{"--project-name", params.project.Name}
 	upArgs = append(upArgs, params.composeGlobalArgs...)
 	upArgs = append(upArgs, "up", "-d")
-	if params.container != nil {
+	// Only add --no-recreate if container exists and we're not recreating
+	if params.container != nil && !params.options.Recreate {
 		upArgs = append(upArgs, "--no-recreate")
 	}
 	upArgs = r.onlyRunServices(upArgs, params.parsedConfig)
