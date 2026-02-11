@@ -67,6 +67,14 @@ type tryStartProjectParams struct {
 	options       UpOptions
 }
 
+type composeUpOverrideParams struct {
+	params                 buildPrepareParams
+	mergedConfig           *config.MergedDevContainerConfig
+	imageDetails           *config.ImageDetails
+	metadataLabel          string
+	overrideBuildImageName string
+}
+
 type buildInfoResult struct {
 	imageBuildInfo     *config.ImageBuildInfo
 	dockerfileContents string
@@ -357,14 +365,29 @@ func (r *runner) tryStartExistingProject(
 		return false, nil
 	}
 
-	r.Log.Debugf("found existing project files: %s", existingProjectFiles)
-	for _, file := range existingProjectFiles {
-		if _, err := os.Stat(file); err != nil {
-			r.Log.Warnf("project file %s does not exist anymore, recreating project", file)
-			return false, nil
-		}
+	if !r.allProjectFilesExist(existingProjectFiles) {
+		return false, nil
 	}
 
+	return r.startProjectWithFiles(ctx, params, existingProjectFiles)
+}
+
+func (r *runner) allProjectFilesExist(files []string) bool {
+	r.Log.Debugf("found existing project files: %s", files)
+	for _, file := range files {
+		if _, err := os.Stat(file); err != nil {
+			r.Log.Warnf("project file %s does not exist anymore, recreating project", file)
+			return false
+		}
+	}
+	return true
+}
+
+func (r *runner) startProjectWithFiles(
+	ctx context.Context,
+	params tryStartProjectParams,
+	existingProjectFiles []string,
+) (bool, *config.ContainerDetails) {
 	upArgs := []string{"--project-name", params.project.Name}
 	for _, file := range existingProjectFiles {
 		upArgs = append(upArgs, "-f", file)
@@ -373,7 +396,7 @@ func (r *runner) tryStartExistingProject(
 	upArgs = r.onlyRunServices(upArgs, params.parsedConfig)
 
 	writer := r.Log.Writer(logrus.InfoLevel, false)
-	err = params.composeHelper.Run(ctx, upArgs, nil, writer, writer)
+	err := params.composeHelper.Run(ctx, upArgs, nil, writer, writer)
 	if err != nil {
 		r.Log.Errorf("error starting project: %s", err)
 		return false, nil
@@ -399,31 +422,38 @@ func (r *runner) tryRestorePersistedFiles(
 	}
 
 	configFiles := strings.Split(labels[ConfigFilesLabel], ",")
+	return r.restoreFilesFromConfig(configFiles, composeGlobalArgs)
+}
 
-	persistedBuildFileFound, persistedBuildFileExists, persistedBuildFile, err := checkForPersistedFile(
+func (r *runner) restoreFilesFromConfig(configFiles []string, composeGlobalArgs *[]string) (bool, error) {
+	buildFound, buildExists, buildFile, err := checkForPersistedFile(
 		configFiles, FeaturesBuildOverrideFilePrefix)
 	if err != nil {
 		return false, fmt.Errorf("check for persisted build override: %w", err)
 	}
 
-	_, persistedStartFileExists, persistedStartFile, err := checkForPersistedFile(
+	_, startExists, startFile, err := checkForPersistedFile(
 		configFiles, FeaturesStartOverrideFilePrefix)
 	if err != nil {
 		return false, fmt.Errorf("check for persisted start override: %w", err)
 	}
 
-	if !persistedBuildFileExists && persistedBuildFileFound || !persistedStartFileExists {
+	if !r.shouldRestoreFiles(buildFound, buildExists, startExists) {
 		return false, nil
 	}
 
-	if persistedBuildFileExists {
-		*composeGlobalArgs = append(*composeGlobalArgs, "-f", persistedBuildFile)
+	if buildExists {
+		*composeGlobalArgs = append(*composeGlobalArgs, "-f", buildFile)
 	}
-	if persistedStartFileExists {
-		*composeGlobalArgs = append(*composeGlobalArgs, "-f", persistedStartFile)
+	if startExists {
+		*composeGlobalArgs = append(*composeGlobalArgs, "-f", startFile)
 	}
 
 	return true, nil
+}
+
+func (r *runner) shouldRestoreFiles(buildFound, buildExists, startExists bool) bool {
+	return (buildExists || !buildFound) && startExists
 }
 
 func (r *runner) buildAndPrepareCompose(
@@ -452,34 +482,59 @@ func (r *runner) buildAndPrepareCompose(
 		return fmt.Errorf("inspect image: %w", err)
 	}
 
-	if params.options.ExtraDevContainerPath != "" {
-		if imageMetadata == nil {
-			imageMetadata = &config.ImageMetadataConfig{}
-		}
-		extraConfig, err := config.ParseDevContainerJSONFile(params.options.ExtraDevContainerPath)
-		if err == nil {
-			config.AddConfigToImageMetadata(extraConfig, imageMetadata)
-		}
-	}
+	imageMetadata = r.mergeExtraConfig(imageMetadata, params.options)
 
 	mergedConfig, err := config.MergeConfiguration(params.parsedConfig.Config, imageMetadata.Config)
 	if err != nil {
 		return fmt.Errorf("merge configuration: %w", err)
 	}
 
+	return r.addComposeUpOverride(composeUpOverrideParams{
+		params:                 params,
+		mergedConfig:           mergedConfig,
+		imageDetails:           imageDetails,
+		metadataLabel:          metadataLabel,
+		overrideBuildImageName: overrideBuildImageName,
+	})
+}
+
+func (r *runner) mergeExtraConfig(
+	imageMetadata *config.ImageMetadataConfig,
+	options UpOptions,
+) *config.ImageMetadataConfig {
+	if options.ExtraDevContainerPath == "" {
+		return imageMetadata
+	}
+
+	if imageMetadata == nil {
+		imageMetadata = &config.ImageMetadataConfig{}
+	}
+
+	extraConfig, err := config.ParseDevContainerJSONFile(options.ExtraDevContainerPath)
+	if err == nil {
+		config.AddConfigToImageMetadata(extraConfig, imageMetadata)
+	}
+
+	return imageMetadata
+}
+
+func (r *runner) addComposeUpOverride(overrideParams composeUpOverrideParams) error {
 	additionalLabels := map[string]string{
-		metadata.ImageMetadataLabel: metadataLabel,
-		config.UserLabel:            imageDetails.Config.User,
+		metadata.ImageMetadataLabel: overrideParams.metadataLabel,
+		config.UserLabel:            overrideParams.imageDetails.Config.User,
 	}
 	overrideComposeUpFilePath, err := r.extendedDockerComposeUp(
-		params.parsedConfig, mergedConfig, params.composeHelper, params.composeService,
-		params.originalImageName, overrideBuildImageName, imageDetails, additionalLabels)
+		overrideParams.params.parsedConfig, overrideParams.mergedConfig,
+		overrideParams.params.composeHelper, overrideParams.params.composeService,
+		overrideParams.params.originalImageName, overrideParams.overrideBuildImageName,
+		overrideParams.imageDetails, additionalLabels)
 	if err != nil {
 		return fmt.Errorf("extend docker-compose up: %w", err)
 	}
 
 	if overrideComposeUpFilePath != "" {
-		*params.composeGlobalArgs = append(*params.composeGlobalArgs, "-f", overrideComposeUpFilePath)
+		*overrideParams.params.composeGlobalArgs = append(
+			*overrideParams.params.composeGlobalArgs, "-f", overrideComposeUpFilePath)
 	}
 
 	return nil
