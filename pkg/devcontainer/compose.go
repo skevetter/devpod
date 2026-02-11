@@ -442,22 +442,32 @@ func (r *runner) tryStartExistingProject(
 		return false, nil
 	}
 
-	if !r.allProjectFilesExist(existingProjectFiles) {
+	// Filter out generated override files that may have been cleaned up
+	validFiles := r.filterValidProjectFiles(existingProjectFiles)
+	if len(validFiles) == 0 {
 		return false, nil
 	}
 
-	return r.startProjectWithFiles(ctx, params, existingProjectFiles)
+	return r.startProjectWithFiles(ctx, params, validFiles)
 }
 
-func (r *runner) allProjectFilesExist(files []string) bool {
+func (r *runner) filterValidProjectFiles(files []string) []string {
 	r.Log.Debugf("found existing project files: %s", files)
+	var validFiles []string
 	for _, file := range files {
-		if _, err := os.Stat(file); err != nil {
-			r.Log.Warnf("project file %s does not exist anymore, recreating project", file)
-			return false
+		// Skip generated override files that may have been cleaned up
+		if strings.Contains(file, FeaturesBuildOverrideFilePrefix) ||
+			strings.Contains(file, FeaturesStartOverrideFilePrefix) {
+			r.Log.Debugf("skipping generated override file: %s", file)
+			continue
 		}
+		if _, err := os.Stat(file); err != nil {
+			r.Log.Warnf("project file %s does not exist anymore, skipping", file)
+			continue
+		}
+		validFiles = append(validFiles, file)
 	}
-	return true
+	return validFiles
 }
 
 func (r *runner) startProjectWithFiles(
@@ -553,7 +563,10 @@ func (r *runner) buildAndPrepareCompose(
 		return fmt.Errorf("inspect image: %w", err)
 	}
 
-	imageMetadata := r.mergeExtraConfig(result.imageMetadata, params.options)
+	imageMetadata, err := r.mergeExtraConfig(result.imageMetadata, params.options)
+	if err != nil {
+		return fmt.Errorf("merge extra config: %w", err)
+	}
 
 	mergedConfig, err := config.MergeConfiguration(params.parsedConfig.Config, imageMetadata.Config)
 	if err != nil {
@@ -572,9 +585,9 @@ func (r *runner) buildAndPrepareCompose(
 func (r *runner) mergeExtraConfig(
 	imageMetadata *config.ImageMetadataConfig,
 	options UpOptions,
-) *config.ImageMetadataConfig {
+) (*config.ImageMetadataConfig, error) {
 	if options.ExtraDevContainerPath == "" {
-		return imageMetadata
+		return imageMetadata, nil
 	}
 
 	if imageMetadata == nil {
@@ -583,12 +596,11 @@ func (r *runner) mergeExtraConfig(
 
 	extraConfig, err := config.ParseDevContainerJSONFile(options.ExtraDevContainerPath)
 	if err != nil {
-		r.Log.Warnf("failed to parse extra devcontainer config %s: %v", options.ExtraDevContainerPath, err)
-	} else {
-		config.AddConfigToImageMetadata(extraConfig, imageMetadata)
+		return nil, err
 	}
+	config.AddConfigToImageMetadata(extraConfig, imageMetadata)
 
-	return imageMetadata
+	return imageMetadata, nil
 }
 
 func (r *runner) addComposeUpOverride(overrideParams composeUpOverrideParams) error {
@@ -652,7 +664,8 @@ func (r *runner) prepareContainer(
 	composeService composetypes.ServiceConfig,
 	originalImageName string,
 ) error {
-	if params.container != nil {
+	// Don't restore persisted files if we're recreating the container
+	if params.container != nil && !params.options.Recreate {
 		didRestoreFromPersistedShare, err := r.tryRestorePersistedFiles(params.container, &params.composeGlobalArgs)
 		if err != nil {
 			return err
@@ -825,6 +838,9 @@ func (r *runner) buildAndExtendDockerCompose(
 	if err != nil {
 		return nil, err
 	}
+	if extendedDockerfilePath != "" {
+		defer func() { _ = os.RemoveAll(filepath.Dir(extendedDockerfilePath)) }()
+	}
 
 	buildArgs := r.prepareBuildArgs(params, dockerComposeFilePath, extendImageBuildInfo)
 
@@ -833,9 +849,6 @@ func (r *runner) buildAndExtendDockerCompose(
 	defer func() { _ = writer.Close() }()
 	r.Log.Debugf("Run %s %s", params.composeHelper.Command, strings.Join(buildArgs, " "))
 	err = params.composeHelper.Run(ctx, buildArgs, nil, writer, writer)
-	if extendedDockerfilePath != "" {
-		_ = os.RemoveAll(filepath.Dir(extendedDockerfilePath))
-	}
 	if err != nil {
 		return nil, err
 	}
@@ -1054,7 +1067,7 @@ func (r *runner) extendedDockerComposeUp(
 	}
 
 	dockerComposePath := filepath.Join(
-		dockerComposeFolder, fmt.Sprintf("%s-%d.yml", FeaturesStartOverrideFilePrefix, time.Now().Second()))
+		dockerComposeFolder, fmt.Sprintf("%s-%d.yml", FeaturesStartOverrideFilePrefix, time.Now().UnixNano()))
 
 	r.Log.Debugf(
 		"Creating docker-compose up %s with content:\n %s",
