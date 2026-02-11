@@ -15,7 +15,7 @@ jobs:
     strategy:
       matrix:
         include:
-          - runner: ubuntu-latest
+          - runner: ubuntu-22.04
           - runner: macos-latest
           - runner: windows-latest
     runs-on: ${{ matrix.runner }}
@@ -59,7 +59,7 @@ jobs:
         include:
           - arch: amd64
             target: x86_64-unknown-linux-gnu
-            runner: ubuntu-latest
+            runner: ubuntu-22.04
             tauri_include_updater_json: true
             tauri_ci: true
 
@@ -203,7 +203,7 @@ jobs:
 
   build-flatpak:
     name: Build Flatpak
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: [build-desktop]
     container:
       image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-48
@@ -297,7 +297,7 @@ jobs:
     name: Publish Prerelease
     needs: [build-desktop, build-flatpak]
     if: github.event.release.prerelease
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: softprops/action-gh-release@v2
         with:
