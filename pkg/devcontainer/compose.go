@@ -1118,16 +1118,15 @@ func (r *runner) getUserEntrypointAndCommand(params composeUpParams) ([]string, 
 func (r *runner) buildEntrypoint(
 	mergedConfig *config.MergedDevContainerConfig, userEntrypoint []string,
 ) composetypes.ShellCommand {
-	entrypoint := composetypes.ShellCommand{
-		"/bin/sh",
-		"-c",
-		`echo Container started
-trap "exit 0" 15
-` + strings.Join(mergedConfig.Entrypoints, "\n") + `
-exec "$$@"
-` + DefaultEntrypoint,
-		"-",
+	var script strings.Builder
+	script.WriteString("echo Container started\ntrap \"exit 0\" 15\nexec \"$$@\"\n")
+	if len(mergedConfig.Entrypoints) > 0 {
+		script.WriteString(strings.Join(mergedConfig.Entrypoints, "\n"))
+		script.WriteByte('\n')
 	}
+	script.WriteString(DefaultEntrypoint)
+
+	entrypoint := composetypes.ShellCommand{"/bin/sh", "-c", script.String(), "-"}
 	return append(entrypoint, userEntrypoint...)
 }
 
