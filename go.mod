@@ -60,7 +60,7 @@ require (
 	github.com/tidwall/jsonc v0.3.2
 	github.com/tonistiigi/fsutil v0.0.0-20251211185533-a2aa163d723f
 	golang.org/x/crypto v0.48.0
-	golang.org/x/mod v0.32.0
+	golang.org/x/mod v0.33.0
 	golang.org/x/sys v0.41.0
 	golang.org/x/term v0.40.0
 	google.golang.org/grpc v1.78.0
