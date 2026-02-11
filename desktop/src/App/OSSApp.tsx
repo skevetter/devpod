@@ -18,7 +18,7 @@ import { useQuery } from "@tanstack/react-query"
 import { useEffect, useMemo } from "react"
 import { Outlet, Link as RouterLink, useMatch, useNavigate } from "react-router-dom"
 import { useBorderColor } from "@/Theme"
-import { Notifications, ProSwitcher, Sidebar, SidebarMenuItem } from "@/components"
+import { Notifications, Sidebar, SidebarMenuItem } from "@/components"
 import { StatusBar } from "@/components/Layout/StatusBar"
 import { Toolbar } from "@/components/Layout/Toolbar"
 import { SIDEBAR_WIDTH, STATUS_BAR_HEIGHT } from "@/constants"
@@ -154,7 +154,6 @@ export function OSSApp() {
                             }
                           />
                         </Box>
-                        <ProSwitcher />
                       </GridItem>
                     </Grid>
                   </Toolbar>
