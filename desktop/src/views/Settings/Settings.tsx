@@ -535,13 +535,6 @@ function ExperimentalSettings() {
         {extraEnvVarsInput}
       </SettingSection>
 
-      <SettingSection title="DevPod Pro (beta)" description="Enable DevPod Pro login and creation">
-        <Switch
-          isChecked={settings.experimental_devPodPro}
-          onChange={(e) => set("experimental_devPodPro", e.target.checked)}
-        />
-      </SettingSection>
-
       <SettingSection title="Color Mode" description="" showDivider={false}>
         <RadioGroup
           value={settings.experimental_colorMode}
