@@ -67,7 +67,8 @@ func (h *Helper) List() (map[string]string, error) {
 	}
 
 	client := &http.Client{Timeout: credentialsTimeout}
-	resp, err := client.Post(fmt.Sprintf("http://localhost:%d/docker-credentials", h.port), "application/json", bytes.NewReader(payload))
+	endpoint := fmt.Sprintf("http://localhost:%d/docker-credentials", h.port)
+	resp, err := client.Post(endpoint, "application/json", bytes.NewReader(payload))
 	if err != nil {
 		h.logError("list registries", err)
 		return map[string]string{}, nil
@@ -98,7 +99,8 @@ func (h *Helper) getFromCredentialsServer(serverURL string) (string, string, err
 	}
 
 	client := &http.Client{Timeout: credentialsTimeout}
-	resp, err := client.Post(fmt.Sprintf("http://localhost:%d/docker-credentials", h.port), "application/json", bytes.NewReader(requestBody))
+	endpoint := fmt.Sprintf("http://localhost:%d/docker-credentials", h.port)
+	resp, err := client.Post(endpoint, "application/json", bytes.NewReader(requestBody))
 	if err != nil {
 		return "", "", err
 	}
@@ -128,7 +130,8 @@ func (h *Helper) getFromWorkspaceServer(serverURL string) (string, string, error
 	}
 
 	client := &http.Client{Timeout: credentialsTimeout}
-	resp, err := client.Post(fmt.Sprintf("http://localhost:%s/docker-credentials", workspacePort), "application/json", bytes.NewReader(requestBody))
+	endpoint := fmt.Sprintf("http://localhost:%s/docker-credentials", workspacePort)
+	resp, err := client.Post(endpoint, "application/json", bytes.NewReader(requestBody))
 	if err != nil {
 		return "", "", err
 	}
