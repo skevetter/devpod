@@ -22,12 +22,19 @@ func TestHelperSuite(t *testing.T) {
 
 func (s *HelperTestSuite) TestGet_Success() {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/credentials" {
-			_ = json.NewEncoder(w).Encode(map[string]string{
-				"username": "testuser",
-				"secret":   "testpass",
-			})
-		}
+		s.Equal(http.MethodPost, r.Method)
+		s.Equal("/docker-credentials", r.URL.Path)
+
+		request := &Request{}
+		err := json.NewDecoder(r.Body).Decode(request)
+		s.NoError(err)
+		s.Equal("docker.io", request.ServerURL)
+
+		_ = json.NewEncoder(w).Encode(&Credentials{
+			ServerURL: "docker.io",
+			Username:  "testuser",
+			Secret:    "testpass",
+		})
 	}))
 	defer server.Close()
 
@@ -74,9 +81,18 @@ func (s *HelperTestSuite) TestGet_WorkspaceServerFallback() {
 	defer primaryServer.Close()
 
 	workspaceServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_ = json.NewEncoder(w).Encode(map[string]string{
-			"username": "workspaceuser",
-			"secret":   "workspacepass",
+		s.Equal(http.MethodPost, r.Method)
+		s.Equal("/docker-credentials", r.URL.Path)
+
+		request := &Request{}
+		err := json.NewDecoder(r.Body).Decode(request)
+		s.NoError(err)
+		s.Equal("docker.io", request.ServerURL)
+
+		_ = json.NewEncoder(w).Encode(&Credentials{
+			ServerURL: "docker.io",
+			Username:  "workspaceuser",
+			Secret:    "workspacepass",
 		})
 	}))
 	defer workspaceServer.Close()
@@ -94,12 +110,18 @@ func (s *HelperTestSuite) TestGet_WorkspaceServerFallback() {
 
 func (s *HelperTestSuite) TestList_Success() {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/list" {
-			_ = json.NewEncoder(w).Encode(map[string]string{
-				"docker.io": "testuser",
-				"gcr.io":    "gcpuser",
-			})
-		}
+		s.Equal(http.MethodPost, r.Method)
+		s.Equal("/docker-credentials", r.URL.Path)
+
+		request := &Request{}
+		err := json.NewDecoder(r.Body).Decode(request)
+		s.NoError(err)
+		s.Equal("", request.ServerURL)
+
+		_ = json.NewEncoder(w).Encode(&ListResponse{Registries: map[string]string{
+			"docker.io": "testuser",
+			"gcr.io":    "gcpuser",
+		}})
 	}))
 	defer server.Close()
 

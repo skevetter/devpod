@@ -1,10 +1,10 @@
 package dockercredentials
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -60,8 +60,14 @@ func (h *Helper) Get(serverURL string) (string, string, error) {
 
 // List returns all configured registries.
 func (h *Helper) List() (map[string]string, error) {
+	payload, err := json.Marshal(&Request{})
+	if err != nil {
+		h.logError("marshal list request", err)
+		return map[string]string{}, nil
+	}
+
 	client := &http.Client{Timeout: credentialsTimeout}
-	resp, err := client.Get(fmt.Sprintf("http://localhost:%d/list", h.port))
+	resp, err := client.Post(fmt.Sprintf("http://localhost:%d/docker-credentials", h.port), "application/json", bytes.NewReader(payload))
 	if err != nil {
 		h.logError("list registries", err)
 		return map[string]string{}, nil
@@ -72,27 +78,27 @@ func (h *Helper) List() (map[string]string, error) {
 		return map[string]string{}, nil
 	}
 
-	var result map[string]string
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+	var response ListResponse
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		h.logError("decode list response", err)
 		return map[string]string{}, nil
 	}
 
-	return result, nil
+	if response.Registries == nil {
+		return map[string]string{}, nil
+	}
+
+	return response.Registries, nil
 }
 
 func (h *Helper) getFromCredentialsServer(serverURL string) (string, string, error) {
-	client := &http.Client{Timeout: credentialsTimeout}
-	u := url.URL{
-		Scheme: "http",
-		Host:   fmt.Sprintf("localhost:%d", h.port),
-		Path:   "/credentials",
-		RawQuery: url.Values{
-			"registry": []string{serverURL},
-		}.Encode(),
+	requestBody, err := json.Marshal(&Request{ServerURL: serverURL})
+	if err != nil {
+		return "", "", err
 	}
-	reqURL := u.String()
-	resp, err := client.Get(reqURL)
+
+	client := &http.Client{Timeout: credentialsTimeout}
+	resp, err := client.Post(fmt.Sprintf("http://localhost:%d/docker-credentials", h.port), "application/json", bytes.NewReader(requestBody))
 	if err != nil {
 		return "", "", err
 	}
@@ -102,10 +108,7 @@ func (h *Helper) getFromCredentialsServer(serverURL string) (string, string, err
 		return "", "", fmt.Errorf("status %d", resp.StatusCode)
 	}
 
-	var creds struct {
-		Username string `json:"username"`
-		Secret   string `json:"secret"`
-	}
+	var creds Credentials
 	if err := json.NewDecoder(resp.Body).Decode(&creds); err != nil {
 		return "", "", err
 	}
@@ -119,14 +122,13 @@ func (h *Helper) getFromWorkspaceServer(serverURL string) (string, string, error
 		return "", "", fmt.Errorf("no workspace port")
 	}
 
-	client := &http.Client{Timeout: credentialsTimeout}
-	u := url.URL{
-		Scheme:   "http",
-		Host:     fmt.Sprintf("localhost:%s", workspacePort),
-		Path:     "/credentials",
-		RawQuery: url.Values{"registry": []string{serverURL}}.Encode(),
+	requestBody, err := json.Marshal(&Request{ServerURL: serverURL})
+	if err != nil {
+		return "", "", err
 	}
-	resp, err := client.Get(u.String())
+
+	client := &http.Client{Timeout: credentialsTimeout}
+	resp, err := client.Post(fmt.Sprintf("http://localhost:%s/docker-credentials", workspacePort), "application/json", bytes.NewReader(requestBody))
 	if err != nil {
 		return "", "", err
 	}
@@ -136,10 +138,7 @@ func (h *Helper) getFromWorkspaceServer(serverURL string) (string, string, error
 		return "", "", fmt.Errorf("status %d", resp.StatusCode)
 	}
 
-	var creds struct {
-		Username string `json:"username"`
-		Secret   string `json:"secret"`
-	}
+	var creds Credentials
 	if err := json.NewDecoder(resp.Body).Decode(&creds); err != nil {
 		return "", "", err
 	}
