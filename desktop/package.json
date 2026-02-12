@@ -67,7 +67,7 @@
     "@tanstack/eslint-plugin-query": "4.39.1",
     "@tauri-apps/cli": "2.9.6",
     "@types/node": "24.10.13",
-    "@types/react": "18.3.27",
+    "@types/react": "18.3.28",
     "@types/react-dom": "18.3.7",
     "@typescript-eslint/eslint-plugin": "8.54.0",
     "@typescript-eslint/parser": "8.54.0",
