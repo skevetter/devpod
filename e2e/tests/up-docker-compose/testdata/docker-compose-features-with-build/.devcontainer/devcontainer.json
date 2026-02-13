@@ -1,0 +1,12 @@
+{
+  "name": "docker-compose-features-with-build",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspaces",
+  "features": {
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "installZsh": true,
+      "username": "devcontainer"
+    }
+  }
+}

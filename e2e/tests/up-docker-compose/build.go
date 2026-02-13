@@ -138,4 +138,29 @@ var _ = ginkgo.Describe("devpod up docker compose test suite", ginkgo.Label("up-
 		framework.ExpectNoError(err)
 		gomega.Expect(ids2[0]).NotTo(gomega.Equal(ids[0]), "Should restart container")
 	})
+
+	ginkgo.It("should start a workspace with features and custom build context", func(ctx context.Context) {
+		tempDir, err := setupWorkspace("tests/up-docker-compose/testdata/docker-compose-features-with-build", initialDir, f)
+		framework.ExpectNoError(err)
+
+		// Wait for devpod workspace to come online (deadline: 60s)
+		err = f.DevPodUp(ctx, tempDir, "--debug")
+		framework.ExpectNoError(err)
+
+		workspace, err := f.FindWorkspace(ctx, tempDir)
+		framework.ExpectNoError(err)
+
+		// Verify container was created
+		ids, err := dockerHelper.FindContainer(ctx, []string{
+			fmt.Sprintf("%s=%s", compose.ProjectLabel, composeHelper.GetProjectName(workspace.UID)),
+			fmt.Sprintf("%s=%s", compose.ServiceLabel, "app"),
+		})
+		framework.ExpectNoError(err)
+		gomega.Expect(ids).To(gomega.HaveLen(1), "1 compose container to be created")
+
+		// Verify the test file was copied (proving build context is correct)
+		containerDetails, err := dockerHelper.InspectContainers(ctx, ids)
+		framework.ExpectNoError(err)
+		gomega.Expect(containerDetails).To(gomega.HaveLen(1))
+	}, ginkgo.SpecTimeout(framework.GetTimeout()*3))
 })
