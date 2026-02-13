@@ -702,7 +702,7 @@ func (r *runner) extendedDockerComposeBuild(composeService *composetypes.Service
 	}
 
 	dockerComposeFolder := getDockerComposeFolder(r.WorkspaceConfig.Origin)
-	err := os.MkdirAll(dockerComposeFolder, 0755)
+	err = os.MkdirAll(dockerComposeFolder, 0755)
 	if err != nil {
 		return "", err
 	}
