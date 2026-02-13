@@ -636,7 +636,7 @@ func (r *runner) extendedDockerfileForCompose(featureBuildInfo *feature.BuildInf
 
 		// rewrite dockerfile
 		finalDockerfileContent = dockerfile.RemoveSyntaxVersion(dockerfileContent)
-		
+
 		// Adjust the feature Dockerfile content to use the correct path relative to the build context
 		adjustedFeatureContent := featureBuildInfo.DockerfileContent
 		if composeService.Build != nil && composeService.Build.Context != "" {
@@ -651,7 +651,7 @@ func (r *runner) extendedDockerfileForCompose(featureBuildInfo *feature.BuildInf
 				)
 			}
 		}
-		
+
 		finalDockerfileContent = strings.TrimSpace(strings.Join([]string{
 			featureBuildInfo.DockerfilePrefixContent,
 			strings.TrimSpace(finalDockerfileContent),
