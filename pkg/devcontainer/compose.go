@@ -642,12 +642,18 @@ func (r *runner) extendedDockerfileForCompose(featureBuildInfo *feature.BuildInf
 		if composeService.Build != nil && composeService.Build.Context != "" {
 			// Calculate the relative path from the build context to the features folder
 			relPath, err := filepath.Rel(composeService.Build.Context, featureBuildInfo.FeaturesFolder)
-			if err == nil && relPath != config.DevPodContextFeatureFolder {
+			// Normalize both paths for comparison to handle cross-platform differences
+			normalizedRelPath := filepath.ToSlash(filepath.Clean(relPath))
+			normalizedFeatureFolder := filepath.ToSlash(filepath.Clean(config.DevPodContextFeatureFolder))
+			if err == nil && normalizedRelPath != normalizedFeatureFolder {
 				// Replace the hardcoded .devpod-internal path with the correct relative path
+				// This specifically targets the COPY instruction in the feature Dockerfile
+				oldPath := "./" + config.DevPodContextFeatureFolder + "/"
+				newPath := "./" + filepath.ToSlash(relPath) + "/"
 				adjustedFeatureContent = strings.ReplaceAll(
 					featureBuildInfo.DockerfileContent,
-					"./"+config.DevPodContextFeatureFolder+"/",
-					"./"+filepath.ToSlash(relPath)+"/",
+					oldPath,
+					newPath,
 				)
 			}
 		}
@@ -673,6 +679,8 @@ func (r *runner) extendedDockerComposeBuild(composeService *composetypes.Service
 	relDockerfilePath, err := filepath.Rel(buildContext, dockerFilePath)
 	if err != nil {
 		// If we can't make it relative, use absolute path
+		// Log this for debugging purposes
+		r.Log.Debugf("Failed to make Dockerfile path relative to build context, using absolute path: %v", err)
 		relDockerfilePath = dockerFilePath
 	}
 
