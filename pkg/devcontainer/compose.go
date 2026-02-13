@@ -531,10 +531,11 @@ func (r *runner) buildAndExtendDockerCompose(
 		}
 
 		// Write the final Dockerfile with features
-		extendedDockerfilePath, extendedDockerfileContent := r.extendedDockerfile(
+		extendedDockerfilePath, extendedDockerfileContent := r.extendedDockerfileForCompose(
 			extendImageBuildInfo.FeaturesBuildInfo,
 			dockerFilePath,
 			dockerfileContents,
+			composeService,
 		)
 
 		r.Log.Debugf(
@@ -621,12 +622,65 @@ func (r *runner) extendedDockerfile(featureBuildInfo *feature.BuildInfo, dockerf
 	return finalDockerfilePath, finalDockerfileContent
 }
 
+// extendedDockerfileForCompose is similar to extendedDockerfile but adjusts the feature COPY paths
+// to work with the original docker-compose build context
+func (r *runner) extendedDockerfileForCompose(featureBuildInfo *feature.BuildInfo, dockerfilePath, dockerfileContent string, composeService *composetypes.ServiceConfig) (string, string) {
+	// extra args?
+	finalDockerfilePath := dockerfilePath
+	finalDockerfileContent := dockerfileContent
+
+	// get extended build info
+	if featureBuildInfo != nil {
+		// rewrite dockerfile path
+		finalDockerfilePath = filepath.Join(featureBuildInfo.FeaturesFolder, "Dockerfile-with-features")
+
+		// rewrite dockerfile
+		finalDockerfileContent = dockerfile.RemoveSyntaxVersion(dockerfileContent)
+		
+		// Adjust the feature Dockerfile content to use the correct path relative to the build context
+		adjustedFeatureContent := featureBuildInfo.DockerfileContent
+		if composeService.Build != nil && composeService.Build.Context != "" {
+			// Calculate the relative path from the build context to the features folder
+			relPath, err := filepath.Rel(composeService.Build.Context, featureBuildInfo.FeaturesFolder)
+			if err == nil && relPath != config.DevPodContextFeatureFolder {
+				// Replace the hardcoded .devpod-internal path with the correct relative path
+				adjustedFeatureContent = strings.ReplaceAll(
+					featureBuildInfo.DockerfileContent,
+					"./"+config.DevPodContextFeatureFolder+"/",
+					"./"+filepath.ToSlash(relPath)+"/",
+				)
+			}
+		}
+		
+		finalDockerfileContent = strings.TrimSpace(strings.Join([]string{
+			featureBuildInfo.DockerfilePrefixContent,
+			strings.TrimSpace(finalDockerfileContent),
+			adjustedFeatureContent,
+		}, "\n"))
+	}
+
+	return finalDockerfilePath, finalDockerfileContent
+}
+
 func (r *runner) extendedDockerComposeBuild(composeService *composetypes.ServiceConfig, dockerFilePath string, featuresBuildInfo *feature.BuildInfo) (string, error) {
+	// Preserve the original build context if it exists, otherwise use the features folder parent
+	buildContext := filepath.Dir(featuresBuildInfo.FeaturesFolder)
+	if composeService.Build != nil && composeService.Build.Context != "" {
+		buildContext = composeService.Build.Context
+	}
+
+	// Make Dockerfile path relative to the build context
+	relDockerfilePath, err := filepath.Rel(buildContext, dockerFilePath)
+	if err != nil {
+		// If we can't make it relative, use absolute path
+		relDockerfilePath = dockerFilePath
+	}
+
 	service := &composetypes.ServiceConfig{
 		Name: composeService.Name,
 		Build: &composetypes.BuildConfig{
-			Dockerfile: dockerFilePath,
-			Context:    filepath.Dir(featuresBuildInfo.FeaturesFolder),
+			Dockerfile: relDockerfilePath,
+			Context:    buildContext,
 		},
 	}
 	if composeService.Image != "" {
