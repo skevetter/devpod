@@ -227,7 +227,13 @@ func RunSSHSession(ctx context.Context, sshClient *ssh.Client, options RunSSHSes
 
 		t, err := resolvePTYTerm(ctx, sshClient, options.SessionOptions)
 		if err != nil {
-			return err
+			t = defaultTerm
+			_, _ = fmt.Fprintf(
+				options.Stderr,
+				"warning: failed to resolve TERM, falling back to %s: %v\n",
+				defaultTerm,
+				err,
+			)
 		}
 		// get initial window size
 		width, height := 80, 40
@@ -286,7 +292,7 @@ func resolvePTYTerm(ctx context.Context, sshClient *ssh.Client, sessionOptions S
 func resolveAutoPTYTerm(ctx context.Context, sshClient *ssh.Client, localTerm string, installTerminfo bool) (string, error) {
 	supported, err := remoteTerminfoExists(sshClient, localTerm)
 	if err != nil {
-		return "", err
+		return defaultTerm, nil
 	}
 	if supported {
 		return localTerm, nil
@@ -297,7 +303,7 @@ func resolveAutoPTYTerm(ctx context.Context, sshClient *ssh.Client, localTerm st
 
 	installed, err := installLocalTerminfoOnRemote(ctx, sshClient, localTerm)
 	if err != nil {
-		return "", err
+		return defaultTerm, nil
 	}
 	if !installed {
 		return defaultTerm, nil
@@ -305,7 +311,7 @@ func resolveAutoPTYTerm(ctx context.Context, sshClient *ssh.Client, localTerm st
 
 	supported, err = remoteTerminfoExists(sshClient, localTerm)
 	if err != nil {
-		return "", err
+		return defaultTerm, nil
 	}
 	if supported {
 		return localTerm, nil
@@ -316,7 +322,8 @@ func resolveAutoPTYTerm(ctx context.Context, sshClient *ssh.Client, localTerm st
 
 func remoteTerminfoExists(sshClient *ssh.Client, term string) (bool, error) {
 	check := fmt.Sprintf(
-		"command -v infocmp >/dev/null 2>&1 && TERM=%s infocmp -x \"$TERM\" >/dev/null 2>&1",
+		"command -v infocmp >/dev/null 2>&1 && TERM=%s infocmp -x %s >/dev/null 2>&1",
+		shellQuote(term),
 		shellQuote(term),
 	)
 	command := fmt.Sprintf("sh -lc %s", shellQuote(check))
