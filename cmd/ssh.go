@@ -56,7 +56,9 @@ type SSHCmd struct {
 	// ssh keepalive options
 	SSHKeepAliveInterval time.Duration `json:"sshKeepAliveInterval,omitempty"`
 
-	StartServices bool
+	StartServices   bool
+	TermMode        string
+	InstallTerminfo bool
 
 	Command string
 	User    string
@@ -107,6 +109,8 @@ func NewSSHCmd(f *flags.GlobalFlags) *cobra.Command {
 	sshCmd.Flags().BoolVar(&cmd.Stdio, "stdio", false, "If true will tunnel connection through stdout and stdin")
 	sshCmd.Flags().BoolVar(&cmd.StartServices, "start-services", true, "If false will not start any port-forwarding or git / docker credentials helper")
 	sshCmd.Flags().DurationVar(&cmd.SSHKeepAliveInterval, "ssh-keepalive-interval", 55*time.Second, "How often should keepalive request be made (55s)")
+	sshCmd.Flags().StringVar(&cmd.TermMode, "term-mode", machine.TermModeAuto, "PTY TERM selection mode: auto, strict, fallback")
+	sshCmd.Flags().BoolVar(&cmd.InstallTerminfo, "install-terminfo", false, "Install local TERM terminfo on the remote before opening a PTY")
 
 	return sshCmd
 }
@@ -227,6 +231,7 @@ func (cmd *SSHCmd) jumpContainerTailscale(
 		sshClient,
 		cmd.AgentForwarding,
 		cmd.Command,
+		machine.SSHSessionOptions{TermMode: cmd.TermMode, InstallTerminfo: cmd.InstallTerminfo},
 		os.Stderr,
 	)
 }
@@ -488,6 +493,7 @@ func (cmd *SSHCmd) startTunnel(ctx context.Context, devPodConfig *config.Config,
 		cmd.User,
 		cmd.Command,
 		cmd.AgentForwarding && devPodConfig.ContextOption(config.ContextOptionSSHAgentForwarding) == "true",
+		machine.SSHSessionOptions{TermMode: cmd.TermMode, InstallTerminfo: cmd.InstallTerminfo},
 		func(ctx context.Context, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
 			if cmd.SSHKeepAliveInterval != DisableSSHKeepAlive {
 				go startSSHKeepAlive(ctx, containerClient, cmd.SSHKeepAliveInterval, log)
