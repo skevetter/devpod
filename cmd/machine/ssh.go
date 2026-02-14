@@ -82,11 +82,18 @@ func NewSSHCmd(flags *flags.GlobalFlags) *cobra.Command {
 	sshCmd.Flags().BoolVar(&cmd.AgentForwarding, "agent-forwarding", false, "If true, will forward the local ssh keys")
 	sshCmd.Flags().StringVar(&cmd.TermMode, "term-mode", TermModeAuto, termModeUsage)
 	sshCmd.Flags().BoolVar(&cmd.InstallTerminfo, "install-terminfo", false, installUsage)
+	_ = sshCmd.RegisterFlagCompletionFunc("term-mode", func(*cobra.Command, []string, string) ([]string, cobra.ShellCompDirective) {
+		return []string{TermModeAuto, TermModeStrict, TermModeFallback}, cobra.ShellCompDirectiveNoFileComp
+	})
 	return sshCmd
 }
 
 // Run runs the command logic
 func (cmd *SSHCmd) Run(ctx context.Context, args []string) error {
+	if !isValidTermMode(cmd.TermMode) {
+		return fmt.Errorf("invalid --term-mode %q: expected one of auto, strict, fallback", cmd.TermMode)
+	}
+
 	devPodConfig, err := config.LoadConfig(cmd.Context, cmd.Provider)
 	if err != nil {
 		return err
@@ -180,90 +187,130 @@ func RunSSHSession(ctx context.Context, sshClient *ssh.Client, options RunSSHSes
 		options.Stderr = os.Stderr
 	}
 
-	// create a new session
 	session, err := sshClient.NewSession()
 	if err != nil {
 		return err
 	}
 	defer func() { _ = session.Close() }()
 
-	// request agent forwarding
-	authSock := devsshagent.GetSSHAuthSocket()
-	if options.AgentForwarding && authSock != "" {
-		err = devsshagent.ForwardToRemote(sshClient, authSock)
-		if err != nil {
-			return fmt.Errorf("forward agent: %w", err)
-		}
-
-		err = devsshagent.RequestAgentForwarding(session)
-		if err != nil {
-			return fmt.Errorf("request agent forwarding: %w", err)
-		}
+	if err := configureAgentForwarding(sshClient, session, options.AgentForwarding); err != nil {
+		return err
 	}
 
-	stdout := os.Stdout
-	stdin := os.Stdin
-
-	if isatty.IsTerminal(stdout.Fd()) {
-		state, err := term.MakeRaw(int(stdout.Fd()))
-		if err != nil {
-			return err
-		}
-		defer func() {
-			_ = term.Restore(int(stdout.Fd()), state)
-		}()
-
-		windowChange := devssh.WatchWindowSize(ctx)
-		go func() {
-			for {
-				select {
-				case <-ctx.Done():
-					return
-				case <-windowChange:
-				}
-				width, height, err := term.GetSize(int(stdout.Fd()))
-				if err != nil {
-					continue
-				}
-				_ = session.WindowChange(height, width)
-			}
-		}()
-
-		t, err := resolvePTYTerm(ctx, sshClient, options.SessionOptions)
-		if err != nil {
-			t = defaultTerm
-			_, _ = fmt.Fprintf(
-				options.Stderr,
-				"warning: failed to resolve TERM, falling back to %s: %v\n",
-				defaultTerm,
-				err,
-			)
-		}
-		// get initial window size
-		width, height := 80, 40
-		if w, h, err := term.GetSize(int(stdout.Fd())); err == nil {
-			width, height = w, h
-		}
-		if err = session.RequestPty(t, height, width, ssh.TerminalModes{}); err != nil {
-			return fmt.Errorf("request pty: %w", err)
-		}
+	if err := setupInteractivePTY(ctx, sshClient, session, options); err != nil {
+		return err
 	}
 
-	session.Stdin = stdin
-	session.Stdout = stdout
-	session.Stderr = options.Stderr
-	if options.Command == "" {
-		if err := session.Shell(); err != nil {
-			return fmt.Errorf("start ssh session with shell: %w", err)
-		}
-	} else {
-		if err := session.Start(options.Command); err != nil {
-			return fmt.Errorf("start ssh session with command %s: %w", options.Command, err)
-		}
+	wireSessionStdio(session, options.Stderr)
+	if err := startSessionCommand(session, options.Command); err != nil {
+		return err
 	}
 
 	if err := session.Wait(); err != nil {
 		return fmt.Errorf("ssh session: %w", err)
+	}
+
+	return nil
+}
+
+func configureAgentForwarding(sshClient *ssh.Client, session *ssh.Session, shouldForward bool) error {
+	authSock := devsshagent.GetSSHAuthSocket()
+	if !shouldForward || authSock == "" {
+		return nil
+	}
+
+	err := devsshagent.ForwardToRemote(sshClient, authSock)
+	if err != nil {
+		return fmt.Errorf("forward agent: %w", err)
+	}
+
+	err = devsshagent.RequestAgentForwarding(session)
+	if err != nil {
+		return fmt.Errorf("request agent forwarding: %w", err)
+	}
+
+	return nil
+}
+
+func setupInteractivePTY(ctx context.Context, sshClient *ssh.Client, session *ssh.Session, options RunSSHSessionOptions) error {
+	stdout := os.Stdout
+	if !isatty.IsTerminal(stdout.Fd()) {
+		return nil
+	}
+
+	state, err := term.MakeRaw(int(stdout.Fd()))
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = term.Restore(int(stdout.Fd()), state)
+	}()
+
+	startWindowResizeForwarder(ctx, session, int(stdout.Fd()))
+
+	t := resolvePTYTermWithFallback(ctx, sshClient, options.SessionOptions, options.Stderr)
+	width, height := getTerminalSize(int(stdout.Fd()))
+	if err = session.RequestPty(t, height, width, ssh.TerminalModes{}); err != nil {
+		return fmt.Errorf("request pty: %w", err)
+	}
+
+	return nil
+}
+
+func resolvePTYTermWithFallback(ctx context.Context, sshClient *ssh.Client, sessionOptions SSHSessionOptions, stderr io.Writer) string {
+	t, err := resolvePTYTerm(ctx, sshClient, sessionOptions)
+	if err == nil {
+		return t
+	}
+
+	_, _ = fmt.Fprintf(stderr, "warning: failed to resolve TERM, falling back to %s: %v\n", defaultTerm, err)
+	return defaultTerm
+}
+
+func startWindowResizeForwarder(ctx context.Context, session *ssh.Session, fd int) {
+	windowChange := devssh.WatchWindowSize(ctx)
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-windowChange:
+			}
+
+			width, height, err := term.GetSize(fd)
+			if err != nil {
+				continue
+			}
+			_ = session.WindowChange(height, width)
+		}
+	}()
+}
+
+func getTerminalSize(fd int) (int, int) {
+	width, height := 80, 40
+	if w, h, err := term.GetSize(fd); err == nil {
+		width, height = w, h
+	}
+
+	return width, height
+}
+
+func wireSessionStdio(session *ssh.Session, stderr io.Writer) {
+	session.Stdin = os.Stdin
+	session.Stdout = os.Stdout
+	session.Stderr = stderr
+}
+
+func startSessionCommand(session *ssh.Session, command string) error {
+	if command == "" {
+		if err := session.Shell(); err != nil {
+			return fmt.Errorf("start ssh session with shell: %w", err)
+		}
+		return nil
+	}
+
+	if err := session.Start(command); err != nil {
+		return fmt.Errorf("start ssh session with command %s: %w", command, err)
 	}
 
 	return nil
@@ -294,7 +341,7 @@ func resolvePTYTerm(ctx context.Context, sshClient *ssh.Client, sessionOptions S
 }
 
 func resolveAutoPTYTerm(ctx context.Context, sshClient *ssh.Client, localTerm string, installTerminfo bool) (string, error) {
-	supported, err := remoteTerminfoExists(sshClient, localTerm)
+	supported, err := remoteTerminfoExists(ctx, sshClient, localTerm)
 	if err != nil {
 		return defaultTerm, nil
 	}
@@ -313,37 +360,34 @@ func resolveAutoPTYTerm(ctx context.Context, sshClient *ssh.Client, localTerm st
 		return defaultTerm, nil
 	}
 
-	supported, err = remoteTerminfoExists(sshClient, localTerm)
+	supported, err = remoteTerminfoExists(ctx, sshClient, localTerm)
 	if err != nil {
 		return defaultTerm, nil
 	}
-	if supported {
-		return localTerm, nil
-	}
 
-	return defaultTerm, nil
+	return termFromSupport(supported, localTerm), nil
 }
 
-func remoteTerminfoExists(sshClient *ssh.Client, term string) (bool, error) {
+func termFromSupport(supported bool, term string) string {
+	if supported {
+		return term
+	}
+
+	return defaultTerm
+}
+
+func remoteTerminfoExists(ctx context.Context, sshClient *ssh.Client, term string) (bool, error) {
 	check := fmt.Sprintf(
 		"command -v infocmp >/dev/null 2>&1 && infocmp -x %s >/dev/null 2>&1",
 		shellQuote(term),
 	)
 	command := fmt.Sprintf("sh -lc %s", shellQuote(check))
-	code, err := runRemoteCommandExitCode(sshClient, command)
+	code, err := runRemoteCommandExitCode(ctx, sshClient, command)
 	if err != nil {
 		return false, err
 	}
 
-	if code == 0 {
-		return true, nil
-	}
-
-	if code == 1 || code == 127 {
-		return false, nil
-	}
-
-	return false, nil
+	return code == 0, nil
 }
 
 func installLocalTerminfoOnRemote(ctx context.Context, sshClient *ssh.Client, term string) (bool, error) {
@@ -357,33 +401,12 @@ func installLocalTerminfoOnRemote(ctx context.Context, sshClient *ssh.Client, te
 	}
 
 	command := "sh -lc 'command -v tic >/dev/null 2>&1 && tic -x - >/dev/null 2>&1'"
-	session, err := sshClient.NewSession()
+	runResult, err := runRemoteCommandWithInput(ctx, sshClient, command, bytes.NewReader(output))
 	if err != nil {
-		return false, fmt.Errorf("create ssh session for terminfo install: %w", err)
-	}
-	defer func() { _ = session.Close() }()
-
-	stdin, err := session.StdinPipe()
-	if err != nil {
-		return false, fmt.Errorf("get remote stdin for terminfo install: %w", err)
+		return false, err
 	}
 
-	errChan := streamBytesToWriter(bytes.NewReader(output), stdin)
-
-	runErr := session.Run(command)
-	copyErr := <-errChan
-	if copyErr != nil {
-		return false, nil
-	}
-	if runErr != nil {
-		var exitErr *ssh.ExitError
-		if errors.As(runErr, &exitErr) {
-			return false, nil
-		}
-		return false, fmt.Errorf("run remote tic command: %w", runErr)
-	}
-
-	return true, nil
+	return runResult == 0, nil
 }
 
 func streamBytesToWriter(reader io.Reader, writer io.WriteCloser) <-chan error {
@@ -401,24 +424,63 @@ func streamBytesToWriter(reader io.Reader, writer io.WriteCloser) <-chan error {
 	return errChan
 }
 
-func runRemoteCommandExitCode(sshClient *ssh.Client, command string) (int, error) {
+func runRemoteCommandWithInput(ctx context.Context, sshClient *ssh.Client, command string, input io.Reader) (int, error) {
 	session, err := sshClient.NewSession()
 	if err != nil {
 		return -1, fmt.Errorf("create ssh session: %w", err)
 	}
 	defer func() { _ = session.Close() }()
 
-	err = session.Run(command)
-	if err == nil {
-		return 0, nil
+	if input != nil {
+		stdin, err := session.StdinPipe()
+		if err != nil {
+			return -1, fmt.Errorf("get remote stdin: %w", err)
+		}
+
+		errChan := streamBytesToWriter(input, stdin)
+		defer func() {
+			_ = <-errChan
+		}()
 	}
 
-	var exitErr *ssh.ExitError
-	if errors.As(err, &exitErr) {
-		return exitErr.ExitStatus(), nil
+	if err := session.Start(command); err != nil {
+		return -1, fmt.Errorf("start remote command: %w", err)
 	}
 
-	return -1, fmt.Errorf("run remote command: %w", err)
+	waitErrCh := make(chan error, 1)
+	go func() {
+		waitErrCh <- session.Wait()
+	}()
+
+	select {
+	case <-ctx.Done():
+		_ = session.Close()
+		return -1, fmt.Errorf("remote command canceled: %w", ctx.Err())
+	case err := <-waitErrCh:
+		if err == nil {
+			return 0, nil
+		}
+
+		var exitErr *ssh.ExitError
+		if errors.As(err, &exitErr) {
+			return exitErr.ExitStatus(), nil
+		}
+
+		return -1, fmt.Errorf("run remote command: %w", err)
+	}
+}
+
+func runRemoteCommandExitCode(ctx context.Context, sshClient *ssh.Client, command string) (int, error) {
+	return runRemoteCommandWithInput(ctx, sshClient, command, nil)
+}
+
+func isValidTermMode(mode string) bool {
+	switch mode {
+	case "", TermModeAuto, TermModeStrict, TermModeFallback:
+		return true
+	default:
+		return false
+	}
 }
 
 func shellQuote(value string) string {
