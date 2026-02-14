@@ -9,7 +9,7 @@ on:
 jobs:
   can-read-secret:
     name: Can Read Secret
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     outputs:
       secret-set: ${{ steps.check-secret.outputs.secret-set }}
     steps:
@@ -24,7 +24,7 @@ jobs:
 
   build-ui:
     name: User Interface Build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v6
 
@@ -58,7 +58,7 @@ jobs:
     strategy:
       matrix:
         include:
-          - runner: ubuntu-latest
+          - runner: ubuntu-22.04
           - runner: macos-latest
           - runner: windows-latest
     runs-on: ${{ matrix.runner }}
@@ -100,55 +100,55 @@ jobs:
       matrix:
         include:
           - label: context
-            runner: ubuntu-latest
+            runner: ubuntu-22.04
             free-disk-space: false
             install-kind: false
             requires-secret: false
 
           - label: ide
-            runner: ubuntu-latest
+            runner: ubuntu-22.04
             free-disk-space: false
             install-kind: false
             requires-secret: false
 
           - label: integration
-            runner: ubuntu-latest
+            runner: ubuntu-22.04
             free-disk-space: false
             install-kind: false
             requires-secret: false
 
           - label: machine
-            runner: ubuntu-latest
+            runner: ubuntu-22.04
             free-disk-space: false
             install-kind: false
             requires-secret: false
 
           - label: machineprovider
-            runner: ubuntu-latest
+            runner: ubuntu-22.04
             free-disk-space: false
             install-kind: false
             requires-secret: false
 
           - label: provider
-            runner: ubuntu-latest
+            runner: ubuntu-22.04
             free-disk-space: false
             install-kind: true
             requires-secret: false
 
           - label: ssh
-            runner: ubuntu-latest
+            runner: ubuntu-22.04
             free-disk-space: false
             install-kind: false
             requires-secret: false
 
           - label: build
-            runner: ubuntu-latest
+            runner: ubuntu-22.04
             free-disk-space: true
             install-kind: true
             requires-secret: true
 
           - label: docker-install
-            runner: ubuntu-latest
+            runner: ubuntu-22.04
             free-disk-space: false
             install-kind: false
             requires-secret: false
@@ -156,49 +156,49 @@ jobs:
           # Up tests
 
           - label: up-workspaces
-            runner: ubuntu-latest
+            runner: ubuntu-22.04
             free-disk-space: true
             install-kind: true
             requires-secret: false
 
           - label: up-git-repositories
-            runner: ubuntu-latest
+            runner: ubuntu-22.04
             free-disk-space: true
             install-kind: true
             requires-secret: false
 
           - label: up-handle-errors
-            runner: ubuntu-latest
+            runner: ubuntu-22.04
             free-disk-space: true
             install-kind: true
             requires-secret: false
 
           - label: up-private-token
-            runner: ubuntu-latest
+            runner: ubuntu-22.04
             free-disk-space: false
             install-kind: false
             requires-secret: true
 
           - label: up-provider-kubernetes
-            runner: ubuntu-latest
+            runner: ubuntu-22.04
             free-disk-space: true
             install-kind: true
             requires-secret: false
 
           - label: up-provider-podman
-            runner: ubuntu-latest
+            runner: ubuntu-22.04
             free-disk-space: true
             install-kind: true
             requires-secret: false
 
           - label: up-provider-docker
-            runner: ubuntu-latest
+            runner: ubuntu-22.04
             free-disk-space: false
             install-kind: true
             requires-secret: false
 
           - label: up-dockerfile-build
-            runner: ubuntu-latest
+            runner: ubuntu-22.04
             free-disk-space: false
             install-kind: true
             requires-secret: false
@@ -206,19 +206,19 @@ jobs:
           #  Up Docker Compose tests
 
           - label: up-docker-compose && build
-            runner: ubuntu-latest
+            runner: ubuntu-22.04
             free-disk-space: false
             install-kind: true
             requires-secret: false
 
           - label: up-docker-compose && config
-            runner: ubuntu-latest
+            runner: ubuntu-22.04
             free-disk-space: false
             install-kind: true
             requires-secret: false
 
           - label: up-docker-compose && suite
-            runner: ubuntu-latest
+            runner: ubuntu-22.04
             free-disk-space: false
             install-kind: true
             requires-secret: false
@@ -226,7 +226,7 @@ jobs:
           # Up Docker Feature tests
 
           - label: up-features && suite
-            runner: ubuntu-latest
+            runner: ubuntu-22.04
             free-disk-space: true
             install-kind: true
             requires-secret: false
@@ -389,7 +389,7 @@ jobs:
         include:
           - arch: amd64
             target: x86_64-unknown-linux-gnu
-            runner: ubuntu-latest
+            runner: ubuntu-22.04
             tauri_include_updater_json: true
             tauri_ci: true
 
@@ -515,7 +515,7 @@ jobs:
 
   build-flatpak:
     name: Build Flatpak
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: [build-desktop]
     container:
       image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-48
@@ -529,7 +529,7 @@ jobs:
       - name: download desktop linux artifact
         uses: actions/download-artifact@v7
         with:
-          name: desktop-ubuntu-latest-amd64
+          name: desktop-ubuntu-22.04-amd64
           path: /tmp/devpod/
 
       # Use GITHUB_WORKSPACE in containers because the path differs from github.workspace
