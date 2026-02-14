@@ -176,6 +176,10 @@ func StartSSHSession(ctx context.Context, options StartSSHSessionOptions) error 
 }
 
 func RunSSHSession(ctx context.Context, sshClient *ssh.Client, options RunSSHSessionOptions) error {
+	if options.Stderr == nil {
+		options.Stderr = os.Stderr
+	}
+
 	// create a new session
 	session, err := sshClient.NewSession()
 	if err != nil {
@@ -322,8 +326,7 @@ func resolveAutoPTYTerm(ctx context.Context, sshClient *ssh.Client, localTerm st
 
 func remoteTerminfoExists(sshClient *ssh.Client, term string) (bool, error) {
 	check := fmt.Sprintf(
-		"command -v infocmp >/dev/null 2>&1 && TERM=%s infocmp -x %s >/dev/null 2>&1",
-		shellQuote(term),
+		"command -v infocmp >/dev/null 2>&1 && infocmp -x %s >/dev/null 2>&1",
 		shellQuote(term),
 	)
 	command := fmt.Sprintf("sh -lc %s", shellQuote(check))
