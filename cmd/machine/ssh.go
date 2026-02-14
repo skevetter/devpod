@@ -190,6 +190,9 @@ func RunSSHSession(ctx context.Context, sshClient *ssh.Client, options RunSSHSes
 		options.Stderr = os.Stderr
 	}
 
+	sessionCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	session, err := sshClient.NewSession()
 	if err != nil {
 		return err
@@ -200,9 +203,11 @@ func RunSSHSession(ctx context.Context, sshClient *ssh.Client, options RunSSHSes
 		return err
 	}
 
-	if err := setupInteractivePTY(ctx, sshClient, session, options); err != nil {
+	restoreTerm, err := setupInteractivePTY(sessionCtx, sshClient, session, options)
+	if err != nil {
 		return err
 	}
+	defer restoreTerm()
 
 	wireSessionStdio(session, options.Stderr)
 	if err := startSessionCommand(session, options.Command); err != nil {
@@ -240,30 +245,41 @@ func setupInteractivePTY(
 	sshClient *ssh.Client,
 	session *ssh.Session,
 	options RunSSHSessionOptions,
-) error {
+) (func(), error) {
 	stdout := os.Stdout
 	if !isatty.IsTerminal(stdout.Fd()) {
-		return nil
+		return noopRestore, nil
 	}
 
-	state, err := term.MakeRaw(int(stdout.Fd()))
+	restoreTerm, err := makeRawTerm(stdout)
 	if err != nil {
-		return err
+		return noopRestore, err
 	}
-	defer func() {
-		_ = term.Restore(int(stdout.Fd()), state)
-	}()
 
 	startWindowResizeForwarder(ctx, session, int(stdout.Fd()))
 
 	t := resolvePTYTermWithFallback(ctx, sshClient, options.SessionOptions, options.Stderr)
 	width, height := getTerminalSize(int(stdout.Fd()))
 	if err = session.RequestPty(t, height, width, ssh.TerminalModes{}); err != nil {
-		return fmt.Errorf("request pty: %w", err)
+		restoreTerm()
+		return noopRestore, fmt.Errorf("request pty: %w", err)
 	}
 
-	return nil
+	return restoreTerm, nil
 }
+
+func makeRawTerm(stdout *os.File) (func(), error) {
+	state, err := term.MakeRaw(int(stdout.Fd()))
+	if err != nil {
+		return noopRestore, err
+	}
+
+	return func() {
+		_ = term.Restore(int(stdout.Fd()), state)
+	}, nil
+}
+
+func noopRestore() {}
 
 func resolvePTYTermWithFallback(
 	ctx context.Context,
