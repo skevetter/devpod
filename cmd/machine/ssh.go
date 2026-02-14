@@ -40,11 +40,29 @@ const (
 	TermModeStrict   = "strict"
 	TermModeFallback = "fallback"
 	defaultTerm      = "xterm-256color"
+	termModeUsage    = "PTY TERM selection mode: auto, strict, fallback"
+	installUsage     = "Install local TERM terminfo on remote before PTY"
 )
 
 type SSHSessionOptions struct {
 	TermMode        string
 	InstallTerminfo bool
+}
+
+type StartSSHSessionOptions struct {
+	User            string
+	Command         string
+	AgentForwarding bool
+	SessionOptions  SSHSessionOptions
+	Exec            ExecFunc
+	Stderr          io.Writer
+}
+
+type RunSSHSessionOptions struct {
+	Command         string
+	AgentForwarding bool
+	SessionOptions  SSHSessionOptions
+	Stderr          io.Writer
 }
 
 // NewSSHCmd creates a new destroy command
@@ -62,8 +80,8 @@ func NewSSHCmd(flags *flags.GlobalFlags) *cobra.Command {
 
 	sshCmd.Flags().StringVar(&cmd.Command, "command", "", "The command to execute on the remote machine")
 	sshCmd.Flags().BoolVar(&cmd.AgentForwarding, "agent-forwarding", false, "If true, will forward the local ssh keys")
-	sshCmd.Flags().StringVar(&cmd.TermMode, "term-mode", TermModeAuto, "PTY TERM selection mode: auto, strict, fallback")
-	sshCmd.Flags().BoolVar(&cmd.InstallTerminfo, "install-terminfo", false, "Install local TERM terminfo on the remote before opening a PTY")
+	sshCmd.Flags().StringVar(&cmd.TermMode, "term-mode", TermModeAuto, termModeUsage)
+	sshCmd.Flags().BoolVar(&cmd.InstallTerminfo, "install-terminfo", false, installUsage)
 	return sshCmd
 }
 
@@ -86,13 +104,11 @@ func (cmd *SSHCmd) Run(ctx context.Context, args []string) error {
 	timeout := config.ParseTimeOption(devPodConfig, config.ContextOptionAgentInjectTimeout)
 
 	// start the ssh session
-	return StartSSHSession(
-		ctx,
-		"",
-		cmd.Command,
-		cmd.AgentForwarding,
-		SSHSessionOptions{TermMode: cmd.TermMode, InstallTerminfo: cmd.InstallTerminfo},
-		func(ctx context.Context, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
+	return StartSSHSession(ctx, StartSSHSessionOptions{
+		Command:         cmd.Command,
+		AgentForwarding: cmd.AgentForwarding,
+		SessionOptions:  SSHSessionOptions{TermMode: cmd.TermMode, InstallTerminfo: cmd.InstallTerminfo},
+		Exec: func(ctx context.Context, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
 			command := fmt.Sprintf("'%s' helper ssh-server --stdio", machineClient.AgentPath())
 			if cmd.Debug {
 				command += " --debug"
@@ -117,12 +133,14 @@ func (cmd *SSHCmd) Run(ctx context.Context, args []string) error {
 				Log:             log.Default.ErrorStreamOnly(),
 				Timeout:         timeout,
 			})
-		}, writer)
+		},
+		Stderr: writer,
+	})
 }
 
 type ExecFunc func(ctx context.Context, stdin io.Reader, stdout io.Writer, stderr io.Writer) error
 
-func StartSSHSession(ctx context.Context, user, command string, agentForwarding bool, sessionOptions SSHSessionOptions, exec ExecFunc, stderr io.Writer) error {
+func StartSSHSession(ctx context.Context, options StartSSHSessionOptions) error {
 	// create readers
 	stdoutReader, stdoutWriter, err := os.Pipe()
 	if err != nil {
@@ -140,19 +158,24 @@ func StartSSHSession(ctx context.Context, user, command string, agentForwarding 
 	// start ssh machine
 	errChan := make(chan error, 1)
 	go func() {
-		errChan <- exec(ctx, stdinReader, stdoutWriter, stderr)
+		errChan <- options.Exec(ctx, stdinReader, stdoutWriter, options.Stderr)
 	}()
 
-	sshClient, err := devssh.StdioClientWithUser(stdoutReader, stdinWriter, user, false)
+	sshClient, err := devssh.StdioClientWithUser(stdoutReader, stdinWriter, options.User, false)
 	if err != nil {
 		return err
 	}
 	defer func() { _ = sshClient.Close() }()
 
-	return RunSSHSession(ctx, sshClient, agentForwarding, command, sessionOptions, stderr)
+	return RunSSHSession(ctx, sshClient, RunSSHSessionOptions{
+		Command:         options.Command,
+		AgentForwarding: options.AgentForwarding,
+		SessionOptions:  options.SessionOptions,
+		Stderr:          options.Stderr,
+	})
 }
 
-func RunSSHSession(ctx context.Context, sshClient *ssh.Client, agentForwarding bool, command string, sessionOptions SSHSessionOptions, stderr io.Writer) error {
+func RunSSHSession(ctx context.Context, sshClient *ssh.Client, options RunSSHSessionOptions) error {
 	// create a new session
 	session, err := sshClient.NewSession()
 	if err != nil {
@@ -162,7 +185,7 @@ func RunSSHSession(ctx context.Context, sshClient *ssh.Client, agentForwarding b
 
 	// request agent forwarding
 	authSock := devsshagent.GetSSHAuthSocket()
-	if agentForwarding && authSock != "" {
+	if options.AgentForwarding && authSock != "" {
 		err = devsshagent.ForwardToRemote(sshClient, authSock)
 		if err != nil {
 			return fmt.Errorf("forward agent: %w", err)
@@ -202,7 +225,7 @@ func RunSSHSession(ctx context.Context, sshClient *ssh.Client, agentForwarding b
 			}
 		}()
 
-		t, err := resolvePTYTerm(ctx, sshClient, sessionOptions)
+		t, err := resolvePTYTerm(ctx, sshClient, options.SessionOptions)
 		if err != nil {
 			return err
 		}
@@ -218,14 +241,14 @@ func RunSSHSession(ctx context.Context, sshClient *ssh.Client, agentForwarding b
 
 	session.Stdin = stdin
 	session.Stdout = stdout
-	session.Stderr = stderr
-	if command == "" {
+	session.Stderr = options.Stderr
+	if options.Command == "" {
 		if err := session.Shell(); err != nil {
 			return fmt.Errorf("start ssh session with shell: %w", err)
 		}
 	} else {
-		if err := session.Start(command); err != nil {
-			return fmt.Errorf("start ssh session with command %s: %w", command, err)
+		if err := session.Start(options.Command); err != nil {
+			return fmt.Errorf("start ssh session with command %s: %w", options.Command, err)
 		}
 	}
 
@@ -247,44 +270,56 @@ func resolvePTYTerm(ctx context.Context, sshClient *ssh.Client, sessionOptions S
 		mode = TermModeAuto
 	}
 
-	switch mode {
-	case TermModeStrict:
+	if mode == TermModeStrict {
 		return localTerm, nil
-	case TermModeFallback:
+	}
+	if mode == TermModeFallback {
 		return defaultTerm, nil
-	case TermModeAuto:
-		supported, err := remoteTerminfoExists(sshClient, localTerm)
-		if err != nil {
-			return "", err
-		}
-		if supported {
-			return localTerm, nil
-		}
-
-		if sessionOptions.InstallTerminfo {
-			installed, err := installLocalTerminfoOnRemote(ctx, sshClient, localTerm)
-			if err != nil {
-				return "", err
-			}
-			if installed {
-				supported, err = remoteTerminfoExists(sshClient, localTerm)
-				if err != nil {
-					return "", err
-				}
-				if supported {
-					return localTerm, nil
-				}
-			}
-		}
-
-		return defaultTerm, nil
-	default:
+	}
+	if mode != TermModeAuto {
 		return "", fmt.Errorf("invalid --term-mode %q: expected one of auto, strict, fallback", mode)
 	}
+
+	return resolveAutoPTYTerm(ctx, sshClient, localTerm, sessionOptions.InstallTerminfo)
+}
+
+func resolveAutoPTYTerm(ctx context.Context, sshClient *ssh.Client, localTerm string, installTerminfo bool) (string, error) {
+	supported, err := remoteTerminfoExists(sshClient, localTerm)
+	if err != nil {
+		return "", err
+	}
+	if supported {
+		return localTerm, nil
+	}
+	if !installTerminfo {
+		return defaultTerm, nil
+	}
+
+	installed, err := installLocalTerminfoOnRemote(ctx, sshClient, localTerm)
+	if err != nil {
+		return "", err
+	}
+	if !installed {
+		return defaultTerm, nil
+	}
+
+	supported, err = remoteTerminfoExists(sshClient, localTerm)
+	if err != nil {
+		return "", err
+	}
+	if supported {
+		return localTerm, nil
+	}
+
+	return defaultTerm, nil
 }
 
 func remoteTerminfoExists(sshClient *ssh.Client, term string) (bool, error) {
-	command := fmt.Sprintf("sh -lc %s", shellQuote(fmt.Sprintf("command -v infocmp >/dev/null 2>&1 && TERM=%s infocmp -x \"$TERM\" >/dev/null 2>&1", shellQuote(term))))
+	check := fmt.Sprintf(
+		"command -v infocmp >/dev/null 2>&1 && TERM=%s infocmp -x \"$TERM\" >/dev/null 2>&1",
+		shellQuote(term),
+	)
+	command := fmt.Sprintf("sh -lc %s", shellQuote(check))
 	code, err := runRemoteCommandExitCode(sshClient, command)
 	if err != nil {
 		return false, err
@@ -307,29 +342,23 @@ func installLocalTerminfoOnRemote(ctx context.Context, sshClient *ssh.Client, te
 	if err != nil {
 		return false, nil
 	}
+	if len(output) == 0 {
+		return false, nil
+	}
 
 	command := "sh -lc 'command -v tic >/dev/null 2>&1 && tic -x - >/dev/null 2>&1'"
 	session, err := sshClient.NewSession()
 	if err != nil {
 		return false, fmt.Errorf("create ssh session for terminfo install: %w", err)
 	}
-	defer session.Close()
+	defer func() { _ = session.Close() }()
 
 	stdin, err := session.StdinPipe()
 	if err != nil {
 		return false, fmt.Errorf("get remote stdin for terminfo install: %w", err)
 	}
 
-	errChan := make(chan error, 1)
-	go func() {
-		_, copyErr := io.Copy(stdin, bytes.NewReader(output))
-		closeErr := stdin.Close()
-		if copyErr != nil {
-			errChan <- copyErr
-			return
-		}
-		errChan <- closeErr
-	}()
+	errChan := streamBytesToWriter(bytes.NewReader(output), stdin)
 
 	runErr := session.Run(command)
 	copyErr := <-errChan
@@ -347,12 +376,27 @@ func installLocalTerminfoOnRemote(ctx context.Context, sshClient *ssh.Client, te
 	return true, nil
 }
 
+func streamBytesToWriter(reader io.Reader, writer io.WriteCloser) <-chan error {
+	errChan := make(chan error, 1)
+	go func() {
+		_, copyErr := io.Copy(writer, reader)
+		closeErr := writer.Close()
+		if copyErr != nil {
+			errChan <- copyErr
+			return
+		}
+		errChan <- closeErr
+	}()
+
+	return errChan
+}
+
 func runRemoteCommandExitCode(sshClient *ssh.Client, command string) (int, error) {
 	session, err := sshClient.NewSession()
 	if err != nil {
 		return -1, fmt.Errorf("create ssh session: %w", err)
 	}
-	defer session.Close()
+	defer func() { _ = session.Close() }()
 
 	err = session.Run(command)
 	if err == nil {
