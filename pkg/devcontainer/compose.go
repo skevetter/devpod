@@ -620,13 +620,13 @@ func (r *runner) extendedDockerfile(featureBuildInfo *feature.BuildInfo, dockerf
 
 func (r *runner) setBuildPathsForContext(
 	originalContext, dockerFilePath, dockerfileContent, featuresFolder string,
-) (string, string, error) {
+) (relDockerfilePath string, modifiedDockerfileContent string, err error) {
 	absBuildContext, err := filepath.Abs(originalContext)
 	if err != nil {
 		return "", "", err
 	}
 
-	relDockerfilePath, err := filepath.Rel(absBuildContext, dockerFilePath)
+	relDockerfilePath, err = filepath.Rel(absBuildContext, dockerFilePath)
 	if err != nil {
 		return "", "", err
 	}
@@ -640,13 +640,13 @@ func (r *runner) setBuildPathsForContext(
 		return "", "", err
 	}
 
-	adjustedContent := strings.ReplaceAll(
+	modifiedDockerfileContent = strings.ReplaceAll(
 		dockerfileContent,
 		"COPY ./"+config.DevPodContextFeatureFolder+"/",
 		"COPY ./"+filepath.ToSlash(relFeaturePath)+"/",
 	)
 
-	return relDockerfilePath, adjustedContent, nil
+	return relDockerfilePath, modifiedDockerfileContent, nil
 }
 
 func (r *runner) extendedDockerComposeBuild(composeService *composetypes.ServiceConfig, dockerFilePath string, dockerfileContent string, featuresBuildInfo *feature.BuildInfo) (string, error) {
