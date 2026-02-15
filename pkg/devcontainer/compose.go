@@ -618,32 +618,26 @@ func (r *runner) extendedDockerfile(featureBuildInfo *feature.BuildInfo, dockerf
 	return finalDockerfilePath, finalDockerfileContent
 }
 
-type buildContextPaths struct {
-	context        string
-	dockerfilePath string
-	content        string
-}
-
 func (r *runner) setBuildPathsForContext(
 	originalContext, dockerFilePath, dockerfileContent, featuresFolder string,
-) (*buildContextPaths, error) {
+) (string, string, error) {
 	absBuildContext, err := filepath.Abs(originalContext)
 	if err != nil {
-		return nil, err
+		return "", "", err
 	}
 
 	relDockerfilePath, err := filepath.Rel(absBuildContext, dockerFilePath)
 	if err != nil {
-		return nil, err
+		return "", "", err
 	}
 
 	absFeatureFolder, err := filepath.Abs(featuresFolder)
 	if err != nil {
-		return nil, err
+		return "", "", err
 	}
 	relFeaturePath, err := filepath.Rel(absBuildContext, absFeatureFolder)
 	if err != nil {
-		return nil, err
+		return "", "", err
 	}
 
 	adjustedContent := strings.ReplaceAll(
@@ -652,11 +646,7 @@ func (r *runner) setBuildPathsForContext(
 		"COPY ./"+filepath.ToSlash(relFeaturePath)+"/",
 	)
 
-	return &buildContextPaths{
-		context:        originalContext,
-		dockerfilePath: relDockerfilePath,
-		content:        adjustedContent,
-	}, nil
+	return relDockerfilePath, adjustedContent, nil
 }
 
 func (r *runner) extendedDockerComposeBuild(composeService *composetypes.ServiceConfig, dockerFilePath string, dockerfileContent string, featuresBuildInfo *feature.BuildInfo) (string, error) {
@@ -665,7 +655,7 @@ func (r *runner) extendedDockerComposeBuild(composeService *composetypes.Service
 	finalDockerfileContent := dockerfileContent
 
 	if composeService.Build != nil && composeService.Build.Context != "" {
-		paths, err := r.setBuildPathsForContext(
+		relDockerFilePath, modifiedDockerfileContent, err := r.setBuildPathsForContext(
 			composeService.Build.Context,
 			dockerFilePath,
 			dockerfileContent,
@@ -674,9 +664,12 @@ func (r *runner) extendedDockerComposeBuild(composeService *composetypes.Service
 		if err != nil {
 			return "", err
 		}
-		buildContext = paths.context
-		dockerfilePathInContext = paths.dockerfilePath
-		finalDockerfileContent = paths.content
+		r.Log.Debugf(
+			"modified Dockerfile path in context to %s and content for extended compose build context %s",
+			relDockerFilePath, composeService.Build.Context)
+		buildContext = composeService.Build.Context
+		dockerfilePathInContext = relDockerFilePath
+		finalDockerfileContent = modifiedDockerfileContent
 	}
 
 	if err := os.WriteFile(dockerFilePath, []byte(finalDockerfileContent), 0600); err != nil {
