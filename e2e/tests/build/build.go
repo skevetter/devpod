@@ -165,6 +165,26 @@ var _ = DevPodDescribe("devpod build test suite", func() {
 			framework.ExpectNoError(err)
 		})
 
+		ginkgo.It("should build docker-compose with features when build context differs from devcontainer location", func() {
+			ctx := context.Background()
+
+			f := framework.NewDefaultFramework(initialDir + "/bin")
+			tempDir, err := framework.CopyToTempDir("tests/build/testdata/docker-compose-features-context")
+			framework.ExpectNoError(err)
+			ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
+
+			_ = f.DevPodProviderDelete(ctx, "docker")
+			err = f.DevPodProviderAdd(ctx, "docker")
+			framework.ExpectNoError(err)
+			err = f.DevPodProviderUse(context.Background(), "docker")
+			framework.ExpectNoError(err)
+
+			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), tempDir)
+
+			err = f.DevPodBuild(ctx, tempDir, "--skip-push")
+			framework.ExpectNoError(err)
+		})
+
 		ginkgo.It("build docker internal buildkit", func() {
 			ctx := context.Background()
 

@@ -1,0 +1,24 @@
+{
+  "name": "example-dc",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "example-dc",
+  "workspaceFolder": "/workspace",
+  "features": {
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "installZsh": true,
+      "configureZshAsDefaultShell": true,
+      "upgradePackages": true,
+      "installOhMyZsh": false,
+      "installOhMyZshConfig": false,
+      "username": "example",
+      "userUid": 1000,
+      "userGid": 1000
+    }
+  },
+  "containerEnv": {
+    "LANG": "en_US.UTF-8",
+    "LANGUAGE": "en_US:en"
+  },
+  "remoteUser": "example",
+  "containerUser": "example"
+}

@@ -1,0 +1,17 @@
+services:
+  example-dc:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: example-dc
+    volumes:
+      - ..:/workspace:z
+    privileged: false
+    command: "sleep infinity"
+    ports:
+      - 8080:8080
+    networks:
+      - example-internal
+
+networks:
+   example-internal: {}

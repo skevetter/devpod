@@ -553,6 +553,7 @@ func (r *runner) buildAndExtendDockerCompose(
 		dockerComposeFilePath, err = r.extendedDockerComposeBuild(
 			composeService,
 			extendedDockerfilePath,
+			extendedDockerfileContent,
 			extendImageBuildInfo.FeaturesBuildInfo,
 		)
 		if err != nil {
@@ -621,12 +622,78 @@ func (r *runner) extendedDockerfile(featureBuildInfo *feature.BuildInfo, dockerf
 	return finalDockerfilePath, finalDockerfileContent
 }
 
-func (r *runner) extendedDockerComposeBuild(composeService *composetypes.ServiceConfig, dockerFilePath string, featuresBuildInfo *feature.BuildInfo) (string, error) {
+type buildContextPaths struct {
+	context        string
+	dockerfilePath string
+	content        string
+}
+
+func (r *runner) setBuildPathsForContext(
+	originalContext, dockerFilePath, dockerfileContent, featuresFolder string,
+) (*buildContextPaths, error) {
+	absBuildContext, err := filepath.Abs(originalContext)
+	if err != nil {
+		return nil, err
+	}
+
+	relDockerfilePath, err := filepath.Rel(absBuildContext, dockerFilePath)
+	if err != nil {
+		return nil, err
+	}
+
+	absFeatureFolder, err := filepath.Abs(featuresFolder)
+	if err != nil {
+		return nil, err
+	}
+	relFeaturePath, err := filepath.Rel(absBuildContext, absFeatureFolder)
+	if err != nil {
+		return nil, err
+	}
+
+	adjustedContent := strings.ReplaceAll(
+		dockerfileContent,
+		"COPY ./"+config.DevPodContextFeatureFolder+"/",
+		"COPY ./"+filepath.ToSlash(relFeaturePath)+"/",
+	)
+
+	return &buildContextPaths{
+		context:        originalContext,
+		dockerfilePath: relDockerfilePath,
+		content:        adjustedContent,
+	}, nil
+}
+
+func (r *runner) extendedDockerComposeBuild(composeService *composetypes.ServiceConfig, dockerFilePath string, dockerfileContent string, featuresBuildInfo *feature.BuildInfo) (string, error) {
+	buildContext := filepath.Dir(featuresBuildInfo.FeaturesFolder)
+	dockerfilePathInContext := dockerFilePath
+	finalDockerfileContent := dockerfileContent
+	var err error
+
+	if composeService.Build != nil && composeService.Build.Context != "" {
+		var paths *buildContextPaths
+		paths, err = r.setBuildPathsForContext(
+			composeService.Build.Context,
+			dockerFilePath,
+			dockerfileContent,
+			featuresBuildInfo.FeaturesFolder,
+		)
+		if err != nil {
+			return "", err
+		}
+		buildContext = paths.context
+		dockerfilePathInContext = paths.dockerfilePath
+		finalDockerfileContent = paths.content
+	}
+
+	if err = os.WriteFile(dockerFilePath, []byte(finalDockerfileContent), 0600); err != nil {
+		return "", err
+	}
+
 	service := &composetypes.ServiceConfig{
 		Name: composeService.Name,
 		Build: &composetypes.BuildConfig{
-			Dockerfile: dockerFilePath,
-			Context:    filepath.Dir(featuresBuildInfo.FeaturesFolder),
+			Dockerfile: dockerfilePathInContext,
+			Context:    buildContext,
 		},
 	}
 	if composeService.Image != "" {
@@ -648,8 +715,7 @@ func (r *runner) extendedDockerComposeBuild(composeService *composetypes.Service
 	}
 
 	dockerComposeFolder := getDockerComposeFolder(r.WorkspaceConfig.Origin)
-	err := os.MkdirAll(dockerComposeFolder, 0755)
-	if err != nil {
+	if err := os.MkdirAll(dockerComposeFolder, 0750); err != nil {
 		return "", err
 	}
 
@@ -666,8 +732,7 @@ func (r *runner) extendedDockerComposeBuild(composeService *composetypes.Service
 		string(dockerComposeData),
 	)
 
-	err = os.WriteFile(dockerComposePath, dockerComposeData, 0600)
-	if err != nil {
+	if err := os.WriteFile(dockerComposePath, dockerComposeData, 0600); err != nil {
 		return "", err
 	}
 
@@ -700,7 +765,7 @@ func (r *runner) extendedDockerComposeUp(
 	}
 
 	dockerComposeFolder := getDockerComposeFolder(r.WorkspaceConfig.Origin)
-	err = os.MkdirAll(dockerComposeFolder, 0755)
+	err = os.MkdirAll(dockerComposeFolder, 0750)
 	if err != nil {
 		return "", err
 	}
