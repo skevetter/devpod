@@ -655,7 +655,12 @@ type buildContextResult struct {
 	dockerfileContent       string
 }
 
-func (r *runner) extendedDockerComposeBuild(composeService *composetypes.ServiceConfig, dockerFilePath string, dockerfileContent string, featuresBuildInfo *feature.BuildInfo) (string, error) {
+func (r *runner) extendedDockerComposeBuild(
+	composeService *composetypes.ServiceConfig,
+	dockerFilePath string,
+	dockerfileContent string,
+	featuresBuildInfo *feature.BuildInfo,
+) (string, error) {
 	result, err := r.prepareBuildContext(
 		composeService, dockerFilePath, dockerfileContent, featuresBuildInfo,
 	)
