@@ -649,10 +649,38 @@ func (r *runner) setBuildPathsForContext(
 	return relDockerfilePath, modifiedDockerfileContent, nil
 }
 
+type buildContextResult struct {
+	context                 string
+	dockerfilePathInContext string
+	dockerfileContent       string
+}
+
 func (r *runner) extendedDockerComposeBuild(composeService *composetypes.ServiceConfig, dockerFilePath string, dockerfileContent string, featuresBuildInfo *feature.BuildInfo) (string, error) {
-	buildContext := filepath.Dir(featuresBuildInfo.FeaturesFolder)
-	dockerfilePathInContext := dockerFilePath
-	finalDockerfileContent := dockerfileContent
+	result, err := r.prepareBuildContext(
+		composeService, dockerFilePath, dockerfileContent, featuresBuildInfo,
+	)
+	if err != nil {
+		return "", err
+	}
+
+	if err := os.WriteFile(dockerFilePath, []byte(result.dockerfileContent), 0600); err != nil {
+		return "", err
+	}
+
+	service := r.createComposeService(composeService, result.dockerfilePathInContext, result.context, featuresBuildInfo)
+	return r.writeComposeFile(service)
+}
+
+func (r *runner) prepareBuildContext(
+	composeService *composetypes.ServiceConfig,
+	dockerFilePath, dockerfileContent string,
+	featuresBuildInfo *feature.BuildInfo,
+) (*buildContextResult, error) {
+	result := &buildContextResult{
+		context:                 filepath.Dir(featuresBuildInfo.FeaturesFolder),
+		dockerfilePathInContext: dockerFilePath,
+		dockerfileContent:       dockerfileContent,
+	}
 
 	if composeService.Build != nil && composeService.Build.Context != "" {
 		relDockerFilePath, modifiedDockerfileContent, err := r.setBuildPathsForContext(
@@ -662,20 +690,24 @@ func (r *runner) extendedDockerComposeBuild(composeService *composetypes.Service
 			featuresBuildInfo.FeaturesFolder,
 		)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 		r.Log.Debugf(
 			"modified Dockerfile path in context to %s and content for extended compose build context %s",
 			relDockerFilePath, composeService.Build.Context)
-		buildContext = composeService.Build.Context
-		dockerfilePathInContext = relDockerFilePath
-		finalDockerfileContent = modifiedDockerfileContent
+		result.context = composeService.Build.Context
+		result.dockerfilePathInContext = relDockerFilePath
+		result.dockerfileContent = modifiedDockerfileContent
 	}
 
-	if err := os.WriteFile(dockerFilePath, []byte(finalDockerfileContent), 0600); err != nil {
-		return "", err
-	}
+	return result, nil
+}
 
+func (r *runner) createComposeService(
+	composeService *composetypes.ServiceConfig,
+	dockerfilePathInContext, buildContext string,
+	featuresBuildInfo *feature.BuildInfo,
+) *composetypes.ServiceConfig {
 	service := &composetypes.ServiceConfig{
 		Name: composeService.Name,
 		Build: &composetypes.BuildConfig{
@@ -696,9 +728,14 @@ func (r *runner) extendedDockerComposeBuild(composeService *composetypes.Service
 		service.Build.Args[k] = &v
 	}
 
-	project := &composetypes.Project{}
-	project.Services = map[string]composetypes.ServiceConfig{
-		service.Name: *service,
+	return service
+}
+
+func (r *runner) writeComposeFile(service *composetypes.ServiceConfig) (string, error) {
+	project := &composetypes.Project{
+		Services: map[string]composetypes.ServiceConfig{
+			service.Name: *service,
+		},
 	}
 
 	dockerComposeFolder := getDockerComposeFolder(r.WorkspaceConfig.Origin)
