@@ -544,10 +544,6 @@ func (r *runner) buildAndExtendDockerCompose(
 		)
 
 		defer func() { _ = os.RemoveAll(filepath.Dir(extendedDockerfilePath)) }()
-		err := os.WriteFile(extendedDockerfilePath, []byte(extendedDockerfileContent), 0600)
-		if err != nil {
-			return "", "", nil, "", fmt.Errorf("write Dockerfile with features: %w", err)
-		}
 
 		// Write the final docker-compose referencing the modified Dockerfile or Image
 		dockerComposeFilePath, err = r.extendedDockerComposeBuild(
@@ -667,11 +663,9 @@ func (r *runner) extendedDockerComposeBuild(composeService *composetypes.Service
 	buildContext := filepath.Dir(featuresBuildInfo.FeaturesFolder)
 	dockerfilePathInContext := dockerFilePath
 	finalDockerfileContent := dockerfileContent
-	var err error
 
 	if composeService.Build != nil && composeService.Build.Context != "" {
-		var paths *buildContextPaths
-		paths, err = r.setBuildPathsForContext(
+		paths, err := r.setBuildPathsForContext(
 			composeService.Build.Context,
 			dockerFilePath,
 			dockerfileContent,
@@ -685,7 +679,7 @@ func (r *runner) extendedDockerComposeBuild(composeService *composetypes.Service
 		finalDockerfileContent = paths.content
 	}
 
-	if err = os.WriteFile(dockerFilePath, []byte(finalDockerfileContent), 0600); err != nil {
+	if err := os.WriteFile(dockerFilePath, []byte(finalDockerfileContent), 0600); err != nil {
 		return "", err
 	}
 

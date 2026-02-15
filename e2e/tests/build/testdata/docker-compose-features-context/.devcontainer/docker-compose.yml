@@ -6,7 +6,6 @@ services:
     container_name: example-dc
     volumes:
       - ..:/workspace:z
-    privileged: false
     command: "sleep infinity"
     ports:
       - 8080:8080
@@ -14,4 +13,4 @@ services:
       - example-internal
 
 networks:
-   example-internal: {}
+  example-internal: {}
