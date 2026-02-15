@@ -51,8 +51,8 @@ type flavorConfig struct {
 }
 
 var flavorConfigs = map[Flavor]flavorConfig{
-	FlavorStable:      {"VSCode", ".vscode-server", "code-server"},
-	FlavorInsiders:    {"VSCode Insiders", ".vscode-server-insiders", "code-server-insiders"},
+	FlavorStable:      {"VS Code", ".vscode-server", "code-server"},
+	FlavorInsiders:    {"VS Code Insiders", ".vscode-server-insiders", "code-server-insiders"},
 	FlavorCursor:      {"Cursor", ".cursor-server", "cursor-server"},
 	FlavorPositron:    {"positron", ".positron-server", "positron"},
 	FlavorCodium:      {"VSCodium", ".vscodium-server", "codium"},
@@ -64,7 +64,7 @@ func (f Flavor) DisplayName() string {
 	if cfg, ok := flavorConfigs[f]; ok {
 		return cfg.displayName
 	}
-	return "VSCode"
+	return "VS Code"
 }
 
 type ServerOptions struct {
@@ -200,7 +200,7 @@ func (o *VsCodeServer) installExtension(binPath, extension string, stdout, stder
 func (o *VsCodeServer) buildExtensionCommand(binPath, extension string) *exec.Cmd {
 	args := []string{"--install-extension", extension}
 
-	// VSCode stable/insiders use serve-local subcommand
+	// VS Code stable/insiders use serve-local subcommand
 	if o.flavor == FlavorStable || o.flavor == FlavorInsiders {
 		args = append([]string{"serve-local", "--accept-server-license-terms"}, args...)
 	}

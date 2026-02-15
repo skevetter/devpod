@@ -48,14 +48,14 @@ var AllowedIDEs = []AllowedIDE{
 	},
 	{
 		Name:        config.IDEVSCode,
-		DisplayName: "VSCode",
+		DisplayName: "VS Code",
 		Options:     vscode.Options,
 		Icon:        "https://devpod.sh/assets/vscode.svg",
 		Group:       config.IDEGroupPrimary,
 	},
 	{
 		Name:        config.IDEOpenVSCode,
-		DisplayName: "VSCode Browser",
+		DisplayName: "VS Code Browser",
 		Options:     openvscode.Options,
 		Icon:        "https://devpod.sh/assets/vscodebrowser.svg",
 		Group:       config.IDEGroupPrimary,
@@ -173,7 +173,7 @@ var AllowedIDEs = []AllowedIDE{
 	},
 	{
 		Name:         config.IDEVSCodeInsiders,
-		DisplayName:  "VSCode Insiders",
+		DisplayName:  "VS Code Insiders",
 		Options:      vscode.Options,
 		Icon:         "https://devpod.sh/assets/vscode_insiders.svg",
 		Experimental: true,

@@ -150,7 +150,7 @@ You get the same developer experience also locally, so you don't need to rely on
 </td>
 <td width="50%" valign="top">
 <b>Cross IDE support</b><br>
-VSCode and the full JetBrains suite is supported, all others can be connected through simple ssh.
+VS Code and the full JetBrains suite is supported, all others can be connected through simple ssh.
 </td>
 </tr>
 <tr>

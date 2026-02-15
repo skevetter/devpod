@@ -452,7 +452,7 @@ function ExperimentalSettings() {
             onChange={(e) => set("experimental_vscodeInsiders", e.target.checked)}
           />
           <FormLabel marginBottom="0" whiteSpace="nowrap" fontSize="sm">
-            VSCode Insiders
+            VS Code Insiders
           </FormLabel>
         </HStack>
 
