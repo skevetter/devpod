@@ -78,7 +78,7 @@ var AllowedIDEs = []AllowedIDE{
 	},
 	{
 		Name:         config.IDECodium,
-		DisplayName:  "Codium",
+		DisplayName:  "VSCodium",
 		Options:      vscode.Options,
 		Icon:         "https://devpod.sh/assets/codium.svg",
 		Experimental: true,

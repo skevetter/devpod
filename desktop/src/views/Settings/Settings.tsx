@@ -482,7 +482,7 @@ function ExperimentalSettings() {
             onChange={(e) => set("experimental_codium", e.target.checked)}
           />
           <FormLabel marginBottom="0" whiteSpace="nowrap" fontSize="sm">
-            Codium
+            VSCodium
           </FormLabel>
         </HStack>
 
