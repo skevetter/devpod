@@ -165,6 +165,18 @@ var _ = ginkgo.Describe("devpod up docker compose test suite", ginkgo.Label("up-
 		gomega.Expect(postAttachCommand).To(gomega.Equal("postAttachCommand"))
 	}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
+	ginkgo.It("commands with quotes", func(ctx context.Context) {
+		tempDir, err := setupWorkspace("tests/up-docker-compose/testdata/docker-compose-lifecycle-quotes", tc.initialDir, tc.f)
+		framework.ExpectNoError(err)
+
+		err = tc.f.DevPodUp(ctx, tempDir)
+		framework.ExpectNoError(err)
+
+		quotedTest, err := tc.execSSH(ctx, tempDir, "cat $HOME/quoted-test.out")
+		framework.ExpectNoError(err)
+		gomega.Expect(quotedTest).To(gomega.Equal("quoted value"))
+	}, ginkgo.SpecTimeout(framework.GetTimeout()))
+
 	ginkgo.It("v2 features", func(ctx context.Context) {
 		_, ws, err := tc.setupAndStartWorkspace(ctx, "tests/up-docker-compose/testdata/docker-compose-v2-with-name", "--debug")
 		framework.ExpectNoError(err)

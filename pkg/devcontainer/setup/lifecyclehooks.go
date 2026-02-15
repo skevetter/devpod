@@ -14,8 +14,8 @@ import (
 	"strings"
 	"sync"
 
+	"al.essio.dev/pkg/shellescape"
 	"github.com/sirupsen/logrus"
-	"github.com/skevetter/devpod/pkg/command"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	"github.com/skevetter/devpod/pkg/types"
 	"github.com/skevetter/log"
@@ -97,17 +97,13 @@ func run(commands []types.LifecycleHook, remoteUser, dir string, remoteEnv map[s
 		}
 
 		for k, c := range cmd {
-			log.WithFields(logrus.Fields{"command": k, "args": strings.Join(c, " ")}).Info("lifecycle hook run command")
+			log.Infof("running %s lifecycle hook: %s %s", name, k, strings.Join(c, " "))
 			currentUser, err := user.Current()
 			if err != nil {
 				return err
 			}
-			args := []string{}
-			if remoteUser != currentUser.Username {
-				args = append(args, "su", remoteUser, "-c", command.Quote(c))
-			} else {
-				args = append(args, "sh", "-c", command.Quote(c))
-			}
+
+			args := buildCommandArgs(c, remoteUser, currentUser.Username)
 
 			// create command
 			cmd := exec.Command(args[0], args[1:]...)
@@ -215,4 +211,17 @@ func mergeRemoteEnv(remoteEnv map[string]string, probedEnv map[string]string, re
 	}
 
 	return retEnv
+}
+
+func buildCommandArgs(c []string, remoteUser, currentUsername string) []string {
+	if len(c) == 1 {
+		if remoteUser != currentUsername {
+			return []string{"su", remoteUser, "-c", c[0]}
+		}
+		return []string{"sh", "-c", c[0]}
+	}
+	if remoteUser != currentUsername {
+		return []string{"su", remoteUser, "-c", shellescape.QuoteCommand(c)}
+	}
+	return c
 }

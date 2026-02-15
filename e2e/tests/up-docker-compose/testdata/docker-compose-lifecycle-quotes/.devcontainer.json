@@ -1,0 +1,9 @@
+{
+  "name": "Go",
+  "dockerComposeFile": "./docker-compose.yaml",
+  "service": "app",
+  "workspaceFolder": "/workspaces",
+  "onCreateCommand": {
+    "test-quotes": "echo \"quoted value\" > $HOME/quoted-test.out"
+  }
+}
