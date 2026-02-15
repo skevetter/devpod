@@ -74,6 +74,12 @@ var openConfigs = map[Flavor]openConfig{
 		macAppPath:   "/Applications/Antigravity.app/Contents/Resources/app/bin/agy",
 		sshExtension: "ms-vscode-remote.remote-ssh",
 	},
+	FlavorBob: {
+		scheme:       "bob",
+		cliName:      "bobide",
+		macAppPath:   "/Applications/Bobide.app/Contents/Resources/app/bin/bobide",
+		sshExtension: "jeanp413.open-remote-ssh",
+	},
 }
 
 func Open(ctx context.Context, params OpenParams) error {

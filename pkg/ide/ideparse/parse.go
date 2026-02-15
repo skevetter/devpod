@@ -211,6 +211,14 @@ var AllowedIDEs = []AllowedIDE{
 		Experimental: true,
 		Group:        config.IDEGroupPrimary,
 	},
+	{
+		Name:         config.IDEBob,
+		DisplayName:  "IBM Bob",
+		Options:      vscode.Options,
+		Icon:         "https://devpod.sh/assets/bob.svg",
+		Experimental: true,
+		Group:        config.IDEGroupPrimary,
+	},
 }
 
 func RefreshIDEOptions(

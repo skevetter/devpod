@@ -432,6 +432,8 @@ func (cmd *SetupContainerCmd) installIDE(
 		return cmd.setupVSCode(setupInfo, ide.Options, vscode.FlavorWindsurf, log)
 	case string(config2.IDEAntigravity):
 		return cmd.setupVSCode(setupInfo, ide.Options, vscode.FlavorAntigravity, log)
+	case string(config2.IDEBob):
+		return cmd.setupVSCode(setupInfo, ide.Options, vscode.FlavorBob, log)
 	case string(config2.IDEOpenVSCode):
 		return cmd.setupOpenVSCode(setupInfo, ide.Options, log)
 	case string(config2.IDEGoland):

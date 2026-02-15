@@ -16,6 +16,7 @@ const ZED = "zed"
 const RSTUDIO = "rstudio"
 const WINDSURF = "windsurf"
 const ANTIGRAVITY = "antigravity"
+const BOB = "bob"
 
 export function useIDEs() {
   const idesQuery = useQuery({
@@ -39,6 +40,7 @@ export function useIDEs() {
         if (ide.name === RSTUDIO && settings.experimental_rstudio) return true
         if (ide.name === WINDSURF && settings.experimental_windsurf) return true
         if (ide.name === ANTIGRAVITY && settings.experimental_antigravity) return true
+        if (ide.name === BOB && settings.experimental_bob) return true
 
         return false
       }),

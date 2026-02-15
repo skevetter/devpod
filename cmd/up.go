@@ -459,7 +459,7 @@ func (o *ideOpener) open(
 
 	switch ideName {
 	case string(config.IDEVSCode), string(config.IDEVSCodeInsiders), string(config.IDECursor),
-		string(config.IDECodium), string(config.IDEPositron), string(config.IDEWindsurf), string(config.IDEAntigravity):
+		string(config.IDECodium), string(config.IDEPositron), string(config.IDEWindsurf), string(config.IDEAntigravity), string(config.IDEBob):
 		return o.openVSCodeFlavor(ctx, ideName, folder, ideOptions)
 
 	case string(config.IDERustRover), string(config.IDEGoland), string(config.IDEPyCharm),
@@ -528,6 +528,7 @@ func (o *ideOpener) openVSCodeFlavor(
 		string(config.IDEPositron):       vscode.FlavorPositron,
 		string(config.IDEWindsurf):       vscode.FlavorWindsurf,
 		string(config.IDEAntigravity):    vscode.FlavorAntigravity,
+		string(config.IDEBob):            vscode.FlavorBob,
 	}
 
 	params := vscode.OpenParams{

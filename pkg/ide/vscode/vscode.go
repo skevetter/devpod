@@ -34,6 +34,7 @@ const (
 	FlavorCodium      Flavor = "codium"
 	FlavorWindsurf    Flavor = "windsurf"
 	FlavorAntigravity Flavor = "antigravity"
+	FlavorBob         Flavor = "bob"
 )
 
 const (
@@ -64,6 +65,7 @@ var flavorConfigs = map[Flavor]flavorConfig{
 	FlavorCodium:      {"VSCodium", ".vscodium-server", "codium-server"},
 	FlavorWindsurf:    {"Windsurf", ".windsurf-server", "windsurf-server"},
 	FlavorAntigravity: {"Antigravity", ".antigravity-server", "antigravity-server"},
+	FlavorBob:         {"Bob", ".bobide-server", "bobide-server"},
 }
 
 func (f Flavor) DisplayName() string {
