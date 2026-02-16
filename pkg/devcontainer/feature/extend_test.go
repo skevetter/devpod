@@ -396,3 +396,46 @@ func (suite *ExtendTestSuite) TestContainsFeature() {
 		suite.Fail("Expected not to contain feature-c")
 	}
 }
+
+func (suite *ExtendTestSuite) TestResolveFeatureUsersUsesMergedMetadata() {
+	imageBuildInfo := &config.ImageBuildInfo{
+		User: "nonroot",
+		Metadata: &config.ImageMetadataConfig{
+			Config: []*config.ImageMetadata{{
+				DevContainerConfigBase: config.DevContainerConfigBase{
+					RemoteUser: "nonroot",
+				},
+			}},
+		},
+	}
+
+	mergedImageMetadata := &config.ImageMetadataConfig{
+		Config: []*config.ImageMetadata{{
+			DevContainerConfigBase: config.DevContainerConfigBase{
+				RemoteUser: "vscode",
+			},
+		}},
+	}
+
+	containerUser, remoteUser := resolveFeatureUsers(imageBuildInfo, mergedImageMetadata)
+	suite.Equal("nonroot", containerUser)
+	suite.Equal("vscode", remoteUser)
+}
+
+func (suite *ExtendTestSuite) TestResolveFeatureUsersFallsBackToImageBuildInfoMetadata() {
+	imageBuildInfo := &config.ImageBuildInfo{
+		User: "root",
+		Metadata: &config.ImageMetadataConfig{
+			Config: []*config.ImageMetadata{{
+				NonComposeBase: config.NonComposeBase{ContainerUser: "appuser"},
+				DevContainerConfigBase: config.DevContainerConfigBase{
+					RemoteUser: "devuser",
+				},
+			}},
+		},
+	}
+
+	containerUser, remoteUser := resolveFeatureUsers(imageBuildInfo, nil)
+	suite.Equal("appuser", containerUser)
+	suite.Equal("devuser", remoteUser)
+}
