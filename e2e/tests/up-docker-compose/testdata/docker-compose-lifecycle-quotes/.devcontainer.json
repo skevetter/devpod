@@ -4,6 +4,6 @@
   "service": "app",
   "workspaceFolder": "/workspaces",
   "onCreateCommand": {
-    "test-quotes": "echo \"quoted value\" > $HOME/quoted-test.out"
+    "test-quotes": "echo -n \"quoted value\" > $HOME/quoted-test.out"
   }
 }
