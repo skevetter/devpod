@@ -1,6 +1,15 @@
 package devcontainer
 
-import "testing"
+import (
+	"path/filepath"
+	"testing"
+
+	composetypes "github.com/compose-spec/compose-go/v2/types"
+	"github.com/sirupsen/logrus"
+	"github.com/skevetter/devpod/pkg/devcontainer/feature"
+	logLib "github.com/skevetter/log"
+	"github.com/stretchr/testify/suite"
+)
 
 func TestStripDigestFromImageRef(t *testing.T) {
 	t.Parallel()
@@ -37,4 +46,45 @@ func TestStripDigestFromImageRef(t *testing.T) {
 			}
 		})
 	}
+}
+
+type PrepareBuildContextSuite struct {
+	suite.Suite
+	runner *runner
+}
+
+func (s *PrepareBuildContextSuite) SetupTest() {
+	s.runner = &runner{Log: logLib.NewDiscardLogger(logrus.InfoLevel)}
+}
+
+func (s *PrepareBuildContextSuite) TestNoContextRelativePath() {
+	result, err := s.runner.prepareBuildContext(
+		&composetypes.ServiceConfig{Name: "test-service"},
+		"/tmp/features/Dockerfile",
+		"FROM alpine",
+		&feature.BuildInfo{FeaturesFolder: "/tmp/features/folder"},
+	)
+
+	s.NoError(err)
+	s.False(filepath.IsAbs(result.dockerfilePathInContext), "dockerfilePathInContext should be relative")
+	s.Equal("Dockerfile", result.dockerfilePathInContext)
+	s.Equal("/tmp/features", result.context)
+}
+
+func (s *PrepareBuildContextSuite) TestNilBuildRelativePath() {
+	result, err := s.runner.prepareBuildContext(
+		&composetypes.ServiceConfig{Name: "test-service", Build: nil},
+		"/workspace/.devcontainer/features/Dockerfile",
+		"FROM alpine",
+		&feature.BuildInfo{FeaturesFolder: "/workspace/.devcontainer/features/folder"},
+	)
+
+	s.NoError(err)
+	s.False(filepath.IsAbs(result.dockerfilePathInContext), "dockerfilePathInContext should be relative")
+	s.Equal("Dockerfile", result.dockerfilePathInContext)
+	s.Equal("/workspace/.devcontainer/features", result.context)
+}
+
+func TestPrepareBuildContextSuite(t *testing.T) {
+	suite.Run(t, new(PrepareBuildContextSuite))
 }

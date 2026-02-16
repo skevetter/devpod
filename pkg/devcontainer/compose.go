@@ -681,9 +681,15 @@ func (r *runner) prepareBuildContext(
 	dockerFilePath, dockerfileContent string,
 	featuresBuildInfo *feature.BuildInfo,
 ) (*buildContextResult, error) {
+	buildContext := filepath.Dir(featuresBuildInfo.FeaturesFolder)
+	relDockerFilePath, err := filepath.Rel(buildContext, dockerFilePath)
+	if err != nil {
+		return nil, err
+	}
+
 	result := &buildContextResult{
-		context:                 filepath.Dir(featuresBuildInfo.FeaturesFolder),
-		dockerfilePathInContext: dockerFilePath,
+		context:                 buildContext,
+		dockerfilePathInContext: relDockerFilePath,
 		dockerfileContent:       dockerfileContent,
 	}
 
