@@ -129,12 +129,12 @@ ARG _DEV_CONTAINERS_BASE_IMAGE=placeholder`, syntax)
 }
 
 func resolveFeatureUsers(imageBuildInfo *config.ImageBuildInfo, mergedImageMetadata *config.ImageMetadataConfig) (string, string) {
-	metadata := imageBuildInfo.Metadata
+	effectiveMetadata := imageBuildInfo.Metadata
 	if mergedImageMetadata != nil {
-		metadata = mergedImageMetadata
+		effectiveMetadata = mergedImageMetadata
 	}
 
-	return findContainerUsers(metadata, "", imageBuildInfo.User)
+	return findContainerUsers(effectiveMetadata, "", imageBuildInfo.User)
 }
 
 func copyFeaturesToDestination(features []*config.FeatureSet, targetDir string) error {
