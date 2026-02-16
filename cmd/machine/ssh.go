@@ -8,7 +8,8 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"strings"
+
+	"al.essio.dev/pkg/shellescape"
 
 	"github.com/mattn/go-isatty"
 	"github.com/sirupsen/logrus"
@@ -346,27 +347,35 @@ func startSessionCommand(session *ssh.Session, command string) error {
 }
 
 func resolvePTYTerm(ctx context.Context, sshClient *ssh.Client, sessionOptions SSHSessionOptions) (string, error) {
-	localTerm := defaultTerm
-	if termEnv, ok := os.LookupEnv("TERM"); ok && termEnv != "" {
-		localTerm = termEnv
-	}
+	localTerm := getLocalTerm()
+	mode := getTermMode(sessionOptions)
 
-	mode := sessionOptions.TermMode
-	if mode == "" {
-		mode = TermModeAuto
-	}
-
-	if mode == TermModeStrict {
+	switch mode {
+	case TermModeStrict:
 		return localTerm, nil
-	}
-	if mode == TermModeFallback {
+	case TermModeFallback:
 		return defaultTerm, nil
-	}
-	if mode != TermModeAuto {
+	case TermModeAuto:
+		return resolveAutoPTYTerm(ctx, sshClient, localTerm, sessionOptions.InstallTerminfo)
+	default:
 		return "", fmt.Errorf("invalid --term-mode %q: expected one of auto, strict, fallback", mode)
 	}
+}
 
-	return resolveAutoPTYTerm(ctx, sshClient, localTerm, sessionOptions.InstallTerminfo)
+func getLocalTerm() string {
+	if termEnv, ok := os.LookupEnv("TERM"); ok && termEnv != "" {
+		return termEnv
+	}
+
+	return defaultTerm
+}
+
+func getTermMode(sessionOptions SSHSessionOptions) string {
+	if sessionOptions.TermMode == "" {
+		return TermModeAuto
+	}
+
+	return sessionOptions.TermMode
 }
 
 func resolveAutoPTYTerm(
@@ -387,10 +396,7 @@ func resolveAutoPTYTerm(
 	}
 
 	installed, err := installLocalTerminfoOnRemote(ctx, sshClient, localTerm)
-	if err != nil {
-		return defaultTerm, nil
-	}
-	if !installed {
+	if err != nil || !installed {
 		return defaultTerm, nil
 	}
 
@@ -413,10 +419,10 @@ func termFromSupport(supported bool, term string) string {
 func remoteTerminfoExists(ctx context.Context, sshClient *ssh.Client, term string) (bool, error) {
 	check := fmt.Sprintf(
 		"command -v infocmp >/dev/null 2>&1 && infocmp -x %s >/dev/null 2>&1",
-		shellQuote(term),
+		shellescape.Quote(term),
 	)
-	command := fmt.Sprintf("sh -lc %s", shellQuote(check))
-	code, err := runRemoteCommandExitCode(ctx, sshClient, command)
+	command := fmt.Sprintf("sh -lc %s", shellescape.Quote(check))
+	code, err := runRemoteCommandWithInput(ctx, sshClient, command, nil)
 	if err != nil {
 		return false, err
 	}
@@ -528,10 +534,6 @@ func waitRemoteCommand(ctx context.Context, session *ssh.Session) (int, error) {
 	}
 }
 
-func runRemoteCommandExitCode(ctx context.Context, sshClient *ssh.Client, command string) (int, error) {
-	return runRemoteCommandWithInput(ctx, sshClient, command, nil)
-}
-
 func isValidTermMode(mode string) bool {
 	switch mode {
 	case "", TermModeAuto, TermModeStrict, TermModeFallback:
@@ -539,8 +541,4 @@ func isValidTermMode(mode string) bool {
 	default:
 		return false
 	}
-}
-
-func shellQuote(value string) string {
-	return "'" + strings.ReplaceAll(value, "'", "'\"'\"'") + "'"
 }
