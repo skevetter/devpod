@@ -1,6 +1,8 @@
 package provider
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -336,6 +338,11 @@ func ParseWorkspaceSource(source string) *WorkspaceSource {
 			GitSubPath:     gitSubdir,
 		}
 	} else if after, ok := strings.CutPrefix(source, WorkspaceSourceLocal); ok {
+		// Expand home directory references (~) in the path.
+		if strings.HasPrefix(after, "~/") {
+			home, _ := os.UserHomeDir()
+			after = filepath.Join(home, after[2:])
+		}
 		return &WorkspaceSource{
 			LocalFolder: after,
 		}
