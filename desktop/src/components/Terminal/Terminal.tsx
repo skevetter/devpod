@@ -148,16 +148,14 @@ export const Terminal = forwardRef<TTerminalRef, TTerminalProps>(function T(
   }, [])
 
   useEffect(() => {
-    let maybeTheme = terminalRef.current?.options.theme
-    if (exists(maybeTheme)) {
-      maybeTheme = terminalTheme
+    if (exists(terminalRef.current?.options.theme)) {
+      terminalRef.current.options.theme = terminalTheme
     }
   }, [terminalTheme])
 
   useEffect(() => {
-    let maybeFontSize = terminalRef.current?.options.fontSize
-    if (exists(maybeFontSize)) {
-      maybeFontSize = remToPx(fontSize)
+    if (exists(terminalRef.current?.options.fontSize)) {
+      terminalRef.current.options.fontSize = remToPx(fontSize)
     }
   }, [fontSize])
 

@@ -41,9 +41,8 @@ type TIDECardProps = Readonly<{
 function IDECard({ name, isSelected, icon, onClick }: TIDECardProps) {
   const iconColor = useColorModeValue("gray.700", "gray.500")
 
-  let content = icon
-  if (name === "None") {
-    content = (
+  const content =
+    name === "None" ? (
       <HStack px="2" py="0" align="center" justify="center" h="full" w="full">
         <Text fontWeight="medium" variant="contrast">
           SSH
@@ -52,10 +51,9 @@ function IDECard({ name, isSelected, icon, onClick }: TIDECardProps) {
           <InfoIcon ml="-0.5" color={iconColor} />
         </Tooltip>
       </HStack>
+    ) : (
+      cloneElement(icon, { boxSize: "10" })
     )
-  } else {
-    content = cloneElement(icon, { boxSize: "10" })
-  }
 
   return (
     <Tooltip label={name} openDelay={0} closeDelay={0}>

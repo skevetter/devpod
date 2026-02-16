@@ -47,25 +47,20 @@ export const Button = defineStyleConfig({
       }
     },
     solid(props) {
-      let bgDark = "gray.800"
-      if (props.colorScheme === "primary") {
-        bgDark = ""
-      } else {
-        bgDark = defaultTheme.components.Button.variants?.solid(props).bg ?? ""
-      }
+      const bgDark =
+        props.colorScheme === "primary"
+          ? ""
+          : (defaultTheme.components.Button.variants?.solid(props).bg ?? "gray.800")
 
-      let bgHoverDark = "gray.700"
-      if (props.colorScheme === "primary") {
-        bgHoverDark = ""
-      } else {
-        bgHoverDark = defaultTheme.components.Button.variants?.solid(props)._hover.bg ?? ""
-      }
-      let bgActiveDark = "gray.700"
-      if (props.colorScheme === "primary") {
-        bgActiveDark = ""
-      } else {
-        bgActiveDark = defaultTheme.components.Button.variants?.solid(props)._active.bg ?? ""
-      }
+      const bgHoverDark =
+        props.colorScheme === "primary"
+          ? ""
+          : (defaultTheme.components.Button.variants?.solid(props)._hover.bg ?? "gray.700")
+
+      const bgActiveDark =
+        props.colorScheme === "primary"
+          ? ""
+          : (defaultTheme.components.Button.variants?.solid(props)._active.bg ?? "gray.700")
 
       return {
         _dark: {
