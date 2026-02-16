@@ -204,7 +204,7 @@ func RunSSHSession(ctx context.Context, sshClient *ssh.Client, options RunSSHSes
 		return err
 	}
 
-	restoreTerm, err := setupInteractivePTY(sessionCtx, sshClient, session, options)
+	restoreTerm, err := setupPTYIfNeeded(sessionCtx, sshClient, session, options)
 	if err != nil {
 		return err
 	}
@@ -220,6 +220,19 @@ func RunSSHSession(ctx context.Context, sshClient *ssh.Client, options RunSSHSes
 	}
 
 	return nil
+}
+
+func setupPTYIfNeeded(
+	ctx context.Context,
+	sshClient *ssh.Client,
+	session *ssh.Session,
+	options RunSSHSessionOptions,
+) (func(), error) {
+	if options.Command != "" {
+		return noopRestore, nil
+	}
+
+	return setupInteractivePTY(ctx, sshClient, session, options)
 }
 
 func configureAgentForwarding(sshClient *ssh.Client, session *ssh.Session, shouldForward bool) error {
