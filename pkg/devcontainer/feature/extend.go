@@ -75,7 +75,10 @@ func GetExtendedBuildInfo(ctx *config.SubstitutionContext, imageBuildInfo *confi
 	}
 
 	contextPath := config.GetContextPath(devContainerConfig.Config)
-	buildInfo, err := getFeatureBuildOptions(contextPath, imageBuildInfo, mergedImageMetadataConfig, target, features)
+	effectiveImageBuildInfo := *imageBuildInfo
+	effectiveImageBuildInfo.Metadata = mergedImageMetadataConfig
+
+	buildInfo, err := getFeatureBuildOptions(contextPath, &effectiveImageBuildInfo, target, features)
 	if err != nil {
 		return nil, err
 	}
@@ -88,8 +91,8 @@ func GetExtendedBuildInfo(ctx *config.SubstitutionContext, imageBuildInfo *confi
 	}, nil
 }
 
-func getFeatureBuildOptions(contextPath string, imageBuildInfo *config.ImageBuildInfo, mergedImageMetadata *config.ImageMetadataConfig, target string, features []*config.FeatureSet) (*BuildInfo, error) {
-	containerUser, remoteUser := resolveFeatureUsers(imageBuildInfo, mergedImageMetadata)
+func getFeatureBuildOptions(contextPath string, imageBuildInfo *config.ImageBuildInfo, target string, features []*config.FeatureSet) (*BuildInfo, error) {
+	containerUser, remoteUser := findContainerUsers(imageBuildInfo.Metadata, "", imageBuildInfo.User)
 
 	// copy features
 	featureFolder := filepath.Join(contextPath, config.DevPodContextFeatureFolder)
@@ -128,7 +131,10 @@ ARG _DEV_CONTAINERS_BASE_IMAGE=placeholder`, syntax)
 	}, nil
 }
 
-func resolveFeatureUsers(imageBuildInfo *config.ImageBuildInfo, mergedImageMetadata *config.ImageMetadataConfig) (string, string) {
+func resolveFeatureUsers(
+	imageBuildInfo *config.ImageBuildInfo,
+	mergedImageMetadata *config.ImageMetadataConfig,
+) (string, string) {
 	effectiveMetadata := imageBuildInfo.Metadata
 	if mergedImageMetadata != nil {
 		effectiveMetadata = mergedImageMetadata
