@@ -244,7 +244,7 @@ func (t *tunnelServer) GitCredentials(ctx context.Context, message *tunnel.Messa
 			if err != nil {
 				return nil, fmt.Errorf("get http path: %w", err)
 			}
-			// Set the credentials `path` field to the path component of the git repository URL.
+			// Set the credentials `path` field to the path component of the Git repository URL.
 			// This allows downstream credential helpers to figure out which passwords needs to be fetched
 			credentials.Path = path
 		} else {
@@ -373,7 +373,7 @@ func (t *tunnelServer) Log(ctx context.Context, message *tunnel.LogMessage) (*tu
 
 func (t *tunnelServer) StreamWorkspace(message *tunnel.Empty, stream tunnel.Tunnel_StreamWorkspaceServer) error {
 	if t.platformOptions != nil && t.platformOptions.Enabled && !t.allowPlatformOptions {
-		return fmt.Errorf("streaming workspace from local computer to platform workspace is not supported. Please specify a git repository to clone instead")
+		return fmt.Errorf("streaming workspace from local computer to platform workspace is not supported. Please specify a Git repository to clone instead")
 	}
 	if t.workspace == nil {
 		return fmt.Errorf("workspace is nil")
@@ -403,7 +403,7 @@ func (t *tunnelServer) StreamWorkspace(message *tunnel.Empty, stream tunnel.Tunn
 
 func (t *tunnelServer) StreamMount(message *tunnel.StreamMountRequest, stream tunnel.Tunnel_StreamMountServer) error {
 	if t.platformOptions != nil && t.platformOptions.Enabled && !t.allowPlatformOptions {
-		return fmt.Errorf("streaming mounts from local computer to platform workspace is not supported. Please specify a git repository to clone instead")
+		return fmt.Errorf("streaming mounts from local computer to platform workspace is not supported. Please specify a Git repository to clone instead")
 	}
 
 	var mount *config.Mount

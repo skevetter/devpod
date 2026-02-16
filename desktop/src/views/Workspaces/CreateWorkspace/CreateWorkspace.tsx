@@ -200,13 +200,13 @@ export function CreateWorkspace() {
                   <FormErrorMessage>{sourceError.message ?? "Error"}</FormErrorMessage>
                 )}
                 <FormHelperText textAlign={"center"}>
-                  Any git repository, local path to a folder or container image you would like to
+                  Any Git repository, local path to a folder or container image you would like to
                   create a workspace from can be a source as long as it adheres to the{" "}
                   <Link
                     fontWeight="bold"
                     target="_blank"
                     href="https://containers.dev/implementors/json_reference/">
-                    devcontainer standard
+                    Dev Container standard
                   </Link>
                   .
                 </FormHelperText>

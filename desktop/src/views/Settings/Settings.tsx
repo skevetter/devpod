@@ -210,7 +210,7 @@ function CustomizationSettings() {
 
       <SettingSection
         title="Dotfiles"
-        description="Set the dotfiles git repository to use inside workspaces">
+        description="Set the dotfiles Git repository to use inside workspaces">
         {dotfilesInput}
       </SettingSection>
 
