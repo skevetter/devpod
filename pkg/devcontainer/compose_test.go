@@ -85,6 +85,80 @@ func (s *PrepareBuildContextSuite) TestNilBuildRelativePath() {
 	s.Equal("/workspace/.devcontainer/features", result.context)
 }
 
+func (s *PrepareBuildContextSuite) TestCustomBuildContext() {
+	dockerfileContent := "FROM alpine\nCOPY ./.devpod-internal/ /tmp/build-features/"
+
+	result, err := s.runner.prepareBuildContext(
+		&composetypes.ServiceConfig{
+			Name: "test-service",
+			Build: &composetypes.BuildConfig{
+				Context: "/workspace",
+			},
+		},
+		"/workspace/.devcontainer/features/Dockerfile",
+		dockerfileContent,
+		&feature.BuildInfo{FeaturesFolder: "/workspace/.devcontainer/features/folder"},
+	)
+
+	s.NoError(err)
+	s.False(filepath.IsAbs(result.dockerfilePathInContext), "dockerfilePathInContext should be relative")
+	s.Equal(".devcontainer/features/Dockerfile", result.dockerfilePathInContext)
+	s.Equal("/workspace", result.context)
+	s.Contains(result.dockerfileContent, "COPY ./.devcontainer/features/folder/")
+	s.NotContains(result.dockerfileContent, "COPY ./.devpod-internal/")
+}
+
+func (s *PrepareBuildContextSuite) TestCustomBuildContextPreservesWhitespace() {
+	dockerfileContent := "COPY  ./.devpod-internal/ /tmp/\nADD\t./.devpod-internal/ /other/"
+
+	result, err := s.runner.prepareBuildContext(
+		&composetypes.ServiceConfig{
+			Name:  "test-service",
+			Build: &composetypes.BuildConfig{Context: "/workspace"},
+		},
+		"/workspace/.devcontainer/features/Dockerfile",
+		dockerfileContent,
+		&feature.BuildInfo{FeaturesFolder: "/workspace/.devcontainer/features/folder"},
+	)
+
+	s.NoError(err)
+	s.Contains(result.dockerfileContent, "COPY  ./.devcontainer/features/folder/")
+	s.Contains(result.dockerfileContent, "ADD\t./.devcontainer/features/folder/")
+}
+
+func (s *PrepareBuildContextSuite) TestCustomBuildContextNoReplacementNeeded() {
+	dockerfileContent := "FROM alpine\nRUN echo hello"
+
+	result, err := s.runner.prepareBuildContext(
+		&composetypes.ServiceConfig{
+			Name:  "test-service",
+			Build: &composetypes.BuildConfig{Context: "/workspace"},
+		},
+		"/workspace/.devcontainer/features/Dockerfile",
+		dockerfileContent,
+		&feature.BuildInfo{FeaturesFolder: "/workspace/.devcontainer/features/folder"},
+	)
+
+	s.NoError(err)
+	s.Equal(dockerfileContent, result.dockerfileContent, "content should be unchanged")
+}
+
+func (s *PrepareBuildContextSuite) TestCustomBuildContextEmptyContext() {
+	result, err := s.runner.prepareBuildContext(
+		&composetypes.ServiceConfig{
+			Name:  "test-service",
+			Build: &composetypes.BuildConfig{Context: ""},
+		},
+		"/workspace/.devcontainer/features/Dockerfile",
+		"FROM alpine",
+		&feature.BuildInfo{FeaturesFolder: "/workspace/.devcontainer/features/folder"},
+	)
+
+	s.NoError(err)
+	s.Equal("Dockerfile", result.dockerfilePathInContext)
+	s.Equal("/workspace/.devcontainer/features", result.context)
+}
+
 func TestPrepareBuildContextSuite(t *testing.T) {
 	suite.Run(t, new(PrepareBuildContextSuite))
 }

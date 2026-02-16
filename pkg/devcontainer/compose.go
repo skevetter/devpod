@@ -640,10 +640,13 @@ func (r *runner) setBuildPathsForContext(
 		return "", "", err
 	}
 
-	modifiedDockerfileContent = strings.ReplaceAll(
+	// Rewrite COPY/ADD directives that reference the features folder to use the relative path
+	// from the custom build context. This ensures that the features folder is referenced in the
+	// Dockerfile.
+	pattern := regexp.MustCompile(`(COPY|ADD)(\s+)\./` + regexp.QuoteMeta(config.DevPodContextFeatureFolder) + `/`)
+	modifiedDockerfileContent = pattern.ReplaceAllString(
 		dockerfileContent,
-		"COPY ./"+config.DevPodContextFeatureFolder+"/",
-		"COPY ./"+filepath.ToSlash(relFeaturePath)+"/",
+		"${1}${2}./"+filepath.ToSlash(relFeaturePath)+"/",
 	)
 
 	return relDockerfilePath, modifiedDockerfileContent, nil
