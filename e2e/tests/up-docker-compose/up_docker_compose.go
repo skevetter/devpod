@@ -172,6 +172,16 @@ var _ = ginkgo.Describe("devpod up docker compose test suite", ginkgo.Label("up-
 		err = tc.f.DevPodUp(ctx, tempDir)
 		framework.ExpectNoError(err)
 
+		workspace, err := tc.f.FindWorkspace(ctx, tempDir)
+		framework.ExpectNoError(err)
+
+		ids, err := tc.dockerHelper.FindContainer(ctx, []string{
+			fmt.Sprintf("%s=%s", compose.ProjectLabel, tc.composeHelper.GetProjectName(workspace.UID)),
+			fmt.Sprintf("%s=%s", compose.ServiceLabel, "app"),
+		})
+		framework.ExpectNoError(err)
+		gomega.Expect(ids).To(gomega.HaveLen(1), "1 compose container to be created")
+
 		quotedTest, err := tc.execSSH(ctx, tempDir, "cat $HOME/quoted-test.out")
 		framework.ExpectNoError(err)
 		gomega.Expect(quotedTest).To(gomega.Equal("quoted value"))
