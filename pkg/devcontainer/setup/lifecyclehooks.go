@@ -103,6 +103,10 @@ func run(commands []types.LifecycleHook, remoteUser, dir string, remoteEnv map[s
 				return err
 			}
 
+			if len(c) == 0 {
+				log.Debugf("skipping empty command for lifecycle hook %s", name)
+				continue
+			}
 			args := buildCommandArgs(c, remoteUser, currentUser.Username)
 
 			// create command
