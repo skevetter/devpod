@@ -75,8 +75,8 @@ func (s *LifecycleHookTestSuite) TestSymlinkWithQuotes() {
 	target, err := os.Readlink(testLink)
 	s.Require().NoError(err)
 	s.Require().NotEmpty(target, "symlink target should not be empty")
-	assert.NotEqual(s.T(), '"', target[0])
-	assert.NotEqual(s.T(), '"', target[len(target)-1])
+	assert.NotEqual(s.T(), byte('"'), target[0])
+	assert.NotEqual(s.T(), byte('"'), target[len(target)-1])
 }
 
 func TestLifecycleHookTestSuite(t *testing.T) {
