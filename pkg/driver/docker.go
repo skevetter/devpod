@@ -13,11 +13,12 @@ import (
 )
 
 type RunDockerDevContainerParams struct {
-	WorkspaceID  string
-	Options      *RunOptions
-	ParsedConfig *config.DevContainerConfig
-	IDE          string
-	IDEOptions   map[string]config2.OptionValue
+	WorkspaceID          string
+	Options              *RunOptions
+	ParsedConfig         *config.DevContainerConfig
+	IDE                  string
+	IDEOptions           map[string]config2.OptionValue
+	LocalWorkspaceFolder string
 }
 
 type BuildRequest struct {

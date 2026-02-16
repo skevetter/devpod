@@ -225,11 +225,12 @@ func (r *runner) runContainer(
 	dockerDriver, ok := r.Driver.(driver.DockerDriver)
 	if ok {
 		return dockerDriver.RunDockerDevContainer(ctx, &driver.RunDockerDevContainerParams{
-			WorkspaceID:  r.ID,
-			Options:      runOptions,
-			ParsedConfig: parsedConfig.Config,
-			IDE:          r.WorkspaceConfig.Workspace.IDE.Name,
-			IDEOptions:   r.WorkspaceConfig.Workspace.IDE.Options,
+			WorkspaceID:          r.ID,
+			Options:              runOptions,
+			ParsedConfig:         parsedConfig.Config,
+			IDE:                  r.WorkspaceConfig.Workspace.IDE.Name,
+			IDEOptions:           r.WorkspaceConfig.Workspace.IDE.Options,
+			LocalWorkspaceFolder: r.LocalWorkspaceFolder,
 		})
 	}
 

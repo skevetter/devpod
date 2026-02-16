@@ -255,7 +255,7 @@ func (d *dockerDriver) RunDockerDevContainer(ctx context.Context, params *driver
 	writer := d.Log.Writer(logrus.InfoLevel, false)
 	defer func() { _ = writer.Close() }()
 
-	if err := d.startContainer(ctx, args, writer); err != nil {
+	if err := d.startContainer(ctx, params.LocalWorkspaceFolder, args, writer); err != nil {
 		return err
 	}
 
@@ -613,11 +613,18 @@ func (d *dockerDriver) addEntrypointArgs(args []string, options *driver.RunOptio
 	return args
 }
 
-func (d *dockerDriver) startContainer(ctx context.Context, args []string, writer io.Writer) error {
-	d.Log.WithFields(logrus.Fields{"command": d.Docker.DockerCommand, "args": strings.Join(args, " ")}).Info("running docker command")
-	err := d.Docker.Run(ctx, args, nil, writer, writer)
+func (d *dockerDriver) startContainer(ctx context.Context, dir string, args []string, writer io.Writer) error {
+	d.Log.WithFields(logrus.Fields{"command": d.Docker.DockerCommand, "args": strings.Join(args, " "), "cwd": dir}).
+		Info("running docker command")
+
+	err := d.Docker.RunWithDir(ctx, dir, args, nil, writer, writer)
 	if err != nil {
-		d.Log.WithFields(logrus.Fields{"error": err, "command": d.Docker.DockerCommand, "args": strings.Join(args, " ")}).Error("docker container failed to start")
+		d.Log.WithFields(logrus.Fields{
+			"error":   err,
+			"command": d.Docker.DockerCommand,
+			"args":    strings.Join(args, " "),
+			"cwd":     dir}).
+			Error("docker container failed to start")
 		return fmt.Errorf("failed to start dev container: %w", err)
 	}
 	return nil
