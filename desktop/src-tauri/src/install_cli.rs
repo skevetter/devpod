@@ -5,7 +5,6 @@ use std::str::Lines;
 use std::{env, path::PathBuf};
 use thiserror::Error;
 use std::fs;
-use log::info;
 
 #[derive(Error, Debug)]
 #[allow(dead_code)]

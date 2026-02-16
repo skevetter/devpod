@@ -5,7 +5,7 @@ use crate::ui_messages::{
 #[cfg(target_os = "linux")]
 use crate::ui_messages::{ShowToastMsg, ToastStatus};
 use crate::AppState;
-use log::{error, info, warn};
+use log::{info, warn};
 use serde::{Deserialize, Serialize};
 #[cfg(target_os = "linux")]
 use std::env;
@@ -16,7 +16,6 @@ use url::Url;
 
 // Should match the one from "tauri.config.json" and "Info.plist"
 const APP_IDENTIFIER: &str = "sh.loft.devpod";
-const APP_URL_SCHEME: &str = "devpod";
 
 pub struct CustomProtocol;
 
