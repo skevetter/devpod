@@ -166,7 +166,11 @@ var _ = ginkgo.Describe("devpod up docker compose test suite", ginkgo.Label("up-
 	}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
 	ginkgo.It("commands with quotes", func(ctx context.Context) {
-		tempDir, err := setupWorkspace("tests/up-docker-compose/testdata/docker-compose-lifecycle-quotes", tc.initialDir, tc.f)
+		tempDir, err := setupWorkspace(
+			"tests/up-docker-compose/testdata/docker-compose-lifecycle-quotes",
+			tc.initialDir,
+			tc.f,
+		)
 		framework.ExpectNoError(err)
 
 		err = tc.f.DevPodUp(ctx, tempDir)
