@@ -1,7 +1,6 @@
 package config
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"fmt"
@@ -85,6 +84,29 @@ func ProbeUserEnv(ctx context.Context, probe string, userName string, log log.Lo
 	return probedEnv, nil
 }
 
+func parseProbeOutput(out []byte, sep byte, log log.Logger) map[string]string {
+	// Parse NUL-separated NAME=VALUE entries robustly.
+	entries := bytes.Split(out, []byte{sep})
+	retEnv := make(map[string]string, len(entries))
+
+	for _, e := range entries {
+		if len(e) == 0 {
+			// Skip trailing NUL or empty entry.
+			continue
+		}
+		// Split on first '=' only.
+		name, value, ok := bytes.Cut(e, []byte{'='})
+		if !ok || len(name) == 0 {
+			log.Debugf("failed to parse env entry: %q", string(e))
+			continue
+		}
+		// Do NOT TrimSpace; values may intentionally start/end with whitespace/newlines.
+		retEnv[string(name)] = string(value)
+	}
+
+	return retEnv
+}
+
 func doProbe(ctx context.Context, userEnvProbe UserEnvProbe, preferredShell []string, userName string, probeCmd string, sep byte, log log.Logger) (map[string]string, error) {
 	args := preferredShell
 	args = append(args, getShellArgs(userEnvProbe, userName, probeCmd)...)
@@ -103,22 +125,8 @@ func doProbe(ctx context.Context, userEnvProbe UserEnvProbe, preferredShell []st
 		return nil, fmt.Errorf("probe user env: %w", err)
 	}
 
-	scanner := bufio.NewScanner(bytes.NewBuffer(out))
-	scanner.Split(splitBySeparator(sep))
+	retEnv := parseProbeOutput(out, sep, log)
 
-	retEnv := map[string]string{}
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		tokens := strings.Split(line, "=")
-		if len(tokens) == 1 {
-			log.Debugf("failed to split env var: %s", line)
-			continue
-		}
-		retEnv[tokens[0]] = tokens[1]
-	}
-	if scanner.Err() != nil {
-		return nil, fmt.Errorf("scan shell output: %w", err)
-	}
 	delete(retEnv, "PWD")
 
 	return retEnv, nil
@@ -142,20 +150,4 @@ func getShellArgs(userEnvProbe UserEnvProbe, user, command string) []string {
 	args = append(args, command)
 
 	return args
-}
-
-func splitBySeparator(sep byte) bufio.SplitFunc {
-	return func(data []byte, atEOF bool) (advance int, token []byte, err error) {
-		if atEOF && len(data) == 0 {
-			return 0, nil, nil
-		}
-		if i := bytes.IndexByte(data, sep); i >= 0 {
-			return i + 1, data[0:i], nil
-		}
-		if atEOF {
-			return len(data), data, nil
-		}
-		// Request more data.
-		return 0, nil, nil
-	}
 }
