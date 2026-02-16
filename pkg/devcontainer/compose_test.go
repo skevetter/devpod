@@ -6,6 +6,7 @@ import (
 
 	composetypes "github.com/compose-spec/compose-go/v2/types"
 	"github.com/sirupsen/logrus"
+	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	"github.com/skevetter/devpod/pkg/devcontainer/feature"
 	logLib "github.com/skevetter/log"
 	"github.com/stretchr/testify/suite"
@@ -86,7 +87,7 @@ func (s *PrepareBuildContextSuite) TestNilBuildRelativePath() {
 }
 
 func (s *PrepareBuildContextSuite) TestCustomBuildContext() {
-	dockerfileContent := "FROM alpine\nCOPY ./.devpod-internal/ /tmp/build-features/"
+	dockerfileContent := "FROM alpine\nCOPY ./" + config.DevPodContextFeatureFolder + "/ /tmp/build-features/"
 
 	result, err := s.runner.prepareBuildContext(
 		&composetypes.ServiceConfig{
@@ -105,11 +106,12 @@ func (s *PrepareBuildContextSuite) TestCustomBuildContext() {
 	s.Equal(".devcontainer/features/Dockerfile", result.dockerfilePathInContext)
 	s.Equal("/workspace", result.context)
 	s.Contains(result.dockerfileContent, "COPY ./.devcontainer/features/folder/")
-	s.NotContains(result.dockerfileContent, "COPY ./.devpod-internal/")
+	s.NotContains(result.dockerfileContent, "COPY ./"+config.DevPodContextFeatureFolder+"/")
 }
 
 func (s *PrepareBuildContextSuite) TestCustomBuildContextPreservesWhitespace() {
-	dockerfileContent := "COPY  ./.devpod-internal/ /tmp/\nADD\t./.devpod-internal/ /other/"
+	dockerfileContent := "COPY  ./" + config.DevPodContextFeatureFolder + "/ /tmp/\n" +
+		"ADD\t./" + config.DevPodContextFeatureFolder + "/ /other/"
 
 	result, err := s.runner.prepareBuildContext(
 		&composetypes.ServiceConfig{

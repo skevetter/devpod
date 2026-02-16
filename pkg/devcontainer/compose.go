@@ -626,7 +626,11 @@ func (r *runner) setBuildPathsForContext(
 		return "", "", err
 	}
 
-	relDockerfilePath, err = filepath.Rel(absBuildContext, dockerFilePath)
+	absDockerFilePath, err := filepath.Abs(dockerFilePath)
+	if err != nil {
+		return "", "", err
+	}
+	relDockerfilePath, err = filepath.Rel(absBuildContext, absDockerFilePath)
 	if err != nil {
 		return "", "", err
 	}
