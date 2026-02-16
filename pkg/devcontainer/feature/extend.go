@@ -131,18 +131,6 @@ ARG _DEV_CONTAINERS_BASE_IMAGE=placeholder`, syntax)
 	}, nil
 }
 
-func resolveFeatureUsers(
-	imageBuildInfo *config.ImageBuildInfo,
-	mergedImageMetadata *config.ImageMetadataConfig,
-) (string, string) {
-	effectiveMetadata := imageBuildInfo.Metadata
-	if mergedImageMetadata != nil {
-		effectiveMetadata = mergedImageMetadata
-	}
-
-	return findContainerUsers(effectiveMetadata, "", imageBuildInfo.User)
-}
-
 func copyFeaturesToDestination(features []*config.FeatureSet, targetDir string) error {
 	// make sure the folder doesn't exist initially
 	_ = os.RemoveAll(targetDir)

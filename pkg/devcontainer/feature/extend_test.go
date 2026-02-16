@@ -397,18 +397,7 @@ func (suite *ExtendTestSuite) TestContainsFeature() {
 	}
 }
 
-func (suite *ExtendTestSuite) TestResolveFeatureUsersUsesMergedMetadata() {
-	imageBuildInfo := &config.ImageBuildInfo{
-		User: "nonroot",
-		Metadata: &config.ImageMetadataConfig{
-			Config: []*config.ImageMetadata{{
-				DevContainerConfigBase: config.DevContainerConfigBase{
-					RemoteUser: "nonroot",
-				},
-			}},
-		},
-	}
-
+func (suite *ExtendTestSuite) TestFindContainerUsersUsesMetadataAndImageUserFallbacks() {
 	mergedImageMetadata := &config.ImageMetadataConfig{
 		Config: []*config.ImageMetadata{{
 			DevContainerConfigBase: config.DevContainerConfigBase{
@@ -417,25 +406,7 @@ func (suite *ExtendTestSuite) TestResolveFeatureUsersUsesMergedMetadata() {
 		}},
 	}
 
-	containerUser, remoteUser := resolveFeatureUsers(imageBuildInfo, mergedImageMetadata)
+	containerUser, remoteUser := findContainerUsers(mergedImageMetadata, "", "nonroot")
 	suite.Equal("nonroot", containerUser)
 	suite.Equal("vscode", remoteUser)
-}
-
-func (suite *ExtendTestSuite) TestResolveFeatureUsersFallsBackToImageBuildInfoMetadata() {
-	imageBuildInfo := &config.ImageBuildInfo{
-		User: "root",
-		Metadata: &config.ImageMetadataConfig{
-			Config: []*config.ImageMetadata{{
-				NonComposeBase: config.NonComposeBase{ContainerUser: "appuser"},
-				DevContainerConfigBase: config.DevContainerConfigBase{
-					RemoteUser: "devuser",
-				},
-			}},
-		},
-	}
-
-	containerUser, remoteUser := resolveFeatureUsers(imageBuildInfo, nil)
-	suite.Equal("appuser", containerUser)
-	suite.Equal("devuser", remoteUser)
 }
