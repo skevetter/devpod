@@ -398,7 +398,7 @@ func (suite *ExtendTestSuite) TestContainsFeature() {
 }
 
 func (suite *ExtendTestSuite) TestFindContainerUsersUsesMetadataAndImageUserFallbacks() {
-	mergedImageMetadata := &config.ImageMetadataConfig{
+	effectiveMetadata := &config.ImageMetadataConfig{
 		Config: []*config.ImageMetadata{{
 			DevContainerConfigBase: config.DevContainerConfigBase{
 				RemoteUser: "vscode",
@@ -406,7 +406,7 @@ func (suite *ExtendTestSuite) TestFindContainerUsersUsesMetadataAndImageUserFall
 		}},
 	}
 
-	containerUser, remoteUser := findContainerUsers(mergedImageMetadata, "", "nonroot")
+	containerUser, remoteUser := findContainerUsers(effectiveMetadata, "", "nonroot")
 	suite.Equal("nonroot", containerUser)
 	suite.Equal("vscode", remoteUser)
 }
