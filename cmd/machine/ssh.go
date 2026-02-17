@@ -443,6 +443,10 @@ func remoteTerminfoExists(ctx context.Context, sshClient *ssh.Client, term strin
 	return code == 0, nil
 }
 
+// installLocalTerminfoOnRemote best-effort installs local terminfo on remote.
+// It returns (false, nil) when prerequisites are missing or installation exits
+// non-zero, because callers should continue with TERM fallback in auto mode.
+// It only returns a non-nil error for transport/session failures.
 func installLocalTerminfoOnRemote(ctx context.Context, sshClient *ssh.Client, term string) (bool, error) {
 	infocmpCmd := exec.CommandContext(ctx, "infocmp", "-x", term)
 	output, err := infocmpCmd.Output()
@@ -477,6 +481,10 @@ func streamBytesToWriter(reader io.Reader, writer io.WriteCloser) <-chan error {
 	return errChan
 }
 
+// runRemoteCommandWithInput runs a remote command with optional stdin payload.
+// Contract: exit status is returned as the first value; non-zero exits are not
+// treated as errors. The error return is reserved for SSH/session failures or
+// context cancellation, so callers can decide how to handle command exit codes.
 func runRemoteCommandWithInput(
 	ctx context.Context,
 	sshClient *ssh.Client,
