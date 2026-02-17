@@ -474,13 +474,10 @@ func (cmd *SetupContainerCmd) installIDE(
 			config.GetRemoteUser(setupInfo), ide.Options, log).
 			Install()
 	case string(config2.IDERStudio):
-		err := rstudio.NewRStudioServer(
+		return rstudio.NewRStudioServer(
 			setupInfo.SubstitutionContext.ContainerWorkspaceFolder,
 			config.GetRemoteUser(setupInfo), ide.Options, log).
 			Install()
-		if err != nil {
-			log.Errorf("could not install rstudio with error: %w", err)
-		}
 	}
 
 	return nil
