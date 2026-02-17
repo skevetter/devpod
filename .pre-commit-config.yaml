@@ -57,6 +57,5 @@ repos:
     hooks:
       - id: go-fmt
       - id: go-imports
-      - id: golangci-lint
-        pass_filenames: false
-        args: [--new-from-rev=HEAD]
+      - id: golangci-lint-repo-mod
+        args: [--fix, --new]

@@ -315,7 +315,6 @@ func (d *dockerDriver) GetDevContainerLogs(
 	return d.Docker.GetContainerLogs(ctx, container.ID, stdout, stderr)
 }
 
-// nolint:cyclop // Cyclop is just from standard error handling.
 func (d *dockerDriver) UpdateContainerUserUID(
 	ctx context.Context,
 	workspaceId string,
@@ -326,14 +325,9 @@ func (d *dockerDriver) UpdateContainerUserUID(
 		return nil
 	}
 
-	localUser, err := user.Current()
-	if err != nil {
+	localUser, containerUser, err := d.validateUpdateRequirements(parsedConfig)
+	if err != nil || containerUser == "" {
 		return err
-	}
-
-	containerUser := d.getContainerUser(parsedConfig)
-	if containerUser == "" {
-		return nil
 	}
 
 	container, err := d.FindDevContainer(ctx, workspaceId)
@@ -341,25 +335,69 @@ func (d *dockerDriver) UpdateContainerUserUID(
 		return err
 	}
 
-	files, err := d.createTempFiles()
-	if err != nil {
-		return err
-	}
-	defer files.cleanup()
-
-	if err := d.fetchContainerFiles(ctx, container.ID, files, writer); err != nil {
-		return err
-	}
-
-	info, err := d.processUserFiles(files, containerUser, localUser.Uid, localUser.Gid)
+	info, err := d.updateUserMappings(ctx, &userMappingParams{
+		containerID:   container.ID,
+		containerUser: containerUser,
+		localUser:     localUser,
+		writer:        writer,
+	})
 	if err != nil {
 		return err
 	}
 
-	if localUser.Uid == "0" || info.uid == "0" || (localUser.Uid == info.uid && localUser.Gid == info.gid) {
+	if d.shouldSkipUpdate(localUser, info) {
 		return nil
 	}
 
+	d.logUserUpdate(containerUser, info, localUser)
+	return d.applyPermissions(ctx, container.ID, localUser.Uid, localUser.Gid, info.home, writer)
+}
+
+func (d *dockerDriver) validateUpdateRequirements(parsedConfig *config.DevContainerConfig) (*user.User, string, error) {
+	localUser, err := user.Current()
+	if err != nil {
+		return nil, "", err
+	}
+
+	containerUser := d.getContainerUser(parsedConfig)
+	return localUser, containerUser, nil
+}
+
+type userMappingParams struct {
+	containerID   string
+	containerUser string
+	localUser     *user.User
+	writer        io.Writer
+}
+
+func (d *dockerDriver) updateUserMappings(ctx context.Context, params *userMappingParams) (*userInfo, error) {
+	files, err := d.createTempFiles()
+	if err != nil {
+		return nil, err
+	}
+	defer files.cleanup()
+
+	if err := d.fetchContainerFiles(ctx, params.containerID, files, params.writer); err != nil {
+		return nil, err
+	}
+
+	info, err := d.processUserFiles(files, params.containerUser, params.localUser.Uid, params.localUser.Gid)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := d.uploadUpdatedFiles(ctx, params.containerID, files, params.writer); err != nil {
+		return nil, err
+	}
+
+	return info, nil
+}
+
+func (d *dockerDriver) shouldSkipUpdate(localUser *user.User, info *userInfo) bool {
+	return localUser.Uid == "0" || info.uid == "0" || (localUser.Uid == info.uid && localUser.Gid == info.gid)
+}
+
+func (d *dockerDriver) logUserUpdate(containerUser string, info *userInfo, localUser *user.User) {
 	d.Log.WithFields(logrus.Fields{
 		"containerUser": containerUser,
 		"containerUid":  info.uid,
@@ -367,12 +405,6 @@ func (d *dockerDriver) UpdateContainerUserUID(
 		"localUid":      localUser.Uid,
 		"localGid":      localUser.Gid,
 	}).Info("updating container user UID and GID")
-
-	if err := d.uploadUpdatedFiles(ctx, container.ID, files, writer); err != nil {
-		return err
-	}
-
-	return d.applyPermissions(ctx, container.ID, localUser.Uid, localUser.Gid, info.home, writer)
 }
 
 type runArgsBuilder struct {
