@@ -262,6 +262,108 @@ func (d *dockerDriver) RunDockerDevContainer(ctx context.Context, params *driver
 	return d.UpdateContainerUserUID(ctx, params.WorkspaceID, params.ParsedConfig, writer)
 }
 
+func (d *dockerDriver) EnsureImage(
+	ctx context.Context,
+	options *driver.RunOptions,
+) error {
+	d.Log.WithFields(logrus.Fields{"image": options.Image}).Info("inspecting image")
+	_, err := d.Docker.InspectImage(ctx, options.Image, false)
+	if err != nil {
+		d.Log.WithFields(logrus.Fields{"image": options.Image}).Info("image not found, pulling image")
+		writer := d.Log.Writer(logrus.DebugLevel, false)
+		defer func() { _ = writer.Close() }()
+
+		return d.Docker.Pull(ctx, options.Image, nil, writer, writer)
+	}
+	return nil
+}
+
+func (d *dockerDriver) EnsurePath(path *config.Mount) *config.Mount {
+	// in case of local windows and remote linux tcp, we need to manually do the path conversion
+	if runtime.GOOS == "windows" {
+		for _, v := range d.Docker.Environment {
+			// we do this only is DOCKER_HOST is not docker-desktop engine, but
+			// a direct TCP connection to a docker daemon running in WSL
+			if strings.Contains(v, "DOCKER_HOST=tcp://") {
+				unixPath := path.Source
+				unixPath = strings.Replace(unixPath, "C:", "c", 1)
+				unixPath = strings.ReplaceAll(unixPath, "\\", "/")
+				unixPath = "/mnt/" + unixPath
+
+				path.Source = unixPath
+
+				return path
+			}
+		}
+	}
+	return path
+}
+
+func (d *dockerDriver) GetDevContainerLogs(ctx context.Context, workspaceId string, stdout io.Writer, stderr io.Writer) error {
+	container, err := d.FindDevContainer(ctx, workspaceId)
+	if err != nil {
+		return err
+	} else if container == nil {
+		return fmt.Errorf("container not found")
+	}
+
+	return d.Docker.GetContainerLogs(ctx, container.ID, stdout, stderr)
+}
+
+func (d *dockerDriver) UpdateContainerUserUID(ctx context.Context, workspaceId string, parsedConfig *config.DevContainerConfig, writer io.Writer) error {
+	if !d.shouldUpdateUserUID(parsedConfig) {
+		return nil
+	}
+
+	localUser, err := user.Current()
+	if err != nil {
+		return err
+	}
+
+	containerUser := d.getContainerUser(parsedConfig)
+	if containerUser == "" {
+		return nil
+	}
+
+	container, err := d.FindDevContainer(ctx, workspaceId)
+	if err != nil || container == nil {
+		return err
+	}
+
+	files, err := d.createTempFiles()
+	if err != nil {
+		return err
+	}
+	defer files.cleanup()
+
+	if err := d.fetchContainerFiles(ctx, container.ID, files, writer); err != nil {
+		return err
+	}
+
+	info, err := d.processUserFiles(files, containerUser, localUser.Uid, localUser.Gid)
+	if err != nil {
+		return err
+	}
+
+	if localUser.Uid == "0" || info.uid == "0" || (localUser.Uid == info.uid && localUser.Gid == info.gid) {
+		return nil
+	}
+
+	d.Log.WithFields(logrus.Fields{
+		"containerUser": containerUser,
+		"containerUid":  info.uid,
+		"containerGid":  info.gid,
+		"localUid":      localUser.Uid,
+		"localGid":      localUser.Gid,
+	}).Info("updating container user UID and GID")
+
+	if err := d.uploadUpdatedFiles(ctx, container.ID, files, writer); err != nil {
+		return err
+	}
+
+	return d.applyPermissions(ctx, container.ID, localUser.Uid, localUser.Gid, info.home, writer)
+}
+
 type runArgsBuilder struct {
 	args   []string
 	driver *dockerDriver
@@ -533,54 +635,6 @@ func appendGPUOptions(parsedConfig *config.DevContainerConfig, d *dockerDriver, 
 		}
 	}
 	return args
-}
-
-func (d *dockerDriver) EnsureImage(
-	ctx context.Context,
-	options *driver.RunOptions,
-) error {
-	d.Log.WithFields(logrus.Fields{"image": options.Image}).Info("inspecting image")
-	_, err := d.Docker.InspectImage(ctx, options.Image, false)
-	if err != nil {
-		d.Log.WithFields(logrus.Fields{"image": options.Image}).Info("image not found, pulling image")
-		writer := d.Log.Writer(logrus.DebugLevel, false)
-		defer func() { _ = writer.Close() }()
-
-		return d.Docker.Pull(ctx, options.Image, nil, writer, writer)
-	}
-	return nil
-}
-
-func (d *dockerDriver) EnsurePath(path *config.Mount) *config.Mount {
-	// in case of local windows and remote linux tcp, we need to manually do the path conversion
-	if runtime.GOOS == "windows" {
-		for _, v := range d.Docker.Environment {
-			// we do this only is DOCKER_HOST is not docker-desktop engine, but
-			// a direct TCP connection to a docker daemon running in WSL
-			if strings.Contains(v, "DOCKER_HOST=tcp://") {
-				unixPath := path.Source
-				unixPath = strings.Replace(unixPath, "C:", "c", 1)
-				unixPath = strings.ReplaceAll(unixPath, "\\", "/")
-				unixPath = "/mnt/" + unixPath
-
-				path.Source = unixPath
-
-				return path
-			}
-		}
-	}
-	return path
-}
-
-func (d *dockerDriver) GetDevContainerLogs(ctx context.Context, workspaceId string, stdout io.Writer, stderr io.Writer) error {
-	container, err := d.FindDevContainer(ctx, workspaceId)
-	if err != nil {
-		return err
-	} else if container == nil {
-		return fmt.Errorf("container not found")
-	}
-
-	return d.Docker.GetContainerLogs(ctx, container.ID, stdout, stderr)
 }
 
 func (d *dockerDriver) getPodmanArgs(options *driver.RunOptions, parsedConfig *config.DevContainerConfig) ([]string, error) {
@@ -878,58 +932,4 @@ func (d *dockerDriver) uploadUpdatedFiles(ctx context.Context, containerID strin
 		return err
 	}
 	return d.copyFileToContainer(ctx, files.groupOut.Name(), containerID, "/etc/group", writer)
-}
-
-func (d *dockerDriver) UpdateContainerUserUID(ctx context.Context, workspaceId string, parsedConfig *config.DevContainerConfig, writer io.Writer) error {
-	if !d.shouldUpdateUserUID(parsedConfig) {
-		return nil
-	}
-
-	localUser, err := user.Current()
-	if err != nil {
-		return err
-	}
-
-	containerUser := d.getContainerUser(parsedConfig)
-	if containerUser == "" {
-		return nil
-	}
-
-	container, err := d.FindDevContainer(ctx, workspaceId)
-	if err != nil || container == nil {
-		return err
-	}
-
-	files, err := d.createTempFiles()
-	if err != nil {
-		return err
-	}
-	defer files.cleanup()
-
-	if err := d.fetchContainerFiles(ctx, container.ID, files, writer); err != nil {
-		return err
-	}
-
-	info, err := d.processUserFiles(files, containerUser, localUser.Uid, localUser.Gid)
-	if err != nil {
-		return err
-	}
-
-	if localUser.Uid == "0" || info.uid == "0" || (localUser.Uid == info.uid && localUser.Gid == info.gid) {
-		return nil
-	}
-
-	d.Log.WithFields(logrus.Fields{
-		"containerUser": containerUser,
-		"containerUid":  info.uid,
-		"containerGid":  info.gid,
-		"localUid":      localUser.Uid,
-		"localGid":      localUser.Gid,
-	}).Info("updating container user UID and GID")
-
-	if err := d.uploadUpdatedFiles(ctx, container.ID, files, writer); err != nil {
-		return err
-	}
-
-	return d.applyPermissions(ctx, container.ID, localUser.Uid, localUser.Gid, info.home, writer)
 }
