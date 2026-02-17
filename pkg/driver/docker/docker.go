@@ -299,7 +299,12 @@ func (d *dockerDriver) EnsurePath(path *config.Mount) *config.Mount {
 	return path
 }
 
-func (d *dockerDriver) GetDevContainerLogs(ctx context.Context, workspaceId string, stdout io.Writer, stderr io.Writer) error {
+func (d *dockerDriver) GetDevContainerLogs(
+	ctx context.Context,
+	workspaceId string,
+	stdout io.Writer,
+	stderr io.Writer,
+) error {
 	container, err := d.FindDevContainer(ctx, workspaceId)
 	if err != nil {
 		return err
@@ -310,7 +315,13 @@ func (d *dockerDriver) GetDevContainerLogs(ctx context.Context, workspaceId stri
 	return d.Docker.GetContainerLogs(ctx, container.ID, stdout, stderr)
 }
 
-func (d *dockerDriver) UpdateContainerUserUID(ctx context.Context, workspaceId string, parsedConfig *config.DevContainerConfig, writer io.Writer) error {
+// nolint:cyclop // Cyclop is just from standard error handling.
+func (d *dockerDriver) UpdateContainerUserUID(
+	ctx context.Context,
+	workspaceId string,
+	parsedConfig *config.DevContainerConfig,
+	writer io.Writer,
+) error {
 	if !d.shouldUpdateUserUID(parsedConfig) {
 		return nil
 	}
