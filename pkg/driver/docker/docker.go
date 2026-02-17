@@ -335,7 +335,7 @@ func (d *dockerDriver) UpdateContainerUserUID(
 		return err
 	}
 
-	info, err := d.updateUserMappings(ctx, &userMappingParams{
+	files, info, err := d.updateUserMappings(ctx, &userMappingParams{
 		containerID:   container.ID,
 		containerUser: containerUser,
 		localUser:     localUser,
@@ -344,12 +344,18 @@ func (d *dockerDriver) UpdateContainerUserUID(
 	if err != nil {
 		return err
 	}
+	defer files.cleanup()
 
 	if d.shouldSkipUpdate(localUser, info) {
 		return nil
 	}
 
 	d.logUserUpdate(containerUser, info, localUser)
+
+	if err := d.uploadUpdatedFiles(ctx, container.ID, files, writer); err != nil {
+		return err
+	}
+
 	return d.applyPermissions(ctx, container.ID, localUser.Uid, localUser.Gid, info.home, writer)
 }
 
@@ -370,27 +376,25 @@ type userMappingParams struct {
 	writer        io.Writer
 }
 
-func (d *dockerDriver) updateUserMappings(ctx context.Context, params *userMappingParams) (*userInfo, error) {
+func (d *dockerDriver) updateUserMappings(
+	ctx context.Context,
+	params *userMappingParams,
+) (*tempFiles, *userInfo, error) {
 	files, err := d.createTempFiles()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	defer files.cleanup()
 
 	if err := d.fetchContainerFiles(ctx, params.containerID, files, params.writer); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	info, err := d.processUserFiles(files, params.containerUser, params.localUser.Uid, params.localUser.Gid)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	if err := d.uploadUpdatedFiles(ctx, params.containerID, files, params.writer); err != nil {
-		return nil, err
-	}
-
-	return info, nil
+	return files, info, nil
 }
 
 func (d *dockerDriver) shouldSkipUpdate(localUser *user.User, info *userInfo) bool {
