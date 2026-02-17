@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// NewUseCmd returns a new root command
+// NewUseCmd returns a new root command.
 func NewUseCmd(flags *flags.GlobalFlags) *cobra.Command {
 	useCmd := &cobra.Command{
 		Use:   "use",

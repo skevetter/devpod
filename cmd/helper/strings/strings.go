@@ -5,7 +5,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// NewStringsCmd returns a new command
+// NewStringsCmd returns a new command.
 func NewStringsCmd(flags *flags.GlobalFlags) *cobra.Command {
 	stringsCmd := &cobra.Command{
 		Use:    "strings",

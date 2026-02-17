@@ -15,14 +15,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// ClustersCmd holds the cmd flags
+// ClustersCmd holds the cmd flags.
 type ClustersCmd struct {
 	*flags.GlobalFlags
 
 	log log.Logger
 }
 
-// NewClustersCmd creates a new command
+// NewClustersCmd creates a new command.
 func NewClustersCmd(globalFlags *flags.GlobalFlags) *cobra.Command {
 	cmd := &ClustersCmd{
 		GlobalFlags: globalFlags,

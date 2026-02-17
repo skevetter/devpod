@@ -28,7 +28,7 @@ type credentialConfig struct {
 	gitSSHSignature bool
 }
 
-// StartServicesDaemon starts the services daemon for credential forwarding and port forwarding
+// StartServicesDaemon starts the services daemon for credential forwarding and port forwarding.
 func StartServicesDaemon(ctx context.Context, opts StartServicesDaemonOptions) error {
 	if opts.User == "" {
 		return nil

@@ -44,12 +44,12 @@ type machineClient struct {
 	executor     *machineExecutor
 }
 
-// machineExecutor handles command execution with common patterns
+// machineExecutor handles command execution with common patterns.
 type machineExecutor struct {
 	client *machineClient
 }
 
-// execConfig defines how to execute a machine command
+// execConfig defines how to execute a machine command.
 type execConfig struct {
 	name         string
 	command      types.StrArray
@@ -105,7 +105,7 @@ func (e *machineExecutor) execute(ctx context.Context, cfg execConfig) error {
 	return nil
 }
 
-// lifecycleCommand executes a standard lifecycle operation (create/start/stop)
+// lifecycleCommand executes a standard lifecycle operation (create/start/stop).
 func (e *machineExecutor) lifecycleCommand(ctx context.Context, name string, command types.StrArray, verb, pastVerb string) error {
 	writer := e.client.log.Writer(logrus.InfoLevel, false)
 	defer func() { _ = writer.Close() }()

@@ -14,7 +14,7 @@ type GetWorkspaceNameCommand struct {
 	*flags.GlobalFlags
 }
 
-// NewGetWorkspaceNameCmd creates a new command
+// NewGetWorkspaceNameCmd creates a new command.
 func NewGetWorkspaceNameCmd(flags *flags.GlobalFlags) *cobra.Command {
 	cmd := &GetWorkspaceNameCommand{
 		GlobalFlags: flags,

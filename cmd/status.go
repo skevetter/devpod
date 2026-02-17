@@ -16,7 +16,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// StatusCmd holds the cmd flags
+// StatusCmd holds the cmd flags.
 type StatusCmd struct {
 	*flags.GlobalFlags
 	client2.StatusOptions
@@ -25,7 +25,7 @@ type StatusCmd struct {
 	Timeout string
 }
 
-// NewStatusCmd creates a new command
+// NewStatusCmd creates a new command.
 func NewStatusCmd(flags *flags.GlobalFlags) *cobra.Command {
 	cmd := &StatusCmd{
 		GlobalFlags: flags,
@@ -64,7 +64,7 @@ func NewStatusCmd(flags *flags.GlobalFlags) *cobra.Command {
 	return statusCmd
 }
 
-// Run runs the command logic
+// Run runs the command logic.
 func (cmd *StatusCmd) Run(ctx context.Context, client client2.BaseWorkspaceClient, log log.Logger) error {
 	// parse timeout
 	if cmd.Timeout != "" {

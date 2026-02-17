@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// ListAvailableCmd holds the list cmd flags
+// ListAvailableCmd holds the list cmd flags.
 type ListAvailableCmd struct {
 	*flags.GlobalFlags
 }
@@ -51,7 +51,7 @@ func getDevpodProviderList() error {
 	return nil
 }
 
-// NewListAvailableCmd creates a new command
+// NewListAvailableCmd creates a new command.
 func NewListAvailableCmd(flags *flags.GlobalFlags) *cobra.Command {
 	cmd := &ListAvailableCmd{
 		GlobalFlags: flags,
@@ -68,7 +68,7 @@ func NewListAvailableCmd(flags *flags.GlobalFlags) *cobra.Command {
 	return listAvailableCmd
 }
 
-// Run runs the command logic
+// Run runs the command logic.
 func (cmd *ListAvailableCmd) Run(ctx context.Context) error {
 	return getDevpodProviderList()
 }

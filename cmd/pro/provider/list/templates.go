@@ -22,14 +22,14 @@ import (
 	storagev1 "github.com/loft-sh/api/v4/pkg/apis/storage/v1"
 )
 
-// TemplatesCmd holds the cmd flags
+// TemplatesCmd holds the cmd flags.
 type TemplatesCmd struct {
 	*flags.GlobalFlags
 
 	log log.Logger
 }
 
-// NewTemplatesCmd creates a new command
+// NewTemplatesCmd creates a new command.
 func NewTemplatesCmd(globalFlags *flags.GlobalFlags) *cobra.Command {
 	cmd := &TemplatesCmd{
 		GlobalFlags: globalFlags,

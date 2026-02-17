@@ -7,10 +7,10 @@ import (
 	"github.com/skevetter/devpod/pkg/util"
 )
 
-// Override devpod home
+// Override devpod home.
 const DEVPOD_HOME = "DEVPOD_HOME"
 
-// Override config path
+// Override config path.
 const DEVPOD_CONFIG = "DEVPOD_CONFIG"
 
 func GetConfigDir() (string, error) {

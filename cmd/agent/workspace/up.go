@@ -32,14 +32,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// UpCmd holds the up cmd flags
+// UpCmd holds the up cmd flags.
 type UpCmd struct {
 	*flags.GlobalFlags
 
 	WorkspaceInfo string
 }
 
-// NewUpCmd creates a new command
+// NewUpCmd creates a new command.
 func NewUpCmd(flags *flags.GlobalFlags) *cobra.Command {
 	cmd := &UpCmd{
 		GlobalFlags: flags,

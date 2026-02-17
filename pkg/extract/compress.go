@@ -54,7 +54,7 @@ func WriteTar(writer io.Writer, localPath string, compress bool) error {
 	return WriteTarExclude(writer, localPath, compress, nil)
 }
 
-// Archiver is responsible for compressing specific files and folders within a target directory
+// Archiver is responsible for compressing specific files and folders within a target directory.
 type Archiver struct {
 	basePath     string
 	writer       *tar.Writer
@@ -63,7 +63,7 @@ type Archiver struct {
 	excludedPaths []string
 }
 
-// NewArchiver creates a new archiver
+// NewArchiver creates a new archiver.
 func NewArchiver(basePath string, writer *tar.Writer, excludedPaths []string) *Archiver {
 	return &Archiver{
 		basePath:     basePath,
@@ -74,7 +74,7 @@ func NewArchiver(basePath string, writer *tar.Writer, excludedPaths []string) *A
 	}
 }
 
-// AddToArchive adds a new path to the archive
+// AddToArchive adds a new path to the archive.
 func (a *Archiver) AddToArchive(relativePath string) error {
 	if a.writtenFiles[relativePath] {
 		return nil

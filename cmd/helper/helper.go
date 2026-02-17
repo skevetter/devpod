@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// NewHelperCmd returns a new command
+// NewHelperCmd returns a new command.
 func NewHelperCmd(globalFlags *flags.GlobalFlags) *cobra.Command {
 	helperCmd := &cobra.Command{
 		Use:   "helper",

@@ -99,7 +99,7 @@ func addHost(params addHostParams) (string, error) {
 	return addHostSection(newConfig, execPath, params)
 }
 
-// proxyCommandBuilder builds SSH ProxyCommand strings
+// proxyCommandBuilder builds SSH ProxyCommand strings.
 type proxyCommandBuilder struct {
 	baseCommand string
 	options     []string
@@ -139,7 +139,7 @@ func (b *proxyCommandBuilder) build() string {
 	return fmt.Sprintf("  ProxyCommand %s %s", b.baseCommand, strings.Join(b.options, " "))
 }
 
-// sshConfigBuilder builds SSH config entries
+// sshConfigBuilder builds SSH config entries.
 type sshConfigBuilder struct {
 	lines []string
 }
@@ -190,7 +190,7 @@ func (b *sshConfigBuilder) build() []string {
 	return b.lines
 }
 
-// buildProxyCommand creates the ProxyCommand string
+// buildProxyCommand creates the ProxyCommand string.
 func buildProxyCommand(execPath string, params addHostParams) string {
 	if params.command != "" {
 		return fmt.Sprintf("  ProxyCommand \"%s\"", params.command)
@@ -203,7 +203,7 @@ func buildProxyCommand(execPath string, params addHostParams) string {
 		build()
 }
 
-// buildSSHConfigLines creates the SSH config entry lines
+// buildSSHConfigLines creates the SSH config entry lines.
 func buildSSHConfigLines(params addHostParams, proxyCmd string) []string {
 	return newSSHConfigBuilder(params.host).
 		addSSHOptions(params.provider).
@@ -212,7 +212,7 @@ func buildSSHConfigLines(params addHostParams, proxyCmd string) []string {
 		build()
 }
 
-// findInsertPosition finds where to insert new SSH config entry
+// findInsertPosition finds where to insert new SSH config entry.
 func findInsertPosition(config string) (int, []string, error) {
 	lineNumber := 0
 	found := false
@@ -248,7 +248,7 @@ func findInsertPosition(config string) (int, []string, error) {
 	return lineNumber, lines, nil
 }
 
-// mergeSSHConfig inserts new lines into existing config
+// mergeSSHConfig inserts new lines into existing config.
 func mergeSSHConfig(lines, newLines []string, position int) string {
 	merged := slices.Insert(lines, position, newLines...)
 

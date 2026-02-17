@@ -11,14 +11,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// OpenVSCodeAsyncCmd holds the cmd flags
+// OpenVSCodeAsyncCmd holds the cmd flags.
 type OpenVSCodeAsyncCmd struct {
 	*flags.GlobalFlags
 
 	SetupInfo string
 }
 
-// NewOpenVSCodeAsyncCmd creates a new command
+// NewOpenVSCodeAsyncCmd creates a new command.
 func NewOpenVSCodeAsyncCmd() *cobra.Command {
 	cmd := &OpenVSCodeAsyncCmd{}
 	vsCodeAsyncCmd := &cobra.Command{
@@ -32,7 +32,7 @@ func NewOpenVSCodeAsyncCmd() *cobra.Command {
 	return vsCodeAsyncCmd
 }
 
-// Run runs the command logic
+// Run runs the command logic.
 func (cmd *OpenVSCodeAsyncCmd) Run(_ *cobra.Command, _ []string) error {
 	log.Default.Debugf("Start setting up container...")
 	decompressed, err := compress.Decompress(cmd.SetupInfo)

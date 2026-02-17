@@ -13,7 +13,7 @@ var KubernetesProvider string
 //go:embed pro/provider.yaml
 var ProProvider string
 
-// GetBuiltInProviders retrieves the built in providers
+// GetBuiltInProviders retrieves the built in providers.
 func GetBuiltInProviders() map[string]string {
 	return map[string]string{
 		"docker":     DockerProvider,

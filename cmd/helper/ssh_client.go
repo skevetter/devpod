@@ -16,7 +16,7 @@ type SSHClient struct {
 	User    string
 }
 
-// NewSSHClientCmd creates a new ssh command
+// NewSSHClientCmd creates a new ssh command.
 func NewSSHClientCmd() *cobra.Command {
 	cmd := &SSHClient{}
 	sshCmd := &cobra.Command{

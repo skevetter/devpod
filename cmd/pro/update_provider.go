@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// UpdateProviderCmd holds the cmd flags
+// UpdateProviderCmd holds the cmd flags.
 type UpdateProviderCmd struct {
 	*flags.GlobalFlags
 	Log log.Logger
@@ -22,7 +22,7 @@ type UpdateProviderCmd struct {
 	Instance string
 }
 
-// NewUpdateProviderCmd creates a new command
+// NewUpdateProviderCmd creates a new command.
 func NewUpdateProviderCmd(globalFlags *flags.GlobalFlags) *cobra.Command {
 	cmd := &UpdateProviderCmd{
 		GlobalFlags: globalFlags,

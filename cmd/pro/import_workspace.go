@@ -36,7 +36,7 @@ type ImportCmd struct {
 	log log.Logger
 }
 
-// NewImportCmd creates a new command
+// NewImportCmd creates a new command.
 func NewImportCmd(globalFlags *proflags.GlobalFlags) *cobra.Command {
 	logger := log.GetInstance()
 	cmd := &ImportCmd{

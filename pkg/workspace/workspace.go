@@ -38,7 +38,7 @@ type RemoteCreator interface {
 	Create(ctx context.Context, stdin io.Reader, stdout, stderr io.Writer) error
 }
 
-// Resolve takes the `devpod up|build` CLI input and either finds an existing workspace or creates a new one
+// Resolve takes the `devpod up|build` CLI input and either finds an existing workspace or creates a new one.
 type ResolveParams struct {
 	IDE                  string
 	IDEOptions           []string
@@ -137,7 +137,7 @@ func getWorkspaceClient(devPodConfig *config.Config, provider *providerpkg.Provi
 	}
 }
 
-// Get tries to retrieve an already existing workspace
+// Get tries to retrieve an already existing workspace.
 func Get(ctx context.Context, devPodConfig *config.Config, args []string, changeLastUsed bool, owner platform.OwnerFilter, localOnly bool, log log.Logger) (client.BaseWorkspaceClient, error) {
 	var (
 		provider  *providerpkg.ProviderConfig
@@ -181,7 +181,7 @@ func Get(ctx context.Context, devPodConfig *config.Config, args []string, change
 	return client, nil
 }
 
-// Exists checks if the given workspace already exists
+// Exists checks if the given workspace already exists.
 func Exists(ctx context.Context, devPodConfig *config.Config, args []string, workspaceID string, owner platform.OwnerFilter, log log.Logger) string {
 	workspace := findWorkspace(ctx, devPodConfig, args, workspaceID, owner, log)
 	if workspace == nil {

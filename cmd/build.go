@@ -16,7 +16,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// BuildCmd holds the cmd flags
+// BuildCmd holds the cmd flags.
 type BuildCmd struct {
 	*flags.GlobalFlags
 	provider.CLIOptions
@@ -27,7 +27,7 @@ type BuildCmd struct {
 	Machine    string
 }
 
-// NewBuildCmd creates a new command
+// NewBuildCmd creates a new command.
 func NewBuildCmd(flags *flags.GlobalFlags) *cobra.Command {
 	cmd := &BuildCmd{
 		GlobalFlags: flags,

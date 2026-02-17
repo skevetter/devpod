@@ -16,7 +16,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// InstallDotfilesCmd holds the installDotfiles cmd flags
+// InstallDotfilesCmd holds the installDotfiles cmd flags.
 type InstallDotfilesCmd struct {
 	*flags.GlobalFlags
 
@@ -25,7 +25,7 @@ type InstallDotfilesCmd struct {
 	StrictHostKeyChecking bool
 }
 
-// NewInstallDotfilesCmd creates a new command
+// NewInstallDotfilesCmd creates a new command.
 func NewInstallDotfilesCmd(flags *flags.GlobalFlags) *cobra.Command {
 	cmd := &InstallDotfilesCmd{
 		GlobalFlags: flags,
@@ -44,7 +44,7 @@ func NewInstallDotfilesCmd(flags *flags.GlobalFlags) *cobra.Command {
 	return installDotfilesCmd
 }
 
-// Run runs the command logic
+// Run runs the command logic.
 func (cmd *InstallDotfilesCmd) Run(ctx context.Context) error {
 	logger := log.Default.ErrorStreamOnly()
 	targetDir := filepath.Join(os.Getenv("HOME"), "dotfiles")

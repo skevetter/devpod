@@ -17,7 +17,7 @@ import (
 
 const AllWorkspaces = "all"
 
-// RebuildCmd holds the cmd flags
+// RebuildCmd holds the cmd flags.
 type RebuildCmd struct {
 	*flags.GlobalFlags
 	Log log.Logger
@@ -26,7 +26,7 @@ type RebuildCmd struct {
 	Host    string
 }
 
-// NewRebuildCmd creates a new command
+// NewRebuildCmd creates a new command.
 func NewRebuildCmd(globalFlags *flags.GlobalFlags) *cobra.Command {
 	cmd := &RebuildCmd{
 		GlobalFlags: globalFlags,

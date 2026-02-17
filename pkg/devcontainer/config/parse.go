@@ -88,12 +88,12 @@ func ParseDevContainerJSONFile(jsonFilePath string) (*DevContainerConfig, error)
 	return replaceLegacy(devContainer)
 }
 
-// ParseDevContainerJSON check if a file named devcontainer.json exists in the given directory and parse it if it does
+// ParseDevContainerJSON check if a file named devcontainer.json exists in the given directory and parse it if it does.
 func ParseDevContainerJSON(folder, relativePath string) (*DevContainerConfig, error) {
 	return ParseDevContainerJSONWithSelector(folder, relativePath, nil)
 }
 
-// ParseDevContainerJSONWithSelector allows custom selection when multiple devcontainer configs exist
+// ParseDevContainerJSONWithSelector allows custom selection when multiple devcontainer configs exist.
 func ParseDevContainerJSONWithSelector(folder, relativePath string, selector func([]string) (string, error)) (*DevContainerConfig, error) {
 	path, err := resolveDevContainerPath(folder, relativePath, selector)
 	if err != nil {
@@ -174,7 +174,7 @@ func findDevContainerConfigs(folder string) ([]string, error) {
 	return configs, nil
 }
 
-// ListDevContainerIDs returns available devcontainer IDs in the folder
+// ListDevContainerIDs returns available devcontainer IDs in the folder.
 func ListDevContainerIDs(folder string) ([]string, error) {
 	configs, err := findDevContainerConfigs(folder)
 	if err != nil {

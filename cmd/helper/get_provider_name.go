@@ -16,7 +16,7 @@ type GetProviderNameCmd struct {
 	*flags.GlobalFlags
 }
 
-// NewGetProviderNameCmd creates a new command
+// NewGetProviderNameCmd creates a new command.
 func NewGetProviderNameCmd(flags *flags.GlobalFlags) *cobra.Command {
 	cmd := &GetProviderNameCmd{
 		GlobalFlags: flags,

@@ -44,7 +44,7 @@ func (f *Framework) DevPodListParsed(ctx context.Context) ([]*provider2.Workspac
 	return retList, nil
 }
 
-// DevPodList executes the `devpod list` command in the test framework
+// DevPodList executes the `devpod list` command in the test framework.
 func (f *Framework) DevPodList(ctx context.Context) (string, error) {
 	listArgs := []string{"list", "--output", "json"}
 
@@ -67,7 +67,7 @@ func (f *Framework) DevPodUpStreams(ctx context.Context, workspace string, addit
 	return stdout, stderr, nil
 }
 
-// DevPodUp executes the `devpod up` command in the test framework
+// DevPodUp executes the `devpod up` command in the test framework.
 func (f *Framework) DevPodUpWithIDE(ctx context.Context, additionalArgs ...string) error {
 	upArgs := []string{"up", "--debug"}
 	upArgs = append(upArgs, additionalArgs...)

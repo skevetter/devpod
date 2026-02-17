@@ -20,7 +20,7 @@ import (
 	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// SleepCmd holds the cmd flags
+// SleepCmd holds the cmd flags.
 type SleepCmd struct {
 	*flags.GlobalFlags
 	Log log.Logger
@@ -30,7 +30,7 @@ type SleepCmd struct {
 	ForceDuration int64
 }
 
-// NewSleepCmd creates a new command
+// NewSleepCmd creates a new command.
 func NewSleepCmd(globalFlags *flags.GlobalFlags) *cobra.Command {
 	cmd := &SleepCmd{
 		GlobalFlags: globalFlags,

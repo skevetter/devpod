@@ -42,7 +42,7 @@ var UIEventsExceptions []string = []string{
 	"devpod context options",
 }
 
-// skip everything in pro mode
+// skip everything in pro mode.
 var CollectorCLI CLICollector = &noopCollector{}
 
 type CLICollector interface {
@@ -53,7 +53,7 @@ type CLICollector interface {
 	Flush()
 }
 
-// StartCLI starts collecting events and sending them to the backend from the CLI
+// StartCLI starts collecting events and sending them to the backend from the CLI.
 func StartCLI(devPodConfig *config.Config, cmd *cobra.Command) {
 	telemetryOpt := devPodConfig.ContextOption(config.ContextOptionTelemetry)
 	if telemetryOpt == "false" || version.GetVersion() == version.DevVersion ||
@@ -177,7 +177,7 @@ func (d *cliCollector) RecordCLI(err error) {
 	})
 }
 
-// isCIEnvironment looks up a couple of well-known CI env vars
+// isCIEnvironment looks up a couple of well-known CI env vars.
 func isCIEnvironment() bool {
 	ciIndicators := []string{
 		"CI",                     // Generic CI variable
@@ -198,7 +198,7 @@ func isCIEnvironment() bool {
 }
 
 // isInteractiveShell checks if the current shell is in interactive mode or not.
-// Can be combined with `isCi` to narrow down usage
+// Can be combined with `isCi` to narrow down usage.
 func isInteractiveShell() bool {
 	return term.IsTerminal(os.Stdin.Fd())
 }

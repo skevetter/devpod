@@ -170,22 +170,23 @@ func getFeatureSafeID(featureID string) string {
 }
 
 func getFeatureLayers(containerUser, remoteUser string, features []*config.FeatureSet) string {
-	result := `RUN \
+	var result strings.Builder
+	result.WriteString(`RUN \
 echo "_CONTAINER_USER_HOME=$(getent passwd ` + containerUser + ` | cut -d: -f6)" >> /tmp/build-features/devcontainer-features.builtin.env && \
 echo "_REMOTE_USER_HOME=$(getent passwd ` + remoteUser + ` | cut -d: -f6)" >> /tmp/build-features/devcontainer-features.builtin.env
 
-`
+`)
 	for i, feature := range features {
-		result += generateContainerEnvs(feature)
-		result += `
+		result.WriteString(generateContainerEnvs(feature))
+		result.WriteString(`
 RUN cd /tmp/build-features/` + strconv.Itoa(i) + ` \
 && chmod +x ./devcontainer-features-install.sh \
 && ./devcontainer-features-install.sh
 
-`
+`)
 	}
 
-	return result
+	return result.String()
 }
 
 func generateContainerEnvs(feature *config.FeatureSet) string {

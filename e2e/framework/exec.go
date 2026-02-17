@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-// ExecCommand executes the command string with the devpod test binary
+// ExecCommand executes the command string with the devpod test binary.
 func (f *Framework) ExecCommandOutput(ctx context.Context, args []string) (string, error) {
 	var execOut bytes.Buffer
 
@@ -26,7 +26,7 @@ func (f *Framework) ExecCommandOutput(ctx context.Context, args []string) (strin
 	return execOut.String(), nil
 }
 
-// ExecCommandStdout executes the command string with the devpod test binary
+// ExecCommandStdout executes the command string with the devpod test binary.
 func (f *Framework) ExecCommandStdout(ctx context.Context, args []string) error {
 	cmd := exec.CommandContext(ctx, filepath.Join(f.DevpodBinDir, f.DevpodBinName), args...)
 	cmd.Stdout = os.Stdout
@@ -38,7 +38,7 @@ func (f *Framework) ExecCommandStdout(ctx context.Context, args []string) error 
 	return nil
 }
 
-// ExecCommand executes the command string with the devpod test binary
+// ExecCommand executes the command string with the devpod test binary.
 func (f *Framework) ExecCommand(ctx context.Context, captureStdOut, searchForString bool, searchString string, args []string) error {
 	var execOut bytes.Buffer
 

@@ -51,7 +51,7 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-// UpCmd holds the up cmd flags
+// UpCmd holds the up cmd flags.
 type UpCmd struct {
 	provider2.CLIOptions
 	*flags.GlobalFlags
@@ -73,7 +73,7 @@ type UpCmd struct {
 	DotfilesScriptEnvFile []string // Paths to files containing Key=Value pairs to pass to install script
 }
 
-// NewUpCmd creates a new up command
+// NewUpCmd creates a new up command.
 func NewUpCmd(f *flags.GlobalFlags) *cobra.Command {
 	cmd := &UpCmd{GlobalFlags: f}
 	upCmd := &cobra.Command{
@@ -198,7 +198,7 @@ func (cmd *UpCmd) registerTestingFlags(upCmd *cobra.Command) {
 	_ = upCmd.Flags().MarkHidden("force-dockerless")
 }
 
-// Run runs the command logic
+// Run runs the command logic.
 func (cmd *UpCmd) Run(
 	ctx context.Context,
 	devPodConfig *config.Config,
@@ -223,14 +223,14 @@ func (cmd *UpCmd) Run(
 	return cmd.openIDE(ctx, devPodConfig, client, wctx, log)
 }
 
-// workspaceContext holds the result of workspace preparation
+// workspaceContext holds the result of workspace preparation.
 type workspaceContext struct {
 	result  *config2.Result
 	user    string
 	workdir string
 }
 
-// prepareWorkspace handles initial setup and validation
+// prepareWorkspace handles initial setup and validation.
 func (cmd *UpCmd) prepareWorkspace(client client2.BaseWorkspaceClient, log log.Logger) {
 	if cmd.Reset {
 		cmd.Recreate = true
@@ -249,7 +249,7 @@ func (cmd *UpCmd) prepareWorkspace(client client2.BaseWorkspaceClient, log log.L
 	}
 }
 
-// executeDevPodUp runs the agent and returns workspace context
+// executeDevPodUp runs the agent and returns workspace context.
 func (cmd *UpCmd) executeDevPodUp(ctx context.Context, devPodConfig *config.Config, client client2.BaseWorkspaceClient, log log.Logger) (*workspaceContext, error) {
 	result, err := cmd.devPodUp(ctx, devPodConfig, client, log)
 	if err != nil {
@@ -275,7 +275,7 @@ func (cmd *UpCmd) executeDevPodUp(ctx context.Context, devPodConfig *config.Conf
 	return &workspaceContext{result: result, user: user, workdir: workdir}, nil
 }
 
-// configureWorkspace sets up SSH, Git, and dotfiles
+// configureWorkspace sets up SSH, Git, and dotfiles.
 func (cmd *UpCmd) configureWorkspace(devPodConfig *config.Config, client client2.BaseWorkspaceClient, wctx *workspaceContext, log log.Logger) error {
 	if cmd.ConfigureSSH {
 		devPodHome := ""
@@ -308,7 +308,7 @@ func (cmd *UpCmd) configureWorkspace(devPodConfig *config.Config, client client2
 	return setupDotfiles(cmd.DotfilesSource, cmd.DotfilesScript, cmd.DotfilesScriptEnvFile, cmd.DotfilesScriptEnv, client, devPodConfig, log)
 }
 
-// openIDE opens the configured IDE
+// openIDE opens the configured IDE.
 func (cmd *UpCmd) openIDE(ctx context.Context, devPodConfig *config.Config, client client2.BaseWorkspaceClient, wctx *workspaceContext, log log.Logger) error {
 	if !cmd.OpenIDE {
 		return nil
@@ -319,7 +319,7 @@ func (cmd *UpCmd) openIDE(ctx context.Context, devPodConfig *config.Config, clie
 	return opener.open(ctx, ideConfig.Name, ideConfig.Options)
 }
 
-// ideOpener handles opening different IDE types
+// ideOpener handles opening different IDE types.
 type ideOpener struct {
 	cmd          *UpCmd
 	devPodConfig *config.Config
@@ -919,7 +919,7 @@ func parseAddressAndPort(bindAddressOption string, defaultPort int) (string, int
 	return address, portName, nil
 }
 
-// setupBackhaul sets up a long running command in the container to ensure an SSH connection is kept alive
+// setupBackhaul sets up a long running command in the container to ensure an SSH connection is kept alive.
 func setupBackhaul(client client2.BaseWorkspaceClient, authSockId string, log log.Logger) error {
 	execPath, err := os.Executable()
 	if err != nil {

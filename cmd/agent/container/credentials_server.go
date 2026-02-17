@@ -24,7 +24,7 @@ import (
 
 const ExitCodeIO int = 64
 
-// CredentialsServerCmd holds the cmd flags
+// CredentialsServerCmd holds the cmd flags.
 type CredentialsServerCmd struct {
 	*flags.GlobalFlags
 
@@ -37,7 +37,7 @@ type CredentialsServerCmd struct {
 	GitUserSigningKey string
 }
 
-// NewCredentialsServerCmd creates a new command
+// NewCredentialsServerCmd creates a new command.
 func NewCredentialsServerCmd(flags *flags.GlobalFlags) *cobra.Command {
 	cmd := &CredentialsServerCmd{
 		GlobalFlags: flags,
@@ -65,7 +65,7 @@ func NewCredentialsServerCmd(flags *flags.GlobalFlags) *cobra.Command {
 	return credentialsServerCmd
 }
 
-// Run runs the command logic
+// Run runs the command logic.
 func (cmd *CredentialsServerCmd) Run(ctx context.Context, port int) error {
 	// create a grpc client
 	tunnelClient, err := tunnelserver.NewTunnelClient(os.Stdin, os.Stdout, true, ExitCodeIO)

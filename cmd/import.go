@@ -18,7 +18,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// ImportCmd holds the export cmd flags
+// ImportCmd holds the export cmd flags.
 type ImportCmd struct {
 	*flags.GlobalFlags
 
@@ -33,7 +33,7 @@ type ImportCmd struct {
 	Data string
 }
 
-// NewImportCmd creates a new command
+// NewImportCmd creates a new command.
 func NewImportCmd(flags *flags.GlobalFlags) *cobra.Command {
 	cmd := &ImportCmd{
 		GlobalFlags: flags,
@@ -64,7 +64,7 @@ func NewImportCmd(flags *flags.GlobalFlags) *cobra.Command {
 	return importCmd
 }
 
-// Run runs the command logic
+// Run runs the command logic.
 func (cmd *ImportCmd) Run(ctx context.Context, devPodConfig *config.Config, log log.Logger) error {
 	exportConfig := &provider.ExportConfig{}
 	err := json.Unmarshal([]byte(cmd.Data), exportConfig)

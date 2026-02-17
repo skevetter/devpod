@@ -11,14 +11,14 @@ import (
 	"github.com/skevetter/log/survey"
 )
 
-// CombinedLogger implements the Logger interface and delegates logging to multiple loggers
+// CombinedLogger implements the Logger interface and delegates logging to multiple loggers.
 type CombinedLogger struct {
 	loggers []logLib.Logger
 	m       sync.Mutex
 	level   logrus.Level
 }
 
-// NewCombinedLogger creates a new CombinedLogger
+// NewCombinedLogger creates a new CombinedLogger.
 func NewCombinedLogger(level logrus.Level, loggers ...logLib.Logger) *CombinedLogger {
 	return &CombinedLogger{
 		loggers: loggers,
@@ -26,7 +26,7 @@ func NewCombinedLogger(level logrus.Level, loggers ...logLib.Logger) *CombinedLo
 	}
 }
 
-// log is a helper to execute a function for all loggers at the appropriate log level
+// log is a helper to execute a function for all loggers at the appropriate log level.
 func (c *CombinedLogger) log(level logrus.Level, logFunc func(logLib.Logger)) {
 	c.m.Lock()
 	defer c.m.Unlock()

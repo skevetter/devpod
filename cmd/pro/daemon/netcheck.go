@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/skevetter/devpod/cmd/agent"
 	"github.com/skevetter/devpod/cmd/pro/completion"
@@ -16,7 +17,7 @@ import (
 	"tailscale.com/client/local"
 )
 
-// NetcheckCmd holds the DevPod daemon flags
+// NetcheckCmd holds the DevPod daemon flags.
 type NetcheckCmd struct {
 	*proflags.GlobalFlags
 
@@ -24,7 +25,7 @@ type NetcheckCmd struct {
 	Log  log.Logger
 }
 
-// NewNetcheckCmd creates a new command
+// NewNetcheckCmd creates a new command.
 func NewNetcheckCmd(flags *proflags.GlobalFlags) *cobra.Command {
 	cmd := &NetcheckCmd{
 		GlobalFlags: flags,
@@ -79,23 +80,24 @@ func (cmd *NetcheckCmd) Run(ctx context.Context, devPodConfig *config.Config, pr
 		if err != nil {
 			return err
 		}
-		msg := fmt.Sprintf("DERP %d (%s)\n", region.RegionID, region.RegionCode)
+		var msg strings.Builder
+		msg.WriteString(fmt.Sprintf("DERP %d (%s)\n", region.RegionID, region.RegionCode))
 		if len(report.Errors) > 0 {
 			for _, error := range report.Errors {
-				msg += fmt.Sprintf("  Error: %s\n", error)
+				msg.WriteString(fmt.Sprintf("  Error: %s\n", error))
 			}
 		}
 		if len(report.Warnings) > 0 {
 			for _, warning := range report.Warnings {
-				msg += fmt.Sprintf("  Warning: %s\n", warning)
+				msg.WriteString(fmt.Sprintf("  Warning: %s\n", warning))
 			}
 		}
 		if len(report.Info) > 0 {
 			for _, info := range report.Info {
-				msg += fmt.Sprintf("  Info: %s\n", info)
+				msg.WriteString(fmt.Sprintf("  Info: %s\n", info))
 			}
 		}
-		fmt.Println(msg)
+		fmt.Println(msg.String())
 	}
 
 	return nil

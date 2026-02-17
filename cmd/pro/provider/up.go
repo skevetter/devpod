@@ -21,7 +21,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-// UpCmd holds the cmd flags:
+// UpCmd holds the cmd flags:.
 type UpCmd struct {
 	*flags.GlobalFlags
 
@@ -35,7 +35,7 @@ type streams struct {
 	Stderr io.Writer
 }
 
-// NewUpCmd creates a new command
+// NewUpCmd creates a new command.
 func NewUpCmd(globalFlags *flags.GlobalFlags) *cobra.Command {
 	logLevel := logrus.InfoLevel
 	if os.Getenv(clientimplementation.DevPodDebug) == "true" || globalFlags.Debug {

@@ -20,7 +20,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// ContainerTunnelCmd holds the ws-tunnel cmd flags
+// ContainerTunnelCmd holds the ws-tunnel cmd flags.
 type ContainerTunnelCmd struct {
 	*flags.GlobalFlags
 
@@ -28,7 +28,7 @@ type ContainerTunnelCmd struct {
 	User          string
 }
 
-// NewContainerTunnelCmd creates a new command
+// NewContainerTunnelCmd creates a new command.
 func NewContainerTunnelCmd(flags *flags.GlobalFlags) *cobra.Command {
 	cmd := &ContainerTunnelCmd{
 		GlobalFlags: flags,
@@ -48,7 +48,7 @@ func NewContainerTunnelCmd(flags *flags.GlobalFlags) *cobra.Command {
 	return containerTunnelCmd
 }
 
-// Run runs the command logic
+// Run runs the command logic.
 func (cmd *ContainerTunnelCmd) Run(ctx context.Context, log log.Logger) error {
 	// write workspace info
 	shouldExit, workspaceInfo, err := agent.WriteWorkspaceInfo(cmd.WorkspaceInfo, log)

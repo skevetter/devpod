@@ -12,7 +12,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// UpdateCmd holds the cmd flags
+// UpdateCmd holds the cmd flags.
 type UpdateCmd struct {
 	*flags.GlobalFlags
 
@@ -20,7 +20,7 @@ type UpdateCmd struct {
 	Options []string
 }
 
-// NewUpdateCmd creates a new command
+// NewUpdateCmd creates a new command.
 func NewUpdateCmd(flags *flags.GlobalFlags) *cobra.Command {
 	cmd := &UpdateCmd{
 		GlobalFlags: flags,

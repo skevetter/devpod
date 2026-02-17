@@ -15,7 +15,7 @@ import (
 	"github.com/creativeprojects/go-selfupdate"
 )
 
-// Version holds the current version tag
+// Version holds the current version tag.
 var version string = strings.TrimPrefix(versionpkg.GetVersion(), "v")
 var devVersion string = strings.TrimPrefix(versionpkg.DevVersion, "v")
 
@@ -37,7 +37,7 @@ var (
 	latestVersionOnce sync.Once
 )
 
-// CheckForNewerVersion checks if there is a newer version on github and returns the newer version
+// CheckForNewerVersion checks if there is a newer version on github and returns the newer version.
 func CheckForNewerVersion() (string, error) {
 	latestVersionOnce.Do(func() {
 		latest, found, err := selfupdate.DetectLatest(context.Background(), selfupdate.ParseSlug(githubSlug))
@@ -56,7 +56,7 @@ func CheckForNewerVersion() (string, error) {
 	return latestVersion, errLatestVersion
 }
 
-// NewerVersionAvailable checks if there is a newer version of devpod
+// NewerVersionAvailable checks if there is a newer version of devpod.
 func NewerVersionAvailable() string {
 	if version == devVersion {
 		return ""
@@ -81,7 +81,7 @@ func NewerVersionAvailable() string {
 	return ""
 }
 
-// Upgrade downloads the latest release from github and replaces devpod if a new version is found
+// Upgrade downloads the latest release from github and replaces devpod if a new version is found.
 func Upgrade(flagVersion string, log log.Logger) error {
 	updater, err := selfupdate.NewUpdater(selfupdate.Config{
 		Filters: []string{"devpod"},

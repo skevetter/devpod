@@ -12,14 +12,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// FleetServerCmd holds the fleet server cmd flags
+// FleetServerCmd holds the fleet server cmd flags.
 type FleetServerCmd struct {
 	*flags.GlobalFlags
 
 	WorkspaceID string
 }
 
-// NewFleetServerCmd creates a new fleet command
+// NewFleetServerCmd creates a new fleet command.
 func NewFleetServerCmd(flags *flags.GlobalFlags) *cobra.Command {
 	cmd := &FleetServerCmd{
 		GlobalFlags: flags,
@@ -35,7 +35,7 @@ func NewFleetServerCmd(flags *flags.GlobalFlags) *cobra.Command {
 	return fleetCmd
 }
 
-// Run runs the command logic
+// Run runs the command logic.
 func (c *FleetServerCmd) Run(cmd *cobra.Command, _ []string) error {
 	logFile := filepath.Join(os.Getenv("HOME"), ".cache/JetBrains/Fleet/log/fleet.log")
 	firstConnection := regexp.MustCompile(`.*Received authorization request.*`)
@@ -66,7 +66,7 @@ func (c *FleetServerCmd) Run(cmd *cobra.Command, _ []string) error {
 				_ = file.Close()
 			}
 		case <-cmd.Context().Done():
-			//context is done - either canceled or time is up for timeout
+			// context is done - either canceled or time is up for timeout
 			return nil
 		}
 	}

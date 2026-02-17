@@ -5,7 +5,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// NewResetCmd creates a new cobra command
+// NewResetCmd creates a new cobra command.
 func NewResetCmd(globalFlags *flags.GlobalFlags) *cobra.Command {
 	c := &cobra.Command{
 		Use:   "reset",

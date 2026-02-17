@@ -14,7 +14,7 @@ type ImageMetadata struct {
 }
 
 // AddConfigToImageMetadata adds a configuration to the given image metadata and
-// used to generate the final image metadata
+// used to generate the final image metadata.
 func AddConfigToImageMetadata(config *DevContainerConfig, imageMetadataConfig *ImageMetadataConfig) {
 	userMetadata := &ImageMetadata{}
 	userMetadata.DevContainerConfigBase = config.DevContainerConfigBase

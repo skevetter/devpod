@@ -191,10 +191,10 @@ func GetUser(userName string) (*GitUser, error) {
 	}
 
 	// we ignore the error here, because if email is empty we don't care
-	name, _ := exec.Command("git", append(scopeArgs[:], "user.name")...).Output()
+	name, _ := exec.Command("git", append(scopeArgs, "user.name")...).Output()
 	gitUser.Name = strings.TrimSpace(string(name))
 
-	email, _ := exec.Command("git", append(scopeArgs[:], "user.email")...).Output()
+	email, _ := exec.Command("git", append(scopeArgs, "user.email")...).Output()
 	gitUser.Email = strings.TrimSpace(string(email))
 
 	return gitUser, nil
@@ -238,7 +238,7 @@ type GetHttpPathParameters struct {
 }
 
 // GetHTTPPath checks for gits `credential.useHttpPath` setting for a given host+protocol and returns the path component
-// of `GitCredential` if the setting is true
+// of `GitCredential` if the setting is true.
 func GetHTTPPath(ctx context.Context, params GetHttpPathParameters) (string, error) {
 	// No need to look up the HTTP Path if we already have one
 	if params.CurrentPath != "" {
@@ -314,7 +314,7 @@ func getGlobalGitConfigPath(userName string) (string, error) {
 	return filepath.Join(home, ".gitconfig"), nil
 }
 
-// GetLocalGitConfigPath resolves the local git config for the specified repository path
+// GetLocalGitConfigPath resolves the local git config for the specified repository path.
 func GetLocalGitConfigPath(repoPath string) string {
 	return filepath.Join(repoPath, ".git", "config")
 }

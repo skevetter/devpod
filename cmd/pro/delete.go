@@ -21,14 +21,14 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
-// DeleteCmd holds the delete cmd flags
+// DeleteCmd holds the delete cmd flags.
 type DeleteCmd struct {
 	*proflags.GlobalFlags
 
 	IgnoreNotFound bool
 }
 
-// NewDeleteCmd creates a new command
+// NewDeleteCmd creates a new command.
 func NewDeleteCmd(flags *proflags.GlobalFlags) *cobra.Command {
 	cmd := &DeleteCmd{
 		GlobalFlags: flags,

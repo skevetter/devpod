@@ -19,7 +19,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// NewProCmd returns a new command
+// NewProCmd returns a new command.
 func NewProCmd(flags *flags.GlobalFlags, streamLogger *log.StreamLogger) *cobra.Command {
 	globalFlags := &proflags.GlobalFlags{GlobalFlags: flags}
 	proCmd := &cobra.Command{

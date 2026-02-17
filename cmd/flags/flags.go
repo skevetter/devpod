@@ -18,7 +18,7 @@ type GlobalFlags struct {
 	Silent    bool
 }
 
-// SetGlobalFlags applies the global flags
+// SetGlobalFlags applies the global flags.
 func SetGlobalFlags(flags *flag.FlagSet) *GlobalFlags {
 	globalFlags := &GlobalFlags{}
 

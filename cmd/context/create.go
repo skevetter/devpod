@@ -13,14 +13,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// CreateCmd holds the create cmd flags
+// CreateCmd holds the create cmd flags.
 type CreateCmd struct {
 	*flags.GlobalFlags
 
 	Options []string
 }
 
-// NewCreateCmd creates a new command
+// NewCreateCmd creates a new command.
 func NewCreateCmd(flags *flags.GlobalFlags) *cobra.Command {
 	cmd := &CreateCmd{
 		GlobalFlags: flags,
@@ -41,7 +41,7 @@ func NewCreateCmd(flags *flags.GlobalFlags) *cobra.Command {
 	return createCmd
 }
 
-// Run runs the command logic
+// Run runs the command logic.
 func (cmd *CreateCmd) Run(ctx context.Context, context string) error {
 	devPodConfig, err := config.LoadConfig("", cmd.Provider)
 	if err != nil {

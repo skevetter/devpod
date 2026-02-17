@@ -5,7 +5,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// NewJSONCmd returns a new command
+// NewJSONCmd returns a new command.
 func NewJSONCmd(flags *flags.GlobalFlags) *cobra.Command {
 	jsonCmd := &cobra.Command{
 		Use:    "json",

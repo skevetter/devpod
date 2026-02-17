@@ -20,7 +20,7 @@ import (
 	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// WakeupCmd holds the cmd flags
+// WakeupCmd holds the cmd flags.
 type WakeupCmd struct {
 	*flags.GlobalFlags
 	Log log.Logger
@@ -29,7 +29,7 @@ type WakeupCmd struct {
 	Host    string
 }
 
-// NewWakeupCmd creates a new command
+// NewWakeupCmd creates a new command.
 func NewWakeupCmd(globalFlags *flags.GlobalFlags) *cobra.Command {
 	cmd := &WakeupCmd{
 		GlobalFlags: globalFlags,

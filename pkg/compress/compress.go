@@ -7,7 +7,7 @@ import (
 	"io"
 )
 
-// Compress gzips a string and base64 encodes it
+// Compress gzips a string and base64 encodes it.
 func Compress(s string) (string, error) {
 	if s == "" {
 		return "", nil
@@ -34,7 +34,7 @@ func Compress(s string) (string, error) {
 	return base64.StdEncoding.EncodeToString(b.Bytes()), nil
 }
 
-// Decompress decompresses a string
+// Decompress decompresses a string.
 func Decompress(s string) (string, error) {
 	if s == "" {
 		return "", nil

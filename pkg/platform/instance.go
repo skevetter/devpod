@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -241,23 +242,24 @@ func WaitForInstance(ctx context.Context, client client.Client, instance *manage
 	})
 	if err != nil {
 		// let's build a proper error message here
-		msg := "Timed out waiting for workspace to get ready \n\n "
+		var msg strings.Builder
+		msg.WriteString("Timed out waiting for workspace to get ready \n\n ")
 		// basic status
-		msg += fmt.Sprintf("ready: %t\n", isReady(updatedInstance))
-		msg += fmt.Sprintf("template synced: %t\n", isTemplateSynced(updatedInstance))
-		msg += "\n"
+		msg.WriteString(fmt.Sprintf("ready: %t\n", isReady(updatedInstance)))
+		msg.WriteString(fmt.Sprintf("template synced: %t\n", isTemplateSynced(updatedInstance)))
+		msg.WriteString("\n")
 
 		// CRD conditions
-		msg += "Conditions:\n"
+		msg.WriteString("Conditions:\n")
 		for _, cond := range updatedInstance.Status.Conditions {
-			msg += fmt.Sprintf("%s is %s (%s): %s\n", cond.Type, cond.Status, cond.Reason, cond.Message)
+			msg.WriteString(fmt.Sprintf("%s is %s (%s): %s\n", cond.Type, cond.Status, cond.Reason, cond.Message))
 		}
-		msg += "\n"
+		msg.WriteString("\n")
 
 		// error message, usually context timeout
-		msg += fmt.Sprintf("Error: %s", err.Error())
+		msg.WriteString(fmt.Sprintf("Error: %s", err.Error()))
 
-		return nil, errors.New(msg)
+		return nil, errors.New(msg.String())
 	}
 
 	return updatedInstance, nil

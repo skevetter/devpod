@@ -15,7 +15,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// CheckUpdateCmd holds the cmd flags
+// CheckUpdateCmd holds the cmd flags.
 type CheckUpdateCmd struct {
 	*flags.GlobalFlags
 	Log log.Logger
@@ -23,7 +23,7 @@ type CheckUpdateCmd struct {
 	Host string
 }
 
-// NewCheckUpdateCmd creates a new command
+// NewCheckUpdateCmd creates a new command.
 func NewCheckUpdateCmd(globalFlags *flags.GlobalFlags) *cobra.Command {
 	cmd := &CheckUpdateCmd{
 		GlobalFlags: globalFlags,

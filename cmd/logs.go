@@ -18,12 +18,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// LogsCmd holds the configuration
+// LogsCmd holds the configuration.
 type LogsCmd struct {
 	*flags.GlobalFlags
 }
 
-// NewLogsCmd creates a new destroy command
+// NewLogsCmd creates a new destroy command.
 func NewLogsCmd(flags *flags.GlobalFlags) *cobra.Command {
 	cmd := &LogsCmd{
 		GlobalFlags: flags,
@@ -42,7 +42,7 @@ func NewLogsCmd(flags *flags.GlobalFlags) *cobra.Command {
 	return startCmd
 }
 
-// Run runs the command logic
+// Run runs the command logic.
 func (cmd *LogsCmd) Run(ctx context.Context, args []string) error {
 	devPodConfig, err := config.LoadConfig(cmd.Context, cmd.Provider)
 	if err != nil {

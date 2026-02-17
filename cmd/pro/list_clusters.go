@@ -15,7 +15,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// ListClustersCmd holds the cmd flags
+// ListClustersCmd holds the cmd flags.
 type ListClustersCmd struct {
 	*flags.GlobalFlags
 	Log log.Logger
@@ -24,7 +24,7 @@ type ListClustersCmd struct {
 	Project string
 }
 
-// NewListClustersCmd creates a new command
+// NewListClustersCmd creates a new command.
 func NewListClustersCmd(globalFlags *flags.GlobalFlags) *cobra.Command {
 	cmd := &ListClustersCmd{
 		GlobalFlags: globalFlags,

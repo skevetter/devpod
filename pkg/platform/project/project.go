@@ -7,12 +7,12 @@ import (
 
 var DefaultProjectNamespacePrefix = "loft-p-"
 
-// having a nil value means the prefix is unset and things should panic and not fail silently
+// having a nil value means the prefix is unset and things should panic and not fail silently.
 var prefix *string
 var prefixMux sync.RWMutex
 
 // SetProjectNamespacePrefix sets the global project namespace prefix
-// Defaulting should be handled when reading the config via ParseProjectNamespacePrefix
+// Defaulting should be handled when reading the config via ParseProjectNamespacePrefix.
 func SetProjectNamespacePrefix(newPrefix string) {
 	prefixMux.Lock()
 	defer prefixMux.Unlock()
@@ -31,7 +31,7 @@ func GetProjectNamespacePrefix() string {
 	return *prefix
 }
 
-// ParseConfiguredProjectNSPrefix handles the defaulting for a configured prefix and returns the prefix to be used
+// ParseConfiguredProjectNSPrefix handles the defaulting for a configured prefix and returns the prefix to be used.
 func ParseConfiguredProjectNSPrefix(configuredPrefix *string) string {
 	if configuredPrefix == nil {
 		return DefaultProjectNamespacePrefix
@@ -40,7 +40,7 @@ func ParseConfiguredProjectNSPrefix(configuredPrefix *string) string {
 	return *configuredPrefix
 }
 
-// ProjectFromNamespace returns the project associated with the namespace
+// ProjectFromNamespace returns the project associated with the namespace.
 func ProjectFromNamespace(namespace string) string {
 	prefixMux.RLock()
 	defer prefixMux.RUnlock()
@@ -52,7 +52,7 @@ func ProjectFromNamespace(namespace string) string {
 	return strings.TrimPrefix(namespace, *prefix)
 }
 
-// ProjectNamespace returns the namespace associated with the project
+// ProjectNamespace returns the namespace associated with the project.
 func ProjectNamespace(projectName string) string {
 	prefixMux.RLock()
 	defer prefixMux.RUnlock()

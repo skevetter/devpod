@@ -22,7 +22,7 @@ import (
 )
 
 // NewContainerTunnel constructs a ContainerTunnel using the workspace client, if proxy is True then
-// the workspace's agent config is not periodically updated
+// the workspace's agent config is not periodically updated.
 func NewContainerTunnel(client client.WorkspaceClient, log log.Logger) *ContainerTunnel {
 	updateConfigInterval := time.Second * 30
 	return &ContainerTunnel{
@@ -32,17 +32,17 @@ func NewContainerTunnel(client client.WorkspaceClient, log log.Logger) *Containe
 	}
 }
 
-// ContainerTunnel manages the state of the tunnel to the container
+// ContainerTunnel manages the state of the tunnel to the container.
 type ContainerTunnel struct {
 	client               client.WorkspaceClient
 	updateConfigInterval time.Duration
 	log                  log.Logger
 }
 
-// Handler defines what to do once the tunnel has a client established
+// Handler defines what to do once the tunnel has a client established.
 type Handler func(ctx context.Context, containerClient *ssh.Client) error
 
-// Run creates an "outer" tunnel to the host to start the SSH server so that the "inner" tunnel can connect to the container over SSH
+// Run creates an "outer" tunnel to the host to start the SSH server so that the "inner" tunnel can connect to the container over SSH.
 func (c *ContainerTunnel) Run(ctx context.Context, handler Handler, cfg *config.Config, envVars map[string]string) error {
 	if handler == nil {
 		return nil
@@ -145,7 +145,7 @@ func (c *ContainerTunnel) Run(ctx context.Context, handler Handler, cfg *config.
 	}
 }
 
-// updateConfig is called periodically to keep the workspace agent config up to date
+// updateConfig is called periodically to keep the workspace agent config up to date.
 func (c *ContainerTunnel) updateConfig(ctx context.Context, sshClient *ssh.Client) {
 	for {
 		select {
@@ -192,7 +192,7 @@ func (c *ContainerTunnel) updateConfig(ctx context.Context, sshClient *ssh.Clien
 	}
 }
 
-// runInContainer uses the connected SSH client to execute handler on the remote
+// runInContainer uses the connected SSH client to execute handler on the remote.
 func (c *ContainerTunnel) runInContainer(ctx context.Context, sshClient *ssh.Client, handler Handler, envVars map[string]string) error {
 	// compress info
 	workspaceInfo, _, err := c.client.AgentInfo(provider.CLIOptions{})

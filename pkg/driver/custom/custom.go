@@ -35,7 +35,7 @@ type customDriver struct {
 	workspaceInfo *provider.AgentWorkspaceInfo
 }
 
-// FindDevContainer returns a running devcontainer details
+// FindDevContainer returns a running devcontainer details.
 func (c *customDriver) FindDevContainer(ctx context.Context, workspaceId string) (*config.ContainerDetails, error) {
 	writer := c.log.Writer(logrus.InfoLevel, false)
 	defer func() { _ = writer.Close() }()
@@ -69,7 +69,7 @@ func (c *customDriver) FindDevContainer(ctx context.Context, workspaceId string)
 	return containerDetails, nil
 }
 
-// CommandDevContainer runs the given command inside the devcontainer
+// CommandDevContainer runs the given command inside the devcontainer.
 func (c *customDriver) CommandDevContainer(ctx context.Context, workspaceId, user, command string, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
 	// run command
 	err := c.runCommand(
@@ -93,7 +93,7 @@ func (c *customDriver) CommandDevContainer(ctx context.Context, workspaceId, use
 	return nil
 }
 
-// TargetArchitecture returns the architecture of the container runtime. e.g. amd64 or arm64
+// TargetArchitecture returns the architecture of the container runtime. e.g. amd64 or arm64.
 func (c *customDriver) TargetArchitecture(ctx context.Context, workspaceId string) (string, error) {
 	writer := c.log.Writer(logrus.InfoLevel, false)
 	defer func() { _ = writer.Close() }()
@@ -124,7 +124,7 @@ func (c *customDriver) TargetArchitecture(ctx context.Context, workspaceId strin
 	return targetArchitecture, nil
 }
 
-// DeleteDevContainer deletes the devcontainer
+// DeleteDevContainer deletes the devcontainer.
 func (c *customDriver) DeleteDevContainer(ctx context.Context, workspaceId string) error {
 	writer := c.log.Writer(logrus.InfoLevel, false)
 	defer func() { _ = writer.Close() }()
@@ -148,7 +148,7 @@ func (c *customDriver) DeleteDevContainer(ctx context.Context, workspaceId strin
 	return nil
 }
 
-// StartDevContainer starts the devcontainer
+// StartDevContainer starts the devcontainer.
 func (c *customDriver) StartDevContainer(ctx context.Context, workspaceId string) error {
 	writer := c.log.Writer(logrus.InfoLevel, false)
 	defer func() { _ = writer.Close() }()
@@ -172,7 +172,7 @@ func (c *customDriver) StartDevContainer(ctx context.Context, workspaceId string
 	return nil
 }
 
-// StopDevContainer stops the devcontainer
+// StopDevContainer stops the devcontainer.
 func (c *customDriver) StopDevContainer(ctx context.Context, workspaceId string) error {
 	writer := c.log.Writer(logrus.InfoLevel, false)
 	defer func() { _ = writer.Close() }()
@@ -196,7 +196,7 @@ func (c *customDriver) StopDevContainer(ctx context.Context, workspaceId string)
 	return nil
 }
 
-// RunDevContainer runs a devcontainer
+// RunDevContainer runs a devcontainer.
 func (c *customDriver) RunDevContainer(ctx context.Context, workspaceId string, options *driver.RunOptions) error {
 	out, err := json.Marshal(options)
 	if err != nil {

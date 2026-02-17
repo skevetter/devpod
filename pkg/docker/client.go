@@ -8,12 +8,12 @@ import (
 	"github.com/skevetter/log"
 )
 
-// Client is a client for docker
+// Client is a client for docker.
 type Client struct {
 	dockerclient.CommonAPIClient
 }
 
-// NewClient creates a new docker client
+// NewClient creates a new docker client.
 func NewClient(ctx context.Context, log log.Logger) (*Client, error) {
 	cli, err := newDockerClientFromEnvironment()
 	if err != nil {

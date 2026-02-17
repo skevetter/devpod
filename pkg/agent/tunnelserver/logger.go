@@ -57,7 +57,7 @@ func (s *tunnelLogger) worker() {
 	}
 }
 
-// formatMessage appends structured fields to the message
+// formatMessage appends structured fields to the message.
 func (s *tunnelLogger) formatMessage(message string) string {
 	if len(s.fields) == 0 {
 		return message
