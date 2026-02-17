@@ -270,10 +270,11 @@ func setupInteractivePTY(
 		return noopRestore, err
 	}
 
-	startWindowResizeForwarder(ctx, session, int(stdout.Fd()))
+	fd := int(stdout.Fd()) // #nosec G115 -- fd is always a valid file descriptor
+	startWindowResizeForwarder(ctx, session, fd)
 
 	t := resolvePTYTermWithFallback(ctx, sshClient, options.SessionOptions, options.Stderr)
-	width, height := getTerminalSize(int(stdout.Fd()))
+	width, height := getTerminalSize(fd)
 	if err = session.RequestPty(t, height, width, ssh.TerminalModes{}); err != nil {
 		restoreTerm()
 		return noopRestore, fmt.Errorf("request pty: %w", err)
@@ -283,7 +284,8 @@ func setupInteractivePTY(
 }
 
 func makeRawTerm(stdout *os.File) (func(), error) {
-	state, err := term.MakeRaw(int(stdout.Fd()))
+	fd := int(stdout.Fd()) // #nosec G115 -- fd is always a valid file descriptor
+	state, err := term.MakeRaw(fd)
 	if err != nil {
 		return noopRestore, err
 	}
@@ -448,6 +450,7 @@ func remoteTerminfoExists(ctx context.Context, sshClient *ssh.Client, term strin
 // non-zero, because callers should continue with TERM fallback in auto mode.
 // It only returns a non-nil error for transport/session failures.
 func installLocalTerminfoOnRemote(ctx context.Context, sshClient *ssh.Client, term string) (bool, error) {
+	// #nosec G204 -- term is validated by the caller
 	infocmpCmd := exec.CommandContext(ctx, "infocmp", "-x", term)
 	output, err := infocmpCmd.Output()
 	if err != nil {
