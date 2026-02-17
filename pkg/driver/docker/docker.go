@@ -326,9 +326,10 @@ func (d *dockerDriver) UpdateContainerUserUID(
 	}
 
 	localUser, containerUser, err := d.validateUpdateRequirements(parsedConfig)
-	if err != nil || containerUser == "" {
+	if err != nil {
 		return err
 	}
+	// containerUser is guaranteed non-empty by shouldUpdateUserUID
 
 	container, err := d.FindDevContainer(ctx, workspaceId)
 	if err != nil || container == nil {
@@ -386,11 +387,13 @@ func (d *dockerDriver) updateUserMappings(
 	}
 
 	if err := d.fetchContainerFiles(ctx, params.containerID, files, params.writer); err != nil {
+		files.cleanup()
 		return nil, nil, err
 	}
 
 	info, err := d.processUserFiles(files, params.containerUser, params.localUser.Uid, params.localUser.Gid)
 	if err != nil {
+		files.cleanup()
 		return nil, nil, err
 	}
 
