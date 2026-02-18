@@ -83,7 +83,7 @@ func (s *DockerDriverTestSuite) TestGetContainerUser_BothEmpty() {
 	s.Equal("", result, "should return empty when both are empty")
 }
 
-func (s *DockerDriverTestSuite) TestGatherUpdateRequirements_Success() {
+func (s *DockerDriverTestSuite) TestGatherUpdateRequirements_WithRemoteUser() {
 	cfg := &config.DevContainerConfig{
 		DevContainerConfigBase: config.DevContainerConfigBase{
 			RemoteUser: "testuser",
@@ -97,7 +97,7 @@ func (s *DockerDriverTestSuite) TestGatherUpdateRequirements_Success() {
 	s.Equal("testuser", containerUser)
 }
 
-func (s *DockerDriverTestSuite) TestGatherUpdateRequirements_ReturnsContainerUser() {
+func (s *DockerDriverTestSuite) TestGatherUpdateRequirements_WithContainerUser() {
 	cfg := &config.DevContainerConfig{
 		NonComposeBase: config.NonComposeBase{
 			ContainerUser: "container",
