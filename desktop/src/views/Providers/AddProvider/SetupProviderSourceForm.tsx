@@ -209,7 +209,7 @@ export function SetupProviderSourceForm({
     (communityProvider: TCommunityProvider) => {
       setShowCustom({ manual: false, community: true })
       let source = communityProvider.repository
-      // Github-hosted providers are special, the CLI expects them to be passed in without the `https://` prefix
+      // GitHub-hosted providers are special, the CLI expects them to be passed in without the `https://` prefix
       if (source.includes("github.com")) {
         source = communityProvider.repository.replace("https://", "")
       }

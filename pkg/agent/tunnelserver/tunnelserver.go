@@ -373,7 +373,8 @@ func (t *tunnelServer) Log(ctx context.Context, message *tunnel.LogMessage) (*tu
 
 func (t *tunnelServer) StreamWorkspace(message *tunnel.Empty, stream tunnel.Tunnel_StreamWorkspaceServer) error {
 	if t.platformOptions != nil && t.platformOptions.Enabled && !t.allowPlatformOptions {
-		return fmt.Errorf("streaming workspace from local computer to platform workspace is not supported. Please specify a Git repository to clone instead")
+		return fmt.Errorf("streaming workspace from local computer to platform workspace is not supported. " +
+			"Please specify a Git repository to clone instead")
 	}
 	if t.workspace == nil {
 		return fmt.Errorf("workspace is nil")
@@ -403,7 +404,8 @@ func (t *tunnelServer) StreamWorkspace(message *tunnel.Empty, stream tunnel.Tunn
 
 func (t *tunnelServer) StreamMount(message *tunnel.StreamMountRequest, stream tunnel.Tunnel_StreamMountServer) error {
 	if t.platformOptions != nil && t.platformOptions.Enabled && !t.allowPlatformOptions {
-		return fmt.Errorf("streaming mounts from local computer to platform workspace is not supported. Please specify a Git repository to clone instead")
+		return fmt.Errorf("streaming mounts from local computer to platform workspace is not supported. " +
+			"Please specify a Git repository to clone instead")
 	}
 
 	var mount *config.Mount
