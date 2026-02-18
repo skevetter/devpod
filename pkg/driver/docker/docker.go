@@ -332,6 +332,7 @@ func (d *dockerDriver) UpdateContainerUserUID(
 	// containerUser is guaranteed non-empty by shouldUpdateUserUID
 
 	if localUser.Uid == "0" {
+		d.Log.Info("local user is root, skipping UID/GID update")
 		return nil
 	}
 
@@ -358,9 +359,10 @@ func (d *dockerDriver) UpdateContainerUserUID(
 		return nil
 	}
 
-	d.logUserUpdate(containerUser, info, localUser)
+	d.Log.Infof("updating container user %q UID from %s to %s and GID from %s to %s",
+		containerUser, info.uid, localUser.Uid, info.gid, localUser.Gid)
 
-	if err := d.uploadUpdatedFiles(ctx, container.ID, files, writer); err != nil {
+	if err := d.copyFilesToContainer(ctx, container.ID, files, writer); err != nil {
 		return err
 	}
 
@@ -409,16 +411,6 @@ func (d *dockerDriver) updateUserMappings(
 
 func (d *dockerDriver) shouldSkipUpdate(localUser *user.User, info *userInfo) bool {
 	return info.uid == "0" || (localUser.Uid == info.uid && localUser.Gid == info.gid)
-}
-
-func (d *dockerDriver) logUserUpdate(containerUser string, info *userInfo, localUser *user.User) {
-	d.Log.WithFields(logrus.Fields{
-		"containerUser": containerUser,
-		"containerUid":  info.uid,
-		"containerGid":  info.gid,
-		"localUid":      localUser.Uid,
-		"localGid":      localUser.Gid,
-	}).Info("updating container user UID and GID")
 }
 
 type runArgsBuilder struct {
@@ -991,7 +983,9 @@ func (d *dockerDriver) processUserFiles(files *tempFiles, containerUser, localUi
 	return info, d.updateGroupFile(groupIn, files.groupOut, info.gid, localGid)
 }
 
-func (d *dockerDriver) uploadUpdatedFiles(ctx context.Context, containerID string, files *tempFiles, writer io.Writer) error {
+func (d *dockerDriver) copyFilesToContainer(
+	ctx context.Context, containerID string, files *tempFiles, writer io.Writer,
+) error {
 	if err := d.copyFileToContainer(ctx, files.passwdOut.Name(), containerID, "/etc/passwd", writer); err != nil {
 		return err
 	}
