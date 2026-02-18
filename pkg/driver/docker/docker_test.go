@@ -25,7 +25,7 @@ func (s *DockerDriverTestSuite) TestShouldSkipUpdate_RootContainerUser() {
 	localUser := &user.User{Uid: "1000", Gid: "1000"}
 	info := &userInfo{uid: "0", gid: "0"}
 
-	result := s.driver.shouldSkipUpdate(localUser, info)
+	result := shouldSkipUpdate(localUser, info)
 
 	s.True(result, "should skip when container user is root")
 }
@@ -34,7 +34,7 @@ func (s *DockerDriverTestSuite) TestShouldSkipUpdate_MatchingUIDs() {
 	localUser := &user.User{Uid: "1000", Gid: "1000"}
 	info := &userInfo{uid: "1000", gid: "1000"}
 
-	result := s.driver.shouldSkipUpdate(localUser, info)
+	result := shouldSkipUpdate(localUser, info)
 
 	s.True(result, "should skip when UIDs and GIDs match")
 }
@@ -43,7 +43,7 @@ func (s *DockerDriverTestSuite) TestShouldSkipUpdate_DifferentUIDs() {
 	localUser := &user.User{Uid: "1000", Gid: "1000"}
 	info := &userInfo{uid: "1001", gid: "1001"}
 
-	result := s.driver.shouldSkipUpdate(localUser, info)
+	result := shouldSkipUpdate(localUser, info)
 
 	s.False(result, "should not skip when UIDs differ")
 }

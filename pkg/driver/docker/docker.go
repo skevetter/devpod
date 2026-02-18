@@ -355,7 +355,8 @@ func (d *dockerDriver) UpdateContainerUserUID(
 	}
 	defer files.cleanup()
 
-	if d.shouldSkipUpdate(localUser, info) {
+	if shouldSkipUpdate(localUser, info) {
+		d.Log.Info("container user UID/GID already match local user, skipping update")
 		return nil
 	}
 
@@ -409,7 +410,7 @@ func (d *dockerDriver) updateUserMappings(
 	return files, info, nil
 }
 
-func (d *dockerDriver) shouldSkipUpdate(localUser *user.User, info *userInfo) bool {
+func shouldSkipUpdate(localUser *user.User, info *userInfo) bool {
 	return info.uid == "0" || (localUser.Uid == info.uid && localUser.Gid == info.gid)
 }
 
