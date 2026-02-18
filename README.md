@@ -174,3 +174,9 @@ DevPod comes with an easy-to-use desktop application that abstracts all the comp
 </td>
 </tr>
 </table>
+
+## MacOS Users
+
+Apple charges an annual $100 developer registration fee that grants access to sign the software application for the MacOS desktop environment. Creating a developer account and publishing the signed version is on the roadmap, but I have not gotten to this just yet. For the moment, users must enable the application via the settings menu.
+
+<img alt="MacOS security settings" width="600px" src="docs/static/media/macos-permissions.png">
