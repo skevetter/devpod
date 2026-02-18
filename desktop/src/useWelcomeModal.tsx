@@ -151,7 +151,8 @@ export function useWelcomeModal() {
                   <Text>
                     Workspaces are your reproducible development environment on a per-project basis.
                     Turn a local folder, Git repository or Docker container into a workspace and
-                    connect it to your favorite coding tool. Or just SSH into them and start developing.
+                    connect it to your favorite coding tool. Or just SSH into them and start
+                    developing.
                   </Text>
                 </Step>
               </Steps>
