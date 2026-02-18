@@ -325,11 +325,15 @@ func (d *dockerDriver) UpdateContainerUserUID(
 		return nil
 	}
 
-	localUser, containerUser, err := d.validateUpdateRequirements(parsedConfig)
+	localUser, containerUser, err := d.gatherUpdateRequirements(parsedConfig)
 	if err != nil {
 		return err
 	}
 	// containerUser is guaranteed non-empty by shouldUpdateUserUID
+
+	if localUser.Uid == "0" {
+		return nil
+	}
 
 	container, err := d.FindDevContainer(ctx, workspaceId)
 	if err != nil {
@@ -363,7 +367,7 @@ func (d *dockerDriver) UpdateContainerUserUID(
 	return d.applyPermissions(ctx, container.ID, localUser.Uid, localUser.Gid, info.home, writer)
 }
 
-func (d *dockerDriver) validateUpdateRequirements(parsedConfig *config.DevContainerConfig) (*user.User, string, error) {
+func (d *dockerDriver) gatherUpdateRequirements(parsedConfig *config.DevContainerConfig) (*user.User, string, error) {
 	localUser, err := user.Current()
 	if err != nil {
 		return nil, "", err
@@ -404,7 +408,7 @@ func (d *dockerDriver) updateUserMappings(
 }
 
 func (d *dockerDriver) shouldSkipUpdate(localUser *user.User, info *userInfo) bool {
-	return localUser.Uid == "0" || info.uid == "0" || (localUser.Uid == info.uid && localUser.Gid == info.gid)
+	return info.uid == "0" || (localUser.Uid == info.uid && localUser.Gid == info.gid)
 }
 
 func (d *dockerDriver) logUserUpdate(containerUser string, info *userInfo, localUser *user.User) {

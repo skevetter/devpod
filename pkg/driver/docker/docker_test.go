@@ -21,15 +21,6 @@ func (s *DockerDriverTestSuite) SetupTest() {
 	s.driver = &dockerDriver{}
 }
 
-func (s *DockerDriverTestSuite) TestShouldSkipUpdate_RootLocalUser() {
-	localUser := &user.User{Uid: "0", Gid: "0"}
-	info := &userInfo{uid: "1000", gid: "1000"}
-
-	result := s.driver.shouldSkipUpdate(localUser, info)
-
-	s.True(result, "should skip when local user is root")
-}
-
 func (s *DockerDriverTestSuite) TestShouldSkipUpdate_RootContainerUser() {
 	localUser := &user.User{Uid: "1000", Gid: "1000"}
 	info := &userInfo{uid: "0", gid: "0"}
@@ -92,28 +83,28 @@ func (s *DockerDriverTestSuite) TestGetContainerUser_BothEmpty() {
 	s.Equal("", result, "should return empty when both are empty")
 }
 
-func (s *DockerDriverTestSuite) TestValidateUpdateRequirements_Success() {
+func (s *DockerDriverTestSuite) TestGatherUpdateRequirements_Success() {
 	cfg := &config.DevContainerConfig{
 		DevContainerConfigBase: config.DevContainerConfigBase{
 			RemoteUser: "testuser",
 		},
 	}
 
-	localUser, containerUser, err := s.driver.validateUpdateRequirements(cfg)
+	localUser, containerUser, err := s.driver.gatherUpdateRequirements(cfg)
 
 	s.NoError(err)
 	s.NotNil(localUser)
 	s.Equal("testuser", containerUser)
 }
 
-func (s *DockerDriverTestSuite) TestValidateUpdateRequirements_ReturnsContainerUser() {
+func (s *DockerDriverTestSuite) TestGatherUpdateRequirements_ReturnsContainerUser() {
 	cfg := &config.DevContainerConfig{
 		NonComposeBase: config.NonComposeBase{
 			ContainerUser: "container",
 		},
 	}
 
-	localUser, containerUser, err := s.driver.validateUpdateRequirements(cfg)
+	localUser, containerUser, err := s.driver.gatherUpdateRequirements(cfg)
 
 	s.NoError(err)
 	s.NotNil(localUser)
