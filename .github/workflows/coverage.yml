@@ -15,7 +15,7 @@ jobs:
           go-version-file: go.mod
 
       - name: Run tests with coverage
-        run: go test "$(go list ./... | grep -v -e /test -e /e2e)" -race -coverprofile=coverage.out -covermode=atomic
+        run: go list ./... | grep -v -e /test -e /e2e | xargs go test -race -coverprofile=coverage.out -covermode=atomic
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
