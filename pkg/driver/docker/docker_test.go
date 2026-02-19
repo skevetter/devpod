@@ -32,10 +32,9 @@ func (s *DockerDriverTestSuite) TestShouldSkipUpdate_RootContainerUser() {
 
 func (s *DockerDriverTestSuite) TestShouldSkipUpdate_MatchingUIDs() {
 	localUser := &user.User{Uid: "1000", Gid: "1000"}
-	info := *localUser
-	infoPtr := &info
+	info := &user.User{Uid: "1000", Gid: "1000"}
 
-	result := shouldSkipUpdate(localUser, infoPtr)
+	result := shouldSkipUpdate(localUser, info)
 
 	s.True(result, "should skip when UIDs and GIDs match")
 }

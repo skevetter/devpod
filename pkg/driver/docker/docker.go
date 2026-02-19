@@ -410,6 +410,9 @@ func (d *dockerDriver) updateUserMappings(
 	return files, info, nil
 }
 
+// shouldSkipUpdate returns true if UID/GID mapping should be skipped.
+// localUser is the host system's current user.
+// info contains the container user's current UID/GID (parsed from container's /etc/passwd).
 func shouldSkipUpdate(localUser *user.User, info *user.User) bool {
 	return info.Uid == "0" || (localUser.Uid == info.Uid && localUser.Gid == info.Gid)
 }
@@ -826,17 +829,25 @@ func (d *dockerDriver) processColonDelimitedFile(in *os.File, out *os.File, fiel
 	return scanner.Err()
 }
 
+type passwordFileUpdateParams struct {
+	passwdIn      *os.File
+	passwdOut     *os.File
+	containerUser string
+	localUid      string
+	localGid      string
+}
+
 // updatePasswdFile processes /etc/passwd, replacing the target user's UID/GID with local values.
 // It reads each line from passwdIn, and for lines matching containerUser, extracts the original
 // UID, GID, and home directory, then writes a modified entry with localUid and localGid to passwdOut.
 // All other lines are copied unchanged. Returns userInfo with the original container values, or an
 // error if the user is not found in the passwd file.
-func (d *dockerDriver) updatePasswdFile(passwdIn *os.File, passwdOut *os.File, containerUser, localUid, localGid string) (*user.User, error) {
+func (d *dockerDriver) updatePasswdFile(params *passwordFileUpdateParams) (*user.User, error) {
 	info := &user.User{}
 
 	// parse passwd format: username:password:uid:gid:gecos:home:shell
 	processor := func(line string, fields []string) (string, bool, error) {
-		if fields[0] != containerUser {
+		if fields[0] != params.containerUser {
 			return "", false, nil
 		}
 
@@ -844,16 +855,23 @@ func (d *dockerDriver) updatePasswdFile(passwdIn *os.File, passwdOut *os.File, c
 		info.Gid = fields[3]
 		info.HomeDir = fields[5]
 
-		modifiedLine := strings.Join([]string{fields[0], fields[1], localUid, localGid, fields[4], fields[5], fields[6]}, ":")
+		modifiedLine := strings.Join([]string{
+			fields[0],
+			fields[1],
+			params.localUid,
+			params.localGid,
+			fields[4],
+			fields[5],
+			fields[6]}, ":")
 		return modifiedLine, true, nil
 	}
 
-	if err := d.processColonDelimitedFile(passwdIn, passwdOut, 7, processor); err != nil {
+	if err := d.processColonDelimitedFile(params.passwdIn, params.passwdOut, 7, processor); err != nil {
 		return nil, err
 	}
 
 	if info.Uid == "" {
-		return nil, fmt.Errorf("user %q not found in passwd", containerUser)
+		return nil, fmt.Errorf("user %q not found in passwd", params.containerUser)
 	}
 
 	return info, nil
@@ -957,14 +975,23 @@ func (d *dockerDriver) fetchContainerFiles(ctx context.Context, containerID stri
 	return d.copyFileFromContainer(ctx, containerID, "/etc/group", files.groupIn.Name(), writer)
 }
 
-func (d *dockerDriver) processUserFiles(files *tempFiles, containerUser, localUid, localGid string) (*user.User, error) {
+func (d *dockerDriver) processUserFiles(
+	files *tempFiles,
+	containerUser, localUid, localGid string,
+) (*user.User, error) {
 	passwdIn, err := os.Open(files.passwdIn.Name())
 	if err != nil {
 		return nil, err
 	}
 	defer func() { _ = passwdIn.Close() }()
 
-	info, err := d.updatePasswdFile(passwdIn, files.passwdOut, containerUser, localUid, localGid)
+	info, err := d.updatePasswdFile(&passwordFileUpdateParams{
+		passwdIn:      passwdIn,
+		passwdOut:     files.passwdOut,
+		containerUser: containerUser,
+		localUid:      localUid,
+		localGid:      localGid,
+	})
 	if err != nil {
 		return nil, err
 	}
