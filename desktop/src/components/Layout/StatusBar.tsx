@@ -101,12 +101,12 @@ function GitHubStar() {
   const iconColor = useStatusBarIconColor()
 
   return (
-    <Tooltip label="Loving DevPod? Give us a star on Github">
+    <Tooltip label="Loving DevPod? Give us a star on GitHub">
       <IconButton
         variant="ghost"
         rounded="full"
         icon={<StarIcon color={iconColor} />}
-        aria-label="Loving DevPod? Give us a star on Github"
+        aria-label="Loving DevPod? Give us a star on GitHub"
         onClick={() => client.open("https://github.com/skevetter/devpod")}
       />
     </Tooltip>

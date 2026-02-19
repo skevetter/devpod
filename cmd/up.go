@@ -1220,7 +1220,7 @@ func setupDotfiles(
 		return nil
 	}
 
-	log.Infof("Dotfiles git repository %s specified", dotfilesRepo)
+	log.Infof("Dotfiles Git repository %s specified", dotfilesRepo)
 	log.Debug("Cloning dotfiles into the devcontainer...")
 
 	dotCmd, err := buildDotCmd(devPodConfig, dotfilesRepo, dotfilesScript, envFiles, envKeyValuePairs, client, log)
@@ -1526,7 +1526,8 @@ func (cmd *UpCmd) prepareClient(ctx context.Context, devPodConfig *config.Config
 		if source == nil {
 			return nil, nil, fmt.Errorf("workspace source is missing")
 		} else if source.LocalFolder != "" && cmd.Platform.Enabled {
-			return nil, nil, fmt.Errorf("local folder is not supported in platform mode. Please specify a git repository instead")
+			return nil, nil, fmt.Errorf("local folder is not supported in platform mode. " +
+				"Please specify a Git repository instead")
 		}
 	}
 

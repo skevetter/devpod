@@ -5,7 +5,7 @@ sidebar_label: Create a Workspace
 
 ## Create a Workspace
 
-You can create a workspace either from the DevPod CLI or through the DevPod desktop application. A workspace can be created from a git repository, a local path or a docker container (e.g. `golang:latest`).
+You can create a workspace either from the DevPod CLI or through the DevPod desktop application. A workspace can be created from a Git repository, a local path or a Docker container (e.g. `golang:latest`).
 
 Upon successful creation, DevPod will make the development container available through the ssh host `WORKSPACE_NAME.devpod`. Alternatively, DevPod can automatically open the workspace in a locally installed IDE, such as VS Code or Intellij.
 
@@ -15,7 +15,7 @@ A workspace is defined through a `devcontainer.json`. If DevPod can't find one, 
 
 ### Via DevPod Desktop Application
 
-Navigate to the 'Workspaces' view and click on the 'Create' button in the title. Enter the git repository you want to work on or select a local folder.
+Navigate to the 'Workspaces' view and click on the 'Create' button in the title. Enter the Git repository you want to work on or select a local folder.
 
 :::info Add Provider
 If you haven't configured a provider yet, DevPod will automatically open the provider modal for you. You can later add providers in the same way by navigating to 'Providers' > 'Add'
@@ -55,7 +55,7 @@ devpod provider add docker
 Run the following command in a terminal to start a new workspace:
 
 ```
-# Create from git repository
+# Create from Git repository
 devpod up github.com/microsoft/vscode-remote-try-node
 ```
 
@@ -135,7 +135,7 @@ devpod up my-workspace --recreate
 
 ## Resetting a workspace
 
-Some scenarios require pulling in the latest changes from a git repository or re-uploading your local folder. If instead of recreating the devcontainer you need to completely restart your workspace from a clean slate, use `Reset` over `Recreate`.
+Some scenarios require pulling in the latest changes from a Git repository or re-uploading your local folder. If instead of recreating the devcontainer you need to completely restart your workspace from a clean slate, use `Reset` over `Recreate`.
 
 ** When recreating a workspace, no changes will be preserved! **
 

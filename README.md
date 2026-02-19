@@ -149,8 +149,8 @@ Choose whatever cloud provider suits you best, be it the cheapest one or the mos
 You get the same developer experience also locally, so you don't need to rely on a cloud provider at all.
 </td>
 <td width="50%" valign="top">
-<b>Cross IDE support</b><br>
-VSCode and the full JetBrains suite is supported, all others can be connected through simple ssh.
+<b>Cross-IDE support</b><br>
+VS Code in its various flavors and the full JetBrains suite are supported, all others can be connected through SSH.
 </td>
 </tr>
 <tr>
@@ -166,7 +166,7 @@ DevPod is 100% open-source and extensible. A provider doesn't exist? Just create
 <tr>
 <td width="50%" valign="top">
 <b>Rich feature set</b><br>
-DevPod already supports prebuilds, auto inactivity shutdown, git & docker credentials sync, and many more features to come.
+DevPod already supports prebuilds, auto inactivity shutdown, Git & Docker credentials sync, and many more features to come.
 </td>
 <td width="50%" valign="top">
 <b>Desktop App</b><br>

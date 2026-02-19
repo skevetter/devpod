@@ -210,7 +210,7 @@ function CustomizationSettings() {
 
       <SettingSection
         title="Dotfiles"
-        description="Set the dotfiles git repository to use inside workspaces">
+        description="Set the dotfiles Git repository to use inside workspaces">
         {dotfilesInput}
       </SettingSection>
 
@@ -452,7 +452,7 @@ function ExperimentalSettings() {
             onChange={(e) => set("experimental_vscodeInsiders", e.target.checked)}
           />
           <FormLabel marginBottom="0" whiteSpace="nowrap" fontSize="sm">
-            VSCode Insiders
+            VS Code Insiders
           </FormLabel>
         </HStack>
 
@@ -482,7 +482,7 @@ function ExperimentalSettings() {
             onChange={(e) => set("experimental_codium", e.target.checked)}
           />
           <FormLabel marginBottom="0" whiteSpace="nowrap" fontSize="sm">
-            Codium
+            VSCodium
           </FormLabel>
         </HStack>
 

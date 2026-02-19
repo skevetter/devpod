@@ -499,7 +499,7 @@ func resolveWorkspaceConfig(
 		return workspace, nil
 	}
 
-	// fall back to git repository
+	// fall back to Git repository
 	workspace.Source = providerpkg.WorkspaceSource{GitRepository: params.name}
 	if gitRepository != "" {
 		workspace.Source.GitRepository = gitRepository

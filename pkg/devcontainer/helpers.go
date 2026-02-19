@@ -111,7 +111,7 @@ func findFilesInGitRepo(ctx context.Context, opts gitRepoFindOptions) (*GetWorks
 	}
 
 	gitInfo := git.NewGitInfo(opts.gitRepository, opts.gitBranch, opts.gitCommit, opts.gitPRReference, opts.gitSubDir)
-	opts.log.Debugf("Cloning git repository into %s", opts.tmpDirPath)
+	opts.log.Debugf("Cloning Git repository into %s", opts.tmpDirPath)
 	err := git.CloneRepository(ctx, gitInfo, opts.tmpDirPath, "", opts.strictHostKeyChecking, opts.log, git.WithCloneStrategy(git.BareCloneStrategy))
 	if err != nil {
 		return nil, err
