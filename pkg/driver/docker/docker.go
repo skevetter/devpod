@@ -361,13 +361,13 @@ func (d *dockerDriver) UpdateContainerUserUID(
 	}
 
 	d.Log.Infof("updating container user %q UID from %s to %s and GID from %s to %s",
-		containerUser, info.uid, localUser.Uid, info.gid, localUser.Gid)
+		containerUser, info.Uid, localUser.Uid, info.Gid, localUser.Gid)
 
 	if err := d.copyFilesToContainer(ctx, container.ID, files, writer); err != nil {
 		return err
 	}
 
-	return d.applyPermissions(ctx, container.ID, localUser.Uid, localUser.Gid, info.home, writer)
+	return d.applyPermissions(ctx, container.ID, localUser.Uid, localUser.Gid, info.HomeDir, writer)
 }
 
 func (d *dockerDriver) gatherUpdateRequirements(parsedConfig *config.DevContainerConfig) (*user.User, string, error) {
@@ -390,7 +390,7 @@ type userMappingParams struct {
 func (d *dockerDriver) updateUserMappings(
 	ctx context.Context,
 	params *userMappingParams,
-) (*tempFiles, *userInfo, error) {
+) (*tempFiles, *user.User, error) {
 	files, err := d.createTempFiles()
 	if err != nil {
 		return nil, nil, err
@@ -410,8 +410,8 @@ func (d *dockerDriver) updateUserMappings(
 	return files, info, nil
 }
 
-func shouldSkipUpdate(localUser *user.User, info *userInfo) bool {
-	return info.uid == "0" || (localUser.Uid == info.uid && localUser.Gid == info.gid)
+func shouldSkipUpdate(localUser *user.User, info *user.User) bool {
+	return info.Uid == "0" || (localUser.Uid == info.Uid && localUser.Gid == info.Gid)
 }
 
 type runArgsBuilder struct {
@@ -791,12 +791,6 @@ func (d *dockerDriver) copyFileToContainer(ctx context.Context, srcPath, contain
 	return d.Docker.Run(ctx, args, nil, writer, writer)
 }
 
-type userInfo struct {
-	uid  string
-	gid  string
-	home string
-}
-
 type lineProcessor func(line string, fields []string) (modifiedLine string, shouldWrite bool, err error)
 
 func (d *dockerDriver) processColonDelimitedFile(in *os.File, out *os.File, fieldCount int, processor lineProcessor) error {
@@ -837,8 +831,8 @@ func (d *dockerDriver) processColonDelimitedFile(in *os.File, out *os.File, fiel
 // UID, GID, and home directory, then writes a modified entry with localUid and localGid to passwdOut.
 // All other lines are copied unchanged. Returns userInfo with the original container values, or an
 // error if the user is not found in the passwd file.
-func (d *dockerDriver) updatePasswdFile(passwdIn *os.File, passwdOut *os.File, containerUser, localUid, localGid string) (*userInfo, error) {
-	info := &userInfo{}
+func (d *dockerDriver) updatePasswdFile(passwdIn *os.File, passwdOut *os.File, containerUser, localUid, localGid string) (*user.User, error) {
+	info := &user.User{}
 
 	// parse passwd format: username:password:uid:gid:gecos:home:shell
 	processor := func(line string, fields []string) (string, bool, error) {
@@ -846,9 +840,9 @@ func (d *dockerDriver) updatePasswdFile(passwdIn *os.File, passwdOut *os.File, c
 			return "", false, nil
 		}
 
-		info.uid = fields[2]
-		info.gid = fields[3]
-		info.home = fields[5]
+		info.Uid = fields[2]
+		info.Gid = fields[3]
+		info.HomeDir = fields[5]
 
 		modifiedLine := strings.Join([]string{fields[0], fields[1], localUid, localGid, fields[4], fields[5], fields[6]}, ":")
 		return modifiedLine, true, nil
@@ -858,7 +852,7 @@ func (d *dockerDriver) updatePasswdFile(passwdIn *os.File, passwdOut *os.File, c
 		return nil, err
 	}
 
-	if info.uid == "" {
+	if info.Uid == "" {
 		return nil, fmt.Errorf("user %q not found in passwd", containerUser)
 	}
 
@@ -963,7 +957,7 @@ func (d *dockerDriver) fetchContainerFiles(ctx context.Context, containerID stri
 	return d.copyFileFromContainer(ctx, containerID, "/etc/group", files.groupIn.Name(), writer)
 }
 
-func (d *dockerDriver) processUserFiles(files *tempFiles, containerUser, localUid, localGid string) (*userInfo, error) {
+func (d *dockerDriver) processUserFiles(files *tempFiles, containerUser, localUid, localGid string) (*user.User, error) {
 	passwdIn, err := os.Open(files.passwdIn.Name())
 	if err != nil {
 		return nil, err
@@ -981,7 +975,7 @@ func (d *dockerDriver) processUserFiles(files *tempFiles, containerUser, localUi
 	}
 	defer func() { _ = groupIn.Close() }()
 
-	return info, d.updateGroupFile(groupIn, files.groupOut, info.gid, localGid)
+	return info, d.updateGroupFile(groupIn, files.groupOut, info.Gid, localGid)
 }
 
 func (d *dockerDriver) copyFilesToContainer(

@@ -23,7 +23,7 @@ func (s *DockerDriverTestSuite) SetupTest() {
 
 func (s *DockerDriverTestSuite) TestShouldSkipUpdate_RootContainerUser() {
 	localUser := &user.User{Uid: "1000", Gid: "1000"}
-	info := &userInfo{uid: "0", gid: "0"}
+	info := &user.User{Uid: "0", Gid: "0"}
 
 	result := shouldSkipUpdate(localUser, info)
 
@@ -32,20 +32,48 @@ func (s *DockerDriverTestSuite) TestShouldSkipUpdate_RootContainerUser() {
 
 func (s *DockerDriverTestSuite) TestShouldSkipUpdate_MatchingUIDs() {
 	localUser := &user.User{Uid: "1000", Gid: "1000"}
-	info := &userInfo{uid: "1000", gid: "1000"}
+	info := *localUser
+	infoPtr := &info
 
-	result := shouldSkipUpdate(localUser, info)
+	result := shouldSkipUpdate(localUser, infoPtr)
 
 	s.True(result, "should skip when UIDs and GIDs match")
 }
 
 func (s *DockerDriverTestSuite) TestShouldSkipUpdate_DifferentUIDs() {
 	localUser := &user.User{Uid: "1000", Gid: "1000"}
-	info := &userInfo{uid: "1001", gid: "1001"}
+	info := &user.User{Uid: "1001", Gid: "1001"}
 
 	result := shouldSkipUpdate(localUser, info)
 
 	s.False(result, "should not skip when UIDs differ")
+}
+
+func (s *DockerDriverTestSuite) TestShouldSkipUpdate_UIDMatch_GIDDifferent() {
+	localUser := &user.User{Uid: "1000", Gid: "1000"}
+	info := &user.User{Uid: "1000", Gid: "1001"}
+
+	result := shouldSkipUpdate(localUser, info)
+
+	s.False(result, "should not skip when UID matches but GID differs")
+}
+
+func (s *DockerDriverTestSuite) TestShouldSkipUpdate_UIDDifferent_GIDMatch() {
+	localUser := &user.User{Uid: "1000", Gid: "1000"}
+	info := &user.User{Uid: "1001", Gid: "1000"}
+
+	result := shouldSkipUpdate(localUser, info)
+
+	s.False(result, "should not skip when GID matches but UID differs")
+}
+
+func (s *DockerDriverTestSuite) TestShouldSkipUpdate_RootWithDifferentGID() {
+	localUser := &user.User{Uid: "1000", Gid: "1000"}
+	info := &user.User{Uid: "0", Gid: "1001"}
+
+	result := shouldSkipUpdate(localUser, info)
+
+	s.True(result, "should skip when container user is root regardless of GID")
 }
 
 func (s *DockerDriverTestSuite) TestGetContainerUser_RemoteUserPriority() {
