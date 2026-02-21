@@ -315,7 +315,6 @@ func (d *dockerDriver) GetDevContainerLogs(
 	return d.Docker.GetContainerLogs(ctx, container.ID, stdout, stderr)
 }
 
-// nolint:cyclop // Cyclop is just from standard error handling.
 func (d *dockerDriver) UpdateContainerUserUID(
 	ctx context.Context,
 	workspaceId string,
@@ -326,53 +325,96 @@ func (d *dockerDriver) UpdateContainerUserUID(
 		return nil
 	}
 
-	localUser, err := user.Current()
+	localUser, containerUser, err := d.gatherUpdateRequirements(parsedConfig)
 	if err != nil {
 		return err
 	}
+	// containerUser is guaranteed non-empty by shouldUpdateUserUID
 
-	containerUser := d.getContainerUser(parsedConfig)
-	if containerUser == "" {
+	if localUser.Uid == "0" {
+		d.Log.Info("local user is root, skipping UID/GID update")
 		return nil
 	}
 
 	container, err := d.FindDevContainer(ctx, workspaceId)
-	if err != nil || container == nil {
+	if err != nil {
 		return err
 	}
+	if container == nil {
+		return fmt.Errorf("container not found")
+	}
 
-	files, err := d.createTempFiles()
+	files, info, err := d.updateUserMappings(ctx, &userMappingParams{
+		containerID:   container.ID,
+		containerUser: containerUser,
+		localUser:     localUser,
+		writer:        writer,
+	})
 	if err != nil {
 		return err
 	}
 	defer files.cleanup()
 
-	if err := d.fetchContainerFiles(ctx, container.ID, files, writer); err != nil {
-		return err
-	}
-
-	info, err := d.processUserFiles(files, containerUser, localUser.Uid, localUser.Gid)
-	if err != nil {
-		return err
-	}
-
-	if localUser.Uid == "0" || info.uid == "0" || (localUser.Uid == info.uid && localUser.Gid == info.gid) {
+	if shouldSkipUpdate(localUser, info) {
+		d.Log.Info("container user UID/GID already match local user, skipping update")
 		return nil
 	}
 
-	d.Log.WithFields(logrus.Fields{
-		"containerUser": containerUser,
-		"containerUid":  info.uid,
-		"containerGid":  info.gid,
-		"localUid":      localUser.Uid,
-		"localGid":      localUser.Gid,
-	}).Info("updating container user UID and GID")
+	d.Log.Infof("updating container user %q UID from %s to %s and GID from %s to %s",
+		containerUser, info.Uid, localUser.Uid, info.Gid, localUser.Gid)
 
-	if err := d.uploadUpdatedFiles(ctx, container.ID, files, writer); err != nil {
+	if err := d.copyFilesToContainer(ctx, container.ID, files, writer); err != nil {
 		return err
 	}
 
-	return d.applyPermissions(ctx, container.ID, localUser.Uid, localUser.Gid, info.home, writer)
+	return d.applyPermissions(ctx, container.ID, localUser.Uid, localUser.Gid, info.HomeDir, writer)
+}
+
+func (d *dockerDriver) gatherUpdateRequirements(parsedConfig *config.DevContainerConfig) (*user.User, string, error) {
+	localUser, err := user.Current()
+	if err != nil {
+		return nil, "", err
+	}
+
+	containerUser := d.getContainerUser(parsedConfig)
+	return localUser, containerUser, nil
+}
+
+type userMappingParams struct {
+	containerID   string
+	containerUser string
+	localUser     *user.User
+	writer        io.Writer
+}
+
+func (d *dockerDriver) updateUserMappings(
+	ctx context.Context,
+	params *userMappingParams,
+) (*tempFiles, *user.User, error) {
+	files, err := d.createTempFiles()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if err := d.fetchContainerFiles(ctx, params.containerID, files, params.writer); err != nil {
+		files.cleanup()
+		return nil, nil, err
+	}
+
+	info, err := d.processUserFiles(files, params.containerUser, params.localUser.Uid, params.localUser.Gid)
+	if err != nil {
+		files.cleanup()
+		return nil, nil, err
+	}
+
+	return files, info, nil
+}
+
+// shouldSkipUpdate returns true if UID/GID mapping should be skipped.
+// localUser is the host system's current user.
+// info contains the container user's current UID/GID (parsed from container's /etc/passwd).
+func shouldSkipUpdate(localUser *user.User, info *user.User) bool {
+	return info.Uid == "0" || (localUser.Uid == info.Uid && localUser.Gid == info.Gid)
 }
 
 type runArgsBuilder struct {
@@ -752,12 +794,6 @@ func (d *dockerDriver) copyFileToContainer(ctx context.Context, srcPath, contain
 	return d.Docker.Run(ctx, args, nil, writer, writer)
 }
 
-type userInfo struct {
-	uid  string
-	gid  string
-	home string
-}
-
 type lineProcessor func(line string, fields []string) (modifiedLine string, shouldWrite bool, err error)
 
 func (d *dockerDriver) processColonDelimitedFile(in *os.File, out *os.File, fieldCount int, processor lineProcessor) error {
@@ -793,34 +829,49 @@ func (d *dockerDriver) processColonDelimitedFile(in *os.File, out *os.File, fiel
 	return scanner.Err()
 }
 
+type passwordFileUpdateParams struct {
+	passwdIn      *os.File
+	passwdOut     *os.File
+	containerUser string
+	localUid      string
+	localGid      string
+}
+
 // updatePasswdFile processes /etc/passwd, replacing the target user's UID/GID with local values.
 // It reads each line from passwdIn, and for lines matching containerUser, extracts the original
 // UID, GID, and home directory, then writes a modified entry with localUid and localGid to passwdOut.
 // All other lines are copied unchanged. Returns userInfo with the original container values, or an
 // error if the user is not found in the passwd file.
-func (d *dockerDriver) updatePasswdFile(passwdIn *os.File, passwdOut *os.File, containerUser, localUid, localGid string) (*userInfo, error) {
-	info := &userInfo{}
+func (d *dockerDriver) updatePasswdFile(params *passwordFileUpdateParams) (*user.User, error) {
+	info := &user.User{}
 
 	// parse passwd format: username:password:uid:gid:gecos:home:shell
 	processor := func(line string, fields []string) (string, bool, error) {
-		if fields[0] != containerUser {
+		if fields[0] != params.containerUser {
 			return "", false, nil
 		}
 
-		info.uid = fields[2]
-		info.gid = fields[3]
-		info.home = fields[5]
+		info.Uid = fields[2]
+		info.Gid = fields[3]
+		info.HomeDir = fields[5]
 
-		modifiedLine := strings.Join([]string{fields[0], fields[1], localUid, localGid, fields[4], fields[5], fields[6]}, ":")
+		modifiedLine := strings.Join([]string{
+			fields[0],
+			fields[1],
+			params.localUid,
+			params.localGid,
+			fields[4],
+			fields[5],
+			fields[6]}, ":")
 		return modifiedLine, true, nil
 	}
 
-	if err := d.processColonDelimitedFile(passwdIn, passwdOut, 7, processor); err != nil {
+	if err := d.processColonDelimitedFile(params.passwdIn, params.passwdOut, 7, processor); err != nil {
 		return nil, err
 	}
 
-	if info.uid == "" {
-		return nil, fmt.Errorf("user %q not found in passwd", containerUser)
+	if info.Uid == "" {
+		return nil, fmt.Errorf("user %q not found in passwd", params.containerUser)
 	}
 
 	return info, nil
@@ -924,14 +975,23 @@ func (d *dockerDriver) fetchContainerFiles(ctx context.Context, containerID stri
 	return d.copyFileFromContainer(ctx, containerID, "/etc/group", files.groupIn.Name(), writer)
 }
 
-func (d *dockerDriver) processUserFiles(files *tempFiles, containerUser, localUid, localGid string) (*userInfo, error) {
+func (d *dockerDriver) processUserFiles(
+	files *tempFiles,
+	containerUser, localUid, localGid string,
+) (*user.User, error) {
 	passwdIn, err := os.Open(files.passwdIn.Name())
 	if err != nil {
 		return nil, err
 	}
 	defer func() { _ = passwdIn.Close() }()
 
-	info, err := d.updatePasswdFile(passwdIn, files.passwdOut, containerUser, localUid, localGid)
+	info, err := d.updatePasswdFile(&passwordFileUpdateParams{
+		passwdIn:      passwdIn,
+		passwdOut:     files.passwdOut,
+		containerUser: containerUser,
+		localUid:      localUid,
+		localGid:      localGid,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -942,10 +1002,12 @@ func (d *dockerDriver) processUserFiles(files *tempFiles, containerUser, localUi
 	}
 	defer func() { _ = groupIn.Close() }()
 
-	return info, d.updateGroupFile(groupIn, files.groupOut, info.gid, localGid)
+	return info, d.updateGroupFile(groupIn, files.groupOut, info.Gid, localGid)
 }
 
-func (d *dockerDriver) uploadUpdatedFiles(ctx context.Context, containerID string, files *tempFiles, writer io.Writer) error {
+func (d *dockerDriver) copyFilesToContainer(
+	ctx context.Context, containerID string, files *tempFiles, writer io.Writer,
+) error {
 	if err := d.copyFileToContainer(ctx, files.passwdOut.Name(), containerID, "/etc/passwd", writer); err != nil {
 		return err
 	}
