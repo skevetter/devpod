@@ -13,6 +13,7 @@ import (
 
 	"errors"
 
+	"al.essio.dev/pkg/shellescape"
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/cmd/completion"
 	"github.com/skevetter/devpod/cmd/flags"
@@ -467,16 +468,17 @@ func (cmd *SSHCmd) startTunnel(ctx context.Context, devPodConfig *config.Config,
 	workdir := cmd.resolveWorkdir(workspaceClient, log)
 
 	log.Debugf("Run outer container tunnel")
-	command := fmt.Sprintf("'%s' helper ssh-server --track-activity --stdio --workdir '%s'", agent.ContainerDevPodHelperLocation, workdir)
+	commandArgs := []string{agent.ContainerDevPodHelperLocation, "helper", "ssh-server", "--track-activity", "--stdio", "--workdir", workdir}
 	if cmd.ReuseSSHAuthSock != "" {
 		log.Debug("Reusing SSH_AUTH_SOCK")
-		command += fmt.Sprintf(" --reuse-ssh-auth-sock=%s", cmd.ReuseSSHAuthSock)
+		commandArgs = append(commandArgs, "--reuse-ssh-auth-sock", cmd.ReuseSSHAuthSock)
 	}
 	if cmd.Debug {
-		command += " --debug"
+		commandArgs = append(commandArgs, "--debug")
 	}
+	command := shellescape.QuoteCommand(commandArgs)
 	if cmd.User != "" && cmd.User != "root" {
-		command = fmt.Sprintf("su -c \"%s\" '%s'", command, cmd.User)
+		command = shellescape.QuoteCommand([]string{"su", "-c", command, cmd.User})
 	}
 
 	envVars, err := cmd.retrieveEnVars()
@@ -526,7 +528,7 @@ func (cmd *SSHCmd) resolveWorkdir(workspaceClient client2.BaseWorkspaceClient, l
 	}
 
 	workspaceConfig := workspaceClient.WorkspaceConfig()
-	if workspaceConfig != nil {
+	if workspaceConfig != nil && workspaceConfig.Context != "" && workspaceConfig.ID != "" {
 		result, err := provider.LoadWorkspaceResult(workspaceConfig.Context, workspaceConfig.ID)
 		if err != nil {
 			log.Debugf("Error loading workspace result for workdir resolution: %v", err)
