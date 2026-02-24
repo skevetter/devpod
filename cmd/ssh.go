@@ -464,10 +464,7 @@ func (cmd *SSHCmd) startTunnel(ctx context.Context, devPodConfig *config.Config,
 		}
 	}
 
-	workdir := filepath.Join("/workspaces", workspaceClient.Workspace())
-	if cmd.WorkDir != "" {
-		workdir = cmd.WorkDir
-	}
+	workdir := cmd.resolveWorkdir(workspaceClient, log)
 
 	log.Debugf("Run outer container tunnel")
 	command := fmt.Sprintf("'%s' helper ssh-server --track-activity --stdio --workdir '%s'", agent.ContainerDevPodHelperLocation, workdir)
@@ -521,6 +518,24 @@ func (cmd *SSHCmd) startTunnel(ctx context.Context, devPodConfig *config.Config,
 		},
 		Stderr: writer,
 	})
+}
+
+func (cmd *SSHCmd) resolveWorkdir(workspaceClient client2.BaseWorkspaceClient, log log.Logger) string {
+	if cmd.WorkDir != "" {
+		return cmd.WorkDir
+	}
+
+	workspaceConfig := workspaceClient.WorkspaceConfig()
+	if workspaceConfig != nil {
+		result, err := provider.LoadWorkspaceResult(workspaceConfig.Context, workspaceConfig.ID)
+		if err != nil {
+			log.Debugf("Error loading workspace result for workdir resolution: %v", err)
+		} else if result != nil && result.MergedConfig != nil && result.MergedConfig.WorkspaceFolder != "" {
+			return result.MergedConfig.WorkspaceFolder
+		}
+	}
+
+	return filepath.Join("/workspaces", workspaceClient.Workspace())
 }
 
 func (cmd *SSHCmd) startServices(
