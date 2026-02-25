@@ -57,6 +57,10 @@ export class ProvidersClient implements TDebuggable {
     return ProviderCommands.RemoveProvider(id)
   }
 
+  public async rename(id: TProviderID, newName: string): Promise<ResultError> {
+    return ProviderCommands.RenameProvider(id, newName)
+  }
+
   public async getOptions(id: TProviderID): Promise<Result<TProviderOptions>> {
     return ProviderCommands.GetProviderOptions(id)
   }

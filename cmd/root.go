@@ -17,6 +17,7 @@ import (
 	"github.com/skevetter/devpod/cmd/pro"
 	"github.com/skevetter/devpod/cmd/provider"
 	"github.com/skevetter/devpod/cmd/use"
+	"github.com/skevetter/devpod/cmd/workspace"
 	"github.com/skevetter/devpod/pkg/client/clientimplementation"
 	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/telemetry"
@@ -125,6 +126,7 @@ func BuildRoot() *cobra.Command {
 	rootCmd.AddCommand(machine.NewMachineCmd(globalFlags))
 	rootCmd.AddCommand(context.NewContextCmd(globalFlags))
 	rootCmd.AddCommand(pro.NewProCmd(globalFlags, log2.Default))
+	rootCmd.AddCommand(workspace.NewWorkspaceCmd(globalFlags))
 	rootCmd.AddCommand(NewUpCmd(globalFlags))
 	rootCmd.AddCommand(NewDeleteCmd(globalFlags))
 	rootCmd.AddCommand(NewSSHCmd(globalFlags))

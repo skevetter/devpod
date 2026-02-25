@@ -128,6 +128,10 @@ export type TConfigureProviderConfig = Readonly<{
 export type TProviderManager = Readonly<{
   remove: TRunnable<TWithProviderID> &
     Pick<UseMutationResult, "status" | "error"> & { target: TWithProviderID | undefined }
+  rename: TRunnable<{ oldProviderID: string; newProviderID: string }> &
+    Pick<UseMutationResult, "status" | "error"> & {
+      target: { oldProviderID: string; newProviderID: string } | undefined
+    }
 }>
 export type TCheckProviderUpdateResult = Readonly<{
   updateAvailable: boolean
