@@ -465,10 +465,18 @@ func (cmd *SSHCmd) startTunnel(ctx context.Context, devPodConfig *config.Config,
 		}
 	}
 
-	workdir := cmd.resolveWorkdir(workspaceClient, log)
+	workdir := resolveWorkdir(cmd.WorkDir, workspaceClient, log)
 
 	log.Debugf("Run outer container tunnel")
-	commandArgs := []string{agent.ContainerDevPodHelperLocation, "helper", "ssh-server", "--track-activity", "--stdio", "--workdir", workdir}
+	commandArgs := []string{
+		agent.ContainerDevPodHelperLocation,
+		"helper",
+		"ssh-server",
+		"--track-activity",
+		"--stdio",
+		"--workdir",
+		workdir,
+	}
 	if cmd.ReuseSSHAuthSock != "" {
 		log.Debug("Reusing SSH_AUTH_SOCK")
 		commandArgs = append(commandArgs, "--reuse-ssh-auth-sock", cmd.ReuseSSHAuthSock)
@@ -522,22 +530,34 @@ func (cmd *SSHCmd) startTunnel(ctx context.Context, devPodConfig *config.Config,
 	})
 }
 
-func (cmd *SSHCmd) resolveWorkdir(workspaceClient client2.BaseWorkspaceClient, log log.Logger) string {
-	if cmd.WorkDir != "" {
-		return cmd.WorkDir
+func resolveWorkdir(workdir string, workspaceClient client2.BaseWorkspaceClient, log log.Logger) string {
+	if workdir != "" {
+		return workdir
 	}
 
-	workspaceConfig := workspaceClient.WorkspaceConfig()
-	if workspaceConfig != nil && workspaceConfig.Context != "" && workspaceConfig.ID != "" {
-		result, err := provider.LoadWorkspaceResult(workspaceConfig.Context, workspaceConfig.ID)
-		if err != nil {
-			log.Debugf("Error loading workspace result for workdir resolution: %v", err)
-		} else if result != nil && result.MergedConfig != nil && result.MergedConfig.WorkspaceFolder != "" {
-			return result.MergedConfig.WorkspaceFolder
-		}
+	if workspaceFolder := resolveMergedWorkspaceFolder(workspaceClient, log); workspaceFolder != "" {
+		return workspaceFolder
 	}
 
 	return filepath.Join("/workspaces", workspaceClient.Workspace())
+}
+
+func resolveMergedWorkspaceFolder(workspaceClient client2.BaseWorkspaceClient, log log.Logger) string {
+	workspaceConfig := workspaceClient.WorkspaceConfig()
+	if workspaceConfig == nil || workspaceConfig.Context == "" || workspaceConfig.ID == "" {
+		return ""
+	}
+
+	result, err := provider.LoadWorkspaceResult(workspaceConfig.Context, workspaceConfig.ID)
+	if err != nil {
+		log.Debugf("Error loading workspace result for workdir resolution: %v", err)
+		return ""
+	}
+	if result == nil || result.MergedConfig == nil {
+		return ""
+	}
+
+	return result.MergedConfig.WorkspaceFolder
 }
 
 func (cmd *SSHCmd) startServices(
@@ -625,12 +645,12 @@ func (cmd *SSHCmd) setupGPGAgent(
 	if len(gitGpgKey) > 0 {
 		gitKey := strings.TrimSpace(string(gitGpgKey))
 		forwardAgent = append(forwardAgent, "--gitkey")
-		forwardAgent = append(forwardAgent, fmt.Sprintf("'%s'", gitKey))
+		forwardAgent = append(forwardAgent, gitKey)
 	}
 
-	command := strings.Join(forwardAgent, " ")
+	command := shellescape.QuoteCommand(forwardAgent)
 	if cmd.User != "" && cmd.User != "root" {
-		command = fmt.Sprintf("su -c \"%s\" '%s'", command, cmd.User)
+		command = shellescape.QuoteCommand([]string{"su", "-c", command, cmd.User})
 	}
 
 	log.Debugf(
