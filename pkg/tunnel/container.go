@@ -42,7 +42,8 @@ type ContainerTunnel struct {
 // Handler defines what to do once the tunnel has a client established.
 type Handler func(ctx context.Context, containerClient *ssh.Client) error
 
-// Run creates an "outer" tunnel to the host to start the SSH server so that the "inner" tunnel can connect to the container over SSH.
+// Run creates an "outer" tunnel to the host to start the SSH server so that the "inner" tunnel can
+// connect to the container over SSH.
 func (c *ContainerTunnel) Run(ctx context.Context, handler Handler, cfg *config.Config, envVars map[string]string) error {
 	if handler == nil {
 		return nil
