@@ -77,8 +77,7 @@ func (cmd *UseCmd) Run(ctx context.Context, providerName string) error {
 	// should reconfigure?
 	shouldReconfigure := cmd.Reconfigure || len(cmd.Options) > 0 || providerWithOptions.State == nil || cmd.SingleMachine
 	if shouldReconfigure {
-		return ConfigureProvider(ProviderOptionsConfig{
-			Ctx:            ctx,
+		return ConfigureProvider(ctx, ProviderOptionsConfig{
 			Provider:       providerWithOptions.Config,
 			Context:        devPodConfig.DefaultContext,
 			UserOptions:    cmd.Options,
@@ -111,7 +110,6 @@ func (cmd *UseCmd) Run(ctx context.Context, providerName string) error {
 }
 
 type ProviderOptionsConfig struct {
-	Ctx            context.Context
 	Provider       *provider2.ProviderConfig
 	Context        string
 	UserOptions    []string
@@ -123,8 +121,8 @@ type ProviderOptionsConfig struct {
 	Log            log.Logger
 }
 
-func ConfigureProvider(cfg ProviderOptionsConfig) error {
-	devPodConfig, err := configureProviderOptions(cfg)
+func ConfigureProvider(ctx context.Context, cfg ProviderOptionsConfig) error {
+	devPodConfig, err := configureProviderOptions(ctx, cfg)
 	if err != nil {
 		return err
 	}
@@ -151,7 +149,7 @@ func mergeExistingOptions(options map[string]string, existingOptions map[string]
 	}
 }
 
-func configureProviderOptions(cfg ProviderOptionsConfig) (*config.Config, error) {
+func configureProviderOptions(ctx context.Context, cfg ProviderOptionsConfig) (*config.Config, error) {
 	devPodConfig, err := config.LoadConfig(cfg.Context, "")
 	if err != nil {
 		return nil, err
@@ -176,7 +174,7 @@ func configureProviderOptions(cfg ProviderOptionsConfig) (*config.Config, error)
 
 	// fill defaults
 	devPodConfig, err = options2.ResolveOptions(
-		cfg.Ctx, devPodConfig, cfg.Provider, options,
+		ctx, devPodConfig, cfg.Provider, options,
 		cfg.SkipRequired, cfg.SkipSubOptions, cfg.SingleMachine, cfg.Log,
 	)
 	if err != nil {
@@ -191,7 +189,7 @@ func configureProviderOptions(cfg ProviderOptionsConfig) (*config.Config, error)
 		stderr := cfg.Log.Writer(logrus.ErrorLevel, false)
 		defer func() { _ = stderr.Close() }()
 
-		err = initProvider(cfg.Ctx, devPodConfig, cfg.Provider, stdout, stderr)
+		err = initProvider(ctx, devPodConfig, cfg.Provider, stdout, stderr)
 		if err != nil {
 			return nil, err
 		}

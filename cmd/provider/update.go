@@ -64,8 +64,7 @@ func (cmd *UpdateCmd) Run(ctx context.Context, devPodConfig *config.Config, args
 		"providerName": providerConfig.Name,
 	}).Done("updated provider")
 	if cmd.Use {
-		err = ConfigureProvider(ProviderOptionsConfig{
-			Ctx:            ctx,
+		err = ConfigureProvider(ctx, ProviderOptionsConfig{
 			Provider:       providerConfig,
 			Context:        devPodConfig.DefaultContext,
 			UserOptions:    cmd.Options,

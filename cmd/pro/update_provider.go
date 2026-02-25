@@ -76,8 +76,7 @@ func (cmd *UpdateProviderCmd) Run(ctx context.Context, args []string) error {
 		return fmt.Errorf("update provider %s: %w", provider.Name, err)
 	}
 
-	err = providercmd.ConfigureProvider(providercmd.ProviderOptionsConfig{
-		Ctx:            ctx,
+	err = providercmd.ConfigureProvider(ctx, providercmd.ProviderOptionsConfig{
 		Provider:       provider,
 		Context:        devPodConfig.DefaultContext,
 		UserOptions:    []string{},
