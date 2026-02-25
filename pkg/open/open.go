@@ -13,7 +13,7 @@ import (
 	"github.com/skratchdot/open-golang/open"
 )
 
-// Open opens the given url in the default application, retrying every second until the context is done
+// Open opens the given url in the default application, retrying every second until the context is done.
 func Open(ctx context.Context, url string, log log.Logger) error {
 	for {
 		select {
@@ -28,7 +28,7 @@ func Open(ctx context.Context, url string, log log.Logger) error {
 	}
 }
 
-// JLabDesktop opens the given url in the JLab desktop application, retrying every second until the context is done
+// JLabDesktop opens the given url in the JLab desktop application, retrying every second until the context is done.
 func JLabDesktop(ctx context.Context, url string, log log.Logger) error {
 	for {
 		select {

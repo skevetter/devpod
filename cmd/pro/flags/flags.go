@@ -6,14 +6,14 @@ import (
 	flag "github.com/spf13/pflag"
 )
 
-// GlobalFlags is the flags that contains the global flags
+// GlobalFlags is the flags that contains the global flags.
 type GlobalFlags struct {
 	*flags.GlobalFlags
 
 	Config string
 }
 
-// SetGlobalFlags applies the global flags
+// SetGlobalFlags applies the global flags.
 func SetGlobalFlags(flags *flag.FlagSet) *GlobalFlags {
 	globalFlags := &GlobalFlags{}
 

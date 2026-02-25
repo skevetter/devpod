@@ -16,7 +16,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// StatusCmd holds the DevPod daemon flags
+// StatusCmd holds the DevPod daemon flags.
 type StatusCmd struct {
 	*proflags.GlobalFlags
 
@@ -24,7 +24,7 @@ type StatusCmd struct {
 	Log  log.Logger
 }
 
-// NewStatusCmd creates a new command
+// NewStatusCmd creates a new command.
 func NewStatusCmd(flags *proflags.GlobalFlags) *cobra.Command {
 	cmd := &StatusCmd{
 		GlobalFlags: flags,

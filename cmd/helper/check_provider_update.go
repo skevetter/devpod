@@ -31,7 +31,7 @@ type providerVersionCheck struct {
 	LatestVersion   string `json:"latestVersion,omitempty"`
 }
 
-// NewCheckProviderUpdateCmd creates a new command
+// NewCheckProviderUpdateCmd creates a new command.
 func NewCheckProviderUpdateCmd(flags *flags.GlobalFlags) *cobra.Command {
 	cmd := &CheckProviderUpdateCmd{
 		GlobalFlags: flags,

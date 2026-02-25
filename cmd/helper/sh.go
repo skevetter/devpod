@@ -14,7 +14,7 @@ type ShellCommand struct {
 	Login   bool
 }
 
-// NewShellCmd creates a new command
+// NewShellCmd creates a new command.
 func NewShellCmd() *cobra.Command {
 	cmd := &ShellCommand{}
 	shellCmd := &cobra.Command{

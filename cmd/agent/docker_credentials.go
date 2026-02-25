@@ -11,14 +11,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// DockerCredentialsCmd holds the cmd flags
+// DockerCredentialsCmd holds the cmd flags.
 type DockerCredentialsCmd struct {
 	*flags.GlobalFlags
 
 	Port int
 }
 
-// NewDockerCredentialsCmd creates a new command
+// NewDockerCredentialsCmd creates a new command.
 func NewDockerCredentialsCmd(flags *flags.GlobalFlags) *cobra.Command {
 	cmd := &DockerCredentialsCmd{
 		GlobalFlags: flags,

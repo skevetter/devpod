@@ -233,7 +233,7 @@ func (r *runner) runDockerCompose(
 	})
 }
 
-// onlyRunServices appends the services defined in .devcontainer.json runServices to the upArgs
+// onlyRunServices appends the services defined in .devcontainer.json runServices to the upArgs.
 func (r *runner) onlyRunServices(upArgs []string, parsedConfig *config.SubstitutedConfig) []string {
 	if len(parsedConfig.Config.RunServices) > 0 {
 		// Run the main devcontainer
@@ -443,7 +443,7 @@ func (r *runner) startContainer(
 }
 
 // prepareComposeBuildInfo modifies a compose project's devcontainer Dockerfile to ensure it can be extended with features
-// If an Image is specified instead of a Build, the metadata from the Image is used to populate the build info
+// If an Image is specified instead of a Build, the metadata from the Image is used to populate the build info.
 func (r *runner) prepareComposeBuildInfo(ctx context.Context, subCtx *config.SubstitutionContext, composeService *composetypes.ServiceConfig, buildTarget string) (*config.ImageBuildInfo, string, string, error) {
 	var dockerFilePath, dockerfileContents string
 	var imageBuildInfo *config.ImageBuildInfo
@@ -492,7 +492,7 @@ func (r *runner) prepareComposeBuildInfo(ctx context.Context, subCtx *config.Sub
 	return imageBuildInfo, dockerfileContents, buildTarget, nil
 }
 
-// This extends the build information for docker compose containers
+// This extends the build information for docker compose containers.
 func (r *runner) buildAndExtendDockerCompose(
 	ctx context.Context,
 	parsedConfig *config.SubstitutedConfig,

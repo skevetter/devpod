@@ -11,14 +11,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// SetOptionsCmd holds the setOptions cmd flags
+// SetOptionsCmd holds the setOptions cmd flags.
 type SetOptionsCmd struct {
 	*flags.GlobalFlags
 
 	Options []string
 }
 
-// NewSetOptionsCmd creates a new command
+// NewSetOptionsCmd creates a new command.
 func NewSetOptionsCmd(flags *flags.GlobalFlags) *cobra.Command {
 	cmd := &SetOptionsCmd{
 		GlobalFlags: flags,
@@ -39,7 +39,7 @@ func NewSetOptionsCmd(flags *flags.GlobalFlags) *cobra.Command {
 	return setOptionsCmd
 }
 
-// Run runs the command logic
+// Run runs the command logic.
 func (cmd *SetOptionsCmd) Run(ctx context.Context, ide string) error {
 	devPodConfig, err := config.LoadConfig(cmd.Context, cmd.Provider)
 	if err != nil {

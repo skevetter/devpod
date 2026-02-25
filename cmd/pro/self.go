@@ -14,7 +14,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// SelfCmd holds the cmd flags
+// SelfCmd holds the cmd flags.
 type SelfCmd struct {
 	*flags.GlobalFlags
 	Log log.Logger
@@ -22,7 +22,7 @@ type SelfCmd struct {
 	Host string
 }
 
-// NewSelfCmd creates a new command
+// NewSelfCmd creates a new command.
 func NewSelfCmd(globalFlags *flags.GlobalFlags) *cobra.Command {
 	cmd := &SelfCmd{
 		GlobalFlags: globalFlags,

@@ -5,7 +5,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// NewIDECmd returns a new command
+// NewIDECmd returns a new command.
 func NewIDECmd(flags *flags.GlobalFlags) *cobra.Command {
 	ideCmd := &cobra.Command{
 		Use:   "ide",

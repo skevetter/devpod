@@ -17,7 +17,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// UseCmd holds the use cmd flags
+// UseCmd holds the use cmd flags.
 type UseCmd struct {
 	*flags.GlobalFlags
 
@@ -29,7 +29,7 @@ type UseCmd struct {
 	SkipInit bool
 }
 
-// NewUseCmd creates a new command
+// NewUseCmd creates a new command.
 func NewUseCmd(flags *flags.GlobalFlags) *cobra.Command {
 	cmd := &UseCmd{
 		GlobalFlags: flags,
@@ -62,7 +62,7 @@ func AddFlags(useCmd *cobra.Command, cmd *UseCmd) {
 	_ = useCmd.Flags().MarkHidden("skip-init")
 }
 
-// Run runs the command logic
+// Run runs the command logic.
 func (cmd *UseCmd) Run(ctx context.Context, providerName string) error {
 	devPodConfig, err := config.LoadConfig(cmd.Context, cmd.Provider)
 	if err != nil {

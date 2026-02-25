@@ -28,7 +28,7 @@ type GetWorkspaceConfigCommandResult struct {
 	ConfigPaths     []string `json:"configPaths"`
 }
 
-// NewGetWorkspaceConfigCommand creates a new command
+// NewGetWorkspaceConfigCommand creates a new command.
 func NewGetWorkspaceConfigCommand(flags *flags.GlobalFlags) *cobra.Command {
 	cmd := &GetWorkspaceConfigCommand{
 		GlobalFlags: flags,

@@ -43,7 +43,7 @@ func (dtc *dockerTestContext) findWorkspaceContainer(ctx context.Context, worksp
 	return dtc.dockerHelper.FindContainer(ctx, []string{fmt.Sprintf("%s=%s", config.DockerIDLabel, workspace.UID)})
 }
 
-// Log scanning functions
+// Log scanning functions.
 func findMessage(reader io.Reader, message string) error {
 	scan := scanner.NewScanner(reader)
 	for scan.Scan() {

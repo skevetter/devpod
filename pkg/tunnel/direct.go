@@ -9,7 +9,7 @@ import (
 	devssh "github.com/skevetter/devpod/pkg/ssh"
 )
 
-// Tunnel defines the function to create an "outer" tunnel
+// Tunnel defines the function to create an "outer" tunnel.
 type Tunnel func(ctx context.Context, stdin io.Reader, stdout io.Writer) error
 
 // NewTunnel creates a tunnel to the devcontainer using generic functions to establish the "outer" and "inner" tunnel, used by proxy clients

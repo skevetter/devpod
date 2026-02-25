@@ -12,7 +12,7 @@ import (
 	"github.com/skevetter/log"
 )
 
-// HandleGitSSHProgramCall implements logic handling call from git when signing a commit
+// HandleGitSSHProgramCall implements logic handling call from git when signing a commit.
 func HandleGitSSHProgramCall(certPath, namespace, bufferFile string, log log.Logger) error {
 	content, err := extractContentFromGitBuffer(bufferFile)
 	if err != nil {
@@ -31,12 +31,12 @@ func HandleGitSSHProgramCall(certPath, namespace, bufferFile string, log log.Log
 	return nil
 }
 
-// extractContentFromGitBuffer reads the content from the buffer file created by git
+// extractContentFromGitBuffer reads the content from the buffer file created by git.
 func extractContentFromGitBuffer(bufferFile string) ([]byte, error) {
 	return os.ReadFile(bufferFile)
 }
 
-// requestContentSignature sends an HTTP request to the credentials server to sign the content
+// requestContentSignature sends an HTTP request to the credentials server to sign the content.
 func requestContentSignature(content []byte, certPath string, log log.Logger) ([]byte, error) {
 	requestBody, err := createSignatureRequestBody(content, certPath)
 	if err != nil {
@@ -51,7 +51,7 @@ func requestContentSignature(content []byte, certPath string, log log.Logger) ([
 	return parseSignatureResponse(responseBody, log)
 }
 
-// writeSignatureToFile writes the signed content to a .sig file
+// writeSignatureToFile writes the signed content to a .sig file.
 func writeSignatureToFile(signature []byte, bufferFile string, log log.Logger) error {
 	sigFile := bufferFile + ".sig"
 	if err := os.WriteFile(sigFile, signature, 0644); err != nil {

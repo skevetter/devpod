@@ -19,7 +19,7 @@ type DockerConfigJSON struct {
 // when pulling images from specific image repositories.
 type DockerConfig map[string]DockerConfigEntry
 
-// DockerConfigEntry holds the user information that grant the access to docker registry
+// DockerConfigEntry holds the user information that grant the access to docker registry.
 type DockerConfigEntry struct {
 	Auth  string `json:"auth"`
 	Email string `json:"email"`

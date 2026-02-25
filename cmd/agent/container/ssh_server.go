@@ -15,7 +15,7 @@ import (
 
 const BaseLogDir = "/var/devpod"
 
-// SSHServerCmd holds the ssh server cmd flags
+// SSHServerCmd holds the ssh server cmd flags.
 type SSHServerCmd struct {
 	*flags.GlobalFlags
 
@@ -24,7 +24,7 @@ type SSHServerCmd struct {
 	RemoteUser string
 }
 
-// NewSSHServerCmd creates a new ssh command
+// NewSSHServerCmd creates a new ssh command.
 func NewSSHServerCmd(flags *flags.GlobalFlags) *cobra.Command {
 	cmd := &SSHServerCmd{
 		GlobalFlags: flags,
@@ -42,7 +42,7 @@ func NewSSHServerCmd(flags *flags.GlobalFlags) *cobra.Command {
 	return sshCmd
 }
 
-// Run runs the command logic
+// Run runs the command logic.
 func (cmd *SSHServerCmd) Run(_ *cobra.Command, _ []string) error {
 	logger := getFileLogger(cmd.RemoteUser, cmd.Debug)
 	server, err := helperssh.NewContainerServer(cmd.Address, cmd.Workdir, logger)

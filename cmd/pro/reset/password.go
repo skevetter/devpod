@@ -20,7 +20,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
-// PasswordCmd holds the lags
+// PasswordCmd holds the lags.
 type PasswordCmd struct {
 	*flags.GlobalFlags
 
@@ -32,7 +32,7 @@ type PasswordCmd struct {
 	Log log.Logger
 }
 
-// NewPasswordCmd creates a new command
+// NewPasswordCmd creates a new command.
 func NewPasswordCmd(globalFlags *flags.GlobalFlags) *cobra.Command {
 	cmd := &PasswordCmd{
 		GlobalFlags: globalFlags,
@@ -63,7 +63,7 @@ devpod pro reset password --user admin
 	return c
 }
 
-// Run executes the functionality
+// Run executes the functionality.
 func (cmd *PasswordCmd) Run() error {
 	restConfig, err := ctrl.GetConfig()
 	if err != nil {

@@ -15,14 +15,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// ListCmd holds the list cmd flags
+// ListCmd holds the list cmd flags.
 type ListCmd struct {
 	*flags.GlobalFlags
 
 	Output string
 }
 
-// NewListCmd creates a new command
+// NewListCmd creates a new command.
 func NewListCmd(flags *flags.GlobalFlags) *cobra.Command {
 	cmd := &ListCmd{
 		GlobalFlags: flags,
@@ -46,7 +46,7 @@ type IDEWithDefault struct {
 	Default bool `json:"default,omitempty"`
 }
 
-// Run runs the command logic
+// Run runs the command logic.
 func (cmd *ListCmd) Run(ctx context.Context) error {
 	devPodConfig, err := config.LoadConfig(cmd.Context, cmd.Provider)
 	if err != nil {

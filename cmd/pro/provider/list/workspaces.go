@@ -18,14 +18,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// WorkspacesCmd holds the cmd flags
+// WorkspacesCmd holds the cmd flags.
 type WorkspacesCmd struct {
 	*flags.GlobalFlags
 
 	log log.Logger
 }
 
-// NewWorkspacesCmd creates a new command
+// NewWorkspacesCmd creates a new command.
 func NewWorkspacesCmd(globalFlags *flags.GlobalFlags) *cobra.Command {
 	cmd := &WorkspacesCmd{
 		GlobalFlags: globalFlags,

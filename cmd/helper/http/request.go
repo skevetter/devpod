@@ -20,7 +20,7 @@ type RequestCmd struct {
 	FailOnErrorCode bool
 }
 
-// NewRequestCmd creates a new ssh command
+// NewRequestCmd creates a new ssh command.
 func NewRequestCmd() *cobra.Command {
 	cmd := &RequestCmd{}
 	requestCmd := &cobra.Command{

@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// DeleteCmd holds the configuration
+// DeleteCmd holds the configuration.
 type DeleteCmd struct {
 	*flags.GlobalFlags
 
@@ -21,7 +21,7 @@ type DeleteCmd struct {
 	Force       bool
 }
 
-// NewDeleteCmd creates a new destroy command
+// NewDeleteCmd creates a new destroy command.
 func NewDeleteCmd(flags *flags.GlobalFlags) *cobra.Command {
 	cmd := &DeleteCmd{
 		GlobalFlags: flags,
@@ -39,7 +39,7 @@ func NewDeleteCmd(flags *flags.GlobalFlags) *cobra.Command {
 	return deleteCmd
 }
 
-// Run runs the command logic
+// Run runs the command logic.
 func (cmd *DeleteCmd) Run(ctx context.Context, args []string) error {
 	devPodConfig, err := config.LoadConfig(cmd.Context, cmd.Provider)
 	if err != nil {

@@ -2,17 +2,17 @@ package framework
 
 import "github.com/onsi/gomega"
 
-// ExpectEqual expects the specified two are the same, otherwise an exception raises
+// ExpectEqual expects the specified two are the same, otherwise an exception raises.
 func ExpectEqual(actual any, extra any, explain ...any) {
 	gomega.ExpectWithOffset(1, actual).To(gomega.Equal(extra), explain...)
 }
 
-// ExpectNotEqual expects the specified two are not the same, otherwise an exception raises
+// ExpectNotEqual expects the specified two are not the same, otherwise an exception raises.
 func ExpectNotEqual(actual any, extra any, explain ...any) {
 	gomega.ExpectWithOffset(1, actual).NotTo(gomega.Equal(extra), explain...)
 }
 
-// ExpectError expects an error happens, otherwise an exception raises
+// ExpectError expects an error happens, otherwise an exception raises.
 func ExpectError(err error, explain ...any) {
 	gomega.ExpectWithOffset(1, err).To(gomega.HaveOccurred(), explain...)
 }

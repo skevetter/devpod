@@ -14,7 +14,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// VersionCmd holds the cmd flags
+// VersionCmd holds the cmd flags.
 type VersionCmd struct {
 	*flags.GlobalFlags
 	Log log.Logger
@@ -22,7 +22,7 @@ type VersionCmd struct {
 	Host string
 }
 
-// NewVersionCmd creates a new command
+// NewVersionCmd creates a new command.
 func NewVersionCmd(globalFlags *flags.GlobalFlags) *cobra.Command {
 	cmd := &VersionCmd{
 		GlobalFlags: globalFlags,

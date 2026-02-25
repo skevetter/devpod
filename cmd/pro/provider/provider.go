@@ -19,7 +19,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// NewProProviderCmd creates a new cobra command
+// NewProProviderCmd creates a new cobra command.
 func NewProProviderCmd(globalFlags *flags.GlobalFlags) *cobra.Command {
 	c := &cobra.Command{
 		Use:    "provider",

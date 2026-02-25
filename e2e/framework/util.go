@@ -92,7 +92,7 @@ func CleanString(input string) string {
 	return strings.ReplaceAll(input, "/", "")
 }
 
-// createTempDir creates a temporary directory based on environment and base directory
+// createTempDir creates a temporary directory based on environment and base directory.
 func createTempDir(baseDir string) (string, error) {
 	var dir string
 	var err error

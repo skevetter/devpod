@@ -29,7 +29,7 @@ import (
 
 var globalFlags *flags.GlobalFlags
 
-// NewRootCmd returns a new root command
+// NewRootCmd returns a new root command.
 func NewRootCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:           "devpod",
@@ -110,7 +110,7 @@ func Execute() {
 	}
 }
 
-// BuildRoot creates a new root command from the
+// BuildRoot creates a new root command from the.
 func BuildRoot() *cobra.Command {
 	rootCmd := NewRootCmd()
 	persistentFlags := rootCmd.PersistentFlags()

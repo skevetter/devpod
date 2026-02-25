@@ -6,7 +6,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// Config defines the client config structure
+// Config defines the client config structure.
 type Config struct {
 	metav1.TypeMeta `json:",inline"`
 
@@ -42,7 +42,7 @@ type VirtualClusterCertificatesEntry struct {
 	ExpirationTime  time.Time
 }
 
-// NewConfig creates a new config
+// NewConfig creates a new config.
 func NewConfig() *Config {
 	return &Config{
 		TypeMeta: metav1.TypeMeta{

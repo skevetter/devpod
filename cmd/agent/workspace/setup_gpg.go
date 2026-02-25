@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// SetupGPGCmd holds the setupGPG cmd flags
+// SetupGPGCmd holds the setupGPG cmd flags.
 type SetupGPGCmd struct {
 	*flags.GlobalFlags
 
@@ -22,7 +22,7 @@ type SetupGPGCmd struct {
 	GitKey     string
 }
 
-// NewSetupGPGCmd creates a new command
+// NewSetupGPGCmd creates a new command.
 func NewSetupGPGCmd(flags *flags.GlobalFlags) *cobra.Command {
 	cmd := &SetupGPGCmd{
 		GlobalFlags: flags,
@@ -49,7 +49,7 @@ func NewSetupGPGCmd(flags *flags.GlobalFlags) *cobra.Command {
 // - importing those into the container
 // - ensuring the gpg-agent is stopped in the container
 // - starting a reverse-tunnel of the local unix socket to remote
-// - ensuring paths and permissions are correctly set in the remote
+// - ensuring paths and permissions are correctly set in the remote.
 func (cmd *SetupGPGCmd) Run(ctx context.Context, log log.Logger) error {
 	log.Debugf("Initializing gpg-agent forwarding")
 

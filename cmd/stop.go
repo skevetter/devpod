@@ -15,13 +15,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// StopCmd holds the destroy cmd flags
+// StopCmd holds the destroy cmd flags.
 type StopCmd struct {
 	*flags.GlobalFlags
 	client2.StopOptions
 }
 
-// NewStopCmd creates a new destroy command
+// NewStopCmd creates a new destroy command.
 func NewStopCmd(flags *flags.GlobalFlags) *cobra.Command {
 	cmd := &StopCmd{
 		GlobalFlags: flags,
@@ -57,7 +57,7 @@ func NewStopCmd(flags *flags.GlobalFlags) *cobra.Command {
 	return stopCmd
 }
 
-// Run runs the command logic
+// Run runs the command logic.
 func (cmd *StopCmd) Run(ctx context.Context, devPodConfig *config.Config, client client2.BaseWorkspaceClient) error {
 	// lock workspace
 	if !cmd.Platform.Enabled {

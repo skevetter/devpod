@@ -305,7 +305,7 @@ type HostRequirements struct {
 	GPU types.StrBool `json:"gpu,omitempty"`
 }
 
-// ShouldEnableGPU determines if GPU should be enabled based on requirements and availability
+// ShouldEnableGPU determines if GPU should be enabled based on requirements and availability.
 func (h *HostRequirements) ShouldEnableGPU(gpuAvailable bool) (enable bool, warnIfMissing bool) {
 	if h == nil || h.GPU == "" {
 		return false, false

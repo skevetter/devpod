@@ -13,14 +13,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// ProjectsCmd holds the cmd flags
+// ProjectsCmd holds the cmd flags.
 type ProjectsCmd struct {
 	*flags.GlobalFlags
 
 	log log.Logger
 }
 
-// NewProjectsCmd creates a new command
+// NewProjectsCmd creates a new command.
 func NewProjectsCmd(globalFlags *flags.GlobalFlags) *cobra.Command {
 	cmd := &ProjectsCmd{
 		GlobalFlags: globalFlags,

@@ -65,18 +65,18 @@ func (c *command) Run() (string, error) {
 	return outBuf.String(), nil
 }
 
-// ShouldUse takes CLIOptions and returns true if crane should be used
+// ShouldUse takes CLIOptions and returns true if crane should be used.
 func ShouldUse(cliOptions *provider2.CLIOptions) bool {
 	return IsAvailable() && cliOptions.Platform.EnvironmentTemplate != ""
 }
 
-// IsAvailable checks if devpod crane is installed in host system
+// IsAvailable checks if devpod crane is installed in host system.
 func IsAvailable() bool {
 	_, err := exec.LookPath(getBinName())
 	return err == nil
 }
 
-// PullConfigFromSource pulls devcontainer config from configSource using git crane and returns config path
+// PullConfigFromSource pulls devcontainer config from configSource using git crane and returns config path.
 func PullConfigFromSource(workspaceInfo *provider2.AgentWorkspaceInfo, options *provider2.CLIOptions, log log.Logger) (string, error) {
 	var data string
 	var err error

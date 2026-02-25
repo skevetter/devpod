@@ -16,7 +16,7 @@ import (
 	"tailscale.com/client/local"
 )
 
-// NetcheckCmd holds the DevPod daemon flags
+// NetcheckCmd holds the DevPod daemon flags.
 type NetcheckCmd struct {
 	*proflags.GlobalFlags
 
@@ -24,7 +24,7 @@ type NetcheckCmd struct {
 	Log  log.Logger
 }
 
-// NewNetcheckCmd creates a new command
+// NewNetcheckCmd creates a new command.
 func NewNetcheckCmd(flags *proflags.GlobalFlags) *cobra.Command {
 	cmd := &NetcheckCmd{
 		GlobalFlags: flags,

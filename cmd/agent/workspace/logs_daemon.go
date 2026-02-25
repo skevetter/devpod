@@ -13,14 +13,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// LogsDaemonCmd holds the cmd flags
+// LogsDaemonCmd holds the cmd flags.
 type LogsDaemonCmd struct {
 	*flags.GlobalFlags
 
 	ID string
 }
 
-// NewLogsDaemonCmd creates a new command
+// NewLogsDaemonCmd creates a new command.
 func NewLogsDaemonCmd(flags *flags.GlobalFlags) *cobra.Command {
 	cmd := &LogsDaemonCmd{
 		GlobalFlags: flags,

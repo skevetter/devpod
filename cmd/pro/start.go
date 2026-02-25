@@ -57,7 +57,7 @@ const defaultReleaseName = "devpod-pro"
 
 var defaultDeploymentName = "loft" // Need to update helm chart if we change this!
 
-// StartCmd holds the login cmd flags
+// StartCmd holds the login cmd flags.
 type StartCmd struct {
 	proflags.GlobalFlags
 
@@ -88,7 +88,7 @@ type StartCmd struct {
 	Docker           bool
 }
 
-// NewStartCmd creates a new command
+// NewStartCmd creates a new command.
 func NewStartCmd(flags *proflags.GlobalFlags) *cobra.Command {
 	cmd := &StartCmd{GlobalFlags: *flags,
 		Product:   "devpod-pro",
@@ -125,7 +125,7 @@ func NewStartCmd(flags *proflags.GlobalFlags) *cobra.Command {
 	return startCmd
 }
 
-// Run runs the command logic
+// Run runs the command logic.
 func (cmd *StartCmd) Run(ctx context.Context) error {
 	if cmd.Docker {
 		return cmd.startDocker(ctx)

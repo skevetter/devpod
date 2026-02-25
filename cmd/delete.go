@@ -15,13 +15,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// DeleteCmd holds the delete cmd flags
+// DeleteCmd holds the delete cmd flags.
 type DeleteCmd struct {
 	*flags.GlobalFlags
 	client2.DeleteOptions
 }
 
-// NewDeleteCmd creates a new command
+// NewDeleteCmd creates a new command.
 func NewDeleteCmd(flags *flags.GlobalFlags) *cobra.Command {
 	cmd := &DeleteCmd{
 		GlobalFlags: flags,
@@ -61,7 +61,7 @@ If the workspace is not found, you can use the --ignore-not-found flag to treat 
 	return deleteCmd
 }
 
-// Run runs the command logic
+// Run runs the command logic.
 func (cmd *DeleteCmd) Run(ctx context.Context, devPodConfig *config.Config, args []string) error {
 	if len(args) == 0 {
 		workspaceName, err := workspace.Delete(ctx, devPodConfig, args, cmd.IgnoreNotFound, cmd.Force, cmd.DeleteOptions, cmd.Owner, log.Default)

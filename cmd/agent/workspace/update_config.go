@@ -9,14 +9,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// UpdateConfigCmd holds the cmd flags
+// UpdateConfigCmd holds the cmd flags.
 type UpdateConfigCmd struct {
 	*flags.GlobalFlags
 
 	WorkspaceInfo string
 }
 
-// NewUpdateConfigCmd creates a new command
+// NewUpdateConfigCmd creates a new command.
 func NewUpdateConfigCmd(flags *flags.GlobalFlags) *cobra.Command {
 	cmd := &UpdateConfigCmd{
 		GlobalFlags: flags,

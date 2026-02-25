@@ -14,14 +14,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// SshCmd holds the cmd flags
+// SshCmd holds the cmd flags.
 type SshCmd struct {
 	*flags.GlobalFlags
 
 	Log log.Logger
 }
 
-// NewSshCmd creates a new command
+// NewSshCmd creates a new command.
 func NewSshCmd(globalFlags *flags.GlobalFlags) *cobra.Command {
 	cmd := &SshCmd{
 		GlobalFlags: globalFlags,

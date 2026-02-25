@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// StdioStream is the struct that implements the net.Conn interface
+// StdioStream is the struct that implements the net.Conn interface.
 type StdioStream struct {
 	in     io.Reader
 	out    io.WriteCloser
@@ -18,7 +18,7 @@ type StdioStream struct {
 	exitCode    int
 }
 
-// NewStdioStream is used to implement the connection interface
+// NewStdioStream is used to implement the connection interface.
 func NewStdioStream(in io.Reader, out io.WriteCloser, exitOnClose bool, exitCode int) *StdioStream {
 	return &StdioStream{
 		local:       NewStdinAddr("local"),
@@ -30,27 +30,27 @@ func NewStdioStream(in io.Reader, out io.WriteCloser, exitOnClose bool, exitCode
 	}
 }
 
-// LocalAddr implements interface
+// LocalAddr implements interface.
 func (s *StdioStream) LocalAddr() net.Addr {
 	return s.local
 }
 
-// RemoteAddr implements interface
+// RemoteAddr implements interface.
 func (s *StdioStream) RemoteAddr() net.Addr {
 	return s.remote
 }
 
-// Read implements interface
+// Read implements interface.
 func (s *StdioStream) Read(b []byte) (n int, err error) {
 	return s.in.Read(b)
 }
 
-// Write implements interface
+// Write implements interface.
 func (s *StdioStream) Write(b []byte) (n int, err error) {
 	return s.out.Write(b)
 }
 
-// Close implements interface
+// Close implements interface.
 func (s *StdioStream) Close() error {
 	if s.exitOnClose {
 		// We kill ourself here because the streams are closed
@@ -60,32 +60,32 @@ func (s *StdioStream) Close() error {
 	return s.out.Close()
 }
 
-// SetDeadline implements interface
+// SetDeadline implements interface.
 func (s *StdioStream) SetDeadline(t time.Time) error {
 	return nil
 }
 
-// SetReadDeadline implements interface
+// SetReadDeadline implements interface.
 func (s *StdioStream) SetReadDeadline(t time.Time) error {
 	return nil
 }
 
-// SetWriteDeadline implements interface
+// SetWriteDeadline implements interface.
 func (s *StdioStream) SetWriteDeadline(t time.Time) error {
 	return nil
 }
 
-// StdinAddr is the struct for the stdi
+// StdinAddr is the struct for the stdi.
 type StdinAddr struct {
 	s string
 }
 
-// NewStdinAddr creates a new StdinAddr
+// NewStdinAddr creates a new StdinAddr.
 func NewStdinAddr(s string) *StdinAddr {
 	return &StdinAddr{s}
 }
 
-// Network implements interface
+// Network implements interface.
 func (a *StdinAddr) Network() string {
 	return "stdio"
 }

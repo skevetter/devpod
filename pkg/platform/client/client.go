@@ -35,10 +35,10 @@ import (
 
 var CacheFolder = ".loft"
 
-// DefaultCacheConfig is the path to the config
+// DefaultCacheConfig is the path to the config.
 var DefaultCacheConfig = "config.json"
 
-// Copied from platform `pkg/authentication/registry.go`
+// Copied from platform `pkg/authentication/registry.go`.
 var ErrAccessKeyNotFound = fmt.Errorf("platform access key not found. Please login again")
 
 const (
@@ -380,7 +380,7 @@ func (c *client) LoginWithAccessKey(host, accessKey string, insecure bool, force
 	return c.Save()
 }
 
-// VerifyVersion checks if the Loft version is compatible with this CLI version
+// VerifyVersion checks if the Loft version is compatible with this CLI version.
 func VerifyVersion(baseClient Client) error {
 	v, err := baseClient.Version()
 	if err != nil {

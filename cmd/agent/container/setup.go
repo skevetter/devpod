@@ -44,7 +44,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// SetupContainerCmd holds the cmd flags
+// SetupContainerCmd holds the cmd flags.
 type SetupContainerCmd struct {
 	*flags.GlobalFlags
 
@@ -58,7 +58,7 @@ type SetupContainerCmd struct {
 	WorkspaceHost          string
 }
 
-// NewSetupContainerCmd creates a new command
+// NewSetupContainerCmd creates a new command.
 func NewSetupContainerCmd(flags *flags.GlobalFlags) *cobra.Command {
 	cmd := &SetupContainerCmd{
 		GlobalFlags: flags,
@@ -91,7 +91,7 @@ type setupContext struct {
 	logger        log.Logger
 }
 
-// Run runs the command logic
+// Run runs the command logic.
 func (cmd *SetupContainerCmd) Run(ctx context.Context) error {
 	tunnelClient, logger, err := cmd.initializeTunnelClient(ctx)
 	if err != nil {

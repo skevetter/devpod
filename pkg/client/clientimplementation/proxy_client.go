@@ -67,12 +67,12 @@ type proxyClient struct {
 	executor     *proxyExecutor
 }
 
-// proxyExecutor handles proxy command execution with common patterns
+// proxyExecutor handles proxy command execution with common patterns.
 type proxyExecutor struct {
 	client *proxyClient
 }
 
-// execParams defines parameters for proxy command execution
+// execParams defines parameters for proxy command execution.
 type execParams struct {
 	name     string
 	command  types.StrArray
@@ -82,7 +82,7 @@ type execParams struct {
 	stderr   io.Writer
 }
 
-// execute runs a proxy command with common settings
+// execute runs a proxy command with common settings.
 func (e *proxyExecutor) execute(ctx context.Context, params execParams) error {
 	return RunCommandWithBinaries(CommandOptions{
 		Ctx:       ctx,
@@ -100,7 +100,7 @@ func (e *proxyExecutor) execute(ctx context.Context, params execParams) error {
 	})
 }
 
-// executeWithJSONLog runs a command with JSON log streaming
+// executeWithJSONLog runs a command with JSON log streaming.
 func (e *proxyExecutor) executeWithJSONLog(ctx context.Context, params execParams) error {
 	writer, _ := devpodlog.PipeJSONStream(e.client.log.ErrorStreamOnly())
 	defer func() { _ = writer.Close() }()
@@ -284,7 +284,7 @@ func (s *proxyClient) Up(ctx context.Context, opt client.UpOptions) error {
 	})
 }
 
-// checkPlatformVersion validates the platform provider version compatibility
+// checkPlatformVersion validates the platform provider version compatibility.
 func (s *proxyClient) checkPlatformVersion(ctx context.Context, providerOptions map[string]config.OptionValue) error {
 	loftConfig := providerOptions["LOFT_CONFIG"].Value
 	if loftConfig == "" {

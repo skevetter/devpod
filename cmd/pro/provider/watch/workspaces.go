@@ -27,14 +27,14 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
-// WorkspacesCmd holds the cmd flags
+// WorkspacesCmd holds the cmd flags.
 type WorkspacesCmd struct {
 	*flags.GlobalFlags
 
 	Log log.Logger
 }
 
-// NewWorkspacesCmd creates a new command
+// NewWorkspacesCmd creates a new command.
 func NewWorkspacesCmd(globalFlags *flags.GlobalFlags) *cobra.Command {
 	cmd := &WorkspacesCmd{
 		GlobalFlags: globalFlags,

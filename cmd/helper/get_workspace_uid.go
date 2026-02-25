@@ -13,7 +13,7 @@ type GetWorkspaceUIDCommand struct {
 	*flags.GlobalFlags
 }
 
-// NewGetWorkspaceUIDCmd creates a new command
+// NewGetWorkspaceUIDCmd creates a new command.
 func NewGetWorkspaceUIDCmd(flags *flags.GlobalFlags) *cobra.Command {
 	cmd := &GetWorkspaceUIDCommand{
 		GlobalFlags: flags,

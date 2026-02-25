@@ -26,7 +26,7 @@ const (
 	ipv6StrLen = 32
 )
 
-// Socket states
+// Socket states.
 const (
 	Established SkState = 0x01
 	SynSent     SkState = 0x02
@@ -56,7 +56,7 @@ var skStates = [...]string{
 	"CLOSING",
 }
 
-// Errors returned by gonetstat
+// Errors returned by gonetstat.
 var (
 	ErrNotEnoughFields = errors.New("gonetstat: not enough fields in the line")
 )
@@ -245,7 +245,7 @@ func extractProcInfo(sktab []SockTabEntry) {
 	}
 }
 
-// doNetstat - collect information about network port status
+// doNetstat - collect information about network port status.
 func doNetstat(path string, fn AcceptFn) ([]SockTabEntry, error) {
 	f, err := os.Open(path)
 	if err != nil {
@@ -261,25 +261,25 @@ func doNetstat(path string, fn AcceptFn) ([]SockTabEntry, error) {
 }
 
 // TCPSocks returns a slice of active TCP sockets containing only those
-// elements that satisfy the accept function
+// elements that satisfy the accept function.
 func osTCPSocks(accept AcceptFn) ([]SockTabEntry, error) {
 	return doNetstat(pathTCPTab, accept)
 }
 
 // TCP6Socks returns a slice of active TCP IPv4 sockets containing only those
-// elements that satisfy the accept function
+// elements that satisfy the accept function.
 func osTCP6Socks(accept AcceptFn) ([]SockTabEntry, error) {
 	return doNetstat(pathTCP6Tab, accept)
 }
 
 // UDPSocks returns a slice of active UDP sockets containing only those
-// elements that satisfy the accept function
+// elements that satisfy the accept function.
 func osUDPSocks(accept AcceptFn) ([]SockTabEntry, error) {
 	return doNetstat(pathUDPTab, accept)
 }
 
 // UDP6Socks returns a slice of active UDP IPv6 sockets containing only those
-// elements that satisfy the accept function
+// elements that satisfy the accept function.
 func osUDP6Socks(accept AcceptFn) ([]SockTabEntry, error) {
 	return doNetstat(pathUDP6Tab, accept)
 }

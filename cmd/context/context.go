@@ -5,7 +5,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// NewContextCmd returns a new command
+// NewContextCmd returns a new command.
 func NewContextCmd(flags *flags.GlobalFlags) *cobra.Command {
 	contextCmd := &cobra.Command{
 		Use:   "context",

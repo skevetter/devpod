@@ -4,7 +4,7 @@ import "math/rand"
 
 var letterRunes = []rune("abcdefghijklmnopqrstuvwxyz")
 
-// String creates a new random string with the given length
+// String creates a new random string with the given length.
 func String(length int) string {
 	b := make([]rune, length)
 	for i := range b {

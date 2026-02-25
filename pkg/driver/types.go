@@ -7,7 +7,7 @@ import (
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 )
 
-// Driver is the default interface for DevPod drivers
+// Driver is the default interface for DevPod drivers.
 type Driver interface {
 	// FindDevContainer returns a running devcontainer details
 	FindDevContainer(ctx context.Context, workspaceID string) (*config.ContainerDetails, error)
@@ -41,7 +41,7 @@ type ReprovisioningDriver interface {
 	CanReprovision() bool
 }
 
-// RunOptions are the options for running a container
+// RunOptions are the options for running a container.
 type RunOptions struct {
 	// UID is a unique identifier for this workspace
 	UID string `json:"uid,omitempty"`
