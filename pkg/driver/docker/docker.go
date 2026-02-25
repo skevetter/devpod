@@ -676,7 +676,8 @@ func (d *dockerDriver) startContainer(ctx context.Context, dir string, args []st
 			"error":   err,
 			"command": d.Docker.DockerCommand,
 			"args":    strings.Join(args, " "),
-			"cwd":     dir}).
+			"cwd":     dir,
+		}).
 			Error("docker container failed to start")
 		return fmt.Errorf("failed to start dev container: %w", err)
 	}
@@ -862,7 +863,8 @@ func (d *dockerDriver) updatePasswdFile(params *passwordFileUpdateParams) (*user
 			params.localGid,
 			fields[4],
 			fields[5],
-			fields[6]}, ":")
+			fields[6],
+		}, ":")
 		return modifiedLine, true, nil
 	}
 

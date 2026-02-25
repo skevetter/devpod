@@ -10,6 +10,8 @@ import (
 	"strings"
 
 	"github.com/blang/semver/v4"
+	managementv1 "github.com/loft-sh/api/v4/pkg/apis/management/v1"
+	storagev1 "github.com/loft-sh/api/v4/pkg/apis/storage/v1"
 	"github.com/skevetter/devpod/cmd/pro/flags"
 	"github.com/skevetter/devpod/pkg/platform"
 	"github.com/skevetter/devpod/pkg/platform/client"
@@ -17,9 +19,6 @@ import (
 	"github.com/skevetter/log"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	managementv1 "github.com/loft-sh/api/v4/pkg/apis/management/v1"
-	storagev1 "github.com/loft-sh/api/v4/pkg/apis/storage/v1"
 )
 
 // TemplatesCmd holds the cmd flags

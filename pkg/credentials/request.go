@@ -1,14 +1,13 @@
 package credentials
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"strconv"
 	"syscall"
 	"time"
-
-	"errors"
 
 	devpodhttp "github.com/skevetter/devpod/pkg/http"
 	"github.com/skevetter/log"

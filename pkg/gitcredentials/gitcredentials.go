@@ -52,7 +52,7 @@ func ConfigureHelper(binaryPath, userName string, port int) error {
         %s
 `, helper)
 
-		err = os.WriteFile(gitConfigPath, []byte(content), 0600)
+		err = os.WriteFile(gitConfigPath, []byte(content), 0o600)
 		if err != nil {
 			return fmt.Errorf("write git config: %w", err)
 		}
@@ -82,7 +82,7 @@ func RemoveHelperFromPath(gitConfigPath string) error {
 	}
 
 	if strings.Contains(string(out), "[credential]") {
-		err = os.WriteFile(gitConfigPath, []byte(removeCredentialHelper(string(out))), 0600)
+		err = os.WriteFile(gitConfigPath, []byte(removeCredentialHelper(string(out))), 0o600)
 		if err != nil {
 			return fmt.Errorf("write git config: %w", err)
 		}

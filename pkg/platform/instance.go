@@ -73,6 +73,7 @@ func FindInstance(ctx context.Context, baseClient client.Client, uid string) (*m
 
 	return &workspaceList.Items[0], nil
 }
+
 func FindInstanceInProject(ctx context.Context, baseClient client.Client, uid, projectName string) (*managementv1.DevPodWorkspaceInstance, error) {
 	managementClient, err := baseClient.Management()
 	if err != nil {

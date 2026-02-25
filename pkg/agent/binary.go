@@ -68,7 +68,7 @@ func (c *BinaryCache) pathFor(arch string) string {
 }
 
 func (c *BinaryCache) atomicWrite(path string, data io.Reader) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0750); err != nil { // #nosec G301
+	if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil { // #nosec G301
 		return err
 	}
 
@@ -84,7 +84,7 @@ func (c *BinaryCache) atomicWrite(path string, data io.Reader) error {
 		return err
 	}
 
-	if err := file.Chmod(0755); err != nil {
+	if err := file.Chmod(0o755); err != nil {
 		_ = file.Close()
 		_ = os.Remove(temp)
 		return err
@@ -233,7 +233,7 @@ func (s *HTTPDownloadSource) prepareCacheDir(
 	streamErr *error,
 ) bool {
 	cachePath := s.Cache.pathFor(arch)
-	if err := os.MkdirAll(filepath.Dir(cachePath), 0750); err != nil { // #nosec G301
+	if err := os.MkdirAll(filepath.Dir(cachePath), 0o750); err != nil { // #nosec G301
 		// Cache directory creation failed; fall back to direct streaming
 		if _, copyErr := io.Copy(pw, body); copyErr != nil {
 			*streamErr = fmt.Errorf("mkdir failed (%v), fallback copy failed: %w", err, copyErr)
@@ -300,7 +300,7 @@ func (s *HTTPDownloadSource) writeToFile(file *os.File, body io.ReadCloser, pw *
 		return false
 	}
 
-	if err := file.Chmod(0755); err != nil {
+	if err := file.Chmod(0o755); err != nil {
 		*streamErr = err
 		return false
 	}

@@ -51,7 +51,8 @@ var _ = ginkgo.Describe("testing up command for podman provider", ginkgo.Label("
 			err = wrapper.Close()
 			framework.ExpectNoError(err)
 
-			err = os.Chmod(initialDir+"/bin/podman-rootful", 0755)
+			//nolint:gosec // Binary needs executable permissions for test
+			err = os.Chmod(initialDir+"/bin/podman-rootful", 0o755)
 			framework.ExpectNoError(err)
 
 			err = exec.Command(initialDir+"/bin/podman-rootful", "ps").Run()

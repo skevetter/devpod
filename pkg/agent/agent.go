@@ -109,7 +109,44 @@ func ParseAgentWorkspaceInfo(workspaceConfigFile string) (*provider2.AgentWorksp
 	return workspaceInfo, nil
 }
 
-func ReadAgentWorkspaceInfo(agentFolder, context, id string, log log.Logger) (bool, *provider2.AgentWorkspaceInfo, error) {
+type readErrorContext struct {
+	agentFolder string
+	context     string
+	id          string
+}
+
+func handleReadError(err error, ctx readErrorContext, log log.Logger) error {
+	if errors.Is(err, ErrFindAgentHomeFolder) {
+		log.WithFields(logrus.Fields{
+			"agentFolder": ctx.agentFolder,
+			"context":     ctx.context,
+			"workspaceId": ctx.id,
+		}).Debug("agent home folder not found")
+		return nil
+	}
+
+	if errors.Is(err, os.ErrPermission) {
+		log.WithFields(logrus.Fields{
+			"agentFolder": ctx.agentFolder,
+			"context":     ctx.context,
+			"workspaceId": ctx.id,
+		}).Debug("permission denied reading workspace info")
+		return nil
+	}
+
+	log.WithFields(logrus.Fields{
+		"error":       err,
+		"agentFolder": ctx.agentFolder,
+		"context":     ctx.context,
+		"workspaceId": ctx.id,
+	}).Error("failed to read agent workspace info")
+	return err
+}
+
+func ReadAgentWorkspaceInfo(
+	agentFolder, context, id string,
+	log log.Logger,
+) (bool, *provider2.AgentWorkspaceInfo, error) {
 	log.WithFields(logrus.Fields{
 		"agentFolder": agentFolder,
 		"context":     context,
@@ -117,30 +154,11 @@ func ReadAgentWorkspaceInfo(agentFolder, context, id string, log log.Logger) (bo
 	}).Debug("starting to read agent workspace info")
 
 	workspaceInfo, err := readAgentWorkspaceInfo(agentFolder, context, id)
-	if err != nil && !errors.Is(err, ErrFindAgentHomeFolder) && !errors.Is(err, os.ErrPermission) {
-		log.WithFields(logrus.Fields{
-			"error":       err,
-			"agentFolder": agentFolder,
-			"context":     context,
-			"workspaceId": id,
-		}).Error("failed to read agent workspace info")
-		return false, nil, err
-	}
-
-	if errors.Is(err, ErrFindAgentHomeFolder) {
-		log.WithFields(logrus.Fields{
-			"agentFolder": agentFolder,
-			"context":     context,
-			"workspaceId": id,
-		}).Debug("agent home folder not found")
-	}
-
-	if errors.Is(err, os.ErrPermission) {
-		log.WithFields(logrus.Fields{
-			"agentFolder": agentFolder,
-			"context":     context,
-			"workspaceId": id,
-		}).Debug("permission denied reading workspace info")
+	if err != nil {
+		ctx := readErrorContext{agentFolder: agentFolder, context: context, id: id}
+		if handleErr := handleReadError(err, ctx, log); handleErr != nil {
+			return false, nil, handleErr
+		}
 	}
 
 	// check if we need to become root
@@ -174,7 +192,11 @@ func WriteWorkspaceInfo(workspaceInfoEncoded string, log log.Logger) (bool, *pro
 	return WriteWorkspaceInfoAndDeleteOld(workspaceInfoEncoded, nil, log)
 }
 
-func WriteWorkspaceInfoAndDeleteOld(workspaceInfoEncoded string, deleteWorkspace func(workspaceInfo *provider2.AgentWorkspaceInfo, log log.Logger) error, log log.Logger) (bool, *provider2.AgentWorkspaceInfo, error) {
+func WriteWorkspaceInfoAndDeleteOld(
+	workspaceInfoEncoded string,
+	deleteWorkspace func(workspaceInfo *provider2.AgentWorkspaceInfo, log log.Logger) error,
+	log log.Logger,
+) (bool, *provider2.AgentWorkspaceInfo, error) {
 	return decodeWorkspaceInfoAndWrite(workspaceInfoEncoded, true, deleteWorkspace, log)
 }
 
@@ -223,7 +245,9 @@ func decodeWorkspaceInfoAndWrite(
 		"context":     workspaceInfo.Workspace.Context,
 		"workspaceId": workspaceInfo.Workspace.ID,
 	}).Debug("creating agent workspace directory")
-	workspaceDir, err := CreateAgentWorkspaceDir(workspaceInfo.Agent.DataPath, workspaceInfo.Workspace.Context, workspaceInfo.Workspace.ID)
+	workspaceDir, err := CreateAgentWorkspaceDir(
+		workspaceInfo.Agent.DataPath, workspaceInfo.Workspace.Context, workspaceInfo.Workspace.ID,
+	)
 	if err != nil {
 		log.WithFields(logrus.Fields{
 			"error":       err,
@@ -265,7 +289,9 @@ func decodeWorkspaceInfoAndWrite(
 
 			// recreate workspace folder again
 			log.Debug("recreating workspace directory after deletion")
-			workspaceDir, err = CreateAgentWorkspaceDir(workspaceInfo.Agent.DataPath, workspaceInfo.Workspace.Context, workspaceInfo.Workspace.ID)
+			workspaceDir, err = CreateAgentWorkspaceDir(
+				workspaceInfo.Agent.DataPath, workspaceInfo.Workspace.Context, workspaceInfo.Workspace.ID,
+			)
 			if err != nil {
 				log.WithFields(logrus.Fields{
 					"error":    err,
@@ -346,7 +372,7 @@ func CreateWorkspaceBusyFile(folder string) {
 		return
 	}
 
-	_ = os.WriteFile(filePath, nil, 0600)
+	_ = os.WriteFile(filePath, nil, 0o600)
 }
 
 func HasWorkspaceBusyFile(folder string) bool {
@@ -373,7 +399,7 @@ func writeWorkspaceInfo(file string, workspaceInfo *provider2.AgentWorkspaceInfo
 	}
 
 	// write workspace config
-	err = os.WriteFile(file, encoded, 0600)
+	err = os.WriteFile(file, encoded, 0o600)
 	if err != nil {
 		return fmt.Errorf("write workspace config file: %w", err)
 	}

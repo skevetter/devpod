@@ -95,7 +95,8 @@ func getCredentialsFromWorkspaceServer(credentials *gitcredentials.GitCredential
 	credentials, credentialsErr := doRequest(httpClient, credentials, "http://runner-proxy/git-credentials")
 	if credentialsErr != nil {
 		// append error to /tmp/git-credentials.log
-		file, err := os.OpenFile("/tmp/git-credentials-error.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		//nolint:gosec // Log file permissions are intentionally 0644 for debugging
+		file, err := os.OpenFile("/tmp/git-credentials-error.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 		if err != nil {
 			return nil
 		}
@@ -112,7 +113,8 @@ func getCredentialsFromLocalMachine(credentials *gitcredentials.GitCredentials, 
 	credentials, credentialsErr := doRequest(devpodhttp.GetHTTPClient(), credentials, "http://localhost:"+strconv.Itoa(port)+"/git-credentials")
 	if credentialsErr != nil {
 		// append error to /tmp/git-credentials.log
-		file, err := os.OpenFile("/tmp/git-credentials-error.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		//nolint:gosec // Log file permissions are intentionally 0644 for debugging
+		file, err := os.OpenFile("/tmp/git-credentials-error.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 		if err != nil {
 			return nil
 		}

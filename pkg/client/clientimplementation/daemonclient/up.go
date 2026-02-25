@@ -9,6 +9,7 @@ import (
 	"os"
 	"time"
 
+	_ "github.com/loft-sh/api/v4/pkg/apis/management/install" // Install the management group to ensure the option types are registered
 	managementv1 "github.com/loft-sh/api/v4/pkg/apis/management/v1"
 	storagev1 "github.com/loft-sh/api/v4/pkg/apis/storage/v1"
 	"github.com/loft-sh/apiserver/pkg/builders"
@@ -20,8 +21,6 @@ import (
 	"github.com/skevetter/log"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	_ "github.com/loft-sh/api/v4/pkg/apis/management/install" // Install the management group to ensure the option types are registered
 )
 
 func (c *client) Up(ctx context.Context, opt clientpkg.UpOptions) (*config.Result, error) {
@@ -307,6 +306,7 @@ const (
 	TaskStatusSucceed = "Succeeded"
 	TaskStatusFailed  = "Failed"
 )
+
 const (
 	TaskTypeUp     = "up"
 	TaskTypeStop   = "stop"

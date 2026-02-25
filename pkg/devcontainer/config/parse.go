@@ -48,7 +48,8 @@ func SaveDevContainerJSON(config *DevContainerConfig) error {
 		return fmt.Errorf("no origin in config")
 	}
 
-	err := os.MkdirAll(filepath.Dir(config.Origin), 0755)
+	//nolint:gosec // Directory needs standard permissions for config access
+	err := os.MkdirAll(filepath.Dir(config.Origin), 0o755)
 	if err != nil {
 		return err
 	}
@@ -58,7 +59,8 @@ func SaveDevContainerJSON(config *DevContainerConfig) error {
 		return err
 	}
 
-	err = os.WriteFile(config.Origin, out, 0644)
+	//nolint:gosec // Config file permissions are intentionally 0644
+	err = os.WriteFile(config.Origin, out, 0o644)
 	if err != nil {
 		return err
 	}

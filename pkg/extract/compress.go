@@ -3,6 +3,7 @@ package extract
 import (
 	"archive/tar"
 	"compress/gzip"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -11,8 +12,6 @@ import (
 	"runtime"
 	"strings"
 	"time"
-
-	"errors"
 )
 
 func WriteTarExclude(writer io.Writer, localPath string, compress bool, excludedPaths []string) error {
@@ -201,13 +200,13 @@ func (a *Archiver) tarFile(target string, targetStat os.FileInfo) error {
 }
 
 const (
-	modeISDIR  = 040000  // Directory
-	modeISFIFO = 010000  // FIFO
-	modeISREG  = 0100000 // Regular file
-	modeISLNK  = 0120000 // Symbolic link
-	modeISBLK  = 060000  // Block special file
-	modeISCHR  = 020000  // Character special file
-	modeISSOCK = 0140000 // Socket
+	modeISDIR  = 0o40000  // Directory
+	modeISFIFO = 0o10000  // FIFO
+	modeISREG  = 0o100000 // Regular file
+	modeISLNK  = 0o120000 // Symbolic link
+	modeISBLK  = 0o60000  // Block special file
+	modeISCHR  = 0o20000  // Character special file
+	modeISSOCK = 0o140000 // Socket
 )
 
 // chmodTarEntry is used to adjust the file permissions used in tar header based
@@ -221,8 +220,8 @@ func chmodTarEntry(perm os.FileMode) os.FileMode {
 	permPart := perm & os.ModePerm
 	noPermPart := perm &^ os.ModePerm
 	// Add the x bit: make everything +x from windows
-	permPart |= 0111
-	permPart &= 0755
+	permPart |= 0o111
+	permPart &= 0o755
 
 	return noPermPart | permPart
 }

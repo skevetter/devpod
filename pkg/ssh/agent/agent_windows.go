@@ -1,12 +1,11 @@
 package agent
 
 import (
+	"errors"
 	"io"
 	"os"
 	"strings"
 	"sync"
-
-	"errors"
 
 	"github.com/Microsoft/go-winio"
 	"golang.org/x/crypto/ssh"

@@ -67,7 +67,8 @@ func main() {
 	}
 
 	if ok {
-		err := os.WriteFile(absPath, []byte(replaced), 0644)
+		//nolint:gosec // Config file permissions are intentionally 0644
+		err := os.WriteFile(absPath, []byte(replaced), 0o644)
 		if err != nil {
 			panic(err)
 		}

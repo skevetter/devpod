@@ -15,10 +15,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/skevetter/log"
-
 	"github.com/skevetter/devpod/pkg/platform/client"
 	sshServer "github.com/skevetter/devpod/pkg/ssh/server"
+	"github.com/skevetter/log"
 	"tailscale.com/client/local"
 	"tailscale.com/envknob"
 	"tailscale.com/ipn/store/mem"

@@ -7,9 +7,8 @@ import (
 	"fmt"
 	"os/exec"
 
-	"github.com/skevetter/log"
-
 	"github.com/skevetter/devpod/pkg/config"
+	"github.com/skevetter/log"
 )
 
 // Open first finds the zed binary for the local platform and then opens the zed editor with the given workspace folder

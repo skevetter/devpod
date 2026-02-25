@@ -16,9 +16,7 @@ import (
 
 const maxFilesToRead = 5000
 
-var (
-	errFileReadOverLimit = errors.New("read files over limit")
-)
+var errFileReadOverLimit = errors.New("read files over limit")
 
 // DirectoryHash computes a hash of the directory contents using the standard dirhash.Hash1 algorithm.
 // It supports filtering via exclude patterns (.dockerignore) and include filters (specific subdirectories).

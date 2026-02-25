@@ -143,7 +143,8 @@ func isDirExecutable(dir string) (bool, error) {
 		}
 	}
 
-	err := os.MkdirAll(dir, 0777)
+	//nolint:gosec // Workspace directory needs world-writable permissions for container access
+	err := os.MkdirAll(dir, 0o777)
 	if err != nil {
 		return false, err
 	}
@@ -151,7 +152,7 @@ func isDirExecutable(dir string) (bool, error) {
 	testFile := filepath.Join(dir, "devpod_test.sh")
 	err = os.WriteFile(testFile, []byte(`#!/bin/sh
 echo DevPod
-`), 0755)
+`), 0o755)
 	if err != nil {
 		return false, err
 	}
@@ -232,7 +233,8 @@ func CreateAgentWorkspaceDir(agentFolder, context, workspaceID string) (string, 
 	workspaceDir := filepath.Join(homeFolder, "contexts", context, "workspaces", workspaceID)
 
 	// create workspace folder
-	err = os.MkdirAll(workspaceDir, 0755)
+	//nolint:gosec // Workspace directory needs standard permissions
+	err = os.MkdirAll(workspaceDir, 0o755)
 	if err != nil {
 		return "", err
 	}

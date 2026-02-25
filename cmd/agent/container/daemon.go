@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -12,8 +13,6 @@ import (
 	"sync"
 	"syscall"
 	"time"
-
-	"errors"
 
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/agent"
@@ -179,10 +178,12 @@ func (cmd *DaemonCmd) shouldRunSsh() bool {
 
 // setupActivityFile creates and sets permissions on the container activity file.
 func setupActivityFile() error {
-	if err := os.WriteFile(agent.ContainerActivityFile, nil, 0777); err != nil {
+	//nolint:gosec // Activity file needs to be world-writable for container access
+	if err := os.WriteFile(agent.ContainerActivityFile, nil, 0o777); err != nil {
 		return err
 	}
-	return os.Chmod(agent.ContainerActivityFile, 0777)
+	//nolint:gosec // Activity file needs to be world-writable for container access
+	return os.Chmod(agent.ContainerActivityFile, 0o777)
 }
 
 // runReaper starts the process reaper and waits for context cancellation.

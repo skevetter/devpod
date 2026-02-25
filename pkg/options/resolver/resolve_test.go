@@ -58,6 +58,7 @@ func (suite *ResolveTestSuite) TestResolveOptions_WithDependencies() {
 	suite.Equal("value1", result["option1"].Value)
 	suite.Equal("value2", result["option2"].Value)
 }
+
 func (suite *ResolveTestSuite) TestResolveOptions_MultipleNodes() {
 	nodes := map[string]*types.Option{
 		"option1": {Default: "value1"},

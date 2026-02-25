@@ -9,8 +9,7 @@ import (
 )
 
 // VersionCmd holds the ws-tunnel cmd flags
-type VersionCmd struct {
-}
+type VersionCmd struct{}
 
 // NewVersionCmd creates a new ws-tunnel command
 func NewVersionCmd() *cobra.Command {

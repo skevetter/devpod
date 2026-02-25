@@ -162,7 +162,6 @@ var _ = ginkgo.Describe("devpod up docker compose test suite", ginkgo.Label("up-
 
 		verifyHostFileAccess(hostFile, expectedContent)
 		verifyHostFileOwnership(hostFile, testUID, testGID, testUID == 0)
-
 	}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
 	ginkgo.It("implements updateRemoteUserUID with non-root container user (vscode)", func(ctx context.Context) {
@@ -199,7 +198,6 @@ var _ = ginkgo.Describe("devpod up docker compose test suite", ginkgo.Label("up-
 
 		verifyHostFileAccess(hostFile, expectedContent)
 		verifyHostFileOwnership(hostFile, testUID, testGID, testUID == 0)
-
 	}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
 	ginkgo.It("privileged", func(ctx context.Context) {

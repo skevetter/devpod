@@ -7,6 +7,7 @@ import (
 	"runtime"
 	"strings"
 
+	dockerconfig "github.com/containers/image/v5/pkg/docker/config"
 	"github.com/docker/cli/cli/config"
 	"github.com/docker/cli/cli/config/types"
 	"github.com/kballard/go-shellquote"
@@ -15,8 +16,6 @@ import (
 	"github.com/skevetter/devpod/pkg/file"
 	"github.com/skevetter/devpod/pkg/random"
 	"github.com/skevetter/log"
-
-	dockerconfig "github.com/containers/image/v5/pkg/docker/config"
 )
 
 const (
@@ -76,7 +75,7 @@ func configureCredentials(userName, shebang string, targetDir, configDir string,
 		return err
 	}
 
-	err = file.MkdirAll(userName, configDir, 0755)
+	err = file.MkdirAll(userName, configDir, 0o755)
 	if err != nil {
 		return err
 	}
@@ -105,7 +104,7 @@ func configureCredentials(userName, shebang string, targetDir, configDir string,
 
 	log.Debugf("Wrote docker credentials helper to %s", credentialHelperPath)
 	// #nosec G306 -- executable file needs 0755 permissions
-	err = os.WriteFile(credentialHelperPath, helperContent, 0755)
+	err = os.WriteFile(credentialHelperPath, helperContent, 0o755)
 	if err != nil {
 		return fmt.Errorf("write credential helper: %w", err)
 	}

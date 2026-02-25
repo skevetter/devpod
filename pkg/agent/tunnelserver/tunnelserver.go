@@ -131,6 +131,7 @@ func (t *tunnelServer) ForwardPort(ctx context.Context, portRequest *tunnel.Forw
 
 	return &tunnel.ForwardPortResponse{}, nil
 }
+
 func (t *tunnelServer) StopForwardPort(ctx context.Context, portRequest *tunnel.StopForwardPortRequest) (*tunnel.StopForwardPortResponse, error) {
 	if t.forwarder == nil {
 		return nil, fmt.Errorf("cannot forward ports")

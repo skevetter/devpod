@@ -66,7 +66,8 @@ var _ = ginkgo.Describe("testing up command for dockerfile builds", ginkgo.Label
 
 		ginkgo.By("Changing a file within the context")
 		scriptPath := filepath.Join(tempDir, "scripts", "alias.sh")
-		scriptFile, err := os.OpenFile(scriptPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		//nolint:gosec // Test file path is controlled and safe
+		scriptFile, err := os.OpenFile(scriptPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 		framework.ExpectNoError(err)
 
 		_, err = scriptFile.Write([]byte("alias yr='date +%Y'"))
@@ -108,7 +109,7 @@ var _ = ginkgo.Describe("testing up command for dockerfile builds", ginkgo.Label
 		image1 := container.Config.LegacyImage
 
 		scriptFile, err := os.OpenFile(tempDir+"/scripts/install.sh",
-			os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
+			os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
 		framework.ExpectNoError(err)
 
 		ginkgo.By("Changing a file within context")

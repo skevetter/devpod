@@ -60,6 +60,7 @@ func GetImageForArch(ctx context.Context, image, arch string) (v1.Image, error) 
 
 	return img, err
 }
+
 func CheckPushPermissions(image string) error {
 	ref, err := name.ParseReference(image)
 	if err != nil {
