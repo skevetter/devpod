@@ -5,9 +5,11 @@ import (
 	"strings"
 )
 
-const AmdUrl = "devpod-linux-amd64"
-const ArmUrl = "devpod-linux-arm64"
-const BinNamePlaceholder = "${BIN_NAME}"
+const (
+	AmdUrl             = "devpod-linux-amd64"
+	ArmUrl             = "devpod-linux-arm64"
+	BinNamePlaceholder = "${BIN_NAME}"
+)
 
 type DownloadURLs struct {
 	Base string

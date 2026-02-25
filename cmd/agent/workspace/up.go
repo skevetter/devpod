@@ -3,13 +3,12 @@ package workspace
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
-
-	"errors"
 
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/cmd/flags"
@@ -756,12 +755,12 @@ func writeConfig(configPath string, config map[string]any) error {
 	}
 
 	// #nosec G301 -- directory needs to be accessible by docker daemon
-	if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(configPath), 0o755); err != nil {
 		return fmt.Errorf("create config directory: %w", err)
 	}
 
 	// #nosec G306 -- daemon.json needs to be readable by docker daemon
-	if err := os.WriteFile(configPath, mergedData, 0644); err != nil {
+	if err := os.WriteFile(configPath, mergedData, 0o644); err != nil {
 		return fmt.Errorf("write config: %w", err)
 	}
 

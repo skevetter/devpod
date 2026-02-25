@@ -8,8 +8,10 @@ import (
 var DefaultProjectNamespacePrefix = "loft-p-"
 
 // having a nil value means the prefix is unset and things should panic and not fail silently
-var prefix *string
-var prefixMux sync.RWMutex
+var (
+	prefix    *string
+	prefixMux sync.RWMutex
+)
 
 // SetProjectNamespacePrefix sets the global project namespace prefix
 // Defaulting should be handled when reading the config via ParseProjectNamespacePrefix

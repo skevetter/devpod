@@ -25,7 +25,6 @@ type StdioListener struct {
 
 // Ready implements interface
 func (lis *StdioListener) Ready(conn net.Conn) {
-
 }
 
 // Accept implements interface

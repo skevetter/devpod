@@ -226,7 +226,6 @@ func injectAgent(ctx *injectContext) error {
 		Timeout:      opts.Timeout,
 		Log:          opts.Log,
 	})
-
 	if err != nil {
 		return handleInjectError(err, wasExecuted, buf)
 	}

@@ -247,9 +247,11 @@ func updateInstanceInteractive(ctx context.Context, baseClient platformclient.Cl
 	return newInstance, nil
 }
 
-type ProjectOption = huh.Option[*managementv1.Project]
-type TemplateOption = huh.Option[*managementv1.DevPodWorkspaceTemplate]
-type CancelFunc = func()
+type (
+	ProjectOption  = huh.Option[*managementv1.Project]
+	TemplateOption = huh.Option[*managementv1.DevPodWorkspaceTemplate]
+	CancelFunc     = func()
+)
 
 var latestTemplateVersion = huh.Option[string]{
 	Key:   "latest",

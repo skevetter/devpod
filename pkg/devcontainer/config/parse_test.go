@@ -65,10 +65,12 @@ func TestFindDevContainerConfigs(t *testing.T) {
 
 	for _, cfg := range configs {
 		fullPath := filepath.Join(tmpDir, cfg)
-		if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
+		//nolint:gosec // Test directory permissions are intentionally 0755
+		if err := os.MkdirAll(filepath.Dir(fullPath), 0o755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(fullPath, []byte(`{"name":"test"}`), 0644); err != nil {
+		//nolint:gosec // Test file permissions are intentionally 0644
+		if err := os.WriteFile(fullPath, []byte(`{"name":"test"}`), 0o644); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -93,10 +95,12 @@ func TestListDevContainerIDs(t *testing.T) {
 
 	for cfg, content := range configs {
 		fullPath := filepath.Join(tmpDir, cfg)
-		if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
+		//nolint:gosec // Test directory permissions are intentionally 0755
+		if err := os.MkdirAll(filepath.Dir(fullPath), 0o755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(fullPath, []byte(content), 0644); err != nil {
+		//nolint:gosec // Test file permissions are intentionally 0644
+		if err := os.WriteFile(fullPath, []byte(content), 0o644); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -129,7 +133,8 @@ func TestParseDevContainerJSONWithSelector(t *testing.T) {
 	t.Run("explicit path", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		configPath := filepath.Join(tmpDir, "custom.json")
-		if err := os.WriteFile(configPath, []byte(`{"name":"Custom"}`), 0644); err != nil {
+		//nolint:gosec // Test file permissions are intentionally 0644
+		if err := os.WriteFile(configPath, []byte(`{"name":"Custom"}`), 0o644); err != nil {
 			t.Fatal(err)
 		}
 
@@ -153,10 +158,12 @@ func TestParseDevContainerJSONWithSelector(t *testing.T) {
 	t.Run(".devcontainer/devcontainer.json", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		configPath := filepath.Join(tmpDir, ".devcontainer", "devcontainer.json")
-		if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil {
+		//nolint:gosec // Test directory permissions are intentionally 0755
+		if err := os.MkdirAll(filepath.Dir(configPath), 0o755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(configPath, []byte(`{"name":"Standard"}`), 0644); err != nil {
+		//nolint:gosec // Test file permissions are intentionally 0644
+		if err := os.WriteFile(configPath, []byte(`{"name":"Standard"}`), 0o644); err != nil {
 			t.Fatal(err)
 		}
 
@@ -172,7 +179,8 @@ func TestParseDevContainerJSONWithSelector(t *testing.T) {
 	t.Run(".devcontainer.json", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		configPath := filepath.Join(tmpDir, ".devcontainer.json")
-		if err := os.WriteFile(configPath, []byte(`{"name":"Root"}`), 0644); err != nil {
+		//nolint:gosec // Test file permissions are intentionally 0644
+		if err := os.WriteFile(configPath, []byte(`{"name":"Root"}`), 0o644); err != nil {
 			t.Fatal(err)
 		}
 
@@ -188,10 +196,12 @@ func TestParseDevContainerJSONWithSelector(t *testing.T) {
 	t.Run("single subfolder", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		configPath := filepath.Join(tmpDir, ".devcontainer/python/devcontainer.json")
-		if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil {
+		//nolint:gosec // Test directory permissions are intentionally 0755
+		if err := os.MkdirAll(filepath.Dir(configPath), 0o755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(configPath, []byte(`{"name":"Python"}`), 0644); err != nil {
+		//nolint:gosec // Test file permissions are intentionally 0644
+		if err := os.WriteFile(configPath, []byte(`{"name":"Python"}`), 0o644); err != nil {
 			t.Fatal(err)
 		}
 
@@ -209,16 +219,20 @@ func TestParseDevContainerJSONWithSelector(t *testing.T) {
 		pythonPath := filepath.Join(tmpDir, ".devcontainer/python/devcontainer.json")
 		nodePath := filepath.Join(tmpDir, ".devcontainer/node/devcontainer.json")
 
-		if err := os.MkdirAll(filepath.Dir(pythonPath), 0755); err != nil {
+		//nolint:gosec // Test directory permissions are intentionally 0755
+		if err := os.MkdirAll(filepath.Dir(pythonPath), 0o755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.MkdirAll(filepath.Dir(nodePath), 0755); err != nil {
+		//nolint:gosec // Test directory permissions are intentionally 0755
+		if err := os.MkdirAll(filepath.Dir(nodePath), 0o755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(pythonPath, []byte(`{"name":"Python"}`), 0644); err != nil {
+		//nolint:gosec // Test file permissions are intentionally 0644
+		if err := os.WriteFile(pythonPath, []byte(`{"name":"Python"}`), 0o644); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(nodePath, []byte(`{"name":"Node"}`), 0644); err != nil {
+		//nolint:gosec // Test file permissions are intentionally 0644
+		if err := os.WriteFile(nodePath, []byte(`{"name":"Node"}`), 0o644); err != nil {
 			t.Fatal(err)
 		}
 
@@ -243,16 +257,20 @@ func TestParseDevContainerJSONWithSelector(t *testing.T) {
 		pythonPath := filepath.Join(tmpDir, ".devcontainer/python/devcontainer.json")
 		nodePath := filepath.Join(tmpDir, ".devcontainer/node/devcontainer.json")
 
-		if err := os.MkdirAll(filepath.Dir(pythonPath), 0755); err != nil {
+		//nolint:gosec // Test directory permissions are intentionally 0755
+		if err := os.MkdirAll(filepath.Dir(pythonPath), 0o755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.MkdirAll(filepath.Dir(nodePath), 0755); err != nil {
+		//nolint:gosec // Test directory permissions are intentionally 0755
+		if err := os.MkdirAll(filepath.Dir(nodePath), 0o755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(pythonPath, []byte(`{"name":"Python"}`), 0644); err != nil {
+		//nolint:gosec // Test file permissions are intentionally 0644
+		if err := os.WriteFile(pythonPath, []byte(`{"name":"Python"}`), 0o644); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(nodePath, []byte(`{"name":"Node"}`), 0644); err != nil {
+		//nolint:gosec // Test file permissions are intentionally 0644
+		if err := os.WriteFile(nodePath, []byte(`{"name":"Node"}`), 0o644); err != nil {
 			t.Fatal(err)
 		}
 
@@ -269,16 +287,20 @@ func TestParseDevContainerJSONWithSelector(t *testing.T) {
 		tmpDir := t.TempDir()
 		pythonPath := filepath.Join(tmpDir, ".devcontainer/python/devcontainer.json")
 		nodePath := filepath.Join(tmpDir, ".devcontainer/node/devcontainer.json")
-		if err := os.MkdirAll(filepath.Dir(pythonPath), 0755); err != nil {
+		//nolint:gosec // Test directory permissions are intentionally 0755
+		if err := os.MkdirAll(filepath.Dir(pythonPath), 0o755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.MkdirAll(filepath.Dir(nodePath), 0755); err != nil {
+		//nolint:gosec // Test directory permissions are intentionally 0755
+		if err := os.MkdirAll(filepath.Dir(nodePath), 0o755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(pythonPath, []byte(`{"name":"Python"}`), 0644); err != nil {
+		//nolint:gosec // Test file permissions are intentionally 0644
+		if err := os.WriteFile(pythonPath, []byte(`{"name":"Python"}`), 0o644); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(nodePath, []byte(`{"name":"Node"}`), 0644); err != nil {
+		//nolint:gosec // Test file permissions are intentionally 0644
+		if err := os.WriteFile(nodePath, []byte(`{"name":"Node"}`), 0o644); err != nil {
 			t.Fatal(err)
 		}
 

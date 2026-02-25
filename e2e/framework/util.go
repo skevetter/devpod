@@ -172,7 +172,8 @@ func copyFile(src, dst string) error {
 	}
 	mode := info.Mode().Perm()
 
-	if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
+	//nolint:gosec // Test directory permissions are intentionally 0755
+	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
 		return err
 	}
 

@@ -305,15 +305,15 @@ func (s *HashTestSuite) TestDirectoryHash_Deterministic() {
 func (s *HashTestSuite) TestDirectoryHash_OrderIndependent() {
 	// Create files in one order
 	tempDir1 := s.T().TempDir()
-	require.NoError(s.T(), os.WriteFile(filepath.Join(tempDir1, "a.txt"), []byte("a"), 0600))
-	require.NoError(s.T(), os.WriteFile(filepath.Join(tempDir1, "b.txt"), []byte("b"), 0600))
-	require.NoError(s.T(), os.WriteFile(filepath.Join(tempDir1, "c.txt"), []byte("c"), 0600))
+	require.NoError(s.T(), os.WriteFile(filepath.Join(tempDir1, "a.txt"), []byte("a"), 0o600))
+	require.NoError(s.T(), os.WriteFile(filepath.Join(tempDir1, "b.txt"), []byte("b"), 0o600))
+	require.NoError(s.T(), os.WriteFile(filepath.Join(tempDir1, "c.txt"), []byte("c"), 0o600))
 
 	// Create files in different order
 	tempDir2 := s.T().TempDir()
-	require.NoError(s.T(), os.WriteFile(filepath.Join(tempDir2, "c.txt"), []byte("c"), 0600))
-	require.NoError(s.T(), os.WriteFile(filepath.Join(tempDir2, "a.txt"), []byte("a"), 0600))
-	require.NoError(s.T(), os.WriteFile(filepath.Join(tempDir2, "b.txt"), []byte("b"), 0600))
+	require.NoError(s.T(), os.WriteFile(filepath.Join(tempDir2, "c.txt"), []byte("c"), 0o600))
+	require.NoError(s.T(), os.WriteFile(filepath.Join(tempDir2, "a.txt"), []byte("a"), 0o600))
+	require.NoError(s.T(), os.WriteFile(filepath.Join(tempDir2, "b.txt"), []byte("b"), 0o600))
 
 	hash1, err := DirectoryHash(tempDir1, nil, nil)
 	require.NoError(s.T(), err)
@@ -426,8 +426,8 @@ func (s *HashTestSuite) TestDirectoryHash_RealWorldScenario_GoProject() {
 func (s *HashTestSuite) createFile(relPath, content string) {
 	fullPath := filepath.Join(s.tempDir, relPath)
 	dir := filepath.Dir(fullPath)
-	require.NoError(s.T(), os.MkdirAll(dir, 0750))
-	require.NoError(s.T(), os.WriteFile(fullPath, []byte(content), 0600))
+	require.NoError(s.T(), os.MkdirAll(dir, 0o750))
+	require.NoError(s.T(), os.WriteFile(fullPath, []byte(content), 0o600))
 }
 
 func (s *HashTestSuite) createSymlink(link, target string) {

@@ -7,17 +7,18 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/blang/semver/v4"
+	"github.com/creativeprojects/go-selfupdate"
 	"github.com/sirupsen/logrus"
 	versionpkg "github.com/skevetter/devpod/pkg/version"
 	"github.com/skevetter/log"
-
-	"github.com/blang/semver/v4"
-	"github.com/creativeprojects/go-selfupdate"
 )
 
 // Version holds the current version tag
-var version string = strings.TrimPrefix(versionpkg.GetVersion(), "v")
-var devVersion string = strings.TrimPrefix(versionpkg.DevVersion, "v")
+var (
+	version    string = strings.TrimPrefix(versionpkg.GetVersion(), "v")
+	devVersion string = strings.TrimPrefix(versionpkg.DevVersion, "v")
+)
 
 var githubSlug = "skevetter/devpod"
 

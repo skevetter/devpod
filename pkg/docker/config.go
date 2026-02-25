@@ -6,7 +6,6 @@ import (
 
 	"github.com/docker/cli/cli/config"
 	"github.com/docker/cli/cli/config/configfile"
-
 	"github.com/docker/docker/pkg/homedir"
 )
 

@@ -21,8 +21,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const PROVIDER_BINARY = "PRO_PROVIDER"
-const providerRepo = "skevetter/devpod"
+const (
+	PROVIDER_BINARY = "PRO_PROVIDER"
+	providerRepo    = "skevetter/devpod"
+)
 
 // LoginCmd holds the login cmd flags
 type LoginCmd struct {

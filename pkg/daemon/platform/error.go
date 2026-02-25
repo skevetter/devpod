@@ -16,6 +16,7 @@ type DaemonNotAvailableError struct {
 func (e *DaemonNotAvailableError) Error() string {
 	return fmt.Sprintf("The DevPod Daemon for provider %s isn't reachable. Is DevPod Desktop or `devpod pro daemon start --host=$YOUR_PRO_HOST` running? %v", e.Provider, e.Err)
 }
+
 func (e *DaemonNotAvailableError) Unwrap() error {
 	return e.Err
 }

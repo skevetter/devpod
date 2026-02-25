@@ -65,7 +65,8 @@ func (k *KubernetesDriver) ReadSecretContents(
 
 func (k *KubernetesDriver) DeleteSecret(
 	ctx context.Context,
-	secretName string) error {
+	secretName string,
+) error {
 	if !k.secretExists(ctx, secretName) {
 		return nil
 	}

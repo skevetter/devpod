@@ -167,7 +167,8 @@ func (s *proxyClient) initLock() {
 		if err != nil {
 			panic(fmt.Errorf("get workspaces dir: %w", err))
 		}
-		_ = os.MkdirAll(workspaceLocksDir, 0777)
+		//nolint:gosec // Workspace locks directory needs world-writable permissions
+		_ = os.MkdirAll(workspaceLocksDir, 0o777)
 
 		// create workspace lock
 		s.workspaceLock = flock.New(filepath.Join(workspaceLocksDir, s.workspace.ID+".workspace.lock"))

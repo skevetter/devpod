@@ -68,7 +68,8 @@ func MergeAndApply(env map[string]string, log log.Logger) {
 		return
 	}
 
-	err = os.WriteFile(location, out, 0666)
+	//nolint:gosec // Env file needs broader permissions for container access
+	err = os.WriteFile(location, out, 0o666)
 	if err != nil {
 		log.Debugf("Error writing envfile: %v", err)
 		return

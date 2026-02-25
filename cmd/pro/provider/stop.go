@@ -7,7 +7,6 @@ import (
 	"os"
 
 	storagev1 "github.com/loft-sh/api/v4/pkg/apis/storage/v1"
-
 	"github.com/skevetter/devpod/cmd/pro/flags"
 	"github.com/skevetter/devpod/pkg/platform"
 	"github.com/skevetter/devpod/pkg/platform/client"

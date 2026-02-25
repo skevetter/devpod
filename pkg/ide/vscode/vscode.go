@@ -167,7 +167,8 @@ func (o *VsCodeServer) isAlreadyInstalled(settingsFile string) bool {
 }
 
 func (o *VsCodeServer) setupSettings(settingsFile string) error {
-	if err := os.MkdirAll(filepath.Dir(settingsFile), 0755); err != nil {
+	//nolint:gosec // Directory needs standard permissions for IDE access
+	if err := os.MkdirAll(filepath.Dir(settingsFile), 0o755); err != nil {
 		return err
 	}
 
@@ -178,7 +179,7 @@ func (o *VsCodeServer) setupSettings(settingsFile string) error {
 		settings = "{}"
 	}
 
-	return os.WriteFile(settingsFile, []byte(settings), 0600)
+	return os.WriteFile(settingsFile, []byte(settings), 0o600)
 }
 
 func (o *VsCodeServer) changeOwnership(location string) error {
@@ -315,7 +316,7 @@ func (o *VsCodeServer) isSafeBinary(binPath string) bool {
 		return false
 	}
 
-	if mode.Perm()&0002 != 0 {
+	if mode.Perm()&0o002 != 0 {
 		return false
 	}
 
@@ -335,7 +336,8 @@ func (o *VsCodeServer) prepareServerLocation(create bool) (string, error) {
 
 	folder := filepath.Join(homeFolder, cfg.serverDir)
 	if create {
-		if err := os.MkdirAll(folder, 0755); err != nil {
+		//nolint:gosec // Directory needs standard permissions for IDE access
+		if err := os.MkdirAll(folder, 0o755); err != nil {
 			return "", err
 		}
 	}

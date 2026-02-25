@@ -10,13 +10,12 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/skevetter/devpod/pkg/config"
+	"github.com/skevetter/devpod/pkg/download"
 	devpodhttp "github.com/skevetter/devpod/pkg/http"
 	"github.com/skevetter/devpod/pkg/provider"
 	"github.com/skevetter/devpod/pkg/types"
 	"github.com/skevetter/devpod/providers"
-
-	"github.com/skevetter/devpod/pkg/config"
-	"github.com/skevetter/devpod/pkg/download"
 	"github.com/skevetter/log"
 )
 
@@ -30,9 +29,7 @@ const (
 	providerPrefix = "skevetter/devpod-provider-"
 )
 
-var (
-	ErrNoWorkspaceFound = errors.New("no workspace found")
-)
+var ErrNoWorkspaceFound = errors.New("no workspace found")
 
 type ProviderWithOptions struct {
 	Config *provider.ProviderConfig `json:"config,omitempty"`

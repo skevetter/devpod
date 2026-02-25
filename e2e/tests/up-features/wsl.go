@@ -39,7 +39,7 @@ var _ = ginkgo.Describe("devpod up docker features test suite", ginkgo.Label("up
 		framework.ExpectNoError(err)
 
 		output := strings.ReplaceAll(string(devContainerFileBuf), "#{server_url}", server.URL())
-		err = os.WriteFile(path.Join(tempDir, ".devcontainer.json"), []byte(output), 0644)
+		err = os.WriteFile(path.Join(tempDir, ".devcontainer.json"), []byte(output), 0o644)
 		framework.ExpectNoError(err)
 
 		ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)

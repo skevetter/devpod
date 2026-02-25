@@ -24,7 +24,7 @@ var _ = ginkgo.Describe("[integration]: devpod provider ssh test suite", ginkgo.
 		ginkgo.It("should generate ssh keypairs", func(ctx context.Context) {
 			sshDir := os.Getenv("HOME") + "/.ssh"
 			if _, err := os.Stat(sshDir); os.IsNotExist(err) {
-				err = os.MkdirAll(sshDir, 0700)
+				err = os.MkdirAll(sshDir, 0o700)
 				framework.ExpectNoError(err)
 			}
 
@@ -45,7 +45,7 @@ var _ = ginkgo.Describe("[integration]: devpod provider ssh test suite", ginkgo.
 				output, err := cmd.Output()
 				framework.ExpectNoError(err)
 
-				err = os.WriteFile(sshPubKeyPath, output, 0600)
+				err = os.WriteFile(sshPubKeyPath, output, 0o600)
 				framework.ExpectNoError(err)
 			}
 
@@ -57,11 +57,11 @@ var _ = ginkgo.Describe("[integration]: devpod provider ssh test suite", ginkgo.
 			authorizedKeysPath := filepath.Join(homeDir, ".ssh", "authorized_keys")
 			_, err = os.Stat(authorizedKeysPath)
 			if err != nil {
-				err = os.WriteFile(authorizedKeysPath, publicKey, 0600)
+				err = os.WriteFile(authorizedKeysPath, publicKey, 0o600)
 				framework.ExpectNoError(err)
 			} else {
 				f, err := os.OpenFile(os.Getenv("HOME")+"/.ssh/authorized_keys",
-					os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
+					os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
 				framework.ExpectNoError(err)
 
 				defer func() { _ = f.Close() }()

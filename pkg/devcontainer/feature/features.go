@@ -191,7 +191,8 @@ func downloadLayer(img v1.Image, id, destFile string, log log.Logger) error {
 	}
 	defer func() { _ = data.Close() }()
 
-	err = os.MkdirAll(filepath.Dir(destFile), 0755)
+	//nolint:gosec // Feature directory needs standard permissions
+	err = os.MkdirAll(filepath.Dir(destFile), 0o755)
 	if err != nil {
 		return fmt.Errorf("create target folder: %w", err)
 	}
@@ -259,7 +260,8 @@ func processDirectTarFeature(id string, httpHeaders map[string]string, log log.L
 func downloadFeatureFromURL(url string, destFile string, httpHeaders map[string]string, log log.Logger) error {
 	log.WithFields(logrus.Fields{"url": url, "destFile": destFile}).Debug("starting feature download")
 
-	err := os.MkdirAll(filepath.Dir(destFile), 0755)
+	//nolint:gosec // Feature directory needs standard permissions
+	err := os.MkdirAll(filepath.Dir(destFile), 0o755)
 	if err != nil {
 		log.WithFields(logrus.Fields{"error": err, "dir": filepath.Dir(destFile)}).Error("failed to create feature folder")
 		return fmt.Errorf("create feature folder: %w", err)

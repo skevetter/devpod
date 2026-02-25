@@ -22,8 +22,8 @@ import (
 )
 
 const (
-	dirPerms    = 0750
-	filePerms   = 0755
+	dirPerms    = 0o750
+	filePerms   = 0o755
 	windowsOS   = "windows"
 	exeSuffix   = ".exe"
 	httpPrefix  = "http://"

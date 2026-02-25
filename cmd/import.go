@@ -120,7 +120,8 @@ func (cmd *ImportCmd) importWorkspace(devPodConfig *config.Config, exportConfig 
 		return fmt.Errorf("get workspace dir: %w", err)
 	}
 
-	err = os.MkdirAll(workspaceDir, 0755)
+	//nolint:gosec // Workspace directory needs standard permissions
+	err = os.MkdirAll(workspaceDir, 0o755)
 	if err != nil {
 		return fmt.Errorf("create workspace dir: %w", err)
 	}
@@ -173,7 +174,8 @@ func (cmd *ImportCmd) importMachine(devPodConfig *config.Config, exportConfig *p
 		return fmt.Errorf("get machine dir: %w", err)
 	}
 
-	err = os.MkdirAll(machineDir, 0755)
+	//nolint:gosec // Machine directory needs standard permissions
+	err = os.MkdirAll(machineDir, 0o755)
 	if err != nil {
 		return fmt.Errorf("create machine dir: %w", err)
 	}
@@ -221,7 +223,8 @@ func (cmd *ImportCmd) importProvider(devPodConfig *config.Config, exportConfig *
 		return fmt.Errorf("get provider dir: %w", err)
 	}
 
-	err = os.MkdirAll(providerDir, 0755)
+	//nolint:gosec // Provider directory needs standard permissions
+	err = os.MkdirAll(providerDir, 0o755)
 	if err != nil {
 		return fmt.Errorf("create provider dir: %w", err)
 	}

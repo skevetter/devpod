@@ -115,7 +115,7 @@ func TestReadDockerignore(t *testing.T) {
 		tempDir := t.TempDir()
 
 		dockerignorePath := filepath.Join(tempDir, ".dockerignore")
-		err := os.WriteFile(dockerignorePath, []byte("*.log\nnode_modules\n"), 0600)
+		err := os.WriteFile(dockerignorePath, []byte("*.log\nnode_modules\n"), 0o600)
 		require.NoError(t, err)
 
 		excludes, err := readDockerignore(tempDir, "Dockerfile")

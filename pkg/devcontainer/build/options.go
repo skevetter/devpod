@@ -187,7 +187,7 @@ func RewriteDockerfile(
 
 		// write dockerfile with features
 		finalDockerfilePath := filepath.Join(featureBuildInfo.FeaturesFolder, "Dockerfile-with-features")
-		err := os.WriteFile(finalDockerfilePath, []byte(finalDockerfileContent), 0600)
+		err := os.WriteFile(finalDockerfilePath, []byte(finalDockerfileContent), 0o600)
 		if err != nil {
 			return "", fmt.Errorf("write Dockerfile with features: %w", err)
 		}

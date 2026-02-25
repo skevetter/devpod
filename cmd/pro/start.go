@@ -21,12 +21,10 @@ import (
 
 	"github.com/denisbrodbeck/machineid"
 	jsonpatch "github.com/evanphx/json-patch"
-	"github.com/mgutz/ansi"
-	"github.com/skratchdot/open-golang/open"
-
 	storagev1 "github.com/loft-sh/api/v4/pkg/apis/storage/v1"
 	"github.com/loft-sh/api/v4/pkg/auth"
 	loftclientset "github.com/loft-sh/api/v4/pkg/clientset/versioned"
+	"github.com/mgutz/ansi"
 	"github.com/sirupsen/logrus"
 	proflags "github.com/skevetter/devpod/cmd/pro/flags"
 	"github.com/skevetter/devpod/pkg/platform"
@@ -36,6 +34,7 @@ import (
 	"github.com/skevetter/log/hash"
 	"github.com/skevetter/log/scanner"
 	"github.com/skevetter/log/survey"
+	"github.com/skratchdot/open-golang/open"
 	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
@@ -49,9 +48,12 @@ import (
 	"k8s.io/kubectl/pkg/util/term"
 )
 
-const LoftRouterDomainSecret = "loft-router-domain"
-const passwordChangedHint = "(has been changed)"
-const defaultUser = "admin"
+const (
+	//nolint:gosec // This is a Kubernetes secret name, not a credential
+	LoftRouterDomainSecret = "loft-router-domain"
+	passwordChangedHint    = "(has been changed)"
+	defaultUser            = "admin"
+)
 
 const defaultReleaseName = "devpod-pro"
 
@@ -90,10 +92,11 @@ type StartCmd struct {
 
 // NewStartCmd creates a new command
 func NewStartCmd(flags *proflags.GlobalFlags) *cobra.Command {
-	cmd := &StartCmd{GlobalFlags: *flags,
-		Product:   "devpod-pro",
-		ChartName: "devpod-pro",
-		Log:       log.Default,
+	cmd := &StartCmd{
+		GlobalFlags: *flags,
+		Product:     "devpod-pro",
+		ChartName:   "devpod-pro",
+		Log:         log.Default,
 	}
 	startCmd := &cobra.Command{
 		Use:   "start",
@@ -407,6 +410,7 @@ The command will wait until DevPod Pro is reachable under the host.
 	printSuccess()
 	return nil
 }
+
 func (cmd *StartCmd) successLocal() error {
 	url := "https://localhost:" + cmd.LocalPort
 

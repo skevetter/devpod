@@ -7,6 +7,8 @@ import (
 	"io"
 	"os"
 
+	managementv1 "github.com/loft-sh/api/v4/pkg/apis/management/v1"
+	storagev1 "github.com/loft-sh/api/v4/pkg/apis/storage/v1"
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/cmd/pro/flags"
 	"github.com/skevetter/devpod/pkg/client/clientimplementation"
@@ -15,9 +17,6 @@ import (
 	"github.com/skevetter/devpod/pkg/platform/remotecommand"
 	"github.com/skevetter/log"
 	"github.com/spf13/cobra"
-
-	managementv1 "github.com/loft-sh/api/v4/pkg/apis/management/v1"
-	storagev1 "github.com/loft-sh/api/v4/pkg/apis/storage/v1"
 	corev1 "k8s.io/api/core/v1"
 )
 

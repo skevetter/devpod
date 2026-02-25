@@ -603,7 +603,7 @@ func TestResolveOptions(t *testing.T) {
 				},
 			},
 			ResolvedDynamicDefinitions: map[string]*types.Option{
-				"TEST5": &types.Option{
+				"TEST5": {
 					Default: "test2",
 				},
 			},

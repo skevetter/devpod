@@ -95,7 +95,8 @@ func (o *FleetServer) Install(projectDir string) error {
 		return fmt.Errorf("unexpected status code while trying to download fleet from %s: %d", url, resp.StatusCode)
 	}
 
-	f, err := os.OpenFile(fleetBinary, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
+	//nolint:gosec // Binary file needs executable permissions
+	f, err := os.OpenFile(fleetBinary, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o755)
 	if err != nil {
 		return err
 	}
@@ -173,7 +174,7 @@ func (o *FleetServer) Start(binaryPath, location, projectDir string) error {
 		text := s.Text()
 		if strings.Contains(text, "https://fleet.jetbrains.com/") {
 			index := strings.Index(text, "https://fleet.jetbrains.com/")
-			err = os.WriteFile(FleetURLFile, []byte(strings.TrimSpace(text[index:])), 0600)
+			err = os.WriteFile(FleetURLFile, []byte(strings.TrimSpace(text[index:])), 0o600)
 			if err != nil {
 				return err
 			}
@@ -221,7 +222,8 @@ func prepareFleetServerLocation(userName string) (string, error) {
 	}
 
 	folder := filepath.Join(homeFolder, ".fleet-server")
-	err = os.MkdirAll(folder, 0755)
+	//nolint:gosec // Directory needs standard permissions for IDE access
+	err = os.MkdirAll(folder, 0o755)
 	if err != nil {
 		return "", err
 	}

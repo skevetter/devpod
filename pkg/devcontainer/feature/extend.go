@@ -17,8 +17,10 @@ import (
 	"github.com/skevetter/log"
 )
 
-var featureSafeIDRegex1 = regexp.MustCompile(`[^\w_]`)
-var featureSafeIDRegex2 = regexp.MustCompile(`^[\d_]+`)
+var (
+	featureSafeIDRegex1 = regexp.MustCompile(`[^\w_]`)
+	featureSafeIDRegex2 = regexp.MustCompile(`^[\d_]+`)
+)
 
 const FEATURE_BASE_DOCKERFILE = `
 FROM $_DEV_CONTAINERS_BASE_IMAGE AS dev_containers_target_stage
@@ -103,7 +105,7 @@ func getFeatureBuildOptions(contextPath string, imageBuildInfo *config.ImageBuil
 
 	// write devcontainer-features.builtin.env, its important to have a terminating \n here as we append to that file later
 	err = os.WriteFile(filepath.Join(featureFolder, "devcontainer-features.builtin.env"), []byte(`_CONTAINER_USER=`+containerUser+`
-_REMOTE_USER=`+remoteUser+"\n"), 0600)
+_REMOTE_USER=`+remoteUser+"\n"), 0o600)
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +138,8 @@ func copyFeaturesToDestination(features []*config.FeatureSet, targetDir string) 
 	_ = os.RemoveAll(targetDir)
 	for i, feature := range features {
 		featureDir := filepath.Join(targetDir, strconv.Itoa(i))
-		err := os.MkdirAll(featureDir, 0755)
+		//nolint:gosec // Feature directory needs standard permissions
+		err := os.MkdirAll(featureDir, 0o755)
 		if err != nil {
 			return err
 		}
@@ -149,14 +152,14 @@ func copyFeaturesToDestination(features []*config.FeatureSet, targetDir string) 
 		// copy feature folder
 		envPath := filepath.Join(featureDir, "devcontainer-features.env")
 		variables := getFeatureEnvVariables(feature.Config, feature.Options)
-		err = os.WriteFile(envPath, []byte(strings.Join(variables, "\n")), 0600)
+		err = os.WriteFile(envPath, []byte(strings.Join(variables, "\n")), 0o600)
 		if err != nil {
 			return fmt.Errorf("write variables of feature %s: %w", feature.ConfigID, err)
 		}
 
 		installWrapperPath := filepath.Join(featureDir, "devcontainer-features-install.sh")
 		installWrapperContent := getFeatureInstallWrapperScript(feature.ConfigID, feature.Config, variables)
-		err = os.WriteFile(installWrapperPath, []byte(installWrapperContent), 0600)
+		err = os.WriteFile(installWrapperPath, []byte(installWrapperContent), 0o600)
 		if err != nil {
 			return fmt.Errorf("write install wrapper script for feature %s: %w", feature.ConfigID, err)
 		}
