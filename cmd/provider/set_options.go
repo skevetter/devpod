@@ -78,18 +78,18 @@ func (cmd *SetOptionsCmd) Run(ctx context.Context, args []string, log log.Logger
 		return err
 	}
 
-	devPodConfig, err = setOptions(
-		ctx,
-		providerWithOptions.Config,
-		devPodConfig.DefaultContext,
-		cmd.Options,
-		cmd.Reconfigure,
-		cmd.Dry,
-		cmd.Dry,
-		false,
-		&cmd.SingleMachine,
-		log,
-	)
+	devPodConfig, err = configureProviderOptions(providerOptionsConfig{
+		Ctx:            ctx,
+		Provider:       providerWithOptions.Config,
+		Context:        devPodConfig.DefaultContext,
+		UserOptions:    cmd.Options,
+		Reconfigure:    cmd.Reconfigure,
+		SkipRequired:   cmd.Dry,
+		SkipInit:       cmd.Dry,
+		SkipSubOptions: false,
+		SingleMachine:  &cmd.SingleMachine,
+		Log:            log,
+	})
 	if err != nil {
 		return err
 	}

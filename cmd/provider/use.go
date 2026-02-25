@@ -99,9 +99,32 @@ func (cmd *UseCmd) Run(ctx context.Context, providerName string) error {
 	return nil
 }
 
+type providerOptionsConfig struct {
+	Ctx            context.Context
+	Provider       *provider2.ProviderConfig
+	Context        string
+	UserOptions    []string
+	Reconfigure    bool
+	SkipRequired   bool
+	SkipInit       bool
+	SkipSubOptions bool
+	SingleMachine  *bool
+	Log            log.Logger
+}
+
 func ConfigureProvider(ctx context.Context, provider *provider2.ProviderConfig, context string, userOptions []string, reconfigure, skipInit, skipSubOptions bool, singleMachine *bool, log log.Logger) error {
-	// set options
-	devPodConfig, err := setOptions(ctx, provider, context, userOptions, reconfigure, false, skipInit, skipSubOptions, singleMachine, log)
+	devPodConfig, err := configureProviderOptions(providerOptionsConfig{
+		Ctx:            ctx,
+		Provider:       provider,
+		Context:        context,
+		UserOptions:    userOptions,
+		Reconfigure:    reconfigure,
+		SkipRequired:   false,
+		SkipInit:       skipInit,
+		SkipSubOptions: skipSubOptions,
+		SingleMachine:  singleMachine,
+		Log:            log,
+	})
 	if err != nil {
 		return err
 	}
@@ -122,60 +145,55 @@ func ConfigureProvider(ctx context.Context, provider *provider2.ProviderConfig, 
 	return nil
 }
 
-func setOptions(
-	ctx context.Context,
-	provider *provider2.ProviderConfig,
-	context string,
-	userOptions []string,
-	reconfigure,
-	skipRequired,
-	skipInit,
-	skipSubOptions bool,
-	singleMachine *bool,
-	log log.Logger,
-) (*config.Config, error) {
-	devPodConfig, err := config.LoadConfig(context, "")
+func mergeExistingOptions(options map[string]string, existingOptions map[string]config.OptionValue) {
+	for k, v := range existingOptions {
+		if _, ok := options[k]; !ok && v.UserProvided {
+			options[k] = v.Value
+		}
+	}
+}
+
+func configureProviderOptions(cfg providerOptionsConfig) (*config.Config, error) {
+	devPodConfig, err := config.LoadConfig(cfg.Context, "")
 	if err != nil {
 		return nil, err
 	}
 
-	userOptions = options2.InheritOptionsFromEnvironment(
-		userOptions,
-		provider.Options,
-		"DEVPOD_PROVIDER_"+provider.Name+"_",
+	cfg.UserOptions = options2.InheritOptionsFromEnvironment(
+		cfg.UserOptions,
+		cfg.Provider.Options,
+		"DEVPOD_PROVIDER_"+cfg.Provider.Name+"_",
 	)
 
 	// parse options
-	options, err := provider2.ParseOptions(userOptions)
+	options, err := provider2.ParseOptions(cfg.UserOptions)
 	if err != nil {
 		return nil, fmt.Errorf("parse options: %w", err)
 	}
 
 	// merge with old values
-	if !reconfigure {
-		for k, v := range devPodConfig.ProviderOptions(provider.Name) {
-			_, ok := options[k]
-			if !ok && v.UserProvided {
-				options[k] = v.Value
-			}
-		}
+	if !cfg.Reconfigure {
+		mergeExistingOptions(options, devPodConfig.ProviderOptions(cfg.Provider.Name))
 	}
 
 	// fill defaults
-	devPodConfig, err = options2.ResolveOptions(ctx, devPodConfig, provider, options, skipRequired, skipSubOptions, singleMachine, log)
+	devPodConfig, err = options2.ResolveOptions(
+		cfg.Ctx, devPodConfig, cfg.Provider, options,
+		cfg.SkipRequired, cfg.SkipSubOptions, cfg.SingleMachine, cfg.Log,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("resolve options: %w", err)
 	}
 
 	// run init command
-	if !skipInit {
-		stdout := log.Writer(logrus.InfoLevel, false)
+	if !cfg.SkipInit {
+		stdout := cfg.Log.Writer(logrus.InfoLevel, false)
 		defer func() { _ = stdout.Close() }()
 
-		stderr := log.Writer(logrus.ErrorLevel, false)
+		stderr := cfg.Log.Writer(logrus.ErrorLevel, false)
 		defer func() { _ = stderr.Close() }()
 
-		err = initProvider(ctx, devPodConfig, provider, stdout, stderr)
+		err = initProvider(cfg.Ctx, devPodConfig, cfg.Provider, stdout, stderr)
 		if err != nil {
 			return nil, err
 		}
@@ -185,7 +203,6 @@ func setOptions(
 }
 
 func initProvider(ctx context.Context, devPodConfig *config.Config, provider *provider2.ProviderConfig, stdout, stderr io.Writer) error {
-	// run init command
 	err := clientimplementation.RunCommandWithBinaries(clientimplementation.CommandOptions{
 		Ctx:     ctx,
 		Name:    "init",
