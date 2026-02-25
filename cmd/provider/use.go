@@ -139,7 +139,6 @@ func ConfigureProvider(cfg ProviderOptionsConfig) error {
 		return fmt.Errorf("save config: %w", err)
 	}
 
-
 	cfg.Log.Donef("configured provider %s", cfg.Provider.Name)
 	return nil
 }
