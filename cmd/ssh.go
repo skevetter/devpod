@@ -7,7 +7,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"path/filepath"
+	"path"
 	"strings"
 	"time"
 
@@ -539,7 +539,7 @@ func resolveWorkdir(workdir string, workspaceClient client2.BaseWorkspaceClient,
 		return workspaceFolder
 	}
 
-	return filepath.Join("/workspaces", workspaceClient.Workspace())
+	return path.Join("/workspaces", workspaceClient.Workspace())
 }
 
 func resolveMergedWorkspaceFolder(workspaceClient client2.BaseWorkspaceClient, log log.Logger) string {
