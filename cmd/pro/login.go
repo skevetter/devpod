@@ -197,7 +197,18 @@ func (cmd *LoginCmd) Run(ctx context.Context, fullURL string, log log.Logger) er
 
 	// 3. Configure provider
 	if cmd.Use {
-		err := providercmd.ConfigureProvider(ctx, providerConfig, devPodConfig.DefaultContext, cmd.Options, false, false, false, nil, log)
+		err := providercmd.ConfigureProvider(providercmd.ProviderOptionsConfig{
+			Ctx:            ctx,
+			Provider:       providerConfig,
+			Context:        devPodConfig.DefaultContext,
+			UserOptions:    cmd.Options,
+			Reconfigure:    false,
+			SkipRequired:   false,
+			SkipInit:       false,
+			SkipSubOptions: false,
+			SingleMachine:  nil,
+			Log:            log,
+		})
 		if err != nil {
 			return fmt.Errorf("configure provider: %w", err)
 		}

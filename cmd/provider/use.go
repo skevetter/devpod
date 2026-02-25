@@ -77,7 +77,18 @@ func (cmd *UseCmd) Run(ctx context.Context, providerName string) error {
 	// should reconfigure?
 	shouldReconfigure := cmd.Reconfigure || len(cmd.Options) > 0 || providerWithOptions.State == nil || cmd.SingleMachine
 	if shouldReconfigure {
-		return ConfigureProvider(ctx, providerWithOptions.Config, devPodConfig.DefaultContext, cmd.Options, cmd.Reconfigure, cmd.SkipInit, false, &cmd.SingleMachine, log.Default)
+		return ConfigureProvider(ProviderOptionsConfig{
+			Ctx:            ctx,
+			Provider:       providerWithOptions.Config,
+			Context:        devPodConfig.DefaultContext,
+			UserOptions:    cmd.Options,
+			Reconfigure:    cmd.Reconfigure,
+			SkipRequired:   false,
+			SkipInit:       cmd.SkipInit,
+			SkipSubOptions: false,
+			SingleMachine:  &cmd.SingleMachine,
+			Log:            log.Default,
+		})
 	} else {
 		log.Default.Infof("To reconfigure provider %s, run with '--reconfigure' to reconfigure the provider", providerWithOptions.Config.Name)
 	}
@@ -99,7 +110,7 @@ func (cmd *UseCmd) Run(ctx context.Context, providerName string) error {
 	return nil
 }
 
-type providerOptionsConfig struct {
+type ProviderOptionsConfig struct {
 	Ctx            context.Context
 	Provider       *provider2.ProviderConfig
 	Context        string
@@ -112,26 +123,15 @@ type providerOptionsConfig struct {
 	Log            log.Logger
 }
 
-func ConfigureProvider(ctx context.Context, provider *provider2.ProviderConfig, context string, userOptions []string, reconfigure, skipInit, skipSubOptions bool, singleMachine *bool, log log.Logger) error {
-	devPodConfig, err := configureProviderOptions(providerOptionsConfig{
-		Ctx:            ctx,
-		Provider:       provider,
-		Context:        context,
-		UserOptions:    userOptions,
-		Reconfigure:    reconfigure,
-		SkipRequired:   false,
-		SkipInit:       skipInit,
-		SkipSubOptions: skipSubOptions,
-		SingleMachine:  singleMachine,
-		Log:            log,
-	})
+func ConfigureProvider(cfg ProviderOptionsConfig) error {
+	devPodConfig, err := configureProviderOptions(cfg)
 	if err != nil {
 		return err
 	}
 
 	// set options
 	defaultContext := devPodConfig.Current()
-	defaultContext.DefaultProvider = provider.Name
+	defaultContext.DefaultProvider = cfg.Provider.Name
 
 	// save provider config
 	err = config.SaveConfig(devPodConfig)
@@ -139,9 +139,8 @@ func ConfigureProvider(ctx context.Context, provider *provider2.ProviderConfig, 
 		return fmt.Errorf("save config: %w", err)
 	}
 
-	log.WithFields(logrus.Fields{
-		"providerName": provider.Name,
-	}).Done("configured provider")
+
+	cfg.Log.Donef("configured provider %s", cfg.Provider.Name)
 	return nil
 }
 
@@ -153,7 +152,7 @@ func mergeExistingOptions(options map[string]string, existingOptions map[string]
 	}
 }
 
-func configureProviderOptions(cfg providerOptionsConfig) (*config.Config, error) {
+func configureProviderOptions(cfg ProviderOptionsConfig) (*config.Config, error) {
 	devPodConfig, err := config.LoadConfig(cfg.Context, "")
 	if err != nil {
 		return nil, err

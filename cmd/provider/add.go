@@ -96,7 +96,18 @@ func (cmd *AddCmd) Run(ctx context.Context, devPodConfig *config.Config, args []
 		"providerName": providerConfig.Name,
 	}).Done("installed provider")
 	if cmd.Use {
-		configureErr := ConfigureProvider(ctx, providerConfig, devPodConfig.DefaultContext, options, true, false, false, &cmd.SingleMachine, log.Default)
+		configureErr := ConfigureProvider(ProviderOptionsConfig{
+			Ctx:            ctx,
+			Provider:       providerConfig,
+			Context:        devPodConfig.DefaultContext,
+			UserOptions:    options,
+			Reconfigure:    true,
+			SkipRequired:   false,
+			SkipInit:       false,
+			SkipSubOptions: false,
+			SingleMachine:  &cmd.SingleMachine,
+			Log:            log.Default,
+		})
 		if configureErr != nil {
 			devPodConfig, err := config.LoadConfig(cmd.Context, "")
 			if err != nil {
