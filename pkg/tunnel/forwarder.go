@@ -12,7 +12,7 @@ import (
 )
 
 // newForwarder returns a new forwarder using an SSH client and list of ports to forward,
-// for each port a new go routine is used to manage the SSH channel
+// for each port a new go routine is used to manage the SSH channel.
 func newForwarder(sshClient *ssh.Client, forwardedPorts []string, log log.Logger) netstat.Forwarder {
 	return &forwarder{
 		sshClient:      sshClient,
@@ -22,7 +22,7 @@ func newForwarder(sshClient *ssh.Client, forwardedPorts []string, log log.Logger
 	}
 }
 
-// forwarder multiplexes a SSH client to forward ports to the remote container
+// forwarder multiplexes a SSH client to forward ports to the remote container.
 type forwarder struct {
 	sync.Mutex
 
@@ -33,7 +33,7 @@ type forwarder struct {
 	log     log.Logger
 }
 
-// Forward opens an SSH channel in the existing connection with channel type "direct-tcpip" to forward the local port
+// Forward opens an SSH channel in the existing connection with channel type "direct-tcpip" to forward the local port.
 func (f *forwarder) Forward(port string) error {
 	f.Lock()
 	defer f.Unlock()
@@ -57,7 +57,7 @@ func (f *forwarder) Forward(port string) error {
 	return nil
 }
 
-// StopForward stops the port forwarding for the given port
+// StopForward stops the port forwarding for the given port.
 func (f *forwarder) StopForward(port string) error {
 	f.Lock()
 	defer f.Unlock()

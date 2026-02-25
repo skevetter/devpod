@@ -15,7 +15,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// AddCmd holds the cmd flags
+// AddCmd holds the cmd flags.
 type AddCmd struct {
 	*flags.GlobalFlags
 
@@ -27,7 +27,7 @@ type AddCmd struct {
 	FromExisting string
 }
 
-// NewAddCmd creates a new command
+// NewAddCmd creates a new command.
 func NewAddCmd(f *flags.GlobalFlags) *cobra.Command {
 	cmd := &AddCmd{
 		GlobalFlags: f,
@@ -96,7 +96,17 @@ func (cmd *AddCmd) Run(ctx context.Context, devPodConfig *config.Config, args []
 		"providerName": providerConfig.Name,
 	}).Done("installed provider")
 	if cmd.Use {
-		configureErr := ConfigureProvider(ctx, providerConfig, devPodConfig.DefaultContext, options, true, false, false, &cmd.SingleMachine, log.Default)
+		configureErr := ConfigureProvider(ctx, ProviderOptionsConfig{
+			Provider:       providerConfig,
+			Context:        devPodConfig.DefaultContext,
+			UserOptions:    options,
+			Reconfigure:    true,
+			SkipRequired:   false,
+			SkipInit:       false,
+			SkipSubOptions: false,
+			SingleMachine:  &cmd.SingleMachine,
+			Log:            log.Default,
+		})
 		if configureErr != nil {
 			devPodConfig, err := config.LoadConfig(cmd.Context, "")
 			if err != nil {
@@ -119,7 +129,7 @@ func (cmd *AddCmd) Run(ctx context.Context, devPodConfig *config.Config, args []
 	return nil
 }
 
-// mergeOptions combines user options with existing options, user provided options take precedence
+// mergeOptions combines user options with existing options, user provided options take precedence.
 func mergeOptions(desiredOptions map[string]*types.Option, stateOptions map[string]config.OptionValue, userOptions []string) []string {
 	retOptions := []string{}
 	for key := range desiredOptions {

@@ -18,7 +18,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// OptionsCmd holds the options cmd flags
+// OptionsCmd holds the options cmd flags.
 type OptionsCmd struct {
 	*flags.GlobalFlags
 
@@ -26,7 +26,7 @@ type OptionsCmd struct {
 	Output string
 }
 
-// NewOptionsCmd creates a new command
+// NewOptionsCmd creates a new command.
 func NewOptionsCmd(flags *flags.GlobalFlags) *cobra.Command {
 	cmd := &OptionsCmd{
 		GlobalFlags: flags,
@@ -54,7 +54,7 @@ type optionWithValue struct {
 	Value    string   `json:"value,omitempty"`
 }
 
-// Run runs the command logic
+// Run runs the command logic.
 func (cmd *OptionsCmd) Run(ctx context.Context, args []string) error {
 	devPodConfig, err := config.LoadConfig(cmd.Context, cmd.Provider)
 	if err != nil {
@@ -145,7 +145,7 @@ func printOptions(devPodConfig *config.Config, provider *workspace.ProviderWithO
 	return nil
 }
 
-// MergeDynamicOptions merges the static provider options and dynamic options
+// MergeDynamicOptions merges the static provider options and dynamic options.
 func MergeDynamicOptions(options map[string]*types.Option, dynamicOptions config.OptionDefinitions) map[string]*types.Option {
 	retOptions := map[string]*types.Option{}
 	maps.Copy(retOptions, options)

@@ -13,7 +13,7 @@ import (
 
 type ConnTrackingFunc func(address string)
 
-// CheckDerpConnection validates the DERP connection
+// CheckDerpConnection validates the DERP connection.
 func CheckDerpConnection(ctx context.Context, baseUrl *url.URL) error {
 	newTransport := http.DefaultTransport.(*http.Transport).Clone()
 	newTransport.TLSClientConfig = &tls.Config{
@@ -41,7 +41,7 @@ func CheckDerpConnection(ctx context.Context, baseUrl *url.URL) error {
 	return nil
 }
 
-// Utility function to get environment variable or default
+// Utility function to get environment variable or default.
 func GetEnvOrDefault(envVar, defaultVal string) string {
 	if val := os.Getenv(envVar); val != "" {
 		return val
@@ -49,7 +49,7 @@ func GetEnvOrDefault(envVar, defaultVal string) string {
 	return defaultVal
 }
 
-// RemoveProtocol removes protocol from URL
+// RemoveProtocol removes protocol from URL.
 func RemoveProtocol(hostPath string) string {
 	if idx := strings.Index(hostPath, "://"); idx != -1 {
 		return hostPath[idx+3:]

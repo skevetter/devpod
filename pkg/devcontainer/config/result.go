@@ -42,7 +42,7 @@ func GetMounts(result *Result) []*Mount {
 //
 // Per DevContainer specification (https://containers.dev/implementors/json_reference/):
 // "remoteUser: Overrides the user that devcontainer.json supporting services tools / runs as in the container...
-// Defaults to the user the container as a whole is running as (often root)."
+// Defaults to the user the container as a whole is running as (often root).".
 func GetRemoteUser(result *Result) string {
 	if result == nil {
 		return "root"

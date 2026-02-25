@@ -16,14 +16,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// StatusCmd holds the cmd flags
+// StatusCmd holds the cmd flags.
 type StatusCmd struct {
 	*flags.GlobalFlags
 
 	Log log.Logger
 }
 
-// NewStatusCmd creates a new command
+// NewStatusCmd creates a new command.
 func NewStatusCmd(globalFlags *flags.GlobalFlags) *cobra.Command {
 	cmd := &StatusCmd{
 		GlobalFlags: globalFlags,

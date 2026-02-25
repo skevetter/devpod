@@ -11,7 +11,7 @@ import (
 
 // ServeAgent will be a simple http file server that will expose our
 // freshly compiled devpod binaries to be downloaded as agents.
-// useful for non-linux runners
+// useful for non-linux runners.
 func ServeAgent() {
 	// Specify the directory containing the files you want to serve
 	dir := "bin"

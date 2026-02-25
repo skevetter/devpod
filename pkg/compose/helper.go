@@ -77,7 +77,7 @@ func NewComposeHelper(dockerHelper *docker.DockerHelper) (*ComposeHelper, error)
 // sudo chmod +x /usr/libexec/docker/cli-plugins/docker-compose
 // Docker Compose V2 requires the buildx plugin for building images and can be installed using
 // sudo curl -SL https://github.com/docker/buildx/releases/latest/download/buildx-v0.30.1.linux-amd64 -o /usr/libexec/docker/cli-plugins/docker-buildx
-// sudo chmod +x /usr/libexec/docker/cli-plugins/docker-buildx
+// sudo chmod +x /usr/libexec/docker/cli-plugins/docker-buildx.
 func tryDockerComposeV2(dockerCmd string, log log.Logger) (*ComposeHelper, error) {
 	if exec.Command(dockerCmd, "compose").Run() != nil {
 		return nil, fmt.Errorf("docker compose not available")

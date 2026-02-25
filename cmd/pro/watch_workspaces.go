@@ -16,7 +16,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// WatchWorkspacesCmd holds the cmd flags
+// WatchWorkspacesCmd holds the cmd flags.
 type WatchWorkspacesCmd struct {
 	*flags.GlobalFlags
 	Log log.Logger
@@ -26,7 +26,7 @@ type WatchWorkspacesCmd struct {
 	FilterByOwner bool
 }
 
-// NewWatchWorkspacesCmd creates a new command
+// NewWatchWorkspacesCmd creates a new command.
 func NewWatchWorkspacesCmd(globalFlags *flags.GlobalFlags) *cobra.Command {
 	cmd := &WatchWorkspacesCmd{
 		GlobalFlags: globalFlags,

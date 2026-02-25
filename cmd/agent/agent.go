@@ -16,7 +16,7 @@ import (
 
 var AgentExecutedAnnotation = "loft.sh/agent-executed"
 
-// NewAgentCmd returns a new root command
+// NewAgentCmd returns a new root command.
 func NewAgentCmd(globalFlags *flags.GlobalFlags) *cobra.Command {
 	agentCmd := &cobra.Command{
 		Use:   "agent",

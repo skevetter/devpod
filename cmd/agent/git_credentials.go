@@ -21,14 +21,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// GitCredentialsCmd holds the cmd flags
+// GitCredentialsCmd holds the cmd flags.
 type GitCredentialsCmd struct {
 	*flags.GlobalFlags
 
 	Port int
 }
 
-// NewGitCredentialsCmd creates a new command
+// NewGitCredentialsCmd creates a new command.
 func NewGitCredentialsCmd(flags *flags.GlobalFlags) *cobra.Command {
 	cmd := &GitCredentialsCmd{
 		GlobalFlags: flags,

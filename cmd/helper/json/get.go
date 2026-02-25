@@ -17,7 +17,7 @@ type GetCmd struct {
 	Fail bool
 }
 
-// NewGetCmd creates a new ssh command
+// NewGetCmd creates a new ssh command.
 func NewGetCmd() *cobra.Command {
 	cmd := &GetCmd{}
 	getCmd := &cobra.Command{

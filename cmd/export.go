@@ -14,12 +14,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// ExportCmd holds the export cmd flags
+// ExportCmd holds the export cmd flags.
 type ExportCmd struct {
 	*flags.GlobalFlags
 }
 
-// NewExportCmd creates a new command
+// NewExportCmd creates a new command.
 func NewExportCmd(flags *flags.GlobalFlags) *cobra.Command {
 	cmd := &ExportCmd{
 		GlobalFlags: flags,
@@ -45,7 +45,7 @@ func NewExportCmd(flags *flags.GlobalFlags) *cobra.Command {
 	return exportCmd
 }
 
-// Run runs the command logic
+// Run runs the command logic.
 func (cmd *ExportCmd) Run(ctx context.Context, devPodConfig *config.Config, args []string) error {
 	// try to load workspace
 	logger := log.Default.ErrorStreamOnly()

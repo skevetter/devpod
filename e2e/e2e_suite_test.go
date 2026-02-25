@@ -12,7 +12,7 @@ import (
 
 	"github.com/skevetter/devpod/e2e/framework"
 
-	// Register tests
+	// Register tests.
 	_ "github.com/skevetter/devpod/e2e/tests/build"
 	_ "github.com/skevetter/devpod/e2e/tests/context"
 	_ "github.com/skevetter/devpod/e2e/tests/dockerinstall"

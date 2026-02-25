@@ -73,7 +73,7 @@ func (s *InjectTestSuite) TestVersionChecker() {
 	})
 }
 
-// MockExecFunc is a helper for testing
+// MockExecFunc is a helper for testing.
 type MockExecFunc struct {
 	CapturedCmd string
 	Output      string

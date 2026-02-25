@@ -776,7 +776,7 @@ const (
 	logThreshold = 10 * time.Second
 )
 
-// StartWait waits for the workspace to be ready, optionally creating/starting it
+// StartWait waits for the workspace to be ready, optionally creating/starting it.
 func StartWait(
 	ctx context.Context,
 	workspaceClient client.WorkspaceClient,
@@ -840,7 +840,7 @@ func handleNotFoundStatus(ctx context.Context, workspaceClient client.WorkspaceC
 	return fmt.Errorf("workspace not found")
 }
 
-// BuildAgentClientOptions contains parameters for BuildAgentClient
+// BuildAgentClientOptions contains parameters for BuildAgentClient.
 type BuildAgentClientOptions struct {
 	WorkspaceClient client.WorkspaceClient
 	CLIOptions      provider.CLIOptions
@@ -849,7 +849,7 @@ type BuildAgentClientOptions struct {
 	TunnelOptions   []tunnelserver.Option
 }
 
-// BuildAgentClient builds an agent client for workspace operations
+// BuildAgentClient builds an agent client for workspace operations.
 func BuildAgentClient(ctx context.Context, opts BuildAgentClientOptions) (*config2.Result, error) {
 	workspaceInfo, wInfo, err := opts.WorkspaceClient.AgentInfo(opts.CLIOptions)
 	if err != nil {

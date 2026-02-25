@@ -96,7 +96,7 @@ func resolveMachine(devPodConfig *config.Config, args []string, log log.Logger) 
 	return machineClient, nil
 }
 
-// MachineExists checks if the given workspace already exists
+// MachineExists checks if the given workspace already exists.
 func MachineExists(devPodConfig *config.Config, args []string) string {
 	if len(args) == 0 {
 		return ""
@@ -116,7 +116,7 @@ func MachineExists(devPodConfig *config.Config, args []string) string {
 	return machineID
 }
 
-// GetMachine creates a machine client
+// GetMachine creates a machine client.
 func GetMachine(devPodConfig *config.Config, args []string, log log.Logger) (client.MachineClient, error) {
 	// check if we have no args
 	if len(args) == 0 {

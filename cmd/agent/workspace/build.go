@@ -12,14 +12,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// BuildCmd holds the cmd flags
+// BuildCmd holds the cmd flags.
 type BuildCmd struct {
 	*flags.GlobalFlags
 
 	WorkspaceInfo string
 }
 
-// NewBuildCmd creates a new command
+// NewBuildCmd creates a new command.
 func NewBuildCmd(flags *flags.GlobalFlags) *cobra.Command {
 	cmd := &BuildCmd{
 		GlobalFlags: flags,
@@ -37,7 +37,7 @@ func NewBuildCmd(flags *flags.GlobalFlags) *cobra.Command {
 	return buildCmd
 }
 
-// Run runs the command logic
+// Run runs the command logic.
 func (cmd *BuildCmd) Run(ctx context.Context) error {
 	// write workspace info
 	shouldExit, workspaceInfo, err := agent.WriteWorkspaceInfoAndDeleteOld(cmd.WorkspaceInfo, func(workspaceInfo *provider2.AgentWorkspaceInfo, log log.Logger) error {

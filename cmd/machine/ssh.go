@@ -26,7 +26,7 @@ import (
 	"golang.org/x/term"
 )
 
-// SSHCmd holds the configuration
+// SSHCmd holds the configuration.
 type SSHCmd struct {
 	*flags.GlobalFlags
 
@@ -66,7 +66,7 @@ type RunSSHSessionOptions struct {
 	Stderr          io.Writer
 }
 
-// NewSSHCmd creates a new destroy command
+// NewSSHCmd creates a new destroy command.
 func NewSSHCmd(flags *flags.GlobalFlags) *cobra.Command {
 	cmd := &SSHCmd{
 		GlobalFlags: flags,
@@ -92,7 +92,7 @@ func NewSSHCmd(flags *flags.GlobalFlags) *cobra.Command {
 	return sshCmd
 }
 
-// Run runs the command logic
+// Run runs the command logic.
 func (cmd *SSHCmd) Run(ctx context.Context, args []string) error {
 	if !isValidTermMode(cmd.TermMode) {
 		return fmt.Errorf("invalid --term-mode %q: expected one of auto, strict, fallback", cmd.TermMode)

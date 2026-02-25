@@ -14,7 +14,7 @@ type GetImageCommand struct {
 	*flags.GlobalFlags
 }
 
-// NewGetImageCmd creates a new command
+// NewGetImageCmd creates a new command.
 func NewGetImageCmd(flags *flags.GlobalFlags) *cobra.Command {
 	cmd := &GetImageCommand{
 		GlobalFlags: flags,

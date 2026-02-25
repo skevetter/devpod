@@ -8,13 +8,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// UpgradeCmd is a struct that defines a command call for "upgrade"
+// UpgradeCmd is a struct that defines a command call for "upgrade".
 type UpgradeCmd struct {
 	log     log.Logger
 	Version string
 }
 
-// NewUpgradeCmd creates a new upgrade command
+// NewUpgradeCmd creates a new upgrade command.
 func NewUpgradeCmd() *cobra.Command {
 	cmd := &UpgradeCmd{log: log.GetInstance()}
 	upgradeCmd := &cobra.Command{
@@ -28,7 +28,7 @@ func NewUpgradeCmd() *cobra.Command {
 	return upgradeCmd
 }
 
-// Run executes the command logic
+// Run executes the command logic.
 func (cmd *UpgradeCmd) Run(*cobra.Command, []string) error {
 	err := upgrade.Upgrade(cmd.Version, cmd.log)
 	if err != nil {

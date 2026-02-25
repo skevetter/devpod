@@ -9,14 +9,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// UseCmd holds the use cmd flags
+// UseCmd holds the use cmd flags.
 type UseCmd struct {
 	*flags.GlobalFlags
 
 	Options []string
 }
 
-// NewUseCmd uses a new command
+// NewUseCmd uses a new command.
 func NewUseCmd(flags *flags.GlobalFlags) *cobra.Command {
 	cmd := &UseCmd{
 		GlobalFlags: flags,
@@ -37,7 +37,7 @@ func NewUseCmd(flags *flags.GlobalFlags) *cobra.Command {
 	return useCmd
 }
 
-// Run runs the command logic
+// Run runs the command logic.
 func (cmd *UseCmd) Run(ctx context.Context, context string) error {
 	devPodConfig, err := config.LoadConfig("", cmd.Provider)
 	if err != nil {

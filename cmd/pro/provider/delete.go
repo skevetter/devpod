@@ -14,14 +14,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// DeleteCmd holds the cmd flags
+// DeleteCmd holds the cmd flags.
 type DeleteCmd struct {
 	*flags.GlobalFlags
 
 	Log log.Logger
 }
 
-// NewDeleteCmd creates a new command
+// NewDeleteCmd creates a new command.
 func NewDeleteCmd(globalFlags *flags.GlobalFlags) *cobra.Command {
 	cmd := &DeleteCmd{
 		GlobalFlags: globalFlags,

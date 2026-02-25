@@ -8,7 +8,7 @@ import (
 
 const OfficialDockerRegistry = "https://index.docker.io/v1/"
 
-// GetRegistryFromImageName retrieves the registry name from an imageName
+// GetRegistryFromImageName retrieves the registry name from an imageName.
 func GetRegistryFromImageName(imageName string) (string, error) {
 	ref, err := reference.ParseNormalizedNamed(imageName)
 	if err != nil {
@@ -37,7 +37,7 @@ func validateIndexName(val string) (string, error) {
 	return val, nil
 }
 
-// newIndexInfo returns IndexInfo configuration from indexName
+// newIndexInfo returns IndexInfo configuration from indexName.
 func newIndexInfo(indexName string) (string, error) {
 	var err error
 	indexName, err = validateIndexName(indexName)

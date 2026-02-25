@@ -24,7 +24,7 @@ import (
 const PROVIDER_BINARY = "PRO_PROVIDER"
 const providerRepo = "skevetter/devpod"
 
-// LoginCmd holds the login cmd flags
+// LoginCmd holds the login cmd flags.
 type LoginCmd struct {
 	proflags.GlobalFlags
 
@@ -40,7 +40,7 @@ type LoginCmd struct {
 	ForceBrowser bool
 }
 
-// NewLoginCmd creates a new command
+// NewLoginCmd creates a new command.
 func NewLoginCmd(flags *proflags.GlobalFlags) *cobra.Command {
 	cmd := &LoginCmd{
 		GlobalFlags: *flags,
@@ -70,7 +70,7 @@ func NewLoginCmd(flags *proflags.GlobalFlags) *cobra.Command {
 	return loginCmd
 }
 
-// Run runs the command logic
+// Run runs the command logic.
 func (cmd *LoginCmd) Run(ctx context.Context, fullURL string, log log.Logger) error {
 	if strings.HasPrefix(fullURL, "http://") {
 		return fmt.Errorf("http is not supported for DevPod Pro, please use https:// instead")
@@ -197,7 +197,17 @@ func (cmd *LoginCmd) Run(ctx context.Context, fullURL string, log log.Logger) er
 
 	// 3. Configure provider
 	if cmd.Use {
-		err := providercmd.ConfigureProvider(ctx, providerConfig, devPodConfig.DefaultContext, cmd.Options, false, false, false, nil, log)
+		err := providercmd.ConfigureProvider(ctx, providercmd.ProviderOptionsConfig{
+			Provider:       providerConfig,
+			Context:        devPodConfig.DefaultContext,
+			UserOptions:    cmd.Options,
+			Reconfigure:    false,
+			SkipRequired:   false,
+			SkipInit:       false,
+			SkipSubOptions: false,
+			SingleMachine:  nil,
+			Log:            log,
+		})
 		if err != nil {
 			return fmt.Errorf("configure provider: %w", err)
 		}

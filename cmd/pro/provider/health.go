@@ -16,14 +16,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// HealthCmd holds the cmd flags
+// HealthCmd holds the cmd flags.
 type HealthCmd struct {
 	*flags.GlobalFlags
 
 	Log log.Logger
 }
 
-// NewHealthCmd creates a new command
+// NewHealthCmd creates a new command.
 func NewHealthCmd(globalFlags *flags.GlobalFlags) *cobra.Command {
 	cmd := &HealthCmd{
 		GlobalFlags: globalFlags,

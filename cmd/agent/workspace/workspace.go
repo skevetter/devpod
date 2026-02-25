@@ -5,7 +5,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// NewWorkspaceCmd returns a new command
+// NewWorkspaceCmd returns a new command.
 func NewWorkspaceCmd(flags *flags.GlobalFlags) *cobra.Command {
 	workspaceCmd := &cobra.Command{
 		Use:   "workspace",

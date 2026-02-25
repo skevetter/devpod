@@ -76,7 +76,7 @@ func main() {
 	}
 }
 
-// File hashes a given file to a sha256 string
+// File hashes a given file to a sha256 string.
 func File(filePath string) (string, error) {
 	file, err := os.Open(filePath)
 	if err != nil {

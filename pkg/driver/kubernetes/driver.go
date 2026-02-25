@@ -14,7 +14,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// NewKubernetesDriver constructs a struct capable of provisioning a workspace and it's resources using kubernetes
+// NewKubernetesDriver constructs a struct capable of provisioning a workspace and it's resources using kubernetes.
 func NewKubernetesDriver(workspaceInfo *provider2.AgentWorkspaceInfo, log log.Logger) (driver.ReprovisioningDriver, error) {
 	options := workspaceInfo.Agent.Kubernetes
 	if options.KubernetesConfig != "" {

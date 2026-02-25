@@ -14,7 +14,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// DeleteCmd holds the cmd flags
+// DeleteCmd holds the cmd flags.
 type DeleteCmd struct {
 	*flags.GlobalFlags
 
@@ -24,7 +24,7 @@ type DeleteCmd struct {
 	WorkspaceInfo string
 }
 
-// NewDeleteCmd creates a new command
+// NewDeleteCmd creates a new command.
 func NewDeleteCmd(flags *flags.GlobalFlags) *cobra.Command {
 	cmd := &DeleteCmd{
 		GlobalFlags: flags,

@@ -50,7 +50,7 @@ const (
 
 	downloadFolder = "/var/devpod/rstudio-server"
 	dataFolder     = "/usr/local/share/devpod/rstudio-server/data"
-	// rstudioConfigFolder is where RStudio expects configuration
+	// rstudioConfigFolder is where RStudio expects configuration.
 	rstudioConfigFolder = "/etc/rstudio"
 	preferencesFile     = "rstudio-prefs.json"
 

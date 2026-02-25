@@ -8,11 +8,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// VersionCmd holds the ws-tunnel cmd flags
+// VersionCmd holds the ws-tunnel cmd flags.
 type VersionCmd struct {
 }
 
-// NewVersionCmd creates a new ws-tunnel command
+// NewVersionCmd creates a new ws-tunnel command.
 func NewVersionCmd() *cobra.Command {
 	cmd := &VersionCmd{}
 	versionCmd := &cobra.Command{
@@ -25,7 +25,7 @@ func NewVersionCmd() *cobra.Command {
 	return versionCmd
 }
 
-// Run runs the command logic
+// Run runs the command logic.
 func (cmd *VersionCmd) Run(_ *cobra.Command, _ []string) error {
 	_, _ = fmt.Fprintln(os.Stdout, version.GetVersion())
 	return nil

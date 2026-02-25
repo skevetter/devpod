@@ -14,7 +14,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-// CriticalStatus container status
+// CriticalStatus container status.
 var CriticalStatus = map[string]bool{
 	"Error":                      true,
 	"Unknown":                    true,

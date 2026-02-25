@@ -18,14 +18,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// DaemonCmd holds the cmd flags
+// DaemonCmd holds the cmd flags.
 type DaemonCmd struct {
 	*flags.GlobalFlags
 
 	Interval string
 }
 
-// NewDaemonCmd creates a new command
+// NewDaemonCmd creates a new command.
 func NewDaemonCmd(flags *flags.GlobalFlags) *cobra.Command {
 	cmd := &DaemonCmd{
 		GlobalFlags: flags,

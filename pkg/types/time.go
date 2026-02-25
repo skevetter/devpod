@@ -27,7 +27,7 @@ import (
 //
 // +protobuf.options.marshal=false
 // +protobuf.as=Timestamp
-// +protobuf.options.(gogoproto.goproto_stringer)=false
+// +protobuf.options.(gogoproto.goproto_stringer)=false.
 type Time struct {
 	time.Time `protobuf:"-"`
 }
@@ -39,7 +39,7 @@ func (t *Time) DeepCopyInto(out *Time) {
 	*out = *t
 }
 
-// NewTime returns a wrapped instance of the provided time
+// NewTime returns a wrapped instance of the provided time.
 func NewTime(time time.Time) Time {
 	return Time{time}
 }
@@ -116,7 +116,7 @@ func (t *Time) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-// UnmarshalQueryParameter converts from a URL query parameter value to an object
+// UnmarshalQueryParameter converts from a URL query parameter value to an object.
 func (t *Time) UnmarshalQueryParameter(str string) error {
 	if len(str) == 0 {
 		t.Time = time.Time{}
@@ -171,7 +171,7 @@ func (Time) OpenAPISchemaType() []string { return []string{"string"} }
 // the OpenAPI spec of this type.
 func (Time) OpenAPISchemaFormat() string { return "date-time" }
 
-// MarshalQueryParameter converts to a URL query parameter value
+// MarshalQueryParameter converts to a URL query parameter value.
 func (t Time) MarshalQueryParameter() (string, error) {
 	if t.IsZero() {
 		// Encode unset/nil objects as an empty string

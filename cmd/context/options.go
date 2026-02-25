@@ -13,14 +13,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// OptionsCmd holds the options cmd flags
+// OptionsCmd holds the options cmd flags.
 type OptionsCmd struct {
 	*flags.GlobalFlags
 
 	Output string
 }
 
-// NewOptionsCmd creates a new command
+// NewOptionsCmd creates a new command.
 func NewOptionsCmd(flags *flags.GlobalFlags) *cobra.Command {
 	cmd := &OptionsCmd{
 		GlobalFlags: flags,
@@ -43,7 +43,7 @@ type optionWithValue struct {
 	Value string `json:"value,omitempty"`
 }
 
-// Run runs the command logic
+// Run runs the command logic.
 func (cmd *OptionsCmd) Run(ctx context.Context, args []string) error {
 	devPodConfig, err := config.LoadConfig(cmd.Context, "")
 	if err != nil {

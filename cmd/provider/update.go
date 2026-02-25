@@ -12,7 +12,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// UpdateCmd holds the cmd flags
+// UpdateCmd holds the cmd flags.
 type UpdateCmd struct {
 	*flags.GlobalFlags
 
@@ -20,7 +20,7 @@ type UpdateCmd struct {
 	Options []string
 }
 
-// NewUpdateCmd creates a new command
+// NewUpdateCmd creates a new command.
 func NewUpdateCmd(flags *flags.GlobalFlags) *cobra.Command {
 	cmd := &UpdateCmd{
 		GlobalFlags: flags,
@@ -64,7 +64,17 @@ func (cmd *UpdateCmd) Run(ctx context.Context, devPodConfig *config.Config, args
 		"providerName": providerConfig.Name,
 	}).Done("updated provider")
 	if cmd.Use {
-		err = ConfigureProvider(ctx, providerConfig, devPodConfig.DefaultContext, cmd.Options, false, false, false, nil, log.Default)
+		err = ConfigureProvider(ctx, ProviderOptionsConfig{
+			Provider:       providerConfig,
+			Context:        devPodConfig.DefaultContext,
+			UserOptions:    cmd.Options,
+			Reconfigure:    false,
+			SkipRequired:   false,
+			SkipInit:       false,
+			SkipSubOptions: false,
+			SingleMachine:  nil,
+			Log:            log.Default,
+		})
 		if err != nil {
 			log.Default.Errorf("Error configuring provider, please retry with 'devpod provider use %s --reconfigure'", providerConfig.Name)
 			return fmt.Errorf("configure provider: %w", err)

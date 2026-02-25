@@ -7,12 +7,13 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"path/filepath"
+	"path"
 	"strings"
 	"time"
 
 	"errors"
 
+	"al.essio.dev/pkg/shellescape"
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/cmd/completion"
 	"github.com/skevetter/devpod/cmd/flags"
@@ -36,7 +37,7 @@ const (
 	DisableSSHKeepAlive time.Duration = 0 * time.Second
 )
 
-// SSHCmd holds the ssh cmd flags
+// SSHCmd holds the ssh cmd flags.
 type SSHCmd struct {
 	*flags.GlobalFlags
 
@@ -65,7 +66,7 @@ type SSHCmd struct {
 	WorkDir string
 }
 
-// NewSSHCmd creates a new ssh command
+// NewSSHCmd creates a new ssh command.
 func NewSSHCmd(f *flags.GlobalFlags) *cobra.Command {
 	cmd := &SSHCmd{
 		GlobalFlags: f,
@@ -125,7 +126,7 @@ func NewSSHCmd(f *flags.GlobalFlags) *cobra.Command {
 	return sshCmd
 }
 
-// Run runs the command logic
+// Run runs the command logic.
 func (cmd *SSHCmd) Run(
 	ctx context.Context,
 	devPodConfig *config.Config,
@@ -464,22 +465,28 @@ func (cmd *SSHCmd) startTunnel(ctx context.Context, devPodConfig *config.Config,
 		}
 	}
 
-	workdir := filepath.Join("/workspaces", workspaceClient.Workspace())
-	if cmd.WorkDir != "" {
-		workdir = cmd.WorkDir
-	}
+	workdir := resolveWorkdir(cmd.WorkDir, workspaceClient, log)
 
 	log.Debugf("Run outer container tunnel")
-	command := fmt.Sprintf("'%s' helper ssh-server --track-activity --stdio --workdir '%s'", agent.ContainerDevPodHelperLocation, workdir)
+	commandArgs := []string{
+		agent.ContainerDevPodHelperLocation,
+		"helper",
+		"ssh-server",
+		"--track-activity",
+		"--stdio",
+		"--workdir",
+		workdir,
+	}
 	if cmd.ReuseSSHAuthSock != "" {
 		log.Debug("Reusing SSH_AUTH_SOCK")
-		command += fmt.Sprintf(" --reuse-ssh-auth-sock=%s", cmd.ReuseSSHAuthSock)
+		commandArgs = append(commandArgs, "--reuse-ssh-auth-sock", cmd.ReuseSSHAuthSock)
 	}
 	if cmd.Debug {
-		command += " --debug"
+		commandArgs = append(commandArgs, "--debug")
 	}
+	command := shellescape.QuoteCommand(commandArgs)
 	if cmd.User != "" && cmd.User != "root" {
-		command = fmt.Sprintf("su -c \"%s\" '%s'", command, cmd.User)
+		command = shellescape.QuoteCommand([]string{"su", "-c", command, cmd.User})
 	}
 
 	envVars, err := cmd.retrieveEnVars()
@@ -523,6 +530,36 @@ func (cmd *SSHCmd) startTunnel(ctx context.Context, devPodConfig *config.Config,
 	})
 }
 
+func resolveWorkdir(workdir string, workspaceClient client2.BaseWorkspaceClient, log log.Logger) string {
+	if workdir != "" {
+		return workdir
+	}
+
+	if workspaceFolder := resolveMergedWorkspaceFolder(workspaceClient, log); workspaceFolder != "" {
+		return workspaceFolder
+	}
+
+	return path.Join("/workspaces", workspaceClient.Workspace())
+}
+
+func resolveMergedWorkspaceFolder(workspaceClient client2.BaseWorkspaceClient, log log.Logger) string {
+	workspaceConfig := workspaceClient.WorkspaceConfig()
+	if workspaceConfig == nil || workspaceConfig.Context == "" || workspaceConfig.ID == "" {
+		return ""
+	}
+
+	result, err := provider.LoadWorkspaceResult(workspaceConfig.Context, workspaceConfig.ID)
+	if err != nil {
+		log.Debugf("Error loading workspace result for workdir resolution: %v", err)
+		return ""
+	}
+	if result == nil || result.MergedConfig == nil {
+		return ""
+	}
+
+	return result.MergedConfig.WorkspaceFolder
+}
+
 func (cmd *SSHCmd) startServices(
 	ctx context.Context,
 	devPodConfig *config.Config,
@@ -555,7 +592,7 @@ func (cmd *SSHCmd) startServices(
 }
 
 // setupGPGAgent will forward a local gpg-agent into the remote container
-// this works by using cmd/agent/workspace/setup_gpg
+// this works by using cmd/agent/workspace/setup_gpg.
 func (cmd *SSHCmd) setupGPGAgent(
 	ctx context.Context,
 	containerClient *ssh.Client,
@@ -608,12 +645,12 @@ func (cmd *SSHCmd) setupGPGAgent(
 	if len(gitGpgKey) > 0 {
 		gitKey := strings.TrimSpace(string(gitGpgKey))
 		forwardAgent = append(forwardAgent, "--gitkey")
-		forwardAgent = append(forwardAgent, fmt.Sprintf("'%s'", gitKey))
+		forwardAgent = append(forwardAgent, gitKey)
 	}
 
-	command := strings.Join(forwardAgent, " ")
+	command := shellescape.QuoteCommand(forwardAgent)
 	if cmd.User != "" && cmd.User != "root" {
-		command = fmt.Sprintf("su -c \"%s\" '%s'", command, cmd.User)
+		command = shellescape.QuoteCommand([]string{"su", "-c", command, cmd.User})
 	}
 
 	log.Debugf(

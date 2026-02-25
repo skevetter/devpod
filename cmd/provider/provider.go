@@ -5,7 +5,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// NewProviderCmd returns a new root command
+// NewProviderCmd returns a new root command.
 func NewProviderCmd(flags *flags.GlobalFlags) *cobra.Command {
 	providerCmd := &cobra.Command{
 		Use:   "provider",

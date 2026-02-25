@@ -45,7 +45,7 @@ type ClusterCmd struct {
 	Host             string
 }
 
-// NewClusterCmd creates a new command
+// NewClusterCmd creates a new command.
 func NewClusterCmd(globalFlags *proflags.GlobalFlags) *cobra.Command {
 	cmd := &ClusterCmd{
 		GlobalFlags: globalFlags,

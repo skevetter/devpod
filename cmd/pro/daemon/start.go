@@ -21,7 +21,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// StartCmd holds the devpod daemon flags
+// StartCmd holds the devpod daemon flags.
 type StartCmd struct {
 	*proflags.GlobalFlags
 
@@ -29,7 +29,7 @@ type StartCmd struct {
 	Log  log.Logger
 }
 
-// NewStartCmd creates a new command
+// NewStartCmd creates a new command.
 func NewStartCmd(flags *proflags.GlobalFlags) *cobra.Command {
 	cmd := &StartCmd{
 		GlobalFlags: flags,

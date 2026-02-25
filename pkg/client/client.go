@@ -54,7 +54,7 @@ type Client interface {
 	Command(ctx context.Context, options CommandOptions) error
 }
 
-// ProxyClient executes it's commands on the platform
+// ProxyClient executes it's commands on the platform.
 type ProxyClient interface {
 	BaseWorkspaceClient
 
@@ -68,7 +68,7 @@ type ProxyClient interface {
 	Ssh(ctx context.Context, options SshOptions) error
 }
 
-// DaemonClient connects to workspaces through a shared daemon
+// DaemonClient connects to workspaces through a shared daemon.
 type DaemonClient interface {
 	BaseWorkspaceClient
 

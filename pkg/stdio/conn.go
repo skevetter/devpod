@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-// StdioStream is the struct that implements the net.Conn interface
+// StdioStream is the struct that implements the net.Conn interface.
 type StdioStream struct {
 	in     *bufio.Reader
 	out    *bufio.Writer
@@ -34,17 +34,17 @@ func NewStdioStream(in io.Reader, out io.WriteCloser, exitOnClose bool, exitCode
 	}
 }
 
-// LocalAddr implements interface
+// LocalAddr implements interface.
 func (s *StdioStream) LocalAddr() net.Addr {
 	return s.local
 }
 
-// RemoteAddr implements interface
+// RemoteAddr implements interface.
 func (s *StdioStream) RemoteAddr() net.Addr {
 	return s.remote
 }
 
-// Read implements interface
+// Read implements interface.
 func (s *StdioStream) Read(b []byte) (n int, err error) {
 	return s.in.Read(b)
 }
@@ -56,13 +56,11 @@ func (s *StdioStream) Write(b []byte) (n int, err error) {
 	if err != nil {
 		return n, err
 	}
-	// Flush terminal data to prevent buffering delays that can cause escape sequence fragmentation.
 	return n, s.out.Flush()
 }
 
-// Close implements interface
+// Close implements interface.
 func (s *StdioStream) Close() error {
-	// Flush any remaining buffered data
 	if err := s.out.Flush(); err != nil {
 		return err
 	}
@@ -75,32 +73,32 @@ func (s *StdioStream) Close() error {
 	return s.outRaw.Close()
 }
 
-// SetDeadline implements interface
+// SetDeadline implements interface.
 func (s *StdioStream) SetDeadline(t time.Time) error {
 	return nil
 }
 
-// SetReadDeadline implements interface
+// SetReadDeadline implements interface.
 func (s *StdioStream) SetReadDeadline(t time.Time) error {
 	return nil
 }
 
-// SetWriteDeadline implements interface
+// SetWriteDeadline implements interface.
 func (s *StdioStream) SetWriteDeadline(t time.Time) error {
 	return nil
 }
 
-// StdinAddr is the struct for the stdi
+// StdinAddr is the struct for the stdi.
 type StdinAddr struct {
 	s string
 }
 
-// NewStdinAddr creates a new StdinAddr
+// NewStdinAddr creates a new StdinAddr.
 func NewStdinAddr(s string) *StdinAddr {
 	return &StdinAddr{s}
 }
 
-// Network implements interface
+// Network implements interface.
 func (a *StdinAddr) Network() string {
 	return "stdio"
 }

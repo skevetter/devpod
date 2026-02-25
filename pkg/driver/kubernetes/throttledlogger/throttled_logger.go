@@ -7,7 +7,7 @@ import (
 )
 
 // ThrottledLogger is a logger that throttles the output,
-// i.e. it only logs a message if a certain amount of time has passed since the last log message
+// i.e. it only logs a message if a certain amount of time has passed since the last log message.
 type ThrottledLogger struct {
 	logger log.Logger
 	timer  *Timer
