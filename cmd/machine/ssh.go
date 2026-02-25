@@ -275,7 +275,48 @@ func setupInteractivePTY(
 
 	t := resolvePTYTermWithFallback(ctx, sshClient, options.SessionOptions, options.Stderr)
 	width, height := getTerminalSize(fd)
-	if err = session.RequestPty(t, height, width, ssh.TerminalModes{}); err != nil {
+
+	// Configure terminal modes for PTY to address TUI rendering issues.
+	//
+	// Modes based on SSH implementations:
+	// - Tailscale: https://github.com/tailscale/tailscale/blob/main/ssh/tailssh/incubator.go
+	// - Coder: https://github.com/coder/coder/blob/main/pty/ssh_other.go (based on Tailscale)
+	// - NetBird: https://github.com/netbirdio/netbird/blob/main/client/ssh/client/terminal_unix.go
+	//
+	// Terminal modes consist of two types:
+	// 1. Control characters (CC values): VINTR, VQUIT, etc. - define which keys do what
+	// 2. Mode flags (boolean): ISIG, ICANON, OPOST, etc. - enable/disable terminal features
+	termModes := ssh.TerminalModes{
+		ssh.TTY_OP_ISPEED: 14400, // Input speed (baud rate)
+		ssh.TTY_OP_OSPEED: 14400, // Output speed (baud rate)
+		ssh.ICRNL:         1,     // Map CR to NL on input (Enter key works correctly)
+		ssh.IXON:          1,     // Enable XON/XOFF flow control on output
+		ssh.IXOFF:         1,     // Enable XON/XOFF flow control on input
+		ssh.OPOST:         1,     // Enable output processing (required for ONLCR)
+		ssh.ONLCR:         1,     // Map NL to CR-NL on output (line breaks work correctly)
+		ssh.ISIG:          1,     // Enable signals (Ctrl-C, Ctrl-Z work)
+		ssh.ICANON:        1,     // Enable canonical mode (line editing works)
+		ssh.ECHO:          1,     // Enable echoing of input characters
+		ssh.ECHOE:         1,     // Erase character erases previous character
+		ssh.ECHOK:         1,     // Kill character erases current line
+		ssh.IEXTEN:        1,     // Enable extended input processing
+		ssh.VINTR:         3,     // Ctrl-C (interrupt/SIGINT)
+		ssh.VQUIT:         28,    // Ctrl-\ (quit/SIGQUIT with core dump)
+		ssh.VERASE:        127,   // Backspace (erase previous character)
+		ssh.VKILL:         21,    // Ctrl-U (erase entire line)
+		ssh.VEOF:          4,     // Ctrl-D (end of file)
+		ssh.VEOL:          0,     // End of line character (disabled)
+		ssh.VEOL2:         0,     // Alternate end of line (disabled)
+		ssh.VSTART:        17,    // Ctrl-Q (XON - resume output)
+		ssh.VSTOP:         19,    // Ctrl-S (XOFF - stop output)
+		ssh.VSUSP:         26,    // Ctrl-Z (suspend/SIGTSTP)
+		ssh.VREPRINT:      18,    // Ctrl-R (reprint current line)
+		ssh.VWERASE:       23,    // Ctrl-W (erase previous word)
+		ssh.VLNEXT:        22,    // Ctrl-V (literal next - quote next character)
+		ssh.VDISCARD:      15,    // Discard output (flush)
+	}
+
+	if err = session.RequestPty(t, height, width, termModes); err != nil {
 		restoreTerm()
 		return noopRestore, fmt.Errorf("request pty: %w", err)
 	}

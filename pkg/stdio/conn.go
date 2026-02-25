@@ -1,6 +1,7 @@
 package stdio
 
 import (
+	"bufio"
 	"io"
 	"net"
 	"os"
@@ -9,8 +10,9 @@ import (
 
 // StdioStream is the struct that implements the net.Conn interface.
 type StdioStream struct {
-	in     io.Reader
-	out    io.WriteCloser
+	in     *bufio.Reader
+	out    *bufio.Writer
+	outRaw io.WriteCloser
 	local  *StdinAddr
 	remote *StdinAddr
 
@@ -19,12 +21,14 @@ type StdioStream struct {
 }
 
 // NewStdioStream is used to implement the connection interface.
+// Uses buffered I/O to prevent terminal escape sequence fragmentation.
 func NewStdioStream(in io.Reader, out io.WriteCloser, exitOnClose bool, exitCode int) *StdioStream {
 	return &StdioStream{
 		local:       NewStdinAddr("local"),
 		remote:      NewStdinAddr("remote"),
-		in:          in,
-		out:         out,
+		in:          bufio.NewReaderSize(in, 32*1024),
+		out:         bufio.NewWriterSize(out, 32*1024),
+		outRaw:      out,
 		exitOnClose: exitOnClose,
 		exitCode:    exitCode,
 	}
@@ -46,18 +50,29 @@ func (s *StdioStream) Read(b []byte) (n int, err error) {
 }
 
 // Write implements interface.
+// Flushes immediately to prevent escape sequence fragmentation.
 func (s *StdioStream) Write(b []byte) (n int, err error) {
-	return s.out.Write(b)
+	n, err = s.out.Write(b)
+	if err != nil {
+		return n, err
+	}
+	return n, s.out.Flush()
 }
 
 // Close implements interface.
 func (s *StdioStream) Close() error {
+	flushErr := s.out.Flush()
+	closeErr := s.outRaw.Close()
+
 	if s.exitOnClose {
 		// We kill ourself here because the streams are closed
 		os.Exit(s.exitCode)
 	}
 
-	return s.out.Close()
+	if flushErr != nil {
+		return flushErr
+	}
+	return closeErr
 }
 
 // SetDeadline implements interface.
