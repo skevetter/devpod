@@ -63,6 +63,7 @@ func (s *StdioStreamSuite) TestStdioStreamClose() {
 	err := stream.Close()
 	s.NoError(err, "Close should not fail")
 	s.True(wc.closed, "Underlying writer should be closed")
+	s.Equal(testData, output.Bytes(), "Buffered data should be flushed before close")
 }
 
 type testWriteCloser struct {

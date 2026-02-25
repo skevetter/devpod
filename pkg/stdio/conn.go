@@ -61,16 +61,18 @@ func (s *StdioStream) Write(b []byte) (n int, err error) {
 
 // Close implements interface.
 func (s *StdioStream) Close() error {
-	if err := s.out.Flush(); err != nil {
-		return err
-	}
+	flushErr := s.out.Flush()
+	closeErr := s.outRaw.Close()
 
 	if s.exitOnClose {
 		// We kill ourself here because the streams are closed
 		os.Exit(s.exitCode)
 	}
 
-	return s.outRaw.Close()
+	if flushErr != nil {
+		return flushErr
+	}
+	return closeErr
 }
 
 // SetDeadline implements interface.
