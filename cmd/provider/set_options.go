@@ -78,8 +78,7 @@ func (cmd *SetOptionsCmd) Run(ctx context.Context, args []string, log log.Logger
 		return err
 	}
 
-	devPodConfig, err = configureProviderOptions(providerOptionsConfig{
-		Ctx:            ctx,
+	devPodConfig, err = configureProviderOptions(ctx, ProviderOptionsConfig{
 		Provider:       providerWithOptions.Config,
 		Context:        devPodConfig.DefaultContext,
 		UserOptions:    cmd.Options,
