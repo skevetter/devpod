@@ -31,23 +31,32 @@ const (
 	ResultLocation = "/var/run/devpod/result.json"
 )
 
-func SetupContainer(ctx context.Context, setupInfo *config.Result, extraWorkspaceEnv []string, chownProjects bool, platformOptions *devpod.PlatformOptions, tunnelClient tunnel.TunnelClient, log log.Logger) error {
+type ContainerSetupConfig struct {
+	SetupInfo         *config.Result
+	ExtraWorkspaceEnv []string
+	ChownProjects     bool
+	PlatformOptions   *devpod.PlatformOptions
+	TunnelClient      tunnel.TunnelClient
+	Log               log.Logger
+}
+
+func SetupContainer(ctx context.Context, cfg *ContainerSetupConfig) error {
 	// write result to ResultLocation
-	WriteResult(setupInfo, log)
+	WriteResult(cfg.SetupInfo, cfg.Log)
 
 	// chown user dir
-	err := ChownWorkspace(setupInfo, chownProjects, log)
+	err := ChownWorkspace(cfg.SetupInfo, cfg.ChownProjects, cfg.Log)
 	if err != nil {
 		return fmt.Errorf("failed to chown workspace: %w", err)
 	}
 
 	// patch remote env
-	log.Debugf("Patch etc environment & profile...")
-	err = PatchEtcEnvironment(setupInfo.MergedConfig, log)
+	cfg.Log.Debugf("patching etc environment")
+	err = PatchEtcEnvironment(cfg.SetupInfo.MergedConfig, cfg.Log)
 	if err != nil {
 		return fmt.Errorf("patch etc environment: %w", err)
 	}
-	err = PatchEtcEnvironmentFlags(extraWorkspaceEnv, log)
+	err = PatchEtcEnvironmentFlags(cfg.ExtraWorkspaceEnv, cfg.Log)
 	if err != nil {
 		return fmt.Errorf("patch etc environment from flags: %w", err)
 	}
@@ -59,37 +68,37 @@ func SetupContainer(ctx context.Context, setupInfo *config.Result, extraWorkspac
 	}
 
 	// link /home/root to root if necessary
-	err = LinkRootHome(setupInfo)
+	err = LinkRootHome(cfg.SetupInfo)
 	if err != nil {
-		log.Errorf("Error linking /home/root: %v", err)
+		cfg.Log.Errorf("Error linking /home/root: %v", err)
 	}
 
 	// chown agent sock file
-	err = ChownAgentSock(setupInfo)
+	err = ChownAgentSock(cfg.SetupInfo)
 	if err != nil {
 		return fmt.Errorf("chown ssh agent sock file: %w", err)
 	}
 
 	// setup kube config
-	err = SetupKubeConfig(ctx, setupInfo, tunnelClient, log)
+	err = SetupKubeConfig(ctx, cfg.SetupInfo, cfg.TunnelClient, cfg.Log)
 	if err != nil {
-		log.Errorf("Error setting up KubeConfig: %v", err)
+		cfg.Log.Errorf("Error setting up KubeConfig: %v", err)
 	}
 
 	// setup platform git credentials
-	err = setupPlatformGitCredentials(config.GetRemoteUser(setupInfo), platformOptions, log)
+	err = setupPlatformGitCredentials(config.GetRemoteUser(cfg.SetupInfo), cfg.PlatformOptions, cfg.Log)
 	if err != nil {
-		log.Errorf("Error setting up platform git credentials: %v", err)
+		cfg.Log.Errorf("Error setting up platform git credentials: %v", err)
 	}
 
 	// run commands
-	log.Debugf("Run lifecycle hooks commands...")
-	err = RunLifecycleHooks(ctx, setupInfo, log)
+	cfg.Log.Debugf("running lifecycle hooks")
+	err = RunLifecycleHooks(ctx, cfg.SetupInfo, cfg.Log)
 	if err != nil {
 		return fmt.Errorf("lifecycle hooks: %w", err)
 	}
 
-	log.Debugf("Done setting up environment")
+	cfg.Log.Debugf("devcontainer setup completed")
 	return nil
 }
 
