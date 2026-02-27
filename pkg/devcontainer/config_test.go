@@ -67,8 +67,7 @@ func (s *SubstituteTestSuite) TestSubstitute_WithInitEnv() {
 }
 
 func (s *SubstituteTestSuite) TestSubstitute_InitEnvOverridesSystemEnv() {
-	os.Setenv("TEST_VAR", "system_value")
-	defer os.Unsetenv("TEST_VAR")
+	s.T().Setenv("TEST_VAR", "system_value")
 
 	rawConfig := &config.DevContainerConfig{
 		ImageContainer: config.ImageContainer{
