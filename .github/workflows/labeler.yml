@@ -14,7 +14,7 @@ jobs:
       issues: write
     runs-on: ubuntu-latest
     steps:
-      - uses: codelytv/pr-size-labeler@v1
+      - uses: skevetter/pr-size-labeler@v1
         with:
           xs_label: "size/xs"
           xs_max_size: "10"
