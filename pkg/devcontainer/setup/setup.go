@@ -48,7 +48,7 @@ func SetupContainer(ctx context.Context, cfg *ContainerSetupConfig) error {
 
 	existing, _ := os.ReadFile(ResultLocation)
 	if string(rawBytes) != string(existing) {
-		err = os.MkdirAll(filepath.Dir(ResultLocation), 0777)
+		err = os.MkdirAll(filepath.Dir(ResultLocation), 0755)
 		if err != nil {
 			cfg.Log.Warnf("error create %s: %v", filepath.Dir(ResultLocation), err)
 		}
@@ -272,16 +272,17 @@ func setupKubeConfig(ctx context.Context, setupInfo *config.Result, tunnelClient
 	exists, err := markerFileExists("setupKubeConfig", "")
 	if err != nil {
 		return err
-	} else if exists || tunnelClient == nil {
+	}
+	if exists || tunnelClient == nil {
 		return nil
 	}
-	log.Info("Setup KubeConfig")
+	log.Info("setup KubeConfig")
 
-	// get kubernetes config from setup server
 	kubeConfigRes, err := tunnelClient.KubeConfig(ctx, &tunnel.Message{})
 	if err != nil {
 		return err
-	} else if kubeConfigRes.Message == "" {
+	}
+	if kubeConfigRes.Message == "" {
 		return nil
 	}
 
@@ -292,12 +293,27 @@ func setupKubeConfig(ctx context.Context, setupInfo *config.Result, tunnelClient
 	}
 
 	kubeDir := filepath.Join(homeDir, ".kube")
-	err = os.Mkdir(kubeDir, 0755)
-	if err != nil && !errors.Is(err, os.ErrExist) {
+	if err := createKubeDir(kubeDir); err != nil {
 		return err
 	}
 
 	configPath := filepath.Join(kubeDir, "config")
+	if err := mergeKubeConfig(configPath, kubeConfigRes.Message); err != nil {
+		return err
+	}
+
+	return copy2.ChownR(kubeDir, user)
+}
+
+func createKubeDir(kubeDir string) error {
+	err := os.Mkdir(kubeDir, 0755)
+	if err != nil && !errors.Is(err, os.ErrExist) {
+		return err
+	}
+	return nil
+}
+
+func mergeKubeConfig(configPath, newConfigData string) error {
 	existingConfig, err := clientcmd.LoadFromFile(configPath)
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return err
@@ -306,33 +322,17 @@ func setupKubeConfig(ctx context.Context, setupInfo *config.Result, tunnelClient
 		existingConfig = clientcmdapi.NewConfig()
 	}
 
-	kubeConfig, err := clientcmd.Load([]byte(kubeConfigRes.Message))
+	kubeConfig, err := clientcmd.Load([]byte(newConfigData))
 	if err != nil {
 		return err
 	}
-	// merge with existing kubeConfig
+
 	maps.Copy(existingConfig.Clusters, kubeConfig.Clusters)
 	maps.Copy(existingConfig.AuthInfos, kubeConfig.AuthInfos)
 	maps.Copy(existingConfig.Contexts, kubeConfig.Contexts)
-
-	// Set the current context to the new one.
-	// This might not always be the correct choice but given that someone
-	// explicitly required this workspace to be in a virtual cluster/space
-	// it's fair to assume they also want to point the current context to it
 	existingConfig.CurrentContext = kubeConfig.CurrentContext
 
-	err = clientcmd.WriteToFile(*existingConfig, configPath)
-	if err != nil {
-		return err
-	}
-
-	// ensure `remoteUser` owns kubeConfig
-	err = copy2.ChownR(kubeDir, user)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return clientcmd.WriteToFile(*existingConfig, configPath)
 }
 
 func markerFileExists(markerName string, markerContent string) (bool, error) {
