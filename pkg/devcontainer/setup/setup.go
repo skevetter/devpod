@@ -268,7 +268,11 @@ func chownAgentSock(setupInfo *config.Result) error {
 
 // setupKubeConfig retrieves and stores a KubeConfig file in the default location `$HOME/.kube/config`.
 // It merges our KubeConfig with existing ones.
-func setupKubeConfig(ctx context.Context, setupInfo *config.Result, tunnelClient tunnel.TunnelClient, log log.Logger) error {
+func setupKubeConfig(
+	ctx context.Context,
+	setupInfo *config.Result,
+	tunnelClient tunnel.TunnelClient,
+	log log.Logger) error {
 	if shouldSkipKubeConfig(tunnelClient) {
 		return nil
 	}
