@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/command"
 	"github.com/skevetter/devpod/pkg/daemon/agent"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
@@ -41,10 +40,7 @@ func (r *runner) runSingleContainer(
 	options UpOptions,
 	timeout time.Duration,
 ) (*config.Result, error) {
-	r.Log.WithFields(logrus.Fields{
-		"workspaceID": r.ID,
-		"platform":    fmt.Sprintf("%+v", options.Platform),
-	}).Debug("start container in single mode")
+	r.Log.Debugf("starting devcontainer for workspace %s, r.ID")
 
 	substitutionContext.Userns = options.Userns
 	substitutionContext.UidMap = options.UidMap

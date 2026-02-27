@@ -167,15 +167,14 @@ func (cmd *SetupContainerCmd) prepareWorkspace(sctx *setupContext) error {
 }
 
 func (cmd *SetupContainerCmd) finalizeSetup(sctx *setupContext) error {
-	err := setup.SetupContainer(
-		sctx.ctx,
-		sctx.setupInfo,
-		sctx.workspaceInfo.CLIOptions.WorkspaceEnv,
-		cmd.ChownWorkspace,
-		&sctx.workspaceInfo.CLIOptions.Platform,
-		sctx.tunnelClient,
-		sctx.logger,
-	)
+	err := setup.SetupContainer(sctx.ctx, &setup.ContainerSetupConfig{
+		SetupInfo:         sctx.setupInfo,
+		ExtraWorkspaceEnv: sctx.workspaceInfo.CLIOptions.WorkspaceEnv,
+		ChownProjects:     cmd.ChownWorkspace,
+		PlatformOptions:   &sctx.workspaceInfo.CLIOptions.Platform,
+		TunnelClient:      sctx.tunnelClient,
+		Log:               sctx.logger,
+	})
 	if err != nil {
 		return err
 	}

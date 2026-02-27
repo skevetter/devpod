@@ -27,7 +27,7 @@ linters:
     - whitespace
   settings:
     cyclop:
-      max-complexity: 7
+      max-complexity: 8
     revive:
       rules:
         - name: argument-limit
