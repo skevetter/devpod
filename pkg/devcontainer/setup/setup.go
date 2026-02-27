@@ -79,15 +79,15 @@ func SetupContainer(ctx context.Context, cfg *ContainerSetupConfig) error {
 }
 
 func setupWorkspaceOwnership(cfg *ContainerSetupConfig) error {
-	if err := ChownWorkspace(cfg.SetupInfo, cfg.ChownProjects, cfg.Log); err != nil {
+	if err := chownWorkspace(cfg.SetupInfo, cfg.ChownProjects, cfg.Log); err != nil {
 		return fmt.Errorf("failed to chown workspace: %w", err)
 	}
 
-	if err := LinkRootHome(cfg.SetupInfo); err != nil {
+	if err := linkRootHome(cfg.SetupInfo); err != nil {
 		cfg.Log.Errorf("Error linking /home/root: %v", err)
 	}
 
-	if err := ChownAgentSock(cfg.SetupInfo); err != nil {
+	if err := chownAgentSock(cfg.SetupInfo); err != nil {
 		return fmt.Errorf("chown ssh agent sock file: %w", err)
 	}
 
@@ -97,15 +97,15 @@ func setupWorkspaceOwnership(cfg *ContainerSetupConfig) error {
 func setupEnvironment(cfg *ContainerSetupConfig) error {
 	cfg.Log.Debugf("patching etc environment")
 
-	if err := PatchEtcEnvironment(cfg.SetupInfo.MergedConfig, cfg.Log); err != nil {
+	if err := patchEtcEnvironment(cfg.SetupInfo.MergedConfig, cfg.Log); err != nil {
 		return fmt.Errorf("patch etc environment: %w", err)
 	}
 
-	if err := PatchEtcEnvironmentFlags(cfg.ExtraWorkspaceEnv, cfg.Log); err != nil {
+	if err := patchEtcEnvironmentFlags(cfg.ExtraWorkspaceEnv, cfg.Log); err != nil {
 		return fmt.Errorf("patch etc environment from flags: %w", err)
 	}
 
-	if err := PatchEtcProfile(); err != nil {
+	if err := patchEtcProfile(); err != nil {
 		return fmt.Errorf("patch etc profile: %w", err)
 	}
 
@@ -113,7 +113,7 @@ func setupEnvironment(cfg *ContainerSetupConfig) error {
 }
 
 func setupOptionalFeatures(ctx context.Context, cfg *ContainerSetupConfig) {
-	if err := SetupKubeConfig(ctx, cfg.SetupInfo, cfg.TunnelClient, cfg.Log); err != nil {
+	if err := setupKubeConfig(ctx, cfg.SetupInfo, cfg.TunnelClient, cfg.Log); err != nil {
 		cfg.Log.Errorf("setup KubeConfig: %v", err)
 	}
 
@@ -122,7 +122,7 @@ func setupOptionalFeatures(ctx context.Context, cfg *ContainerSetupConfig) {
 	}
 }
 
-func LinkRootHome(setupInfo *config.Result) error {
+func linkRootHome(setupInfo *config.Result) error {
 	user := config.GetRemoteUser(setupInfo)
 	if user != "root" {
 		return nil
@@ -154,7 +154,7 @@ func LinkRootHome(setupInfo *config.Result) error {
 	return nil
 }
 
-func ChownWorkspace(setupInfo *config.Result, recursive bool, log log.Logger) error {
+func chownWorkspace(setupInfo *config.Result, recursive bool, log log.Logger) error {
 	user := config.GetRemoteUser(setupInfo)
 	exists, err := markerFileExists("chownWorkspace", "")
 	if err != nil {
@@ -191,7 +191,7 @@ func ChownWorkspace(setupInfo *config.Result, recursive bool, log log.Logger) er
 	return nil
 }
 
-func PatchEtcProfile() error {
+func patchEtcProfile() error {
 	exists, err := markerFileExists("patchEtcProfile", "")
 	if err != nil {
 		return err
@@ -207,7 +207,7 @@ func PatchEtcProfile() error {
 	return nil
 }
 
-func PatchEtcEnvironmentFlags(workspaceEnv []string, log log.Logger) error {
+func patchEtcEnvironmentFlags(workspaceEnv []string, log log.Logger) error {
 	if len(workspaceEnv) == 0 {
 		return nil
 	}
@@ -228,7 +228,7 @@ func PatchEtcEnvironmentFlags(workspaceEnv []string, log log.Logger) error {
 	return nil
 }
 
-func PatchEtcEnvironment(mergedConfig *config.MergedDevContainerConfig, log log.Logger) error {
+func patchEtcEnvironment(mergedConfig *config.MergedDevContainerConfig, log log.Logger) error {
 	if len(mergedConfig.RemoteEnv) == 0 {
 		return nil
 	}
@@ -253,7 +253,7 @@ func PatchEtcEnvironment(mergedConfig *config.MergedDevContainerConfig, log log.
 	return nil
 }
 
-func ChownAgentSock(setupInfo *config.Result) error {
+func chownAgentSock(setupInfo *config.Result) error {
 	user := config.GetRemoteUser(setupInfo)
 	agentSockFile := os.Getenv("SSH_AUTH_SOCK")
 	if agentSockFile != "" {
@@ -266,9 +266,9 @@ func ChownAgentSock(setupInfo *config.Result) error {
 	return nil
 }
 
-// SetupKubeConfig retrieves and stores a KubeConfig file in the default location `$HOME/.kube/config`.
+// setupKubeConfig retrieves and stores a KubeConfig file in the default location `$HOME/.kube/config`.
 // It merges our KubeConfig with existing ones.
-func SetupKubeConfig(ctx context.Context, setupInfo *config.Result, tunnelClient tunnel.TunnelClient, log log.Logger) error {
+func setupKubeConfig(ctx context.Context, setupInfo *config.Result, tunnelClient tunnel.TunnelClient, log log.Logger) error {
 	exists, err := markerFileExists("setupKubeConfig", "")
 	if err != nil {
 		return err
