@@ -41,60 +41,36 @@ type ContainerSetupConfig struct {
 }
 
 func SetupContainer(ctx context.Context, cfg *ContainerSetupConfig) error {
-	// write result to ResultLocation
-	WriteResult(cfg.SetupInfo, cfg.Log)
-
-	// chown user dir
-	err := ChownWorkspace(cfg.SetupInfo, cfg.ChownProjects, cfg.Log)
+	rawBytes, err := json.Marshal(cfg.SetupInfo)
 	if err != nil {
-		return fmt.Errorf("failed to chown workspace: %w", err)
+		cfg.Log.Warnf("error marshal result: %v", err)
 	}
 
-	// patch remote env
-	cfg.Log.Debugf("patching etc environment")
-	err = PatchEtcEnvironment(cfg.SetupInfo.MergedConfig, cfg.Log)
-	if err != nil {
-		return fmt.Errorf("patch etc environment: %w", err)
-	}
-	err = PatchEtcEnvironmentFlags(cfg.ExtraWorkspaceEnv, cfg.Log)
-	if err != nil {
-		return fmt.Errorf("patch etc environment from flags: %w", err)
+	existing, _ := os.ReadFile(ResultLocation)
+	if string(rawBytes) != string(existing) {
+		err = os.MkdirAll(filepath.Dir(ResultLocation), 0777)
+		if err != nil {
+			cfg.Log.Warnf("error create %s: %v", filepath.Dir(ResultLocation), err)
+		}
+
+		err = os.WriteFile(ResultLocation, rawBytes, 0600)
+		if err != nil {
+			cfg.Log.Warnf("error write result to %s: %v", ResultLocation, err)
+		}
 	}
 
-	// patch etc profile
-	err = PatchEtcProfile()
-	if err != nil {
-		return fmt.Errorf("patch etc profile: %w", err)
+	if err := setupWorkspaceOwnership(cfg); err != nil {
+		return err
 	}
 
-	// link /home/root to root if necessary
-	err = LinkRootHome(cfg.SetupInfo)
-	if err != nil {
-		cfg.Log.Errorf("Error linking /home/root: %v", err)
+	if err := setupEnvironment(cfg); err != nil {
+		return err
 	}
 
-	// chown agent sock file
-	err = ChownAgentSock(cfg.SetupInfo)
-	if err != nil {
-		return fmt.Errorf("chown ssh agent sock file: %w", err)
-	}
+	setupOptionalFeatures(ctx, cfg)
 
-	// setup kube config
-	err = SetupKubeConfig(ctx, cfg.SetupInfo, cfg.TunnelClient, cfg.Log)
-	if err != nil {
-		cfg.Log.Errorf("Error setting up KubeConfig: %v", err)
-	}
-
-	// setup platform git credentials
-	err = setupPlatformGitCredentials(config.GetRemoteUser(cfg.SetupInfo), cfg.PlatformOptions, cfg.Log)
-	if err != nil {
-		cfg.Log.Errorf("Error setting up platform git credentials: %v", err)
-	}
-
-	// run commands
 	cfg.Log.Debugf("running lifecycle hooks")
-	err = RunLifecycleHooks(ctx, cfg.SetupInfo, cfg.Log)
-	if err != nil {
+	if err := RunLifecycleHooks(ctx, cfg.SetupInfo, cfg.Log); err != nil {
 		return fmt.Errorf("lifecycle hooks: %w", err)
 	}
 
@@ -102,28 +78,47 @@ func SetupContainer(ctx context.Context, cfg *ContainerSetupConfig) error {
 	return nil
 }
 
-func WriteResult(setupInfo *config.Result, log log.Logger) {
-	rawBytes, err := json.Marshal(setupInfo)
-	if err != nil {
-		log.Warnf("Error marshal result: %v", err)
-		return
+func setupWorkspaceOwnership(cfg *ContainerSetupConfig) error {
+	if err := ChownWorkspace(cfg.SetupInfo, cfg.ChownProjects, cfg.Log); err != nil {
+		return fmt.Errorf("failed to chown workspace: %w", err)
 	}
 
-	existing, _ := os.ReadFile(ResultLocation)
-	if string(rawBytes) == string(existing) {
-		return
+	if err := LinkRootHome(cfg.SetupInfo); err != nil {
+		cfg.Log.Errorf("Error linking /home/root: %v", err)
 	}
 
-	err = os.MkdirAll(filepath.Dir(ResultLocation), 0777)
-	if err != nil {
-		log.Warnf("Error create %s: %v", filepath.Dir(ResultLocation), err)
-		return
+	if err := ChownAgentSock(cfg.SetupInfo); err != nil {
+		return fmt.Errorf("chown ssh agent sock file: %w", err)
 	}
 
-	err = os.WriteFile(ResultLocation, rawBytes, 0600)
-	if err != nil {
-		log.Warnf("Error write result to %s: %v", ResultLocation, err)
-		return
+	return nil
+}
+
+func setupEnvironment(cfg *ContainerSetupConfig) error {
+	cfg.Log.Debugf("patching etc environment")
+
+	if err := PatchEtcEnvironment(cfg.SetupInfo.MergedConfig, cfg.Log); err != nil {
+		return fmt.Errorf("patch etc environment: %w", err)
+	}
+
+	if err := PatchEtcEnvironmentFlags(cfg.ExtraWorkspaceEnv, cfg.Log); err != nil {
+		return fmt.Errorf("patch etc environment from flags: %w", err)
+	}
+
+	if err := PatchEtcProfile(); err != nil {
+		return fmt.Errorf("patch etc profile: %w", err)
+	}
+
+	return nil
+}
+
+func setupOptionalFeatures(ctx context.Context, cfg *ContainerSetupConfig) {
+	if err := SetupKubeConfig(ctx, cfg.SetupInfo, cfg.TunnelClient, cfg.Log); err != nil {
+		cfg.Log.Errorf("setup KubeConfig: %v", err)
+	}
+
+	if err := setupPlatformGitCredentials(config.GetRemoteUser(cfg.SetupInfo), cfg.PlatformOptions, cfg.Log); err != nil {
+		cfg.Log.Errorf("setup platform git credentials: %v", err)
 	}
 }
 
