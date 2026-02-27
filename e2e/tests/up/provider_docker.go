@@ -69,7 +69,9 @@ var _ = ginkgo.Describe("testing up command for docker customizations", ginkgo.L
 	}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
 	ginkgo.It("variables substitution", func(ctx context.Context) {
-		tempDir, err := dtc.setupAndUp(ctx, "tests/up/testdata/docker-variables")
+		tempDir, err := dtc.setupAndUp(ctx, "tests/up/testdata/docker-variables",
+			"--init-env", "CUSTOM_VAR=custom_value",
+			"--init-env", "CUSTOM_IMAGE=alpine:latest")
 		framework.ExpectNoError(err)
 
 		workspace, err := dtc.f.FindWorkspace(ctx, tempDir)
@@ -106,6 +108,14 @@ var _ = ginkgo.Describe("testing up command for docker customizations", ginkgo.L
 		containerWorkspaceFolderBasename, err := dtc.execSSHCapture(ctx, workspace.ID, "cat $HOME/container-workspace-folder-basename.out")
 		framework.ExpectNoError(err)
 		gomega.Expect(containerWorkspaceFolderBasename).To(gomega.Equal(filepath.Base(tempDir)))
+
+		customVar, err := dtc.execSSHCapture(ctx, workspace.ID, "cat $HOME/custom-var.out")
+		framework.ExpectNoError(err)
+		gomega.Expect(customVar).To(gomega.Equal("custom_value"))
+
+		customImage, err := dtc.execSSHCapture(ctx, workspace.ID, "cat $HOME/custom-image.out")
+		framework.ExpectNoError(err)
+		gomega.Expect(customImage).To(gomega.Equal("alpine:latest"))
 	}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
 	ginkgo.It("mounts", func(ctx context.Context) {
