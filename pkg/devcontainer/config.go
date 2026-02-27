@@ -2,6 +2,7 @@ package devcontainer
 
 import (
 	"fmt"
+	"maps"
 	"os"
 	"path"
 	"path/filepath"
@@ -136,11 +137,19 @@ func (r *runner) substitute(
 		r.WorkspaceConfig.Workspace.ID,
 		rawParsedConfig,
 	)
+
+	// merge InitEnv into environment for variable substitution
+	env := config.ListToObject(os.Environ())
+	if len(options.InitEnv) > 0 {
+		initEnv := config.ListToObject(options.InitEnv)
+		maps.Copy(env, initEnv)
+	}
+
 	substitutionContext := &config.SubstitutionContext{
 		DevContainerID:           r.ID,
 		LocalWorkspaceFolder:     r.LocalWorkspaceFolder,
 		ContainerWorkspaceFolder: containerWorkspaceFolder,
-		Env:                      config.ListToObject(os.Environ()),
+		Env:                      env,
 
 		WorkspaceMount: workspaceMount,
 	}

@@ -4,11 +4,13 @@
   "remoteEnv": {
     "FOO": "BAR",
     "LOCAL_ENV_HOME": "${localEnv:HOME}",
-    "CONTAINER_ENV_PATH": "${containerEnv:PATH}"
+    "CONTAINER_ENV_PATH": "${containerEnv:PATH}",
+    "CUSTOM_VAR": "${localEnv:CUSTOM_VAR}",
+    "CUSTOM_IMAGE": "${localEnv:CUSTOM_IMAGE}"
   },
   "postCreateCommand": [
     "sh",
     "-c",
-    "echo -n ${devcontainerId} > $HOME/dev-container-id.out && echo -n ${CONTAINER_ENV_PATH} > $HOME/container-env-path.out && echo -n ${LOCAL_ENV_HOME} > $HOME/local-env-home.out && echo -n ${localWorkspaceFolder} > $HOME/local-workspace-folder.out && echo -n ${localWorkspaceFolderBasename} > $HOME/local-workspace-folder-basename.out && echo -n ${containerWorkspaceFolder} > $HOME/container-workspace-folder.out && echo -n ${containerWorkspaceFolderBasename} > $HOME/container-workspace-folder-basename.out"
+    "echo -n ${devcontainerId} > $HOME/dev-container-id.out && echo -n ${CONTAINER_ENV_PATH} > $HOME/container-env-path.out && echo -n ${LOCAL_ENV_HOME} > $HOME/local-env-home.out && echo -n ${localWorkspaceFolder} > $HOME/local-workspace-folder.out && echo -n ${localWorkspaceFolderBasename} > $HOME/local-workspace-folder-basename.out && echo -n ${containerWorkspaceFolder} > $HOME/container-workspace-folder.out && echo -n ${containerWorkspaceFolderBasename} > $HOME/container-workspace-folder-basename.out && echo -n ${CUSTOM_VAR} > $HOME/custom-var.out && echo -n ${CUSTOM_IMAGE} > $HOME/custom-image.out"
   ]
 }
