@@ -48,7 +48,7 @@ func SetupContainer(ctx context.Context, cfg *ContainerSetupConfig) error {
 
 	existing, _ := os.ReadFile(ResultLocation)
 	if string(rawBytes) != string(existing) {
-		err = os.MkdirAll(filepath.Dir(ResultLocation), 0755)
+		err = os.MkdirAll(filepath.Dir(ResultLocation), 0755) // #nosec G301 -- Standard directory permissions
 		if err != nil {
 			cfg.Log.Warnf("error create %s: %v", filepath.Dir(ResultLocation), err)
 		}
@@ -269,11 +269,7 @@ func chownAgentSock(setupInfo *config.Result) error {
 // setupKubeConfig retrieves and stores a KubeConfig file in the default location `$HOME/.kube/config`.
 // It merges our KubeConfig with existing ones.
 func setupKubeConfig(ctx context.Context, setupInfo *config.Result, tunnelClient tunnel.TunnelClient, log log.Logger) error {
-	exists, err := markerFileExists("setupKubeConfig", "")
-	if err != nil {
-		return err
-	}
-	if exists || tunnelClient == nil {
+	if shouldSkipKubeConfig(tunnelClient) {
 		return nil
 	}
 	log.Info("setup KubeConfig")
@@ -286,6 +282,15 @@ func setupKubeConfig(ctx context.Context, setupInfo *config.Result, tunnelClient
 		return nil
 	}
 
+	return writeKubeConfig(setupInfo, kubeConfigRes.Message)
+}
+
+func shouldSkipKubeConfig(tunnelClient tunnel.TunnelClient) bool {
+	exists, err := markerFileExists("setupKubeConfig", "")
+	return err != nil || exists || tunnelClient == nil
+}
+
+func writeKubeConfig(setupInfo *config.Result, configData string) error {
 	user := config.GetRemoteUser(setupInfo)
 	homeDir, err := command.GetHome(user)
 	if err != nil {
@@ -298,7 +303,7 @@ func setupKubeConfig(ctx context.Context, setupInfo *config.Result, tunnelClient
 	}
 
 	configPath := filepath.Join(kubeDir, "config")
-	if err := mergeKubeConfig(configPath, kubeConfigRes.Message); err != nil {
+	if err := mergeKubeConfig(configPath, configData); err != nil {
 		return err
 	}
 
@@ -306,7 +311,7 @@ func setupKubeConfig(ctx context.Context, setupInfo *config.Result, tunnelClient
 }
 
 func createKubeDir(kubeDir string) error {
-	err := os.Mkdir(kubeDir, 0755)
+	err := os.Mkdir(kubeDir, 0755) // #nosec G301 -- Standard directory permissions
 	if err != nil && !errors.Is(err, os.ErrExist) {
 		return err
 	}
