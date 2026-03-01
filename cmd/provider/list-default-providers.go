@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/skevetter/devpod/cmd/flags"
@@ -19,7 +20,7 @@ type ListAvailableCmd struct {
 }
 
 func getDevpodProviderList() error {
-	req, err := http.NewRequest("GET", "https://api.github.com/users/loft-sh/repos?per_page=100", nil)
+	req, err := http.NewRequest("GET", "https://api.github.com/users/skevetter/repos?per_page=100", nil)
 	if err != nil {
 		return err
 	}
@@ -40,11 +41,11 @@ func getDevpodProviderList() error {
 		return err
 	}
 
-	fmt.Println("List of available providers from loft:")
+	_, _ = fmt.Fprintln(os.Stdout, "List of available providers from skevetter:")
 	for _, v := range jsonResult {
 		if strings.Contains(v["name"].(string), "devpod-provider") {
 			name := strings.TrimPrefix(v["name"].(string), "devpod-provider-")
-			fmt.Println("\t", name)
+			_, _ = fmt.Fprintln(os.Stdout, "\t", name)
 		}
 	}
 
