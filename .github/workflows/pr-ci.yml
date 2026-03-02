@@ -87,7 +87,7 @@ jobs:
         env:
           DEVPOD_CLI_VERSION: v0.0.0
 
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: devpod-${{ steps.os.outputs.runner_os }}
           path: dist/devpod-${{ steps.os.outputs.runner_os }}_*/devpod-${{ steps.os.outputs.runner_os }}-*
@@ -278,7 +278,7 @@ jobs:
 
       - name: download CLI artifacts
         if: matrix.requires-secret == false || needs.can-read-secret.outputs.secret-set == 'true'
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           pattern: devpod-${{ steps.os.outputs.runner_os }}
           path: ${{ runner.temp }}/devpod-bin/
@@ -286,7 +286,7 @@ jobs:
 
       - name: download Linux CLI artifacts for Windows
         if: runner.os == 'Windows' && (matrix.requires-secret == false || needs.can-read-secret.outputs.secret-set == 'true')
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           pattern: devpod-linux
           path: ${{ runner.temp }}/devpod-bin/
@@ -440,7 +440,7 @@ jobs:
           echo "runner_os=$OS" >> "$GITHUB_OUTPUT"
 
       - name: download CLI artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           pattern: devpod-*
           path: ${{ runner.temp }}/devpod-bin/
@@ -508,7 +508,7 @@ jobs:
           CI: ${{ matrix.tauri_ci }}
 
       - name: upload artifacts
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: desktop-${{ matrix.runner }}-${{ matrix.arch }}
           path: desktop/src-tauri/target/${{ matrix.target }}/release/bundle/**/*
@@ -527,7 +527,7 @@ jobs:
         run: git clone https://github.com/flathub/shared-modules.git desktop/flatpak/shared-modules
 
       - name: download desktop linux artifact
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: desktop-ubuntu-latest-amd64
           path: /tmp/devpod/
