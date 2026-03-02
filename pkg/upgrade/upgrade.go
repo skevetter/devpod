@@ -7,143 +7,149 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/sirupsen/logrus"
-	versionpkg "github.com/skevetter/devpod/pkg/version"
-	"github.com/skevetter/log"
-
 	"github.com/blang/semver/v4"
 	"github.com/creativeprojects/go-selfupdate"
+	versionpkg "github.com/skevetter/devpod/pkg/version"
+	"github.com/skevetter/log"
 )
 
-// Version holds the current version tag.
-var version string = strings.TrimPrefix(versionpkg.GetVersion(), "v")
-var devVersion string = strings.TrimPrefix(versionpkg.DevVersion, "v")
-
-var githubSlug = "skevetter/devpod"
-
-func PrintNewerVersionWarning() {
-	if os.Getenv("DEVPOD_SKIP_VERSION_CHECK") != "true" {
-		// Get version of current binary
-		latestVersion := NewerVersionAvailable()
-		if latestVersion != "" {
-			log.GetInstance().Warnf("There is a newer version of devpod: v%s. Run `devpod upgrade` to upgrade to the newest version.\n", latestVersion)
-		}
-	}
-}
+const defaultRepository = "skevetter/devpod"
 
 var (
-	latestVersion     string
-	errLatestVersion  error
-	latestVersionOnce sync.Once
+	currentVersion     = strings.TrimPrefix(versionpkg.GetVersion(), "v")
+	developmentVersion = strings.TrimPrefix(versionpkg.DevVersion, "v")
 )
 
-// CheckForNewerVersion checks if there is a newer version on github and returns the newer version.
-func CheckForNewerVersion() (string, error) {
-	latestVersionOnce.Do(func() {
-		latest, found, err := selfupdate.DetectLatest(context.Background(), selfupdate.ParseSlug(githubSlug))
-		if err != nil {
-			errLatestVersion = err
-			return
-		}
-
-		if !found || latest.Equal(version) {
-			return
-		}
-
-		latestVersion = latest.Version()
-	})
-
-	return latestVersion, errLatestVersion
-}
-
-// NewerVersionAvailable checks if there is a newer version of devpod.
-func NewerVersionAvailable() string {
-	if version == devVersion {
-		return ""
-	}
-
-	if version != "" {
-		latestStableVersion, err := CheckForNewerVersion()
-		if latestStableVersion != "" && err == nil { // Check versions only if newest version could be determined without errors
-			semverVersion, err := semver.Parse(version)
-			if err == nil { // Only compare version if version can be parsed
-				semverLatestStableVersion, err := semver.Parse(latestStableVersion)
-				if err == nil { // Only compare version if latestStableVersion can be parsed
-					// If latestStableVersion > version
-					if semverLatestStableVersion.Compare(semverVersion) == 1 {
-						return latestStableVersion
-					}
-				}
-			}
-		}
-	}
-
-	return ""
-}
-
 // Upgrade downloads the latest release from github and replaces devpod if a new version is found.
-func Upgrade(flagVersion string, log log.Logger) error {
-	updater, err := selfupdate.NewUpdater(selfupdate.Config{
-		Filters: []string{"devpod"},
+func Upgrade(targetVersion string, logger log.Logger) error {
+	updater, err := selfupdate.NewUpdater(selfupdate.Config{})
+	if err != nil {
+		return fmt.Errorf("initialize updater: %w", err)
+	}
+
+	if targetVersion != "" {
+		return upgradeToVersion(context.Background(), updater, targetVersion, logger)
+	}
+
+	return upgradeToLatest(context.Background(), updater, logger)
+}
+
+// checker handles version checking operations.
+type checker struct {
+	repository    string
+	currentVer    string
+	devVer        string
+	latestVersion string
+	checkErr      error
+	once          sync.Once
+}
+
+// newChecker creates a new version checker.
+func newChecker() *checker {
+	return &checker{
+		repository: defaultRepository,
+		currentVer: currentVersion,
+		devVer:     developmentVersion,
+	}
+}
+
+// checkLatest checks if there is a newer version available.
+func (c *checker) checkLatest(ctx context.Context) (string, error) {
+	c.once.Do(func() {
+		latest, found, err := selfupdate.DetectLatest(ctx, selfupdate.ParseSlug(c.repository))
+		if err != nil {
+			c.checkErr = fmt.Errorf("detect latest version: %w", err)
+			return
+		}
+
+		if !found || latest.Equal(c.currentVer) {
+			return
+		}
+
+		c.latestVersion = latest.Version()
 	})
+
+	return c.latestVersion, c.checkErr
+}
+
+// isNewerAvailable returns the newer version if available, empty string otherwise.
+func (c *checker) isNewerAvailable(ctx context.Context) (string, error) {
+	if c.currentVer == c.devVer {
+		return "", nil
+	}
+
+	if c.currentVer == "" {
+		return "", nil
+	}
+
+	latestVer, err := c.checkLatest(ctx)
+	if err != nil || latestVer == "" {
+		return "", err
+	}
+
+	current, err := semver.Parse(c.currentVer)
 	if err != nil {
-		return fmt.Errorf("failed to initialize updater: %w", err)
-	}
-	if flagVersion != "" {
-		release, found, err := updater.DetectVersion(context.Background(), selfupdate.ParseSlug(githubSlug), flagVersion)
-		if err != nil {
-			return fmt.Errorf("find version: %w", err)
-		} else if !found {
-			return fmt.Errorf("devpod version %s couldn't be found", flagVersion)
-		}
-
-		cmdPath, err := os.Executable()
-		if err != nil {
-			return err
-		}
-
-		log.WithFields(logrus.Fields{
-			"version": flagVersion,
-		}).Info("downloading version")
-		err = updater.UpdateTo(context.Background(), release, cmdPath)
-		if err != nil {
-			return err
-		}
-
-		log.WithFields(logrus.Fields{
-			"version": flagVersion,
-		}).Done("updated devpod to version")
-		return nil
+		return "", fmt.Errorf("parse current version: %w", err)
 	}
 
-	newerVersion, err := CheckForNewerVersion()
+	latest, err := semver.Parse(latestVer)
 	if err != nil {
-		return err
+		return "", fmt.Errorf("parse latest version: %w", err)
 	}
+
+	if latest.Compare(current) == 1 {
+		return latestVer, nil
+	}
+
+	return "", nil
+}
+
+func upgradeToVersion(ctx context.Context, updater *selfupdate.Updater, version string, logger log.Logger) error {
+	release, found, err := updater.DetectVersion(ctx, selfupdate.ParseSlug(defaultRepository), version)
+	if err != nil {
+		return fmt.Errorf("detect version %s: %w", version, err)
+	}
+	if !found {
+		return fmt.Errorf("version %s not found", version)
+	}
+
+	cmdPath, err := os.Executable()
+	if err != nil {
+		return fmt.Errorf("get executable path: %w", err)
+	}
+
+	logger.Infof("downloading version %s", version)
+	if err := updater.UpdateTo(ctx, release, cmdPath); err != nil {
+		return fmt.Errorf("update to version %s: %w", version, err)
+	}
+
+	logger.Donef("updated devpod to version %s", version)
+	return nil
+}
+
+func upgradeToLatest(ctx context.Context, updater *selfupdate.Updater, logger log.Logger) error {
+	checker := newChecker()
+	newerVersion, err := checker.isNewerAvailable(ctx)
+	if err != nil {
+		return fmt.Errorf("check for newer version: %w", err)
+	}
+
 	if newerVersion == "" {
-		log.Infof("Current binary is the latest version: %s", version)
+		logger.Infof("current binary is the latest version %s", currentVersion)
 		return nil
 	}
 
-	log.Info("downloading newest version")
-	latest, err := updater.UpdateSelf(context.Background(), version, selfupdate.ParseSlug(githubSlug))
+	logger.Info("downloading newest version")
+	latest, err := updater.UpdateSelf(ctx, currentVersion, selfupdate.ParseSlug(defaultRepository))
 	if err != nil {
-		return err
+		return fmt.Errorf("update to latest: %w", err)
 	}
 
-	if latest.Equal(version) {
-		// latest version is the same as current version. It means current binary is up to date.
-		log.WithFields(logrus.Fields{
-			"version": version,
-		}).Info("current binary is the latest version")
-	} else {
-		log.WithFields(logrus.Fields{
-			"version": latest.Version(),
-		}).Done("updated to version")
-		log.WithFields(logrus.Fields{
-			"releaseNotes": latest.ReleaseNotes,
-		}).Info("release note")
+	if latest.Equal(currentVersion) {
+		logger.Donef("current binary is the latest version %s", currentVersion)
+		return nil
 	}
 
+	logger.Donef("updated to version %s", latest.Version())
 	return nil
 }
