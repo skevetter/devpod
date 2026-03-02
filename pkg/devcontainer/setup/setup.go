@@ -370,18 +370,8 @@ func mergeKubeConfig(configPath, newConfigData string) error {
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return err
 	}
-	if existingConfig == nil {
-		existingConfig = clientcmdapi.NewConfig()
-	}
-	if existingConfig.Clusters == nil {
-		existingConfig.Clusters = map[string]*clientcmdapi.Cluster{}
-	}
-	if existingConfig.AuthInfos == nil {
-		existingConfig.AuthInfos = map[string]*clientcmdapi.AuthInfo{}
-	}
-	if existingConfig.Contexts == nil {
-		existingConfig.Contexts = map[string]*clientcmdapi.Context{}
-	}
+
+	existingConfig = ensureKubeConfigMaps(existingConfig)
 
 	kubeConfig, err := clientcmd.Load([]byte(newConfigData))
 	if err != nil {
@@ -398,6 +388,22 @@ func mergeKubeConfig(configPath, newConfigData string) error {
 	return clientcmd.WriteToFile(*existingConfig, configPath)
 }
 
+func ensureKubeConfigMaps(config *clientcmdapi.Config) *clientcmdapi.Config {
+	if config == nil {
+		config = clientcmdapi.NewConfig()
+	}
+	if config.Clusters == nil {
+		config.Clusters = map[string]*clientcmdapi.Cluster{}
+	}
+	if config.AuthInfos == nil {
+		config.AuthInfos = map[string]*clientcmdapi.AuthInfo{}
+	}
+	if config.Contexts == nil {
+		config.Contexts = map[string]*clientcmdapi.Context{}
+	}
+	return config
+}
+
 func markerFileExists(markerName string, markerContent string) (bool, error) {
 	markerName = filepath.Join("/var/devpod", markerName+".marker")
 	t, err := os.ReadFile(markerName)
@@ -408,7 +414,7 @@ func markerFileExists(markerName string, markerContent string) (bool, error) {
 	}
 
 	// write marker
-	_ = os.MkdirAll(filepath.Dir(markerName), 0755)
+	_ = os.MkdirAll(filepath.Dir(markerName), 0755) // #nosec G301 -- Standard directory permissions
 	err = os.WriteFile(markerName, []byte(markerContent), 0600)
 	if err != nil {
 		return false, fmt.Errorf("write marker: %w", err)
