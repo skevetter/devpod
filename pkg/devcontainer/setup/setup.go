@@ -68,13 +68,16 @@ func SetupContainer(ctx context.Context, cfg *ContainerSetupConfig) error {
 
 func validateContainerSetupConfig(cfg *ContainerSetupConfig) error {
 	if cfg == nil {
-		return fmt.Errorf("nil container setup config")
+		return fmt.Errorf("container setup config is nil")
+	}
+	if cfg.Log == nil {
+		return fmt.Errorf("logger not found in container setup config")
 	}
 	if cfg.SetupInfo == nil {
-		return fmt.Errorf("missing setup info")
+		return fmt.Errorf("setup info not found in container setup config")
 	}
 	if cfg.SetupInfo.MergedConfig == nil {
-		return fmt.Errorf("missing merged devcontainer config")
+		return fmt.Errorf("merged devcontainer config not found in container setup config")
 	}
 
 	return nil
@@ -328,8 +331,12 @@ func shouldSkipKubeConfig(tunnelClient tunnel.TunnelClient, log log.Logger) bool
 	}
 
 	markerPath := filepath.Join("/var/devpod", "setupKubeConfig.marker")
-	_, err := os.Stat(markerPath)
+	info, err := os.Stat(markerPath)
 	if err == nil {
+		if info.Mode().Perm()&0o022 != 0 {
+			log.Warnf("ignoring insecure marker permissions: %s (%#o)", markerPath, info.Mode().Perm())
+			return false
+		}
 		return true
 	}
 	if !errors.Is(err, os.ErrNotExist) {
@@ -407,8 +414,8 @@ func markerFileExists(markerName string, markerContent string) (bool, error) {
 	}
 
 	// write marker
-	_ = os.MkdirAll(filepath.Dir(markerName), 0777)
-	err = os.WriteFile(markerName, []byte(markerContent), 0644)
+	_ = os.MkdirAll(filepath.Dir(markerName), 0755)
+	err = os.WriteFile(markerName, []byte(markerContent), 0600)
 	if err != nil {
 		return false, fmt.Errorf("write marker: %w", err)
 	}
