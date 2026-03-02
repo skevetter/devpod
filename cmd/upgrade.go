@@ -25,8 +25,11 @@ func NewUpgradeCmd() *cobra.Command {
 		RunE:  cmd.Run,
 	}
 
-	upgradeCmd.Flags().StringVar(&cmd.Version, "version", "", "The version to update to. Defaults to the latest stable version available")
-	upgradeCmd.Flags().BoolVar(&cmd.DryRun, "dry-run", false, "Show which version would be downloaded without actually upgrading")
+	upgradeCmd.Flags().
+		StringVar(&cmd.Version, "version", "",
+			"The version to update to. Defaults to the latest stable version available")
+	upgradeCmd.Flags().
+		BoolVar(&cmd.DryRun, "dry-run", false, "Show which version would be downloaded without actually upgrading")
 	return upgradeCmd
 }
 

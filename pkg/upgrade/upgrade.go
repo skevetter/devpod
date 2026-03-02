@@ -21,12 +21,13 @@ func Upgrade(targetVersion string, dryRun bool, logger log.Logger) error {
 	}
 
 	if dryRun {
-		fmt.Printf("asset_name=%s\n", release.AssetName)
-		fmt.Printf("version=%s\n", release.Version())
-		fmt.Printf("os=%s\n", release.OS)
-		fmt.Printf("arch=%s\n", release.Arch)
-		fmt.Printf("url=%s\n", release.AssetURL)
-		fmt.Printf("size=%d\n", release.AssetByteSize)
+		_, _ = fmt.Fprintf(os.Stdout, `asset_name=%s
+		version=%s
+		os=%s
+		arch=%s
+		url=%s
+		size=%d
+		`, release.AssetName, release.Version(), release.OS, release.Arch, release.AssetURL, release.AssetByteSize)
 		return nil
 	}
 
@@ -59,16 +60,33 @@ func detectRelease(ctx context.Context, targetVersion string) (*selfupdate.Relea
 	repo := selfupdate.ParseSlug(defaultRepository)
 
 	if targetVersion != "" {
-		release, found, err := updater.DetectVersion(ctx, repo, targetVersion)
-		if err != nil {
-			return nil, fmt.Errorf("detect version %s: %w", targetVersion, err)
-		}
-		if !found {
-			return nil, fmt.Errorf("version %s not found", targetVersion)
-		}
-		return release, nil
+		return detectSpecificVersion(ctx, updater, repo, targetVersion)
 	}
 
+	return detectLatestVersion(ctx, updater, repo)
+}
+
+func detectSpecificVersion(
+	ctx context.Context,
+	updater *selfupdate.Updater,
+	repo selfupdate.RepositorySlug,
+	version string,
+) (*selfupdate.Release, error) {
+	release, found, err := updater.DetectVersion(ctx, repo, version)
+	if err != nil {
+		return nil, fmt.Errorf("detect version %s: %w", version, err)
+	}
+	if !found {
+		return nil, fmt.Errorf("version %s not found", version)
+	}
+	return release, nil
+}
+
+func detectLatestVersion(
+	ctx context.Context,
+	updater *selfupdate.Updater,
+	repo selfupdate.RepositorySlug,
+) (*selfupdate.Release, error) {
 	release, found, err := updater.DetectLatest(ctx, repo)
 	if err != nil {
 		return nil, fmt.Errorf("detect latest version: %w", err)
