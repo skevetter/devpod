@@ -21,13 +21,12 @@ func Upgrade(targetVersion string, dryRun bool, logger log.Logger) error {
 	}
 
 	if dryRun {
-		_, _ = fmt.Fprintf(os.Stdout, `asset_name=%s
-		version=%s
-		os=%s
-		arch=%s
-		url=%s
-		size=%d
-		`, release.AssetName, release.Version(), release.OS, release.Arch, release.AssetURL, release.AssetByteSize)
+		_, _ = fmt.Fprintf(os.Stdout, "asset_name=%s\n", release.AssetName)
+		_, _ = fmt.Fprintf(os.Stdout, "version=%s\n", release.Version())
+		_, _ = fmt.Fprintf(os.Stdout, "os=%s\n", release.OS)
+		_, _ = fmt.Fprintf(os.Stdout, "arch=%s\n", release.Arch)
+		_, _ = fmt.Fprintf(os.Stdout, "url=%s\n", release.AssetURL)
+		_, _ = fmt.Fprintf(os.Stdout, "size=%d\n", release.AssetByteSize)
 		return nil
 	}
 
