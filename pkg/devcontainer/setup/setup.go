@@ -41,6 +41,9 @@ type ContainerSetupConfig struct {
 }
 
 func SetupContainer(ctx context.Context, cfg *ContainerSetupConfig) error {
+	if cfg == nil || cfg.SetupInfo == nil {
+		return fmt.Errorf("invalid container setup config")
+	}
 	rawBytes, err := json.Marshal(cfg.SetupInfo)
 	if err != nil {
 		cfg.Log.Warnf("error marshal result: %v", err)
@@ -117,8 +120,10 @@ func setupOptionalFeatures(ctx context.Context, cfg *ContainerSetupConfig) {
 		cfg.Log.Errorf("setup KubeConfig: %v", err)
 	}
 
-	if err := setupPlatformGitCredentials(config.GetRemoteUser(cfg.SetupInfo), cfg.PlatformOptions, cfg.Log); err != nil {
-		cfg.Log.Errorf("setup platform git credentials: %v", err)
+	if cfg.PlatformOptions != nil {
+		if err := setupPlatformGitCredentials(config.GetRemoteUser(cfg.SetupInfo), cfg.PlatformOptions, cfg.Log); err != nil {
+			cfg.Log.Errorf("setup platform git credentials: %v", err)
+		}
 	}
 }
 
@@ -329,6 +334,15 @@ func mergeKubeConfig(configPath, newConfigData string) error {
 	}
 	if existingConfig == nil {
 		existingConfig = clientcmdapi.NewConfig()
+	}
+	if existingConfig.Clusters == nil {
+		existingConfig.Clusters = map[string]*clientcmdapi.Cluster{}
+	}
+	if existingConfig.AuthInfos == nil {
+		existingConfig.AuthInfos = map[string]*clientcmdapi.AuthInfo{}
+	}
+	if existingConfig.Contexts == nil {
+		existingConfig.Contexts = map[string]*clientcmdapi.Context{}
 	}
 
 	kubeConfig, err := clientcmd.Load([]byte(newConfigData))

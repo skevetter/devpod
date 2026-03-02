@@ -40,7 +40,7 @@ func (r *runner) runSingleContainer(
 	options UpOptions,
 	timeout time.Duration,
 ) (*config.Result, error) {
-	r.Log.Debugf("starting devcontainer for workspace %s, r.ID")
+	r.Log.Debugf("starting devcontainer for workspace %s", r.ID)
 
 	substitutionContext.Userns = options.Userns
 	substitutionContext.UidMap = options.UidMap
