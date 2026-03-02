@@ -44,23 +44,8 @@ func SetupContainer(ctx context.Context, cfg *ContainerSetupConfig) error {
 	if cfg == nil || cfg.SetupInfo == nil {
 		return fmt.Errorf("invalid container setup config")
 	}
-	rawBytes, err := json.Marshal(cfg.SetupInfo)
-	if err != nil {
-		cfg.Log.Warnf("error marshal result: %v", err)
-	}
 
-	existing, _ := os.ReadFile(ResultLocation)
-	if string(rawBytes) != string(existing) {
-		err = os.MkdirAll(filepath.Dir(ResultLocation), 0755) // #nosec G301 -- Standard directory permissions
-		if err != nil {
-			cfg.Log.Warnf("error create %s: %v", filepath.Dir(ResultLocation), err)
-		}
-
-		err = os.WriteFile(ResultLocation, rawBytes, 0600)
-		if err != nil {
-			cfg.Log.Warnf("error write result to %s: %v", ResultLocation, err)
-		}
-	}
+	writeResultFile(cfg)
 
 	if err := setupWorkspaceOwnership(cfg); err != nil {
 		return err
@@ -79,6 +64,27 @@ func SetupContainer(ctx context.Context, cfg *ContainerSetupConfig) error {
 
 	cfg.Log.Debugf("devcontainer setup completed")
 	return nil
+}
+
+func writeResultFile(cfg *ContainerSetupConfig) {
+	rawBytes, err := json.Marshal(cfg.SetupInfo)
+	if err != nil {
+		cfg.Log.Warnf("error marshal result: %v", err)
+		return
+	}
+
+	existing, _ := os.ReadFile(ResultLocation)
+	if string(rawBytes) == string(existing) {
+		return
+	}
+
+	if err := os.MkdirAll(filepath.Dir(ResultLocation), 0755); err != nil { // #nosec G301 -- Standard directory permissions
+		cfg.Log.Warnf("error create %s: %v", filepath.Dir(ResultLocation), err)
+	}
+
+	if err := os.WriteFile(ResultLocation, rawBytes, 0600); err != nil {
+		cfg.Log.Warnf("error write result to %s: %v", ResultLocation, err)
+	}
 }
 
 func setupWorkspaceOwnership(cfg *ContainerSetupConfig) error {
@@ -278,7 +284,7 @@ func setupKubeConfig(
 	setupInfo *config.Result,
 	tunnelClient tunnel.TunnelClient,
 	log log.Logger) error {
-	if shouldSkipKubeConfig(tunnelClient) {
+	if shouldSkipKubeConfig(tunnelClient, log) {
 		return nil
 	}
 	log.Info("setup KubeConfig")
@@ -294,9 +300,18 @@ func setupKubeConfig(
 	return writeKubeConfig(setupInfo, kubeConfigRes.Message)
 }
 
-func shouldSkipKubeConfig(tunnelClient tunnel.TunnelClient) bool {
+func shouldSkipKubeConfig(tunnelClient tunnel.TunnelClient, log log.Logger) bool {
+	if tunnelClient == nil {
+		return true
+	}
+
 	exists, err := markerFileExists("setupKubeConfig", "")
-	return err != nil || exists || tunnelClient == nil
+	if err != nil {
+		log.Errorf("error checking marker file in shouldSkipKubeConfig: %v", err)
+		return false
+	}
+
+	return exists
 }
 
 func writeKubeConfig(setupInfo *config.Result, configData string) error {
