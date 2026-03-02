@@ -41,8 +41,8 @@ type ContainerSetupConfig struct {
 }
 
 func SetupContainer(ctx context.Context, cfg *ContainerSetupConfig) error {
-	if cfg == nil || cfg.SetupInfo == nil {
-		return fmt.Errorf("invalid container setup config")
+	if err := validateContainerSetupConfig(cfg); err != nil {
+		return err
 	}
 
 	writeResultFile(cfg)
@@ -63,6 +63,20 @@ func SetupContainer(ctx context.Context, cfg *ContainerSetupConfig) error {
 	}
 
 	cfg.Log.Debugf("devcontainer setup completed")
+	return nil
+}
+
+func validateContainerSetupConfig(cfg *ContainerSetupConfig) error {
+	if cfg == nil {
+		return fmt.Errorf("nil container setup config")
+	}
+	if cfg.SetupInfo == nil {
+		return fmt.Errorf("missing setup info")
+	}
+	if cfg.SetupInfo.MergedConfig == nil {
+		return fmt.Errorf("missing merged devcontainer config")
+	}
+
 	return nil
 }
 
