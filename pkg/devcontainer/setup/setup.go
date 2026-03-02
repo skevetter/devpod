@@ -308,11 +308,18 @@ func setupKubeConfig(
 	if err != nil {
 		return err
 	}
-	if kubeConfigRes.Message == "" {
+	if kubeConfigRes.Message == "" { // no kubeconfig returned, skip
 		return nil
 	}
 
-	return writeKubeConfig(setupInfo, kubeConfigRes.Message)
+	if err := writeKubeConfig(setupInfo, kubeConfigRes.Message); err != nil {
+		return err
+	}
+
+	if _, err := markerFileExists("setupKubeConfig", ""); err != nil {
+		log.Warnf("write kubeconfig marker: %v", err)
+	}
+	return nil
 }
 
 func shouldSkipKubeConfig(tunnelClient tunnel.TunnelClient, log log.Logger) bool {
@@ -320,13 +327,15 @@ func shouldSkipKubeConfig(tunnelClient tunnel.TunnelClient, log log.Logger) bool
 		return true
 	}
 
-	exists, err := markerFileExists("setupKubeConfig", "")
-	if err != nil {
-		log.Errorf("error checking marker file in shouldSkipKubeConfig: %v", err)
-		return false
+	markerPath := filepath.Join("/var/devpod", "setupKubeConfig.marker")
+	_, err := os.Stat(markerPath)
+	if err == nil {
+		return true
 	}
-
-	return exists
+	if !errors.Is(err, os.ErrNotExist) {
+		log.Warnf("error checking marker file in shouldSkipKubeConfig: %v", err)
+	}
+	return false
 }
 
 func writeKubeConfig(setupInfo *config.Result, configData string) error {
