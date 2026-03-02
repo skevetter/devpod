@@ -231,6 +231,14 @@ jobs:
             install-kind: true
             requires-secret: false
 
+          # Upgrade tests
+
+          - label: upgrade
+            runner: ubuntu-latest
+            free-disk-space: false
+            install-kind: false
+            requires-secret: false
+
           # Windows tests
 
           - label: context

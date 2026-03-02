@@ -32,12 +32,7 @@ func NewUpgradeCmd() *cobra.Command {
 
 // Run executes the command logic.
 func (cmd *UpgradeCmd) Run(*cobra.Command, []string) error {
-	if cmd.DryRun {
-		return upgrade.DryRun(cmd.Version, cmd.log)
-	}
-
-	err := upgrade.Upgrade(cmd.Version, cmd.log)
-	if err != nil {
+	if err := upgrade.Upgrade(cmd.Version, cmd.DryRun, cmd.log); err != nil {
 		return fmt.Errorf("unable to upgrade: %w", err)
 	}
 

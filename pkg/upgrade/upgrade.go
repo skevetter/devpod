@@ -4,152 +4,30 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strings"
-	"sync"
 
-	"github.com/blang/semver/v4"
 	"github.com/creativeprojects/go-selfupdate"
-	versionpkg "github.com/skevetter/devpod/pkg/version"
 	"github.com/skevetter/log"
 )
 
 const defaultRepository = "skevetter/devpod"
 
-// DryRun the upgrade process.
-func DryRun(targetVersion string, logger log.Logger) error {
-	updater, err := selfupdate.NewUpdater(selfupdate.Config{})
-	if err != nil {
-		return fmt.Errorf("initialize updater: %w", err)
-	}
-
-	ctx := context.Background()
-	var release *selfupdate.Release
-	var found bool
-
-	if targetVersion != "" {
-		release, found, err = updater.DetectVersion(ctx, selfupdate.ParseSlug(defaultRepository), targetVersion)
-		if err != nil {
-			return fmt.Errorf("detect version %s: %w", targetVersion, err)
-		}
-		if !found {
-			return fmt.Errorf("version %s not found", targetVersion)
-		}
-	} else {
-		release, found, err = updater.DetectLatest(ctx, selfupdate.ParseSlug(defaultRepository))
-		if err != nil {
-			return fmt.Errorf("detect latest version: %w", err)
-		}
-		if !found {
-			return fmt.Errorf("no release found")
-		}
-	}
-
-	fmt.Printf("asset_name=%s\n", release.AssetName)
-	fmt.Printf("version=%s\n", release.Version())
-	fmt.Printf("os=%s\n", release.OS)
-	fmt.Printf("arch=%s\n", release.Arch)
-	fmt.Printf("url=%s\n", release.AssetURL)
-	fmt.Printf("size=%d\n", release.AssetByteSize)
-
-	return nil
-}
-
-var (
-	currentVersion     = strings.TrimPrefix(versionpkg.GetVersion(), "v")
-	developmentVersion = strings.TrimPrefix(versionpkg.DevVersion, "v")
-)
-
 // Upgrade downloads the latest release from github and replaces devpod if a new version is found.
-func Upgrade(targetVersion string, logger log.Logger) error {
-	updater, err := selfupdate.NewUpdater(selfupdate.Config{})
+// If dryRun is true, it only shows what would be downloaded without actually upgrading.
+func Upgrade(targetVersion string, dryRun bool, logger log.Logger) error {
+	ctx := context.Background()
+	release, err := detectRelease(ctx, targetVersion)
 	if err != nil {
-		return fmt.Errorf("initialize updater: %w", err)
+		return err
 	}
 
-	if targetVersion != "" {
-		return upgradeToVersion(context.Background(), updater, targetVersion, logger)
-	}
-
-	return upgradeToLatest(context.Background(), updater, logger)
-}
-
-// checker handles version checking operations.
-type checker struct {
-	repository    string
-	currentVer    string
-	devVer        string
-	latestVersion string
-	checkErr      error
-	once          sync.Once
-}
-
-// newChecker creates a new version checker.
-func newChecker() *checker {
-	return &checker{
-		repository: defaultRepository,
-		currentVer: currentVersion,
-		devVer:     developmentVersion,
-	}
-}
-
-// checkLatest checks if there is a newer version available.
-func (c *checker) checkLatest(ctx context.Context) (string, error) {
-	c.once.Do(func() {
-		latest, found, err := selfupdate.DetectLatest(ctx, selfupdate.ParseSlug(c.repository))
-		if err != nil {
-			c.checkErr = fmt.Errorf("detect latest version: %w", err)
-			return
-		}
-
-		if !found || latest.Equal(c.currentVer) {
-			return
-		}
-
-		c.latestVersion = latest.Version()
-	})
-
-	return c.latestVersion, c.checkErr
-}
-
-// isNewerAvailable returns the newer version if available, empty string otherwise.
-func (c *checker) isNewerAvailable(ctx context.Context) (string, error) {
-	if c.currentVer == c.devVer {
-		return "", nil
-	}
-
-	if c.currentVer == "" {
-		return "", nil
-	}
-
-	latestVer, err := c.checkLatest(ctx)
-	if err != nil || latestVer == "" {
-		return "", err
-	}
-
-	current, err := semver.Parse(c.currentVer)
-	if err != nil {
-		return "", fmt.Errorf("parse current version: %w", err)
-	}
-
-	latest, err := semver.Parse(latestVer)
-	if err != nil {
-		return "", fmt.Errorf("parse latest version: %w", err)
-	}
-
-	if latest.Compare(current) == 1 {
-		return latestVer, nil
-	}
-
-	return "", nil
-}
-
-func upgradeToVersion(ctx context.Context, updater *selfupdate.Updater, version string, logger log.Logger) error {
-	release, found, err := updater.DetectVersion(ctx, selfupdate.ParseSlug(defaultRepository), version)
-	if err != nil {
-		return fmt.Errorf("detect version %s: %w", version, err)
-	}
-	if !found {
-		return fmt.Errorf("version %s not found", version)
+	if dryRun {
+		fmt.Printf("asset_name=%s\n", release.AssetName)
+		fmt.Printf("version=%s\n", release.Version())
+		fmt.Printf("os=%s\n", release.OS)
+		fmt.Printf("arch=%s\n", release.Arch)
+		fmt.Printf("url=%s\n", release.AssetURL)
+		fmt.Printf("size=%d\n", release.AssetByteSize)
+		return nil
 	}
 
 	cmdPath, err := os.Executable()
@@ -157,38 +35,46 @@ func upgradeToVersion(ctx context.Context, updater *selfupdate.Updater, version 
 		return fmt.Errorf("get executable path: %w", err)
 	}
 
-	logger.Infof("downloading version %s", version)
-	if err := updater.UpdateTo(ctx, release, cmdPath); err != nil {
-		return fmt.Errorf("update to version %s: %w", version, err)
+	updater, err := selfupdate.NewUpdater(selfupdate.Config{})
+	if err != nil {
+		return fmt.Errorf("initialize updater: %w", err)
 	}
 
-	logger.Donef("updated devpod to version %s", version)
+	logger.Infof("downloading version %s", release.Version())
+	if err := updater.UpdateTo(ctx, release, cmdPath); err != nil {
+		return fmt.Errorf("update to version %s: %w", release.Version(), err)
+	}
+
+	logger.Donef("updated devpod to version %s", release.Version())
 	return nil
 }
 
-func upgradeToLatest(ctx context.Context, updater *selfupdate.Updater, logger log.Logger) error {
-	checker := newChecker()
-	newerVersion, err := checker.isNewerAvailable(ctx)
+// detectRelease detects which release to use based on targetVersion.
+func detectRelease(ctx context.Context, targetVersion string) (*selfupdate.Release, error) {
+	updater, err := selfupdate.NewUpdater(selfupdate.Config{})
 	if err != nil {
-		return fmt.Errorf("check for newer version: %w", err)
+		return nil, fmt.Errorf("initialize updater: %w", err)
 	}
 
-	if newerVersion == "" {
-		logger.Infof("current binary is the latest version %s", currentVersion)
-		return nil
+	repo := selfupdate.ParseSlug(defaultRepository)
+
+	if targetVersion != "" {
+		release, found, err := updater.DetectVersion(ctx, repo, targetVersion)
+		if err != nil {
+			return nil, fmt.Errorf("detect version %s: %w", targetVersion, err)
+		}
+		if !found {
+			return nil, fmt.Errorf("version %s not found", targetVersion)
+		}
+		return release, nil
 	}
 
-	logger.Info("downloading newest version")
-	latest, err := updater.UpdateSelf(ctx, currentVersion, selfupdate.ParseSlug(defaultRepository))
+	release, found, err := updater.DetectLatest(ctx, repo)
 	if err != nil {
-		return fmt.Errorf("update to latest: %w", err)
+		return nil, fmt.Errorf("detect latest version: %w", err)
 	}
-
-	if latest.Equal(currentVersion) {
-		logger.Donef("current binary is the latest version %s", currentVersion)
-		return nil
+	if !found {
+		return nil, fmt.Errorf("no release found")
 	}
-
-	logger.Donef("updated to version %s", latest.Version())
-	return nil
+	return release, nil
 }
