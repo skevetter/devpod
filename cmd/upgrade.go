@@ -22,7 +22,13 @@ func NewUpgradeCmd() *cobra.Command {
 		Use:   "upgrade",
 		Short: "Upgrade the DevPod CLI to the newest version",
 		Args:  cobra.NoArgs,
-		RunE:  cmd.Run,
+		RunE: func(cobraCmd *cobra.Command, args []string) error {
+			ctx := cobraCmd.Context()
+			if err := upgrade.Upgrade(ctx, cmd.Version, cmd.DryRun, cmd.log); err != nil {
+				return fmt.Errorf("unable to upgrade: %w", err)
+			}
+			return nil
+		},
 	}
 
 	upgradeCmd.Flags().
@@ -31,13 +37,4 @@ func NewUpgradeCmd() *cobra.Command {
 	upgradeCmd.Flags().
 		BoolVar(&cmd.DryRun, "dry-run", false, "Show which version would be downloaded without actually upgrading")
 	return upgradeCmd
-}
-
-// Run executes the command logic.
-func (cmd *UpgradeCmd) Run(*cobra.Command, []string) error {
-	if err := upgrade.Upgrade(cmd.Version, cmd.DryRun, cmd.log); err != nil {
-		return fmt.Errorf("unable to upgrade: %w", err)
-	}
-
-	return nil
 }

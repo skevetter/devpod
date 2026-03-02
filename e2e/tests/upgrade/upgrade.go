@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/onsi/ginkgo/v2"
+	"github.com/onsi/gomega"
 	"github.com/skevetter/devpod/e2e/framework"
 )
 
@@ -38,9 +39,8 @@ var _ = ginkgo.Context("testing upgrade command", ginkgo.Label("upgrade"), ginkg
 			framework.ExpectEqual(values["arch"], expectedArch, "Arch should match runtime")
 
 			expectedAssetPattern := "devpod-" + expectedOS + "-" + expectedArch
-			framework.ExpectEqual(
-				strings.Contains(values["asset_name"], expectedAssetPattern), true,
-				"Asset name should contain OS and Arch")
+			gomega.Expect(values["asset_name"]).
+				To(gomega.ContainSubstring(expectedAssetPattern), "Asset name should contain OS and Arch")
 		},
 	)
 })

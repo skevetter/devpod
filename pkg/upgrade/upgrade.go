@@ -13,9 +13,8 @@ const defaultRepository = "skevetter/devpod"
 
 // Upgrade downloads the latest release from github and replaces devpod if a new version is found.
 // If dryRun is true, it only shows what would be downloaded without actually upgrading.
-func Upgrade(targetVersion string, dryRun bool, logger log.Logger) error {
-	ctx := context.Background()
-	release, err := detectRelease(ctx, targetVersion)
+func Upgrade(ctx context.Context, targetVersion string, dryRun bool, logger log.Logger) error {
+	release, updater, err := detectRelease(ctx, targetVersion)
 	if err != nil {
 		return err
 	}
@@ -35,11 +34,6 @@ func Upgrade(targetVersion string, dryRun bool, logger log.Logger) error {
 		return fmt.Errorf("get executable path: %w", err)
 	}
 
-	updater, err := selfupdate.NewUpdater(selfupdate.Config{})
-	if err != nil {
-		return fmt.Errorf("initialize updater: %w", err)
-	}
-
 	logger.Infof("downloading version %s", release.Version())
 	if err := updater.UpdateTo(ctx, release, cmdPath); err != nil {
 		return fmt.Errorf("update to version %s: %w", release.Version(), err)
@@ -50,19 +44,21 @@ func Upgrade(targetVersion string, dryRun bool, logger log.Logger) error {
 }
 
 // detectRelease detects which release to use based on targetVersion.
-func detectRelease(ctx context.Context, targetVersion string) (*selfupdate.Release, error) {
+func detectRelease(ctx context.Context, targetVersion string) (*selfupdate.Release, *selfupdate.Updater, error) {
 	updater, err := selfupdate.NewUpdater(selfupdate.Config{})
 	if err != nil {
-		return nil, fmt.Errorf("initialize updater: %w", err)
+		return nil, nil, fmt.Errorf("initialize updater: %w", err)
 	}
 
 	repo := selfupdate.ParseSlug(defaultRepository)
 
 	if targetVersion != "" {
-		return detectSpecificVersion(ctx, updater, repo, targetVersion)
+		release, err := detectSpecificVersion(ctx, updater, repo, targetVersion)
+		return release, updater, err
 	}
 
-	return detectLatestVersion(ctx, updater, repo)
+	release, err := detectLatestVersion(ctx, updater, repo)
+	return release, updater, err
 }
 
 func detectSpecificVersion(
