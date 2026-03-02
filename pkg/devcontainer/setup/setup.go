@@ -78,7 +78,8 @@ func writeResultFile(cfg *ContainerSetupConfig) {
 		return
 	}
 
-	if err := os.MkdirAll(filepath.Dir(ResultLocation), 0755); err != nil { // #nosec G301 -- Standard directory permissions
+	// #nosec G301 -- Standard directory permissions
+	if err := os.MkdirAll(filepath.Dir(ResultLocation), 0755); err != nil {
 		cfg.Log.Warnf("error create %s: %v", filepath.Dir(ResultLocation), err)
 	}
 
