@@ -79,7 +79,7 @@ jobs:
           fi
           echo "runner_os=$OS" >> "$GITHUB_OUTPUT"
 
-      - uses: goreleaser/goreleaser-action@v6
+      - uses: goreleaser/goreleaser-action@v7
         with:
           distribution: goreleaser
           version: "~> v2"
