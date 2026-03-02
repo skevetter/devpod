@@ -353,7 +353,7 @@ func writeKubeConfig(setupInfo *config.Result, configData string) error {
 	}
 
 	kubeDir := filepath.Join(homeDir, ".kube")
-	if err := createKubeDir(kubeDir); err != nil {
+	if err := os.MkdirAll(kubeDir, 0755); err != nil { // #nosec G301 -- Standard directory permissions
 		return err
 	}
 
@@ -363,14 +363,6 @@ func writeKubeConfig(setupInfo *config.Result, configData string) error {
 	}
 
 	return copy2.ChownR(kubeDir, user)
-}
-
-func createKubeDir(kubeDir string) error {
-	err := os.Mkdir(kubeDir, 0755) // #nosec G301 -- Standard directory permissions
-	if err != nil && !errors.Is(err, os.ErrExist) {
-		return err
-	}
-	return nil
 }
 
 func mergeKubeConfig(configPath, newConfigData string) error {
@@ -399,7 +391,9 @@ func mergeKubeConfig(configPath, newConfigData string) error {
 	maps.Copy(existingConfig.Clusters, kubeConfig.Clusters)
 	maps.Copy(existingConfig.AuthInfos, kubeConfig.AuthInfos)
 	maps.Copy(existingConfig.Contexts, kubeConfig.Contexts)
-	existingConfig.CurrentContext = kubeConfig.CurrentContext
+	if kubeConfig.CurrentContext != "" {
+		existingConfig.CurrentContext = kubeConfig.CurrentContext
+	}
 
 	return clientcmd.WriteToFile(*existingConfig, configPath)
 }
