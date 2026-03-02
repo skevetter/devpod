@@ -15,6 +15,45 @@ import (
 
 const defaultRepository = "skevetter/devpod"
 
+// DryRun the upgrade process.
+func DryRun(targetVersion string, logger log.Logger) error {
+	updater, err := selfupdate.NewUpdater(selfupdate.Config{})
+	if err != nil {
+		return fmt.Errorf("initialize updater: %w", err)
+	}
+
+	ctx := context.Background()
+	var release *selfupdate.Release
+	var found bool
+
+	if targetVersion != "" {
+		release, found, err = updater.DetectVersion(ctx, selfupdate.ParseSlug(defaultRepository), targetVersion)
+		if err != nil {
+			return fmt.Errorf("detect version %s: %w", targetVersion, err)
+		}
+		if !found {
+			return fmt.Errorf("version %s not found", targetVersion)
+		}
+	} else {
+		release, found, err = updater.DetectLatest(ctx, selfupdate.ParseSlug(defaultRepository))
+		if err != nil {
+			return fmt.Errorf("detect latest version: %w", err)
+		}
+		if !found {
+			return fmt.Errorf("no release found")
+		}
+	}
+
+	fmt.Printf("asset_name=%s\n", release.AssetName)
+	fmt.Printf("version=%s\n", release.Version())
+	fmt.Printf("os=%s\n", release.OS)
+	fmt.Printf("arch=%s\n", release.Arch)
+	fmt.Printf("url=%s\n", release.AssetURL)
+	fmt.Printf("size=%d\n", release.AssetByteSize)
+
+	return nil
+}
+
 var (
 	currentVersion     = strings.TrimPrefix(versionpkg.GetVersion(), "v")
 	developmentVersion = strings.TrimPrefix(versionpkg.DevVersion, "v")
