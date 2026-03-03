@@ -18,8 +18,10 @@ import (
 	"k8s.io/utils/ptr"
 )
 
-const DevContainerName = "devpod"
-const InitContainerName = "devpod-init"
+const (
+	DevContainerName  = "devpod"
+	InitContainerName = "devpod-init"
+)
 
 const (
 	DevPodCreatedLabel      = "devpod.sh/created"

@@ -675,7 +675,7 @@ func (r *runner) extendedDockerComposeBuild(
 		return "", err
 	}
 
-	if err := os.WriteFile(dockerFilePath, []byte(result.dockerfileContent), 0600); err != nil {
+	if err := os.WriteFile(dockerFilePath, []byte(result.dockerfileContent), 0o600); err != nil {
 		return "", err
 	}
 
@@ -757,7 +757,7 @@ func (r *runner) writeComposeFile(service *composetypes.ServiceConfig) (string, 
 	}
 
 	dockerComposeFolder := getDockerComposeFolder(r.WorkspaceConfig.Origin)
-	if err := os.MkdirAll(dockerComposeFolder, 0750); err != nil {
+	if err := os.MkdirAll(dockerComposeFolder, 0o750); err != nil {
 		return "", err
 	}
 
@@ -774,7 +774,7 @@ func (r *runner) writeComposeFile(service *composetypes.ServiceConfig) (string, 
 		string(dockerComposeData),
 	)
 
-	if err := os.WriteFile(dockerComposePath, dockerComposeData, 0600); err != nil {
+	if err := os.WriteFile(dockerComposePath, dockerComposeData, 0o600); err != nil {
 		return "", err
 	}
 
@@ -807,7 +807,7 @@ func (r *runner) extendedDockerComposeUp(
 	}
 
 	dockerComposeFolder := getDockerComposeFolder(r.WorkspaceConfig.Origin)
-	err = os.MkdirAll(dockerComposeFolder, 0750)
+	err = os.MkdirAll(dockerComposeFolder, 0o750)
 	if err != nil {
 		return "", err
 	}
@@ -820,7 +820,7 @@ func (r *runner) extendedDockerComposeUp(
 		string(dockerComposeData),
 	)
 
-	err = os.WriteFile(dockerComposePath, dockerComposeData, 0600)
+	err = os.WriteFile(dockerComposePath, dockerComposeData, 0o600)
 	if err != nil {
 		return "", err
 	}

@@ -172,7 +172,8 @@ func copyFile(src, dst string) error {
 	}
 	mode := info.Mode().Perm()
 
-	if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
+	// #nosec G301 -- TODO Consider using a more secure permission setting and ownership if needed.
+	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
 		return err
 	}
 

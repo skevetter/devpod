@@ -22,8 +22,10 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
-type AgentInjectFunc func(context.Context, string, *os.File, *os.File, io.WriteCloser) error
-type TunnelServerFunc func(ctx context.Context, stdin io.WriteCloser, stdout io.Reader) (*config2.Result, error)
+type (
+	AgentInjectFunc  func(context.Context, string, *os.File, *os.File, io.WriteCloser) error
+	TunnelServerFunc func(ctx context.Context, stdin io.WriteCloser, stdout io.Reader) (*config2.Result, error)
+)
 
 var logLevelMap = map[string]logrus.Level{
 	"debug": logrus.DebugLevel,

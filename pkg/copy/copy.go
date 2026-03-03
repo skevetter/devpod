@@ -68,7 +68,7 @@ func RenameDirectory(srcDir, dest string) error {
 }
 
 func Directory(scrDir, dest string) error {
-	if err := CreateIfNotExists(dest, 0755); err != nil {
+	if err := CreateIfNotExists(dest, 0o755); err != nil {
 		return err
 	}
 
@@ -87,7 +87,7 @@ func Directory(scrDir, dest string) error {
 
 		switch fileInfo.Mode() & os.ModeType {
 		case os.ModeDir:
-			if err := CreateIfNotExists(destPath, 0755); err != nil {
+			if err := CreateIfNotExists(destPath, 0o755); err != nil {
 				return err
 			}
 			if err := Directory(sourcePath, destPath); err != nil {
@@ -98,7 +98,7 @@ func Directory(scrDir, dest string) error {
 				return err
 			}
 		default:
-			if err := File(sourcePath, destPath, 0644); err != nil {
+			if err := File(sourcePath, destPath, 0o644); err != nil {
 				return err
 			}
 		}

@@ -6,8 +6,10 @@ import (
 	"sync"
 )
 
-var httpClient *http.Client
-var httpClientOnce sync.Once
+var (
+	httpClient     *http.Client
+	httpClientOnce sync.Once
+)
 
 func GetHTTPClient() *http.Client {
 	httpClientOnce.Do(func() {

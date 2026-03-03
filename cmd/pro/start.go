@@ -48,9 +48,11 @@ import (
 	"k8s.io/kubectl/pkg/util/term"
 )
 
-const LoftRouterDomainSecret = "loft-router-domain"
-const passwordChangedHint = "(has been changed)"
-const defaultUser = "admin"
+const (
+	LoftRouterDomainSecret = "loft-router-domain" // #nosec G101
+	passwordChangedHint    = "(has been changed)"
+	defaultUser            = "admin"
+)
 
 const defaultReleaseName = "devpod-pro"
 
@@ -89,10 +91,11 @@ type StartCmd struct {
 
 // NewStartCmd creates a new command.
 func NewStartCmd(flags *proflags.GlobalFlags) *cobra.Command {
-	cmd := &StartCmd{GlobalFlags: *flags,
-		Product:   "devpod-pro",
-		ChartName: "devpod-pro",
-		Log:       log.Default,
+	cmd := &StartCmd{
+		GlobalFlags: *flags,
+		Product:     "devpod-pro",
+		ChartName:   "devpod-pro",
+		Log:         log.Default,
 	}
 	startCmd := &cobra.Command{
 		Use:   "start",
@@ -406,6 +409,7 @@ The command will wait until DevPod Pro is reachable under the host.
 	printSuccess()
 	return nil
 }
+
 func (cmd *StartCmd) successLocal() error {
 	url := "https://localhost:" + cmd.LocalPort
 

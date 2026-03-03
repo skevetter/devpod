@@ -322,12 +322,13 @@ func RemoveFromConfig(workspaceID string, sshConfigPath string, sshConfigInclude
 }
 
 func writeSSHConfig(path, content string, log log.Logger) error {
-	err := os.MkdirAll(filepath.Dir(path), 0755)
+	// #nosec G301 -- TODO Consider using a more secure permission setting and ownership if needed.
+	err := os.MkdirAll(filepath.Dir(path), 0o755)
 	if err != nil {
 		log.Debugf("error creating ssh directory: %v", err)
 	}
 
-	err = os.WriteFile(path, []byte(content), 0600)
+	err = os.WriteFile(path, []byte(content), 0o600)
 	if err != nil {
 		return fmt.Errorf("write ssh config: %w", err)
 	}

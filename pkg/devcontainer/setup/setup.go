@@ -96,11 +96,11 @@ func writeResultFile(cfg *ContainerSetupConfig) {
 	}
 
 	// #nosec G301 -- Standard directory permissions
-	if err := os.MkdirAll(filepath.Dir(ResultLocation), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(ResultLocation), 0o755); err != nil {
 		cfg.Log.Warnf("error create %s: %v", filepath.Dir(ResultLocation), err)
 	}
 
-	if err := os.WriteFile(ResultLocation, rawBytes, 0600); err != nil {
+	if err := os.WriteFile(ResultLocation, rawBytes, 0o600); err != nil {
 		cfg.Log.Warnf("error write result to %s: %v", ResultLocation, err)
 	}
 }
@@ -170,7 +170,8 @@ func linkRootHome(setupInfo *config.Result) error {
 	}
 
 	// link /home/root to the root home
-	err = os.MkdirAll("/home", 0777)
+	// #nosec G301 -- TODO Consider using a more secure permission setting and ownership if needed.
+	err = os.MkdirAll("/home", 0o777)
 	if err != nil {
 		return fmt.Errorf("create /home folder: %w", err)
 	}
@@ -301,7 +302,8 @@ func setupKubeConfig(
 	ctx context.Context,
 	setupInfo *config.Result,
 	tunnelClient tunnel.TunnelClient,
-	log log.Logger) error {
+	log log.Logger,
+) error {
 	if shouldSkipKubeConfig(tunnelClient, log) {
 		return nil
 	}
@@ -353,7 +355,7 @@ func writeKubeConfig(setupInfo *config.Result, configData string) error {
 	}
 
 	kubeDir := filepath.Join(homeDir, ".kube")
-	if err := os.MkdirAll(kubeDir, 0755); err != nil { // #nosec G301 -- Standard directory permissions
+	if err := os.MkdirAll(kubeDir, 0o755); err != nil { // #nosec G301 -- Standard directory permissions
 		return err
 	}
 
@@ -414,8 +416,8 @@ func markerFileExists(markerName string, markerContent string) (bool, error) {
 	}
 
 	// write marker
-	_ = os.MkdirAll(filepath.Dir(markerName), 0755) // #nosec G301 -- Standard directory permissions
-	err = os.WriteFile(markerName, []byte(markerContent), 0600)
+	_ = os.MkdirAll(filepath.Dir(markerName), 0o755) // #nosec G301 -- Standard directory permissions
+	err = os.WriteFile(markerName, []byte(markerContent), 0o600)
 	if err != nil {
 		return false, fmt.Errorf("write marker: %w", err)
 	}
@@ -458,6 +460,7 @@ func setupPlatformGitCredentials(userName string, platformOptions *devpod.Platfo
 
 	return nil
 }
+
 func setupPlatformGitHTTPCredentials(userName string, platformOptions *devpod.PlatformOptions, log log.Logger) error {
 	if !platformOptions.Enabled || len(platformOptions.UserCredentials.GitHttp) == 0 {
 		return nil
@@ -489,7 +492,7 @@ func setupPlatformGitSSHKeys(userName string, platformOptions *devpod.PlatformOp
 
 	// write ssh keys to ~/.ssh/id_rsa
 	sshFolder := filepath.Join(homeFolder, ".ssh")
-	err = os.MkdirAll(sshFolder, 0700)
+	err = os.MkdirAll(sshFolder, 0o700)
 	if err != nil && !errors.Is(err, os.ErrExist) {
 		return err
 	}
@@ -530,7 +533,7 @@ func setupPlatformGitSSHKeys(userName string, platformOptions *devpod.PlatformOp
 			log.Warnf("Error decoding platform git ssh key: %v", err)
 			continue
 		}
-		err = os.WriteFile(fileName, decoded, 0600)
+		err = os.WriteFile(fileName, decoded, 0o600)
 		if err != nil {
 			log.Warnf("Error writing platform git ssh key: %v", err)
 			continue

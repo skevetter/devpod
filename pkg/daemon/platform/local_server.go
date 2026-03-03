@@ -361,6 +361,7 @@ func (l *localServer) projectTemplates(w http.ResponseWriter, r *http.Request, p
 
 	tryJSON(w, templateList)
 }
+
 func (l *localServer) projectClusters(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	projectName := params.ByName("project")
 	managementClient, err := l.pc.Management()
@@ -477,7 +478,8 @@ func (l *localServer) watchWorkspaces(w http.ResponseWriter, r *http.Request, pa
 		OwnerFilter:    ownerFilter,
 		PlatformClient: l.pc,
 		TsClient:       l.lc,
-		Log:            l.log},
+		Log:            l.log,
+	},
 		// we need to debounce events here to avoid spamming the client with too many events
 		throttle(func(instanceList []*ProWorkspaceInstance) {
 			if r.Context().Err() != nil {

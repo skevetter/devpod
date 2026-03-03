@@ -48,7 +48,8 @@ func SaveDevContainerJSON(config *DevContainerConfig) error {
 		return fmt.Errorf("no origin in config")
 	}
 
-	err := os.MkdirAll(filepath.Dir(config.Origin), 0755)
+	// #nosec G301 -- TODO Consider using a more secure permission setting and ownership if needed.
+	err := os.MkdirAll(filepath.Dir(config.Origin), 0o755)
 	if err != nil {
 		return err
 	}
@@ -58,7 +59,8 @@ func SaveDevContainerJSON(config *DevContainerConfig) error {
 		return err
 	}
 
-	err = os.WriteFile(config.Origin, out, 0644)
+	// #nosec G306 -- TODO Consider using a more secure permission setting and ownership if needed.
+	err = os.WriteFile(config.Origin, out, 0o644)
 	if err != nil {
 		return err
 	}

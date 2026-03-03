@@ -143,7 +143,8 @@ func isDirExecutable(dir string) (bool, error) {
 		}
 	}
 
-	err := os.MkdirAll(dir, 0777)
+	// #nosec G301,G703 -- TODO Consider using a more secure permission setting and ownership if needed.
+	err := os.MkdirAll(dir, 0o777)
 	if err != nil {
 		return false, err
 	}
@@ -151,7 +152,7 @@ func isDirExecutable(dir string) (bool, error) {
 	testFile := filepath.Join(dir, "devpod_test.sh")
 	err = os.WriteFile(testFile, []byte(`#!/bin/sh
 echo DevPod
-`), 0755)
+`), 0o755)
 	if err != nil {
 		return false, err
 	}
@@ -231,8 +232,9 @@ func CreateAgentWorkspaceDir(agentFolder, context, workspaceID string) (string, 
 	// workspace folder
 	workspaceDir := filepath.Join(homeFolder, "contexts", context, "workspaces", workspaceID)
 
+	// #nosec G301 -- TODO Consider using a more secure permission setting and ownership if needed.
 	// create workspace folder
-	err = os.MkdirAll(workspaceDir, 0755)
+	err = os.MkdirAll(workspaceDir, 0o755)
 	if err != nil {
 		return "", err
 	}

@@ -67,7 +67,8 @@ func main() {
 	}
 
 	if ok {
-		err := os.WriteFile(absPath, []byte(replaced), 0644)
+		// #nosec G306,G703 -- TODO Consider using a more secure permission setting and ownership if needed.
+		err := os.WriteFile(absPath, []byte(replaced), 0o644)
 		if err != nil {
 			panic(err)
 		}

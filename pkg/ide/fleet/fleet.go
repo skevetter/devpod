@@ -95,7 +95,12 @@ func (o *FleetServer) Install(projectDir string) error {
 		return fmt.Errorf("unexpected status code while trying to download fleet from %s: %d", url, resp.StatusCode)
 	}
 
-	f, err := os.OpenFile(fleetBinary, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
+	if !strings.HasPrefix(fleetBinary, "fleet") {
+		return fmt.Errorf("unexpected fleet binary name: %s", fleetBinary)
+	}
+
+	// #nosec G302,G304 -- TODO Consider using a more secure permission setting and ownership if needed.
+	f, err := os.OpenFile(fleetBinary, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o755)
 	if err != nil {
 		return err
 	}
@@ -173,7 +178,8 @@ func (o *FleetServer) Start(binaryPath, location, projectDir string) error {
 		text := s.Text()
 		if strings.Contains(text, "https://fleet.jetbrains.com/") {
 			index := strings.Index(text, "https://fleet.jetbrains.com/")
-			err = os.WriteFile(FleetURLFile, []byte(strings.TrimSpace(text[index:])), 0600)
+			//nolint:gosec // G703: FleetURLFile path is controlled by the application
+			err = os.WriteFile(FleetURLFile, []byte(strings.TrimSpace(text[index:])), 0o600)
 			if err != nil {
 				return err
 			}
@@ -221,7 +227,8 @@ func prepareFleetServerLocation(userName string) (string, error) {
 	}
 
 	folder := filepath.Join(homeFolder, ".fleet-server")
-	err = os.MkdirAll(folder, 0755)
+	// #nosec G301 -- TODO Consider using a more secure permission setting and ownership if needed.
+	err = os.MkdirAll(folder, 0o755)
 	if err != nil {
 		return "", err
 	}

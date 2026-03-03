@@ -75,7 +75,7 @@ func configureCredentials(userName, shebang string, targetDir, configDir string,
 		return err
 	}
 
-	err = file.MkdirAll(userName, configDir, 0755)
+	err = file.MkdirAll(userName, configDir, 0o755)
 	if err != nil {
 		return err
 	}
@@ -104,7 +104,7 @@ func configureCredentials(userName, shebang string, targetDir, configDir string,
 
 	log.Debugf("Wrote docker credentials helper to %s", credentialHelperPath)
 	// #nosec G306 -- executable file needs 0755 permissions
-	err = os.WriteFile(credentialHelperPath, helperContent, 0755)
+	err = os.WriteFile(credentialHelperPath, helperContent, 0o755)
 	if err != nil {
 		return fmt.Errorf("write credential helper: %w", err)
 	}

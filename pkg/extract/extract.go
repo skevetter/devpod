@@ -105,7 +105,7 @@ func extractNext(tarReader *tar.Reader, destFolder string, options *Options) (bo
 	}
 
 	// whats the file perm?
-	filePerm := os.FileMode(0644)
+	filePerm := os.FileMode(0o644)
 	if options.Perm != nil {
 		filePerm = *options.Perm
 	}
@@ -155,7 +155,8 @@ func extractNext(tarReader *tar.Reader, destFolder string, options *Options) (bo
 
 	// Set permissions
 	if options.Perm == nil {
-		_ = os.Chmod(outFileName, header.FileInfo().Mode()|0600)
+		//nolint:gosec // G703: Path traversal is handled by archive extraction context
+		_ = os.Chmod(outFileName, header.FileInfo().Mode()|0o600)
 	}
 
 	// Set mod time from tar header

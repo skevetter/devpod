@@ -11,7 +11,6 @@ func IsAvailable(addr string) (bool, error) {
 	if err != nil {
 		// Try to create a server with the port
 		server, err := net.Listen("tcp", addr)
-
 		// if it fails then the port is likely taken
 		if err != nil {
 			return false, err

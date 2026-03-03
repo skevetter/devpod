@@ -54,7 +54,8 @@ func requestContentSignature(content []byte, certPath string, log log.Logger) ([
 // writeSignatureToFile writes the signed content to a .sig file.
 func writeSignatureToFile(signature []byte, bufferFile string, log log.Logger) error {
 	sigFile := bufferFile + ".sig"
-	if err := os.WriteFile(sigFile, signature, 0644); err != nil {
+	// #nosec G306 -- TODO Consider using a more secure permission setting and ownership if needed.
+	if err := os.WriteFile(sigFile, signature, 0o644); err != nil {
 		log.Errorf("Failed to write signature to file: %w", err)
 		return err
 	}

@@ -73,7 +73,8 @@ var _ = ginkgo.Describe("devpod up docker compose test suite", ginkgo.Label("up-
 		origPath := filepath.Join(tempDir, ".devcontainer.json")
 		err = os.Chown(origPath, os.Getuid(), os.Getgid())
 		framework.ExpectNoError(err)
-		err = os.Chmod(origPath, 0666)
+		// #nosec G302 -- TODO Consider using a more secure permission setting and ownership if needed.
+		err = os.Chmod(origPath, 0o666)
 		framework.ExpectNoError(err)
 		err = os.Remove(origPath)
 		framework.ExpectNoError(err)

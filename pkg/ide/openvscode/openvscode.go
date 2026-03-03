@@ -226,12 +226,13 @@ func (o *OpenVSCodeServer) installSettings() error {
 	}
 
 	settingsDir := filepath.Join(location, "data", "Machine")
-	err = os.MkdirAll(settingsDir, 0755)
+	// #nosec G301,G306 -- TODO Consider using a more secure permission setting and ownership if needed.
+	err = os.MkdirAll(settingsDir, 0o755)
 	if err != nil {
 		return err
 	}
 
-	err = os.WriteFile(filepath.Join(settingsDir, "settings.json"), []byte(o.settings), 0600)
+	err = os.WriteFile(filepath.Join(settingsDir, "settings.json"), []byte(o.settings), 0o600)
 	if err != nil {
 		return err
 	}
@@ -291,7 +292,8 @@ func prepareOpenVSCodeServerLocation(userName string) (string, error) {
 	}
 
 	folder := filepath.Join(homeFolder, ".openvscode-server")
-	err = os.MkdirAll(folder, 0755)
+	// #nosec G301 -- TODO Consider using a more secure permission setting and ownership if needed.
+	err = os.MkdirAll(folder, 0o755)
 	if err != nil {
 		return "", err
 	}

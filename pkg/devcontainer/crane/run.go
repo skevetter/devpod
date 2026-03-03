@@ -12,9 +12,7 @@ import (
 	"github.com/skevetter/log"
 )
 
-var (
-	craneSigningKey string
-)
+var craneSigningKey string
 
 const (
 	PullCommand    = "pull"

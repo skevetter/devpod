@@ -70,6 +70,7 @@ func Init(ctx context.Context, config InitConfig) (*Daemon, error) {
 		log:            log,
 	}, nil
 }
+
 func (d *Daemon) Start(ctx context.Context) error {
 	errChan := make(chan error, 1)
 

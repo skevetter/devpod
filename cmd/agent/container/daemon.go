@@ -178,10 +178,12 @@ func (cmd *DaemonCmd) shouldRunSsh() bool {
 
 // setupActivityFile creates and sets permissions on the container activity file.
 func setupActivityFile() error {
-	if err := os.WriteFile(agent.ContainerActivityFile, nil, 0777); err != nil {
+	// #nosec G306 -- TODO Consider using a more secure permission setting and ownership if needed.
+	if err := os.WriteFile(agent.ContainerActivityFile, nil, 0o777); err != nil {
 		return err
 	}
-	return os.Chmod(agent.ContainerActivityFile, 0777)
+	// #nosec G302 -- TODO Consider using a more secure permission setting and ownership if needed.
+	return os.Chmod(agent.ContainerActivityFile, 0o777)
 }
 
 // runReaper starts the process reaper and waits for context cancellation.

@@ -159,7 +159,7 @@ func sanitizeServerURL(serverURL string) string {
 func (h *Helper) logError(operation string, err error) {
 	logPath := filepath.Join(os.TempDir(), logFileName)
 	// #nosec G304 -- log file path is controlled and in temp directory
-	f, ferr := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
+	f, ferr := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
 	if ferr != nil {
 		return
 	}

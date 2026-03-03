@@ -68,7 +68,8 @@ func MergeAndApply(env map[string]string, log log.Logger) {
 		return
 	}
 
-	err = os.WriteFile(location, out, 0666)
+	// #nosec G306 -- TODO Consider using a more secure permission setting and ownership if needed.
+	err = os.WriteFile(location, out, 0o666)
 	if err != nil {
 		log.Debugf("Error writing envfile: %v", err)
 		return

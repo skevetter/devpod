@@ -130,7 +130,8 @@ func (cmd *SSHCmd) Run(
 	ctx context.Context,
 	devPodConfig *config.Config,
 	client client2.BaseWorkspaceClient,
-	log log.Logger) error {
+	log log.Logger,
+) error {
 	// add ssh keys to agent
 	if devPodConfig.ContextOption(config.ContextOptionSSHAgentForwarding) == "true" && devPodConfig.ContextOption(config.ContextOptionSSHAddPrivateKeys) == "true" {
 		log.Debug("adding ssh keys to agent, disable via 'devpod context set-options -o SSH_ADD_PRIVATE_KEYS=false'")

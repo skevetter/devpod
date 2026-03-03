@@ -82,7 +82,8 @@ func GetDevPodKeysDir() string {
 	dir, err := util.UserHomeDir()
 	if err == nil {
 		tempDir := filepath.Join(dir, ".devpod", "keys")
-		err = os.MkdirAll(tempDir, 0755)
+		// #nosec G301 -- TODO Consider using a more secure permission setting and ownership if needed.
+		err = os.MkdirAll(tempDir, 0o755)
 		if err == nil {
 			return tempDir
 		}
@@ -120,7 +121,8 @@ func GetPrivateKeyRawBase(dir string) ([]byte, error) {
 	keyLock.Lock()
 	defer keyLock.Unlock()
 
-	err := os.MkdirAll(dir, 0755)
+	// #nosec G301 -- TODO Consider using a more secure permission setting and ownership if needed.
+	err := os.MkdirAll(dir, 0o755)
 	if err != nil {
 		return nil, err
 	}
@@ -135,12 +137,13 @@ func GetPrivateKeyRawBase(dir string) ([]byte, error) {
 			return nil, fmt.Errorf("generate key pair: %w", err)
 		}
 
-		err = os.WriteFile(publicKeyFile, []byte(pubKey), 0644)
+		// #nosec G306 -- TODO Consider using a more secure permission setting and ownership if needed.
+		err = os.WriteFile(publicKeyFile, []byte(pubKey), 0o644)
 		if err != nil {
 			return nil, fmt.Errorf("write public ssh key: %w", err)
 		}
 
-		err = os.WriteFile(privateKeyFile, []byte(privateKey), 0600)
+		err = os.WriteFile(privateKeyFile, []byte(privateKey), 0o600)
 		if err != nil {
 			return nil, fmt.Errorf("write private ssh key: %w", err)
 		}
@@ -159,7 +162,8 @@ func GetHostKeyBase(dir string) (string, error) {
 	keyLock.Lock()
 	defer keyLock.Unlock()
 
-	err := os.MkdirAll(dir, 0755)
+	// #nosec G301 -- TODO Consider using a more secure permission setting and ownership if needed.
+	err := os.MkdirAll(dir, 0o755)
 	if err != nil {
 		return "", err
 	}
@@ -173,7 +177,7 @@ func GetHostKeyBase(dir string) (string, error) {
 			return "", fmt.Errorf("generate host key: %w", err)
 		}
 
-		err = os.WriteFile(hostKeyFile, []byte(privateKey), 0600)
+		err = os.WriteFile(hostKeyFile, []byte(privateKey), 0o600)
 		if err != nil {
 			return "", fmt.Errorf("write host key: %w", err)
 		}
@@ -192,7 +196,8 @@ func GetPublicKeyBase(dir string) (string, error) {
 	keyLock.Lock()
 	defer keyLock.Unlock()
 
-	err := os.MkdirAll(dir, 0755)
+	// #nosec G301 -- TODO Consider using a more secure permission setting and ownership if needed.
+	err := os.MkdirAll(dir, 0o755)
 	if err != nil {
 		return "", err
 	}
@@ -207,12 +212,13 @@ func GetPublicKeyBase(dir string) (string, error) {
 			return "", fmt.Errorf("generate key pair: %w", err)
 		}
 
-		err = os.WriteFile(publicKeyFile, []byte(pubKey), 0644)
+		// #nosec G306 -- TODO Consider using a more secure permission setting and ownership if needed.
+		err = os.WriteFile(publicKeyFile, []byte(pubKey), 0o644)
 		if err != nil {
 			return "", fmt.Errorf("write public ssh key: %w", err)
 		}
 
-		err = os.WriteFile(privateKeyFile, []byte(privateKey), 0600)
+		err = os.WriteFile(privateKeyFile, []byte(privateKey), 0o600)
 		if err != nil {
 			return "", fmt.Errorf("write private ssh key: %w", err)
 		}

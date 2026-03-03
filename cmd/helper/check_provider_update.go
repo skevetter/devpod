@@ -17,9 +17,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	errProviderNotFound = errors.New("provider not found")
-)
+var errProviderNotFound = errors.New("provider not found")
 
 type CheckProviderUpdateCmd struct {
 	*flags.GlobalFlags

@@ -29,9 +29,7 @@ const (
 	providerPrefix = "skevetter/devpod-provider-"
 )
 
-var (
-	ErrNoWorkspaceFound = errors.New("no workspace found")
-)
+var ErrNoWorkspaceFound = errors.New("no workspace found")
 
 type ProviderWithOptions struct {
 	Config *provider.ProviderConfig `json:"config,omitempty"`

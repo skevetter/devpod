@@ -306,6 +306,7 @@ const (
 	TaskStatusSucceed = "Succeeded"
 	TaskStatusFailed  = "Failed"
 )
+
 const (
 	TaskTypeUp     = "up"
 	TaskTypeStop   = "stop"

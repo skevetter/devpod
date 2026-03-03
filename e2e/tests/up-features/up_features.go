@@ -69,7 +69,8 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-features", "suite
 		framework.ExpectNoError(err)
 
 		output := strings.ReplaceAll(string(devContainerFileBuf), "#{server_url}", server.URL())
-		err = os.WriteFile(path.Join(tempDir, ".devcontainer.json"), []byte(output), 0644)
+		// #nosec G306 -- TODO Consider using a more secure permission setting and ownership if needed.
+		err = os.WriteFile(path.Join(tempDir, ".devcontainer.json"), []byte(output), 0o644)
 		framework.ExpectNoError(err)
 
 		respHeader := http.Header{}
@@ -367,5 +368,4 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-features", "suite
 		framework.ExpectNoError(err)
 		framework.ExpectEqual(strings.TrimSpace(out), "ubuntu")
 	}, ginkgo.SpecTimeout(framework.GetTimeout()))
-
 })

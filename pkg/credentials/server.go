@@ -15,8 +15,10 @@ import (
 	"github.com/skevetter/log"
 )
 
-const DefaultPort = "12049"
-const CredentialsServerPortEnv = "DEVPOD_CREDENTIALS_SERVER_PORT"
+const (
+	DefaultPort              = "12049"
+	CredentialsServerPortEnv = "DEVPOD_CREDENTIALS_SERVER_PORT" // #nosec G101
+)
 
 func RunCredentialsServer(
 	ctx context.Context,

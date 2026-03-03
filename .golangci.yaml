@@ -5,6 +5,7 @@ run:
 formatters:
   enable:
     - gci
+    - gofumpt
     - goimports
 linters:
   enable:

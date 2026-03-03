@@ -346,7 +346,7 @@ func CreateWorkspaceBusyFile(folder string) {
 		return
 	}
 
-	_ = os.WriteFile(filePath, nil, 0600)
+	_ = os.WriteFile(filePath, nil, 0o600)
 }
 
 func HasWorkspaceBusyFile(folder string) bool {
@@ -373,7 +373,7 @@ func writeWorkspaceInfo(file string, workspaceInfo *provider2.AgentWorkspaceInfo
 	}
 
 	// write workspace config
-	err = os.WriteFile(file, encoded, 0600)
+	err = os.WriteFile(file, encoded, 0o600)
 	if err != nil {
 		return fmt.Errorf("write workspace config file: %w", err)
 	}

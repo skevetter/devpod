@@ -66,7 +66,7 @@ func (c *FleetServerCmd) Run(cmd *cobra.Command, _ []string) error {
 				_ = file.Close()
 			}
 		case <-cmd.Context().Done():
-			//context is done - either canceled or time is up for timeout
+			// context is done - either canceled or time is up for timeout
 			return nil
 		}
 	}
