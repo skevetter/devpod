@@ -203,7 +203,15 @@ jobs:
 
   build-flatpak:
     name: Build Flatpak
-    runs-on: ubuntu-latest
+    # Use Ubuntu 22.04 to build the flatpak to ensure compatibility with older glibc versions, as recommended by Tauri. For more details, see
+    # https://v2.tauri.app/distribute/appimage/
+    # "Core libraries such as glibc frequently break compatibility with older systems. For this reason, you must build
+    # your Tauri application using the oldest base system you intend to support. A relatively old system such as
+    # Ubuntu 18.04 is more suited than Ubuntu 22.04, as the binary compiled on Ubuntu 22.04 will have a higher
+    # requirement of the glibc version, so when running on an older system, you will face a runtime error like
+    # /usr/lib/libc.so.6: version 'GLIBC_2.33' not found. We recommend using a Docker container or GitHub Actions to
+    # build your Tauri application for Linux."
+    runs-on: ubuntu-22.04
     needs: [build-desktop]
     container:
       image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-48
