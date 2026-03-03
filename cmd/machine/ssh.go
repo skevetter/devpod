@@ -10,7 +10,6 @@ import (
 	"os/exec"
 
 	"al.essio.dev/pkg/shellescape"
-
 	"github.com/mattn/go-isatty"
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/cmd/flags"

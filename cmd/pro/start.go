@@ -21,12 +21,10 @@ import (
 
 	"github.com/denisbrodbeck/machineid"
 	jsonpatch "github.com/evanphx/json-patch"
-	"github.com/mgutz/ansi"
-	"github.com/skratchdot/open-golang/open"
-
 	storagev1 "github.com/loft-sh/api/v4/pkg/apis/storage/v1"
 	"github.com/loft-sh/api/v4/pkg/auth"
 	loftclientset "github.com/loft-sh/api/v4/pkg/clientset/versioned"
+	"github.com/mgutz/ansi"
 	"github.com/sirupsen/logrus"
 	proflags "github.com/skevetter/devpod/cmd/pro/flags"
 	"github.com/skevetter/devpod/pkg/platform"
@@ -36,6 +34,7 @@ import (
 	"github.com/skevetter/log/hash"
 	"github.com/skevetter/log/scanner"
 	"github.com/skevetter/log/survey"
+	"github.com/skratchdot/open-golang/open"
 	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"

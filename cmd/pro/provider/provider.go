@@ -15,7 +15,6 @@ import (
 	"github.com/skevetter/devpod/pkg/platform/client"
 	"github.com/skevetter/devpod/pkg/telemetry"
 	"github.com/skevetter/log"
-
 	"github.com/spf13/cobra"
 )
 

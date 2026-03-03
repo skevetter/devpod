@@ -3,13 +3,12 @@ package completion
 import (
 	"strings"
 
-	"github.com/spf13/cobra"
-
 	"github.com/skevetter/devpod/cmd/flags"
 	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/platform"
 	"github.com/skevetter/devpod/pkg/workspace"
 	"github.com/skevetter/log"
+	"github.com/spf13/cobra"
 )
 
 func RegisterFlagCompletionFuns(rootCmd *cobra.Command, globalFlags *flags.GlobalFlags) error {

@@ -6,13 +6,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/log"
 	"github.com/skratchdot/open-golang/open"
-
-	"github.com/skevetter/devpod/pkg/config"
 )
 
-// Open first finds the zed binary for the local platform and then opens the zed editor with the given workspace folder
+// Open first finds the zed binary for the local platform and then opens the zed editor with the given workspace folder.
 func Open(ctx context.Context, values map[string]config.OptionValue, userName, workspaceFolder, workspaceID string, log log.Logger) error {
 	log.Info("Opening Zed editor...")
 

@@ -14,7 +14,6 @@ import (
 
 	"github.com/skevetter/devpod/pkg/provider"
 	"github.com/skevetter/devpod/pkg/util"
-
 	"golang.org/x/crypto/ssh"
 )
 

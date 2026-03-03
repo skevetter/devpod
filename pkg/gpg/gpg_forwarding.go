@@ -10,10 +10,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/skevetter/log"
-
 	"github.com/sirupsen/logrus"
 	devssh "github.com/skevetter/devpod/pkg/ssh"
+	"github.com/skevetter/log"
 	"golang.org/x/crypto/ssh"
 )
 

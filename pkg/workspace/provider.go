@@ -10,13 +10,12 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/skevetter/devpod/pkg/config"
+	"github.com/skevetter/devpod/pkg/download"
 	devpodhttp "github.com/skevetter/devpod/pkg/http"
 	"github.com/skevetter/devpod/pkg/provider"
 	"github.com/skevetter/devpod/pkg/types"
 	"github.com/skevetter/devpod/providers"
-
-	"github.com/skevetter/devpod/pkg/config"
-	"github.com/skevetter/devpod/pkg/download"
 	"github.com/skevetter/log"
 )
 

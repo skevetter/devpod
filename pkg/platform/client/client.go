@@ -16,18 +16,16 @@ import (
 	"time"
 
 	"github.com/blang/semver/v4"
-
 	managementv1 "github.com/loft-sh/api/v4/pkg/apis/management/v1"
 	storagev1 "github.com/loft-sh/api/v4/pkg/apis/storage/v1"
 	"github.com/loft-sh/api/v4/pkg/auth"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/skevetter/devpod/pkg/platform/kube"
 	"github.com/skevetter/devpod/pkg/platform/project"
 	"github.com/skevetter/devpod/pkg/util"
 	"github.com/skevetter/devpod/pkg/version"
 	"github.com/skevetter/log"
 	"github.com/skratchdot/open-golang/open"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"

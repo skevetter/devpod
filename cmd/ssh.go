@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -10,8 +11,6 @@ import (
 	"path"
 	"strings"
 	"time"
-
-	"errors"
 
 	"al.essio.dev/pkg/shellescape"
 	"github.com/sirupsen/logrus"

@@ -53,11 +53,8 @@ repos:
     hooks:
       - id: commitizen
         stages: [commit-msg]
-  - repo: https://github.com/TekWizely/pre-commit-golang
-    rev: v1.0.0-rc.4
+  - repo: https://github.com/golangci/golangci-lint
+    rev: v2.10.1
     hooks:
-      - id: go-fmt
-      - id: go-imports
       - id: golangci-lint
-        pass_filenames: false
-        args: [--new-from-rev=HEAD]
+      - id: golangci-lint-fmt

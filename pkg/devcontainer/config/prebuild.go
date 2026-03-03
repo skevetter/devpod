@@ -11,7 +11,6 @@ import (
 	"github.com/moby/patternmatcher/ignorefile"
 	"github.com/sirupsen/logrus"
 	util "github.com/skevetter/devpod/pkg/util/hash"
-
 	"github.com/skevetter/log"
 	"github.com/skevetter/log/hash"
 )

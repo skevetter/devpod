@@ -3,13 +3,12 @@ package workspace
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
-
-	"errors"
 
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/cmd/flags"

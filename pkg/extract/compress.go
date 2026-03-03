@@ -3,6 +3,7 @@ package extract
 import (
 	"archive/tar"
 	"compress/gzip"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -11,8 +12,6 @@ import (
 	"runtime"
 	"strings"
 	"time"
-
-	"errors"
 )
 
 func WriteTarExclude(writer io.Writer, localPath string, compress bool, excludedPaths []string) error {

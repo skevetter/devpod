@@ -4,10 +4,9 @@ import (
 	"os"
 	"path/filepath"
 
+	detector "github.com/loft-sh/programming-language-detection/pkg/detector"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	"github.com/skevetter/log"
-
-	detector "github.com/loft-sh/programming-language-detection/pkg/detector"
 )
 
 type ProgrammingLanguage string
