@@ -70,6 +70,12 @@
       "matchFileNames": [".github/workflows/act.yml"],
       "allowedVersions": "v4",
       "description": "pin to v4 for act support in act.yml workflow only"
+    },
+    {
+      "matchPackageNames": ["ubuntu"],
+      "matchManagers": ["github-actions"],
+      "enabled": false,
+      "description": "Do not automatically update Ubuntu runner versions"
     }
   ]
 }
