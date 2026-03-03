@@ -5,7 +5,14 @@
         "depends": ["libwebkit2gtk-4.1-0", "libgtk-3-0"]
       },
       "appimage": {
-        "bundleMediaFramework": true
+        "bundleMediaFramework": true,
+        "linuxdeploy": {
+          "args": [
+            "--exclude-library=libseccomp.so.2",
+            "--exclude-library=libcrypto.so.3",
+            "--exclude-library=libssl.so.3"
+          ]
+        }
       },
       "rpm": {
         "depends": ["webkit2gtk4.1", "gtk3"]
