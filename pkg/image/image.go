@@ -71,11 +71,28 @@ func CheckPushPermissions(ctx context.Context, image string) error {
 		return fmt.Errorf("create authentication keychain: %w", err)
 	}
 
-	if err := remote.CheckPushPermission(ref, keychain, http.DefaultTransport); err != nil {
+	// Create a context-aware transport to propagate cancellations and timeouts
+	transport := &contextAwareTransport{
+		ctx:       ctx,
+		transport: http.DefaultTransport,
+	}
+
+	if err := remote.CheckPushPermission(ref, keychain, transport); err != nil {
 		return fmt.Errorf("check push permissions: %w", err)
 	}
 
 	return nil
+}
+
+// contextAwareTransport wraps an http.RoundTripper to inject context into requests.
+type contextAwareTransport struct {
+	ctx       context.Context
+	transport http.RoundTripper
+}
+
+func (t *contextAwareTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	req = req.WithContext(t.ctx)
+	return t.transport.RoundTrip(req)
 }
 
 func GetImageConfig(ctx context.Context, image string, log log.Logger) (*v1.ConfigFile, v1.Image, error) {

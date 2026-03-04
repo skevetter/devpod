@@ -65,7 +65,8 @@ type FindInstanceOptions struct {
 	// Name searches for an instance by its name. Only used if UID is empty.
 	Name string
 	// Namespace specifies the namespace to search in. If empty and ProjectName is set,
-	// the project namespace is used. If both are empty, searches all namespaces.
+	// the project namespace is used. If both are empty, UID lookup searches all namespaces.
+	// Name lookup requires Namespace or ProjectName to avoid ambiguous cross-namespace matches.
 	Namespace string
 	// ProjectName converts to a project namespace. Ignored if Namespace is explicitly set.
 	ProjectName string
@@ -140,6 +141,9 @@ func FindInstance(
 	}
 
 	if opts.Name != "" {
+		if namespace == metav1.NamespaceAll {
+			return nil, fmt.Errorf("the Namespace or ProjectName must be specified when searching by Name")
+		}
 		return findInstanceByName(ctx, managementClient, opts.Name, namespace)
 	}
 
