@@ -144,16 +144,15 @@ func isDirExecutable(dir string) (bool, error) {
 	}
 
 	// #nosec G301,G703 -- TODO Consider using a more secure permission setting and ownership if needed.
-	err := os.MkdirAll(dir, 0o777)
-	if err != nil {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return false, err
 	}
 
 	testFile := filepath.Join(dir, "devpod_test.sh")
-	err = os.WriteFile(testFile, []byte(`#!/bin/sh
+	// #nosec G306,G703 -- TODO Consider using a more secure permission setting and ownership if needed.
+	if err := os.WriteFile(testFile, []byte(`#!/bin/sh
 echo DevPod
-`), 0o755)
-	if err != nil {
+`), 0o755); err != nil {
 		return false, err
 	}
 	defer func() { _ = os.Remove(testFile) }()

@@ -155,7 +155,7 @@ func extractNext(tarReader *tar.Reader, destFolder string, options *Options) (bo
 
 	// Set permissions
 	if options.Perm == nil {
-		//nolint:gosec // G703: Path traversal is handled by archive extraction context
+		// #nosec G305 -- Path traversal is handled by archive extraction context
 		_ = os.Chmod(outFileName, header.FileInfo().Mode()|0o600)
 	}
 

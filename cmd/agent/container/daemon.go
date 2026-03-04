@@ -68,8 +68,9 @@ func (cmd *DaemonCmd) Run(c *cobra.Command, args []string) error {
 			return fmt.Errorf("failed to parse timeout duration: %w", err)
 		}
 		if timeoutDuration > 0 {
-			if err := setupActivityFile(); err != nil {
-				return err
+			// #nosec G306 -- TODO Consider using a more secure permission setting and ownership if needed.
+			if err := os.WriteFile(agent.ContainerActivityFile, nil, 0o666); err != nil {
+				return fmt.Errorf("failed to create activity file: %w", err)
 			}
 		}
 	}
@@ -174,16 +175,6 @@ func (cmd *DaemonCmd) shouldRunNetworkServer() bool {
 // shouldRunSsh returns true if at least one SSH configuration value is provided.
 func (cmd *DaemonCmd) shouldRunSsh() bool {
 	return cmd.Config.Ssh.Workdir != "" || cmd.Config.Ssh.User != ""
-}
-
-// setupActivityFile creates and sets permissions on the container activity file.
-func setupActivityFile() error {
-	// #nosec G306 -- TODO Consider using a more secure permission setting and ownership if needed.
-	if err := os.WriteFile(agent.ContainerActivityFile, nil, 0o777); err != nil {
-		return err
-	}
-	// #nosec G302 -- TODO Consider using a more secure permission setting and ownership if needed.
-	return os.Chmod(agent.ContainerActivityFile, 0o777)
 }
 
 // runReaper starts the process reaper and waits for context cancellation.

@@ -108,8 +108,8 @@ var _ = DevPodDescribe("devpod provider test suite", func() {
 			framework.ExpectNoError(err)
 
 			// Add .DS_Store file to tempDir
-			// #nosec G301 -- TODO Consider using a more secure permission setting and ownership if needed.
-			err = os.Mkdir(tempDir+"/.DS_Store", 0o755)
+			// #nosec G306 -- TODO Consider using a more secure permission setting and ownership if needed.
+			err = os.WriteFile(tempDir+"/.DS_Store", []byte("test"), 0o644)
 			framework.ExpectNoError(err)
 
 			// List providers

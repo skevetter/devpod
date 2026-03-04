@@ -22,10 +22,7 @@ import (
 )
 
 const (
-	FleetURLFile = "/tmp/devpod-fleet.url.txt"
-)
-
-const (
+	FleetURLFileName    = "/tmp/devpod-fleet.url.txt"
 	VersionOption       = "VERSION"
 	DownloadAmd64Option = "DOWNLOAD_AMD64"
 	DownloadArm64Option = "DOWNLOAD_ARM64"
@@ -95,11 +92,7 @@ func (o *FleetServer) Install(projectDir string) error {
 		return fmt.Errorf("unexpected status code while trying to download fleet from %s: %d", url, resp.StatusCode)
 	}
 
-	if !strings.HasPrefix(fleetBinary, "fleet") {
-		return fmt.Errorf("unexpected fleet binary name: %s", fleetBinary)
-	}
-
-	// #nosec G302,G304 -- TODO Consider using a more secure permission setting and ownership if needed.
+	// #nosec G306,G703 -- TODO Consider using a more secure permission setting and ownership if needed.
 	f, err := os.OpenFile(fleetBinary, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o755)
 	if err != nil {
 		return err
@@ -178,8 +171,8 @@ func (o *FleetServer) Start(binaryPath, location, projectDir string) error {
 		text := s.Text()
 		if strings.Contains(text, "https://fleet.jetbrains.com/") {
 			index := strings.Index(text, "https://fleet.jetbrains.com/")
-			//nolint:gosec // G703: FleetURLFile path is controlled by the application
-			err = os.WriteFile(FleetURLFile, []byte(strings.TrimSpace(text[index:])), 0o600)
+			fleetURLFile := filepath.Join(location, FleetURLFileName)
+			err = os.WriteFile(fleetURLFile, []byte(strings.TrimSpace(text[index:])), 0o600) // #nosec G703
 			if err != nil {
 				return err
 			}

@@ -802,7 +802,7 @@ func startFleet(ctx context.Context, client client2.BaseWorkspaceClient, logger 
 		ctx,
 		client,
 		logger,
-		[]string{"--command", "cat " + fleet.FleetURLFile},
+		[]string{"--command", "cat " + fleet.FleetURLFileName},
 	)
 	if err != nil {
 		return err
