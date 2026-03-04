@@ -20,6 +20,7 @@ import (
 	"github.com/skevetter/devpod/pkg/platform/project"
 	"github.com/skevetter/log"
 	corev1 "k8s.io/api/core/v1"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -109,8 +110,15 @@ func findInstanceByName(
 	name string,
 	namespace string,
 ) (*managementv1.DevPodWorkspaceInstance, error) {
-	return managementClient.Loft().ManagementV1().
+	workspace, err := managementClient.Loft().ManagementV1().
 		DevPodWorkspaceInstances(namespace).Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		if kerrors.IsNotFound(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return workspace, nil
 }
 
 // FindInstance finds a DevPodWorkspaceInstance using the provided options.
