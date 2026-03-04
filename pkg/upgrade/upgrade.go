@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/creativeprojects/go-selfupdate"
+	"github.com/skevetter/devpod/pkg/version"
 	"github.com/skevetter/log"
 )
 
@@ -17,6 +18,13 @@ func Upgrade(ctx context.Context, targetVersion string, dryRun bool, logger log.
 	release, updater, err := detectRelease(ctx, targetVersion)
 	if err != nil {
 		return err
+	}
+
+	if release.Version() == getCurrentVersion() {
+		if _, err := fmt.Fprintf(os.Stdout, "devpod is already at version %s\n", release.Version()); err != nil {
+			return fmt.Errorf("write output: %w", err)
+		}
+		return nil
 	}
 
 	if dryRun {
@@ -96,4 +104,9 @@ func detectLatestVersion(
 		return nil, fmt.Errorf("no release found")
 	}
 	return release, nil
+}
+
+// getCurrentVersion returns the current version of devpod.
+func getCurrentVersion() string {
+	return version.GetVersion()
 }

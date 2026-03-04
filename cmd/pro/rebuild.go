@@ -15,8 +15,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const AllWorkspaces = "all"
-
 // RebuildCmd holds the cmd flags.
 type RebuildCmd struct {
 	*flags.GlobalFlags

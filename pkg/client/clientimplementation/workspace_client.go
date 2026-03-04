@@ -266,6 +266,7 @@ func (s *workspaceClient) Lock(ctx context.Context) error {
 func (s *workspaceClient) Unlock() {
 	if err := s.initLock(); err != nil {
 		s.log.Warnf("initializing lock: %v", err)
+		return
 	}
 
 	if s.machineLock != nil {
@@ -274,8 +275,10 @@ func (s *workspaceClient) Unlock() {
 		}
 	}
 
-	if err := s.workspaceLock.Unlock(); err != nil {
-		s.log.Warnf("error unlocking workspace: %v", err)
+	if s.workspaceLock != nil {
+		if err := s.workspaceLock.Unlock(); err != nil {
+			s.log.Warnf("error unlocking workspace: %v", err)
+		}
 	}
 }
 
