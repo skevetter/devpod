@@ -226,8 +226,7 @@ func (s *WorkspaceServer) startListeners(ctx context.Context, projectName, works
 		return fmt.Errorf("failed to create listener on TS port %s: %w", TSPortForwardPort, err)
 	}
 
-	// make sure all users can access the socket
-	_ = os.Chmod(runnerProxySocket, 0o755) // #nosec G302
+	_ = os.Chmod(runnerProxySocket, 0o777) // #nosec G302 -- required so all users can connect to the unix socket
 
 	// add all listeners to the list
 	s.listeners = append(s.listeners, sshListener, wsListener, runnerProxyListener)

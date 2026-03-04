@@ -76,7 +76,7 @@ func (cmd *WakeupCmd) Run(ctx context.Context, args []string) error {
 	}
 
 	if workspaceInstance.Status.Phase != storagev1.InstanceSleeping {
-		cmd.Log.Infof("Workspace %s is not sleeping", targetWorkspace, workspaceInstance.Name)
+		cmd.Log.Infof("Workspace %s is not sleeping", workspaceInstance.Name)
 		return nil
 	}
 

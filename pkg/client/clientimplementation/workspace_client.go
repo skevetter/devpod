@@ -239,7 +239,7 @@ func (s *workspaceClient) agentInfo(cliOptions provider.CLIOptions) *provider.Ag
 
 func (s *workspaceClient) Lock(ctx context.Context) error {
 	if err := s.initLock(); err != nil {
-		return err
+		return fmt.Errorf("initializing lock: %w", err)
 	}
 
 	// try to lock workspace
@@ -264,20 +264,18 @@ func (s *workspaceClient) Lock(ctx context.Context) error {
 }
 
 func (s *workspaceClient) Unlock() {
-	s.initLock()
+	if err := s.initLock(); err != nil {
+		s.log.Warnf("initializing lock: %v", err)
+	}
 
-	// try to unlock machine
 	if s.machineLock != nil {
-		err := s.machineLock.Unlock()
-		if err != nil {
-			s.log.WithFields(logrus.Fields{"error": err}).Warn("error unlocking machine")
+		if err := s.machineLock.Unlock(); err != nil {
+			s.log.Warnf("error unlocking machine: %v", err)
 		}
 	}
 
-	// try to unlock workspace
-	err := s.workspaceLock.Unlock()
-	if err != nil {
-		s.log.WithFields(logrus.Fields{"error": err}).Warn("error unlocking workspace")
+	if err := s.workspaceLock.Unlock(); err != nil {
+		s.log.Warnf("error unlocking workspace: %v", err)
 	}
 }
 

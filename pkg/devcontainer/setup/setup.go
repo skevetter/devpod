@@ -95,8 +95,7 @@ func writeResultFile(cfg *ContainerSetupConfig) {
 		return
 	}
 
-	// #nosec G301 -- Standard directory permissions
-	if err := os.MkdirAll(filepath.Dir(ResultLocation), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(ResultLocation), 0o755); err != nil { // #nosec G301
 		cfg.Log.Warnf("error create %s: %v", filepath.Dir(ResultLocation), err)
 	}
 
@@ -355,7 +354,7 @@ func writeKubeConfig(setupInfo *config.Result, configData string) error {
 	}
 
 	kubeDir := filepath.Join(homeDir, ".kube")
-	if err := os.MkdirAll(kubeDir, 0o755); err != nil { // #nosec G301 -- Standard directory permissions
+	if err := os.MkdirAll(kubeDir, 0o700); err != nil { // #nosec G301 -- kube directory should be user-private
 		return err
 	}
 

@@ -71,6 +71,9 @@ func (cmd *RebuildCmd) Run(ctx context.Context, args []string) error {
 	if err != nil {
 		return err
 	}
+	if workspace == nil {
+		return fmt.Errorf("workspace %q not found in project %q", targetWorkspace, cmd.Project)
+	}
 
 	opts := struct {
 		Recreate bool `json:"recreate"`

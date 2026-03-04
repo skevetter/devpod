@@ -71,9 +71,8 @@ func CheckPushPermissions(ctx context.Context, image string) error {
 		return fmt.Errorf("create authentication keychain: %w", err)
 	}
 
-	err = remote.CheckPushPermission(ref, keychain, http.DefaultTransport)
-	if err != nil {
-		return err
+	if err := remote.CheckPushPermission(ref, keychain, http.DefaultTransport); err != nil {
+		return fmt.Errorf("check push permissions: %w", err)
 	}
 
 	return nil

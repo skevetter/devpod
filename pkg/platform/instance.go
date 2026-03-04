@@ -82,7 +82,7 @@ func FindInstance(
 	}
 
 	namespace := opts.Namespace
-	if namespace == "" {
+	if namespace == "" && opts.ProjectName != "" {
 		namespace = project.ProjectNamespace(opts.ProjectName)
 	}
 

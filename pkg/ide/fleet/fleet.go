@@ -219,8 +219,7 @@ func prepareFleetServerLocation(userName string) (string, error) {
 	}
 
 	folder := filepath.Join(homeFolder, ".fleet-server")
-	// #nosec G301 -- TODO Consider using a more secure permission setting and ownership if needed.
-	err = os.MkdirAll(folder, 0o755)
+	err = os.MkdirAll(folder, 0o755) // #nosec G301
 	if err != nil {
 		return "", err
 	}

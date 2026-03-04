@@ -102,13 +102,14 @@ func (cmd *SSHServerCmd) Run(_ *cobra.Command, _ []string) error {
 			go func() {
 				_, err = os.Stat(agent.ContainerActivityFile)
 				if err != nil {
-					err = os.WriteFile(agent.ContainerActivityFile, nil, 0o755) // #nosec G306
-					if err != nil {
-						fmt.Fprintf(os.Stderr, "Error writing file: %v\n", err)
+					if err := os.WriteFile(agent.ContainerActivityFile, nil, 0o644); err != nil { // #nosec G306
+						fmt.Fprintf(os.Stderr, "error writing file: %v\n", err)
 						return
 					}
-
-					_ = os.Chmod(agent.ContainerActivityFile, 0o755) // #nosec G302
+					if err := os.Chmod(agent.ContainerActivityFile, 0o644); err != nil { // #nosec G302
+						fmt.Fprintf(os.Stderr, "error setting file permissions: %v\n", err)
+						return
+					}
 				}
 
 				for {

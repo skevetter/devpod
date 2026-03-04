@@ -67,6 +67,9 @@ func (cmd *WorkspaceCmd) Run(ctx context.Context, stdin io.Reader, stdout io.Wri
 		if err != nil {
 			return err
 		}
+		if oldInstance == nil {
+			return fmt.Errorf("workspace instance %q not found in project %q", newInstance.GetName(), projectName)
+		}
 
 		updatedInstance, err := updateInstance(ctx, baseClient, oldInstance, newInstance, cmd.Log)
 		if err != nil {
@@ -97,6 +100,9 @@ func (cmd *WorkspaceCmd) Run(ctx context.Context, stdin io.Reader, stdout io.Wri
 	oldInstance, err := platform.FindInstance(ctx, baseClient, opts)
 	if err != nil {
 		return err
+	}
+	if oldInstance == nil {
+		return fmt.Errorf("workspace instance with UID %q not found in project %q", workspaceUID, project)
 	}
 
 	newInstance, err := form.UpdateInstance(ctx, baseClient, oldInstance, cmd.Log)
