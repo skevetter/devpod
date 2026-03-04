@@ -16,6 +16,7 @@ import (
 	managementv1 "github.com/loft-sh/api/v4/pkg/apis/management/v1"
 	storagev1 "github.com/loft-sh/api/v4/pkg/apis/storage/v1"
 	"github.com/skevetter/devpod/pkg/platform/client"
+	"github.com/skevetter/devpod/pkg/platform/kube"
 	"github.com/skevetter/devpod/pkg/platform/project"
 	"github.com/skevetter/log"
 	corev1 "k8s.io/api/core/v1"
@@ -69,6 +70,49 @@ type FindInstanceOptions struct {
 	ProjectName string
 }
 
+// resolveNamespace determines the namespace to use based on options.
+func resolveNamespace(opts FindInstanceOptions) string {
+	if opts.Namespace != "" {
+		return opts.Namespace
+	}
+	if opts.ProjectName != "" {
+		return project.ProjectNamespace(opts.ProjectName)
+	}
+	return ""
+}
+
+// findInstanceByUID searches for an instance using its UID label.
+func findInstanceByUID(
+	ctx context.Context,
+	managementClient kube.Interface,
+	uid string,
+	namespace string,
+) (*managementv1.DevPodWorkspaceInstance, error) {
+	listOpts := metav1.ListOptions{
+		LabelSelector: storagev1.DevPodWorkspaceUIDLabel + "=" + uid,
+	}
+	workspaceList, err := managementClient.Loft().ManagementV1().
+		DevPodWorkspaceInstances(namespace).List(ctx, listOpts)
+	if err != nil {
+		return nil, err
+	}
+	if len(workspaceList.Items) == 0 {
+		return nil, nil
+	}
+	return &workspaceList.Items[0], nil
+}
+
+// findInstanceByName searches for an instance using its name.
+func findInstanceByName(
+	ctx context.Context,
+	managementClient kube.Interface,
+	name string,
+	namespace string,
+) (*managementv1.DevPodWorkspaceInstance, error) {
+	return managementClient.Loft().ManagementV1().
+		DevPodWorkspaceInstances(namespace).Get(ctx, name, metav1.GetOptions{})
+}
+
 // FindInstance finds a DevPodWorkspaceInstance using the provided options.
 // Either UID or Name must be specified. If neither is provided, returns an error.
 func FindInstance(
@@ -81,33 +125,14 @@ func FindInstance(
 		return nil, fmt.Errorf("create management client: %w", err)
 	}
 
-	namespace := opts.Namespace
-	if namespace == "" && opts.ProjectName != "" {
-		namespace = project.ProjectNamespace(opts.ProjectName)
-	}
+	namespace := resolveNamespace(opts)
 
 	if opts.UID != "" {
-		listOpts := metav1.ListOptions{
-			LabelSelector: storagev1.DevPodWorkspaceUIDLabel + "=" + opts.UID,
-		}
-		workspaceList, err := managementClient.Loft().ManagementV1().
-			DevPodWorkspaceInstances(namespace).List(ctx, listOpts)
-		if err != nil {
-			return nil, err
-		}
-		if len(workspaceList.Items) == 0 {
-			return nil, nil
-		}
-		return &workspaceList.Items[0], nil
+		return findInstanceByUID(ctx, managementClient, opts.UID, namespace)
 	}
 
 	if opts.Name != "" {
-		workspace, err := managementClient.Loft().ManagementV1().
-			DevPodWorkspaceInstances(namespace).Get(ctx, opts.Name, metav1.GetOptions{})
-		if err != nil {
-			return nil, err
-		}
-		return workspace, nil
+		return findInstanceByName(ctx, managementClient, opts.Name, namespace)
 	}
 
 	return nil, fmt.Errorf("either UID or Name must be specified in FindInstanceOptions")
