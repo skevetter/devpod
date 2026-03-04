@@ -171,7 +171,7 @@ func linkRootHome(setupInfo *config.Result) error {
 
 	// link /home/root to the root home
 	// #nosec G301 -- TODO Consider using a more secure permission setting and ownership if needed.
-	err = os.MkdirAll("/home", 0o777)
+	err = os.MkdirAll("/home", 0o755)
 	if err != nil {
 		return fmt.Errorf("create /home folder: %w", err)
 	}

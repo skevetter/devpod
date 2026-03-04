@@ -155,8 +155,7 @@ func extractNext(tarReader *tar.Reader, destFolder string, options *Options) (bo
 
 	// Set permissions
 	if options.Perm == nil {
-		// #nosec G305 -- Path traversal is handled by archive extraction context
-		_ = os.Chmod(outFileName, header.FileInfo().Mode()|0o600)
+		_ = os.Chmod(outFileName, header.FileInfo().Mode()|0o600) // #nosec G703
 	}
 
 	// Set mod time from tar header

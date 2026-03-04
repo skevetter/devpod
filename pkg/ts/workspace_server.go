@@ -227,7 +227,7 @@ func (s *WorkspaceServer) startListeners(ctx context.Context, projectName, works
 	}
 
 	// make sure all users can access the socket
-	_ = os.Chmod(runnerProxySocket, 0o777)
+	_ = os.Chmod(runnerProxySocket, 0o755) // #nosec G302
 
 	// add all listeners to the list
 	s.listeners = append(s.listeners, sshListener, wsListener, runnerProxyListener)

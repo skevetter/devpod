@@ -49,6 +49,7 @@ type workspaceClient struct {
 	m sync.Mutex
 
 	workspaceLockOnce sync.Once
+	workspaceLockErr  error
 	workspaceLock     *flock.Flock
 	machineLock       *flock.Flock
 
@@ -236,33 +237,10 @@ func (s *workspaceClient) agentInfo(cliOptions provider.CLIOptions) *provider.Ag
 	return agentInfo
 }
 
-func (s *workspaceClient) initLock() {
-	s.workspaceLockOnce.Do(func() {
-		s.m.Lock()
-		defer s.m.Unlock()
-
-		// get locks dir
-		workspaceLocksDir, err := provider.GetLocksDir(s.workspace.Context)
-		if err != nil {
-			panic(fmt.Errorf("get workspaces dir: %w", err))
-		}
-		// #nosec G301 -- TODO Consider using a more secure permission setting and ownership if needed.
-		if err = os.MkdirAll(workspaceLocksDir, 0o755); err != nil {
-			panic(fmt.Errorf("create workspace locks dir: %w", err))
-		}
-
-		// create workspace lock
-		s.workspaceLock = flock.New(filepath.Join(workspaceLocksDir, s.workspace.ID+".workspace.lock"))
-
-		// create machine lock
-		if s.machine != nil {
-			s.machineLock = flock.New(filepath.Join(workspaceLocksDir, s.machine.ID+".machine.lock"))
-		}
-	})
-}
-
 func (s *workspaceClient) Lock(ctx context.Context) error {
-	s.initLock()
+	if err := s.initLock(); err != nil {
+		return err
+	}
 
 	// try to lock workspace
 	s.log.Debug("acquire workspace lock")
@@ -572,6 +550,33 @@ func (s *workspaceClient) Status(ctx context.Context, options client.StatusOptio
 	}
 
 	return client.StatusNotFound, nil
+}
+
+func (s *workspaceClient) initLock() error {
+	s.workspaceLockOnce.Do(func() {
+		s.m.Lock()
+		defer s.m.Unlock()
+
+		// get locks dir
+		workspaceLocksDir, err := provider.GetLocksDir(s.workspace.Context)
+		if err != nil {
+			s.workspaceLockErr = fmt.Errorf("get workspaces dir: %w", err)
+			return
+		}
+		if err = os.MkdirAll(workspaceLocksDir, 0o755); err != nil { // #nosec G301
+			s.workspaceLockErr = fmt.Errorf("create workspace locks dir: %w", err)
+			return
+		}
+
+		// create workspace lock
+		s.workspaceLock = flock.New(filepath.Join(workspaceLocksDir, s.workspace.ID+".workspace.lock"))
+
+		// create machine lock
+		if s.machine != nil {
+			s.machineLock = flock.New(filepath.Join(workspaceLocksDir, s.machine.ID+".machine.lock"))
+		}
+	})
+	return s.workspaceLockErr
 }
 
 func (s *workspaceClient) getContainerStatus(ctx context.Context) (client.Status, error) {

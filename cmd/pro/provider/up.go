@@ -75,7 +75,8 @@ func (cmd *UpCmd) Run(ctx context.Context) error {
 		return err
 	}
 
-	instance, err := platform.FindInstanceInProject(ctx, baseClient, info.UID, info.ProjectName)
+	opts := platform.FindInstanceOptions{UID: info.UID, ProjectName: info.ProjectName}
+	instance, err := platform.FindInstance(ctx, baseClient, opts)
 	if err != nil {
 		return err
 	} else if instance == nil {

@@ -85,7 +85,7 @@ func (cmd *WorkspaceCmd) Run(ctx context.Context, stdin io.Reader, stdout io.Wri
 	if workspaceUID == "" || workspaceID == "" || workspaceFolder == "" {
 		return fmt.Errorf("workspaceID, workspaceUID or workspace folder not found: %s, %s, %s", workspaceID, workspaceUID, workspaceFolder)
 	}
-	instance, err := platform.FindInstance(ctx, baseClient, workspaceUID)
+	instance, err := platform.FindInstance(ctx, baseClient, platform.FindInstanceOptions{UID: workspaceUID})
 	if err != nil {
 		return err
 	}

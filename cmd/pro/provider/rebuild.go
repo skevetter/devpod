@@ -58,7 +58,8 @@ func (cmd *RebuildCmd) Run(ctx context.Context, args []string) error {
 		return err
 	}
 
-	workspace, err := platform.FindInstanceByName(ctx, baseClient, targetWorkspace, cmd.Project)
+	instanceOpts := platform.FindInstanceOptions{Name: targetWorkspace, ProjectName: cmd.Project}
+	workspace, err := platform.FindInstance(ctx, baseClient, instanceOpts)
 	if err != nil {
 		return err
 	}

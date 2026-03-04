@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	FleetURLFileName    = "/tmp/devpod-fleet.url.txt"
+	FleetURLFileName    = "devpod-fleet.url.txt"
 	VersionOption       = "VERSION"
 	DownloadAmd64Option = "DOWNLOAD_AMD64"
 	DownloadArm64Option = "DOWNLOAD_ARM64"
@@ -92,8 +92,7 @@ func (o *FleetServer) Install(projectDir string) error {
 		return fmt.Errorf("unexpected status code while trying to download fleet from %s: %d", url, resp.StatusCode)
 	}
 
-	// #nosec G306,G703 -- TODO Consider using a more secure permission setting and ownership if needed.
-	f, err := os.OpenFile(fleetBinary, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o755)
+	f, err := os.OpenFile(fleetBinary, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o755) // #nosec G302,G304
 	if err != nil {
 		return err
 	}

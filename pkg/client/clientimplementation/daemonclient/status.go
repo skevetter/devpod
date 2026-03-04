@@ -18,7 +18,7 @@ func (c *client) Status(ctx context.Context, opt clientpkg.StatusOptions) (clien
 		return status, err
 	}
 
-	instance, err := platform.FindInstance(ctx, baseClient, c.workspace.UID)
+	instance, err := platform.FindInstance(ctx, baseClient, platform.FindInstanceOptions{UID: c.workspace.UID})
 	if err != nil {
 		return status, err
 	} else if instance == nil {

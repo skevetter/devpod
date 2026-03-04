@@ -164,7 +164,8 @@ func collectProWorkspaceInfo(
 		return nil, fmt.Errorf("init client from host: %w", err)
 	}
 
-	workspace, err := platform.FindInstanceInProject(ctx, baseClient, workspaceUID, project)
+	opts := platform.FindInstanceOptions{UID: workspaceUID, ProjectName: project}
+	workspace, err := platform.FindInstance(ctx, baseClient, opts)
 	if err != nil {
 		return nil, err
 	} else if workspace == nil {

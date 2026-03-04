@@ -66,14 +66,8 @@ var _ = ginkgo.Describe("testing up command for dockerfile builds", ginkgo.Label
 
 		ginkgo.By("Changing a file within the context")
 		scriptPath := filepath.Join(tempDir, "scripts", "alias.sh")
-		// #nosec G304 -- TODO Consider using a more secure permission setting and ownership if needed.
-		scriptFile, err := os.OpenFile(scriptPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644) //nolint:gosec
-		framework.ExpectNoError(err)
 
-		_, err = scriptFile.Write([]byte("alias yr='date +%Y'"))
-		framework.ExpectNoError(err)
-
-		err = scriptFile.Close()
+		err = os.WriteFile(scriptPath, []byte("alias yr='date +%Y'"), 0o600)
 		framework.ExpectNoError(err)
 
 		ginkgo.By("Starting DevPod again with --recreate")

@@ -29,7 +29,7 @@ func (c *client) Up(ctx context.Context, opt clientpkg.UpOptions) (*config.Resul
 		return nil, err
 	}
 
-	instance, err := platform.FindInstance(ctx, baseClient, c.workspace.UID)
+	instance, err := platform.FindInstance(ctx, baseClient, platform.FindInstanceOptions{UID: c.workspace.UID})
 	if err != nil {
 		return nil, err
 	} else if instance == nil {

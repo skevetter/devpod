@@ -108,7 +108,8 @@ func (cmd *ImportCmd) Run(ctx context.Context, args []string) error {
 	if err != nil {
 		return fmt.Errorf("base client: %w", err)
 	}
-	instance, err := platform.FindInstanceInProject(ctx, baseClient, cmd.WorkspaceUid, cmd.WorkspaceProject)
+	opts := platform.FindInstanceOptions{UID: cmd.WorkspaceUid, ProjectName: cmd.WorkspaceProject}
+	instance, err := platform.FindInstance(ctx, baseClient, opts)
 	if err != nil {
 		return fmt.Errorf("find workspace instance: %w", err)
 	}

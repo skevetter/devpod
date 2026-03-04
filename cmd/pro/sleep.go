@@ -71,7 +71,8 @@ func (cmd *SleepCmd) Run(ctx context.Context, args []string) error {
 		return err
 	}
 
-	workspaceInstance, err := platform.FindInstanceByName(ctx, baseClient, targetWorkspace, cmd.Project)
+	opts := platform.FindInstanceOptions{Name: targetWorkspace, ProjectName: cmd.Project}
+	workspaceInstance, err := platform.FindInstance(ctx, baseClient, opts)
 	if err != nil {
 		return err
 	}

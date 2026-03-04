@@ -19,7 +19,8 @@ func (c *client) Stop(ctx context.Context, opt clientpkg.StopOptions) error {
 	if err != nil {
 		return err
 	}
-	workspace, err := platform.FindInstance(ctx, baseClient, c.workspace.UID)
+	opts := platform.FindInstanceOptions{UID: c.workspace.UID}
+	workspace, err := platform.FindInstance(ctx, baseClient, opts)
 	if err != nil {
 		return err
 	} else if workspace == nil {

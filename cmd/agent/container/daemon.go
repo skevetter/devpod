@@ -68,9 +68,11 @@ func (cmd *DaemonCmd) Run(c *cobra.Command, args []string) error {
 			return fmt.Errorf("failed to parse timeout duration: %w", err)
 		}
 		if timeoutDuration > 0 {
-			// #nosec G306 -- TODO Consider using a more secure permission setting and ownership if needed.
-			if err := os.WriteFile(agent.ContainerActivityFile, nil, 0o666); err != nil {
+			if err := os.WriteFile(agent.ContainerActivityFile, nil, 0o666); err != nil { // #nosec G306
 				return fmt.Errorf("failed to create activity file: %w", err)
+			}
+			if err := os.Chmod(agent.ContainerActivityFile, 0o666); err != nil { // #nosec G302
+				return fmt.Errorf("failed to set activity file permissions: %w", err)
 			}
 		}
 	}

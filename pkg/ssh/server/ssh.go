@@ -121,7 +121,7 @@ func (s *server) handler(sess ssh.Session) {
 	cmd := s.getCommand(sess, isPty)
 
 	if ssh.AgentRequested(sess) {
-		l, tmpDir, err := setupAgentListener(sess, s.reuseSock)
+		l, tmpDir, err := setupAgentListener(s.reuseSock)
 		if err != nil {
 			exitWithError(sess, err, s.log)
 			return

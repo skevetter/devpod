@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"regexp"
 
-	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
@@ -61,13 +60,18 @@ func GetImageForArch(ctx context.Context, image, arch string) (v1.Image, error) 
 	return img, err
 }
 
-func CheckPushPermissions(image string) error {
+func CheckPushPermissions(ctx context.Context, image string) error {
 	ref, err := name.ParseReference(image)
 	if err != nil {
-		return err
+		return fmt.Errorf("parse image reference %q: %w", image, err)
 	}
 
-	err = remote.CheckPushPermission(ref, authn.DefaultKeychain, http.DefaultTransport)
+	keychain, err := GetKeychain(ctx)
+	if err != nil {
+		return fmt.Errorf("create authentication keychain: %w", err)
+	}
+
+	err = remote.CheckPushPermission(ref, keychain, http.DefaultTransport)
 	if err != nil {
 		return err
 	}

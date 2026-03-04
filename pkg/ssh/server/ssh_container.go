@@ -90,7 +90,7 @@ func (s *containerServer) handler(sess ssh.Session) {
 	}
 
 	if ssh.AgentRequested(sess) {
-		l, tmpDir, err := setupAgentListener(sess, "")
+		l, tmpDir, err := setupAgentListener("")
 		if err != nil {
 			exitWithError(sess, err, s.log)
 			return

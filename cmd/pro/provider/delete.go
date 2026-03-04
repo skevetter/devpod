@@ -50,7 +50,8 @@ func (cmd *DeleteCmd) Run(ctx context.Context, stdin io.Reader, stdout io.Writer
 	if err != nil {
 		return err
 	}
-	workspace, err := platform.FindInstanceInProject(ctx, baseClient, info.UID, info.ProjectName)
+	opts := platform.FindInstanceOptions{UID: info.UID, ProjectName: info.ProjectName}
+	workspace, err := platform.FindInstance(ctx, baseClient, opts)
 	if err != nil {
 		return err
 	} else if workspace == nil {

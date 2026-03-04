@@ -22,7 +22,7 @@ func (c *client) Delete(ctx context.Context, opt clientpkg.DeleteOptions) error 
 		return err
 	}
 
-	workspace, err := platform.FindInstance(ctx, baseClient, c.workspace.UID)
+	workspace, err := platform.FindInstance(ctx, baseClient, platform.FindInstanceOptions{UID: c.workspace.UID})
 	if err != nil {
 		return err
 	} else if workspace == nil {

@@ -9,10 +9,10 @@ import (
 	"github.com/skevetter/ssh"
 )
 
-func setupAgentListener(sess ssh.Session, reuseSock string) (net.Listener, string, error) {
+func setupAgentListener(reuseSock string) (net.Listener, string, error) {
 	// on some systems (like containers) /tmp may not exists, this ensures
 	// that we have a compliant directory structure
-	err := os.MkdirAll("/tmp", 0o777)
+	err := os.MkdirAll("/tmp", 0o755) // #nosec G301
 	if err != nil {
 		return nil, "", fmt.Errorf("create /tmp dir: %w", err)
 	}
@@ -23,7 +23,7 @@ func setupAgentListener(sess ssh.Session, reuseSock string) (net.Listener, strin
 	if reuseSock != "" {
 		dir = filepath.Join(os.TempDir(), fmt.Sprintf("auth-agent-%s", reuseSock))
 		// #nosec G301 -- TODO Consider using a more secure permission setting and ownership if needed.
-		err = os.MkdirAll(dir, 0o777)
+		err = os.MkdirAll(dir, 0o755)
 		if err != nil {
 			return nil, "", fmt.Errorf("creating SSH_AUTH_SOCK dir in /tmp: %w", err)
 		}

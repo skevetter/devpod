@@ -62,7 +62,8 @@ func (cmd *WorkspaceCmd) Run(ctx context.Context, stdin io.Reader, stdout io.Wri
 		newInstance.TypeMeta = metav1.TypeMeta{} // ignore
 
 		projectName := project.ProjectFromNamespace(newInstance.GetNamespace())
-		oldInstance, err := platform.FindInstanceByName(ctx, baseClient, newInstance.GetName(), projectName)
+		opts := platform.FindInstanceOptions{Name: newInstance.GetName(), ProjectName: projectName}
+		oldInstance, err := platform.FindInstance(ctx, baseClient, opts)
 		if err != nil {
 			return err
 		}
@@ -92,7 +93,8 @@ func (cmd *WorkspaceCmd) Run(ctx context.Context, stdin io.Reader, stdout io.Wri
 		return fmt.Errorf("workspaceID, workspaceUID or project not found: %s, %s, %s", workspaceID, workspaceUID, project)
 	}
 
-	oldInstance, err := platform.FindInstanceInProject(ctx, baseClient, workspaceUID, project)
+	opts := platform.FindInstanceOptions{UID: workspaceUID, ProjectName: project}
+	oldInstance, err := platform.FindInstance(ctx, baseClient, opts)
 	if err != nil {
 		return err
 	}
