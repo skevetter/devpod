@@ -37,7 +37,7 @@ require (
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 	github.com/loft-sh/agentapi/v4 v4.7.0
 	github.com/loft-sh/analytics-client v0.0.0-20240219162240-2f4c64b2494e
-	github.com/loft-sh/api/v4 v4.3.0-devpod.alpha.31
+	github.com/loft-sh/api/v4 v4.4.0
 	github.com/loft-sh/apiserver v0.0.0-20260113122925-594495a02e96
 	github.com/loft-sh/programming-language-detection v0.0.5
 	github.com/mattn/go-isatty v0.0.20

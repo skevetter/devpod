@@ -483,8 +483,8 @@ github.com/loft-sh/agentapi/v4 v4.7.0 h1:tLvAFYovubivH+4XuaNfRhpLTabYmRn1Sq6408L
 github.com/loft-sh/agentapi/v4 v4.7.0/go.mod h1:0/NaLoWQ6Pbp0zm9m0hbANr+8b25atagAdcQQMe2mGo=
 github.com/loft-sh/analytics-client v0.0.0-20240219162240-2f4c64b2494e h1:JcPnMaoczikvpasi8OJ47dCkWZjfgFubWa4V2SZo7h0=
 github.com/loft-sh/analytics-client v0.0.0-20240219162240-2f4c64b2494e/go.mod h1:FFWcGASyM2QlWTDTCG/WBVM/XYr8btqYt335TFNRCFg=
-github.com/loft-sh/api/v4 v4.3.0-devpod.alpha.31 h1:H2k4Qi7zWloBQmD6fepUaZOpzmv6A7WxAWtDOdzrQC0=
-github.com/loft-sh/api/v4 v4.3.0-devpod.alpha.31/go.mod h1:qBNf6+sIg2XNYdBWe2c16C1gjDcrKZ88sGd76oYT3Jg=
+github.com/loft-sh/api/v4 v4.4.0 h1:RP4YsNay7xqay0oxb8g4n7NECVxE/ogQApFov8Z4nZ8=
+github.com/loft-sh/api/v4 v4.4.0/go.mod h1:LqPbhgISsMvxIucmEUe42ifwuAG6kyqSBy1WTcrtGPQ=
 github.com/loft-sh/apiserver v0.0.0-20260113122925-594495a02e96 h1:MnvrgRnVm7X8zQPyVS2U2veIxacmVUYSFTHsoi6sJrw=
 github.com/loft-sh/apiserver v0.0.0-20260113122925-594495a02e96/go.mod h1:yBY01KhmW2XAWoqbAx8rx3xqwVwGMa3OYwiM2eYalY4=
 github.com/loft-sh/programming-language-detection v0.0.5 h1:XiWlxtrf4t6Z7SQiob0JMKaCeMHCP3kWhB80wLt+EMY=

@@ -52,7 +52,7 @@
     },
     {
       "matchPackageNames": ["github.com/loft-sh/api/v4"],
-      "allowedVersions": "v4.3.0-devpod.alpha.31"
+      "allowedVersions": "v4.4.0"
     },
     {
       "matchPackageNames": ["github.com/tailscale/tailscale"],
