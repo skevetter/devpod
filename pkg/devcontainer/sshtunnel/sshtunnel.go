@@ -98,7 +98,15 @@ func ExecuteCommand(ctx context.Context, opts ExecuteCommandOptions) (*config2.R
 	result, err := waitForTunnelCompletion(cancelCtx, tc)
 	wg.Wait() // Wait for goroutines to complete
 
-	return result, err
+	errs := collectTunnelErrors(tc, result)
+	if err != nil {
+		errs = append(errs, err)
+	}
+
+	if len(errs) == 0 {
+		return result, nil
+	}
+	return result, errors.Join(errs...)
 }
 
 func setupTunnelContext(
@@ -146,13 +154,7 @@ func waitForTunnelCompletion(ctx context.Context, tc *tunnelContext) (*config2.R
 	}
 
 	tc.opts.Log.Debug("awaiting tunnel server command completion")
-	errs := collectTunnelErrors(tc, result)
-	tc.opts.Log.Debug("SSH tunnel execution completed")
-
-	if len(errs) == 0 {
-		return result, nil
-	}
-	return result, errors.Join(errs...)
+	return result, nil
 }
 
 // collectTunnelErrors collects errors from both goroutines running in the SSH tunnel.
