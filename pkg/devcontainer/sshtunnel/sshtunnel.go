@@ -190,7 +190,6 @@ func createPipes() (*pipePair, error) {
 
 type sshServerHelperParams struct {
 	opts         ExecuteCommandOptions
-	cancel       context.CancelFunc
 	stdinReader  *os.File
 	stdoutWriter *os.File
 	errChan      chan error
@@ -211,7 +210,6 @@ func isExpectedError(err error) bool {
 
 func executeSSHServerHelper(ctx context.Context, p *sshServerHelperParams) {
 	defer p.opts.Log.Debug("done executing SSH server helper command")
-	defer p.cancel()
 
 	writer := p.opts.Log.Writer(logrus.InfoLevel, false)
 	defer func() { _ = writer.Close() }()
