@@ -62,9 +62,14 @@ type tunnelContext struct {
 
 // ExecuteCommand runs the command in an SSH Tunnel and returns the result.
 func ExecuteCommand(ctx context.Context, opts ExecuteCommandOptions) (*config2.Result, error) {
+	if opts.TunnelServerFunc == nil {
+		return nil, errors.New("tunnel server func is required")
+	}
+	if opts.AgentInject == nil {
+		return nil, errors.New("agent inject func is required")
+	}
 	opts.Log.Debugf("starting SSH tunnel execution: ssh=%q workspace=%q addKeys=%v",
 		opts.SSHCommand, opts.Command, opts.AddPrivateKeys)
-
 	cancelCtx, tc, err := setupTunnelContext(ctx, opts)
 	if err != nil {
 		return nil, err
@@ -486,11 +491,11 @@ func (l *TunnelLogStreamer) extractLogLevel(line string) (bool, logrus.Level) {
 }
 
 func isCleanupEOF(err error) bool {
-	if err == nil {
-		return false
+	for e := err; e != nil; e = errors.Unwrap(e) {
+		if errors.Is(e, io.EOF) ||
+			strings.Contains(strings.ToLower(e.Error()), "ssh session closed unexpectedly") {
+			return true
+		}
 	}
-	if errors.Is(err, io.EOF) {
-		return true
-	}
-	return strings.Contains(strings.ToLower(err.Error()), "ssh session closed unexpectedly")
+	return false
 }
