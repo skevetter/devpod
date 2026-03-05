@@ -91,6 +91,10 @@ func ExecuteCommand(ctx context.Context, opts ExecuteCommandOptions) (*config2.R
 	})
 
 	result, err := waitForTunnelCompletion(cancelCtx, tc)
+	if err != nil {
+		opts.Log.Warnf("tunnel server error: %v", err)
+		tc.cancel() // stop other goroutine if tunnel server failed
+	}
 	wg.Wait() // Wait for goroutines to complete
 
 	return result, err
@@ -488,5 +492,5 @@ func isCleanupEOF(err error) bool {
 	if errors.Is(err, io.EOF) {
 		return true
 	}
-	return strings.HasPrefix(strings.ToLower(err.Error()), "ssh session closed unexpectedly")
+	return strings.Contains(strings.ToLower(err.Error()), "ssh session closed unexpectedly")
 }
