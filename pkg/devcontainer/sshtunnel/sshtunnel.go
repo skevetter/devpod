@@ -276,8 +276,6 @@ func addPrivateKeys(ctx context.Context, opts ExecuteCommandOptions) {
 }
 
 func runSSHTunnel(ctx context.Context, tc *tunnelContext) {
-	defer tc.cancel()
-
 	tc.opts.Log.Debug("creating SSH client")
 	sshClient, err := devssh.StdioClient(tc.sshPipes.stdoutReader, tc.sshPipes.stdinWriter, false)
 	if err != nil {
