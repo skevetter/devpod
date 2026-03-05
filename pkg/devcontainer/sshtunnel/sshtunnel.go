@@ -19,13 +19,7 @@ import (
 	devsshagent "github.com/skevetter/devpod/pkg/ssh/agent"
 	"github.com/skevetter/log"
 	"golang.org/x/crypto/ssh"
-	"golang.org/x/sync/errgroup"
 	"k8s.io/apimachinery/pkg/util/wait"
-)
-
-const (
-	// maxLogLines is the number of error lines to keep from tunnel output for debugging.
-	maxLogLines = 1
 )
 
 type (
@@ -53,81 +47,79 @@ type ExecuteCommandOptions struct {
 
 type tunnelContext struct {
 	opts      ExecuteCommandOptions
+	cancelCtx context.Context
+	cancel    context.CancelFunc
 	sshPipes  *pipePair
 	grpcPipes *pipePair
 }
 
 // ExecuteCommand runs the command in an SSH Tunnel and returns the result.
 func ExecuteCommand(ctx context.Context, opts ExecuteCommandOptions) (*config2.Result, error) {
-	if opts.TunnelServerFunc == nil {
-		return nil, errors.New("tunnel server func is required")
-	}
-	if opts.AgentInject == nil {
-		return nil, errors.New("agent inject func is required")
-	}
 	opts.Log.Debugf("starting SSH tunnel execution: ssh=%q workspace=%q addKeys=%v",
 		opts.SSHCommand, opts.Command, opts.AddPrivateKeys)
 
-	tc, err := setupTunnelContext(opts)
+	cancelCtx, tc, err := setupTunnelContext(ctx, opts)
 	if err != nil {
 		return nil, err
 	}
 	defer tc.cleanup()
 
-	g, ctx := errgroup.WithContext(ctx)
-	var result *config2.Result
-
-	// Start SSH server helper
-	g.Go(func() error {
-		return executeSSHServerHelper(ctx, &sshServerHelperParams{
-			opts:         opts,
-			stdinReader:  tc.sshPipes.stdinReader,
-			stdoutWriter: tc.sshPipes.stdoutWriter,
-		})
-	})
+	// Inject SSH server helper
+	if err := executeSSHServerHelper(cancelCtx, &sshServerHelperParams{
+		opts:         opts,
+		stdinReader:  tc.sshPipes.stdinReader,
+		stdoutWriter: tc.sshPipes.stdoutWriter,
+	}); err != nil {
+		return nil, err
+	}
 
 	if opts.AddPrivateKeys {
 		addPrivateKeys(ctx, opts)
 	}
 
-	// Start SSH tunnel
-	g.Go(func() error {
-		return runSSHTunnel(ctx, tc)
-	})
+	// Run SSH tunnel
+	errChan := make(chan error, 1)
+	go func() {
+		errChan <- runSSHTunnel(cancelCtx, tc)
+	}()
 
 	// Run gRPC server
-	g.Go(func() error {
-		var err error
-		result, err = tc.opts.TunnelServerFunc(
-			ctx,
-			tc.grpcPipes.stdinWriter,
-			tc.grpcPipes.stdoutReader,
-		)
-		return err
-	})
+	result, err := tc.opts.TunnelServerFunc(
+		cancelCtx,
+		tc.grpcPipes.stdinWriter,
+		tc.grpcPipes.stdoutReader,
+	)
 
-	// Wait for all to complete
-	if err := g.Wait(); err != nil {
-		return result, err
+	// Wait for SSH tunnel to finish
+	if tunnelErr := <-errChan; tunnelErr != nil && err == nil {
+		err = tunnelErr
 	}
 
-	return result, nil
+	return result, err
 }
 
-func setupTunnelContext(opts ExecuteCommandOptions) (*tunnelContext, error) {
+func setupTunnelContext(
+	ctx context.Context,
+	opts ExecuteCommandOptions,
+) (context.Context, *tunnelContext, error) {
 	sshPipes, err := createPipes()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
+
+	cancelCtx, cancel := context.WithCancel(ctx)
 
 	grpcPipes, err := createPipes()
 	if err != nil {
 		sshPipes.Close()
-		return nil, err
+		cancel()
+		return nil, nil, err
 	}
 
-	return &tunnelContext{
+	return cancelCtx, &tunnelContext{
 		opts:      opts,
+		cancelCtx: cancelCtx,
+		cancel:    cancel,
 		sshPipes:  sshPipes,
 		grpcPipes: grpcPipes,
 	}, nil
@@ -136,6 +128,7 @@ func setupTunnelContext(opts ExecuteCommandOptions) (*tunnelContext, error) {
 func (tc *tunnelContext) cleanup() {
 	tc.sshPipes.Close()
 	tc.grpcPipes.Close()
+	tc.cancel()
 }
 
 type pipePair struct {
@@ -323,6 +316,8 @@ func runCommandInSSHTunnel(ctx context.Context, tc *tunnelContext, sshClient *ss
 	}
 	return nil
 }
+
+const maxLogLines = 1
 
 type TunnelLogStreamer struct {
 	pw     *io.PipeWriter
