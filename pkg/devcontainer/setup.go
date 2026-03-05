@@ -270,8 +270,7 @@ func (r *runner) executeSetup(
 		)
 	}
 
-	return sshtunnel.ExecuteCommand(sshtunnel.ExecuteCommandOptions{
-		Ctx:              ctx,
+	return sshtunnel.ExecuteCommand(ctx, sshtunnel.ExecuteCommandOptions{
 		Client:           nil,
 		AddPrivateKeys:   false,
 		AgentInject:      agentInjectFunc,

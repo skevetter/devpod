@@ -22,6 +22,13 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
+const (
+	// errorChannelBuffer is the size of the error channel buffer.
+	errorChannelBuffer = 2
+	// maxLogLines is the number of error lines to keep from tunnel output for debugging.
+	maxLogLines = 1
+)
+
 type (
 	AgentInjectFunc  func(context.Context, string, *os.File, *os.File, io.WriteCloser) error
 	TunnelServerFunc func(ctx context.Context, stdin io.WriteCloser, stdout io.Reader) (*config2.Result, error)
@@ -36,7 +43,6 @@ var logLevelMap = map[string]logrus.Level{
 }
 
 type ExecuteCommandOptions struct {
-	Ctx              context.Context
 	Client           client2.WorkspaceClient
 	AddPrivateKeys   bool
 	AgentInject      AgentInjectFunc
@@ -48,7 +54,6 @@ type ExecuteCommandOptions struct {
 
 type tunnelContext struct {
 	opts      ExecuteCommandOptions
-	cancelCtx context.Context
 	cancel    context.CancelFunc
 	errChan   chan error
 	sshPipes  *pipePair
@@ -56,11 +61,11 @@ type tunnelContext struct {
 }
 
 // ExecuteCommand runs the command in an SSH Tunnel and returns the result.
-func ExecuteCommand(opts ExecuteCommandOptions) (*config2.Result, error) {
+func ExecuteCommand(ctx context.Context, opts ExecuteCommandOptions) (*config2.Result, error) {
 	opts.Log.Debugf("starting SSH tunnel execution: ssh=%q workspace=%q addKeys=%v",
 		opts.SSHCommand, opts.Command, opts.AddPrivateKeys)
 
-	tc, err := setupTunnelContext(opts)
+	cancelCtx, tc, err := setupTunnelContext(ctx, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -69,9 +74,8 @@ func ExecuteCommand(opts ExecuteCommandOptions) (*config2.Result, error) {
 	var wg sync.WaitGroup
 
 	wg.Go(func() {
-		executeSSHServerHelper(&sshServerHelperParams{
+		executeSSHServerHelper(ctx, &sshServerHelperParams{
 			opts:         opts,
-			cancel:       tc.cancel,
 			stdinReader:  tc.sshPipes.stdinReader,
 			stdoutWriter: tc.sshPipes.stdoutWriter,
 			errChan:      tc.errChan,
@@ -79,40 +83,40 @@ func ExecuteCommand(opts ExecuteCommandOptions) (*config2.Result, error) {
 	})
 
 	if opts.AddPrivateKeys {
-		addPrivateKeys(opts)
+		addPrivateKeys(ctx, opts)
 	}
 
 	wg.Go(func() {
-		runSSHTunnel(tc)
+		runSSHTunnel(cancelCtx, tc)
 	})
 
-	result, err := waitForTunnelCompletion(tc)
-
-	// Wait for goroutines to complete
-	wg.Wait()
+	result, err := waitForTunnelCompletion(cancelCtx, tc)
+	wg.Wait() // Wait for goroutines to complete
 
 	return result, err
 }
 
-func setupTunnelContext(opts ExecuteCommandOptions) (*tunnelContext, error) {
+func setupTunnelContext(
+	ctx context.Context,
+	opts ExecuteCommandOptions,
+) (context.Context, *tunnelContext, error) {
 	sshPipes, err := createPipes()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	cancelCtx, cancel := context.WithCancel(opts.Ctx)
-	errChan := make(chan error, 2)
+	cancelCtx, cancel := context.WithCancel(ctx)
+	errChan := make(chan error, errorChannelBuffer)
 
 	grpcPipes, err := createPipes()
 	if err != nil {
 		sshPipes.Close()
 		cancel()
-		return nil, err
+		return nil, nil, err
 	}
 
-	return &tunnelContext{
+	return cancelCtx, &tunnelContext{
 		opts:      opts,
-		cancelCtx: cancelCtx,
 		cancel:    cancel,
 		errChan:   errChan,
 		sshPipes:  sshPipes,
@@ -126,9 +130,9 @@ func (tc *tunnelContext) cleanup() {
 	tc.cancel()
 }
 
-func waitForTunnelCompletion(tc *tunnelContext) (*config2.Result, error) {
+func waitForTunnelCompletion(ctx context.Context, tc *tunnelContext) (*config2.Result, error) {
 	result, err := tc.opts.TunnelServerFunc(
-		tc.cancelCtx,
+		ctx,
 		tc.grpcPipes.stdinWriter,
 		tc.grpcPipes.stdoutReader,
 	)
@@ -137,25 +141,51 @@ func waitForTunnelCompletion(tc *tunnelContext) (*config2.Result, error) {
 	}
 
 	tc.opts.Log.Debug("awaiting tunnel server command completion")
-
-	// Collect both errors to handle race condition
-	var errs []error
-	err1 := <-tc.errChan
-	if err1 != nil {
-		errs = append(errs, err1)
-	}
-	err2 := <-tc.errChan
-	if err2 != nil {
-		errs = append(errs, err2)
-	}
-
+	errs := collectTunnelErrors(tc, result)
 	tc.opts.Log.Debug("SSH tunnel execution completed")
 
-	// Return first error or combine multiple errors
 	if len(errs) == 0 {
 		return result, nil
 	}
 	return result, errors.Join(errs...)
+}
+
+// collectTunnelErrors collects errors from both goroutines running in the SSH tunnel.
+// It expects two errors:
+//   - First error: from executeSSHServerHelper (SSH server injection and agent command execution)
+//   - Second error: from runSSHTunnel (SSH tunnel establishment and command execution)
+//
+// If a valid result was received, EOF errors during cleanup are ignored as they indicate
+// normal session termination after successful completion.
+func collectTunnelErrors(tc *tunnelContext, result *config2.Result) []error {
+	hasValidResult := result != nil
+	var errs []error
+
+	err1 := <-tc.errChan
+	if shouldReportError(err1, hasValidResult, tc.opts.Log) {
+		errs = append(errs, err1)
+	}
+
+	err2 := <-tc.errChan
+	if shouldReportError(err2, hasValidResult, tc.opts.Log) {
+		errs = append(errs, err2)
+	}
+
+	return errs
+}
+
+// shouldReportError determines if an error should be reported to the caller.
+// It returns false for nil errors and for EOF errors that occur during cleanup
+// after a successful result has been received.
+func shouldReportError(err error, hasValidResult bool, log log.Logger) bool {
+	if err == nil {
+		return false
+	}
+	if hasValidResult && isCleanupEOF(err) {
+		log.Debug("ignoring EOF during cleanup after successful result")
+		return false
+	}
+	return true
 }
 
 type pipePair struct {
@@ -199,7 +229,6 @@ func createPipes() (*pipePair, error) {
 
 type sshServerHelperParams struct {
 	opts         ExecuteCommandOptions
-	cancel       context.CancelFunc
 	stdinReader  *os.File
 	stdoutWriter *os.File
 	errChan      chan error
@@ -218,15 +247,14 @@ func isExpectedError(err error) bool {
 	return false
 }
 
-func executeSSHServerHelper(p *sshServerHelperParams) {
+func executeSSHServerHelper(ctx context.Context, p *sshServerHelperParams) {
 	defer p.opts.Log.Debug("done executing SSH server helper command")
-	defer p.cancel()
 
 	writer := p.opts.Log.Writer(logrus.InfoLevel, false)
 	defer func() { _ = writer.Close() }()
 
 	p.opts.Log.Debugf("injecting and running SSH server command: %q", p.opts.SSHCommand)
-	err := p.opts.AgentInject(p.opts.Ctx, p.opts.SSHCommand, p.stdinReader, p.stdoutWriter, writer)
+	err := p.opts.AgentInject(ctx, p.opts.SSHCommand, p.stdinReader, p.stdoutWriter, writer)
 	if err != nil && !isExpectedError(err) {
 		p.errChan <- fmt.Errorf("executing agent command: %w", err)
 	} else {
@@ -234,15 +262,15 @@ func executeSSHServerHelper(p *sshServerHelperParams) {
 	}
 }
 
-func addPrivateKeys(opts ExecuteCommandOptions) {
+func addPrivateKeys(ctx context.Context, opts ExecuteCommandOptions) {
 	opts.Log.Debug("adding SSH keys to agent")
-	err := devssh.AddPrivateKeysToAgent(opts.Ctx, opts.Log)
+	err := devssh.AddPrivateKeysToAgent(ctx, opts.Log)
 	if err != nil {
 		opts.Log.Debugf("failed to add private keys to SSH agent: %v", err)
 	}
 }
 
-func runSSHTunnel(tc *tunnelContext) {
+func runSSHTunnel(ctx context.Context, tc *tunnelContext) {
 	defer tc.cancel()
 
 	tc.opts.Log.Debug("creating SSH client")
@@ -257,7 +285,7 @@ func runSSHTunnel(tc *tunnelContext) {
 		tc.opts.Log.Debug("SSH client closed")
 	}()
 
-	sess, err := establishSSHSession(tc, sshClient)
+	sess, err := establishSSHSession(ctx, tc, sshClient)
 	if err != nil {
 		return
 	}
@@ -269,10 +297,11 @@ func runSSHTunnel(tc *tunnelContext) {
 	if err = setupSSHAgentForwarding(tc, sshClient, sess); err != nil {
 		return
 	}
-	runCommandInSSHTunnel(tc, sshClient)
+	runCommandInSSHTunnel(ctx, tc, sshClient)
 }
 
 func establishSSHSession(
+	ctx context.Context,
 	tc *tunnelContext,
 	sshClient *ssh.Client,
 ) (*ssh.Session, error) {
@@ -285,7 +314,7 @@ func establishSSHSession(
 
 	var session *ssh.Session
 	if err := wait.ExponentialBackoffWithContext(
-		tc.cancelCtx,
+		ctx,
 		backoff,
 		func(ctx context.Context) (bool, error) {
 			sess, err := sshClient.NewSession()
@@ -335,13 +364,13 @@ func setupSSHAgentForwarding(
 	return err
 }
 
-func runCommandInSSHTunnel(tc *tunnelContext, sshClient *ssh.Client) {
+func runCommandInSSHTunnel(ctx context.Context, tc *tunnelContext, sshClient *ssh.Client) {
 	streamer := NewTunnelLogStreamer(tc.opts.Log)
 	defer func() { _ = streamer.Close() }()
 
 	tc.opts.Log.Debugf("running agent command in SSH tunnel: %q", tc.opts.Command)
 	if err := devssh.Run(devssh.RunOptions{
-		Context: tc.cancelCtx,
+		Context: ctx,
 		Client:  sshClient,
 		Command: tc.opts.Command,
 		Stdin:   tc.grpcPipes.stdinReader,
@@ -358,8 +387,6 @@ func runCommandInSSHTunnel(tc *tunnelContext, sshClient *ssh.Client) {
 		tc.errChan <- nil
 	}
 }
-
-const maxLogLines = 1
 
 type TunnelLogStreamer struct {
 	pw     *io.PipeWriter
@@ -452,4 +479,14 @@ func (l *TunnelLogStreamer) extractLogLevel(line string) (bool, logrus.Level) {
 	level, ok := logLevelMap[strings.ToLower(parts[1])]
 
 	return ok, level
+}
+
+func isCleanupEOF(err error) bool {
+	if err == nil {
+		return false
+	}
+	if errors.Is(err, io.EOF) {
+		return true
+	}
+	return strings.HasPrefix(strings.ToLower(err.Error()), "ssh session closed unexpectedly")
 }
