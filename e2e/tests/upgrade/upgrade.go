@@ -11,7 +11,7 @@ import (
 	"github.com/skevetter/devpod/e2e/framework"
 )
 
-var _ = ginkgo.Context("testing upgrade command", ginkgo.Label("upgrade"), ginkgo.Ordered, func() {
+var _ = ginkgo.Describe("testing upgrade command", ginkgo.Label("upgrade"), ginkgo.Ordered, func() {
 	ginkgo.It(
 		"should detect correct binary for current OS and architecture using dry-run",
 		func(ctx context.Context) {

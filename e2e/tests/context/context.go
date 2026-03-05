@@ -9,13 +9,14 @@ import (
 	"github.com/skevetter/devpod/e2e/framework"
 )
 
-var _ = DevPodDescribe("devpod context test suite", func() {
-	ginkgo.Context("testing context command", ginkgo.Label("context"), ginkgo.Ordered, func() {
+var _ = ginkgo.Describe(
+	"devpod context test suite",
+	ginkgo.Label("context"),
+	ginkgo.Ordered,
+	func() {
 		ctx := context.Background()
 		initialDir, err := os.Getwd()
-		if err != nil {
-			panic(err)
-		}
+		framework.ExpectNoError(err)
 
 		ginkgo.It("create a new context, switch to it and delete afterwards", func() {
 			f := framework.NewDefaultFramework(initialDir + "/bin")
@@ -111,5 +112,5 @@ var _ = DevPodDescribe("devpod context test suite", func() {
 				)
 			}
 		})
-	})
-})
+	},
+)

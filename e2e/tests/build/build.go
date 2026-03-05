@@ -15,406 +15,10 @@ import (
 	"github.com/skevetter/log"
 )
 
-var _ = DevPodDescribe("devpod build test suite", func() {
-	ginkgo.Context("testing build", ginkgo.Label("build"), ginkgo.Ordered, func() {
-		var initialDir string
-		var dockerHelper *docker.DockerHelper
-
-		ginkgo.BeforeEach(func() {
-			var err error
-			initialDir, err = os.Getwd()
-			framework.ExpectNoError(err)
-			dockerHelper = &docker.DockerHelper{DockerCommand: "docker", Log: log.Default}
-		})
-
-		ginkgo.It("build docker buildx", func() {
-			ctx := context.Background()
-
-			f := framework.NewDefaultFramework(initialDir + "/bin")
-			tempDir, err := framework.CopyToTempDir("tests/build/testdata/docker")
-			framework.ExpectNoError(err)
-			ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
-
-			_ = f.DevPodProviderDelete(ctx, "docker")
-			err = f.DevPodProviderAdd(ctx, "docker")
-			framework.ExpectNoError(err)
-			err = f.DevPodProviderUse(context.Background(), "docker")
-			framework.ExpectNoError(err)
-
-			cfg := getDevcontainerConfig(tempDir)
-
-			dockerfilePath := tempDir + "/.devcontainer/Dockerfile"
-			dockerfileContent, err := os.ReadFile(dockerfilePath)
-			framework.ExpectNoError(err)
-			_, modifiedDockerfileContents, err := dockerfile.EnsureFinalStageName(
-				string(dockerfileContent),
-				config.DockerfileDefaultTarget,
-			)
-			framework.ExpectNoError(err)
-
-			prebuildRepo := "test-repo"
-
-			// do the build
-			platforms := "linux/amd64,linux/arm64"
-			err = f.DevPodBuild(
-				ctx,
-				tempDir,
-				"--force-build",
-				"--platform",
-				platforms,
-				"--repository",
-				prebuildRepo,
-				"--skip-push",
-			)
-			framework.ExpectNoError(err)
-
-			// parse the dockerfile
-			file, err := dockerfile.Parse(modifiedDockerfileContents)
-			framework.ExpectNoError(err)
-			info := &config.ImageBuildInfo{Dockerfile: file}
-
-			// make sure images are there
-			prebuildHash, err := config.CalculatePrebuildHash(config.PrebuildHashParams{
-				Config:            cfg,
-				Platform:          "linux/amd64",
-				Architecture:      "amd64",
-				ContextPath:       filepath.Dir(cfg.Origin),
-				DockerfilePath:    dockerfilePath,
-				DockerfileContent: modifiedDockerfileContents,
-				BuildInfo:         info,
-				Log:               log.Default,
-			})
-			framework.ExpectNoError(err)
-			_, err = dockerHelper.InspectImage(ctx, prebuildRepo+":"+prebuildHash, false)
-			framework.ExpectNoError(err)
-
-			prebuildHash, err = config.CalculatePrebuildHash(config.PrebuildHashParams{
-				Config:            cfg,
-				Platform:          "linux/arm64",
-				Architecture:      "arm64",
-				ContextPath:       filepath.Dir(cfg.Origin),
-				DockerfilePath:    dockerfilePath,
-				DockerfileContent: modifiedDockerfileContents,
-				BuildInfo:         info,
-				Log:               log.Default,
-			})
-			framework.ExpectNoError(err)
-			_, err = dockerHelper.InspectImage(ctx, prebuildRepo+":"+prebuildHash, false)
-			framework.ExpectNoError(err)
-			details, err := dockerHelper.InspectImage(ctx, prebuildRepo+":"+prebuildHash, false)
-			framework.ExpectNoError(err)
-			framework.ExpectEqual(
-				details.Config.Labels["test"],
-				"VALUE",
-				"should contain test label",
-			)
-		})
-
-		ginkgo.It(
-			"should build image without repository specified if skip-push flag is set",
-			func() {
-				ctx := context.Background()
-
-				f := framework.NewDefaultFramework(initialDir + "/bin")
-				tempDir, err := framework.CopyToTempDir("tests/build/testdata/docker")
-				framework.ExpectNoError(err)
-				ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
-
-				_ = f.DevPodProviderDelete(ctx, "docker")
-				err = f.DevPodProviderAdd(ctx, "docker")
-				framework.ExpectNoError(err)
-				err = f.DevPodProviderUse(context.Background(), "docker")
-				framework.ExpectNoError(err)
-				ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), tempDir)
-
-				cfg := getDevcontainerConfig(tempDir)
-
-				dockerfilePath := tempDir + "/.devcontainer/Dockerfile"
-				dockerfileContent, err := os.ReadFile(dockerfilePath)
-				framework.ExpectNoError(err)
-				_, modifiedDockerfileContents, err := dockerfile.EnsureFinalStageName(
-					string(dockerfileContent),
-					config.DockerfileDefaultTarget,
-				)
-				framework.ExpectNoError(err)
-
-				// do the build
-				err = f.DevPodBuild(ctx, tempDir, "--skip-push")
-				framework.ExpectNoError(err)
-
-				// parse the dockerfile
-				file, err := dockerfile.Parse(modifiedDockerfileContents)
-				framework.ExpectNoError(err)
-				info := &config.ImageBuildInfo{Dockerfile: file}
-
-				// make sure images are there
-				prebuildHash, err := config.CalculatePrebuildHash(config.PrebuildHashParams{
-					Config:            cfg,
-					Platform:          "linux/" + runtime.GOARCH,
-					Architecture:      runtime.GOARCH,
-					ContextPath:       filepath.Dir(cfg.Origin),
-					DockerfilePath:    dockerfilePath,
-					DockerfileContent: modifiedDockerfileContents,
-					BuildInfo:         info,
-					Log:               log.Default,
-				})
-				framework.ExpectNoError(err)
-				_, err = dockerHelper.InspectImage(
-					ctx,
-					build.GetImageName(tempDir, prebuildHash),
-					false,
-				)
-				framework.ExpectNoError(err)
-			},
-		)
-
-		ginkgo.It(
-			"should build the image of the referenced service from the docker compose file",
-			func() {
-				ctx := context.Background()
-
-				f := framework.NewDefaultFramework(initialDir + "/bin")
-				tempDir, err := framework.CopyToTempDir("tests/build/testdata/docker-compose")
-				framework.ExpectNoError(err)
-				ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
-
-				_ = f.DevPodProviderDelete(ctx, "docker")
-				err = f.DevPodProviderAdd(ctx, "docker")
-				framework.ExpectNoError(err)
-				err = f.DevPodProviderUse(context.Background(), "docker")
-				framework.ExpectNoError(err)
-
-				ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), tempDir)
-
-				prebuildRepo := "test-repo"
-
-				// do the build
-				err = f.DevPodBuild(ctx, tempDir, "--repository", prebuildRepo, "--skip-push")
-				framework.ExpectNoError(err)
-			},
-		)
-
-		ginkgo.It(
-			"should build docker-compose with features when build context differs from devcontainer location",
-			func() {
-				ctx := context.Background()
-
-				f := framework.NewDefaultFramework(initialDir + "/bin")
-				tempDir, err := framework.CopyToTempDir(
-					"tests/build/testdata/docker-compose-features-context",
-				)
-				framework.ExpectNoError(err)
-				ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
-
-				_ = f.DevPodProviderDelete(ctx, "docker")
-				err = f.DevPodProviderAdd(ctx, "docker")
-				framework.ExpectNoError(err)
-				err = f.DevPodProviderUse(context.Background(), "docker")
-				framework.ExpectNoError(err)
-
-				ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), tempDir)
-
-				err = f.DevPodBuild(ctx, tempDir, "--skip-push")
-				framework.ExpectNoError(err)
-			},
-		)
-
-		ginkgo.It("build docker internal buildkit", func() {
-			ctx := context.Background()
-
-			f := framework.NewDefaultFramework(initialDir + "/bin")
-			tempDir, err := framework.CopyToTempDir("tests/build/testdata/docker")
-			framework.ExpectNoError(err)
-			ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
-
-			_ = f.DevPodProviderDelete(ctx, "docker")
-			err = f.DevPodProviderAdd(ctx, "docker")
-			framework.ExpectNoError(err)
-			err = f.DevPodProviderUse(context.Background(), "docker")
-			framework.ExpectNoError(err)
-
-			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), tempDir)
-
-			cfg := getDevcontainerConfig(tempDir)
-
-			dockerfilePath := tempDir + "/.devcontainer/Dockerfile"
-			dockerfileContent, err := os.ReadFile(dockerfilePath)
-			framework.ExpectNoError(err)
-			_, modifiedDockerfileContents, err := dockerfile.EnsureFinalStageName(
-				string(dockerfileContent),
-				config.DockerfileDefaultTarget,
-			)
-			framework.ExpectNoError(err)
-
-			prebuildRepo := "test-repo"
-
-			// do the build
-			err = f.DevPodBuild(
-				ctx,
-				tempDir,
-				"--force-build",
-				"--force-internal-buildkit",
-				"--repository",
-				prebuildRepo,
-				"--skip-push",
-			)
-			framework.ExpectNoError(err)
-
-			// parse the dockerfile
-			file, err := dockerfile.Parse(modifiedDockerfileContents)
-			framework.ExpectNoError(err)
-			info := &config.ImageBuildInfo{Dockerfile: file}
-
-			// make sure images are there
-			prebuildHash, err := config.CalculatePrebuildHash(config.PrebuildHashParams{
-				Config:            cfg,
-				Platform:          "linux/amd64",
-				Architecture:      "amd64",
-				ContextPath:       filepath.Dir(cfg.Origin),
-				DockerfilePath:    dockerfilePath,
-				DockerfileContent: modifiedDockerfileContents,
-				BuildInfo:         info,
-				Log:               log.Default,
-			})
-			framework.ExpectNoError(err)
-
-			_, err = dockerHelper.InspectImage(ctx, prebuildRepo+":"+prebuildHash, false)
-			framework.ExpectNoError(err)
-		})
-
-		ginkgo.It("build kubernetes dockerless", func() {
-			// skip windows for now
-			if runtime.GOOS == "windows" {
-				return
-			}
-
-			ctx := context.Background()
-
-			f := framework.NewDefaultFramework(initialDir + "/bin")
-			tempDir, err := framework.CopyToTempDir("tests/build/testdata/kubernetes")
-			framework.ExpectNoError(err)
-			ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
-
-			_ = f.DevPodProviderDelete(ctx, "kubernetes")
-			err = f.DevPodProviderAdd(ctx, "kubernetes")
-			framework.ExpectNoError(err)
-			err = f.DevPodProviderUse(
-				context.Background(),
-				"kubernetes",
-				"-o",
-				"KUBERNETES_NAMESPACE=devpod",
-			)
-			framework.ExpectNoError(err)
-
-			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), tempDir)
-
-			// do the up
-			err = f.DevPodUp(ctx, tempDir)
-			framework.ExpectNoError(err)
-
-			// check if ssh works
-			out, err := f.DevPodSSH(ctx, tempDir, "echo -n $MY_TEST")
-			framework.ExpectNoError(err)
-			framework.ExpectEqual(out, "test456", "should contain my-test")
-		})
-
-		ginkgo.It("rebuild kubernetes dockerless", func() {
-			// skip windows for now
-			if runtime.GOOS == "windows" {
-				return
-			}
-
-			ctx := context.Background()
-
-			f := framework.NewDefaultFramework(initialDir + "/bin")
-			tempDir, err := framework.CopyToTempDir("tests/build/testdata/kubernetes")
-			framework.ExpectNoError(err)
-			ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
-
-			_ = f.DevPodProviderDelete(ctx, "kubernetes")
-			err = f.DevPodProviderAdd(ctx, "kubernetes")
-			framework.ExpectNoError(err)
-			err = f.DevPodProviderUse(
-				context.Background(),
-				"kubernetes",
-				"-o",
-				"KUBERNETES_NAMESPACE=devpod",
-			)
-			framework.ExpectNoError(err)
-
-			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), tempDir)
-
-			// do the up
-			err = f.DevPodUp(ctx, tempDir)
-			framework.ExpectNoError(err)
-
-			// create files in root and in workspace, after create we expect data to still be there
-			_, err = f.DevPodSSH(ctx, tempDir, "touch /workspaces/"+filepath.Base(tempDir)+"/DATA")
-			framework.ExpectNoError(err)
-			_, err = f.DevPodSSH(ctx, tempDir, "touch /ROOTFS")
-			framework.ExpectNoError(err)
-
-			// recreate
-			err = f.DevPodUpRecreate(ctx, tempDir)
-			framework.ExpectNoError(err)
-
-			// this should still be there
-			_, err = f.DevPodSSH(ctx, tempDir, "ls /workspaces/"+filepath.Base(tempDir)+"/DATA")
-			framework.ExpectNoError(err)
-			// this should fail! because --recreare should trigger a new build, so a new rootfs
-			_, err = f.DevPodSSH(ctx, tempDir, "ls /ROOTFS")
-			framework.ExpectError(err)
-		})
-
-		ginkgo.It("reset kubernetes dockerless", func() {
-			// skip windows for now
-			if runtime.GOOS == "windows" {
-				return
-			}
-
-			ctx := context.Background()
-
-			f := framework.NewDefaultFramework(initialDir + "/bin")
-			tempDir, err := framework.CopyToTempDir("tests/build/testdata/kubernetes")
-			framework.ExpectNoError(err)
-			ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
-
-			_ = f.DevPodProviderDelete(ctx, "kubernetes")
-			err = f.DevPodProviderAdd(ctx, "kubernetes")
-			framework.ExpectNoError(err)
-			err = f.DevPodProviderUse(
-				context.Background(),
-				"kubernetes",
-				"-o",
-				"KUBERNETES_NAMESPACE=devpod",
-			)
-			framework.ExpectNoError(err)
-
-			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), tempDir)
-
-			// do the up
-			err = f.DevPodUp(ctx, tempDir)
-			framework.ExpectNoError(err)
-
-			// create files in root and in workspace, after create we expect data to still be there
-			_, err = f.DevPodSSH(ctx, tempDir, "touch /workspaces/"+filepath.Base(tempDir)+"/DATA")
-			framework.ExpectNoError(err)
-			_, err = f.DevPodSSH(ctx, tempDir, "touch /ROOTFS")
-			framework.ExpectNoError(err)
-
-			// recreate
-			err = f.DevPodUpReset(ctx, tempDir)
-			framework.ExpectNoError(err)
-
-			// this should fail! because --reset should trigger a new git clone
-			_, err = f.DevPodSSH(ctx, tempDir, "ls /workspaces/"+filepath.Base(tempDir)+"/DATA")
-			framework.ExpectNoError(err)
-			// this should fail! because --recreare should trigger a new build, so a new rootfs
-			_, err = f.DevPodSSH(ctx, tempDir, "ls /ROOTFS")
-			framework.ExpectError(err)
-		})
-	})
-})
+const (
+	prebuildRepoName = "test-repo"
+	osWindows        = "windows"
+)
 
 func getDevcontainerConfig(dir string) *config.DevContainerConfig {
 	return &config.DevContainerConfig{
@@ -434,4 +38,368 @@ func getDevcontainerConfig(dir string) *config.DevContainerConfig {
 		},
 		Origin: dir + "/.devcontainer/devcontainer.json",
 	}
+}
+
+var _ = ginkgo.Describe("devpod build test suite", ginkgo.Label("build"), ginkgo.Ordered, func() {
+	var initialDir string
+	var dockerHelper *docker.DockerHelper
+
+	ginkgo.BeforeEach(func() {
+		var err error
+		initialDir, err = os.Getwd()
+		framework.ExpectNoError(err)
+		dockerHelper = &docker.DockerHelper{DockerCommand: "docker", Log: log.Default}
+	})
+
+	ginkgo.It("build docker buildx", func() {
+		ctx := context.Background()
+
+		f := framework.NewDefaultFramework(initialDir + "/bin")
+		tempDir, err := framework.CopyToTempDir("tests/build/testdata/docker")
+		framework.ExpectNoError(err)
+		ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
+
+		_ = f.DevPodProviderDelete(ctx, "docker")
+		err = f.DevPodProviderAdd(ctx, "docker")
+		framework.ExpectNoError(err)
+		err = f.DevPodProviderUse(context.Background(), "docker")
+		framework.ExpectNoError(err)
+
+		cfg := getDevcontainerConfig(tempDir)
+
+		dockerfilePath := tempDir + "/.devcontainer/Dockerfile"
+		dockerfileContent, err := os.ReadFile(dockerfilePath) // #nosec G304 -- test file path
+		framework.ExpectNoError(err)
+		_, modifiedDockerfileContents, err := dockerfile.EnsureFinalStageName(
+			string(dockerfileContent),
+			config.DockerfileDefaultTarget,
+		)
+		framework.ExpectNoError(err)
+
+		// do the build
+		platforms := "linux/amd64,linux/arm64"
+		err = f.DevPodBuild(
+			ctx,
+			tempDir,
+			"--force-build",
+			"--platform",
+			platforms,
+			"--repository",
+			prebuildRepoName,
+			"--skip-push",
+		)
+		framework.ExpectNoError(err)
+
+		// parse the dockerfile
+		file, err := dockerfile.Parse(modifiedDockerfileContents)
+		framework.ExpectNoError(err)
+		info := &config.ImageBuildInfo{Dockerfile: file}
+
+		// make sure images are there
+		prebuildHash, err := config.CalculatePrebuildHash(config.PrebuildHashParams{
+			Config:            cfg,
+			Platform:          "linux/amd64",
+			Architecture:      "amd64",
+			ContextPath:       filepath.Dir(cfg.Origin),
+			DockerfilePath:    dockerfilePath,
+			DockerfileContent: modifiedDockerfileContents,
+			BuildInfo:         info,
+			Log:               log.Default,
+		})
+		framework.ExpectNoError(err)
+		_, err = dockerHelper.InspectImage(ctx, prebuildRepoName+":"+prebuildHash, false)
+		framework.ExpectNoError(err)
+
+		prebuildHash, err = config.CalculatePrebuildHash(config.PrebuildHashParams{
+			Config:            cfg,
+			Platform:          "linux/arm64",
+			Architecture:      "arm64",
+			ContextPath:       filepath.Dir(cfg.Origin),
+			DockerfilePath:    dockerfilePath,
+			DockerfileContent: modifiedDockerfileContents,
+			BuildInfo:         info,
+			Log:               log.Default,
+		})
+		framework.ExpectNoError(err)
+		_, err = dockerHelper.InspectImage(ctx, prebuildRepoName+":"+prebuildHash, false)
+		framework.ExpectNoError(err)
+		details, err := dockerHelper.InspectImage(ctx, prebuildRepoName+":"+prebuildHash, false)
+		framework.ExpectNoError(err)
+		framework.ExpectEqual(
+			details.Config.Labels["test"],
+			"VALUE",
+			"should contain test label",
+		)
+	})
+
+	ginkgo.It(
+		"should build image without repository specified if skip-push flag is set",
+		func() {
+			ctx := context.Background()
+
+			f := framework.NewDefaultFramework(initialDir + "/bin")
+			tempDir, err := framework.CopyToTempDir("tests/build/testdata/docker")
+			framework.ExpectNoError(err)
+			ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
+
+			_ = f.DevPodProviderDelete(ctx, "docker")
+			err = f.DevPodProviderAdd(ctx, "docker")
+			framework.ExpectNoError(err)
+			err = f.DevPodProviderUse(context.Background(), "docker")
+			framework.ExpectNoError(err)
+			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), tempDir)
+
+			cfg := getDevcontainerConfig(tempDir)
+
+			dockerfilePath := tempDir + "/.devcontainer/Dockerfile"
+			dockerfileContent, err := os.ReadFile(dockerfilePath) // #nosec G304 -- test file path
+			framework.ExpectNoError(err)
+			_, modifiedDockerfileContents, err := dockerfile.EnsureFinalStageName(
+				string(dockerfileContent),
+				config.DockerfileDefaultTarget,
+			)
+			framework.ExpectNoError(err)
+
+			// do the build
+			err = f.DevPodBuild(ctx, tempDir, "--skip-push")
+			framework.ExpectNoError(err)
+
+			// parse the dockerfile
+			file, err := dockerfile.Parse(modifiedDockerfileContents)
+			framework.ExpectNoError(err)
+			info := &config.ImageBuildInfo{Dockerfile: file}
+
+			// make sure images are there
+			prebuildHash, err := config.CalculatePrebuildHash(config.PrebuildHashParams{
+				Config:            cfg,
+				Platform:          "linux/" + runtime.GOARCH,
+				Architecture:      runtime.GOARCH,
+				ContextPath:       filepath.Dir(cfg.Origin),
+				DockerfilePath:    dockerfilePath,
+				DockerfileContent: modifiedDockerfileContents,
+				BuildInfo:         info,
+				Log:               log.Default,
+			})
+			framework.ExpectNoError(err)
+			_, err = dockerHelper.InspectImage(
+				ctx,
+				build.GetImageName(tempDir, prebuildHash),
+				false,
+			)
+			framework.ExpectNoError(err)
+		},
+	)
+
+	ginkgo.It(
+		"should build the image of the referenced service from the docker compose file",
+		func() {
+			ctx := context.Background()
+
+			f := framework.NewDefaultFramework(initialDir + "/bin")
+			tempDir, err := framework.CopyToTempDir("tests/build/testdata/docker-compose")
+			framework.ExpectNoError(err)
+			ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
+
+			_ = f.DevPodProviderDelete(ctx, "docker")
+			err = f.DevPodProviderAdd(ctx, "docker")
+			framework.ExpectNoError(err)
+			err = f.DevPodProviderUse(context.Background(), "docker")
+			framework.ExpectNoError(err)
+
+			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), tempDir)
+
+			prebuildRepo := prebuildRepoName
+
+			// do the build
+			err = f.DevPodBuild(ctx, tempDir, "--repository", prebuildRepo, "--skip-push")
+			framework.ExpectNoError(err)
+		},
+	)
+
+	ginkgo.It(
+		"should build docker-compose with features when build context differs from devcontainer location",
+		func() {
+			ctx := context.Background()
+
+			f := framework.NewDefaultFramework(initialDir + "/bin")
+			tempDir, err := framework.CopyToTempDir(
+				"tests/build/testdata/docker-compose-features-context",
+			)
+			framework.ExpectNoError(err)
+			ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
+
+			_ = f.DevPodProviderDelete(ctx, "docker")
+			err = f.DevPodProviderAdd(ctx, "docker")
+			framework.ExpectNoError(err)
+			err = f.DevPodProviderUse(context.Background(), "docker")
+			framework.ExpectNoError(err)
+
+			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), tempDir)
+
+			err = f.DevPodBuild(ctx, tempDir, "--skip-push")
+			framework.ExpectNoError(err)
+		},
+	)
+
+	ginkgo.It("build docker internal buildkit", func() {
+		ctx := context.Background()
+
+		f := framework.NewDefaultFramework(initialDir + "/bin")
+		tempDir, err := framework.CopyToTempDir("tests/build/testdata/docker")
+		framework.ExpectNoError(err)
+		ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
+
+		_ = f.DevPodProviderDelete(ctx, "docker")
+		err = f.DevPodProviderAdd(ctx, "docker")
+		framework.ExpectNoError(err)
+		err = f.DevPodProviderUse(context.Background(), "docker")
+		framework.ExpectNoError(err)
+
+		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), tempDir)
+
+		cfg := getDevcontainerConfig(tempDir)
+
+		dockerfilePath := tempDir + "/.devcontainer/Dockerfile"
+		dockerfileContent, err := os.ReadFile(dockerfilePath) // #nosec G304 -- test file path
+		framework.ExpectNoError(err)
+		_, modifiedDockerfileContents, err := dockerfile.EnsureFinalStageName(
+			string(dockerfileContent),
+			config.DockerfileDefaultTarget,
+		)
+		framework.ExpectNoError(err)
+
+		prebuildRepo := prebuildRepoName
+
+		// do the build
+		err = f.DevPodBuild(
+			ctx,
+			tempDir,
+			"--force-build",
+			"--force-internal-buildkit",
+			"--repository",
+			prebuildRepo,
+			"--skip-push",
+		)
+		framework.ExpectNoError(err)
+
+		// parse the dockerfile
+		file, err := dockerfile.Parse(modifiedDockerfileContents)
+		framework.ExpectNoError(err)
+		info := &config.ImageBuildInfo{Dockerfile: file}
+
+		// make sure images are there
+		prebuildHash, err := config.CalculatePrebuildHash(config.PrebuildHashParams{
+			Config:            cfg,
+			Platform:          "linux/amd64",
+			Architecture:      "amd64",
+			ContextPath:       filepath.Dir(cfg.Origin),
+			DockerfilePath:    dockerfilePath,
+			DockerfileContent: modifiedDockerfileContents,
+			BuildInfo:         info,
+			Log:               log.Default,
+		})
+		framework.ExpectNoError(err)
+
+		_, err = dockerHelper.InspectImage(ctx, prebuildRepo+":"+prebuildHash, false)
+		framework.ExpectNoError(err)
+	})
+
+	ginkgo.It("build kubernetes dockerless", func() {
+		// skip windows for now
+		if runtime.GOOS == osWindows {
+			return
+		}
+
+		ctx := context.Background()
+
+		f := framework.NewDefaultFramework(initialDir + "/bin")
+		tempDir, err := framework.CopyToTempDir("tests/build/testdata/kubernetes")
+		framework.ExpectNoError(err)
+		ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
+
+		_ = f.DevPodProviderDelete(ctx, "kubernetes")
+		err = f.DevPodProviderAdd(ctx, "kubernetes")
+		framework.ExpectNoError(err)
+		err = f.DevPodProviderUse(
+			context.Background(),
+			"kubernetes",
+			"-o",
+			"KUBERNETES_NAMESPACE=devpod",
+		)
+		framework.ExpectNoError(err)
+
+		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), tempDir)
+
+		// do the up
+		err = f.DevPodUp(ctx, tempDir)
+		framework.ExpectNoError(err)
+
+		// check if ssh works
+		out, err := f.DevPodSSH(ctx, tempDir, "echo -n $MY_TEST")
+		framework.ExpectNoError(err)
+		framework.ExpectEqual(out, "test456", "should contain my-test")
+	})
+
+	ginkgo.It("rebuild kubernetes dockerless", func() {
+		validateKubernetesDeploymentWithoutDocker(
+			initialDir,
+			func(ctx context.Context, f *framework.Framework, tempDir string) error {
+				return f.DevPodUpRecreate(ctx, tempDir)
+			},
+		)
+	})
+
+	ginkgo.It("reset kubernetes dockerless", func() {
+		validateKubernetesDeploymentWithoutDocker(
+			initialDir,
+			func(ctx context.Context, f *framework.Framework, tempDir string) error {
+				return f.DevPodUpReset(ctx, tempDir)
+			},
+		)
+	})
+})
+
+func validateKubernetesDeploymentWithoutDocker(
+	initialDir string,
+	action func(context.Context, *framework.Framework, string) error,
+) {
+	if runtime.GOOS == osWindows {
+		return
+	}
+
+	ctx := context.Background()
+
+	f := framework.NewDefaultFramework(initialDir + "/bin")
+	tempDir, err := framework.CopyToTempDir("tests/build/testdata/kubernetes")
+	framework.ExpectNoError(err)
+	ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
+
+	_ = f.DevPodProviderDelete(ctx, "kubernetes")
+	err = f.DevPodProviderAdd(ctx, "kubernetes")
+	framework.ExpectNoError(err)
+	err = f.DevPodProviderUse(
+		context.Background(),
+		"kubernetes",
+		"-o",
+		"KUBERNETES_NAMESPACE=devpod",
+	)
+	framework.ExpectNoError(err)
+
+	ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), tempDir)
+
+	err = f.DevPodUp(ctx, tempDir)
+	framework.ExpectNoError(err)
+
+	_, err = f.DevPodSSH(ctx, tempDir, "touch /workspaces/"+filepath.Base(tempDir)+"/DATA")
+	framework.ExpectNoError(err)
+	_, err = f.DevPodSSH(ctx, tempDir, "touch /ROOTFS")
+	framework.ExpectNoError(err)
+
+	err = action(ctx, f, tempDir)
+	framework.ExpectNoError(err)
+
+	_, err = f.DevPodSSH(ctx, tempDir, "ls /workspaces/"+filepath.Base(tempDir)+"/DATA")
+	framework.ExpectNoError(err)
+	_, err = f.DevPodSSH(ctx, tempDir, "ls /ROOTFS")
+	framework.ExpectError(err)
 }
