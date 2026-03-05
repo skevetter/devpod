@@ -28,8 +28,18 @@ var RiderOptions = ide.Options{
 	},
 }
 
-func NewRiderServer(userName string, values map[string]config.OptionValue, log log.Logger) *GenericJetBrainsServer {
-	amd64Download, arm64Download := getDownloadURLs(RiderOptions, values, RiderProductCode, RiderDownloadAmd64Template, RiderDownloadArm64Template)
+func NewRiderServer(
+	userName string,
+	values map[string]config.OptionValue,
+	log log.Logger,
+) *GenericJetBrainsServer {
+	amd64Download, arm64Download := getDownloadURLs(
+		RiderOptions,
+		values,
+		RiderProductCode,
+		RiderDownloadAmd64Template,
+		RiderDownloadArm64Template,
+	)
 	return newGenericServer(userName, &GenericOptions{
 		ID:            "rider",
 		DisplayName:   "Rider",

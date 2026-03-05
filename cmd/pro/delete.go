@@ -41,7 +41,8 @@ func NewDeleteCmd(flags *proflags.GlobalFlags) *cobra.Command {
 		},
 	}
 
-	deleteCmd.Flags().BoolVar(&cmd.IgnoreNotFound, "ignore-not-found", false, "Treat \"pro instance not found\" as a successful delete")
+	deleteCmd.Flags().
+		BoolVar(&cmd.IgnoreNotFound, "ignore-not-found", false, "Treat \"pro instance not found\" as a successful delete")
 	return deleteCmd
 }
 
@@ -57,7 +58,10 @@ func (cmd *DeleteCmd) Run(ctx context.Context, args []string) error {
 
 	// load pro instance config
 	proInstanceName := args[0]
-	proInstanceConfig, err := provider.LoadProInstanceConfig(devPodConfig.DefaultContext, proInstanceName)
+	proInstanceConfig, err := provider.LoadProInstanceConfig(
+		devPodConfig.DefaultContext,
+		proInstanceName,
+	)
 	if err != nil {
 		if os.IsNotExist(err) && cmd.IgnoreNotFound {
 			return nil
@@ -66,7 +70,10 @@ func (cmd *DeleteCmd) Run(ctx context.Context, args []string) error {
 		return fmt.Errorf("load pro instance %s: %w", proInstanceName, err)
 	}
 
-	providerConfig, err := provider.LoadProviderConfig(devPodConfig.DefaultContext, proInstanceConfig.Provider)
+	providerConfig, err := provider.LoadProviderConfig(
+		devPodConfig.DefaultContext,
+		proInstanceConfig.Provider,
+	)
 	if err != nil {
 		return fmt.Errorf("load provider: %w", err)
 	}
@@ -74,11 +81,22 @@ func (cmd *DeleteCmd) Run(ctx context.Context, args []string) error {
 	// stop daemon and clean up local workspaces
 	if providerConfig.IsDaemonProvider() {
 		// clean up local workspaces
-		workspaces, err := workspace.ListLocalWorkspaces(devPodConfig.DefaultContext, false, log.Default)
+		workspaces, err := workspace.ListLocalWorkspaces(
+			devPodConfig.DefaultContext,
+			false,
+			log.Default,
+		)
 		if err != nil {
 			log.Default.Warnf("Failed to list workspaces: %v", err)
 		} else {
-			cleanupLocalWorkspaces(ctx, devPodConfig, workspaces, providerConfig.Name, cmd.Owner, log.Default)
+			cleanupLocalWorkspaces(
+				ctx,
+				devPodConfig,
+				workspaces,
+				providerConfig.Name,
+				cmd.Owner,
+				log.Default,
+			)
 		}
 
 		daemonClient := daemon.NewLocalClient(proInstanceConfig.Provider)
@@ -100,7 +118,10 @@ func (cmd *DeleteCmd) Run(ctx context.Context, args []string) error {
 	}
 
 	// delete the pro instance dir itself
-	proInstanceDir, err := provider.GetProInstanceDir(devPodConfig.DefaultContext, proInstanceConfig.Host)
+	proInstanceDir, err := provider.GetProInstanceDir(
+		devPodConfig.DefaultContext,
+		proInstanceConfig.Host,
+	)
 	if err != nil {
 		return err
 	}
@@ -117,7 +138,14 @@ func (cmd *DeleteCmd) Run(ctx context.Context, args []string) error {
 	return nil
 }
 
-func cleanupLocalWorkspaces(ctx context.Context, devPodConfig *config.Config, workspaces []*provider.Workspace, providerName string, owner platform.OwnerFilter, log log.Logger) {
+func cleanupLocalWorkspaces(
+	ctx context.Context,
+	devPodConfig *config.Config,
+	workspaces []*provider.Workspace,
+	providerName string,
+	owner platform.OwnerFilter,
+	log log.Logger,
+) {
 	usedWorkspaces := []*provider.Workspace{}
 
 	for _, workspace := range workspaces {
@@ -133,7 +161,15 @@ func cleanupLocalWorkspaces(ctx context.Context, devPodConfig *config.Config, wo
 			wg.Add(1)
 			go func(w provider.Workspace) {
 				defer wg.Done()
-				client, err := workspace.Get(ctx, devPodConfig, []string{w.ID}, true, owner, true, log)
+				client, err := workspace.Get(
+					ctx,
+					devPodConfig,
+					[]string{w.ID},
+					true,
+					owner,
+					true,
+					log,
+				)
 				if err != nil {
 					log.WithFields(logrus.Fields{
 						"workspaceId": w.ID,
@@ -143,12 +179,15 @@ func cleanupLocalWorkspaces(ctx context.Context, devPodConfig *config.Config, wo
 					return
 				}
 				// delete workspace folder
-				err = clientimplementation.DeleteWorkspaceFolder(clientimplementation.DeleteWorkspaceFolderParams{
-					Context:              devPodConfig.DefaultContext,
-					WorkspaceID:          client.Workspace(),
-					SSHConfigPath:        client.WorkspaceConfig().SSHConfigPath,
-					SSHConfigIncludePath: client.WorkspaceConfig().SSHConfigIncludePath,
-				}, log)
+				err = clientimplementation.DeleteWorkspaceFolder(
+					clientimplementation.DeleteWorkspaceFolderParams{
+						Context:              devPodConfig.DefaultContext,
+						WorkspaceID:          client.Workspace(),
+						SSHConfigPath:        client.WorkspaceConfig().SSHConfigPath,
+						SSHConfigIncludePath: client.WorkspaceConfig().SSHConfigIncludePath,
+					},
+					log,
+				)
 				if err != nil {
 					log.WithFields(logrus.Fields{
 						"workspaceId": w.ID,
@@ -173,12 +212,18 @@ func cleanupLocalWorkspaces(ctx context.Context, devPodConfig *config.Config, wo
 }
 
 func waitDaemonStopped(ctx context.Context, providerName string) error {
-	return wait.PollUntilContextTimeout(ctx, 250*time.Millisecond, 5*time.Second, true, func(ctx context.Context) (done bool, err error) {
-		_, err = daemon.Dial(daemon.GetSocketAddr(providerName))
-		if err != nil {
-			return true, nil
-		}
+	return wait.PollUntilContextTimeout(
+		ctx,
+		250*time.Millisecond,
+		5*time.Second,
+		true,
+		func(ctx context.Context) (done bool, err error) {
+			_, err = daemon.Dial(daemon.GetSocketAddr(providerName))
+			if err != nil {
+				return true, nil
+			}
 
-		return false, nil
-	})
+			return false, nil
+		},
+	)
 }

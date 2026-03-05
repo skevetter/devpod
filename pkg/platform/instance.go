@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -142,7 +143,9 @@ func FindInstance(
 
 	if opts.Name != "" {
 		if namespace == metav1.NamespaceAll {
-			return nil, fmt.Errorf("the Namespace or ProjectName must be specified when searching by Name")
+			return nil, fmt.Errorf(
+				"the Namespace or ProjectName must be specified when searching by Name",
+			)
 		}
 		return findInstanceByName(ctx, managementClient, opts.Name, namespace)
 	}
@@ -172,7 +175,13 @@ func URLOptions(options any) url.Values {
 	return nil
 }
 
-func DialInstance(baseClient client.Client, workspace *managementv1.DevPodWorkspaceInstance, subResource string, values url.Values, log log.Logger) (*websocket.Conn, error) {
+func DialInstance(
+	baseClient client.Client,
+	workspace *managementv1.DevPodWorkspaceInstance,
+	subResource string,
+	values url.Values,
+	log log.Logger,
+) (*websocket.Conn, error) {
 	restConfig, err := baseClient.ManagementConfig()
 	if err != nil {
 		return nil, err
@@ -217,7 +226,13 @@ func DialInstance(baseClient client.Client, workspace *managementv1.DevPodWorksp
 
 // UpdateInstance diffs two versions of a DevPodWorkspaceInstance, applies changes via a patch to reduce conflicts.
 // Afterwards it waits until the instance is ready to be used.
-func UpdateInstance(ctx context.Context, client client.Client, oldInstance *managementv1.DevPodWorkspaceInstance, newInstance *managementv1.DevPodWorkspaceInstance, log log.Logger) (*managementv1.DevPodWorkspaceInstance, error) {
+func UpdateInstance(
+	ctx context.Context,
+	client client.Client,
+	oldInstance *managementv1.DevPodWorkspaceInstance,
+	newInstance *managementv1.DevPodWorkspaceInstance,
+	log log.Logger,
+) (*managementv1.DevPodWorkspaceInstance, error) {
 	managementClient, err := client.Management()
 	if err != nil {
 		return nil, err
@@ -248,7 +263,12 @@ func UpdateInstance(ctx context.Context, client client.Client, oldInstance *mana
 	return WaitForInstance(ctx, client, res, log)
 }
 
-func WaitForInstance(ctx context.Context, client client.Client, instance *managementv1.DevPodWorkspaceInstance, log log.Logger) (*managementv1.DevPodWorkspaceInstance, error) {
+func WaitForInstance(
+	ctx context.Context,
+	client client.Client,
+	instance *managementv1.DevPodWorkspaceInstance,
+	log log.Logger,
+) (*managementv1.DevPodWorkspaceInstance, error) {
 	managementClient, err := client.Management()
 	if err != nil {
 		return nil, err
@@ -256,53 +276,74 @@ func WaitForInstance(ctx context.Context, client client.Client, instance *manage
 
 	var updatedInstance *managementv1.DevPodWorkspaceInstance
 	// we need to wait until instance is scheduled
-	err = wait.PollUntilContextTimeout(ctx, time.Second, 30*time.Second, true, func(ctx context.Context) (done bool, err error) {
-		updatedInstance, err = managementClient.Loft().ManagementV1().
-			DevPodWorkspaceInstances(instance.GetNamespace()).
-			Get(ctx, instance.GetName(), metav1.GetOptions{})
-		if err != nil {
-			return false, err
-		}
-		name := updatedInstance.GetName()
-		status := updatedInstance.Status
-
-		if !isReady(updatedInstance) {
-			log.Debugf("Workspace %s is in phase %s, waiting until its ready", name, status.Phase)
-			return false, nil
-		}
-
-		if !isTemplateSynced(updatedInstance) {
-			log.Debugf("Workspace template is not ready yet")
-			for _, cond := range updatedInstance.Status.Conditions {
-				if cond.Status != corev1.ConditionTrue {
-					log.Debugf("%s is %s (%s): %s", cond.Type, cond.Status, cond.Reason, cond.Message)
-				}
+	err = wait.PollUntilContextTimeout(
+		ctx,
+		time.Second,
+		30*time.Second,
+		true,
+		func(ctx context.Context) (done bool, err error) {
+			updatedInstance, err = managementClient.Loft().ManagementV1().
+				DevPodWorkspaceInstances(instance.GetNamespace()).
+				Get(ctx, instance.GetName(), metav1.GetOptions{})
+			if err != nil {
+				return false, err
 			}
-			return false, nil
-		}
+			name := updatedInstance.GetName()
+			status := updatedInstance.Status
 
-		log.Debugf("Workspace %s is ready", name)
-		return true, nil
-	})
+			if !isReady(updatedInstance) {
+				log.Debugf(
+					"Workspace %s is in phase %s, waiting until its ready",
+					name,
+					status.Phase,
+				)
+				return false, nil
+			}
+
+			if !isTemplateSynced(updatedInstance) {
+				log.Debugf("Workspace template is not ready yet")
+				for _, cond := range updatedInstance.Status.Conditions {
+					if cond.Status != corev1.ConditionTrue {
+						log.Debugf(
+							"%s is %s (%s): %s",
+							cond.Type,
+							cond.Status,
+							cond.Reason,
+							cond.Message,
+						)
+					}
+				}
+				return false, nil
+			}
+
+			log.Debugf("Workspace %s is ready", name)
+			return true, nil
+		},
+	)
 	if err != nil {
 		// let's build a proper error message here
-		msg := "Timed out waiting for workspace to get ready \n\n "
+		var msg strings.Builder
+		msg.WriteString("Timed out waiting for workspace to get ready \n\n ")
 		// basic status
-		msg += fmt.Sprintf("ready: %t\n", isReady(updatedInstance))
-		msg += fmt.Sprintf("template synced: %t\n", isTemplateSynced(updatedInstance))
-		msg += "\n"
+		fmt.Fprintf(&msg, "ready: %t\n", isReady(updatedInstance))
+		fmt.Fprintf(&msg, "template synced: %t\n", isTemplateSynced(updatedInstance))
+		msg.WriteString("\n")
 
 		// CRD conditions
-		msg += "Conditions:\n"
+		msg.WriteString("Conditions:\n")
 		for _, cond := range updatedInstance.Status.Conditions {
-			msg += fmt.Sprintf("%s is %s (%s): %s\n", cond.Type, cond.Status, cond.Reason, cond.Message)
+			fmt.Fprintf(&msg, "%s is %s (%s): %s\n",
+				cond.Type,
+				cond.Status,
+				cond.Reason,
+				cond.Message)
 		}
-		msg += "\n"
+		msg.WriteString("\n")
 
 		// error message, usually context timeout
-		msg += fmt.Sprintf("Error: %s", err.Error())
+		fmt.Fprintf(&msg, "Error: %s", err.Error())
 
-		return nil, errors.New(msg)
+		return nil, errors.New(msg.String())
 	}
 
 	return updatedInstance, nil

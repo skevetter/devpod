@@ -40,7 +40,12 @@ func NewLogsDaemonCmd(flags *flags.GlobalFlags) *cobra.Command {
 
 func (cmd *LogsDaemonCmd) Run(ctx context.Context) error {
 	// get workspace
-	shouldExit, _, err := agent.ReadAgentWorkspaceInfo(cmd.AgentDir, cmd.Context, cmd.ID, log.Default.ErrorStreamOnly())
+	shouldExit, _, err := agent.ReadAgentWorkspaceInfo(
+		cmd.AgentDir,
+		cmd.Context,
+		cmd.ID,
+		log.Default.ErrorStreamOnly(),
+	)
 	if err != nil {
 		return err
 	} else if shouldExit {

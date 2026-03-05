@@ -96,7 +96,10 @@ func ParseDevContainerJSON(folder, relativePath string) (*DevContainerConfig, er
 }
 
 // ParseDevContainerJSONWithSelector allows custom selection when multiple devcontainer configs exist.
-func ParseDevContainerJSONWithSelector(folder, relativePath string, selector func([]string) (string, error)) (*DevContainerConfig, error) {
+func ParseDevContainerJSONWithSelector(
+	folder, relativePath string,
+	selector func([]string) (string, error),
+) (*DevContainerConfig, error) {
 	path, err := resolveDevContainerPath(folder, relativePath, selector)
 	if err != nil {
 		return nil, err
@@ -107,7 +110,10 @@ func ParseDevContainerJSONWithSelector(folder, relativePath string, selector fun
 	return ParseDevContainerJSONFile(path)
 }
 
-func resolveDevContainerPath(folder, relativePath string, selector func([]string) (string, error)) (string, error) {
+func resolveDevContainerPath(
+	folder, relativePath string,
+	selector func([]string) (string, error),
+) (string, error) {
 	// Explicit path provided
 	if relativePath != "" {
 		path := path2.Join(filepath.ToSlash(folder), relativePath)
@@ -166,7 +172,9 @@ func findDevContainerConfigs(folder string) ([]string, error) {
 
 	// Fallback to glob for deeper structures
 	if len(configs) == 0 {
-		matches, err := doublestar.FilepathGlob(filepath.ToSlash(filepath.Clean(folder)) + "/.devcontainer/**/devcontainer.json")
+		matches, err := doublestar.FilepathGlob(
+			filepath.ToSlash(filepath.Clean(folder)) + "/.devcontainer/**/devcontainer.json",
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -262,16 +270,30 @@ func ParseKeyValueFile(filename string) ([]string, error) {
 	for scanner.Scan() {
 		scannedBytes := scanner.Bytes()
 		if !utf8.Valid(scannedBytes) {
-			return nil, fmt.Errorf("env file %s contains invalid utf8 bytes in line %d", filename, lineNum)
+			return nil, fmt.Errorf(
+				"env file %s contains invalid utf8 bytes in line %d",
+				filename,
+				lineNum,
+			)
 		}
 		line := string(scannedBytes)
 		// skip commented or empty lines
 		if len(line) > 0 && !strings.HasPrefix(line, "#") {
 			key, value, found := strings.Cut(line, "=")
 			if len(key) == 0 || strings.Contains(key, " ") {
-				return nil, fmt.Errorf("env file %s contains invalid variable key in line %d: %s", filename, lineNum, line)
+				return nil, fmt.Errorf(
+					"env file %s contains invalid variable key in line %d: %s",
+					filename,
+					lineNum,
+					line,
+				)
 			} else if len(value) == 0 {
-				return nil, fmt.Errorf("env file %s contains invalid variable value in line %d: %s", filename, lineNum, line)
+				return nil, fmt.Errorf(
+					"env file %s contains invalid variable value in line %d: %s",
+					filename,
+					lineNum,
+					line,
+				)
 			}
 			if found {
 				keyValuePairs = append(keyValuePairs, line)

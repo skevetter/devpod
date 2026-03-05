@@ -127,7 +127,11 @@ func (tc *tunnelContext) cleanup() {
 }
 
 func waitForTunnelCompletion(tc *tunnelContext) (*config2.Result, error) {
-	result, err := tc.opts.TunnelServerFunc(tc.cancelCtx, tc.grpcPipes.stdinWriter, tc.grpcPipes.stdoutReader)
+	result, err := tc.opts.TunnelServerFunc(
+		tc.cancelCtx,
+		tc.grpcPipes.stdinWriter,
+		tc.grpcPipes.stdoutReader,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("start tunnel server: %w", err)
 	}
@@ -280,16 +284,20 @@ func establishSSHSession(
 	}
 
 	var session *ssh.Session
-	if err := wait.ExponentialBackoffWithContext(tc.cancelCtx, backoff, func(ctx context.Context) (bool, error) {
-		sess, err := sshClient.NewSession()
-		if err != nil {
-			tc.opts.Log.Debugf("SSH server not ready: %v", err)
-			return false, nil // Retry
-		}
-		tc.opts.Log.Debug("SSH session created")
-		session = sess
-		return true, nil // Success
-	}); err != nil {
+	if err := wait.ExponentialBackoffWithContext(
+		tc.cancelCtx,
+		backoff,
+		func(ctx context.Context) (bool, error) {
+			sess, err := sshClient.NewSession()
+			if err != nil {
+				tc.opts.Log.Debugf("SSH server not ready: %v", err)
+				return false, nil // Retry
+			}
+			tc.opts.Log.Debug("SSH session created")
+			session = sess
+			return true, nil // Success
+		},
+	); err != nil {
 		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 			tc.errChan <- err
 			return nil, err

@@ -10,7 +10,12 @@ import (
 	"github.com/skevetter/log/terminal"
 )
 
-func (c *client) Create(ctx context.Context, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
+func (c *client) Create(
+	ctx context.Context,
+	stdin io.Reader,
+	stdout io.Writer,
+	stderr io.Writer,
+) error {
 	baseClient, err := c.initPlatformClient(ctx)
 	if err != nil {
 		return err
@@ -28,7 +33,15 @@ func (c *client) Create(ctx context.Context, stdin io.Reader, stdout io.Writer, 
 		return fmt.Errorf("unable to create new instance through CLI if stdin is not a terminal")
 	}
 
-	instance, err = createInstanceInteractive(ctx, baseClient, c.workspace.ID, c.workspace.UID, c.workspace.Source.String(), c.workspace.Picture, c.log)
+	instance, err = createInstanceInteractive(
+		ctx,
+		baseClient,
+		c.workspace.ID,
+		c.workspace.UID,
+		c.workspace.Source.String(),
+		c.workspace.Picture,
+		c.log,
+	)
 	if err != nil {
 		return err
 	}

@@ -56,7 +56,8 @@ func NewGitSSHSignatureCmd(flags *flags.GlobalFlags) *cobra.Command {
 
 	gitSshSignatureCmd.Flags().StringVarP(&cmd.CertPath, "file", "f", "", "Path to the private key")
 	gitSshSignatureCmd.Flags().StringVarP(&cmd.Namespace, "namespace", "n", "", "Namespace")
-	gitSshSignatureCmd.Flags().StringVarP(&cmd.Command, "command", "Y", "sign", "Command - should be 'sign'")
+	gitSshSignatureCmd.Flags().
+		StringVarP(&cmd.Command, "command", "Y", "sign", "Command - should be 'sign'")
 
 	return gitSshSignatureCmd
 }

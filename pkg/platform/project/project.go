@@ -27,7 +27,10 @@ func GetProjectNamespacePrefix() string {
 	defer prefixMux.Unlock()
 
 	if prefix == nil {
-		panic("Seems like you forgot to init the project namespace prefix. This is a requirement as otherwise resolving a project namespace is not possible.")
+		panic(
+			"Seems like you forgot to init the project namespace prefix. This is a requirement as otherwise " +
+				"resolving a project namespace is not possible.",
+		)
 	}
 
 	return *prefix
@@ -48,7 +51,10 @@ func ProjectFromNamespace(namespace string) string {
 	defer prefixMux.RUnlock()
 
 	if prefix == nil {
-		panic("Seems like you forgot to init the project namespace prefix. This is a requirement as otherwise resolving a project namespace is not possible.")
+		panic(
+			"Seems like you forgot to init the project namespace prefix. This is a requirement as otherwise " +
+				"resolving a project namespace is not possible.",
+		)
 	}
 
 	return strings.TrimPrefix(namespace, *prefix)
@@ -60,7 +66,10 @@ func ProjectNamespace(projectName string) string {
 	defer prefixMux.RUnlock()
 
 	if prefix == nil {
-		panic("Seems like you forgot to init the project namespace prefix. This is a requirement as otherwise resolving a project namespace is not possible.")
+		panic(
+			"Seems like you forgot to init the project namespace prefix. This is a requirement as otherwise " +
+				"resolving a project namespace is not possible.",
+		)
 	}
 
 	return *prefix + projectName

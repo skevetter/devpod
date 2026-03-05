@@ -13,7 +13,11 @@ import (
 
 // newForwarder returns a new forwarder using an SSH client and list of ports to forward,
 // for each port a new go routine is used to manage the SSH channel.
-func newForwarder(sshClient *ssh.Client, forwardedPorts []string, log log.Logger) netstat.Forwarder {
+func newForwarder(
+	sshClient *ssh.Client,
+	forwardedPorts []string,
+	log log.Logger,
+) netstat.Forwarder {
 	return &forwarder{
 		sshClient:      sshClient,
 		forwardedPorts: forwardedPorts,
@@ -48,7 +52,16 @@ func (f *forwarder) Forward(port string) error {
 
 	go func(port string) {
 		// do the forward
-		err := devssh.PortForward(cancelCtx, f.sshClient, "tcp", "localhost:"+port, "tcp", "localhost:"+port, 0, f.log)
+		err := devssh.PortForward(
+			cancelCtx,
+			f.sshClient,
+			"tcp",
+			"localhost:"+port,
+			"tcp",
+			"localhost:"+port,
+			0,
+			f.log,
+		)
 		if err != nil {
 			f.log.Errorf("Error port forwarding %s: %v", port, err)
 		}

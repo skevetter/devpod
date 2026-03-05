@@ -71,28 +71,50 @@ func (cmd *TemplatesCmd) Run(ctx context.Context) error {
 	return nil
 }
 
-func Templates(ctx context.Context, client client.Client, projectName string) (*managementv1.ProjectTemplates, error) {
+func Templates(
+	ctx context.Context,
+	client client.Client,
+	projectName string,
+) (*managementv1.ProjectTemplates, error) {
 	managementClient, err := client.Management()
 	if err != nil {
 		return nil, err
 	}
 
-	templateList, err := managementClient.Loft().ManagementV1().Projects().ListTemplates(ctx, projectName, metav1.GetOptions{})
+	templateList, err := managementClient.Loft().
+		ManagementV1().
+		Projects().
+		ListTemplates(ctx, projectName, metav1.GetOptions{})
 	if err != nil {
 		return templateList, fmt.Errorf("list templates: %w", err)
 	} else if len(templateList.DevPodWorkspaceTemplates) == 0 {
-		return templateList, fmt.Errorf("seems like there is no template allowed in project %s, please make sure to at least have a single template available", projectName)
+		return templateList, fmt.Errorf(
+			"seems like there is no template allowed in project %s, "+
+				"please make sure to at least have a single template available",
+			projectName,
+		)
 	}
 
 	return templateList, nil
 }
 
-func FindTemplate(ctx context.Context, managementClient kube.Interface, projectName, templateName string) (*managementv1.DevPodWorkspaceTemplate, error) {
-	templateList, err := managementClient.Loft().ManagementV1().Projects().ListTemplates(ctx, projectName, metav1.GetOptions{})
+func FindTemplate(
+	ctx context.Context,
+	managementClient kube.Interface,
+	projectName, templateName string,
+) (*managementv1.DevPodWorkspaceTemplate, error) {
+	templateList, err := managementClient.Loft().
+		ManagementV1().
+		Projects().
+		ListTemplates(ctx, projectName, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("list templates: %w", err)
 	} else if len(templateList.DevPodWorkspaceTemplates) == 0 {
-		return nil, fmt.Errorf("seems like there is no DevPod template allowed in project %s, please make sure to at least have a single template available", projectName)
+		return nil, fmt.Errorf(
+			"seems like there is no DevPod template allowed in project %s, "+
+				"please make sure to at least have a single template available",
+			projectName,
+		)
 	}
 
 	// find template
@@ -111,7 +133,10 @@ func FindTemplate(ctx context.Context, managementClient kube.Interface, projectN
 	return template, nil
 }
 
-func GetTemplateParameters(template *managementv1.DevPodWorkspaceTemplate, templateVersion string) ([]storagev1.AppParameter, error) {
+func GetTemplateParameters(
+	template *managementv1.DevPodWorkspaceTemplate,
+	templateVersion string,
+) ([]storagev1.AppParameter, error) {
 	if templateVersion == "latest" {
 		templateVersion = ""
 	}
@@ -164,11 +189,17 @@ func GetLatestVersion(versions storagev1.VersionsAccessor) storagev1.VersionAcce
 	return latestVersion.Object
 }
 
-func GetLatestMatchedVersion(versions storagev1.VersionsAccessor, versionPattern string) (latestVersion storagev1.VersionAccessor, latestMatchedVersion storagev1.VersionAccessor, err error) {
+func GetLatestMatchedVersion(
+	versions storagev1.VersionsAccessor,
+	versionPattern string,
+) (latestVersion storagev1.VersionAccessor, latestMatchedVersion storagev1.VersionAccessor, err error) {
 	// parse version
 	splittedVersion := strings.Split(strings.ToLower(strings.TrimPrefix(versionPattern, "v")), ".")
 	if len(splittedVersion) != 3 {
-		return nil, nil, fmt.Errorf("couldn't parse version %s, expected version in format: 0.0.0", versionPattern)
+		return nil, nil, fmt.Errorf(
+			"couldn't parse version %s, expected version in format: 0.0.0",
+			versionPattern,
+		)
 	}
 
 	// find latest version that matches our defined version

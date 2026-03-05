@@ -77,7 +77,11 @@ func (s *dockerBuildxStrategy) build(
 	multiWriter := io.MultiWriter(writer, stderrBuf)
 	if err := s.driver.Docker.Run(ctx, args, nil, writer, multiWriter); err != nil {
 		if stderrBuf.Len() > 0 {
-			return fmt.Errorf("failed to build image: %w: %s", err, strings.TrimSpace(stderrBuf.String()))
+			return fmt.Errorf(
+				"failed to build image: %w: %s",
+				err,
+				strings.TrimSpace(stderrBuf.String()),
+			)
 		}
 		return fmt.Errorf("failed to build image: %w", err)
 	}
@@ -184,7 +188,14 @@ func (s *buildkitStrategy) build(
 	}
 	defer func() { _ = buildKitClient.Close() }()
 
-	if err := buildkit.Build(ctx, buildKitClient, writer, platform, options, s.driver.Log); err != nil {
+	if err := buildkit.Build(
+		ctx,
+		buildKitClient,
+		writer,
+		platform,
+		options,
+		s.driver.Log,
+	); err != nil {
 		return fmt.Errorf("build: %w", err)
 	}
 	return nil
@@ -206,7 +217,10 @@ type resolveRequest struct {
 	prebuildHash      string
 }
 
-func (r *imageResolver) tryResolve(ctx context.Context, req resolveRequest) (*config.BuildInfo, bool) {
+func (r *imageResolver) tryResolve(
+	ctx context.Context,
+	req resolveRequest,
+) (*config.BuildInfo, bool) {
 	if req.options.Repository != "" || req.options.ForceBuild {
 		return nil, false
 	}

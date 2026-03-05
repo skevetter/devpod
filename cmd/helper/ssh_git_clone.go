@@ -35,12 +35,19 @@ func NewSSHGitCloneCmd() *cobra.Command {
 
 func (cmd *SSHGitClone) Run(ctx context.Context, args []string) error {
 	if len(args) < 2 {
-		return fmt.Errorf("expected args in format: {user}@{host} {commands...}, received \"%s\"", strings.Join(args, " "))
+		return fmt.Errorf(
+			"expected args in format: {user}@{host} {commands...}, received \"%s\"",
+			strings.Join(args, " "),
+		)
 	}
 	host := args[0]
 	sshCmdArgs := args[1:]
 	if len(host) == 0 || len(sshCmdArgs) == 0 {
-		return fmt.Errorf("unexpected input: host: %s, args: %s", host, strings.Join(sshCmdArgs, " "))
+		return fmt.Errorf(
+			"unexpected input: host: %s, args: %s",
+			host,
+			strings.Join(sshCmdArgs, " "),
+		)
 	}
 
 	user, addr, err := parseSSHHost(host)

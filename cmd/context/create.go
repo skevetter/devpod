@@ -37,7 +37,8 @@ func NewCreateCmd(flags *flags.GlobalFlags) *cobra.Command {
 		},
 	}
 
-	createCmd.Flags().StringArrayVarP(&cmd.Options, "option", "o", []string{}, "context option in the form KEY=VALUE")
+	createCmd.Flags().
+		StringArrayVarP(&cmd.Options, "option", "o", []string{}, "context option in the form KEY=VALUE")
 	return createCmd
 }
 
@@ -112,13 +113,22 @@ func parseOptions(options []string) (map[string]config.OptionValue, error) {
 		value := strings.Join(splitted[1:], "=")
 		contextOption, ok := contextOptions[key]
 		if !ok {
-			return nil, fmt.Errorf("invalid option '%s', allowed options are: %v", key, allowedOptions)
+			return nil, fmt.Errorf(
+				"invalid option '%s', allowed options are: %v",
+				key,
+				allowedOptions,
+			)
 		}
 
 		if len(contextOption.Enum) > 0 {
 			found := slices.Contains(contextOption.Enum, value)
 			if !found {
-				return nil, fmt.Errorf("invalid value '%s' for option '%s', has to match one of the following values: %v", value, key, contextOption.Enum)
+				return nil, fmt.Errorf(
+					"invalid value '%s' for option '%s', has to match one of the following values: %v",
+					value,
+					key,
+					contextOption.Enum,
+				)
 			}
 		}
 

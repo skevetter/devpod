@@ -67,7 +67,10 @@ func (s *PrepareBuildContextSuite) TestNoContextRelativePath() {
 	)
 
 	s.NoError(err)
-	s.False(filepath.IsAbs(result.dockerfilePathInContext), "dockerfilePathInContext should be relative")
+	s.False(
+		filepath.IsAbs(result.dockerfilePathInContext),
+		"dockerfilePathInContext should be relative",
+	)
 	s.Equal("Dockerfile", result.dockerfilePathInContext)
 	s.Equal("/tmp/features", result.context)
 }
@@ -81,7 +84,10 @@ func (s *PrepareBuildContextSuite) TestNilBuildRelativePath() {
 	)
 
 	s.NoError(err)
-	s.False(filepath.IsAbs(result.dockerfilePathInContext), "dockerfilePathInContext should be relative")
+	s.False(
+		filepath.IsAbs(result.dockerfilePathInContext),
+		"dockerfilePathInContext should be relative",
+	)
 	s.Equal("Dockerfile", result.dockerfilePathInContext)
 	s.Equal("/workspace/.devcontainer/features", result.context)
 }
@@ -102,7 +108,10 @@ func (s *PrepareBuildContextSuite) TestCustomBuildContext() {
 	)
 
 	s.NoError(err)
-	s.False(filepath.IsAbs(result.dockerfilePathInContext), "dockerfilePathInContext should be relative")
+	s.False(
+		filepath.IsAbs(result.dockerfilePathInContext),
+		"dockerfilePathInContext should be relative",
+	)
 	s.Equal(".devcontainer/features/Dockerfile", result.dockerfilePathInContext)
 	s.Equal("/workspace", result.context)
 	s.Contains(result.dockerfileContent, "COPY ./.devcontainer/features/folder/")

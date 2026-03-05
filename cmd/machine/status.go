@@ -59,9 +59,19 @@ func (cmd *StatusCmd) Run(ctx context.Context, args []string) error {
 	case "plain":
 		switch machineStatus {
 		case client.StatusStopped:
-			log.Default.Infof("Machine '%s' is '%s', you can start it via 'devpod machine start %s'", machineClient.Machine(), machineStatus, machineClient.Machine())
+			log.Default.Infof(
+				"Machine '%s' is '%s', you can start it via 'devpod machine start %s'",
+				machineClient.Machine(),
+				machineStatus,
+				machineClient.Machine(),
+			)
 		case client.StatusBusy:
-			log.Default.Infof("Machine '%s' is '%s', which means its currently unaccessible. This is usually resolved by waiting a couple of minutes", machineClient.Machine(), machineStatus)
+			log.Default.Infof(
+				"Machine '%s' is '%s', which means its currently unaccessible. "+
+					"This is usually resolved by waiting a couple of minutes",
+				machineClient.Machine(),
+				machineStatus,
+			)
 		case client.StatusNotFound:
 			log.Default.Infof("Machine '%s' is '%s'", machineClient.Machine(), machineStatus)
 		default:
@@ -85,7 +95,10 @@ func (cmd *StatusCmd) Run(ctx context.Context, args []string) error {
 
 		fmt.Print(string(out))
 	default:
-		return fmt.Errorf("unexpected output format, choose either json or plain. Got %s", cmd.Output)
+		return fmt.Errorf(
+			"unexpected output format, choose either json or plain. Got %s",
+			cmd.Output,
+		)
 	}
 
 	return nil

@@ -39,7 +39,8 @@ func NewOptionsCmd(flags *flags.GlobalFlags) *cobra.Command {
 		},
 	}
 
-	optionsCmd.Flags().StringVar(&cmd.Output, "output", "plain", "The output format to use. Can be json or plain")
+	optionsCmd.Flags().
+		StringVar(&cmd.Output, "output", "plain", "The output format to use. Can be json or plain")
 	return optionsCmd
 }
 
@@ -99,7 +100,10 @@ func (cmd *OptionsCmd) Run(ctx context.Context, ide string) error {
 		}
 		fmt.Print(string(out))
 	default:
-		return fmt.Errorf("unexpected output format, choose either json or plain. Got %s", cmd.Output)
+		return fmt.Errorf(
+			"unexpected output format, choose either json or plain. Got %s",
+			cmd.Output,
+		)
 	}
 
 	return nil

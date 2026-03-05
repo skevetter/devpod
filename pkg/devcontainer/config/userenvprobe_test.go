@@ -35,9 +35,11 @@ func TestParseProbeOutput(t *testing.T) {
 			},
 		},
 		{
-			name:   "bash function with newlines and special characters",
-			output: []byte("BASH_FUNC_scl%%=() {  if [ \"$1\" = \"load\" -o \"$1\" = \"unload\" ]; then\n eval \"module $@\";\n else\n /usr/bin/scl \"$@\";\n fi\n}\x00PATH=/usr/bin\x00"),
-			sep:    '\x00',
+			name: "bash function with newlines and special characters",
+			output: []byte(
+				"BASH_FUNC_scl%%=() {  if [ \"$1\" = \"load\" -o \"$1\" = \"unload\" ]; then\n eval \"module $@\";\n else\n /usr/bin/scl \"$@\";\n fi\n}\x00PATH=/usr/bin\x00",
+			),
+			sep: '\x00',
 			expected: map[string]string{
 				"BASH_FUNC_scl%%": "() {  if [ \"$1\" = \"load\" -o \"$1\" = \"unload\" ]; then\n eval \"module $@\";\n else\n /usr/bin/scl \"$@\";\n fi\n}",
 				"PATH":            "/usr/bin",
@@ -95,9 +97,11 @@ func TestParseProbeOutput(t *testing.T) {
 			},
 		},
 		{
-			name:   "complex bash function with multiple newlines",
-			output: []byte("BASH_FUNC_module%%=() {\n eval `/usr/bin/modulecmd bash $*`\n}\x00SHELL=/bin/bash\x00"),
-			sep:    '\x00',
+			name: "complex bash function with multiple newlines",
+			output: []byte(
+				"BASH_FUNC_module%%=() {\n eval `/usr/bin/modulecmd bash $*`\n}\x00SHELL=/bin/bash\x00",
+			),
+			sep: '\x00',
 			expected: map[string]string{
 				"BASH_FUNC_module%%": "() {\n eval `/usr/bin/modulecmd bash $*`\n}",
 				"SHELL":              "/bin/bash",
@@ -121,9 +125,11 @@ func TestParseProbeOutput(t *testing.T) {
 			},
 		},
 		{
-			name:   "bash function from RHEL",
-			output: []byte("BASH_FUNC_scl%%=() {  if [ \"$1\" = \"load\" -o \"$1\" = \"unload\" ]; then\n eval \"module $@\";\n else\n /usr/bin/scl \"$@\";\n fi\n}\x00"),
-			sep:    '\x00',
+			name: "bash function from RHEL",
+			output: []byte(
+				"BASH_FUNC_scl%%=() {  if [ \"$1\" = \"load\" -o \"$1\" = \"unload\" ]; then\n eval \"module $@\";\n else\n /usr/bin/scl \"$@\";\n fi\n}\x00",
+			),
+			sep: '\x00',
 			expected: map[string]string{
 				"BASH_FUNC_scl%%": "() {  if [ \"$1\" = \"load\" -o \"$1\" = \"unload\" ]; then\n eval \"module $@\";\n else\n /usr/bin/scl \"$@\";\n fi\n}",
 			},

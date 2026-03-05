@@ -42,7 +42,11 @@ func UserHomeDir() (string, error) {
 		}
 		return drive + path, nil
 	case "darwin":
-		cmd := exec.Command("sh", "-c", `dscl -q . -read /Users/"$(whoami)" NFSHomeDirectory | sed 's/^[^ ]*: //'`)
+		cmd := exec.Command(
+			"sh",
+			"-c",
+			`dscl -q . -read /Users/"$(whoami)" NFSHomeDirectory | sed 's/^[^ ]*: //'`,
+		)
 		cmd.Stdout = &stdout
 		if err := cmd.Run(); err == nil {
 			result := strings.TrimSpace(stdout.String())

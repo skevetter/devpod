@@ -46,7 +46,8 @@ func NewDaemonCmd() *cobra.Command {
 		Args:  cobra.NoArgs,
 		RunE:  cmd.Run,
 	}
-	daemonCmd.Flags().StringVar(&cmd.Config.Timeout, "timeout", "", "The timeout to stop the container after")
+	daemonCmd.Flags().
+		StringVar(&cmd.Config.Timeout, "timeout", "", "The timeout to stop the container after")
 	return daemonCmd
 }
 
@@ -68,7 +69,11 @@ func (cmd *DaemonCmd) Run(c *cobra.Command, args []string) error {
 			return fmt.Errorf("failed to parse timeout duration: %w", err)
 		}
 		if timeoutDuration > 0 {
-			if err := os.WriteFile(agent.ContainerActivityFile, nil, 0o666); err != nil { // #nosec G306
+			if err := os.WriteFile(
+				agent.ContainerActivityFile,
+				nil,
+				0o666,
+			); err != nil { // #nosec G306
 				return fmt.Errorf("failed to create activity file: %w", err)
 			}
 			if err := os.Chmod(agent.ContainerActivityFile, 0o666); err != nil { // #nosec G302
@@ -187,7 +192,12 @@ func runReaper(ctx context.Context, errChan chan<- error, wg *sync.WaitGroup) {
 }
 
 // runTimeoutMonitor monitors the activity file and signals an error if the timeout is exceeded.
-func runTimeoutMonitor(ctx context.Context, duration time.Duration, errChan chan<- error, wg *sync.WaitGroup) {
+func runTimeoutMonitor(
+	ctx context.Context,
+	duration time.Duration,
+	errChan chan<- error,
+	wg *sync.WaitGroup,
+) {
 	defer wg.Done()
 	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
@@ -209,7 +219,12 @@ func runTimeoutMonitor(ctx context.Context, duration time.Duration, errChan chan
 }
 
 // runNetworkServer starts the network server.
-func runNetworkServer(ctx context.Context, cmd *DaemonCmd, errChan chan<- error, wg *sync.WaitGroup) {
+func runNetworkServer(
+	ctx context.Context,
+	cmd *DaemonCmd,
+	errChan chan<- error,
+	wg *sync.WaitGroup,
+) {
 	defer wg.Done()
 	if err := os.MkdirAll(RootDir, os.ModePerm); err != nil {
 		errChan <- err

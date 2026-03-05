@@ -67,13 +67,15 @@ func getIP() string {
 			switch v := addr.(type) {
 			case *net.IPAddr:
 				if v.IP.To4() != nil {
-					if v.IP.DefaultMask().String() == "ffffff00" || v.IP.DefaultMask().String() == "ff000000" {
+					if v.IP.DefaultMask().String() == "ffffff00" ||
+						v.IP.DefaultMask().String() == "ff000000" {
 						return v.IP.String()
 					}
 				}
 			case *net.IPNet:
 				if v.IP.To4() != nil {
-					if v.IP.DefaultMask().String() == "ffffff00" || v.IP.DefaultMask().String() == "ff000000" {
+					if v.IP.DefaultMask().String() == "ffffff00" ||
+						v.IP.DefaultMask().String() == "ff000000" {
 						return v.IP.String()
 					}
 				}

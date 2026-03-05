@@ -34,7 +34,13 @@ func getLatestDownloadURL(code string, platform string) string {
 	return fmt.Sprintf("https://download.jetbrains.com/product?code=%s&platform=%s", code, platform)
 }
 
-func getDownloadURLs(options ide.Options, values map[string]config2.OptionValue, productCode string, templateAmd64 string, templateArm64 string) (string, string) {
+func getDownloadURLs(
+	options ide.Options,
+	values map[string]config2.OptionValue,
+	productCode string,
+	templateAmd64 string,
+	templateArm64 string,
+) (string, string) {
 	version := options.GetValue(values, VersionOption)
 	var amd64Download, arm64Download string
 	if version == "latest" {
@@ -62,7 +68,11 @@ type GenericOptions struct {
 	DownloadArm64 string
 }
 
-func newGenericServer(userName string, options *GenericOptions, log log.Logger) *GenericJetBrainsServer {
+func newGenericServer(
+	userName string,
+	options *GenericOptions,
+	log log.Logger,
+) *GenericJetBrainsServer {
 	return &GenericJetBrainsServer{
 		userName: userName,
 		options:  options,
@@ -78,10 +88,21 @@ type GenericJetBrainsServer struct {
 
 func (o *GenericJetBrainsServer) OpenGateway(workspaceFolder, workspaceID string) error {
 	o.log.Infof("Starting %s through JetBrains Gateway...", o.options.DisplayName)
-	err := open.Run(`jetbrains-gateway://connect#idePath=` + url.QueryEscape(o.getDirectory(path.Join("/", "home", o.userName))) + `&projectPath=` + url.QueryEscape(workspaceFolder) + `&host=` + workspaceID + `.devpod&port=22&user=` + url.QueryEscape(o.userName) + `&type=ssh&deploy=false`)
+	err := open.Run(
+		`jetbrains-gateway://connect#idePath=` + url.QueryEscape(
+			o.getDirectory(path.Join("/", "home", o.userName)),
+		) + `&projectPath=` + url.QueryEscape(
+			workspaceFolder,
+		) + `&host=` + workspaceID + `.devpod&port=22&user=` + url.QueryEscape(
+			o.userName,
+		) + `&type=ssh&deploy=false`,
+	)
 	if err != nil {
 		o.log.Debugf("Error opening jetbrains-gateway: %v", err)
-		o.log.Errorf("Seems like you don't have JetBrains Gateway installed on your computer. Please install JetBrains Gateway via https://www.jetbrains.com/remote-development/gateway/")
+		o.log.Errorf(
+			"Seems like you don't have JetBrains Gateway installed on your computer. " +
+				"Please install JetBrains Gateway via https://www.jetbrains.com/remote-development/gateway/",
+		)
 		return err
 	}
 	return nil
@@ -156,7 +177,9 @@ func (o *GenericJetBrainsServer) Install(setupInfo *config.Result) error {
 
 	installPluginsCommand := exec.Command(
 		path.Join(targetLocation, "bin", "remote-dev-server.sh"),
-		append([]string{"installPlugins", "--give-consent-to-use-third-party-plugins"}, plugins...)...,
+		append(
+			[]string{"installPlugins", "--give-consent-to-use-third-party-plugins"},
+			plugins...)...,
 	)
 
 	// JetBrains IDE launcher uses HOME and possibly USER environment variables;
@@ -176,7 +199,11 @@ func (o *GenericJetBrainsServer) Install(setupInfo *config.Result) error {
 
 	out, err := installPluginsCommand.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("failed to install JetBrains plugins %v: %w", plugins, command.WrapCommandError(out, err))
+		return fmt.Errorf(
+			"failed to install JetBrains plugins %v: %w",
+			plugins,
+			command.WrapCommandError(out, err),
+		)
 	}
 
 	o.log.Debugf("remote-dev-server.sh output: %s", out)

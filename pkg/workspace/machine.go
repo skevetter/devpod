@@ -32,9 +32,13 @@ func listMachines(devPodConfig *config.Config, log log.Logger) ([]*providerpkg.M
 
 	retMachines := []*providerpkg.Machine{}
 	for _, entry := range entries {
-		machineConfig, err := providerpkg.LoadMachineConfig(devPodConfig.DefaultContext, entry.Name())
+		machineConfig, err := providerpkg.LoadMachineConfig(
+			devPodConfig.DefaultContext,
+			entry.Name(),
+		)
 		if err != nil {
-			log.WithFields(logrus.Fields{"machine": entry.Name(), "error": err}).Warn("could not load machine")
+			log.WithFields(logrus.Fields{"machine": entry.Name(), "error": err}).
+				Warn("could not load machine")
 			continue
 		}
 
@@ -44,7 +48,12 @@ func listMachines(devPodConfig *config.Config, log log.Logger) ([]*providerpkg.M
 	return retMachines, nil
 }
 
-func ResolveMachine(devPodConfig *config.Config, args []string, userOptions []string, log log.Logger) (client.Client, error) {
+func ResolveMachine(
+	devPodConfig *config.Config,
+	args []string,
+	userOptions []string,
+	log log.Logger,
+) (client.Client, error) {
 	machineClient, err := resolveMachine(devPodConfig, args, log)
 	if err != nil {
 		return nil, err
@@ -59,7 +68,11 @@ func ResolveMachine(devPodConfig *config.Config, args []string, userOptions []st
 	return machineClient, nil
 }
 
-func resolveMachine(devPodConfig *config.Config, args []string, log log.Logger) (client.Client, error) {
+func resolveMachine(
+	devPodConfig *config.Config,
+	args []string,
+	log log.Logger,
+) (client.Client, error) {
 	// check if we have no args
 	if len(args) == 0 {
 		return nil, fmt.Errorf("please specify the machine name")
@@ -81,13 +94,22 @@ func resolveMachine(devPodConfig *config.Config, args []string, log log.Logger) 
 	}
 
 	// resolve workspace
-	machineObj, err := createMachine(devPodConfig.DefaultContext, machineID, defaultProvider.Config.Name)
+	machineObj, err := createMachine(
+		devPodConfig.DefaultContext,
+		machineID,
+		defaultProvider.Config.Name,
+	)
 	if err != nil {
 		return nil, err
 	}
 
 	// create a new client
-	machineClient, err := clientimplementation.NewMachineClient(devPodConfig, defaultProvider.Config, machineObj, log)
+	machineClient, err := clientimplementation.NewMachineClient(
+		devPodConfig,
+		defaultProvider.Config,
+		machineObj,
+		log,
+	)
 	if err != nil {
 		_ = os.RemoveAll(filepath.Dir(machineObj.Origin))
 		return nil, err
@@ -117,7 +139,11 @@ func MachineExists(devPodConfig *config.Config, args []string) string {
 }
 
 // GetMachine creates a machine client.
-func GetMachine(devPodConfig *config.Config, args []string, log log.Logger) (client.MachineClient, error) {
+func GetMachine(
+	devPodConfig *config.Config,
+	args []string,
+	log log.Logger,
+) (client.MachineClient, error) {
 	// check if we have no args
 	if len(args) == 0 {
 		return selectMachine(devPodConfig, log)
@@ -176,7 +202,11 @@ func selectMachine(devPodConfig *config.Config, log log.Logger) (client.MachineC
 	return loadExistingMachine(answer, devPodConfig, log)
 }
 
-func loadExistingMachine(machineID string, devPodConfig *config.Config, log log.Logger) (client.MachineClient, error) {
+func loadExistingMachine(
+	machineID string,
+	devPodConfig *config.Config,
+	log log.Logger,
+) (client.MachineClient, error) {
 	machineConfig, err := providerpkg.LoadMachineConfig(devPodConfig.DefaultContext, machineID)
 	if err != nil {
 		return nil, err
@@ -187,7 +217,12 @@ func loadExistingMachine(machineID string, devPodConfig *config.Config, log log.
 		return nil, err
 	}
 
-	return clientimplementation.NewMachineClient(devPodConfig, providerWithOptions.Config, machineConfig, log)
+	return clientimplementation.NewMachineClient(
+		devPodConfig,
+		providerWithOptions.Config,
+		machineConfig,
+		log,
+	)
 }
 
 func createMachine(context, machineID, providerName string) (*providerpkg.Machine, error) {
@@ -229,5 +264,8 @@ func SingleMachineName(devPodConfig *config.Config, provider string, log log.Log
 		}
 	}
 
-	return encoding.SafeConcatNameMax([]string{"devpod-shared", provider, encoding.GetMachineUIDShort(log)}, encoding.MachineUIDLength)
+	return encoding.SafeConcatNameMax(
+		[]string{"devpod-shared", provider, encoding.GetMachineUIDShort(log)},
+		encoding.MachineUIDLength,
+	)
 }

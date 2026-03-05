@@ -102,7 +102,11 @@ func TestInheritFromEnvironment(t *testing.T) {
 			}
 		}
 
-		result := InheritFromEnvironment(testCase.Assignments, testCase.Names, testCase.EnvironmentVariablePrefix)
+		result := InheritFromEnvironment(
+			testCase.Assignments,
+			testCase.Names,
+			testCase.EnvironmentVariablePrefix,
+		)
 
 		assert.DeepEqual(t, result, testCase.ExpectedAssignments)
 	}

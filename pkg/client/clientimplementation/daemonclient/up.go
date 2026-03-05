@@ -29,19 +29,33 @@ func (c *client) Up(ctx context.Context, opt clientpkg.UpOptions) (*config.Resul
 		return nil, err
 	}
 
-	instance, err := platform.FindInstance(ctx, baseClient, platform.FindInstanceOptions{UID: c.workspace.UID})
+	instance, err := platform.FindInstance(
+		ctx,
+		baseClient,
+		platform.FindInstanceOptions{UID: c.workspace.UID},
+	)
 	if err != nil {
 		return nil, err
 	} else if instance == nil {
-		return nil, fmt.Errorf("workspace %s not found. Looks like it does not exist anymore and you can delete it", c.workspace.ID)
+		return nil, fmt.Errorf(
+			"workspace %s not found. Looks like it does not exist anymore and you can delete it",
+			c.workspace.ID,
+		)
 	}
 
 	// check if the workspace is migrated and we need to force recreate or reset
 	if instance.Annotations["loft.sh/migrated"] == "true" && !opt.Recreate && !opt.Reset {
 		if os.Getenv("DEVPOD_UI") == "true" {
-			return nil, fmt.Errorf("workspace %s is migrated and needs to be rebuild or reset. Please click on rebuild or reset on the workspace to do this", c.workspace.ID)
+			return nil, fmt.Errorf(
+				"workspace %s is migrated and needs to be rebuild or reset. "+
+					"Please click on rebuild or reset on the workspace to do this",
+				c.workspace.ID,
+			)
 		} else {
-			return nil, fmt.Errorf("workspace %s is migrated and needs to be recreated or reset. Please use the recreate or reset flag to do this", c.workspace.ID)
+			return nil, fmt.Errorf(
+				"workspace %s is migrated and needs to be recreated or reset. Please use the recreate or reset flag to do this",
+				c.workspace.ID,
+			)
 		}
 	}
 
@@ -78,21 +92,27 @@ func (c *client) Up(ctx context.Context, opt clientpkg.UpOptions) (*config.Resul
 	// if we have an active up task, cancel it before creating a new one
 	if activeUpTask != nil {
 		c.log.Warnf("Found active up task %s, attempting to cancel it", activeUpTask.ID)
-		_, err = managementClient.Loft().ManagementV1().DevPodWorkspaceInstances(instance.Namespace).Cancel(ctx, instance.Name, &managementv1.DevPodWorkspaceInstanceCancel{
-			TaskID: activeUpTask.ID,
-		}, metav1.CreateOptions{})
+		_, err = managementClient.Loft().
+			ManagementV1().
+			DevPodWorkspaceInstances(instance.Namespace).
+			Cancel(ctx, instance.Name, &managementv1.DevPodWorkspaceInstanceCancel{
+				TaskID: activeUpTask.ID,
+			}, metav1.CreateOptions{})
 		if err != nil {
 			return nil, fmt.Errorf("cancel task: %w", err)
 		}
 	}
 
 	// create up task
-	task, err := managementClient.Loft().ManagementV1().DevPodWorkspaceInstances(instance.Namespace).Up(ctx, instance.Name, &managementv1.DevPodWorkspaceInstanceUp{
-		Spec: managementv1.DevPodWorkspaceInstanceUpSpec{
-			Debug:   opt.Debug,
-			Options: string(rawOptions),
-		},
-	}, metav1.CreateOptions{})
+	task, err := managementClient.Loft().
+		ManagementV1().
+		DevPodWorkspaceInstances(instance.Namespace).
+		Up(ctx, instance.Name, &managementv1.DevPodWorkspaceInstanceUp{
+			Spec: managementv1.DevPodWorkspaceInstanceUpSpec{
+				Debug:   opt.Debug,
+				Options: string(rawOptions),
+			},
+		}, metav1.CreateOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error creating up: %w", err)
 	} else if task.Status.TaskID == "" {
@@ -102,7 +122,13 @@ func (c *client) Up(ctx context.Context, opt clientpkg.UpOptions) (*config.Resul
 	return waitTaskDone(ctx, managementClient, instance, task.Status.TaskID, c.log)
 }
 
-func waitTaskDone(ctx context.Context, managementClient kube.Interface, instance *managementv1.DevPodWorkspaceInstance, taskID string, log log.Logger) (*config.Result, error) {
+func waitTaskDone(
+	ctx context.Context,
+	managementClient kube.Interface,
+	instance *managementv1.DevPodWorkspaceInstance,
+	taskID string,
+	log log.Logger,
+) (*config.Result, error) {
 	exitCode, err := observeTask(ctx, managementClient, instance, taskID, log)
 	if err != nil {
 		return nil, fmt.Errorf("up: %w", err)
@@ -172,7 +198,13 @@ func printInstanceInfo(instance *managementv1.DevPodWorkspaceInstance, log log.L
 	log.Debug("Starting pro workspace with configuration", string(workspaceConfig))
 }
 
-func observeTask(ctx context.Context, managementClient kube.Interface, instance *managementv1.DevPodWorkspaceInstance, taskID string, log log.Logger) (int, error) {
+func observeTask(
+	ctx context.Context,
+	managementClient kube.Interface,
+	instance *managementv1.DevPodWorkspaceInstance,
+	taskID string,
+	log log.Logger,
+) (int, error) {
 	var (
 		exitCode int
 		err      error
@@ -190,9 +222,12 @@ func observeTask(ctx context.Context, managementClient kube.Interface, instance 
 			defer cancel()
 			defer cancelPrintCtx()
 
-			_, err := managementClient.Loft().ManagementV1().DevPodWorkspaceInstances(instance.Namespace).Cancel(timeoutCtx, instance.Name, &managementv1.DevPodWorkspaceInstanceCancel{
-				TaskID: taskID,
-			}, metav1.CreateOptions{})
+			_, err := managementClient.Loft().
+				ManagementV1().
+				DevPodWorkspaceInstances(instance.Namespace).
+				Cancel(timeoutCtx, instance.Name, &managementv1.DevPodWorkspaceInstanceCancel{
+					TaskID: taskID,
+				}, metav1.CreateOptions{})
 			if err != nil {
 				errChan <- err
 			} else {
@@ -224,7 +259,13 @@ type Message struct {
 	Bytes    []byte      `json:"bytes,omitempty"`
 }
 
-func printLogs(ctx context.Context, managementClient kube.Interface, workspace *managementv1.DevPodWorkspaceInstance, taskID string, logger log.Logger) (int, error) {
+func printLogs(
+	ctx context.Context,
+	managementClient kube.Interface,
+	workspace *managementv1.DevPodWorkspaceInstance,
+	taskID string,
+	logger log.Logger,
+) (int, error) {
 	// get logs reader
 	logger.Debugf("printing logs of task: %s", taskID)
 	logsReader, err := managementClient.Loft().ManagementV1().RESTClient().Get().
@@ -313,7 +354,11 @@ const (
 	TaskTypeDelete = "delete"
 )
 
-func findActiveUpTask(ctx context.Context, managementClient kube.Interface, instance *managementv1.DevPodWorkspaceInstance) (*managementv1.DevPodWorkspaceInstanceTask, error) {
+func findActiveUpTask(
+	ctx context.Context,
+	managementClient kube.Interface,
+	instance *managementv1.DevPodWorkspaceInstance,
+) (*managementv1.DevPodWorkspaceInstanceTask, error) {
 	tasks := &managementv1.DevPodWorkspaceInstanceTasks{}
 	err := managementClient.Loft().ManagementV1().RESTClient().Get().
 		Namespace(instance.Namespace).

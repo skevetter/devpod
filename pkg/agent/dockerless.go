@@ -128,7 +128,10 @@ func shouldBuild(opts DockerlessBuildOptions) bool {
 }
 
 func prepareBuildDirectory(buildContext string) error {
-	fallbackDir := filepath.Join(config.DevPodDockerlessBuildInfoFolder, config.DevPodContextFeatureFolder)
+	fallbackDir := filepath.Join(
+		config.DevPodDockerlessBuildInfoFolder,
+		config.DevPodContextFeatureFolder,
+	)
 	buildInfoDir := filepath.Join(buildContext, config.DevPodContextFeatureFolder)
 
 	if _, err := os.Stat(buildInfoDir); os.IsNotExist(err) {
@@ -166,7 +169,10 @@ func setupDockerCredentials(opts DockerlessBuildOptions) func() {
 		} else {
 			_ = os.Unsetenv("DOCKER_CONFIG")
 		}
-		opts.Log.Warnf("failed to configure docker credentials, private registries may not work: %v", err)
+		opts.Log.Warnf(
+			"failed to configure docker credentials, private registries may not work: %v",
+			err,
+		)
 		return nil
 	}
 
@@ -183,7 +189,10 @@ func setupDockerCredentials(opts DockerlessBuildOptions) func() {
 }
 
 func cleanupBuildDirectory(buildContext string, log log.Logger) {
-	fallbackDir := filepath.Join(config.DevPodDockerlessBuildInfoFolder, config.DevPodContextFeatureFolder)
+	fallbackDir := filepath.Join(
+		config.DevPodDockerlessBuildInfoFolder,
+		config.DevPodContextFeatureFolder,
+	)
 	buildInfoDir := filepath.Join(buildContext, config.DevPodContextFeatureFolder)
 
 	_ = os.RemoveAll(fallbackDir)
@@ -199,12 +208,19 @@ func buildDockerlessArgs(binaryPath string, opts DockerlessBuildOptions) []strin
 	args = append(args, "--build-arg", "TARGETARCH="+runtime.GOARCH)
 
 	if opts.DockerlessOptions.RegistryCache != "" {
-		opts.Log.Debugf("appending registry cache to dockerless build arguments: %v", opts.DockerlessOptions.RegistryCache)
+		opts.Log.Debugf(
+			"appending registry cache to dockerless build arguments: %v",
+			opts.DockerlessOptions.RegistryCache,
+		)
 		args = append(args, "--registry-cache", opts.DockerlessOptions.RegistryCache)
 	}
 
 	if opts.SetupInfo.SubstitutionContext.ContainerWorkspaceFolder != "" {
-		args = append(args, "--ignore-path", opts.SetupInfo.SubstitutionContext.ContainerWorkspaceFolder)
+		args = append(
+			args,
+			"--ignore-path",
+			opts.SetupInfo.SubstitutionContext.ContainerWorkspaceFolder,
+		)
 	}
 	for _, m := range opts.SetupInfo.MergedConfig.Mounts {
 		if m.Target != "" {
@@ -251,7 +267,11 @@ func runDockerlessBuild(ctx context.Context, args []string, debug bool, log log.
 	cmd.Stderr = stderrWriter
 	cmd.Env = os.Environ()
 
-	log.Infof("starting dockerless build: %s %s", "/.dockerless/dockerless", strings.Join(args, " "))
+	log.Infof(
+		"starting dockerless build: %s %s",
+		"/.dockerless/dockerless",
+		strings.Join(args, " "),
+	)
 	if err := cmd.Run(); err != nil {
 		stderrOutput := strings.TrimSpace(stderrBuf.String())
 		log.Errorf("dockerless build failed: %v: stderr output: %s", err, stderrOutput)

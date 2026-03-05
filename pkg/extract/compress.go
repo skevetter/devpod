@@ -14,7 +14,12 @@ import (
 	"time"
 )
 
-func WriteTarExclude(writer io.Writer, localPath string, compress bool, excludedPaths []string) error {
+func WriteTarExclude(
+	writer io.Writer,
+	localPath string,
+	compress bool,
+	excludedPaths []string,
+) error {
 	absolute, err := filepath.Abs(localPath)
 	if err != nil {
 		return fmt.Errorf("absolute: %w", err)
@@ -41,7 +46,11 @@ func WriteTarExclude(writer io.Writer, localPath string, compress bool, excluded
 
 	// When its a file we copy the file to the toplevel of the tar
 	if !stat.IsDir() {
-		return NewArchiver(filepath.Dir(absolute), tarWriter, excludedPaths).AddToArchive(filepath.Base(absolute))
+		return NewArchiver(
+			filepath.Dir(absolute),
+			tarWriter,
+			excludedPaths,
+		).AddToArchive(filepath.Base(absolute))
 	}
 
 	// When its a folder we copy the contents and not the folder itself to the

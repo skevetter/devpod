@@ -12,7 +12,14 @@ import (
 
 type Dialer func(ctx context.Context, network, address string) (net.Conn, error)
 
-func WaitForSSHClient(ctx context.Context, dialer Dialer, network, address string, user string, timeout time.Duration, log log.Logger) (*ssh.Client, error) {
+func WaitForSSHClient(
+	ctx context.Context,
+	dialer Dialer,
+	network, address string,
+	user string,
+	timeout time.Duration,
+	log log.Logger,
+) (*ssh.Client, error) {
 	deadline := time.Now().Add(timeout)
 
 	var (
@@ -37,7 +44,12 @@ func WaitForSSHClient(ctx context.Context, dialer Dialer, network, address strin
 	return c, err
 }
 
-func newSSHClient(ctx context.Context, dialer Dialer, network, address string, user string) (*ssh.Client, error) {
+func newSSHClient(
+	ctx context.Context,
+	dialer Dialer,
+	network, address string,
+	user string,
+) (*ssh.Client, error) {
 	conn, err := dialer(ctx, network, address)
 	if err != nil {
 		return nil, fmt.Errorf("dial %s: %w", address, err)

@@ -105,24 +105,39 @@ func NewStartCmd(flags *proflags.GlobalFlags) *cobra.Command {
 		},
 	}
 
-	startCmd.Flags().BoolVar(&cmd.Docker, "docker", false, "If enabled will try to deploy DevPod Pro to the local docker installation.")
+	startCmd.Flags().
+		BoolVar(&cmd.Docker, "docker", false, "If enabled will try to deploy DevPod Pro to the local docker installation.")
 	startCmd.Flags().StringVar(&cmd.DockerImage, "docker-image", "", "The docker image to install.")
 	startCmd.Flags().StringArrayVar(&cmd.DockerArgs, "docker-arg", []string{}, "Extra docker args")
-	startCmd.Flags().StringVar(&cmd.Context, "context", "", "The kube context to use for installation")
-	startCmd.Flags().StringVar(&cmd.Namespace, "namespace", "devpod-pro", "The namespace to install into")
-	startCmd.Flags().StringVar(&cmd.Host, "host", "", "Provide a hostname to enable ingress and configure its hostname")
-	startCmd.Flags().StringVar(&cmd.Password, "password", "", "The password to use for the admin account. (If empty this will be the namespace UID)")
+	startCmd.Flags().
+		StringVar(&cmd.Context, "context", "", "The kube context to use for installation")
+	startCmd.Flags().
+		StringVar(&cmd.Namespace, "namespace", "devpod-pro", "The namespace to install into")
+	startCmd.Flags().
+		StringVar(&cmd.Host, "host", "", "Provide a hostname to enable ingress and configure its hostname")
+	startCmd.Flags().
+		StringVar(&cmd.Password, "password", "",
+			"The password to use for the admin account. (If empty this will be the namespace UID)")
 	startCmd.Flags().StringVar(&cmd.Version, "version", "", "The version to install")
-	startCmd.Flags().StringVar(&cmd.Values, "values", "", "Path to a file for extra helm chart values")
-	startCmd.Flags().BoolVar(&cmd.ReuseValues, "reuse-values", true, "Reuse previous helm values on upgrade")
-	startCmd.Flags().BoolVar(&cmd.Upgrade, "upgrade", false, "If true, will try to upgrade the release")
+	startCmd.Flags().
+		StringVar(&cmd.Values, "values", "", "Path to a file for extra helm chart values")
+	startCmd.Flags().
+		BoolVar(&cmd.ReuseValues, "reuse-values", true, "Reuse previous helm values on upgrade")
+	startCmd.Flags().
+		BoolVar(&cmd.Upgrade, "upgrade", false, "If true, will try to upgrade the release")
 	startCmd.Flags().StringVar(&cmd.Email, "email", "", "The email to use for the installation")
-	startCmd.Flags().BoolVar(&cmd.Reset, "reset", false, "If true, an existing instance will be deleted before installing DevPod Pro")
-	startCmd.Flags().BoolVar(&cmd.NoWait, "no-wait", false, "If true, will not wait after installing it")
-	startCmd.Flags().BoolVar(&cmd.NoTunnel, "no-tunnel", false, "If true, will not create a loft.host tunnel for this installation")
-	startCmd.Flags().BoolVar(&cmd.NoLogin, "no-login", false, "If true, will not login to a DevPod Pro instance on start")
-	startCmd.Flags().StringVar(&cmd.ChartPath, "chart-path", "", "The local chart path to deploy DevPod Pro")
-	startCmd.Flags().StringVar(&cmd.ChartRepo, "chart-repo", "https://charts.loft.sh/", "The chart repo to deploy DevPod Pro")
+	startCmd.Flags().
+		BoolVar(&cmd.Reset, "reset", false, "If true, an existing instance will be deleted before installing DevPod Pro")
+	startCmd.Flags().
+		BoolVar(&cmd.NoWait, "no-wait", false, "If true, will not wait after installing it")
+	startCmd.Flags().
+		BoolVar(&cmd.NoTunnel, "no-tunnel", false, "If true, will not create a loft.host tunnel for this installation")
+	startCmd.Flags().
+		BoolVar(&cmd.NoLogin, "no-login", false, "If true, will not login to a DevPod Pro instance on start")
+	startCmd.Flags().
+		StringVar(&cmd.ChartPath, "chart-path", "", "The local chart path to deploy DevPod Pro")
+	startCmd.Flags().
+		StringVar(&cmd.ChartRepo, "chart-repo", "https://charts.loft.sh/", "The chart repo to deploy DevPod Pro")
 
 	return startCmd
 }
@@ -200,9 +215,21 @@ func (cmd *StartCmd) upgrade() error {
 		extraArgs = append(extraArgs, "--set", "admin.password="+cmd.Password)
 	}
 	if cmd.Host != "" {
-		extraArgs = append(extraArgs, "--set", "ingress.enabled=true", "--set", "ingress.host="+cmd.Host)
+		extraArgs = append(
+			extraArgs,
+			"--set",
+			"ingress.enabled=true",
+			"--set",
+			"ingress.host="+cmd.Host,
+		)
 		extraArgs = append(extraArgs, "--set", "env.LOFT_HOST="+cmd.Host)
-		extraArgs = append(extraArgs, "--set", "devpodIngress.enabled=true", "--set", "devpodIngress.host=*."+cmd.Host)
+		extraArgs = append(
+			extraArgs,
+			"--set",
+			"devpodIngress.enabled=true",
+			"--set",
+			"devpodIngress.host=*."+cmd.Host,
+		)
 		extraArgs = append(extraArgs, "--set", "env.DEVPOD_SUBDOMAIN=*."+cmd.Host)
 	}
 	if cmd.Version != "" {
@@ -235,18 +262,38 @@ func (cmd *StartCmd) upgrade() error {
 	err := upgradeRelease(chartName, chartRepo, cmd.Context, cmd.Namespace, extraArgs, cmd.Log)
 	if err != nil {
 		if !cmd.Reset {
-			return errors.New(err.Error() + fmt.Sprintf("\n\nIf want to purge and reinstall DevPod Pro, run: %s\n", ansi.Color("devpod pro start --reset", "green+b")))
+			return errors.New(
+				err.Error() + fmt.Sprintf(
+					"\n\nIf want to purge and reinstall DevPod Pro, run: %s\n",
+					ansi.Color("devpod pro start --reset", "green+b"),
+				),
+			)
 		}
 
 		// Try to purge Loft and retry install
 		cmd.Log.Info("Trying to delete objects blocking current installation")
 
-		manifests, err := getReleaseManifests(chartName, chartRepo, cmd.Context, cmd.Namespace, extraArgs, cmd.Log)
+		manifests, err := getReleaseManifests(
+			chartName,
+			chartRepo,
+			cmd.Context,
+			cmd.Namespace,
+			extraArgs,
+			cmd.Log,
+		)
 		if err != nil {
 			return err
 		}
 
-		kubectlDelete := exec.Command("kubectl", "delete", "-f", "-", "--ignore-not-found=true", "--grace-period=0", "--force")
+		kubectlDelete := exec.Command(
+			"kubectl",
+			"delete",
+			"-f",
+			"-",
+			"--ignore-not-found=true",
+			"--grace-period=0",
+			"--force",
+		)
 
 		buffer := bytes.Buffer{}
 		buffer.Write([]byte(manifests))
@@ -261,7 +308,15 @@ func (cmd *StartCmd) upgrade() error {
 		// Retry Loft installation
 		err = upgradeRelease(chartName, chartRepo, cmd.Context, cmd.Namespace, extraArgs, cmd.Log)
 		if err != nil {
-			return errors.New(err.Error() + fmt.Sprintf("\n\nExisting installation failed. Reach out to get help:\n- via Slack: %s (fastest option)\n- via Online Chat: %s\n- via Email: %s\n", ansi.Color("https://slack.loft.sh/", "green+b"), ansi.Color("https://loft.sh/", "green+b"), ansi.Color("support@loft.sh", "green+b")))
+			return errors.New(
+				err.Error() + fmt.Sprintf(
+					"\n\nExisting installation failed. Reach out to get help:\n- via Slack: %s (fastest option)\n"+
+						"- via Online Chat: %s\n- via Email: %s\n",
+					ansi.Color("https://slack.loft.sh/", "green+b"),
+					ansi.Color("https://loft.sh/", "green+b"),
+					ansi.Color("support@loft.sh", "green+b"),
+				),
+			)
 		}
 	}
 
@@ -396,10 +451,18 @@ The command will wait until DevPod Pro is reachable under the host.
 
 `)
 
-	cmd.Log.Info("Waiting for you to configure DNS, so DevPod Pro can be reached on https://" + host)
-	err = wait.PollUntilContextTimeout(ctx, 5*time.Second, platform.Timeout(), true, func(ctx context.Context) (done bool, err error) {
-		return isHostReachable(ctx, host)
-	})
+	cmd.Log.Info(
+		"Waiting for you to configure DNS, so DevPod Pro can be reached on https://" + host,
+	)
+	err = wait.PollUntilContextTimeout(
+		ctx,
+		5*time.Second,
+		platform.Timeout(),
+		true,
+		func(ctx context.Context) (done bool, err error) {
+			return isHostReachable(ctx, host)
+		},
+	)
 	if err != nil {
 		return err
 	}
@@ -495,7 +558,11 @@ func (cmd *StartCmd) startDocker(ctx context.Context) error {
 	if err != nil {
 		return err
 	} else if containerID == "" {
-		return fmt.Errorf("%w: %s", ErrMissingContainer, "couldn't find Loft container after starting it")
+		return fmt.Errorf(
+			"%w: %s",
+			ErrMissingContainer,
+			"couldn't find Loft container after starting it",
+		)
 	}
 
 	return cmd.successDocker(ctx, containerID)
@@ -514,17 +581,28 @@ func (cmd *StartCmd) successDocker(ctx context.Context, containerID string) erro
 
 	// wait for domain to become reachable
 	cmd.Log.Infof("Wait for DevPod Pro to become available at %s...", host)
-	err = wait.PollUntilContextTimeout(ctx, time.Second, time.Minute*10, true, func(ctx context.Context) (bool, error) {
-		containerDetails, err := cmd.inspectContainer(ctx, containerID)
-		if err != nil {
-			return false, fmt.Errorf("inspect loft container: %w", err)
-		} else if strings.ToLower(containerDetails.State.Status) == "exited" || strings.ToLower(containerDetails.State.Status) == "dead" {
-			logs, _ := cmd.logsContainer(ctx, containerID)
-			return false, fmt.Errorf("container failed (status: %s):\n %s", containerDetails.State.Status, logs)
-		}
+	err = wait.PollUntilContextTimeout(
+		ctx,
+		time.Second,
+		time.Minute*10,
+		true,
+		func(ctx context.Context) (bool, error) {
+			containerDetails, err := cmd.inspectContainer(ctx, containerID)
+			if err != nil {
+				return false, fmt.Errorf("inspect loft container: %w", err)
+			} else if strings.ToLower(containerDetails.State.Status) == "exited" ||
+				strings.ToLower(containerDetails.State.Status) == "dead" {
+				logs, _ := cmd.logsContainer(ctx, containerID)
+				return false, fmt.Errorf(
+					"container failed (status: %s):\n %s",
+					containerDetails.State.Status,
+					logs,
+				)
+			}
 
-		return isHostReachable(ctx, host)
-	})
+			return isHostReachable(ctx, host)
+		},
+	)
 	if err != nil {
 		return fmt.Errorf("error waiting for DevPod Pro: %w", err)
 	}
@@ -572,19 +650,29 @@ func (cmd *StartCmd) waitForLoftDocker(ctx context.Context, containerID string) 
 
 	// check if no tunnel
 	if cmd.NoTunnel {
-		return "", fmt.Errorf("%w: %s", ErrLoftNotReachable, "cannot connect to DevPod Pro as it has no exposed port and --no-tunnel is enabled")
+		return "", fmt.Errorf(
+			"%w: %s",
+			ErrLoftNotReachable,
+			"cannot connect to DevPod Pro as it has no exposed port and --no-tunnel is enabled",
+		)
 	}
 
 	// wait for router
 	url := ""
-	waitErr := wait.PollUntilContextTimeout(ctx, time.Second, time.Minute*10, true, func(ctx context.Context) (bool, error) {
-		url, err = cmd.findLoftRouter(ctx, containerID)
-		if err != nil {
-			return false, nil
-		}
+	waitErr := wait.PollUntilContextTimeout(
+		ctx,
+		time.Second,
+		time.Minute*10,
+		true,
+		func(ctx context.Context) (bool, error) {
+			url, err = cmd.findLoftRouter(ctx, containerID)
+			if err != nil {
+				return false, nil
+			}
 
-		return true, nil
-	})
+			return true, nil
+		},
+	)
 	if waitErr != nil {
 		return "", fmt.Errorf("error waiting for loft router domain: %w", err)
 	}
@@ -605,7 +693,10 @@ func (cmd *StartCmd) prepareDocker() error {
 	// test for helm and kubectl
 	_, err := exec.LookPath("docker")
 	if err != nil {
-		return fmt.Errorf("seems like docker is not installed. Docker is required for the installation of loft. Please visit https://docs.docker.com/engine/install/ for install instructions")
+		return fmt.Errorf(
+			"seems like docker is not installed. Docker is required for the installation of loft. " +
+				"Please visit https://docs.docker.com/engine/install/ for install instructions",
+		)
 	}
 
 	output, err := exec.Command("docker", "ps").CombinedOutput()
@@ -716,7 +807,11 @@ func (cmd *StartCmd) removeContainer(ctx context.Context, id string) error {
 	return nil
 }
 
-func (cmd *StartCmd) findLoftContainer(ctx context.Context, name string, onlyRunning bool) (string, error) {
+func (cmd *StartCmd) findLoftContainer(
+	ctx context.Context,
+	name string,
+	onlyRunning bool,
+) (string, error) {
 	args := []string{"ps", "-q", "-a", "-f", "name=^" + name + "$"}
 	out, err := cmd.buildDockerCmd(ctx, args...).Output()
 	if err != nil {
@@ -769,12 +864,19 @@ func (cmd *StartCmd) prepare() error {
 	loftConfig := loader.Config()
 
 	// first load the kube config
-	kubeClientConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(clientcmd.NewDefaultClientConfigLoadingRules(), &clientcmd.ConfigOverrides{})
+	kubeClientConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
+		clientcmd.NewDefaultClientConfigLoadingRules(),
+		&clientcmd.ConfigOverrides{},
+	)
 
 	// load the raw config
 	kubeConfig, err := kubeClientConfig.RawConfig()
 	if err != nil {
-		return fmt.Errorf("there is an error loading your current kube config (%w), please make sure you have access to a kubernetes cluster and the command `kubectl get namespaces` is working", err)
+		return fmt.Errorf(
+			"there is an error loading your current kube config (%w), please make sure you have access "+
+				"to a kubernetes cluster and the command `kubectl get namespaces` is working",
+			err,
+		)
 	}
 
 	// we switch the context to the install config
@@ -797,12 +899,20 @@ func (cmd *StartCmd) prepare() error {
 	_ = loader.Save()
 
 	// kube client config
-	kubeClientConfig = clientcmd.NewNonInteractiveClientConfig(kubeConfig, contextToLoad, &clientcmd.ConfigOverrides{}, clientcmd.NewDefaultClientConfigLoadingRules())
+	kubeClientConfig = clientcmd.NewNonInteractiveClientConfig(
+		kubeConfig,
+		contextToLoad,
+		&clientcmd.ConfigOverrides{},
+		clientcmd.NewDefaultClientConfigLoadingRules(),
+	)
 
 	// test for helm and kubectl
 	_, err = exec.LookPath("helm")
 	if err != nil {
-		return fmt.Errorf("seems like helm is not installed. Helm is required for the installation of loft. Please visit https://helm.sh/docs/intro/install/ for install instructions")
+		return fmt.Errorf(
+			"seems like helm is not installed. Helm is required for the installation of loft. " +
+				"Please visit https://helm.sh/docs/intro/install/ for install instructions",
+		)
 	}
 
 	output, err := exec.Command("helm", "version").CombinedOutput()
@@ -812,27 +922,46 @@ func (cmd *StartCmd) prepare() error {
 
 	_, err = exec.LookPath("kubectl")
 	if err != nil {
-		return fmt.Errorf("seems like kubectl is not installed. Kubectl is required for the installation of loft. Please visit https://kubernetes.io/docs/tasks/tools/install-kubectl/ for install instructions")
+		return fmt.Errorf(
+			"seems like kubectl is not installed. Kubectl is required for the installation of loft. " +
+				"Please visit https://kubernetes.io/docs/tasks/tools/install-kubectl/ for install instructions",
+		)
 	}
 
 	output, err = exec.Command("kubectl", "version", "--context", contextToLoad).CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("seems like kubectl cannot connect to your Kubernetes cluster: \n\n%s", output)
+		return fmt.Errorf(
+			"seems like kubectl cannot connect to your Kubernetes cluster: \n\n%s",
+			output,
+		)
 	}
 
 	cmd.RestConfig, err = kubeClientConfig.ClientConfig()
 	if err != nil {
-		return fmt.Errorf("there is an error loading your current kube config (%w), please make sure you have access to a kubernetes cluster and the command `kubectl get namespaces` is working", err)
+		return fmt.Errorf(
+			"there is an error loading your current kube config (%w), please make sure you have access "+
+				"to a kubernetes cluster and the command `kubectl get namespaces` is working",
+			err,
+		)
 	}
 	cmd.KubeClient, err = kubernetes.NewForConfig(cmd.RestConfig)
 	if err != nil {
-		return fmt.Errorf("there is an error loading your current kube config (%w), please make sure you have access to a kubernetes cluster and the command `kubectl get namespaces` is working", err)
+		return fmt.Errorf(
+			"there is an error loading your current kube config (%w), please make sure you have access "+
+				"to a kubernetes cluster and the command `kubectl get namespaces` is working",
+			err,
+		)
 	}
 
 	// Check if cluster has RBAC correctly configured
-	_, err = cmd.KubeClient.RbacV1().ClusterRoles().Get(context.Background(), "cluster-admin", metav1.GetOptions{})
+	_, err = cmd.KubeClient.RbacV1().
+		ClusterRoles().
+		Get(context.Background(), "cluster-admin", metav1.GetOptions{})
 	if err != nil {
-		return fmt.Errorf("error retrieving cluster role 'cluster-admin': %w. Please make sure RBAC is correctly configured in your cluster", err)
+		return fmt.Errorf(
+			"error retrieving cluster role 'cluster-admin': %w. Please make sure RBAC is correctly configured in your cluster",
+			err,
+		)
 	}
 
 	return nil
@@ -943,7 +1072,13 @@ func (cmd *StartCmd) waitForDeployment(ctx context.Context) (*corev1.Pod, error)
 	}
 
 	// ensure user admin secret is there
-	isNewPassword, err := ensureAdminPassword(ctx, cmd.KubeClient, cmd.RestConfig, cmd.Password, cmd.Log)
+	isNewPassword, err := ensureAdminPassword(
+		ctx,
+		cmd.KubeClient,
+		cmd.RestConfig,
+		cmd.Password,
+		cmd.Log,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -957,7 +1092,9 @@ func (cmd *StartCmd) waitForDeployment(ctx context.Context) (*corev1.Pod, error)
 }
 
 func (cmd *StartCmd) pingLoftRouter(ctx context.Context, loftPod *corev1.Pod) (string, error) {
-	loftRouterSecret, err := cmd.KubeClient.CoreV1().Secrets(loftPod.Namespace).Get(ctx, LoftRouterDomainSecret, metav1.GetOptions{})
+	loftRouterSecret, err := cmd.KubeClient.CoreV1().
+		Secrets(loftPod.Namespace).
+		Get(ctx, LoftRouterDomainSecret, metav1.GetOptions{})
 	if err != nil {
 		if kerrors.IsNotFound(err) {
 			return "", nil
@@ -980,19 +1117,30 @@ func (cmd *StartCmd) pingLoftRouter(ctx context.Context, loftPod *corev1.Pod) (s
 		},
 	}
 	cmd.Log.Infof("Waiting until DevPod Pro is reachable at https://%s", loftRouterDomain)
-	err = wait.PollUntilContextTimeout(ctx, time.Second*3, time.Minute*5, true, func(ctx context.Context) (bool, error) {
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://"+loftRouterDomain+"/version", nil)
-		if err != nil {
-			return false, nil
-		}
+	err = wait.PollUntilContextTimeout(
+		ctx,
+		time.Second*3,
+		time.Minute*5,
+		true,
+		func(ctx context.Context) (bool, error) {
+			req, err := http.NewRequestWithContext(
+				ctx,
+				http.MethodGet,
+				"https://"+loftRouterDomain+"/version",
+				nil,
+			)
+			if err != nil {
+				return false, nil
+			}
 
-		resp, err := httpClient.Do(req)
-		if err != nil {
-			return false, nil
-		}
+			resp, err := httpClient.Do(req)
+			if err != nil {
+				return false, nil
+			}
 
-		return resp.StatusCode == http.StatusOK, nil
-	})
+			return resp.StatusCode == http.StatusOK, nil
+		},
+	)
 	if err != nil {
 		return "", err
 	}
@@ -1125,7 +1273,11 @@ func (cmd *StartCmd) loginViaCLI(url string) error {
 }
 
 func (cmd *StartCmd) loginUI(url string) error {
-	queryString := fmt.Sprintf("username=%s&password=%s", defaultUser, netUrl.QueryEscape(cmd.Password))
+	queryString := fmt.Sprintf(
+		"username=%s&password=%s",
+		defaultUser,
+		netUrl.QueryEscape(cmd.Password),
+	)
 	loginURL := fmt.Sprintf("%s/login#%s", url, queryString)
 
 	err := open.Run(loginURL)
@@ -1142,12 +1294,27 @@ func (cmd *StartCmd) isLoggedIn(url string) bool {
 	url = strings.TrimPrefix(url, "https://")
 
 	c, err := client.NewClientFromPath(cmd.Config)
-	return err == nil && strings.TrimPrefix(strings.TrimSuffix(c.Config().Host, "/"), "https://") == strings.TrimSuffix(url, "/")
+	return err == nil &&
+		strings.TrimPrefix(
+			strings.TrimSuffix(c.Config().Host, "/"),
+			"https://",
+		) == strings.TrimSuffix(
+			url,
+			"/",
+		)
 }
 
-func uninstall(ctx context.Context, kubeClient kubernetes.Interface, restConfig *rest.Config, kubeContext, namespace string, log log.Logger) error {
+func uninstall(
+	ctx context.Context,
+	kubeClient kubernetes.Interface,
+	restConfig *rest.Config,
+	kubeContext, namespace string,
+	log log.Logger,
+) error {
 	releaseName := "devpod-pro"
-	deploy, err := kubeClient.AppsV1().Deployments(namespace).Get(ctx, defaultDeploymentName, metav1.GetOptions{})
+	deploy, err := kubeClient.AppsV1().
+		Deployments(namespace).
+		Get(ctx, defaultDeploymentName, metav1.GetOptions{})
 	if err != nil && !kerrors.IsNotFound(err) {
 		return err
 	} else if deploy != nil && deploy.Labels != nil && deploy.Labels["release"] != "" {
@@ -1174,7 +1341,9 @@ func uninstall(ctx context.Context, kubeClient kubernetes.Interface, restConfig 
 		return err
 	}
 
-	err = apiRegistrationClient.ApiregistrationV1().APIServices().Delete(ctx, "v1.management.loft.sh", metav1.DeleteOptions{})
+	err = apiRegistrationClient.ApiregistrationV1().
+		APIServices().
+		Delete(ctx, "v1.management.loft.sh", metav1.DeleteOptions{})
 	if err != nil && !kerrors.IsNotFound(err) {
 		return err
 	}
@@ -1184,38 +1353,52 @@ func uninstall(ctx context.Context, kubeClient kubernetes.Interface, restConfig 
 		return err
 	}
 
-	err = kubeClient.CoreV1().Secrets(namespace).Delete(context.Background(), "loft-user-secret-admin", metav1.DeleteOptions{})
+	err = kubeClient.CoreV1().
+		Secrets(namespace).
+		Delete(context.Background(), "loft-user-secret-admin", metav1.DeleteOptions{})
 	if err != nil && !kerrors.IsNotFound(err) {
 		return err
 	}
 
-	err = kubeClient.CoreV1().Secrets(namespace).Delete(context.Background(), LoftRouterDomainSecret, metav1.DeleteOptions{})
+	err = kubeClient.CoreV1().
+		Secrets(namespace).
+		Delete(context.Background(), LoftRouterDomainSecret, metav1.DeleteOptions{})
 	if err != nil && !kerrors.IsNotFound(err) {
 		return err
 	}
 
 	// we also cleanup the validating webhook configuration and apiservice
-	err = kubeClient.AdmissionregistrationV1().ValidatingWebhookConfigurations().Delete(ctx, "loft-agent", metav1.DeleteOptions{})
+	err = kubeClient.AdmissionregistrationV1().
+		ValidatingWebhookConfigurations().
+		Delete(ctx, "loft-agent", metav1.DeleteOptions{})
 	if err != nil && !kerrors.IsNotFound(err) {
 		return err
 	}
 
-	err = apiRegistrationClient.ApiregistrationV1().APIServices().Delete(ctx, "v1alpha1.tenancy.kiosk.sh", metav1.DeleteOptions{})
+	err = apiRegistrationClient.ApiregistrationV1().
+		APIServices().
+		Delete(ctx, "v1alpha1.tenancy.kiosk.sh", metav1.DeleteOptions{})
 	if err != nil && !kerrors.IsNotFound(err) {
 		return err
 	}
 
-	err = apiRegistrationClient.ApiregistrationV1().APIServices().Delete(ctx, "v1.cluster.loft.sh", metav1.DeleteOptions{})
+	err = apiRegistrationClient.ApiregistrationV1().
+		APIServices().
+		Delete(ctx, "v1.cluster.loft.sh", metav1.DeleteOptions{})
 	if err != nil && !kerrors.IsNotFound(err) {
 		return err
 	}
 
-	err = kubeClient.CoreV1().ConfigMaps(namespace).Delete(ctx, "loft-agent-controller", metav1.DeleteOptions{})
+	err = kubeClient.CoreV1().
+		ConfigMaps(namespace).
+		Delete(ctx, "loft-agent-controller", metav1.DeleteOptions{})
 	if err != nil && !kerrors.IsNotFound(err) {
 		return err
 	}
 
-	err = kubeClient.CoreV1().ConfigMaps(namespace).Delete(ctx, "loft-applied-defaults", metav1.DeleteOptions{})
+	err = kubeClient.CoreV1().
+		ConfigMaps(namespace).
+		Delete(ctx, "loft-applied-defaults", metav1.DeleteOptions{})
 	if err != nil && !kerrors.IsNotFound(err) {
 		return err
 	}
@@ -1227,8 +1410,14 @@ func uninstall(ctx context.Context, kubeClient kubernetes.Interface, restConfig 
 	return nil
 }
 
-func isAlreadyInstalled(ctx context.Context, kubeClient kubernetes.Interface, namespace string) (bool, error) {
-	_, err := kubeClient.AppsV1().Deployments(namespace).Get(ctx, defaultDeploymentName, metav1.GetOptions{})
+func isAlreadyInstalled(
+	ctx context.Context,
+	kubeClient kubernetes.Interface,
+	namespace string,
+) (bool, error) {
+	_, err := kubeClient.AppsV1().
+		Deployments(namespace).
+		Get(ctx, defaultDeploymentName, metav1.GetOptions{})
 	if err != nil {
 		if kerrors.IsNotFound(err) {
 			return false, nil
@@ -1240,7 +1429,11 @@ func isAlreadyInstalled(ctx context.Context, kubeClient kubernetes.Interface, na
 	return true, nil
 }
 
-func getDefaultPassword(ctx context.Context, kubeClient kubernetes.Interface, namespace string) (string, error) {
+func getDefaultPassword(
+	ctx context.Context,
+	kubeClient kubernetes.Interface,
+	namespace string,
+) (string, error) {
 	loftNamespace, err := kubeClient.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
 	if err != nil {
 		if kerrors.IsNotFound(err) {
@@ -1262,10 +1455,18 @@ func getDefaultPassword(ctx context.Context, kubeClient kubernetes.Interface, na
 	return string(loftNamespace.UID), nil
 }
 
-func isInstalledLocally(ctx context.Context, kubeClient kubernetes.Interface, namespace string) bool {
-	_, err := kubeClient.NetworkingV1().Ingresses(namespace).Get(ctx, "loft-ingress", metav1.GetOptions{})
+func isInstalledLocally(
+	ctx context.Context,
+	kubeClient kubernetes.Interface,
+	namespace string,
+) bool {
+	_, err := kubeClient.NetworkingV1().
+		Ingresses(namespace).
+		Get(ctx, "loft-ingress", metav1.GetOptions{})
 	if err != nil && !kerrors.IsNotFound(err) {
-		_, err = kubeClient.NetworkingV1beta1().Ingresses(namespace).Get(ctx, "loft-ingress", metav1.GetOptions{})
+		_, err = kubeClient.NetworkingV1beta1().
+			Ingresses(namespace).
+			Get(ctx, "loft-ingress", metav1.GetOptions{})
 		return kerrors.IsNotFound(err)
 	}
 
@@ -1274,18 +1475,29 @@ func isInstalledLocally(ctx context.Context, kubeClient kubernetes.Interface, na
 
 func enterHostNameQuestion(log log.Logger) (string, error) {
 	return log.Question(&survey.QuestionOptions{
-		Question: fmt.Sprintf("Enter a hostname for your %s instance (e.g. loft.my-domain.tld): \n ", "DevPod Pro"),
+		Question: fmt.Sprintf(
+			"Enter a hostname for your %s instance (e.g. loft.my-domain.tld): \n ",
+			"DevPod Pro",
+		),
 		ValidationFunc: func(answer string) error {
 			u, err := netUrl.Parse("https://" + answer)
 			if err != nil || u.Path != "" || u.Port() != "" || len(strings.Split(answer, ".")) < 2 {
-				return fmt.Errorf("please enter a valid hostname without protocol (https://), without path and without port, e.g. loft.my-domain.tld")
+				return fmt.Errorf(
+					"please enter a valid hostname without protocol (https://), without path and without port, " +
+						"e.g. loft.my-domain.tld",
+				)
 			}
 			return nil
 		},
 	})
 }
 
-func ensureIngressController(ctx context.Context, kubeClient kubernetes.Interface, kubeContext string, log log.Logger) error {
+func ensureIngressController(
+	ctx context.Context,
+	kubeClient kubernetes.Interface,
+	kubeContext string,
+	log log.Logger,
+) error {
 	// first create an ingress controller
 	const (
 		YesOption = "Yes"
@@ -1358,7 +1570,9 @@ func ensureIngressController(ctx context.Context, kubeClient kubernetes.Interfac
 			if err != nil {
 				return err
 			}
-			_, err = kubeClient.CoreV1().Secrets(secret.Namespace).Patch(ctx, secret.Name, types.MergePatchType, data, metav1.PatchOptions{})
+			_, err = kubeClient.CoreV1().
+				Secrets(secret.Namespace).
+				Patch(ctx, secret.Name, types.MergePatchType, data, metav1.PatchOptions{})
 			if err != nil {
 				return err
 			}
@@ -1399,7 +1613,13 @@ func deleteUser(ctx context.Context, restConfig *rest.Config, name string) error
 	return nil
 }
 
-func ensureAdminPassword(ctx context.Context, kubeClient kubernetes.Interface, restConfig *rest.Config, password string, log log.Logger) (bool, error) {
+func ensureAdminPassword(
+	ctx context.Context,
+	kubeClient kubernetes.Interface,
+	restConfig *rest.Config,
+	password string,
+	log log.Logger,
+) (bool, error) {
 	loftClient, err := loftclientset.NewForConfig(restConfig)
 	if err != nil {
 		return false, err
@@ -1439,7 +1659,9 @@ func ensureAdminPassword(ctx context.Context, kubeClient kubernetes.Interface, r
 
 	passwordHash := fmt.Sprintf("%x", sha256.Sum256([]byte(password)))
 
-	secret, err := kubeClient.CoreV1().Secrets(admin.Spec.PasswordRef.SecretNamespace).Get(ctx, admin.Spec.PasswordRef.SecretName, metav1.GetOptions{})
+	secret, err := kubeClient.CoreV1().
+		Secrets(admin.Spec.PasswordRef.SecretNamespace).
+		Get(ctx, admin.Spec.PasswordRef.SecretName, metav1.GetOptions{})
 	if err != nil && !kerrors.IsNotFound(err) {
 		return false, err
 	} else if err == nil {
@@ -1449,7 +1671,9 @@ func ensureAdminPassword(ctx context.Context, kubeClient kubernetes.Interface, r
 		}
 
 		secret.Data[key] = []byte(passwordHash)
-		_, err = kubeClient.CoreV1().Secrets(secret.Namespace).Update(ctx, secret, metav1.UpdateOptions{})
+		_, err = kubeClient.CoreV1().
+			Secrets(secret.Namespace).
+			Update(ctx, secret, metav1.UpdateOptions{})
 		if err != nil {
 			return false, fmt.Errorf("update admin password secret: %w", err)
 		}
@@ -1466,7 +1690,9 @@ func ensureAdminPassword(ctx context.Context, kubeClient kubernetes.Interface, r
 			key: []byte(passwordHash),
 		},
 	}
-	_, err = kubeClient.CoreV1().Secrets(secret.Namespace).Create(ctx, secret, metav1.CreateOptions{})
+	_, err = kubeClient.CoreV1().
+		Secrets(secret.Namespace).
+		Create(ctx, secret, metav1.CreateOptions{})
 	if err != nil {
 		return false, fmt.Errorf("create admin password secret: %w", err)
 	}
@@ -1475,10 +1701,18 @@ func ensureAdminPassword(ctx context.Context, kubeClient kubernetes.Interface, r
 	return false, nil
 }
 
-func getIngressHost(ctx context.Context, kubeClient kubernetes.Interface, namespace string) (string, error) {
-	ingress, err := kubeClient.NetworkingV1().Ingresses(namespace).Get(ctx, "loft-ingress", metav1.GetOptions{})
+func getIngressHost(
+	ctx context.Context,
+	kubeClient kubernetes.Interface,
+	namespace string,
+) (string, error) {
+	ingress, err := kubeClient.NetworkingV1().
+		Ingresses(namespace).
+		Get(ctx, "loft-ingress", metav1.GetOptions{})
 	if err != nil {
-		ingress, err := kubeClient.NetworkingV1beta1().Ingresses(namespace).Get(ctx, "loft-ingress", metav1.GetOptions{})
+		ingress, err := kubeClient.NetworkingV1beta1().
+			Ingresses(namespace).
+			Get(ctx, "loft-ingress", metav1.GetOptions{})
 		if err != nil {
 			return "", err
 		} else {
@@ -1494,7 +1728,11 @@ func getIngressHost(ctx context.Context, kubeClient kubernetes.Interface, namesp
 		}
 	}
 
-	return "", fmt.Errorf("couldn't find any host in loft ingress '%s/loft-ingress', please make sure you have not changed any deployed resources", namespace)
+	return "", fmt.Errorf(
+		"couldn't find any host in loft ingress '%s/loft-ingress', "+
+			"please make sure you have not changed any deployed resources",
+		namespace,
+	)
 }
 
 type version struct {
@@ -1523,9 +1761,19 @@ func isHostReachable(ctx context.Context, host string) (bool, error) {
 		v := &version{}
 		err = json.Unmarshal(out, v)
 		if err != nil {
-			return false, fmt.Errorf("error decoding response from %s: %w. Try running '%s --reset'", url, err, "devpod pro start")
+			return false, fmt.Errorf(
+				"error decoding response from %s: %w. Try running '%s --reset'",
+				url,
+				err,
+				"devpod pro start",
+			)
 		} else if v.Version == "" {
-			return false, fmt.Errorf("unexpected response from %s: %s. Try running '%s --reset'", url, string(out), "devpod pro start")
+			return false, fmt.Errorf(
+				"unexpected response from %s: %s. Try running '%s --reset'",
+				url,
+				string(out),
+				"devpod pro start",
+			)
 		}
 
 		return true, nil
@@ -1534,7 +1782,11 @@ func isHostReachable(ctx context.Context, host string) (bool, error) {
 	return false, nil
 }
 
-func upgradeRelease(chartName, chartRepo, kubeContext, namespace string, extraArgs []string, log log.Logger) error {
+func upgradeRelease(
+	chartName, chartRepo, kubeContext, namespace string,
+	extraArgs []string,
+	log log.Logger,
+) error {
 	// now we install loft
 	args := []string{
 		"upgrade",
@@ -1574,7 +1826,11 @@ func upgradeRelease(chartName, chartRepo, kubeContext, namespace string, extraAr
 	return nil
 }
 
-func getReleaseManifests(chartName, chartRepo, kubeContext, namespace string, extraArgs []string, _ log.Logger) (string, error) {
+func getReleaseManifests(
+	chartName, chartRepo, kubeContext, namespace string,
+	extraArgs []string,
+	_ log.Logger,
+) (string, error) {
 	args := []string{
 		"template",
 		defaultReleaseName,
@@ -1615,7 +1871,9 @@ func getHelmWorkdir(chartName string) (string, error) {
 		if _, err := os.Stat(path.Join(tempDir, chartName)); err == nil {
 			tempDir, err = os.MkdirTemp(tempDir, chartName)
 			if err != nil {
-				return "", errors.New("problematic directory `" + chartName + "` found: please execute command in a different folder")
+				return "", errors.New(
+					"problematic directory `" + chartName + "` found: please execute command in a different folder",
+				)
 			}
 		}
 

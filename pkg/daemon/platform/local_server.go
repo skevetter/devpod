@@ -87,7 +87,12 @@ var (
 	routeDockerCredentials = "/docker-credentials"
 )
 
-func newLocalServer(lc *local.Client, pc platformclient.Client, devPodContext string, log log.Logger) (*localServer, error) {
+func newLocalServer(
+	lc *local.Client,
+	pc platformclient.Client,
+	devPodContext string,
+	log log.Logger,
+) (*localServer, error) {
 	l := &localServer{
 		lc:             lc,
 		pc:             pc,
@@ -122,7 +127,12 @@ func newLocalServer(lc *local.Client, pc platformclient.Client, devPodContext st
 	router.GET(routeDockerCredentials, l.getDockerCredentials)
 
 	handler := handlers.LoggingHandler(log.Writer(logrus.DebugLevel, true), router)
-	handler = handlers.RecoveryHandler(handlers.RecoveryLogger(panicLogger{log: l.log}), handlers.PrintRecoveryStack(true))(handler)
+	handler = handlers.RecoveryHandler(
+		handlers.RecoveryLogger(panicLogger{log: l.log}),
+		handlers.PrintRecoveryStack(true),
+	)(
+		handler,
+	)
 	l.httpServer = &http.Server{Handler: handler}
 
 	return l, nil
@@ -179,7 +189,10 @@ func (l *localServer) watchPlatform(stopChan <-chan struct{}) error {
 		if err != nil {
 			l.log.Error(fmt.Errorf("create mangement client: %w", err))
 		} else {
-			_, err = managementClient.Loft().ManagementV1().Selves().Create(context.Background(), &managementv1.Self{}, metav1.CreateOptions{})
+			_, err = managementClient.Loft().
+				ManagementV1().
+				Selves().
+				Create(context.Background(), &managementv1.Self{}, metav1.CreateOptions{})
 			l.platformStatus.mu.Lock()
 			if err != nil {
 				if IsAccessKeyNotFound(err) {
@@ -253,7 +266,11 @@ func (l *localServer) status(w http.ResponseWriter, r *http.Request, params http
 func (l *localServer) shutdown(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	err := l.Close()
 	if err != nil {
-		http.Error(w, fmt.Errorf("shut down daemon server: %w", err).Error(), http.StatusInternalServerError)
+		http.Error(
+			w,
+			fmt.Errorf("shut down daemon server: %w", err).Error(),
+			http.StatusInternalServerError,
+		)
 		return
 	}
 
@@ -267,7 +284,11 @@ type VersionInfo struct {
 func (l *localServer) version(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	platformVersion, err := platform.GetPlatformVersion(l.pc.Config().Host)
 	if err != nil {
-		http.Error(w, fmt.Errorf("get platform version: %w", err).Error(), http.StatusInternalServerError)
+		http.Error(
+			w,
+			fmt.Errorf("get platform version: %w", err).Error(),
+			http.StatusInternalServerError,
+		)
 		return
 	}
 
@@ -280,7 +301,11 @@ func (l *localServer) self(w http.ResponseWriter, r *http.Request, params httpro
 	tryJSON(w, l.pc.Self())
 }
 
-func (l *localServer) userProfile(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+func (l *localServer) userProfile(
+	w http.ResponseWriter,
+	r *http.Request,
+	params httprouter.Params,
+) {
 	managementClient, err := l.pc.Management()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -288,16 +313,27 @@ func (l *localServer) userProfile(w http.ResponseWriter, r *http.Request, params
 	}
 	userName := l.pc.Self().Status.User.Name
 
-	profile, err := managementClient.Loft().ManagementV1().Users().GetProfile(r.Context(), userName, metav1.GetOptions{})
+	profile, err := managementClient.Loft().
+		ManagementV1().
+		Users().
+		GetProfile(r.Context(), userName, metav1.GetOptions{})
 	if err != nil {
-		http.Error(w, fmt.Errorf("get user profile: %w", err).Error(), http.StatusInternalServerError)
+		http.Error(
+			w,
+			fmt.Errorf("get user profile: %w", err).Error(),
+			http.StatusInternalServerError,
+		)
 		return
 	}
 
 	tryJSON(w, profile)
 }
 
-func (l *localServer) updateUserProfile(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+func (l *localServer) updateUserProfile(
+	w http.ResponseWriter,
+	r *http.Request,
+	params httprouter.Params,
+) {
 	profile := &managementv1.UserProfile{}
 	err := json.NewDecoder(r.Body).Decode(profile)
 	if err != nil {
@@ -312,9 +348,16 @@ func (l *localServer) updateUserProfile(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 	userName := l.pc.Self().Status.User.Name
-	updatedProfile, err := managementClient.Loft().ManagementV1().Users().UpdateProfile(r.Context(), userName, profile, metav1.CreateOptions{})
+	updatedProfile, err := managementClient.Loft().
+		ManagementV1().
+		Users().
+		UpdateProfile(r.Context(), userName, profile, metav1.CreateOptions{})
 	if err != nil {
-		http.Error(w, fmt.Errorf("update user profile: %w", err).Error(), http.StatusInternalServerError)
+		http.Error(
+			w,
+			fmt.Errorf("update user profile: %w", err).Error(),
+			http.StatusInternalServerError,
+		)
 		return
 	}
 
@@ -328,12 +371,17 @@ func (l *localServer) projects(w http.ResponseWriter, r *http.Request, params ht
 		return
 	}
 
-	projectList, err := managementClient.Loft().ManagementV1().Projects().List(r.Context(), metav1.ListOptions{})
+	projectList, err := managementClient.Loft().
+		ManagementV1().
+		Projects().
+		List(r.Context(), metav1.ListOptions{})
 	if err != nil {
 		http.Error(w, fmt.Errorf("list projects: %w", err).Error(), http.StatusInternalServerError)
 		return
 	} else if len(projectList.Items) == 0 {
-		err := fmt.Errorf("you don't have access to any projects, please make sure you have at least access to 1 project")
+		err := fmt.Errorf(
+			"you don't have access to any projects, please make sure you have at least access to 1 project",
+		)
 		http.Error(w, err.Error(), http.StatusForbidden)
 		return
 	}
@@ -341,7 +389,11 @@ func (l *localServer) projects(w http.ResponseWriter, r *http.Request, params ht
 	tryJSON(w, projectList.Items)
 }
 
-func (l *localServer) projectTemplates(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+func (l *localServer) projectTemplates(
+	w http.ResponseWriter,
+	r *http.Request,
+	params httprouter.Params,
+) {
 	projectName := params.ByName("project")
 	managementClient, err := l.pc.Management()
 	if err != nil {
@@ -349,12 +401,19 @@ func (l *localServer) projectTemplates(w http.ResponseWriter, r *http.Request, p
 		return
 	}
 
-	templateList, err := managementClient.Loft().ManagementV1().Projects().ListTemplates(r.Context(), projectName, metav1.GetOptions{})
+	templateList, err := managementClient.Loft().
+		ManagementV1().
+		Projects().
+		ListTemplates(r.Context(), projectName, metav1.GetOptions{})
 	if err != nil {
 		http.Error(w, fmt.Errorf("list templates: %w", err).Error(), http.StatusInternalServerError)
 		return
 	} else if len(templateList.DevPodWorkspaceTemplates) == 0 {
-		err := fmt.Errorf("seems like there is no template allowed in project %s, please make sure to at least have a single template available", projectName)
+		err := fmt.Errorf(
+			"seems like there is no template allowed in project %s, "+
+				"please make sure to at least have a single template available",
+			projectName,
+		)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -362,7 +421,11 @@ func (l *localServer) projectTemplates(w http.ResponseWriter, r *http.Request, p
 	tryJSON(w, templateList)
 }
 
-func (l *localServer) projectClusters(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+func (l *localServer) projectClusters(
+	w http.ResponseWriter,
+	r *http.Request,
+	params httprouter.Params,
+) {
 	projectName := params.ByName("project")
 	managementClient, err := l.pc.Management()
 	if err != nil {
@@ -370,12 +433,18 @@ func (l *localServer) projectClusters(w http.ResponseWriter, r *http.Request, pa
 		return
 	}
 
-	clusterList, err := managementClient.Loft().ManagementV1().Projects().ListClusters(r.Context(), projectName, metav1.GetOptions{})
+	clusterList, err := managementClient.Loft().
+		ManagementV1().
+		Projects().
+		ListClusters(r.Context(), projectName, metav1.GetOptions{})
 	if err != nil {
 		http.Error(w, fmt.Errorf("list cluster: %w", err).Error(), http.StatusInternalServerError)
 		return
 	} else if len(clusterList.Clusters) == 0 {
-		err := fmt.Errorf("seems like there is no cluster allowed in project %s, please make sure to at least have a single cluster available", projectName)
+		err := fmt.Errorf(
+			"seems like there is no cluster allowed in project %s, please make sure to at least have a single cluster available",
+			projectName,
+		)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -383,7 +452,11 @@ func (l *localServer) projectClusters(w http.ResponseWriter, r *http.Request, pa
 	tryJSON(w, clusterList)
 }
 
-func (l *localServer) listWorkspace(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+func (l *localServer) listWorkspace(
+	w http.ResponseWriter,
+	r *http.Request,
+	params httprouter.Params,
+) {
 	ownerParam := r.URL.Query().Get("owner")
 	ownerFilter := platform.SelfOwnerFilter
 	if ownerParam != "" {
@@ -396,12 +469,17 @@ func (l *localServer) listWorkspace(w http.ResponseWriter, r *http.Request, para
 		return
 	}
 
-	projectList, err := managementClient.Loft().ManagementV1().Projects().List(r.Context(), metav1.ListOptions{})
+	projectList, err := managementClient.Loft().
+		ManagementV1().
+		Projects().
+		List(r.Context(), metav1.ListOptions{})
 	if err != nil {
 		http.Error(w, fmt.Errorf("list projects: %w", err).Error(), http.StatusInternalServerError)
 		return
 	} else if len(projectList.Items) == 0 {
-		err := fmt.Errorf("you don't have access to any projects, please make sure you have at least access to 1 project")
+		err := fmt.Errorf(
+			"you don't have access to any projects, please make sure you have at least access to 1 project",
+		)
 		http.Error(w, err.Error(), http.StatusForbidden)
 		return
 	}
@@ -409,14 +487,22 @@ func (l *localServer) listWorkspace(w http.ResponseWriter, r *http.Request, para
 	instances := []managementv1.DevPodWorkspaceInstance{}
 	for _, p := range projectList.Items {
 		ns := project.ProjectNamespace(p.GetName())
-		workspaceList, err := managementClient.Loft().ManagementV1().DevPodWorkspaceInstances(ns).List(r.Context(), metav1.ListOptions{})
+		workspaceList, err := managementClient.Loft().
+			ManagementV1().
+			DevPodWorkspaceInstances(ns).
+			List(r.Context(), metav1.ListOptions{})
 		if err != nil {
-			http.Error(w, fmt.Errorf("list workspaces in project %s: %w", p.GetName(), err).Error(), http.StatusNoContent)
+			http.Error(
+				w,
+				fmt.Errorf("list workspaces in project %s: %w", p.GetName(), err).Error(),
+				http.StatusNoContent,
+			)
 			return
 		}
 
 		for _, instance := range workspaceList.Items {
-			if ownerFilter == platform.SelfOwnerFilter && !platform.IsOwner(l.pc.Self(), instance.GetOwner()) {
+			if ownerFilter == platform.SelfOwnerFilter &&
+				!platform.IsOwner(l.pc.Self(), instance.GetOwner()) {
 				continue
 			}
 			if instance.GetLabels() == nil {
@@ -431,16 +517,28 @@ func (l *localServer) listWorkspace(w http.ResponseWriter, r *http.Request, para
 	tryJSON(w, instances)
 }
 
-func (l *localServer) getWorkspace(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+func (l *localServer) getWorkspace(
+	w http.ResponseWriter,
+	r *http.Request,
+	params httprouter.Params,
+) {
 	uid := r.URL.Query().Get("uid")
 	if uid == "" {
 		http.Error(w, "missing required query parameter \"uid\"", http.StatusBadRequest)
 		return
 	}
 
-	instance, err := platform.FindInstance(r.Context(), l.pc, platform.FindInstanceOptions{UID: uid})
+	instance, err := platform.FindInstance(
+		r.Context(),
+		l.pc,
+		platform.FindInstanceOptions{UID: uid},
+	)
 	if err != nil {
-		http.Error(w, fmt.Errorf("failed to get workspace with uid %s: %w", uid, err).Error(), http.StatusInternalServerError)
+		http.Error(
+			w,
+			fmt.Errorf("failed to get workspace with uid %s: %w", uid, err).Error(),
+			http.StatusInternalServerError,
+		)
 		return
 	}
 	if instance == nil {
@@ -452,7 +550,11 @@ func (l *localServer) getWorkspace(w http.ResponseWriter, r *http.Request, param
 	tryJSON(w, instance)
 }
 
-func (l *localServer) watchWorkspaces(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+func (l *localServer) watchWorkspaces(
+	w http.ResponseWriter,
+	r *http.Request,
+	params httprouter.Params,
+) {
 	f, ok := w.(http.Flusher)
 	if !ok {
 		http.Error(w, "not a flusher", http.StatusInternalServerError)
@@ -497,7 +599,11 @@ func (l *localServer) watchWorkspaces(w http.ResponseWriter, r *http.Request, pa
 		}, time.Second),
 	)
 	if err != nil {
-		http.Error(w, fmt.Errorf("failed to watch workspaces: %w", err).Error(), http.StatusInternalServerError)
+		http.Error(
+			w,
+			fmt.Errorf("failed to watch workspaces: %w", err).Error(),
+			http.StatusInternalServerError,
+		)
 		l.log.Errorf("watch workspaces: %w", err)
 		return
 	}
@@ -506,7 +612,10 @@ func (l *localServer) watchWorkspaces(w http.ResponseWriter, r *http.Request, pa
 // throttle returns a function that wraps f so that f is called at most once
 // every interval. If a call happens before the interval has elapsed,
 // the latest instanceList is saved and f will be called with it when possible.
-func throttle(f func(instanceList []*ProWorkspaceInstance), interval time.Duration) func(instanceList []*ProWorkspaceInstance) {
+func throttle(
+	f func(instanceList []*ProWorkspaceInstance),
+	interval time.Duration,
+) func(instanceList []*ProWorkspaceInstance) {
 	var mu sync.Mutex
 	var lastExecuted time.Time          // Time of the last execution of f.
 	var pending []*ProWorkspaceInstance // Latest instanceList waiting to be processed.
@@ -549,7 +658,11 @@ func throttle(f func(instanceList []*ProWorkspaceInstance), interval time.Durati
 	}
 }
 
-func (l *localServer) createWorkspace(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+func (l *localServer) createWorkspace(
+	w http.ResponseWriter,
+	r *http.Request,
+	params httprouter.Params,
+) {
 	instance := &managementv1.DevPodWorkspaceInstance{}
 	err := json.NewDecoder(r.Body).Decode(instance)
 	if err != nil {
@@ -567,7 +680,11 @@ func (l *localServer) createWorkspace(w http.ResponseWriter, r *http.Request, pa
 	tryJSON(w, updatedInstance)
 }
 
-func (l *localServer) updateWorkspace(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+func (l *localServer) updateWorkspace(
+	w http.ResponseWriter,
+	r *http.Request,
+	params httprouter.Params,
+) {
 	newInstance := &managementv1.DevPodWorkspaceInstance{}
 	err := json.NewDecoder(r.Body).Decode(newInstance)
 	if err != nil {
@@ -593,7 +710,11 @@ func (l *localServer) updateWorkspace(w http.ResponseWriter, r *http.Request, pa
 	tryJSON(w, updatedInstance)
 }
 
-func (l *localServer) getGitCredentials(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+func (l *localServer) getGitCredentials(
+	w http.ResponseWriter,
+	r *http.Request,
+	params httprouter.Params,
+) {
 	host := r.URL.Query().Get("host")
 	if host == "" {
 		http.Error(w, "missing required query parameter \"host\"", http.StatusBadRequest)
@@ -609,14 +730,22 @@ func (l *localServer) getGitCredentials(w http.ResponseWriter, r *http.Request, 
 		Host:     host,
 	})
 	if err != nil {
-		http.Error(w, fmt.Errorf("get git credentials: %w", err).Error(), http.StatusInternalServerError)
+		http.Error(
+			w,
+			fmt.Errorf("get git credentials: %w", err).Error(),
+			http.StatusInternalServerError,
+		)
 		return
 	}
 
 	tryJSON(w, credentials)
 }
 
-func (l *localServer) getDockerCredentials(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+func (l *localServer) getDockerCredentials(
+	w http.ResponseWriter,
+	r *http.Request,
+	params httprouter.Params,
+) {
 	host := r.URL.Query().Get("server")
 	if host == "" {
 		http.Error(w, "missing required query parameter \"server\"", http.StatusBadRequest)
@@ -626,7 +755,11 @@ func (l *localServer) getDockerCredentials(w http.ResponseWriter, r *http.Reques
 	all, err := dockercredentials.ListCredentials()
 	if err != nil {
 		klog.Errorf("failed to list docker credentials: %v", err)
-		http.Error(w, fmt.Errorf("list docker credentials: %w", err).Error(), http.StatusInternalServerError)
+		http.Error(
+			w,
+			fmt.Errorf("list docker credentials: %w", err).Error(),
+			http.StatusInternalServerError,
+		)
 		return
 	}
 	for registry, cred := range all.Registries {
@@ -648,7 +781,12 @@ func tryJSON(w http.ResponseWriter, obj any) {
 	_, _ = w.Write(out)
 }
 
-func createInstance(ctx context.Context, client platformclient.Client, instance *managementv1.DevPodWorkspaceInstance, log log.Logger) (*managementv1.DevPodWorkspaceInstance, error) {
+func createInstance(
+	ctx context.Context,
+	client platformclient.Client,
+	instance *managementv1.DevPodWorkspaceInstance,
+	log log.Logger,
+) (*managementv1.DevPodWorkspaceInstance, error) {
 	managementClient, err := client.Management()
 	if err != nil {
 		return nil, err
@@ -664,7 +802,13 @@ func createInstance(ctx context.Context, client platformclient.Client, instance 
 	return platform.WaitForInstance(ctx, client, updatedInstance, log)
 }
 
-func updateInstance(ctx context.Context, client platformclient.Client, oldInstance *managementv1.DevPodWorkspaceInstance, newInstance *managementv1.DevPodWorkspaceInstance, log log.Logger) (*managementv1.DevPodWorkspaceInstance, error) {
+func updateInstance(
+	ctx context.Context,
+	client platformclient.Client,
+	oldInstance *managementv1.DevPodWorkspaceInstance,
+	newInstance *managementv1.DevPodWorkspaceInstance,
+	log log.Logger,
+) (*managementv1.DevPodWorkspaceInstance, error) {
 	// This ensures the template is kept up to date with configuration changes
 	if newInstance.Spec.TemplateRef != nil {
 		newInstance.Spec.TemplateRef.SyncOnce = true

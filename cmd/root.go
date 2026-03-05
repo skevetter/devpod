@@ -42,7 +42,10 @@ func NewRootCmd() *cobra.Command {
 			} else if globalFlags.LogOutput == "raw" {
 				log2.Default.SetFormat(log2.RawFormat)
 			} else if globalFlags.LogOutput != "plain" {
-				return fmt.Errorf("unrecognized log format %s, needs to be either plain, raw or json", globalFlags.LogOutput)
+				return fmt.Errorf(
+					"unrecognized log format %s, needs to be either plain, raw or json",
+					globalFlags.LogOutput,
+				)
 			}
 
 			if globalFlags.Silent {
@@ -98,11 +101,14 @@ func Execute() {
 		if globalFlags.Debug {
 			log2.Default.Fatalf("%+v", err)
 		} else {
-			if rootCmd.Annotations == nil || rootCmd.Annotations[agent.AgentExecutedAnnotation] != "true" {
+			if rootCmd.Annotations == nil ||
+				rootCmd.Annotations[agent.AgentExecutedAnnotation] != "true" {
 				if terminal.IsTerminalIn {
 					log2.Default.Error("Try using the --debug flag to see a more verbose output")
 				} else if os.Getenv(telemetry.UIEnvVar) == "true" {
-					log2.Default.Error("Try enabling Debug mode under Settings to see a more verbose output")
+					log2.Default.Error(
+						"Try enabling Debug mode under Settings to see a more verbose output",
+					)
 				}
 			}
 			log2.Default.Fatal(err)
@@ -174,7 +180,13 @@ func inheritFlagsFromEnvironment(flags *flag.FlagSet) {
 			// set the variable holding the flag's value to the default supplied by the environment
 			err := flag.Value.Set(value)
 			if err != nil {
-				log2.Default.Fatalf("failed to set flag %s from the environment variable %s with value %s: %+v", flag.Name, environmentVariable, value, err)
+				log2.Default.Fatalf(
+					"failed to set flag %s from the environment variable %s with value %s: %+v",
+					flag.Name,
+					environmentVariable,
+					value,
+					err,
+				)
 			}
 			// reflect this default in the usage output
 			flag.DefValue = value

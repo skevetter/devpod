@@ -28,8 +28,18 @@ var WebStormOptions = ide.Options{
 	},
 }
 
-func NewWebStormServer(userName string, values map[string]config.OptionValue, log log.Logger) *GenericJetBrainsServer {
-	amd64Download, arm64Download := getDownloadURLs(WebStormOptions, values, WebStormProductCode, WebStormDownloadAmd64Template, WebStormDownloadArm64Template)
+func NewWebStormServer(
+	userName string,
+	values map[string]config.OptionValue,
+	log log.Logger,
+) *GenericJetBrainsServer {
+	amd64Download, arm64Download := getDownloadURLs(
+		WebStormOptions,
+		values,
+		WebStormProductCode,
+		WebStormDownloadAmd64Template,
+		WebStormDownloadArm64Template,
+	)
 	return newGenericServer(userName, &GenericOptions{
 		ID:            "webstorm",
 		DisplayName:   "WebStorm",

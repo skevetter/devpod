@@ -32,7 +32,13 @@ type gitRepoFindOptions struct {
 	log                   log.Logger
 }
 
-func FindDevcontainerFiles(ctx context.Context, rawSource, tmpDirPath string, maxDepth int, strictHostKeyChecking bool, log log.Logger) (*GetWorkspaceConfigResult, error) {
+func FindDevcontainerFiles(
+	ctx context.Context,
+	rawSource, tmpDirPath string,
+	maxDepth int,
+	strictHostKeyChecking bool,
+	log log.Logger,
+) (*GetWorkspaceConfigResult, error) {
 	// local path
 	isLocalPath, _ := file.IsLocalDir(rawSource)
 	if isLocalPath {
@@ -40,8 +46,11 @@ func FindDevcontainerFiles(ctx context.Context, rawSource, tmpDirPath string, ma
 	}
 
 	// git repo
-	gitRepository, gitPRReference, gitBranch, gitCommit, gitSubDir := git.NormalizeRepository(rawSource)
-	if strings.HasSuffix(rawSource, ".git") || git.PingRepository(gitRepository, git.GetDefaultExtraEnv(strictHostKeyChecking)) {
+	gitRepository, gitPRReference, gitBranch, gitCommit, gitSubDir := git.NormalizeRepository(
+		rawSource,
+	)
+	if strings.HasSuffix(rawSource, ".git") ||
+		git.PingRepository(gitRepository, git.GetDefaultExtraEnv(strictHostKeyChecking)) {
 		log.Debug("Git repository detected")
 		opts := gitRepoFindOptions{
 			gitRepository:         gitRepository,
@@ -72,7 +81,11 @@ func FindDevcontainerFiles(ctx context.Context, rawSource, tmpDirPath string, ma
 	return result, nil
 }
 
-func FindFilesInLocalDir(rawSource string, maxDepth int, log log.Logger) (*GetWorkspaceConfigResult, error) {
+func FindFilesInLocalDir(
+	rawSource string,
+	maxDepth int,
+	log log.Logger,
+) (*GetWorkspaceConfigResult, error) {
 	log.Debug("Local directory detected")
 	result := &GetWorkspaceConfigResult{ConfigPaths: []string{}}
 	result.IsLocal = true
@@ -104,15 +117,32 @@ func FindFilesInLocalDir(rawSource string, maxDepth int, log log.Logger) (*GetWo
 	return result, nil
 }
 
-func findFilesInGitRepo(ctx context.Context, opts gitRepoFindOptions) (*GetWorkspaceConfigResult, error) {
+func findFilesInGitRepo(
+	ctx context.Context,
+	opts gitRepoFindOptions,
+) (*GetWorkspaceConfigResult, error) {
 	result := &GetWorkspaceConfigResult{
 		ConfigPaths:     []string{},
 		IsGitRepository: true,
 	}
 
-	gitInfo := git.NewGitInfo(opts.gitRepository, opts.gitBranch, opts.gitCommit, opts.gitPRReference, opts.gitSubDir)
+	gitInfo := git.NewGitInfo(
+		opts.gitRepository,
+		opts.gitBranch,
+		opts.gitCommit,
+		opts.gitPRReference,
+		opts.gitSubDir,
+	)
 	opts.log.Debugf("Cloning Git repository into %s", opts.tmpDirPath)
-	err := git.CloneRepository(ctx, gitInfo, opts.tmpDirPath, "", opts.strictHostKeyChecking, opts.log, git.WithCloneStrategy(git.BareCloneStrategy))
+	err := git.CloneRepository(
+		ctx,
+		gitInfo,
+		opts.tmpDirPath,
+		"",
+		opts.strictHostKeyChecking,
+		opts.log,
+		git.WithCloneStrategy(git.BareCloneStrategy),
+	)
 	if err != nil {
 		return nil, err
 	}

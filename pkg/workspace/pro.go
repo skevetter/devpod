@@ -9,7 +9,10 @@ import (
 	"github.com/skevetter/log"
 )
 
-func ListProInstances(devPodConfig *config.Config, log log.Logger) ([]*provider2.ProInstance, error) {
+func ListProInstances(
+	devPodConfig *config.Config,
+	log log.Logger,
+) ([]*provider2.ProInstance, error) {
 	proInstanceDir, err := provider2.GetProInstancesDir(devPodConfig.DefaultContext)
 	if err != nil {
 		return nil, err
@@ -22,9 +25,13 @@ func ListProInstances(devPodConfig *config.Config, log log.Logger) ([]*provider2
 
 	retProInstances := []*provider2.ProInstance{}
 	for _, entry := range entries {
-		proInstanceConfig, err := provider2.LoadProInstanceConfig(devPodConfig.DefaultContext, entry.Name())
+		proInstanceConfig, err := provider2.LoadProInstanceConfig(
+			devPodConfig.DefaultContext,
+			entry.Name(),
+		)
 		if err != nil {
-			log.WithFields(logrus.Fields{"instance": entry.Name(), "error": err}).Warn("could not load pro instance")
+			log.WithFields(logrus.Fields{"instance": entry.Name(), "error": err}).
+				Warn("could not load pro instance")
 			continue
 		}
 
@@ -34,7 +41,10 @@ func ListProInstances(devPodConfig *config.Config, log log.Logger) ([]*provider2
 	return retProInstances, nil
 }
 
-func FindProviderProInstance(proInstances []*provider2.ProInstance, providerName string) (*provider2.ProInstance, bool) {
+func FindProviderProInstance(
+	proInstances []*provider2.ProInstance,
+	providerName string,
+) (*provider2.ProInstance, bool) {
 	for _, instance := range proInstances {
 		if instance.Provider == providerName {
 			return instance, true

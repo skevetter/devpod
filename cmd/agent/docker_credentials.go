@@ -30,7 +30,8 @@ func NewDockerCredentialsCmd(flags *flags.GlobalFlags) *cobra.Command {
 			return cmd.Run(context.Background(), args, log.Default.ErrorStreamOnly())
 		},
 	}
-	dockerCredentialsCmd.Flags().IntVar(&cmd.Port, "port", 0, "If specified, will use the given port")
+	dockerCredentialsCmd.Flags().
+		IntVar(&cmd.Port, "port", 0, "If specified, will use the given port")
 	_ = dockerCredentialsCmd.MarkFlagRequired("port")
 	return dockerCredentialsCmd
 }

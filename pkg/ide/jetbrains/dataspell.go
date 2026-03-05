@@ -28,8 +28,18 @@ var DataSpellOptions = ide.Options{
 	},
 }
 
-func NewDataSpellServer(userName string, values map[string]config.OptionValue, log log.Logger) *GenericJetBrainsServer {
-	amd64Download, arm64Download := getDownloadURLs(DataSpellOptions, values, DataSpellProductCode, DataSpellDownloadAmd64Template, DataSpellDownloadArm64Template)
+func NewDataSpellServer(
+	userName string,
+	values map[string]config.OptionValue,
+	log log.Logger,
+) *GenericJetBrainsServer {
+	amd64Download, arm64Download := getDownloadURLs(
+		DataSpellOptions,
+		values,
+		DataSpellProductCode,
+		DataSpellDownloadAmd64Template,
+		DataSpellDownloadArm64Template,
+	)
 	return newGenericServer(userName, &GenericOptions{
 		ID:            "dataspell",
 		DisplayName:   "DataSpell",

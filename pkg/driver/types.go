@@ -13,7 +13,13 @@ type Driver interface {
 	FindDevContainer(ctx context.Context, workspaceID string) (*config.ContainerDetails, error)
 
 	// CommandDevContainer runs the given command inside the devcontainer
-	CommandDevContainer(ctx context.Context, workspaceID, user, command string, stdin io.Reader, stdout io.Writer, stderr io.Writer) error
+	CommandDevContainer(
+		ctx context.Context,
+		workspaceID, user, command string,
+		stdin io.Reader,
+		stdout io.Writer,
+		stderr io.Writer,
+	) error
 
 	// RunDevContainer runs a devcontainer
 	RunDevContainer(ctx context.Context, workspaceID string, options *RunOptions) error
@@ -31,7 +37,12 @@ type Driver interface {
 	StopDevContainer(ctx context.Context, workspaceID string) error
 
 	// GetContainerLogs returns the logs of the devcontainer
-	GetDevContainerLogs(ctx context.Context, workspaceID string, stdout io.Writer, stderr io.Writer) error
+	GetDevContainerLogs(
+		ctx context.Context,
+		workspaceID string,
+		stdout io.Writer,
+		stderr io.Writer,
+	) error
 }
 
 type ReprovisioningDriver interface {

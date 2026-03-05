@@ -21,7 +21,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func CreateInstance(ctx context.Context, baseClient client.Client, id, uid, source, picture string, log log.Logger) (*managementv1.DevPodWorkspaceInstance, error) {
+func CreateInstance(
+	ctx context.Context,
+	baseClient client.Client,
+	id, uid, source, picture string,
+	log log.Logger,
+) (*managementv1.DevPodWorkspaceInstance, error) {
 	formCtx, cancelForm := context.WithCancel(ctx)
 	defer cancelForm()
 
@@ -122,7 +127,12 @@ func CreateInstance(ctx context.Context, baseClient client.Client, id, uid, sour
 	return instance, nil
 }
 
-func UpdateInstance(ctx context.Context, baseClient client.Client, instance *managementv1.DevPodWorkspaceInstance, log log.Logger) (*managementv1.DevPodWorkspaceInstance, error) {
+func UpdateInstance(
+	ctx context.Context,
+	baseClient client.Client,
+	instance *managementv1.DevPodWorkspaceInstance,
+	log log.Logger,
+) (*managementv1.DevPodWorkspaceInstance, error) {
 	formCtx, cancelForm := context.WithCancel(ctx)
 	defer cancelForm()
 
@@ -140,7 +150,8 @@ func UpdateInstance(ctx context.Context, baseClient client.Client, instance *man
 			Value: t,
 		})
 
-		if instance.Spec.TemplateRef != nil && instance.Spec.TemplateRef.Name == template.GetName() {
+		if instance.Spec.TemplateRef != nil &&
+			instance.Spec.TemplateRef.Name == template.GetName() {
 			selectedTemplate = t
 		}
 	}
@@ -184,7 +195,8 @@ func UpdateInstance(ctx context.Context, baseClient client.Client, instance *man
 	if len(parameters) > 0 {
 		tRef := instance.Spec.TemplateRef
 		var existingParameters map[string]any
-		if tRef != nil && tRef.Name == selectedTemplate.GetName() && tRef.Version == selectedTemplateVersion {
+		if tRef != nil && tRef.Name == selectedTemplate.GetName() &&
+			tRef.Version == selectedTemplateVersion {
 			existingParameters = map[string]any{}
 			err = yaml.Unmarshal([]byte(instance.Spec.Parameters), &existingParameters)
 			if err != nil {
@@ -231,11 +243,13 @@ func UpdateInstance(ctx context.Context, baseClient client.Client, instance *man
 
 	newInstance := instance.DeepCopy()
 	// template
-	if instance.Spec.TemplateRef != nil && instance.Spec.TemplateRef.Name != selectedTemplate.GetName() {
+	if instance.Spec.TemplateRef != nil &&
+		instance.Spec.TemplateRef.Name != selectedTemplate.GetName() {
 		newInstance.Spec.TemplateRef.Name = selectedTemplate.GetName()
 	}
 	// version
-	if instance.Spec.TemplateRef != nil && instance.Spec.TemplateRef.Version != selectedTemplateVersion {
+	if instance.Spec.TemplateRef != nil &&
+		instance.Spec.TemplateRef.Version != selectedTemplateVersion {
 		newInstance.Spec.TemplateRef.Version = selectedTemplateVersion
 	}
 	// parameters
@@ -274,7 +288,13 @@ func projectOptions(ctx context.Context, client client.Client) ([]ProjectOption,
 	return projectOptions, nil
 }
 
-func getClusterOptions(ctx context.Context, client client.Client, project *managementv1.Project, cancel CancelFunc, log log.Logger) []huh.Option[*managementv1.Cluster] {
+func getClusterOptions(
+	ctx context.Context,
+	client client.Client,
+	project *managementv1.Project,
+	cancel CancelFunc,
+	log log.Logger,
+) []huh.Option[*managementv1.Cluster] {
 	opts := []huh.Option[*managementv1.Cluster]{}
 	if project == nil {
 		return opts
@@ -298,7 +318,13 @@ func getClusterOptions(ctx context.Context, client client.Client, project *manag
 	return opts
 }
 
-func getTemplateOptions(ctx context.Context, client client.Client, project *managementv1.Project, cancel CancelFunc, log log.Logger) []huh.Option[*managementv1.DevPodWorkspaceTemplate] {
+func getTemplateOptions(
+	ctx context.Context,
+	client client.Client,
+	project *managementv1.Project,
+	cancel CancelFunc,
+	log log.Logger,
+) []huh.Option[*managementv1.DevPodWorkspaceTemplate] {
 	opts := []huh.Option[*managementv1.DevPodWorkspaceTemplate]{}
 	if project == nil {
 		return opts
@@ -333,7 +359,9 @@ func getTemplateOptions(ctx context.Context, client client.Client, project *mana
 	return opts
 }
 
-func getTemplateVersionOptions(template *managementv1.DevPodWorkspaceTemplate) []huh.Option[string] {
+func getTemplateVersionOptions(
+	template *managementv1.DevPodWorkspaceTemplate,
+) []huh.Option[string] {
 	opts := []huh.Option[string]{latestTemplateVersion}
 	if template == nil {
 		return opts

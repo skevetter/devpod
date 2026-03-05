@@ -34,7 +34,13 @@ func NewCheckHealthCmd(globalFlags *flags.GlobalFlags) *cobra.Command {
 		Short:  "Check platform health",
 		Hidden: true,
 		RunE: func(cobraCmd *cobra.Command, args []string) error {
-			devPodConfig, provider, err := findProProvider(cobraCmd.Context(), cmd.Context, cmd.Provider, cmd.Host, cmd.Log)
+			devPodConfig, provider, err := findProProvider(
+				cobraCmd.Context(),
+				cmd.Context,
+				cmd.Provider,
+				cmd.Host,
+				cmd.Log,
+			)
 			if err != nil {
 				return err
 			}
@@ -60,7 +66,11 @@ func NewCheckHealthCmd(globalFlags *flags.GlobalFlags) *cobra.Command {
 	return c
 }
 
-func (cmd *CheckHealthCmd) Run(ctx context.Context, devPodConfig *config.Config, provider *provider.ProviderConfig) error {
+func (cmd *CheckHealthCmd) Run(
+	ctx context.Context,
+	devPodConfig *config.Config,
+	provider *provider.ProviderConfig,
+) error {
 	var buf bytes.Buffer
 	// ignore --debug because we tunnel json through stdio
 	cmd.Log.SetLevel(logrus.InfoLevel)

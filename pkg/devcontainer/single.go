@@ -82,7 +82,11 @@ func (r *runner) runSingleContainer(
 			substitutionContext.ContainerWorkspaceFolder = containerDetails.Config.WorkingDir
 		}
 
-		imageMetadataConfig, err := metadata.GetImageMetadataFromContainer(containerDetails, substitutionContext, r.Log)
+		imageMetadataConfig, err := metadata.GetImageMetadataFromContainer(
+			containerDetails,
+			substitutionContext,
+			r.Log,
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -98,7 +102,10 @@ func (r *runner) runSingleContainer(
 			config.AddConfigToImageMetadata(extraConfig, imageMetadataConfig)
 		}
 
-		mergedConfig, err = config.MergeConfiguration(parsedConfig.Config, imageMetadataConfig.Config)
+		mergedConfig, err = config.MergeConfiguration(
+			parsedConfig.Config,
+			imageMetadataConfig.Config,
+		)
 		if err != nil {
 			return nil, fmt.Errorf("merge config: %w", err)
 		}
@@ -149,7 +156,10 @@ func (r *runner) runSingleContainer(
 		}
 
 		// merge configuration
-		mergedConfig, err = config.MergeConfiguration(parsedConfig.Config, buildInfo.ImageMetadata.Config)
+		mergedConfig, err = config.MergeConfiguration(
+			parsedConfig.Config,
+			buildInfo.ImageMetadata.Config,
+		)
 		if err != nil {
 			return nil, fmt.Errorf("merge config: %w", err)
 		}
@@ -158,7 +168,12 @@ func (r *runner) runSingleContainer(
 		if options.Platform.AccessKey != "" {
 			r.Log.Debugf("Platform config detected, injecting DevPod daemon entrypoint.")
 
-			data, err := agent.GetEncodedWorkspaceDaemonConfig(options.Platform, r.WorkspaceConfig.Workspace, substitutionContext, mergedConfig)
+			data, err := agent.GetEncodedWorkspaceDaemonConfig(
+				options.Platform,
+				r.WorkspaceConfig.Workspace,
+				substitutionContext,
+				mergedConfig,
+			)
 			if err != nil {
 				r.Log.Errorf("Failed to marshal daemon config: %v", err)
 			} else {
@@ -381,10 +396,12 @@ func (r *runner) addExtraEnvVars(env map[string]string) map[string]string {
 
 	env[DevPodExtraEnvVar] = "true"
 	env[RemoteContainersExtraEnvVar] = "true"
-	if r.WorkspaceConfig != nil && r.WorkspaceConfig.Workspace != nil && r.WorkspaceConfig.Workspace.ID != "" {
+	if r.WorkspaceConfig != nil && r.WorkspaceConfig.Workspace != nil &&
+		r.WorkspaceConfig.Workspace.ID != "" {
 		env[WorkspaceIDExtraEnvVar] = r.WorkspaceConfig.Workspace.ID
 	}
-	if r.WorkspaceConfig != nil && r.WorkspaceConfig.Workspace != nil && r.WorkspaceConfig.Workspace.UID != "" {
+	if r.WorkspaceConfig != nil && r.WorkspaceConfig.Workspace != nil &&
+		r.WorkspaceConfig.Workspace.UID != "" {
 		env[WorkspaceUIDExtraEnvVar] = r.WorkspaceConfig.Workspace.UID
 	}
 
@@ -399,9 +416,17 @@ exec "$@"
 ` + strings.Join(customEntrypoints, "\n") + DefaultEntrypoint
 }
 
-func GetContainerEntrypointAndArgs(mergedConfig *config.MergedDevContainerConfig, imageDetails *config.ImageDetails) (string, []string) {
-	cmd := []string{"-c", GetStartScript(mergedConfig), "-"} // `wait $!` allows for the `trap` to run (synchronous `sleep` would not).
-	if imageDetails != nil && mergedConfig.OverrideCommand != nil && !*mergedConfig.OverrideCommand {
+func GetContainerEntrypointAndArgs(
+	mergedConfig *config.MergedDevContainerConfig,
+	imageDetails *config.ImageDetails,
+) (string, []string) {
+	cmd := []string{
+		"-c",
+		GetStartScript(mergedConfig),
+		"-",
+	} // `wait $!` allows for the `trap` to run (synchronous `sleep` would not).
+	if imageDetails != nil && mergedConfig.OverrideCommand != nil &&
+		!*mergedConfig.OverrideCommand {
 		cmd = append(cmd, imageDetails.Config.Entrypoint...)
 		cmd = append(cmd, imageDetails.Config.Cmd...)
 	}

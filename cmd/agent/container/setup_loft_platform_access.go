@@ -32,12 +32,15 @@ func NewSetupLoftPlatformAccessCmd(flags *flags.GlobalFlags) *cobra.Command {
 	}
 
 	setupLoftPlatformAccessCmd.Flags().StringVar(&cmd.Context, "context", "", "context to use")
-	_ = setupLoftPlatformAccessCmd.Flags().MarkDeprecated("context", "Information should be provided by services server, don't use this flag anymore")
+	_ = setupLoftPlatformAccessCmd.Flags().
+		MarkDeprecated("context", "Information should be provided by services server, don't use this flag anymore")
 
 	setupLoftPlatformAccessCmd.Flags().StringVar(&cmd.Provider, "provider", "", "provider to use")
-	_ = setupLoftPlatformAccessCmd.Flags().MarkDeprecated("provider", "Information should be provided by services server, don't use this flag anymore")
+	_ = setupLoftPlatformAccessCmd.Flags().
+		MarkDeprecated("provider", "Information should be provided by services server, don't use this flag anymore")
 
-	setupLoftPlatformAccessCmd.Flags().IntVar(&cmd.Port, "port", 0, "If specified, will use the given port")
+	setupLoftPlatformAccessCmd.Flags().
+		IntVar(&cmd.Port, "port", 0, "If specified, will use the given port")
 	_ = setupLoftPlatformAccessCmd.Flags().MarkDeprecated("port", "")
 
 	return setupLoftPlatformAccessCmd

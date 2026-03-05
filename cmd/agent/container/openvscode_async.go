@@ -58,5 +58,6 @@ func (cmd *OpenVSCodeAsyncCmd) Run(_ *cobra.Command, _ []string) error {
 func setupOpenVSCodeExtensions(setupInfo *config.Result, log log.Logger) error {
 	vsCodeConfiguration := config.GetVSCodeConfiguration(setupInfo.MergedConfig)
 	user := config.GetRemoteUser(setupInfo)
-	return openvscode.NewOpenVSCodeServer(vsCodeConfiguration.Extensions, "", user, "", "", nil, log).InstallExtensions()
+	return openvscode.NewOpenVSCodeServer(vsCodeConfiguration.Extensions, "", user, "", "", nil, log).
+		InstallExtensions()
 }

@@ -39,8 +39,10 @@ func NewListCmd(flags *proflags.GlobalFlags) *cobra.Command {
 		},
 	}
 
-	listCmd.Flags().StringVar(&cmd.Output, "output", "plain", "The output format to use. Can be json or plain")
-	listCmd.Flags().BoolVar(&cmd.Login, "login", false, "Check if the user is logged into the pro instance")
+	listCmd.Flags().
+		StringVar(&cmd.Output, "output", "plain", "The output format to use. Can be json or plain")
+	listCmd.Flags().
+		BoolVar(&cmd.Login, "login", false, "Check if the user is logged into the pro instance")
 	return listCmd
 }
 
@@ -112,7 +114,10 @@ func (cmd *ListCmd) Run(ctx context.Context) error {
 		}
 		fmt.Print(string(out))
 	default:
-		return fmt.Errorf("unexpected output format, choose either json or plain. Got %s", cmd.Output)
+		return fmt.Errorf(
+			"unexpected output format, choose either json or plain. Got %s",
+			cmd.Output,
+		)
 	}
 
 	return nil
@@ -134,16 +139,34 @@ var (
 	capabilityUpdateProvider Capability = "update-provider"
 )
 
-func checkLogin(ctx context.Context, devPodConfig *config.Config, proInstance *provider.ProInstance) error {
+func checkLogin(
+	ctx context.Context,
+	devPodConfig *config.Config,
+	proInstance *provider.ProInstance,
+) error {
 	// for every pro instance, check auth status by calling login
-	if err := login(ctx, devPodConfig, proInstance.Host, proInstance.Provider, "", true, false, log.Default); err != nil {
+	if err := login(
+		ctx,
+		devPodConfig,
+		proInstance.Host,
+		proInstance.Provider,
+		"",
+		true,
+		false,
+		log.Default,
+	); err != nil {
 		return fmt.Errorf("not logged into %s", proInstance.Host)
 	}
 
 	return nil
 }
 
-func getCapabilities(ctx context.Context, devPodConfig *config.Config, proInstance *provider.ProInstance, log log.Logger) []Capability {
+func getCapabilities(
+	ctx context.Context,
+	devPodConfig *config.Config,
+	proInstance *provider.ProInstance,
+	log log.Logger,
+) []Capability {
 	capabilities := []Capability{}
 	provider, err := workspace.FindProvider(devPodConfig, proInstance.Provider, log)
 	if err != nil {

@@ -71,7 +71,11 @@ func (p *ProgressReader) Read(b []byte) (n int, err error) {
 	n, err = p.Reader.Read(b)
 	p.bytesRead += int64(n)
 	if time.Since(p.lastMessage) > time.Second*1 {
-		p.Log.Infof("Downloaded %.2f / %.2f MB", float64(p.bytesRead)/1024/1024, float64(p.TotalSize/1024/1024))
+		p.Log.Infof(
+			"Downloaded %.2f / %.2f MB",
+			float64(p.bytesRead)/1024/1024,
+			float64(p.TotalSize/1024/1024),
+		)
 		p.lastMessage = time.Now()
 	}
 

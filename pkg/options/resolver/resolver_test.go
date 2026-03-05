@@ -43,7 +43,12 @@ func (suite *ResolverTestSuite) TestBasicFunctionality() {
 		"option1": {Value: "value1"},
 	}
 
-	resolved, newDefs, err := suite.resolver.Resolve(context.Background(), nil, optionDefs, optionValues)
+	resolved, newDefs, err := suite.resolver.Resolve(
+		context.Background(),
+		nil,
+		optionDefs,
+		optionValues,
+	)
 	suite.NoError(err)
 	suite.NotNil(resolved)
 	suite.NotNil(newDefs)
@@ -71,7 +76,10 @@ func (suite *ResolverTestSuite) TestGraphFunctionality() {
 func (suite *ResolverTestSuite) TestResolveOptions_EmptyGraph() {
 	suite.resolver.graph = graph.NewGraph[*types.Option]()
 
-	result, err := suite.resolver.resolveOptions(context.Background(), map[string]config.OptionValue{})
+	result, err := suite.resolver.resolveOptions(
+		context.Background(),
+		map[string]config.OptionValue{},
+	)
 	suite.NoError(err)
 	suite.Empty(result)
 }
@@ -84,7 +92,10 @@ func (suite *ResolverTestSuite) TestResolveOptions_SingleOption() {
 	}
 	suite.Require().NoError(suite.resolver.graph.AddNode("test_option", option))
 
-	result, err := suite.resolver.resolveOptions(context.Background(), map[string]config.OptionValue{})
+	result, err := suite.resolver.resolveOptions(
+		context.Background(),
+		map[string]config.OptionValue{},
+	)
 	suite.NoError(err)
 	suite.Len(result, 1)
 	suite.Equal("default_value", result["test_option"].Value)
@@ -101,7 +112,10 @@ func (suite *ResolverTestSuite) TestResolveOptions_UserProvidedValue() {
 	}
 	suite.Require().NoError(suite.resolver.graph.AddNode("test_option", option))
 
-	result, err := suite.resolver.resolveOptions(context.Background(), map[string]config.OptionValue{})
+	result, err := suite.resolver.resolveOptions(
+		context.Background(),
+		map[string]config.OptionValue{},
+	)
 	suite.NoError(err)
 	suite.Equal("user_value", result["test_option"].Value)
 	suite.True(result["test_option"].UserProvided)
@@ -115,7 +129,10 @@ func (suite *ResolverTestSuite) TestResolveOptions_EnumValue() {
 	}
 	suite.Require().NoError(suite.resolver.graph.AddNode("enum_option", option))
 
-	result, err := suite.resolver.resolveOptions(context.Background(), map[string]config.OptionValue{})
+	result, err := suite.resolver.resolveOptions(
+		context.Background(),
+		map[string]config.OptionValue{},
+	)
 	suite.NoError(err)
 	suite.Equal("only_choice", result["enum_option"].Value)
 }
@@ -130,7 +147,10 @@ func (suite *ResolverTestSuite) TestResolveOptions_SkipGlobalOption() {
 	}
 	suite.Require().NoError(suite.resolver.graph.AddNode("global_option", option))
 
-	result, err := suite.resolver.resolveOptions(context.Background(), map[string]config.OptionValue{})
+	result, err := suite.resolver.resolveOptions(
+		context.Background(),
+		map[string]config.OptionValue{},
+	)
 	suite.NoError(err)
 	suite.Empty(result)
 }
@@ -145,7 +165,10 @@ func (suite *ResolverTestSuite) TestResolveOptions_SkipLocalOption() {
 	}
 	suite.Require().NoError(suite.resolver.graph.AddNode("local_option", option))
 
-	result, err := suite.resolver.resolveOptions(context.Background(), map[string]config.OptionValue{})
+	result, err := suite.resolver.resolveOptions(
+		context.Background(),
+		map[string]config.OptionValue{},
+	)
 	suite.NoError(err)
 	suite.Empty(result)
 }

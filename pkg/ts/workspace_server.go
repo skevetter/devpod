@@ -202,7 +202,11 @@ func (s *WorkspaceServer) parseWorkspaceHostname() (workspace, project string, e
 }
 
 // startListeners creates and starts the SSH and HTTP reverse proxy listeners.
-func (s *WorkspaceServer) startListeners(ctx context.Context, projectName, workspaceName string, lc *local.Client) error {
+func (s *WorkspaceServer) startListeners(
+	ctx context.Context,
+	projectName, workspaceName string,
+	lc *local.Client,
+) error {
 	// Create and start the SSH listener.
 	s.log.Infof("Starting SSH listener")
 	sshListener, err := s.createListener(fmt.Sprintf(":%d", sshServer.DefaultUserPort))
@@ -226,7 +230,10 @@ func (s *WorkspaceServer) startListeners(ctx context.Context, projectName, works
 		return fmt.Errorf("failed to create listener on TS port %s: %w", TSPortForwardPort, err)
 	}
 
-	_ = os.Chmod(runnerProxySocket, 0o777) // #nosec G302 -- required so all users can connect to the unix socket
+	_ = os.Chmod(
+		runnerProxySocket,
+		0o777,
+	) // #nosec G302 -- required so all users can connect to the unix socket
 
 	// add all listeners to the list
 	s.listeners = append(s.listeners, sshListener, wsListener, runnerProxyListener)
@@ -294,7 +301,13 @@ func (s *WorkspaceServer) removeConnection() {
 }
 
 // gitCredentialsHandler is the handler for git credentials requests for workspace.
-func (s *WorkspaceServer) gitCredentialsHandler(w http.ResponseWriter, r *http.Request, lc *local.Client, transport *http.Transport, projectName, workspaceName string) {
+func (s *WorkspaceServer) gitCredentialsHandler(
+	w http.ResponseWriter,
+	r *http.Request,
+	lc *local.Client,
+	transport *http.Transport,
+	projectName, workspaceName string,
+) {
 	s.log.Infof("Received git credentials request from %s", r.RemoteAddr)
 
 	// create a new http client with a custom transport
@@ -305,7 +318,12 @@ func (s *WorkspaceServer) gitCredentialsHandler(w http.ResponseWriter, r *http.R
 	}
 
 	// build the runner URL
-	runnerURL := fmt.Sprintf("http://%s.ts.loft/devpod/%s/%s/workspace-git-credentials", discoveredRunner, projectName, workspaceName)
+	runnerURL := fmt.Sprintf(
+		"http://%s.ts.loft/devpod/%s/%s/workspace-git-credentials",
+		discoveredRunner,
+		projectName,
+		workspaceName,
+	)
 	parsedURL, err := url.Parse(runnerURL)
 	if err != nil {
 		http.Error(w, "failed to parse runner URL", http.StatusInternalServerError)
@@ -325,7 +343,13 @@ func (s *WorkspaceServer) gitCredentialsHandler(w http.ResponseWriter, r *http.R
 }
 
 // dockerCredentialsHandler is the handler for docker credentials requests for workspace.
-func (s *WorkspaceServer) dockerCredentialsHandler(w http.ResponseWriter, r *http.Request, lc *local.Client, transport *http.Transport, projectName, workspaceName string) {
+func (s *WorkspaceServer) dockerCredentialsHandler(
+	w http.ResponseWriter,
+	r *http.Request,
+	lc *local.Client,
+	transport *http.Transport,
+	projectName, workspaceName string,
+) {
 	s.log.Infof("Received docker credentials request from %s", r.RemoteAddr)
 
 	// create a new http client with a custom transport
@@ -336,7 +360,12 @@ func (s *WorkspaceServer) dockerCredentialsHandler(w http.ResponseWriter, r *htt
 	}
 
 	// build the runner URL
-	runnerURL := fmt.Sprintf("http://%s.ts.loft/devpod/%s/%s/workspace-docker-credentials", discoveredRunner, projectName, workspaceName)
+	runnerURL := fmt.Sprintf(
+		"http://%s.ts.loft/devpod/%s/%s/workspace-docker-credentials",
+		discoveredRunner,
+		projectName,
+		workspaceName,
+	)
 	parsedURL, err := url.Parse(runnerURL)
 	if err != nil {
 		http.Error(w, "failed to parse runner URL", http.StatusInternalServerError)
@@ -369,7 +398,11 @@ func (s *WorkspaceServer) httpPortForwardHandler(w http.ResponseWriter, r *http.
 		http.Error(w, "missing required X-Loft headers", http.StatusBadRequest)
 		return
 	}
-	s.log.Debugf("httpPortForwardHandler: received headers: X-Loft-Forward-Port=%s, X-Loft-Forward-Url=%s", targetPort, baseForwardStr)
+	s.log.Debugf(
+		"httpPortForwardHandler: received headers: X-Loft-Forward-Port=%s, X-Loft-Forward-Url=%s",
+		targetPort,
+		baseForwardStr,
+	)
 
 	// Parse and modify the URL to target the local endpoint.
 	parsedURL, err := url.Parse(baseForwardStr)
@@ -395,7 +428,11 @@ func (s *WorkspaceServer) httpPortForwardHandler(w http.ResponseWriter, r *http.
 	}
 	proxy.Transport = http.DefaultTransport
 
-	s.log.Infof("httpPortForwardHandler: final proxied request: %s %s", r.Method, parsedURL.String())
+	s.log.Infof(
+		"httpPortForwardHandler: final proxied request: %s %s",
+		r.Method,
+		parsedURL.String(),
+	)
 	proxy.ServeHTTP(w, r)
 }
 
@@ -442,7 +479,11 @@ func (s *WorkspaceServer) handleSSHConnection(clientConn net.Conn) {
 	_, err = io.Copy(clientConn, backendConn)
 }
 
-func (s *WorkspaceServer) sendHeartbeats(ctx context.Context, projectName, workspaceName string, lc *local.Client) {
+func (s *WorkspaceServer) sendHeartbeats(
+	ctx context.Context,
+	projectName, workspaceName string,
+	lc *local.Client,
+) {
 	// create a new http client with a custom transport
 	transport := &http.Transport{DialContext: s.tsServer.Dial}
 	client := &http.Client{Transport: transport, Timeout: 10 * time.Second}
@@ -471,7 +512,13 @@ func (s *WorkspaceServer) sendHeartbeats(ctx context.Context, projectName, works
 	}
 }
 
-func (s *WorkspaceServer) sendHeartbeat(ctx context.Context, client *http.Client, projectName, workspaceName string, lc *local.Client, connections int) error {
+func (s *WorkspaceServer) sendHeartbeat(
+	ctx context.Context,
+	client *http.Client,
+	projectName, workspaceName string,
+	lc *local.Client,
+	connections int,
+) error {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
@@ -480,8 +527,17 @@ func (s *WorkspaceServer) sendHeartbeat(ctx context.Context, client *http.Client
 		return fmt.Errorf("failed to discover runner: %w", err)
 	}
 
-	heartbeatURL := fmt.Sprintf("http://%s.ts.loft/devpod/%s/%s/heartbeat", discoveredRunner, projectName, workspaceName)
-	s.log.Infof("Sending heartbeat to %s, because there are %d active connections", heartbeatURL, connections)
+	heartbeatURL := fmt.Sprintf(
+		"http://%s.ts.loft/devpod/%s/%s/heartbeat",
+		discoveredRunner,
+		projectName,
+		workspaceName,
+	)
+	s.log.Infof(
+		"Sending heartbeat to %s, because there are %d active connections",
+		heartbeatURL,
+		connections,
+	)
 	req, err := http.NewRequestWithContext(ctx, "GET", heartbeatURL, nil)
 	if err != nil {
 		return fmt.Errorf("failed to create request for %s: %w", heartbeatURL, err)

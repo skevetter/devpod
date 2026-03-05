@@ -42,7 +42,15 @@ func NewStopCmd(flags *flags.GlobalFlags) *cobra.Command {
 				return fmt.Errorf("decode platform options: %w", err)
 			}
 
-			client, err := workspace2.Get(ctx, devPodConfig, args, false, cmd.Owner, false, log.Default)
+			client, err := workspace2.Get(
+				ctx,
+				devPodConfig,
+				args,
+				false,
+				cmd.Owner,
+				false,
+				log.Default,
+			)
 			if err != nil {
 				return err
 			}
@@ -50,7 +58,15 @@ func NewStopCmd(flags *flags.GlobalFlags) *cobra.Command {
 			return cmd.Run(ctx, devPodConfig, client)
 		},
 		ValidArgsFunction: func(rootCmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-			return completion.GetWorkspaceSuggestions(rootCmd, cmd.Context, cmd.Provider, args, toComplete, cmd.Owner, log.Default)
+			return completion.GetWorkspaceSuggestions(
+				rootCmd,
+				cmd.Context,
+				cmd.Provider,
+				args,
+				toComplete,
+				cmd.Owner,
+				log.Default,
+			)
 		},
 	}
 
@@ -58,7 +74,11 @@ func NewStopCmd(flags *flags.GlobalFlags) *cobra.Command {
 }
 
 // Run runs the command logic.
-func (cmd *StopCmd) Run(ctx context.Context, devPodConfig *config.Config, client client2.BaseWorkspaceClient) error {
+func (cmd *StopCmd) Run(
+	ctx context.Context,
+	devPodConfig *config.Config,
+	client client2.BaseWorkspaceClient,
+) error {
 	// lock workspace
 	if !cmd.Platform.Enabled {
 		err := client.Lock(ctx)
@@ -93,10 +113,15 @@ func (cmd *StopCmd) Run(ctx context.Context, devPodConfig *config.Config, client
 	return nil
 }
 
-func (cmd *StopCmd) stopSingleMachine(ctx context.Context, client client2.BaseWorkspaceClient, devPodConfig *config.Config) (bool, error) {
+func (cmd *StopCmd) stopSingleMachine(
+	ctx context.Context,
+	client client2.BaseWorkspaceClient,
+	devPodConfig *config.Config,
+) (bool, error) {
 	// check if single machine
 	singleMachineName := workspace2.SingleMachineName(devPodConfig, client.Provider(), log.Default)
-	if !devPodConfig.Current().IsSingleMachine(client.Provider()) || client.WorkspaceConfig().Machine.ID != singleMachineName {
+	if !devPodConfig.Current().IsSingleMachine(client.Provider()) ||
+		client.WorkspaceConfig().Machine.ID != singleMachineName {
 		return false, nil
 	}
 
@@ -121,7 +146,11 @@ func (cmd *StopCmd) stopSingleMachine(ctx context.Context, client client2.BaseWo
 	}
 
 	// if we haven't found another workspace on this machine, delete the whole machine
-	machineClient, err := workspace2.GetMachine(devPodConfig, []string{singleMachineName}, log.Default)
+	machineClient, err := workspace2.GetMachine(
+		devPodConfig,
+		[]string{singleMachineName},
+		log.Default,
+	)
 	if err != nil {
 		return false, fmt.Errorf("get machine: %w", err)
 	}

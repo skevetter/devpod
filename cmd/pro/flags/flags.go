@@ -17,7 +17,12 @@ type GlobalFlags struct {
 func SetGlobalFlags(flags *flag.FlagSet) *GlobalFlags {
 	globalFlags := &GlobalFlags{}
 
-	flags.StringVar(&globalFlags.Config, "config", client.DefaultCacheConfig, "The config to use (will be created if it does not exist)")
+	flags.StringVar(
+		&globalFlags.Config,
+		"config",
+		client.DefaultCacheConfig,
+		"The config to use (will be created if it does not exist)",
+	)
 
 	return globalFlags
 }

@@ -106,7 +106,9 @@ var _ = DevPodDescribe("devpod context test suite", func() {
 				}
 			}
 			if !intellijFound {
-				ginkgo.Fail("Selecting context-b using environment variable DEVPOD_CONTEXT does not work as expected")
+				ginkgo.Fail(
+					"Selecting context-b using environment variable DEVPOD_CONTEXT does not work as expected",
+				)
 			}
 		})
 	})

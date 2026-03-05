@@ -37,7 +37,13 @@ func NewWatchWorkspacesCmd(globalFlags *flags.GlobalFlags) *cobra.Command {
 		Short:  "Watch workspaces",
 		Hidden: true,
 		RunE: func(cobraCmd *cobra.Command, args []string) error {
-			devPodConfig, provider, err := findProProvider(cobraCmd.Context(), cmd.Context, cmd.Provider, cmd.Host, cmd.Log)
+			devPodConfig, provider, err := findProProvider(
+				cobraCmd.Context(),
+				cmd.Context,
+				cmd.Provider,
+				cmd.Host,
+				cmd.Log,
+			)
 			if err != nil {
 				return err
 			}
@@ -50,12 +56,17 @@ func NewWatchWorkspacesCmd(globalFlags *flags.GlobalFlags) *cobra.Command {
 	_ = c.MarkFlagRequired("host")
 	c.Flags().StringVar(&cmd.Project, "project", "", "The project to use")
 	_ = c.MarkFlagRequired("project")
-	c.Flags().BoolVar(&cmd.FilterByOwner, "filter-by-owner", true, "If true only shows workspaces of current owner")
+	c.Flags().
+		BoolVar(&cmd.FilterByOwner, "filter-by-owner", true, "If true only shows workspaces of current owner")
 
 	return c
 }
 
-func (cmd *WatchWorkspacesCmd) Run(ctx context.Context, devPodConfig *config.Config, providerConfig *provider.ProviderConfig) error {
+func (cmd *WatchWorkspacesCmd) Run(
+	ctx context.Context,
+	devPodConfig *config.Config,
+	providerConfig *provider.ProviderConfig,
+) error {
 	opts := devPodConfig.ProviderOptions(providerConfig.Name)
 	cancelCtx, cancel := context.WithCancel(ctx)
 	defer cancel()

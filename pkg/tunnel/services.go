@@ -146,7 +146,11 @@ func buildCredentialsCommand(opts RunServicesOptions) string {
 }
 
 // runServicesIteration performs one iteration of the retry loop.
-func runServicesIteration(ctx context.Context, opts RunServicesOptions, forwardedPorts []string) error {
+func runServicesIteration(
+	ctx context.Context,
+	opts RunServicesOptions,
+	forwardedPorts []string,
+) error {
 	stdoutReader, stdoutWriter, err := os.Pipe()
 	if err != nil {
 		return err
@@ -269,7 +273,12 @@ func getContainerResult(p portForwardParams) (*config2.Result, error) {
 		Stderr:  stderr,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("retrieve container result: %s\n%s: %w", stdout.String(), stderr.String(), err)
+		return nil, fmt.Errorf(
+			"retrieve container result: %s\n%s: %w",
+			stdout.String(),
+			stderr.String(),
+			err,
+		)
 	}
 
 	result := &config2.Result{}
@@ -427,5 +436,8 @@ func parseForwardPort(port string) (string, int64, error) {
 		return tokens[0], portNum, nil
 	}
 
-	return "", 0, fmt.Errorf("invalid forwardPorts port format %q (expected 'port' or 'host:port')", port)
+	return "", 0, fmt.Errorf(
+		"invalid forwardPorts port format %q (expected 'port' or 'host:port')",
+		port,
+	)
 }

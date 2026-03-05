@@ -180,7 +180,13 @@ type WorkspaceNetworkMetrics struct {
 	Timestamp      int64          `json:"timestamp,omitempty"`
 }
 
-func newStore(self *managementv1.Self, context string, ownerFilter platform.OwnerFilter, tsClient *local.Client, log log.Logger) *instanceStore {
+func newStore(
+	self *managementv1.Self,
+	context string,
+	ownerFilter platform.OwnerFilter,
+	tsClient *local.Client,
+	log log.Logger,
+) *instanceStore {
 	return &instanceStore{
 		self:             self,
 		context:          context,
@@ -202,8 +208,11 @@ func (s *instanceStore) Add(instance *managementv1.DevPodWorkspaceInstance) {
 		return
 	}
 	var source *provider.WorkspaceSource
-	if instance.GetAnnotations() != nil && instance.GetAnnotations()[storagev1.DevPodWorkspaceSourceAnnotation] != "" {
-		source = provider.ParseWorkspaceSource(instance.GetAnnotations()[storagev1.DevPodWorkspaceSourceAnnotation])
+	if instance.GetAnnotations() != nil &&
+		instance.GetAnnotations()[storagev1.DevPodWorkspaceSourceAnnotation] != "" {
+		source = provider.ParseWorkspaceSource(
+			instance.GetAnnotations()[storagev1.DevPodWorkspaceSourceAnnotation],
+		)
 	}
 
 	var ideConfig *provider.WorkspaceIDEConfig
@@ -232,8 +241,12 @@ func (s *instanceStore) Add(instance *managementv1.DevPodWorkspaceInstance) {
 	s.m.Unlock()
 }
 
-func (s *instanceStore) Update(oldInstance *managementv1.DevPodWorkspaceInstance, newInstance *managementv1.DevPodWorkspaceInstance) {
-	if s.ownerFilter == platform.SelfOwnerFilter && !platform.IsOwner(s.self, newInstance.GetOwner()) {
+func (s *instanceStore) Update(
+	oldInstance *managementv1.DevPodWorkspaceInstance,
+	newInstance *managementv1.DevPodWorkspaceInstance,
+) {
+	if s.ownerFilter == platform.SelfOwnerFilter &&
+		!platform.IsOwner(s.self, newInstance.GetOwner()) {
 		return
 	}
 	s.Add(newInstance)
@@ -348,11 +361,21 @@ func (s *instanceStore) updateWorkspaceLatencies(ctx context.Context) {
 			s.log.Debugf("pinging workspace %s/%s", instance.GetNamespace(), instance.GetName())
 			pingResult, err := s.tsClient.Ping(timeoutCtx, peer.TailscaleIPs[0], tailcfg.PingDisco)
 			if err != nil {
-				s.log.Debugf("Failed to ping workspace %s/%s: %v", instance.GetNamespace(), instance.GetName(), err)
+				s.log.Debugf(
+					"Failed to ping workspace %s/%s: %v",
+					instance.GetNamespace(),
+					instance.GetName(),
+					err,
+				)
 				return
 			}
 			if pingResult.Err != "" {
-				s.log.Debugf("Failed to ping workspace %s/%s: %v", instance.GetNamespace(), instance.GetName(), pingResult.Err)
+				s.log.Debugf(
+					"Failed to ping workspace %s/%s: %v",
+					instance.GetNamespace(),
+					instance.GetName(),
+					pingResult.Err,
+				)
 				return
 			}
 

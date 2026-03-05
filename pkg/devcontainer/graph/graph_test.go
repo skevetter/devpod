@@ -505,11 +505,13 @@ func (suite *GraphTestSuite) TestLargeGraph() {
 	nodeCount := 100
 
 	for i := range nodeCount {
-		suite.Require().NoError(suite.graph.AddNode(fmt.Sprintf("node%d", i), fmt.Sprintf("data%d", i)))
+		suite.Require().
+			NoError(suite.graph.AddNode(fmt.Sprintf("node%d", i), fmt.Sprintf("data%d", i)))
 	}
 
 	for i := 0; i < nodeCount-1; i++ {
-		suite.Require().NoError(suite.graph.AddEdge(fmt.Sprintf("node%d", i), fmt.Sprintf("node%d", i+1)))
+		suite.Require().
+			NoError(suite.graph.AddEdge(fmt.Sprintf("node%d", i), fmt.Sprintf("node%d", i+1)))
 	}
 
 	suite.Equal(nodeCount, suite.graph.NodeCount())

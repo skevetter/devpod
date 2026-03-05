@@ -75,7 +75,11 @@ func NewProCmd(flags *flags.GlobalFlags, streamLogger *log.StreamLogger) *cobra.
 	return proCmd
 }
 
-func findProProvider(ctx context.Context, context, provider, host string, log log.Logger) (*config.Config, *providerpkg.ProviderConfig, error) {
+func findProProvider(
+	ctx context.Context,
+	context, provider, host string,
+	log log.Logger,
+) (*config.Config, *providerpkg.ProviderConfig, error) {
 	devPodConfig, err := config.LoadConfig(context, provider)
 	if err != nil {
 		return nil, nil, err

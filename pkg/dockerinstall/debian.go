@@ -51,13 +51,17 @@ func (i *DebianInstaller) setupRepo(shC string) error {
 	if !i.distro.HasCodename() {
 		return fmt.Errorf(
 			"invalid or missing codename for %s: %s (VERSION_CODENAME not found in /etc/os-release)",
-			i.distro.ID, i.distro.Version,
+			i.distro.ID,
+			i.distro.Version,
 		)
 	}
 
 	aptRepo := fmt.Sprintf(
 		"deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] %s/linux/%s %s %s",
-		i.opts.downloadURL, i.distro.ID, i.distro.Version, i.opts.channel,
+		i.opts.downloadURL,
+		i.distro.ID,
+		i.distro.Version,
+		i.opts.channel,
 	)
 
 	cmds := []string{
@@ -119,7 +123,11 @@ func (i *DebianInstaller) findPackageVersion(pkgName string) (string, error) {
 		return "", fmt.Errorf("apt-cache madison %s failed: %w", pkgName, err)
 	}
 	if len(out) == 0 {
-		return "", fmt.Errorf("version '%s' not found in apt-cache madison results for %s", i.opts.version, pkgName)
+		return "", fmt.Errorf(
+			"version '%s' not found in apt-cache madison results for %s",
+			i.opts.version,
+			pkgName,
+		)
 	}
 	return "=" + strings.TrimSpace(string(out)), nil
 }

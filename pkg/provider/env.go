@@ -49,14 +49,22 @@ const (
 	DEVCONTAINER_ID = "DEVCONTAINER_ID"
 )
 
-func combineOptions(resolvedOptions map[string]config.OptionValue, otherOptions map[string]config.OptionValue) map[string]config.OptionValue {
+func combineOptions(
+	resolvedOptions map[string]config.OptionValue,
+	otherOptions map[string]config.OptionValue,
+) map[string]config.OptionValue {
 	options := map[string]config.OptionValue{}
 	maps.Copy(options, resolvedOptions)
 	maps.Copy(options, otherOptions)
 	return options
 }
 
-func ToEnvironment(workspace *Workspace, machine *Machine, options map[string]config.OptionValue, extraEnv map[string]string) []string {
+func ToEnvironment(
+	workspace *Workspace,
+	machine *Machine,
+	options map[string]config.OptionValue,
+	extraEnv map[string]string,
+) []string {
 	env := ToOptions(workspace, machine, options)
 
 	// create environment variables for command
@@ -71,7 +79,11 @@ func ToEnvironment(workspace *Workspace, machine *Machine, options map[string]co
 	return osEnviron
 }
 
-func CombineOptions(workspace *Workspace, machine *Machine, options map[string]config.OptionValue) map[string]config.OptionValue {
+func CombineOptions(
+	workspace *Workspace,
+	machine *Machine,
+	options map[string]config.OptionValue,
+) map[string]config.OptionValue {
 	providerOptions := map[string]config.OptionValue{}
 	if options != nil {
 		providerOptions = combineOptions(providerOptions, options)
@@ -142,7 +154,11 @@ func ToOptionsMachine(machine *Machine) map[string]string {
 	return retVars
 }
 
-func ToOptions(workspace *Workspace, machine *Machine, options map[string]config.OptionValue) map[string]string {
+func ToOptions(
+	workspace *Workspace,
+	machine *Machine,
+	options map[string]config.OptionValue,
+) map[string]string {
 	providerOptions := CombineOptions(workspace, machine, options)
 	retVars := map[string]string{}
 	for optionName, optionValue := range providerOptions {
@@ -178,7 +194,11 @@ func GetBaseEnvironment(context, provider string) map[string]string {
 	return retVars
 }
 
-func GetProviderOptions(workspace *Workspace, server *Machine, devConfig *config.Config) map[string]config.OptionValue {
+func GetProviderOptions(
+	workspace *Workspace,
+	server *Machine,
+	devConfig *config.Config,
+) map[string]config.OptionValue {
 	retValues := map[string]config.OptionValue{}
 	providerName := ""
 	if workspace != nil {

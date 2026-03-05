@@ -174,7 +174,12 @@ func downloadGithubRelease(org, repo, release, file, token string) (io.ReadClose
 		return nil, fmt.Errorf("couldn't find asset %s in github release (%s)", file, releaseURL)
 	}
 
-	assetPath := fmt.Sprintf("/repos/%s/%s/releases/assets/%d", url.PathEscape(org), url.PathEscape(repo), releaseAsset.ID)
+	assetPath := fmt.Sprintf(
+		"/repos/%s/%s/releases/assets/%d",
+		url.PathEscape(org),
+		url.PathEscape(repo),
+		releaseAsset.ID,
+	)
 	assetURL := (&url.URL{
 		Scheme: "https",
 		Host:   "api.github.com",

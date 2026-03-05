@@ -100,7 +100,10 @@ func GetVSCodeConfiguration(mergedConfig *MergedDevContainerConfig) *VSCodeCusto
 				continue
 			}
 
-			retVSCodeCustomizations.Extensions = append(retVSCodeCustomizations.Extensions, extension)
+			retVSCodeCustomizations.Extensions = append(
+				retVSCodeCustomizations.Extensions,
+				extension,
+			)
 		}
 
 		maps.Copy(retVSCodeCustomizations.Settings, vsCode.Settings)

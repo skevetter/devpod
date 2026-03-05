@@ -62,7 +62,12 @@ type preferences struct {
 	InitialWorkingDirectory string `json:"initial_working_directory,omitempty"` // RStudio expects snake_case
 }
 
-func NewRStudioServer(workspaceFolder string, userName string, values map[string]config.OptionValue, log log.Logger) *RStudioServer {
+func NewRStudioServer(
+	workspaceFolder string,
+	userName string,
+	values map[string]config.OptionValue,
+	log log.Logger,
+) *RStudioServer {
 	return &RStudioServer{
 		values:          values,
 		workspaceFolder: workspaceFolder,
@@ -161,7 +166,8 @@ func ensureGdebi(log log.Logger) error {
 			return fmt.Errorf("apt update: %w: %s", err, string(out))
 		}
 
-		out, err = exec.Command("apt", "-y", "install", "--no-install-recommends", "gdebi-core").CombinedOutput()
+		out, err = exec.Command("apt", "-y", "install", "--no-install-recommends", "gdebi-core").
+			CombinedOutput()
 		if err != nil {
 			return fmt.Errorf("install gdebi core: %w: %s", err, string(out))
 		}
@@ -177,7 +183,10 @@ func getDistroCodename(log log.Logger) (string, error) {
 		return "", fmt.Errorf("read /etc/os-release: %w", err)
 	}
 	if !bytes.Contains(all, []byte("ID=ubuntu")) {
-		return "", fmt.Errorf("RStudio Server is only supported on ubuntu images, OS information is %s", string(all))
+		return "", fmt.Errorf(
+			"RStudio Server is only supported on ubuntu images, OS information is %s",
+			string(all),
+		)
 	}
 
 	// Find ubuntu release codename
@@ -192,7 +201,11 @@ func getDistroCodename(log log.Logger) (string, error) {
 }
 
 func downloadRStudioDeb(ubuntuCodename string, log log.Logger) (string, error) {
-	downloadURL := getDownloadURL("stable", ubuntuCodename, runtime.GOARCH) // the agent injection already handles the cpu architecture
+	downloadURL := getDownloadURL(
+		"stable",
+		ubuntuCodename,
+		runtime.GOARCH,
+	) // the agent injection already handles the cpu architecture
 	log.Infof("Downloading RStudio from %s", downloadURL)
 
 	// Download .deb
@@ -308,14 +321,19 @@ directory=%s`, configFolder)
 		return fmt.Errorf("save db conf: %w", err)
 	}
 
-	rServerConf := fmt.Sprintf(`# https://docs.posit.co/ide/server-pro/access_and_security/server_permissions.html#running-without-permissions
+	rServerConf := fmt.Sprintf(
+		`# https://docs.posit.co/ide/server-pro/access_and_security/server_permissions.html#running-without-permissions
 server-user=%s
 auth-none=1
 auth-minimum-user-id=0
 
 server-data-dir=%s
 database-config-file=%s/dbconf.conf
-`, userName, configFolder, configFolder)
+`,
+		userName,
+		configFolder,
+		configFolder,
+	)
 	serverConfPath := filepath.Join(rstudioConfigFolder, "rserver.conf")
 	// The RStudio installer automatically creates an empty file at destConfPath, let's try to remove that first
 	_ = os.Remove(serverConfPath)

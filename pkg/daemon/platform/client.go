@@ -60,7 +60,10 @@ func (c *LocalClient) Status(ctx context.Context, debug bool) (Status, error) {
 	return status, nil
 }
 
-func (c *LocalClient) GetWorkspace(ctx context.Context, uid string) (*managementv1.DevPodWorkspaceInstance, error) {
+func (c *LocalClient) GetWorkspace(
+	ctx context.Context,
+	uid string,
+) (*managementv1.DevPodWorkspaceInstance, error) {
 	b, err := c.doRequest(ctx, http.MethodGet, routeGetWorkspace+fmt.Sprintf("?uid=%s", uid), nil)
 	if err != nil {
 		return nil, err
@@ -78,8 +81,16 @@ func (c *LocalClient) GetWorkspace(ctx context.Context, uid string) (*management
 	return instance, nil
 }
 
-func (c *LocalClient) ListWorkspaces(ctx context.Context, ownerFilter platform.OwnerFilter) ([]managementv1.DevPodWorkspaceInstance, error) {
-	b, err := c.doRequest(ctx, http.MethodGet, routeListWorkspaces+"?owner="+ownerFilter.String(), nil)
+func (c *LocalClient) ListWorkspaces(
+	ctx context.Context,
+	ownerFilter platform.OwnerFilter,
+) ([]managementv1.DevPodWorkspaceInstance, error) {
+	b, err := c.doRequest(
+		ctx,
+		http.MethodGet,
+		routeListWorkspaces+"?owner="+ownerFilter.String(),
+		nil,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +104,10 @@ func (c *LocalClient) ListWorkspaces(ctx context.Context, ownerFilter platform.O
 	return instances, nil
 }
 
-func (c *LocalClient) CreateWorkspace(ctx context.Context, workspace *managementv1.DevPodWorkspaceInstance) (*managementv1.DevPodWorkspaceInstance, error) {
+func (c *LocalClient) CreateWorkspace(
+	ctx context.Context,
+	workspace *managementv1.DevPodWorkspaceInstance,
+) (*managementv1.DevPodWorkspaceInstance, error) {
 	body, err := json.Marshal(workspace)
 	if err != nil {
 		return nil, err
@@ -111,7 +125,10 @@ func (c *LocalClient) CreateWorkspace(ctx context.Context, workspace *management
 	return newInstance, nil
 }
 
-func (c *LocalClient) UpdateWorkspace(ctx context.Context, workspace *managementv1.DevPodWorkspaceInstance) (*managementv1.DevPodWorkspaceInstance, error) {
+func (c *LocalClient) UpdateWorkspace(
+	ctx context.Context,
+	workspace *managementv1.DevPodWorkspaceInstance,
+) (*managementv1.DevPodWorkspaceInstance, error) {
 	body, err := json.Marshal(workspace)
 	if err != nil {
 		return nil, err
@@ -138,11 +155,21 @@ func (c *LocalClient) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-func (c *LocalClient) doRequest(ctx context.Context, method string, path string, body io.Reader) ([]byte, error) {
+func (c *LocalClient) doRequest(
+	ctx context.Context,
+	method string,
+	path string,
+	body io.Reader,
+) ([]byte, error) {
 	timeoutCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(timeoutCtx, method, fmt.Sprintf("http://localclient.devpod%s", path), body)
+	req, err := http.NewRequestWithContext(
+		timeoutCtx,
+		method,
+		fmt.Sprintf("http://localclient.devpod%s", path),
+		body,
+	)
 	if err != nil {
 		return nil, err
 	}

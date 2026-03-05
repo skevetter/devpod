@@ -20,7 +20,13 @@ const (
 )
 
 type Cloner interface {
-	Clone(ctx context.Context, repository string, targetDir string, extraArgs, extraEnv []string, log log.Logger) error
+	Clone(
+		ctx context.Context,
+		repository string,
+		targetDir string,
+		extraArgs, extraEnv []string,
+		log log.Logger,
+	) error
 }
 
 type Option func(*cloner)
@@ -119,7 +125,13 @@ func (w *progressWriter) Write(p []byte) (n int, err error) {
 	return w.log.WriteLevel(w.level, p)
 }
 
-func (c *cloner) Clone(ctx context.Context, repository string, targetDir string, extraArgs, extraEnv []string, log log.Logger) error {
+func (c *cloner) Clone(
+	ctx context.Context,
+	repository string,
+	targetDir string,
+	extraArgs, extraEnv []string,
+	log log.Logger,
+) error {
 	args := c.initialArgs()
 	args = append(args, extraArgs...)
 	args = append(args, c.extraArgs...)

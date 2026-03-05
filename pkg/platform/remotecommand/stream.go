@@ -63,7 +63,10 @@ func (s *Stream) Read(reader io.Reader) error {
 	for {
 		n, err := reader.Read(buf)
 		if n > 0 {
-			err = s.ws.WriteMessage(websocket.BinaryMessage, newDataMessage(s.dataType, buf[:n]).Bytes())
+			err = s.ws.WriteMessage(
+				websocket.BinaryMessage,
+				newDataMessage(s.dataType, buf[:n]).Bytes(),
+			)
 			if err != nil {
 				//nolint:all
 				if err == websocket.ErrCloseSent {

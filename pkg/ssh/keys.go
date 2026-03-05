@@ -37,7 +37,10 @@ func rsaKeyGen() (privateKey string, publicKey string, err error) {
 	}, privateKeyRaw)
 }
 
-func generateKeys(block pem.Block, cp crypto.Signer) (privateKey string, publicKey string, err error) {
+func generateKeys(
+	block pem.Block,
+	cp crypto.Signer,
+) (privateKey string, publicKey string, err error) {
 	pkBytes := pem.EncodeToMemory(&block)
 	privateKey = string(pkBytes)
 

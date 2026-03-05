@@ -34,7 +34,13 @@ func NewCheckUpdateCmd(globalFlags *flags.GlobalFlags) *cobra.Command {
 		Short:  "Check platform provider update",
 		Hidden: true,
 		RunE: func(cobraCmd *cobra.Command, args []string) error {
-			devPodConfig, provider, err := findProProvider(cobraCmd.Context(), cmd.Context, cmd.Provider, cmd.Host, cmd.Log)
+			devPodConfig, provider, err := findProProvider(
+				cobraCmd.Context(),
+				cmd.Context,
+				cmd.Provider,
+				cmd.Host,
+				cmd.Log,
+			)
 			if err != nil {
 				return err
 			}
@@ -65,7 +71,11 @@ type ProviderUpdateInfo struct {
 	NewVersion string `json:"newVersion,omitempty"`
 }
 
-func (cmd *CheckUpdateCmd) Run(ctx context.Context, devPodConfig *config.Config, provider *provider.ProviderConfig) error {
+func (cmd *CheckUpdateCmd) Run(
+	ctx context.Context,
+	devPodConfig *config.Config,
+	provider *provider.ProviderConfig,
+) error {
 	remoteVersion, err := platform.GetDevPodVersion(fmt.Sprintf("https://%s", cmd.Host))
 	if err != nil {
 		return err

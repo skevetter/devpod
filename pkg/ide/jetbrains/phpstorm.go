@@ -28,8 +28,18 @@ var PhpStormOptions = ide.Options{
 	},
 }
 
-func NewPhpStorm(userName string, values map[string]config.OptionValue, log log.Logger) *GenericJetBrainsServer {
-	amd64Download, arm64Download := getDownloadURLs(PhpStormOptions, values, PhpStormProductCode, PhpStormDownloadAmd64Template, PhpStormDownloadArm64Template)
+func NewPhpStorm(
+	userName string,
+	values map[string]config.OptionValue,
+	log log.Logger,
+) *GenericJetBrainsServer {
+	amd64Download, arm64Download := getDownloadURLs(
+		PhpStormOptions,
+		values,
+		PhpStormProductCode,
+		PhpStormDownloadAmd64Template,
+		PhpStormDownloadArm64Template,
+	)
 	return newGenericServer(userName, &GenericOptions{
 		ID:            "phpstorm",
 		DisplayName:   "PhpStorm",

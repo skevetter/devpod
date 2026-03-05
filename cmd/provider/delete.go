@@ -36,12 +36,22 @@ func NewDeleteCmd(flags *flags.GlobalFlags) *cobra.Command {
 			return cmd.Run(context.Background(), args)
 		},
 		ValidArgsFunction: func(rootCmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-			return completion.GetProviderSuggestions(rootCmd, cmd.Context, cmd.Provider, args, toComplete, cmd.Owner, logpkg.Default)
+			return completion.GetProviderSuggestions(
+				rootCmd,
+				cmd.Context,
+				cmd.Provider,
+				args,
+				toComplete,
+				cmd.Owner,
+				logpkg.Default,
+			)
 		},
 	}
 
-	deleteCmd.Flags().BoolVar(&cmd.IgnoreNotFound, "ignore-not-found", false, "Treat \"provider not found\" as a successful delete")
-	deleteCmd.Flags().BoolVar(&cmd.Force, "force", false, "Force delete the provider and ignore provider is already used")
+	deleteCmd.Flags().
+		BoolVar(&cmd.IgnoreNotFound, "ignore-not-found", false, "Treat \"provider not found\" as a successful delete")
+	deleteCmd.Flags().
+		BoolVar(&cmd.Force, "force", false, "Force delete the provider and ignore provider is already used")
 	_ = deleteCmd.Flags().MarkHidden("force")
 	return deleteCmd
 }
@@ -75,7 +85,13 @@ func (cmd *DeleteCmd) Run(ctx context.Context, args []string) error {
 	return nil
 }
 
-func DeleteProvider(ctx context.Context, devPodConfig *config.Config, provider string, ignoreNotFound, force bool, log logpkg.Logger) error {
+func DeleteProvider(
+	ctx context.Context,
+	devPodConfig *config.Config,
+	provider string,
+	ignoreNotFound, force bool,
+	log logpkg.Logger,
+) error {
 	// if force is not set, check if the provider is associated with a pro instance or workspace
 	if !force {
 		// check if this provider is associated with a pro instance
@@ -85,7 +101,12 @@ func DeleteProvider(ctx context.Context, devPodConfig *config.Config, provider s
 		}
 		for _, instance := range proInstances {
 			if instance.Provider == provider {
-				return fmt.Errorf("cannot delete provider '%s', because it is connected to Pro instance '%s'. Removing the Pro instance will automatically delete this provider", instance.Provider, instance.Host)
+				return fmt.Errorf(
+					"cannot delete provider '%s', because it is connected to Pro instance '%s'. "+
+						"Removing the Pro instance will automatically delete this provider",
+					instance.Provider,
+					instance.Host,
+				)
 			}
 		}
 
@@ -98,7 +119,13 @@ func DeleteProvider(ctx context.Context, devPodConfig *config.Config, provider s
 		// search for workspace that uses this machine
 		for _, workspace := range workspaces {
 			if workspace.Provider.Name == provider {
-				return fmt.Errorf("cannot delete provider '%s', because workspace '%s' is still using it. Please delete the workspace '%s' before deleting the provider", workspace.Provider.Name, workspace.ID, workspace.ID)
+				return fmt.Errorf(
+					"cannot delete provider '%s', because workspace '%s' is still using it. "+
+						"Please delete the workspace '%s' before deleting the provider",
+					workspace.Provider.Name,
+					workspace.ID,
+					workspace.ID,
+				)
 			}
 		}
 	}

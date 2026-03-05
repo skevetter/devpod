@@ -64,7 +64,8 @@ func tryOpen(ctx context.Context, url string, fn func(string) error, log log.Log
 	if resp != nil {
 		defer func() { _ = resp.Body.Close() }()
 
-		if resp.StatusCode != http.StatusBadGateway && resp.StatusCode != http.StatusServiceUnavailable {
+		if resp.StatusCode != http.StatusBadGateway &&
+			resp.StatusCode != http.StatusServiceUnavailable {
 			select {
 			case <-ctx.Done():
 				return nil

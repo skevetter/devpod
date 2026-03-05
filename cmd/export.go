@@ -37,8 +37,18 @@ func NewExportCmd(flags *flags.GlobalFlags) *cobra.Command {
 
 			return cmd.Run(ctx, devPodConfig, args)
 		},
-		ValidArgsFunction: func(rootCmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-			return completion.GetWorkspaceSuggestions(rootCmd, cmd.Context, cmd.Provider, args, toComplete, cmd.Owner, log.Default)
+		ValidArgsFunction: func(
+			rootCmd *cobra.Command, args []string, toComplete string,
+		) ([]string, cobra.ShellCompDirective) {
+			return completion.GetWorkspaceSuggestions(
+				rootCmd,
+				cmd.Context,
+				cmd.Provider,
+				args,
+				toComplete,
+				cmd.Owner,
+				log.Default,
+			)
 		},
 	}
 
@@ -70,7 +80,10 @@ func (cmd *ExportCmd) Run(ctx context.Context, devPodConfig *config.Config, args
 	return nil
 }
 
-func exportWorkspace(devPodConfig *config.Config, workspaceConfig *provider.Workspace) (*provider.ExportConfig, error) {
+func exportWorkspace(
+	devPodConfig *config.Config,
+	workspaceConfig *provider.Workspace,
+) (*provider.ExportConfig, error) {
 	var err error
 
 	// create return config
@@ -84,14 +97,21 @@ func exportWorkspace(devPodConfig *config.Config, workspaceConfig *provider.Work
 
 	// has machine?
 	if workspaceConfig.Machine.ID != "" {
-		retConfig.Machine, err = provider.ExportMachine(workspaceConfig.Context, workspaceConfig.Machine.ID)
+		retConfig.Machine, err = provider.ExportMachine(
+			workspaceConfig.Context,
+			workspaceConfig.Machine.ID,
+		)
 		if err != nil {
 			return nil, fmt.Errorf("export machine config: %w", err)
 		}
 	}
 
 	// export provider
-	retConfig.Provider, err = provider.ExportProvider(devPodConfig, workspaceConfig.Context, workspaceConfig.Provider.Name)
+	retConfig.Provider, err = provider.ExportProvider(
+		devPodConfig,
+		workspaceConfig.Context,
+		workspaceConfig.Provider.Name,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("export provider config: %w", err)
 	}

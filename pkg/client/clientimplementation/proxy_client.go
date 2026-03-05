@@ -43,7 +43,12 @@ const (
 	lockRetry   = time.Second
 )
 
-func NewProxyClient(devPodConfig *config.Config, prov *provider.ProviderConfig, workspace *provider.Workspace, log log.Logger) (client.ProxyClient, error) {
+func NewProxyClient(
+	devPodConfig *config.Config,
+	prov *provider.ProviderConfig,
+	workspace *provider.Workspace,
+	log log.Logger,
+) (client.ProxyClient, error) {
 	pc := &proxyClient{
 		devPodConfig: devPodConfig,
 		config:       prov,
@@ -134,7 +139,14 @@ func (s *proxyClient) Unlock() {
 }
 
 func tryLock(ctx context.Context, lock *flock.Flock, name string, log log.Logger) error {
-	done := scheduleLogMessage(fmt.Sprintf("Trying to lock %s, seems like another process is running that blocks this %s", name, name), log)
+	done := scheduleLogMessage(
+		fmt.Sprintf(
+			"Trying to lock %s, seems like another process is running that blocks this %s",
+			name,
+			name,
+		),
+		log,
+	)
 	defer close(done)
 
 	now := time.Now()
@@ -154,7 +166,10 @@ func tryLock(ctx context.Context, lock *flock.Flock, name string, log log.Logger
 		}
 	}
 
-	return fmt.Errorf("timed out waiting to lock %s, seems like there is another process running on this machine that blocks it", name)
+	return fmt.Errorf(
+		"timed out waiting to lock %s, seems like there is another process running on this machine that blocks it",
+		name,
+	)
 }
 
 func (s *proxyClient) initLock() {
@@ -173,7 +188,9 @@ func (s *proxyClient) initLock() {
 		}
 
 		// create workspace lock
-		s.workspaceLock = flock.New(filepath.Join(workspaceLocksDir, s.workspace.ID+".workspace.lock"))
+		s.workspaceLock = flock.New(
+			filepath.Join(workspaceLocksDir, s.workspace.ID+".workspace.lock"),
+		)
 	})
 }
 
@@ -199,7 +216,11 @@ func (s *proxyClient) Context() string {
 	return s.workspace.Context
 }
 
-func (s *proxyClient) RefreshOptions(ctx context.Context, userOptionsRaw []string, reconfigure bool) error {
+func (s *proxyClient) RefreshOptions(
+	ctx context.Context,
+	userOptionsRaw []string,
+	reconfigure bool,
+) error {
 	s.m.Lock()
 	defer s.m.Unlock()
 
@@ -232,7 +253,12 @@ func (s *proxyClient) RefreshOptions(ctx context.Context, userOptionsRaw []strin
 	return nil
 }
 
-func (s *proxyClient) Create(ctx context.Context, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
+func (s *proxyClient) Create(
+	ctx context.Context,
+	stdin io.Reader,
+	stdout io.Writer,
+	stderr io.Writer,
+) error {
 	err := s.executor.execute(ctx, execParams{
 		name:    "createWorkspace",
 		command: s.config.Exec.Proxy.Create.Workspace,
@@ -288,7 +314,10 @@ func (s *proxyClient) Up(ctx context.Context, opt client.UpOptions) error {
 }
 
 // checkPlatformVersion validates the platform provider version compatibility.
-func (s *proxyClient) checkPlatformVersion(ctx context.Context, providerOptions map[string]config.OptionValue) error {
+func (s *proxyClient) checkPlatformVersion(
+	ctx context.Context,
+	providerOptions map[string]config.OptionValue,
+) error {
 	loftConfig := providerOptions["LOFT_CONFIG"].Value
 	if loftConfig == "" {
 		return nil
@@ -310,7 +339,10 @@ func (s *proxyClient) checkPlatformVersion(ctx context.Context, providerOptions 
 	}
 
 	if parsedVersion.GE(semver.MustParse("0.6.99")) {
-		return fmt.Errorf("you are using an outdated provider version for this platform. Please disconnect and reconnect the platform to update the provider")
+		return fmt.Errorf(
+			"you are using an outdated provider version for this platform. " +
+				"Please disconnect and reconnect the platform to update the provider",
+		)
 	}
 
 	return nil
@@ -349,7 +381,10 @@ func (s *proxyClient) Delete(ctx context.Context, opt client.DeleteOptions) erro
 	}, s.log)
 }
 
-func (s *proxyClient) Status(ctx context.Context, options client.StatusOptions) (client.Status, error) {
+func (s *proxyClient) Status(
+	ctx context.Context,
+	options client.StatusOptions,
+) (client.Status, error) {
 	s.m.Lock()
 	defer s.m.Unlock()
 
@@ -371,14 +406,22 @@ func (s *proxyClient) Status(ctx context.Context, options client.StatusOptions) 
 		Log:       s.log.ErrorStreamOnly(),
 	})
 	if err != nil {
-		return client.StatusNotFound, fmt.Errorf("error retrieving container status: %s%w", buf.String(), err)
+		return client.StatusNotFound, fmt.Errorf(
+			"error retrieving container status: %s%w",
+			buf.String(),
+			err,
+		)
 	}
 
 	devpodlog.ReadJSONStream(bytes.NewReader(buf.Bytes()), s.log.ErrorStreamOnly())
 	status := &client.WorkspaceStatus{}
 	err = json.Unmarshal(stdout.Bytes(), status)
 	if err != nil {
-		return client.StatusNotFound, fmt.Errorf("error parsing proxy command response: %s%w", stdout.String(), err)
+		return client.StatusNotFound, fmt.Errorf(
+			"error parsing proxy command response: %s%w",
+			stdout.String(),
+			err,
+		)
 	}
 
 	// parse status

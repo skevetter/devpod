@@ -68,7 +68,12 @@ type ProWorkspaceInstanceStatus struct {
 	IDE    *provider.WorkspaceIDEConfig `json:"ide,omitempty"`
 }
 
-func (cmd *WorkspacesCmd) Run(ctx context.Context, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
+func (cmd *WorkspacesCmd) Run(
+	ctx context.Context,
+	stdin io.Reader,
+	stdout io.Writer,
+	stderr io.Writer,
+) error {
 	if cmd.Context == "" {
 		cmd.Context = config.DefaultContext
 	}
@@ -171,7 +176,13 @@ type instanceStore struct {
 	log log.Logger
 }
 
-func newStore(informer informermanagementv1.DevPodWorkspaceInstanceInformer, self *managementv1.Self, context string, filterByOwner bool, log log.Logger) *instanceStore {
+func newStore(
+	informer informermanagementv1.DevPodWorkspaceInstanceInformer,
+	self *managementv1.Self,
+	context string,
+	filterByOwner bool,
+	log log.Logger,
+) *instanceStore {
 	return &instanceStore{
 		informer:      informer,
 		self:          self,
@@ -191,8 +202,11 @@ func (s *instanceStore) Add(instance *managementv1.DevPodWorkspaceInstance) {
 		return
 	}
 	var source *provider.WorkspaceSource
-	if instance.GetAnnotations() != nil && instance.GetAnnotations()[storagev1.DevPodWorkspaceSourceAnnotation] != "" {
-		source = provider.ParseWorkspaceSource(instance.GetAnnotations()[storagev1.DevPodWorkspaceSourceAnnotation])
+	if instance.GetAnnotations() != nil &&
+		instance.GetAnnotations()[storagev1.DevPodWorkspaceSourceAnnotation] != "" {
+		source = provider.ParseWorkspaceSource(
+			instance.GetAnnotations()[storagev1.DevPodWorkspaceSourceAnnotation],
+		)
 	}
 
 	var ideConfig *provider.WorkspaceIDEConfig
@@ -221,7 +235,10 @@ func (s *instanceStore) Add(instance *managementv1.DevPodWorkspaceInstance) {
 	s.m.Unlock()
 }
 
-func (s *instanceStore) Update(oldInstance *managementv1.DevPodWorkspaceInstance, newInstance *managementv1.DevPodWorkspaceInstance) {
+func (s *instanceStore) Update(
+	oldInstance *managementv1.DevPodWorkspaceInstance,
+	newInstance *managementv1.DevPodWorkspaceInstance,
+) {
 	s.Add(newInstance)
 }
 
@@ -271,12 +288,16 @@ func (s *instanceStore) List() []*ProWorkspaceInstance {
 				s.m.Unlock()
 
 				var source *provider.WorkspaceSource
-				if instance.GetAnnotations() != nil && instance.GetAnnotations()[storagev1.DevPodWorkspaceSourceAnnotation] != "" {
-					source = provider.ParseWorkspaceSource(instance.GetAnnotations()[storagev1.DevPodWorkspaceSourceAnnotation])
+				if instance.GetAnnotations() != nil &&
+					instance.GetAnnotations()[storagev1.DevPodWorkspaceSourceAnnotation] != "" {
+					source = provider.ParseWorkspaceSource(
+						instance.GetAnnotations()[storagev1.DevPodWorkspaceSourceAnnotation],
+					)
 				}
 
 				var ideConfig *provider.WorkspaceIDEConfig
-				if instance.GetLabels() != nil && instance.GetLabels()[storagev1.DevPodWorkspaceIDLabel] != "" {
+				if instance.GetLabels() != nil &&
+					instance.GetLabels()[storagev1.DevPodWorkspaceIDLabel] != "" {
 					id := instance.GetLabels()[storagev1.DevPodWorkspaceIDLabel]
 					workspaceConfig, err := provider.LoadWorkspaceConfig(s.context, id)
 					if err == nil {

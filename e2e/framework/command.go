@@ -55,7 +55,11 @@ func (f *Framework) DevPodList(ctx context.Context) (string, error) {
 	return out, nil
 }
 
-func (f *Framework) DevPodUpStreams(ctx context.Context, workspace string, additionalArgs ...string) (string, string, error) {
+func (f *Framework) DevPodUpStreams(
+	ctx context.Context,
+	workspace string,
+	additionalArgs ...string,
+) (string, string, error) {
 	upArgs := []string{"up", "--ide", "none", workspace}
 	upArgs = append(upArgs, additionalArgs...)
 
@@ -123,7 +127,11 @@ func (f *Framework) DevPodUpReset(ctx context.Context, additionalArgs ...string)
 	return nil
 }
 
-func (f *Framework) DevPodSSH(ctx context.Context, workspace string, command string) (string, error) {
+func (f *Framework) DevPodSSH(
+	ctx context.Context,
+	workspace string,
+	command string,
+) (string, error) {
 	out, err := f.ExecCommandOutput(ctx, []string{"ssh", workspace, "--command", command})
 	if err != nil {
 		return "", fmt.Errorf("devpod ssh failed: %s", err.Error())
@@ -132,17 +140,30 @@ func (f *Framework) DevPodSSH(ctx context.Context, workspace string, command str
 }
 
 func (f *Framework) DevPodSSHEchoTestString(ctx context.Context, workspace string) error {
-	err := f.ExecCommand(ctx, true, true, "mYtEsTsTrInG", []string{"ssh", "--command", "echo 'bVl0RXNUc1RySW5H' | base64 -d", workspace})
+	err := f.ExecCommand(
+		ctx,
+		true,
+		true,
+		"mYtEsTsTrInG",
+		[]string{"ssh", "--command", "echo 'bVl0RXNUc1RySW5H' | base64 -d", workspace},
+	)
 	if err != nil {
 		return fmt.Errorf("devpod ssh failed: %s", err.Error())
 	}
 	return nil
 }
 
-func (f *Framework) DevPodProviderOptionsCheckNamespaceDescription(ctx context.Context, provider, searchStr string) error {
+func (f *Framework) DevPodProviderOptionsCheckNamespaceDescription(
+	ctx context.Context,
+	provider, searchStr string,
+) error {
 	err := f.ExecCommand(ctx, true, true, searchStr, []string{"provider", "options", provider})
 	if err != nil {
-		return fmt.Errorf("did not found value %s in devpod provider options output. error: %s", searchStr, err.Error())
+		return fmt.Errorf(
+			"did not found value %s in devpod provider options output. error: %s",
+			searchStr,
+			err.Error(),
+		)
 	}
 	return nil
 }
@@ -156,7 +177,11 @@ func (f *Framework) DevPodProviderList(ctx context.Context, extraArgs ...string)
 	return nil
 }
 
-func (f *Framework) DevPodProviderUse(ctx context.Context, provider string, extraArgs ...string) error {
+func (f *Framework) DevPodProviderUse(
+	ctx context.Context,
+	provider string,
+	extraArgs ...string,
+) error {
 	baseArgs := []string{"provider", "use", provider}
 	err := f.ExecCommand(ctx, false, true, "", append(baseArgs, extraArgs...))
 	if err != nil {
@@ -165,7 +190,10 @@ func (f *Framework) DevPodProviderUse(ctx context.Context, provider string, extr
 	return nil
 }
 
-func (f *Framework) DevPodStatus(ctx context.Context, extraArgs ...string) (client.WorkspaceStatus, error) {
+func (f *Framework) DevPodStatus(
+	ctx context.Context,
+	extraArgs ...string,
+) (client.WorkspaceStatus, error) {
 	baseArgs := []string{"status", "--output", "json"}
 	baseArgs = append(baseArgs, extraArgs...)
 	stdout, err := f.ExecCommandOutput(ctx, baseArgs)
@@ -255,7 +283,11 @@ func (f *Framework) DevPodWorkspaceStop(ctx context.Context, extraArgs ...string
 	return f.ExecCommandStdout(ctx, baseArgs)
 }
 
-func (f *Framework) DevPodWorkspaceDelete(ctx context.Context, workspace string, extraArgs ...string) error {
+func (f *Framework) DevPodWorkspaceDelete(
+	ctx context.Context,
+	workspace string,
+	extraArgs ...string,
+) error {
 	baseArgs := []string{"delete", workspace, "--ignore-not-found"}
 	baseArgs = append(baseArgs, extraArgs...)
 
@@ -285,7 +317,8 @@ func (f *Framework) SetupGPG(tmpDir string) error {
 		return nil
 	}
 
-	err = exec.Command("gpg-agent", "--homedir", "$HOME/.gnupg", "--use-standard-socket", "--daemon").Run()
+	err = exec.Command("gpg-agent", "--homedir", "$HOME/.gnupg", "--use-standard-socket", "--daemon").
+		Run()
 	if err != nil {
 		return nil
 	}
@@ -294,7 +327,8 @@ func (f *Framework) SetupGPG(tmpDir string) error {
 }
 
 func (f *Framework) DevPodSSHGpgTestKey(ctx context.Context, workspace string) error {
-	pubKeyB, err := exec.Command("sh", "-c", "gpg -k --with-colons 2>/dev/null | grep sec | base64 -w0").Output()
+	pubKeyB, err := exec.Command("sh", "-c", "gpg -k --with-colons 2>/dev/null | grep sec | base64 -w0").
+		Output()
 	if err != nil {
 		return err
 	}
@@ -312,7 +346,11 @@ func (f *Framework) DevPodSSHGpgTestKey(ctx context.Context, workspace string) e
 	}
 
 	if stdout != string(pubKeyB) {
-		return fmt.Errorf("devpod gpg public key forwarding failed, expected %s, got %s", string(pubKeyB), stdout)
+		return fmt.Errorf(
+			"devpod gpg public key forwarding failed, expected %s, got %s",
+			string(pubKeyB),
+			stdout,
+		)
 	}
 
 	return nil
@@ -327,7 +365,12 @@ func (f *Framework) DevpodPortTest(ctx context.Context, port string, workspace s
 	return err
 }
 
-func (f *Framework) DevPodProviderFindOption(ctx context.Context, provider string, searchStr string, extraArgs ...string) error {
+func (f *Framework) DevPodProviderFindOption(
+	ctx context.Context,
+	provider string,
+	searchStr string,
+	extraArgs ...string,
+) error {
 	baseArgs := []string{"provider", "options", provider}
 	err := f.ExecCommand(ctx, false, true, searchStr, append(baseArgs, extraArgs...))
 	if err != nil {
@@ -336,7 +379,11 @@ func (f *Framework) DevPodProviderFindOption(ctx context.Context, provider strin
 	return nil
 }
 
-func (f *Framework) DevPodContextCreate(ctx context.Context, name string, extraArgs ...string) error {
+func (f *Framework) DevPodContextCreate(
+	ctx context.Context,
+	name string,
+	extraArgs ...string,
+) error {
 	baseArgs := []string{"context", "create", name}
 	err := f.ExecCommand(ctx, false, true, "", append(baseArgs, extraArgs...))
 	if err != nil {
@@ -354,7 +401,11 @@ func (f *Framework) DevPodContextUse(ctx context.Context, name string, extraArgs
 	return nil
 }
 
-func (f *Framework) DevPodContextDelete(ctx context.Context, name string, extraArgs ...string) error {
+func (f *Framework) DevPodContextDelete(
+	ctx context.Context,
+	name string,
+	extraArgs ...string,
+) error {
 	baseArgs := []string{"context", "delete", name}
 	err := f.ExecCommand(ctx, false, true, "", append(baseArgs, extraArgs...))
 	if err != nil {

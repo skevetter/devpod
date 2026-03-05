@@ -21,7 +21,11 @@ func Upgrade(ctx context.Context, targetVersion string, dryRun bool, logger log.
 	}
 
 	if release.Version() == version.GetVersion() {
-		if _, err := fmt.Fprintf(os.Stdout, "devpod version %s is already up-to-date\n", release.Version()); err != nil {
+		if _, err := fmt.Fprintf(
+			os.Stdout,
+			"devpod version %s is already up-to-date\n",
+			release.Version(),
+		); err != nil {
 			return fmt.Errorf("write output: %w", err)
 		}
 		return nil
@@ -58,7 +62,10 @@ func Upgrade(ctx context.Context, targetVersion string, dryRun bool, logger log.
 }
 
 // detectRelease detects which release to use based on targetVersion.
-func detectRelease(ctx context.Context, targetVersion string) (*selfupdate.Release, *selfupdate.Updater, error) {
+func detectRelease(
+	ctx context.Context,
+	targetVersion string,
+) (*selfupdate.Release, *selfupdate.Updater, error) {
 	updater, err := selfupdate.NewUpdater(selfupdate.Config{})
 	if err != nil {
 		return nil, nil, fmt.Errorf("initialize updater: %w", err)

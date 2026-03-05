@@ -28,8 +28,18 @@ var IntellijOptions = ide.Options{
 	},
 }
 
-func NewIntellij(userName string, values map[string]config.OptionValue, log log.Logger) *GenericJetBrainsServer {
-	amd64Download, arm64Download := getDownloadURLs(IntellijOptions, values, IntellijProductCode, IntellijDownloadAmd64Template, IntellijDownloadArm64Template)
+func NewIntellij(
+	userName string,
+	values map[string]config.OptionValue,
+	log log.Logger,
+) *GenericJetBrainsServer {
+	amd64Download, arm64Download := getDownloadURLs(
+		IntellijOptions,
+		values,
+		IntellijProductCode,
+		IntellijDownloadAmd64Template,
+		IntellijDownloadArm64Template,
+	)
 	return newGenericServer(userName, &GenericOptions{
 		ID:            "intellij",
 		DisplayName:   "Intellij",

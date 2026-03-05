@@ -23,7 +23,10 @@ func (k *KubernetesDriver) createPersistentVolumeClaim(
 	}
 
 	k.Log.Infof("Create Persistent Volume Claim '%s'", id)
-	_, err = k.client.Client().CoreV1().PersistentVolumeClaims(k.namespace).Create(ctx, pvc, metav1.CreateOptions{})
+	_, err = k.client.Client().
+		CoreV1().
+		PersistentVolumeClaims(k.namespace).
+		Create(ctx, pvc, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("create pvc: %w", err)
 	}

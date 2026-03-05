@@ -38,7 +38,8 @@ func NewDaemonCmd(flags *flags.GlobalFlags) *cobra.Command {
 			return cmd.Run(context.Background())
 		},
 	}
-	daemonCmd.Flags().StringVar(&cmd.Interval, "interval", "", "The interval how to poll workspaces")
+	daemonCmd.Flags().
+		StringVar(&cmd.Interval, "interval", "", "The interval how to poll workspaces")
 	return daemonCmd
 }
 
@@ -117,7 +118,12 @@ func (cmd *DaemonCmd) doOnce(log log.Logger) {
 		if len(matches) == 0 {
 			log.Infof("No workspaces found in path '%s'", baseFolder)
 		} else {
-			log.Infof("%d workspaces found in path '%s', but none of them had any auto-stop configured or were still running / never completed successfully", len(matches), baseFolder)
+			log.Infof(
+				"%d workspaces found in path '%s', but none of them had any auto-stop "+
+					"configured or were still running / never completed successfully",
+				len(matches),
+				baseFolder,
+			)
 		}
 		return
 	}
@@ -133,7 +139,12 @@ func (cmd *DaemonCmd) doOnce(log log.Logger) {
 		}
 	}
 	if latestActivity.Add(timeout).After(time.Now()) {
-		log.Infof("Workspace '%s' has latest activity at '%s', will auto-stop machine in %s", workspace.Workspace.ID, latestActivity.String(), time.Until(latestActivity.Add(timeout)).String())
+		log.Infof(
+			"Workspace '%s' has latest activity at '%s', will auto-stop machine in %s",
+			workspace.Workspace.ID,
+			latestActivity.String(),
+			time.Until(latestActivity.Add(timeout)).String(),
+		)
 		return
 	}
 
@@ -151,7 +162,11 @@ func (cmd *DaemonCmd) runShutdownCommand(workspace *provider2.AgentWorkspaceInfo
 
 	// we run the timeout command now
 	buf := &bytes.Buffer{}
-	log.Infof("Run shutdown command for workspace %s: %s", workspace.Workspace.ID, strings.Join(workspace.Agent.Exec.Shutdown, " "))
+	log.Infof(
+		"Run shutdown command for workspace %s: %s",
+		workspace.Workspace.ID,
+		strings.Join(workspace.Agent.Exec.Shutdown, " "),
+	)
 	err = clientimplementation.RunCommand(clientimplementation.RunCommandOptions{
 		Ctx:     context.Background(),
 		Command: workspace.Agent.Exec.Shutdown,
@@ -160,7 +175,12 @@ func (cmd *DaemonCmd) runShutdownCommand(workspace *provider2.AgentWorkspaceInfo
 		Stderr:  buf,
 	})
 	if err != nil {
-		log.Errorf("Error running %s: %s%w", strings.Join(workspace.Agent.Exec.Shutdown, " "), buf.String(), err)
+		log.Errorf(
+			"Error running %s: %s%w",
+			strings.Join(workspace.Agent.Exec.Shutdown, " "),
+			buf.String(),
+			err,
+		)
 		return
 	}
 
@@ -193,7 +213,10 @@ func (cmd *DaemonCmd) initialTouch(log log.Logger) {
 	}
 }
 
-func getActivity(workspaceConfig string, log log.Logger) (*time.Time, *provider2.AgentWorkspaceInfo, error) {
+func getActivity(
+	workspaceConfig string,
+	log log.Logger,
+) (*time.Time, *provider2.AgentWorkspaceInfo, error) {
 	workspace, err := agent.ParseAgentWorkspaceInfo(workspaceConfig)
 	if err != nil {
 		log.Errorf("Error reading %s: %v", workspaceConfig, err)

@@ -25,7 +25,9 @@ func init() {
 
 		f, err := os.OpenFile("/tmp/pprof_ports", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 		if err == nil {
-			f.Write([]byte(fmt.Sprintf("%d=%d\n", os.Getpid(), listener.Addr().(*net.TCPAddr).Port)))
+			f.Write(
+				[]byte(fmt.Sprintf("%d=%d\n", os.Getpid(), listener.Addr().(*net.TCPAddr).Port)),
+			)
 			f.Close()
 		}
 

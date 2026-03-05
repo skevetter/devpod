@@ -32,7 +32,9 @@ const (
 func (r *runner) composeHelper() (*compose.ComposeHelper, error) {
 	dockerDriver, ok := r.Driver.(driver.DockerDriver)
 	if !ok {
-		return nil, fmt.Errorf("docker compose is not supported by this provider, please choose a different one")
+		return nil, fmt.Errorf(
+			"docker compose is not supported by this provider, please choose a different one",
+		)
 	}
 
 	return dockerDriver.ComposeHelper()
@@ -86,7 +88,9 @@ func (r *runner) deleteDockerCompose(ctx context.Context, projectName string) er
 	return nil
 }
 
-func (r *runner) dockerComposeProjectFiles(parsedConfig *config.SubstitutedConfig) ([]string, []string, []string, error) {
+func (r *runner) dockerComposeProjectFiles(
+	parsedConfig *config.SubstitutedConfig,
+) ([]string, []string, []string, error) {
 	envFiles, err := r.getEnvFiles()
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("get env files: %w", err)
@@ -134,7 +138,11 @@ func (r *runner) runDockerCompose(
 	project.Name = composeHelper.GetProjectName(r.ID)
 	r.Log.Debugf("Loaded project %s", project.Name)
 
-	containerDetails, err := composeHelper.FindDevContainer(ctx, project.Name, parsedConfig.Config.Service)
+	containerDetails, err := composeHelper.FindDevContainer(
+		ctx,
+		project.Name,
+		parsedConfig.Config.Service,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("find dev container: %w", err)
 	}
@@ -173,7 +181,11 @@ func (r *runner) runDockerCompose(
 				r.Log.Errorf("Error starting project: %s", err)
 			} else {
 				// wait for running and get container details
-				details, err := composeHelper.FindDevContainer(ctx, project.Name, parsedConfig.Config.Service)
+				details, err := composeHelper.FindDevContainer(
+					ctx,
+					project.Name,
+					parsedConfig.Config.Service,
+				)
 				if err != nil {
 					r.Log.Errorf("Error finding dev container: %s", err)
 				} else {
@@ -185,7 +197,16 @@ func (r *runner) runDockerCompose(
 
 		// Start container if not running
 		if !didStartProject {
-			containerDetails, err = r.startContainer(ctx, parsedConfig, substitutionContext, project, composeHelper, composeGlobalArgs, containerDetails, options)
+			containerDetails, err = r.startContainer(
+				ctx,
+				parsedConfig,
+				substitutionContext,
+				project,
+				composeHelper,
+				composeGlobalArgs,
+				containerDetails,
+				options,
+			)
 			if err != nil {
 				return nil, fmt.Errorf("start container: %w", err)
 			} else if containerDetails == nil {
@@ -194,15 +215,25 @@ func (r *runner) runDockerCompose(
 		}
 	}
 
-	imageMetadataConfig, err := metadata.GetImageMetadataFromContainer(containerDetails, substitutionContext, r.Log)
+	imageMetadataConfig, err := metadata.GetImageMetadataFromContainer(
+		containerDetails,
+		substitutionContext,
+		r.Log,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("get image metadata from container: %w", err)
 	}
 
 	if dockerDriver, ok := r.Driver.(driver.DockerDriver); ok {
-		err = dockerDriver.UpdateContainerUserUID(ctx, r.ID, parsedConfig.Config, r.Log.Writer(logrus.InfoLevel, false))
+		err = dockerDriver.UpdateContainerUserUID(
+			ctx,
+			r.ID,
+			parsedConfig.Config,
+			r.Log.Writer(logrus.InfoLevel, false),
+		)
 		if err != nil {
-			r.Log.WithFields(logrus.Fields{"error": err}).Error("failed to update container user UID/GID")
+			r.Log.WithFields(logrus.Fields{"error": err}).
+				Error("failed to update container user UID/GID")
 			return nil, err
 		}
 	}
@@ -249,7 +280,10 @@ func (r *runner) onlyRunServices(upArgs []string, parsedConfig *config.Substitut
 	return upArgs
 }
 
-func (r *runner) getDockerComposeFilePaths(parsedConfig *config.SubstitutedConfig, envFiles []string) ([]string, error) {
+func (r *runner) getDockerComposeFilePaths(
+	parsedConfig *config.SubstitutedConfig,
+	envFiles []string,
+) ([]string, error) {
 	configFileDir := filepath.Dir(parsedConfig.Config.Origin)
 
 	// Use docker compose files from config
@@ -314,7 +348,10 @@ func (r *runner) startContainer(
 	service := parsedConfig.Config.Service
 	composeService, err := project.GetService(service)
 	if err != nil {
-		return nil, fmt.Errorf("service '%s' configured in devcontainer.json not found in Docker Compose configuration", service)
+		return nil, fmt.Errorf(
+			"service '%s' configured in devcontainer.json not found in Docker Compose configuration",
+			service,
+		)
 	}
 
 	originalImageName := composeService.Image
@@ -331,12 +368,18 @@ func (r *runner) startContainer(
 		if labels[ConfigFilesLabel] != "" {
 			configFiles := strings.Split(labels[ConfigFilesLabel], ",")
 
-			persistedBuildFileFound, persistedBuildFileExists, persistedBuildFile, err := checkForPersistedFile(configFiles, FeaturesBuildOverrideFilePrefix)
+			persistedBuildFileFound, persistedBuildFileExists, persistedBuildFile, err := checkForPersistedFile(
+				configFiles,
+				FeaturesBuildOverrideFilePrefix,
+			)
 			if err != nil {
 				return nil, fmt.Errorf("check for persisted build override: %w", err)
 			}
 
-			_, persistedStartFileExists, persistedStartFile, err := checkForPersistedFile(configFiles, FeaturesStartOverrideFilePrefix)
+			_, persistedStartFileExists, persistedStartFile, err := checkForPersistedFile(
+				configFiles,
+				FeaturesStartOverrideFilePrefix,
+			)
 			if err != nil {
 				return nil, fmt.Errorf("check for persisted start override: %w", err)
 			}
@@ -356,7 +399,15 @@ func (r *runner) startContainer(
 	}
 
 	if container == nil || !didRestoreFromPersistedShare {
-		overrideBuildImageName, overrideComposeBuildFilePath, imageMetadata, metadataLabel, err := r.buildAndExtendDockerCompose(ctx, parsedConfig, substitutionContext, project, composeHelper, &composeService, composeGlobalArgs)
+		overrideBuildImageName, overrideComposeBuildFilePath, imageMetadata, metadataLabel, err := r.buildAndExtendDockerCompose(
+			ctx,
+			parsedConfig,
+			substitutionContext,
+			project,
+			composeHelper,
+			&composeService,
+			composeGlobalArgs,
+		)
 		if err != nil {
 			return nil, fmt.Errorf("build and extend docker-compose: %w", err)
 		}
@@ -395,7 +446,16 @@ func (r *runner) startContainer(
 			metadata.ImageMetadataLabel: metadataLabel,
 			config.UserLabel:            imageDetails.Config.User,
 		}
-		overrideComposeUpFilePath, err := r.extendedDockerComposeUp(parsedConfig, mergedConfig, composeHelper, &composeService, originalImageName, overrideBuildImageName, imageDetails, additionalLabels)
+		overrideComposeUpFilePath, err := r.extendedDockerComposeUp(
+			parsedConfig,
+			mergedConfig,
+			composeHelper,
+			&composeService,
+			originalImageName,
+			overrideBuildImageName,
+			imageDetails,
+			additionalLabels,
+		)
 		if err != nil {
 			return nil, fmt.Errorf("extend docker-compose up: %w", err)
 		}
@@ -444,7 +504,12 @@ func (r *runner) startContainer(
 
 // prepareComposeBuildInfo modifies a compose project's devcontainer Dockerfile to ensure it can be extended with features
 // If an Image is specified instead of a Build, the metadata from the Image is used to populate the build info.
-func (r *runner) prepareComposeBuildInfo(ctx context.Context, subCtx *config.SubstitutionContext, composeService *composetypes.ServiceConfig, buildTarget string) (*config.ImageBuildInfo, string, string, error) {
+func (r *runner) prepareComposeBuildInfo(
+	ctx context.Context,
+	subCtx *config.SubstitutionContext,
+	composeService *composetypes.ServiceConfig,
+	buildTarget string,
+) (*config.ImageBuildInfo, string, string, error) {
 	var dockerFilePath, dockerfileContents string
 	var imageBuildInfo *config.ImageBuildInfo
 	var err error
@@ -453,7 +518,10 @@ func (r *runner) prepareComposeBuildInfo(ctx context.Context, subCtx *config.Sub
 		if path.IsAbs(composeService.Build.Dockerfile) {
 			dockerFilePath = composeService.Build.Dockerfile
 		} else {
-			dockerFilePath = filepath.Join(composeService.Build.Context, composeService.Build.Dockerfile)
+			dockerFilePath = filepath.Join(
+				composeService.Build.Context,
+				composeService.Build.Dockerfile,
+			)
 		}
 
 		originalDockerfile, err := os.ReadFile(dockerFilePath)
@@ -466,7 +534,10 @@ func (r *runner) prepareComposeBuildInfo(ctx context.Context, subCtx *config.Sub
 		if originalTarget != "" {
 			buildTarget = originalTarget
 		} else {
-			lastStageName, modifiedDockerfile, err := dockerfile.EnsureFinalStageName(string(originalDockerfile), config.DockerfileDefaultTarget)
+			lastStageName, modifiedDockerfile, err := dockerfile.EnsureFinalStageName(
+				string(originalDockerfile),
+				config.DockerfileDefaultTarget,
+			)
 			if err != nil {
 				return nil, "", "", err
 			}
@@ -479,7 +550,12 @@ func (r *runner) prepareComposeBuildInfo(ctx context.Context, subCtx *config.Sub
 				dockerfileContents = string(originalDockerfile)
 			}
 		}
-		imageBuildInfo, err = r.getImageBuildInfoFromDockerfile(subCtx, string(originalDockerfile), mappingToMap(composeService.Build.Args), originalTarget)
+		imageBuildInfo, err = r.getImageBuildInfoFromDockerfile(
+			subCtx,
+			string(originalDockerfile),
+			mappingToMap(composeService.Build.Args),
+			originalTarget,
+		)
 		if err != nil {
 			return nil, "", "", err
 		}
@@ -514,12 +590,24 @@ func (r *runner) buildAndExtendDockerCompose(
 	buildTarget := "dev_container_auto_added_stage_label"
 
 	// Determine base imageName for generated features build
-	imageBuildInfo, dockerfileContents, buildTarget, err = r.prepareComposeBuildInfo(ctx, substitutionContext, composeService, buildTarget)
+	imageBuildInfo, dockerfileContents, buildTarget, err = r.prepareComposeBuildInfo(
+		ctx,
+		substitutionContext,
+		composeService,
+		buildTarget,
+	)
 	if err != nil {
 		return "", "", nil, "", err
 	}
 
-	extendImageBuildInfo, err := feature.GetExtendedBuildInfo(substitutionContext, imageBuildInfo, buildTarget, parsedConfig, r.Log, false)
+	extendImageBuildInfo, err := feature.GetExtendedBuildInfo(
+		substitutionContext,
+		imageBuildInfo,
+		buildTarget,
+		parsedConfig,
+		r.Log,
+		false,
+	)
 	if err != nil {
 		return "", "", nil, "", err
 	}
@@ -588,7 +676,12 @@ func (r *runner) buildAndExtendDockerCompose(
 		return buildImageName, "", nil, "", err
 	}
 
-	imageMetadata, err := metadata.GetDevContainerMetadata(substitutionContext, imageBuildInfo.Metadata, parsedConfig, extendImageBuildInfo.Features)
+	imageMetadata, err := metadata.GetDevContainerMetadata(
+		substitutionContext,
+		imageBuildInfo.Metadata,
+		parsedConfig,
+		extendImageBuildInfo.Features,
+	)
 	if err != nil {
 		return buildImageName, "", nil, "", err
 	}
@@ -596,7 +689,10 @@ func (r *runner) buildAndExtendDockerCompose(
 	return buildImageName, dockerComposeFilePath, imageMetadata, extendImageBuildInfo.MetadataLabel, nil
 }
 
-func (r *runner) extendedDockerfile(featureBuildInfo *feature.BuildInfo, dockerfilePath, dockerfileContent string) (string, string) {
+func (r *runner) extendedDockerfile(
+	featureBuildInfo *feature.BuildInfo,
+	dockerfilePath, dockerfileContent string,
+) (string, string) {
 	// extra args?
 	finalDockerfilePath := dockerfilePath
 	finalDockerfileContent := dockerfileContent
@@ -604,7 +700,10 @@ func (r *runner) extendedDockerfile(featureBuildInfo *feature.BuildInfo, dockerf
 	// get extended build info
 	if featureBuildInfo != nil {
 		// rewrite dockerfile path
-		finalDockerfilePath = filepath.Join(featureBuildInfo.FeaturesFolder, "Dockerfile-with-features")
+		finalDockerfilePath = filepath.Join(
+			featureBuildInfo.FeaturesFolder,
+			"Dockerfile-with-features",
+		)
 
 		// rewrite dockerfile
 		finalDockerfileContent = dockerfile.RemoveSyntaxVersion(dockerfileContent)
@@ -647,7 +746,9 @@ func (r *runner) setBuildPathsForContext(
 	// Rewrite COPY/ADD directives that reference the features folder to use the relative path
 	// from the custom build context. This ensures that the features folder is referenced in the
 	// Dockerfile.
-	pattern := regexp.MustCompile(`(COPY|ADD)(\s+)\./` + regexp.QuoteMeta(config.DevPodContextFeatureFolder) + `/`)
+	pattern := regexp.MustCompile(
+		`(COPY|ADD)(\s+)\./` + regexp.QuoteMeta(config.DevPodContextFeatureFolder) + `/`,
+	)
 	modifiedDockerfileContent = pattern.ReplaceAllString(
 		dockerfileContent,
 		"${1}${2}./"+filepath.ToSlash(relFeaturePath)+"/",
@@ -679,7 +780,12 @@ func (r *runner) extendedDockerComposeBuild(
 		return "", err
 	}
 
-	service := r.createComposeService(composeService, result.dockerfilePathInContext, result.context, featuresBuildInfo)
+	service := r.createComposeService(
+		composeService,
+		result.dockerfilePathInContext,
+		result.context,
+		featuresBuildInfo,
+	)
 	return r.writeComposeFile(service)
 }
 
@@ -712,7 +818,9 @@ func (r *runner) prepareBuildContext(
 		}
 		r.Log.Debugf(
 			"modified Dockerfile path in context to %s and content for extended compose build context %s",
-			relDockerFilePath, composeService.Build.Context)
+			relDockerFilePath,
+			composeService.Build.Context,
+		)
 		result.context = composeService.Build.Context
 		result.dockerfilePathInContext = relDockerFilePath
 		result.dockerfileContent = modifiedDockerfileContent
@@ -766,7 +874,10 @@ func (r *runner) writeComposeFile(service *composetypes.ServiceConfig) (string, 
 		return "", err
 	}
 
-	dockerComposePath := filepath.Join(dockerComposeFolder, fmt.Sprintf("%s-%d.yml", FeaturesBuildOverrideFilePrefix, time.Now().Second()))
+	dockerComposePath := filepath.Join(
+		dockerComposeFolder,
+		fmt.Sprintf("%s-%d.yml", FeaturesBuildOverrideFilePrefix, time.Now().Second()),
+	)
 
 	r.Log.Debugf(
 		"Creating docker-compose build %s with content:\n %s",
@@ -800,7 +911,16 @@ func (r *runner) extendedDockerComposeUp(
 	imageDetails *config.ImageDetails,
 	additionalLabels map[string]string,
 ) (string, error) {
-	dockerComposeUpProject := r.generateDockerComposeUpProject(parsedConfig, mergedConfig, composeHelper, composeService, originalImageName, overrideImageName, imageDetails, additionalLabels)
+	dockerComposeUpProject := r.generateDockerComposeUpProject(
+		parsedConfig,
+		mergedConfig,
+		composeHelper,
+		composeService,
+		originalImageName,
+		overrideImageName,
+		imageDetails,
+		additionalLabels,
+	)
 	dockerComposeData, err := yaml.Marshal(dockerComposeUpProject)
 	if err != nil {
 		return "", err
@@ -812,7 +932,10 @@ func (r *runner) extendedDockerComposeUp(
 		return "", err
 	}
 
-	dockerComposePath := filepath.Join(dockerComposeFolder, fmt.Sprintf("%s-%d.yml", FeaturesStartOverrideFilePrefix, time.Now().Second()))
+	dockerComposePath := filepath.Join(
+		dockerComposeFolder,
+		fmt.Sprintf("%s-%d.yml", FeaturesStartOverrideFilePrefix, time.Now().Second()),
+	)
 
 	r.Log.Debugf(
 		"Creating docker-compose up %s with content:\n %s",
@@ -938,9 +1061,15 @@ exec "$$@"
 	return project
 }
 
-func (r *runner) configureGPUResources(parsedConfig *config.SubstitutedConfig, gpuSupportEnabled bool, overrideService *composetypes.ServiceConfig) {
+func (r *runner) configureGPUResources(
+	parsedConfig *config.SubstitutedConfig,
+	gpuSupportEnabled bool,
+	overrideService *composetypes.ServiceConfig,
+) {
 	if parsedConfig.Config.HostRequirements != nil {
-		enableGPU, warnIfMissing := parsedConfig.Config.HostRequirements.ShouldEnableGPU(gpuSupportEnabled)
+		enableGPU, warnIfMissing := parsedConfig.Config.HostRequirements.ShouldEnableGPU(
+			gpuSupportEnabled,
+		)
 		if enableGPU {
 			overrideService.Deploy = &composetypes.DeployConfig{
 				Resources: composetypes.Resources{
@@ -960,7 +1089,10 @@ func (r *runner) configureGPUResources(parsedConfig *config.SubstitutedConfig, g
 	}
 }
 
-func checkForPersistedFile(files []string, prefix string) (foundLabel bool, fileExists bool, filePath string, err error) {
+func checkForPersistedFile(
+	files []string,
+	prefix string,
+) (foundLabel bool, fileExists bool, filePath string, err error) {
 	for _, file := range files {
 		if !strings.HasPrefix(file, prefix) {
 			continue

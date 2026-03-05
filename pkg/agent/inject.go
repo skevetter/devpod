@@ -116,9 +116,19 @@ func (o *InjectOptions) applyURLDefaults() {
 		o.DownloadURL = DefaultAgentDownloadURL()
 	}
 
-	if strings.Contains(o.DownloadURL, "github.com") && strings.Contains(o.DownloadURL, "/releases/tag/") {
-		normalizedDownloadUrl := strings.Replace(o.DownloadURL, "/releases/tag/", "/releases/download/", 1)
-		o.Log.Warnf("download URL %s is a tag URL, normalizing to download URL %s", o.DownloadURL, normalizedDownloadUrl)
+	if strings.Contains(o.DownloadURL, "github.com") &&
+		strings.Contains(o.DownloadURL, "/releases/tag/") {
+		normalizedDownloadUrl := strings.Replace(
+			o.DownloadURL,
+			"/releases/tag/",
+			"/releases/download/",
+			1,
+		)
+		o.Log.Warnf(
+			"download URL %s is a tag URL, normalizing to download URL %s",
+			o.DownloadURL,
+			normalizedDownloadUrl,
+		)
 		o.DownloadURL = normalizedDownloadUrl
 	}
 }
@@ -275,7 +285,12 @@ func handleInjectError(err error, wasExecuted bool, buf *bytes.Buffer) error {
 func performVersionCheck(ctx *injectContext) error {
 	opts := ctx.opts
 
-	detectedVersion, err := ctx.vc.detectRemoteAgentVersion(opts.Ctx, opts.Exec, opts.RemoteAgentPath, opts.Log)
+	detectedVersion, err := ctx.vc.detectRemoteAgentVersion(
+		opts.Ctx,
+		opts.Exec,
+		opts.RemoteAgentPath,
+		opts.Log,
+	)
 
 	if !opts.SkipVersionCheck {
 		if err != nil {

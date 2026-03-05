@@ -41,7 +41,12 @@ func NewStopCmd(globalFlags *flags.GlobalFlags) *cobra.Command {
 	return c
 }
 
-func (cmd *StopCmd) Run(ctx context.Context, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
+func (cmd *StopCmd) Run(
+	ctx context.Context,
+	stdin io.Reader,
+	stdout io.Writer,
+	stderr io.Writer,
+) error {
 	baseClient, err := client.InitClientFromPath(ctx, cmd.Config)
 	if err != nil {
 		return err
@@ -59,7 +64,13 @@ func (cmd *StopCmd) Run(ctx context.Context, stdin io.Reader, stdout io.Writer, 
 		return fmt.Errorf("couldn't find workspace")
 	}
 
-	conn, err := platform.DialInstance(baseClient, workspace, "stop", platform.OptionsFromEnv(storagev1.DevPodFlagsStop), cmd.Log)
+	conn, err := platform.DialInstance(
+		baseClient,
+		workspace,
+		"stop",
+		platform.OptionsFromEnv(storagev1.DevPodFlagsStop),
+		cmd.Log,
+	)
 	if err != nil {
 		return err
 	}

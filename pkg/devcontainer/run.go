@@ -88,8 +88,16 @@ type UpOptions struct {
 	RegistryCache string
 }
 
-func (r *runner) Up(ctx context.Context, options UpOptions, timeout time.Duration) (*config.Result, error) {
-	r.Log.Debugf("Up devcontainer for workspace '%s' with timeout %s", r.WorkspaceConfig.Workspace.ID, timeout)
+func (r *runner) Up(
+	ctx context.Context,
+	options UpOptions,
+	timeout time.Duration,
+) (*config.Result, error) {
+	r.Log.Debugf(
+		"Up devcontainer for workspace '%s' with timeout %s",
+		r.WorkspaceConfig.Workspace.ID,
+		timeout,
+	)
 
 	substitutedConfig, substitutionContext, err := r.getSubstitutedConfig(options.CLIOptions)
 	if err != nil {
@@ -99,7 +107,12 @@ func (r *runner) Up(ctx context.Context, options UpOptions, timeout time.Duratio
 
 	// do not run initialize command in platform mode
 	if !options.Platform.Enabled {
-		if err := runInitializeCommand(r.LocalWorkspaceFolder, substitutedConfig.Config, options.InitEnv, r.Log); err != nil {
+		if err := runInitializeCommand(
+			r.LocalWorkspaceFolder,
+			substitutedConfig.Config,
+			options.InitEnv,
+			r.Log,
+		); err != nil {
 			return nil, err
 		}
 	} else if len(substitutedConfig.Config.InitializeCommand) > 0 {
@@ -124,23 +137,41 @@ func (r *runner) Up(ctx context.Context, options UpOptions, timeout time.Duratio
 	}
 }
 
-func (r *runner) runDefaultContainer(ctx context.Context, options UpOptions, substitutedConfig *config.SubstitutedConfig, substitutionContext *config.SubstitutionContext, timeout time.Duration) (*config.Result, error) {
+func (r *runner) runDefaultContainer(
+	ctx context.Context,
+	options UpOptions,
+	substitutedConfig *config.SubstitutedConfig,
+	substitutionContext *config.SubstitutionContext,
+	timeout time.Duration,
+) (*config.Result, error) {
 	if options.FallbackImage != "" {
-		r.Log.Warn("dev container config is missing one of \"image\", \"dockerFile\" or \"dockerComposeFile\" properties, using fallback image " + options.FallbackImage)
+		r.Log.Warn(
+			"dev container config is missing one of \"image\", \"dockerFile\" or \"dockerComposeFile\" properties, " +
+				"using fallback image " + options.FallbackImage,
+		)
 
 		substitutedConfig.Config.ImageContainer = config.ImageContainer{
 			Image: options.FallbackImage,
 		}
 	} else {
-		r.Log.Warn("dev container config is missing one of \"image\", \"dockerFile\" or \"dockerComposeFile\" properties, defaulting to auto-detection")
+		r.Log.Warn(
+			"dev container config is missing one of \"image\", \"dockerFile\" or \"dockerComposeFile\" properties, " +
+				"defaulting to auto-detection",
+		)
 
 		lang, err := language.DetectLanguage(r.LocalWorkspaceFolder)
 		if err != nil {
-			return nil, fmt.Errorf("could not detect project language and dev container config is missing one of \"image\", \"dockerFile\" or \"dockerComposeFile\" properties")
+			return nil, fmt.Errorf(
+				"could not detect project language and dev container config is missing one of " +
+					"\"image\", \"dockerFile\" or \"dockerComposeFile\" properties",
+			)
 		}
 
 		if language.MapConfig[lang] == nil {
-			return nil, fmt.Errorf("could not detect project language and dev container config is missing one of \"image\", \"dockerFile\" or \"dockerComposeFile\" properties")
+			return nil, fmt.Errorf(
+				"could not detect project language and dev container config is missing one of " +
+					"\"image\", \"dockerFile\" or \"dockerComposeFile\" properties",
+			)
 		}
 		substitutedConfig.Config.ImageContainer = language.MapConfig[lang].ImageContainer
 	}

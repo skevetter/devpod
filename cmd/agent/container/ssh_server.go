@@ -36,9 +36,12 @@ func NewSSHServerCmd(flags *flags.GlobalFlags) *cobra.Command {
 		RunE:  cmd.Run,
 	}
 
-	sshCmd.Flags().StringVar(&cmd.Address, "address", fmt.Sprintf("127.0.0.1:%d", helperssh.DefaultUserPort), "Address to listen to")
-	sshCmd.Flags().StringVar(&cmd.RemoteUser, "remote-user", "", "The remote user for this workspace")
-	sshCmd.Flags().StringVar(&cmd.Workdir, "workdir", "", "Directory where commands will run on the host")
+	sshCmd.Flags().
+		StringVar(&cmd.Address, "address", fmt.Sprintf("127.0.0.1:%d", helperssh.DefaultUserPort), "Address to listen to")
+	sshCmd.Flags().
+		StringVar(&cmd.RemoteUser, "remote-user", "", "The remote user for this workspace")
+	sshCmd.Flags().
+		StringVar(&cmd.Workdir, "workdir", "", "Directory where commands will run on the host")
 	return sshCmd
 }
 

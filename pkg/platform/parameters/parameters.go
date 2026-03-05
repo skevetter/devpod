@@ -24,7 +24,11 @@ func VerifyValue(value string, parameter storagev1.AppParameter) (any, error) {
 		}
 
 		if parameter.Required && value == "" {
-			return nil, fmt.Errorf("parameter %s (%s) is required", parameter.Label, parameter.Variable)
+			return nil, fmt.Errorf(
+				"parameter %s (%s) is required",
+				parameter.Label,
+				parameter.Variable,
+			)
 		}
 		if slices.Contains(parameter.Options, value) {
 			return value, nil
@@ -36,17 +40,31 @@ func VerifyValue(value string, parameter storagev1.AppParameter) (any, error) {
 			}
 
 			if !regEx.MatchString(value) {
-				return nil, fmt.Errorf("parameter %s (%s) needs to match regex %s", parameter.Label, parameter.Variable, parameter.Validation)
+				return nil, fmt.Errorf(
+					"parameter %s (%s) needs to match regex %s",
+					parameter.Label,
+					parameter.Variable,
+					parameter.Validation,
+				)
 			}
 		}
 		if parameter.Invalidation != "" {
 			regEx, err := regexp.Compile(parameter.Invalidation)
 			if err != nil {
-				return nil, fmt.Errorf("compile invalidation regex %s: %w", parameter.Invalidation, err)
+				return nil, fmt.Errorf(
+					"compile invalidation regex %s: %w",
+					parameter.Invalidation,
+					err,
+				)
 			}
 
 			if regEx.MatchString(value) {
-				return nil, fmt.Errorf("parameter %s (%s) cannot match regex %s", parameter.Label, parameter.Variable, parameter.Invalidation)
+				return nil, fmt.Errorf(
+					"parameter %s (%s) cannot match regex %s",
+					parameter.Label,
+					parameter.Variable,
+					parameter.Invalidation,
+				)
 			}
 		}
 
@@ -55,47 +73,90 @@ func VerifyValue(value string, parameter storagev1.AppParameter) (any, error) {
 		if parameter.DefaultValue != "" && value == "" {
 			boolValue, err := strconv.ParseBool(parameter.DefaultValue)
 			if err != nil {
-				return nil, fmt.Errorf("parse default value for parameter %s (%s): %w", parameter.Label, parameter.Variable, err)
+				return nil, fmt.Errorf(
+					"parse default value for parameter %s (%s): %w",
+					parameter.Label,
+					parameter.Variable,
+					err,
+				)
 			}
 
 			return boolValue, nil
 		}
 		if parameter.Required && value == "" {
-			return nil, fmt.Errorf("parameter %s (%s) is required", parameter.Label, parameter.Variable)
+			return nil, fmt.Errorf(
+				"parameter %s (%s) is required",
+				parameter.Label,
+				parameter.Variable,
+			)
 		}
 
 		boolValue, err := strconv.ParseBool(value)
 		if err != nil {
-			return nil, fmt.Errorf("parse value for parameter %s (%s): %w", parameter.Label, parameter.Variable, err)
+			return nil, fmt.Errorf(
+				"parse value for parameter %s (%s): %w",
+				parameter.Label,
+				parameter.Variable,
+				err,
+			)
 		}
 		return boolValue, nil
 	case "number":
 		if parameter.DefaultValue != "" && value == "" {
 			intValue, err := strconv.Atoi(parameter.DefaultValue)
 			if err != nil {
-				return nil, fmt.Errorf("parse default value for parameter %s (%s): %w", parameter.Label, parameter.Variable, err)
+				return nil, fmt.Errorf(
+					"parse default value for parameter %s (%s): %w",
+					parameter.Label,
+					parameter.Variable,
+					err,
+				)
 			}
 
 			return intValue, nil
 		}
 		if parameter.Required && value == "" {
-			return nil, fmt.Errorf("parameter %s (%s) is required", parameter.Label, parameter.Variable)
+			return nil, fmt.Errorf(
+				"parameter %s (%s) is required",
+				parameter.Label,
+				parameter.Variable,
+			)
 		}
 		num, err := strconv.Atoi(value)
 		if err != nil {
-			return nil, fmt.Errorf("parse value for parameter %s (%s): %w", parameter.Label, parameter.Variable, err)
+			return nil, fmt.Errorf(
+				"parse value for parameter %s (%s): %w",
+				parameter.Label,
+				parameter.Variable,
+				err,
+			)
 		}
 		if parameter.Min != nil && num < *parameter.Min {
-			return nil, fmt.Errorf("parameter %s (%s) cannot be smaller than %d", parameter.Label, parameter.Variable, *parameter.Min)
+			return nil, fmt.Errorf(
+				"parameter %s (%s) cannot be smaller than %d",
+				parameter.Label,
+				parameter.Variable,
+				*parameter.Min,
+			)
 		}
 		if parameter.Max != nil && num > *parameter.Max {
-			return nil, fmt.Errorf("parameter %s (%s) cannot be greater than %d", parameter.Label, parameter.Variable, *parameter.Max)
+			return nil, fmt.Errorf(
+				"parameter %s (%s) cannot be greater than %d",
+				parameter.Label,
+				parameter.Variable,
+				*parameter.Max,
+			)
 		}
 
 		return num, nil
 	}
 
-	return nil, fmt.Errorf("unrecognized type %s for parameter %s (%s)", parameter.Type, parameter.Label, parameter.Variable)
+	return nil, fmt.Errorf(
+		"unrecognized type %s for parameter %s (%s)",
+		parameter.Type,
+		parameter.Label,
+		parameter.Variable,
+	)
 }
 
 func GetDeepValue(parameters any, path string) any {

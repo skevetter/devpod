@@ -78,7 +78,11 @@ func (c *Client) FullLogs(ctx context.Context, namespace, pod, container string)
 	return io.ReadAll(logs)
 }
 
-func (c *Client) Logs(ctx context.Context, namespace, pod, container string, follow bool) (io.ReadCloser, error) {
+func (c *Client) Logs(
+	ctx context.Context,
+	namespace, pod, container string,
+	follow bool,
+) (io.ReadCloser, error) {
 	return c.client.CoreV1().Pods(namespace).GetLogs(pod, &corev1.PodLogOptions{
 		Container: container,
 		Follow:    follow,

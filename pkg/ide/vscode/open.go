@@ -119,7 +119,11 @@ func openViaBrowser(params OpenParams) error {
 	params.Log.Debugf("opening URL %s", openURL)
 	err := open.Run(openURL)
 	if err != nil {
-		params.Log.Errorf("flavor %s is not installed on host device: %v", params.Flavor.DisplayName(), err)
+		params.Log.Errorf(
+			"flavor %s is not installed on host device: %v",
+			params.Flavor.DisplayName(),
+			err,
+		)
 		return err
 	}
 
@@ -137,7 +141,11 @@ func openViaCLI(ctx context.Context, params OpenParams) error {
 		return fmt.Errorf("flavor %s binary is not found", params.Flavor)
 	}
 
-	hasSSHExtension, hasContainersExtension, err := listInstalledExtensions(ctx, cliPath, config.sshExtension)
+	hasSSHExtension, hasContainersExtension, err := listInstalledExtensions(
+		ctx,
+		cliPath,
+		config.sshExtension,
+	)
 	if err != nil {
 		return err
 	}
@@ -149,7 +157,12 @@ func openViaCLI(ctx context.Context, params OpenParams) error {
 	}
 
 	args := buildOpenArgs(params.Workspace, params.Folder, params.NewWindow, hasContainersExtension)
-	params.Log.Debugf("flavor %s command %s %s", params.Flavor.DisplayName(), cliPath, strings.Join(args, " "))
+	params.Log.Debugf(
+		"flavor %s command %s %s",
+		params.Flavor.DisplayName(),
+		cliPath,
+		strings.Join(args, " "),
+	)
 	out, err := exec.CommandContext(ctx, cliPath, args...).CombinedOutput()
 	if err != nil {
 		return command.WrapCommandError(out, err)
@@ -158,7 +171,10 @@ func openViaCLI(ctx context.Context, params OpenParams) error {
 	return nil
 }
 
-func listInstalledExtensions(ctx context.Context, cliPath, sshExtension string) (hasSSH, hasContainers bool, err error) {
+func listInstalledExtensions(
+	ctx context.Context,
+	cliPath, sshExtension string,
+) (hasSSH, hasContainers bool, err error) {
 	out, err := exec.CommandContext(ctx, cliPath, "--list-extensions").CombinedOutput()
 	if err != nil {
 		return false, false, command.WrapCommandError(out, err)

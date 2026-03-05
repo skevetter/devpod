@@ -13,14 +13,26 @@ type DownloadURLsTestSuite struct {
 
 func (s *DownloadURLsTestSuite) TestNewDownloadURLs_WithoutTrailingSlash() {
 	urls := NewDownloadURLs("https://github.com/skevetter/devpod/releases/latest/download")
-	s.Equal("https://github.com/skevetter/devpod/releases/latest/download/devpod-linux-amd64", urls.Amd)
-	s.Equal("https://github.com/skevetter/devpod/releases/latest/download/devpod-linux-arm64", urls.Arm)
+	s.Equal(
+		"https://github.com/skevetter/devpod/releases/latest/download/devpod-linux-amd64",
+		urls.Amd,
+	)
+	s.Equal(
+		"https://github.com/skevetter/devpod/releases/latest/download/devpod-linux-arm64",
+		urls.Arm,
+	)
 }
 
 func (s *DownloadURLsTestSuite) TestNewDownloadURLs_WithTrailingSlash() {
 	urls := NewDownloadURLs("https://github.com/skevetter/devpod/releases/latest/download/")
-	s.Equal("https://github.com/skevetter/devpod/releases/latest/download/devpod-linux-amd64", urls.Amd)
-	s.Equal("https://github.com/skevetter/devpod/releases/latest/download/devpod-linux-arm64", urls.Arm)
+	s.Equal(
+		"https://github.com/skevetter/devpod/releases/latest/download/devpod-linux-amd64",
+		urls.Amd,
+	)
+	s.Equal(
+		"https://github.com/skevetter/devpod/releases/latest/download/devpod-linux-arm64",
+		urls.Arm,
+	)
 }
 
 func (s *DownloadURLsTestSuite) TestNewDownloadURLs_WithPlaceholder() {

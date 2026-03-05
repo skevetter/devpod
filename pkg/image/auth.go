@@ -17,8 +17,12 @@ import (
 )
 
 var (
-	amazonKeychain authn.Keychain = authn.NewKeychainFromHelper(ecr.NewECRHelper(ecr.WithLogger(io.Discard)))
-	azureKeychain  authn.Keychain = authn.NewKeychainFromHelper(credhelper.NewACRCredentialsHelper())
+	amazonKeychain authn.Keychain = authn.NewKeychainFromHelper(
+		ecr.NewECRHelper(ecr.WithLogger(io.Discard)),
+	)
+	azureKeychain authn.Keychain = authn.NewKeychainFromHelper(
+		credhelper.NewACRCredentialsHelper(),
+	)
 )
 
 const tokenFileLocation = "/var/run/secrets/kubernetes.io/serviceaccount/token"
@@ -100,12 +104,17 @@ func getPodMetadata(token []byte) (podMetadata, error) {
 		return nil, nil
 	})
 	if err != nil {
-		return podMetadata{}, fmt.Errorf("failed to parse kubernetes service account token: %w", err)
+		return podMetadata{}, fmt.Errorf(
+			"failed to parse kubernetes service account token: %w",
+			err,
+		)
 	}
 
 	kubeClaim := claims.Kubernetes
 	if kubeClaim.Namespace == "" || kubeClaim.Svcacct.Name == "" {
-		return podMetadata{}, fmt.Errorf("failed to retrieve pod metadata from kubernetes service account token")
+		return podMetadata{}, fmt.Errorf(
+			"failed to retrieve pod metadata from kubernetes service account token",
+		)
 	}
 
 	return podMetadata{

@@ -40,7 +40,12 @@ func NewSshCmd(globalFlags *flags.GlobalFlags) *cobra.Command {
 	return c
 }
 
-func (cmd *SshCmd) Run(ctx context.Context, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
+func (cmd *SshCmd) Run(
+	ctx context.Context,
+	stdin io.Reader,
+	stdout io.Writer,
+	stderr io.Writer,
+) error {
 	baseClient, err := client.InitClientFromPath(ctx, cmd.Config)
 	if err != nil {
 		return err
@@ -58,7 +63,13 @@ func (cmd *SshCmd) Run(ctx context.Context, stdin io.Reader, stdout io.Writer, s
 		return fmt.Errorf("couldn't find workspace")
 	}
 
-	conn, err := platform.DialInstance(baseClient, workspace, "ssh", platform.OptionsFromEnv("DEVPOD_FLAGS_SSH"), cmd.Log)
+	conn, err := platform.DialInstance(
+		baseClient,
+		workspace,
+		"ssh",
+		platform.OptionsFromEnv("DEVPOD_FLAGS_SSH"),
+		cmd.Log,
+	)
 	if err != nil {
 		return err
 	}

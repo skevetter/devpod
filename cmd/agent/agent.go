@@ -38,7 +38,11 @@ func NewAgentCmd(globalFlags *flags.GlobalFlags) *cobra.Command {
 	return agentCmd
 }
 
-func AgentPersistentPreRunE(cobraCmd *cobra.Command, args []string, globalFlags *flags.GlobalFlags) error {
+func AgentPersistentPreRunE(
+	cobraCmd *cobra.Command,
+	args []string,
+	globalFlags *flags.GlobalFlags,
+) error {
 	// get top level parent
 	parent := cobraCmd
 	for parent.Parent() != nil {

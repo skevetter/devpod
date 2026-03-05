@@ -95,7 +95,11 @@ func (t *contextAwareTransport) RoundTrip(req *http.Request) (*http.Response, er
 	return t.transport.RoundTrip(req)
 }
 
-func GetImageConfig(ctx context.Context, image string, log log.Logger) (*v1.ConfigFile, v1.Image, error) {
+func GetImageConfig(
+	ctx context.Context,
+	image string,
+	log log.Logger,
+) (*v1.ConfigFile, v1.Image, error) {
 	log.Debugf("Getting image config for image '%s'", image)
 	defer log.Debugf("Done getting image config for image '%s'", image)
 
@@ -129,7 +133,11 @@ func shouldNotBeSlugged(data string, regexp *regexp.Regexp, maxSize int) bool {
 	return len(data) == 0 || regexp.Match([]byte(data)) && len(data) <= maxSize
 }
 
-func GetImageConfigForArch(ctx context.Context, image, arch string, log log.Logger) (*v1.ConfigFile, v1.Image, error) {
+func GetImageConfigForArch(
+	ctx context.Context,
+	image, arch string,
+	log log.Logger,
+) (*v1.ConfigFile, v1.Image, error) {
 	log.Debugf("Getting image config for image '%s' with architecture '%s'", image, arch)
 	defer log.Debugf("Done getting image config for image '%s' with architecture '%s'", image, arch)
 

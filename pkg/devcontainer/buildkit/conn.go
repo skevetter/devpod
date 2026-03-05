@@ -12,9 +12,16 @@ type DockerClient interface {
 }
 
 func NewDockerClient(ctx context.Context, dockerClient DockerClient) (*client.Client, error) {
-	return client.New(ctx, "", client.WithContextDialer(func(context.Context, string) (net.Conn, error) {
-		return dockerClient.DialHijack(ctx, "/grpc", "h2c", nil)
-	}), client.WithSessionDialer(func(ctx context.Context, proto string, meta map[string][]string) (net.Conn, error) {
-		return dockerClient.DialHijack(ctx, "/session", proto, meta)
-	}))
+	return client.New(
+		ctx,
+		"",
+		client.WithContextDialer(func(context.Context, string) (net.Conn, error) {
+			return dockerClient.DialHijack(ctx, "/grpc", "h2c", nil)
+		}),
+		client.WithSessionDialer(
+			func(ctx context.Context, proto string, meta map[string][]string) (net.Conn, error) {
+				return dockerClient.DialHijack(ctx, "/session", proto, meta)
+			},
+		),
+	)
 }

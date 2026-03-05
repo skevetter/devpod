@@ -9,7 +9,14 @@ import (
 	"github.com/skevetter/log"
 )
 
-func ExecuteConn(ctx context.Context, rawConn *websocket.Conn, stdin io.Reader, stdout io.Writer, stderr io.Writer, log log.Logger) (int, error) {
+func ExecuteConn(
+	ctx context.Context,
+	rawConn *websocket.Conn,
+	stdin io.Reader,
+	stdout io.Writer,
+	stderr io.Writer,
+	log log.Logger,
+) (int, error) {
 	conn := NewWebsocketConn(rawConn)
 
 	ctx, cancel := context.WithCancel(ctx)
@@ -18,7 +25,10 @@ func ExecuteConn(ctx context.Context, rawConn *websocket.Conn, stdin io.Reader, 
 	// close websocket connection
 	defer func() { _ = conn.Close() }()
 	defer func() {
-		err := conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+		err := conn.WriteMessage(
+			websocket.CloseMessage,
+			websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""),
+		)
 		if err != nil {
 			log.Debugf("error write close: %v", err)
 			return

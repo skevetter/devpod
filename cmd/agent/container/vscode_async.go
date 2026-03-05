@@ -31,7 +31,8 @@ func NewVSCodeAsyncCmd() *cobra.Command {
 	vsCodeAsyncCmd.Flags().StringVar(&cmd.SetupInfo, "setup-info", "", "The container setup info")
 	_ = vsCodeAsyncCmd.MarkFlagRequired("setup-info")
 
-	vsCodeAsyncCmd.Flags().StringVar(&cmd.Flavor, "flavor", string(vscode.FlavorStable), "The flavor of the VSCode distribution")
+	vsCodeAsyncCmd.Flags().
+		StringVar(&cmd.Flavor, "flavor", string(vscode.FlavorStable), "The flavor of the VSCode distribution")
 	return vsCodeAsyncCmd
 }
 

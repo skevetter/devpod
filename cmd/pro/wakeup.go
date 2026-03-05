@@ -98,28 +98,43 @@ func (cmd *WakeupCmd) Run(ctx context.Context, args []string) error {
 	}
 	delete(workspaceInstance.Annotations, clusterv1.SleepModeForceAnnotation)
 	delete(workspaceInstance.Annotations, clusterv1.SleepModeForceDurationAnnotation)
-	workspaceInstance.Annotations[clusterv1.SleepModeLastActivityAnnotation] = strconv.FormatInt(time.Now().Unix(), 10)
+	workspaceInstance.Annotations[clusterv1.SleepModeLastActivityAnnotation] = strconv.FormatInt(
+		time.Now().Unix(),
+		10,
+	)
 
 	patchData, err := patch.Data(workspaceInstance)
 	if err != nil {
 		return err
 	}
 
-	_, err = managementClient.Loft().ManagementV1().DevPodWorkspaceInstances(project.ProjectNamespace(cmd.Project)).Patch(ctx, workspaceInstance.Name, patch.Type(), patchData, metav1.PatchOptions{})
+	_, err = managementClient.Loft().
+		ManagementV1().
+		DevPodWorkspaceInstances(project.ProjectNamespace(cmd.Project)).
+		Patch(ctx, workspaceInstance.Name, patch.Type(), patchData, metav1.PatchOptions{})
 	if err != nil {
 		return err
 	}
 
 	// wait for sleeping
 	cmd.Log.Info("Wait until workspace wakes up...")
-	err = wait.PollUntilContextTimeout(ctx, time.Second, platform.Timeout(), false, func(ctx context.Context) (done bool, err error) {
-		workspaceInstance, err := managementClient.Loft().ManagementV1().DevPodWorkspaceInstances(project.ProjectNamespace(cmd.Project)).Get(ctx, workspaceInstance.Name, metav1.GetOptions{})
-		if err != nil {
-			return false, err
-		}
+	err = wait.PollUntilContextTimeout(
+		ctx,
+		time.Second,
+		platform.Timeout(),
+		false,
+		func(ctx context.Context) (done bool, err error) {
+			workspaceInstance, err := managementClient.Loft().
+				ManagementV1().
+				DevPodWorkspaceInstances(project.ProjectNamespace(cmd.Project)).
+				Get(ctx, workspaceInstance.Name, metav1.GetOptions{})
+			if err != nil {
+				return false, err
+			}
 
-		return workspaceInstance.Status.Phase == storagev1.InstanceReady, nil
-	})
+			return workspaceInstance.Status.Phase == storagev1.InstanceReady, nil
+		},
+	)
 	if err != nil {
 		return fmt.Errorf("error waiting for workspace to wake up: %w", err)
 	}

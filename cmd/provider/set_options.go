@@ -42,14 +42,26 @@ func NewSetOptionsCmd(f *flags.GlobalFlags) *cobra.Command {
 			return cmd.Run(context.Background(), args, logger)
 		},
 		ValidArgsFunction: func(rootCmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-			return completion.GetProviderSuggestions(rootCmd, cmd.Context, cmd.Provider, args, toComplete, cmd.Owner, log.Default)
+			return completion.GetProviderSuggestions(
+				rootCmd,
+				cmd.Context,
+				cmd.Provider,
+				args,
+				toComplete,
+				cmd.Owner,
+				log.Default,
+			)
 		},
 	}
 
-	setOptionsCmd.Flags().BoolVar(&cmd.SingleMachine, "single-machine", false, "If enabled will use a single machine for all workspaces")
-	setOptionsCmd.Flags().BoolVar(&cmd.Reconfigure, "reconfigure", false, "If enabled will not merge existing provider config")
-	setOptionsCmd.Flags().StringArrayVarP(&cmd.Options, "option", "o", []string{}, "Provider option in the form KEY=VALUE")
-	setOptionsCmd.Flags().BoolVar(&cmd.Dry, "dry", false, "Dry will not persist the options to file and instead return the new filled options")
+	setOptionsCmd.Flags().
+		BoolVar(&cmd.SingleMachine, "single-machine", false, "If enabled will use a single machine for all workspaces")
+	setOptionsCmd.Flags().
+		BoolVar(&cmd.Reconfigure, "reconfigure", false, "If enabled will not merge existing provider config")
+	setOptionsCmd.Flags().
+		StringArrayVarP(&cmd.Options, "option", "o", []string{}, "Provider option in the form KEY=VALUE")
+	setOptionsCmd.Flags().
+		BoolVar(&cmd.Dry, "dry", false, "Dry will not persist the options to file and instead return the new filled options")
 	return setOptionsCmd
 }
 

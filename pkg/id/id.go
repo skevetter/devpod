@@ -17,7 +17,11 @@ func SafeConcatNameMax(name []string, max int) string {
 	fullPath := strings.Join(name, "-")
 	if len(fullPath) > max {
 		digest := sha256.Sum256([]byte(fullPath))
-		return strings.ReplaceAll(fullPath[0:max-8]+"-"+hex.EncodeToString(digest[0:])[0:7], ".-", "-")
+		return strings.ReplaceAll(
+			fullPath[0:max-8]+"-"+hex.EncodeToString(digest[0:])[0:7],
+			".-",
+			"-",
+		)
 	}
 	return fullPath
 }

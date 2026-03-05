@@ -37,7 +37,10 @@ func makeEnvironment(env map[string]string, log log.Logger) []string {
 	return ret
 }
 
-func NewDockerDriver(workspaceInfo *provider2.AgentWorkspaceInfo, log log.Logger) (driver.DockerDriver, error) {
+func NewDockerDriver(
+	workspaceInfo *provider2.AgentWorkspaceInfo,
+	log log.Logger,
+) (driver.DockerDriver, error) {
 	dockerCommand := "docker"
 	if workspaceInfo.Agent.Docker.Path != "" {
 		dockerCommand = workspaceInfo.Agent.Docker.Path
@@ -74,7 +77,13 @@ func (d *dockerDriver) TargetArchitecture(ctx context.Context, workspaceId strin
 	return runtime.GOARCH, nil
 }
 
-func (d *dockerDriver) CommandDevContainer(ctx context.Context, workspaceId, user, command string, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
+func (d *dockerDriver) CommandDevContainer(
+	ctx context.Context,
+	workspaceId, user, command string,
+	stdin io.Reader,
+	stdout io.Writer,
+	stderr io.Writer,
+) error {
 	container, err := d.FindDevContainer(ctx, workspaceId)
 	if err != nil {
 		return err
@@ -177,7 +186,10 @@ func (d *dockerDriver) StopDevContainer(ctx context.Context, workspaceId string)
 	return d.Docker.Stop(ctx, container.ID)
 }
 
-func (d *dockerDriver) InspectImage(ctx context.Context, imageName string) (*config.ImageDetails, error) {
+func (d *dockerDriver) InspectImage(
+	ctx context.Context,
+	imageName string,
+) (*config.ImageDetails, error) {
 	return d.Docker.InspectImage(ctx, imageName, true)
 }
 
@@ -203,13 +215,19 @@ func (d *dockerDriver) DockerHelper() (*docker.DockerHelper, error) {
 	return d.Docker, nil
 }
 
-func (d *dockerDriver) FindDevContainer(ctx context.Context, workspaceId string) (*config.ContainerDetails, error) {
+func (d *dockerDriver) FindDevContainer(
+	ctx context.Context,
+	workspaceId string,
+) (*config.ContainerDetails, error) {
 	var containerDetails *config.ContainerDetails
 	var err error
 	if d.Docker.ContainerID != "" {
 		containerDetails, err = d.Docker.FindContainerByID(ctx, []string{d.Docker.ContainerID})
 	} else {
-		containerDetails, err = d.Docker.FindDevContainer(ctx, []string{config.DockerIDLabel + "=" + workspaceId})
+		containerDetails, err = d.Docker.FindDevContainer(
+			ctx,
+			[]string{config.DockerIDLabel + "=" + workspaceId},
+		)
 	}
 	if err != nil {
 		return nil, err
@@ -237,7 +255,10 @@ func (d *dockerDriver) RunDevContainer(
 	return fmt.Errorf("unsupported")
 }
 
-func (d *dockerDriver) RunDockerDevContainer(ctx context.Context, params *driver.RunDockerDevContainerParams) error {
+func (d *dockerDriver) RunDockerDevContainer(
+	ctx context.Context,
+	params *driver.RunDockerDevContainerParams,
+) error {
 	if err := d.EnsureImage(ctx, params.Options); err != nil {
 		return err
 	}
@@ -269,7 +290,8 @@ func (d *dockerDriver) EnsureImage(
 	d.Log.WithFields(logrus.Fields{"image": options.Image}).Info("inspecting image")
 	_, err := d.Docker.InspectImage(ctx, options.Image, false)
 	if err != nil {
-		d.Log.WithFields(logrus.Fields{"image": options.Image}).Info("image not found, pulling image")
+		d.Log.WithFields(logrus.Fields{"image": options.Image}).
+			Info("image not found, pulling image")
 		writer := d.Log.Writer(logrus.DebugLevel, false)
 		defer func() { _ = writer.Close() }()
 
@@ -370,7 +392,9 @@ func (d *dockerDriver) UpdateContainerUserUID(
 	return d.applyPermissions(ctx, container.ID, localUser.Uid, localUser.Gid, info.HomeDir, writer)
 }
 
-func (d *dockerDriver) gatherUpdateRequirements(parsedConfig *config.DevContainerConfig) (*user.User, string, error) {
+func (d *dockerDriver) gatherUpdateRequirements(
+	parsedConfig *config.DevContainerConfig,
+) (*user.User, string, error) {
 	localUser, err := user.Current()
 	if err != nil {
 		return nil, "", err
@@ -401,7 +425,12 @@ func (d *dockerDriver) updateUserMappings(
 		return nil, nil, err
 	}
 
-	info, err := d.processUserFiles(files, params.containerUser, params.localUser.Uid, params.localUser.Gid)
+	info, err := d.processUserFiles(
+		files,
+		params.containerUser,
+		params.localUser.Uid,
+		params.localUser.Gid,
+	)
 	if err != nil {
 		files.cleanup()
 		return nil, nil, err
@@ -423,7 +452,10 @@ type runArgsBuilder struct {
 	params *driver.RunDockerDevContainerParams
 }
 
-func (d *dockerDriver) buildRunArgs(params *driver.RunDockerDevContainerParams, helper *docker.DockerHelper) ([]string, error) {
+func (d *dockerDriver) buildRunArgs(
+	params *driver.RunDockerDevContainerParams,
+	helper *docker.DockerHelper,
+) ([]string, error) {
 	b := &runArgsBuilder{
 		args:   []string{"run"},
 		driver: d,
@@ -551,7 +583,10 @@ func (b *runArgsBuilder) addImage() *runArgsBuilder {
 	return b
 }
 
-func (d *dockerDriver) addPortArgs(args []string, parsedConfig *config.DevContainerConfig) []string {
+func (d *dockerDriver) addPortArgs(
+	args []string,
+	parsedConfig *config.DevContainerConfig,
+) []string {
 	for _, appPort := range parsedConfig.AppPort {
 		intPort, err := strconv.Atoi(appPort)
 		if err != nil {
@@ -563,7 +598,11 @@ func (d *dockerDriver) addPortArgs(args []string, parsedConfig *config.DevContai
 	return args
 }
 
-func (d *dockerDriver) addWorkspaceMountArgs(args []string, options *driver.RunOptions, helper *docker.DockerHelper) []string {
+func (d *dockerDriver) addWorkspaceMountArgs(
+	args []string,
+	options *driver.RunOptions,
+	helper *docker.DockerHelper,
+) []string {
 	if options.WorkspaceMount != nil {
 		workspacePath := d.EnsurePath(options.WorkspaceMount)
 		mountPath := workspacePath.String()
@@ -625,14 +664,26 @@ func (d *dockerDriver) addMountArgs(args []string, options *driver.RunOptions) (
 	return args, nil
 }
 
-func (d *dockerDriver) addIDEMountArgs(args []string, ide string, ideOptions map[string]config2.OptionValue) []string {
+func (d *dockerDriver) addIDEMountArgs(
+	args []string,
+	ide string,
+	ideOptions map[string]config2.OptionValue,
+) []string {
 	switch ide {
 	case string(config2.IDEGoland):
 		args = append(args, "--mount", jetbrains.NewGolandServer("", ideOptions, d.Log).GetVolume())
 	case string(config2.IDERustRover):
-		args = append(args, "--mount", jetbrains.NewRustRoverServer("", ideOptions, d.Log).GetVolume())
+		args = append(
+			args,
+			"--mount",
+			jetbrains.NewRustRoverServer("", ideOptions, d.Log).GetVolume(),
+		)
 	case string(config2.IDEPyCharm):
-		args = append(args, "--mount", jetbrains.NewPyCharmServer("", ideOptions, d.Log).GetVolume())
+		args = append(
+			args,
+			"--mount",
+			jetbrains.NewPyCharmServer("", ideOptions, d.Log).GetVolume(),
+		)
 	case string(config2.IDEPhpStorm):
 		args = append(args, "--mount", jetbrains.NewPhpStorm("", ideOptions, d.Log).GetVolume())
 	case string(config2.IDEIntellij):
@@ -642,16 +693,32 @@ func (d *dockerDriver) addIDEMountArgs(args []string, ide string, ideOptions map
 	case string(config2.IDERider):
 		args = append(args, "--mount", jetbrains.NewRiderServer("", ideOptions, d.Log).GetVolume())
 	case string(config2.IDERubyMine):
-		args = append(args, "--mount", jetbrains.NewRubyMineServer("", ideOptions, d.Log).GetVolume())
+		args = append(
+			args,
+			"--mount",
+			jetbrains.NewRubyMineServer("", ideOptions, d.Log).GetVolume(),
+		)
 	case string(config2.IDEWebStorm):
-		args = append(args, "--mount", jetbrains.NewWebStormServer("", ideOptions, d.Log).GetVolume())
+		args = append(
+			args,
+			"--mount",
+			jetbrains.NewWebStormServer("", ideOptions, d.Log).GetVolume(),
+		)
 	case string(config2.IDEDataSpell):
-		args = append(args, "--mount", jetbrains.NewDataSpellServer("", ideOptions, d.Log).GetVolume())
+		args = append(
+			args,
+			"--mount",
+			jetbrains.NewDataSpellServer("", ideOptions, d.Log).GetVolume(),
+		)
 	}
 	return args
 }
 
-func (d *dockerDriver) addLabelArgs(args []string, workspaceId string, options *driver.RunOptions) []string {
+func (d *dockerDriver) addLabelArgs(
+	args []string,
+	workspaceId string,
+	options *driver.RunOptions,
+) []string {
 	labels := append(config.GetDockerLabelForID(workspaceId), options.Labels...)
 	for _, label := range labels {
 		args = append(args, "-l", label)
@@ -666,7 +733,12 @@ func (d *dockerDriver) addEntrypointArgs(args []string, options *driver.RunOptio
 	return args
 }
 
-func (d *dockerDriver) startContainer(ctx context.Context, dir string, args []string, writer io.Writer) error {
+func (d *dockerDriver) startContainer(
+	ctx context.Context,
+	dir string,
+	args []string,
+	writer io.Writer,
+) error {
 	d.Log.WithFields(logrus.Fields{"command": d.Docker.DockerCommand, "args": strings.Join(args, " "), "cwd": dir}).
 		Info("running docker command")
 
@@ -684,7 +756,11 @@ func (d *dockerDriver) startContainer(ctx context.Context, dir string, args []st
 	return nil
 }
 
-func appendGPUOptions(parsedConfig *config.DevContainerConfig, d *dockerDriver, args []string) []string {
+func appendGPUOptions(
+	parsedConfig *config.DevContainerConfig,
+	d *dockerDriver,
+	args []string,
+) []string {
 	if parsedConfig.HostRequirements != nil {
 		gpuAvailable, _ := d.Docker.GPUSupportEnabled()
 		enableGPU, warnIfMissing := parsedConfig.HostRequirements.ShouldEnableGPU(gpuAvailable)
@@ -698,7 +774,10 @@ func appendGPUOptions(parsedConfig *config.DevContainerConfig, d *dockerDriver, 
 	return args
 }
 
-func (d *dockerDriver) getPodmanArgs(options *driver.RunOptions, parsedConfig *config.DevContainerConfig) ([]string, error) {
+func (d *dockerDriver) getPodmanArgs(
+	options *driver.RunOptions,
+	parsedConfig *config.DevContainerConfig,
+) ([]string, error) {
 	if !d.Docker.IsPodman() {
 		return []string{}, nil
 	}
@@ -727,7 +806,11 @@ func (d *dockerDriver) addIdMappingArgs(args []string, options *driver.RunOption
 	return args
 }
 
-func (d *dockerDriver) addKeepIdArgs(args []string, options *driver.RunOptions, parsedConfig *config.DevContainerConfig) []string {
+func (d *dockerDriver) addKeepIdArgs(
+	args []string,
+	options *driver.RunOptions,
+	parsedConfig *config.DevContainerConfig,
+) []string {
 	if d.hasIdMapping(options, parsedConfig) || options.Userns != "" {
 		return args
 	}
@@ -739,7 +822,10 @@ func (d *dockerDriver) addKeepIdArgs(args []string, options *driver.RunOptions, 
 	return args
 }
 
-func (d *dockerDriver) hasIdMapping(options *driver.RunOptions, parsedConfig *config.DevContainerConfig) bool {
+func (d *dockerDriver) hasIdMapping(
+	options *driver.RunOptions,
+	parsedConfig *config.DevContainerConfig,
+) bool {
 	if len(options.UidMap) > 0 || len(options.GidMap) > 0 {
 		return true
 	}
@@ -754,7 +840,10 @@ func (d *dockerDriver) hasIdMapping(options *driver.RunOptions, parsedConfig *co
 	return false
 }
 
-func (d *dockerDriver) getRemoteUser(options *driver.RunOptions, parsedConfig *config.DevContainerConfig) string {
+func (d *dockerDriver) getRemoteUser(
+	options *driver.RunOptions,
+	parsedConfig *config.DevContainerConfig,
+) string {
 	if parsedConfig != nil {
 		if parsedConfig.RemoteUser != "" {
 			return parsedConfig.RemoteUser
@@ -783,21 +872,36 @@ func (d *dockerDriver) getContainerUser(parsedConfig *config.DevContainerConfig)
 	return parsedConfig.ContainerUser
 }
 
-func (d *dockerDriver) copyFileFromContainer(ctx context.Context, containerID, srcPath, dstPath string, writer io.Writer) error {
+func (d *dockerDriver) copyFileFromContainer(
+	ctx context.Context,
+	containerID, srcPath, dstPath string,
+	writer io.Writer,
+) error {
 	args := []string{"cp", fmt.Sprintf("%s:%s", containerID, srcPath), dstPath}
-	d.Log.WithFields(logrus.Fields{"command": d.Docker.DockerCommand, "args": strings.Join(args, " ")}).Debug("copying file from container")
+	d.Log.WithFields(logrus.Fields{"command": d.Docker.DockerCommand, "args": strings.Join(args, " ")}).
+		Debug("copying file from container")
 	return d.Docker.Run(ctx, args, nil, writer, writer)
 }
 
-func (d *dockerDriver) copyFileToContainer(ctx context.Context, srcPath, containerID, dstPath string, writer io.Writer) error {
+func (d *dockerDriver) copyFileToContainer(
+	ctx context.Context,
+	srcPath, containerID, dstPath string,
+	writer io.Writer,
+) error {
 	args := []string{"cp", srcPath, fmt.Sprintf("%s:%s", containerID, dstPath)}
-	d.Log.WithFields(logrus.Fields{"command": d.Docker.DockerCommand, "args": strings.Join(args, " ")}).Debug("copying file to container")
+	d.Log.WithFields(logrus.Fields{"command": d.Docker.DockerCommand, "args": strings.Join(args, " ")}).
+		Debug("copying file to container")
 	return d.Docker.Run(ctx, args, nil, writer, writer)
 }
 
 type lineProcessor func(line string, fields []string) (modifiedLine string, shouldWrite bool, err error)
 
-func (d *dockerDriver) processColonDelimitedFile(in *os.File, out *os.File, fieldCount int, processor lineProcessor) error {
+func (d *dockerDriver) processColonDelimitedFile(
+	in *os.File,
+	out *os.File,
+	fieldCount int,
+	processor lineProcessor,
+) error {
 	scanner := bufio.NewScanner(in)
 
 	for scanner.Scan() {
@@ -868,7 +972,12 @@ func (d *dockerDriver) updatePasswdFile(params *passwordFileUpdateParams) (*user
 		return modifiedLine, true, nil
 	}
 
-	if err := d.processColonDelimitedFile(params.passwdIn, params.passwdOut, 7, processor); err != nil {
+	if err := d.processColonDelimitedFile(
+		params.passwdIn,
+		params.passwdOut,
+		7,
+		processor,
+	); err != nil {
 		return nil, err
 	}
 
@@ -883,7 +992,11 @@ func (d *dockerDriver) updatePasswdFile(params *passwordFileUpdateParams) (*user
 // It reads each line from groupIn, and for lines where the GID field matches containerGid,
 // writes a modified entry with localGid to groupOut. All other lines are copied unchanged.
 // Returns an error if scanning fails.
-func (d *dockerDriver) updateGroupFile(groupIn *os.File, groupOut *os.File, containerGid, localGid string) error {
+func (d *dockerDriver) updateGroupFile(
+	groupIn *os.File,
+	groupOut *os.File,
+	containerGid, localGid string,
+) error {
 	// parse group format: groupname:password:gid:user_list
 	processor := func(line string, fields []string) (string, bool, error) {
 		if fields[2] != containerGid {
@@ -897,20 +1010,36 @@ func (d *dockerDriver) updateGroupFile(groupIn *os.File, groupOut *os.File, cont
 	return d.processColonDelimitedFile(groupIn, groupOut, 4, processor)
 }
 
-func (d *dockerDriver) applyPermissions(ctx context.Context, containerID, localUid, localGid, containerHome string, writer io.Writer) error {
+func (d *dockerDriver) applyPermissions(
+	ctx context.Context,
+	containerID, localUid, localGid, containerHome string,
+	writer io.Writer,
+) error {
 	args := []string{"exec", "-u", "root", containerID, "chmod", "644", "/etc/passwd", "/etc/group"}
-	d.Log.WithFields(logrus.Fields{"command": d.Docker.DockerCommand, "args": strings.Join(args, " ")}).Debug("modifying permissions of /etc/passwd and /etc/group")
+	d.Log.WithFields(logrus.Fields{"command": d.Docker.DockerCommand, "args": strings.Join(args, " ")}).
+		Debug("modifying permissions of /etc/passwd and /etc/group")
 	if err := d.Docker.Run(ctx, args, nil, writer, writer); err != nil {
 		return err
 	}
 
 	if containerHome == "" {
-		d.Log.WithFields(logrus.Fields{"containerID": containerID}).Warn("container home directory not found, skipping chown")
+		d.Log.WithFields(logrus.Fields{"containerID": containerID}).
+			Warn("container home directory not found, skipping chown")
 		return nil
 	}
 
-	args = []string{"exec", "-u", "root", containerID, "chown", "-R", fmt.Sprintf("%s:%s", localUid, localGid), containerHome}
-	d.Log.WithFields(logrus.Fields{"command": d.Docker.DockerCommand, "args": strings.Join(args, " ")}).Debug("running docker chown command")
+	args = []string{
+		"exec",
+		"-u",
+		"root",
+		containerID,
+		"chown",
+		"-R",
+		fmt.Sprintf("%s:%s", localUid, localGid),
+		containerHome,
+	}
+	d.Log.WithFields(logrus.Fields{"command": d.Docker.DockerCommand, "args": strings.Join(args, " ")}).
+		Debug("running docker chown command")
 	return d.Docker.Run(ctx, args, nil, writer, writer)
 }
 
@@ -970,8 +1099,19 @@ func (d *dockerDriver) createTempFiles() (*tempFiles, error) {
 	return files, nil
 }
 
-func (d *dockerDriver) fetchContainerFiles(ctx context.Context, containerID string, files *tempFiles, writer io.Writer) error {
-	if err := d.copyFileFromContainer(ctx, containerID, "/etc/passwd", files.passwdIn.Name(), writer); err != nil {
+func (d *dockerDriver) fetchContainerFiles(
+	ctx context.Context,
+	containerID string,
+	files *tempFiles,
+	writer io.Writer,
+) error {
+	if err := d.copyFileFromContainer(
+		ctx,
+		containerID,
+		"/etc/passwd",
+		files.passwdIn.Name(),
+		writer,
+	); err != nil {
 		return err
 	}
 	return d.copyFileFromContainer(ctx, containerID, "/etc/group", files.groupIn.Name(), writer)
@@ -1010,7 +1150,13 @@ func (d *dockerDriver) processUserFiles(
 func (d *dockerDriver) copyFilesToContainer(
 	ctx context.Context, containerID string, files *tempFiles, writer io.Writer,
 ) error {
-	if err := d.copyFileToContainer(ctx, files.passwdOut.Name(), containerID, "/etc/passwd", writer); err != nil {
+	if err := d.copyFileToContainer(
+		ctx,
+		files.passwdOut.Name(),
+		containerID,
+		"/etc/passwd",
+		writer,
+	); err != nil {
 		return err
 	}
 	return d.copyFileToContainer(ctx, files.groupOut.Name(), containerID, "/etc/group", writer)

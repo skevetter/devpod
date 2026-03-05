@@ -36,7 +36,11 @@ func AddPrivateKeysToAgent(ctx context.Context, log log.Logger) error {
 		out, err := exec.CommandContext(timeoutCtx, "ssh-add", privateKey).CombinedOutput()
 		cancel()
 		if err != nil {
-			log.Debugf("Error adding key %s to agent: %v", privateKey, command.WrapCommandError(out, err))
+			log.Debugf(
+				"Error adding key %s to agent: %v",
+				privateKey,
+				command.WrapCommandError(out, err),
+			)
 		}
 	}
 

@@ -52,13 +52,25 @@ type BuildInfo struct {
 	BuildArgs               map[string]string
 }
 
-func GetExtendedBuildInfo(ctx *config.SubstitutionContext, imageBuildInfo *config.ImageBuildInfo, target string, devContainerConfig *config.SubstitutedConfig, log log.Logger, forceBuild bool) (*ExtendedBuildInfo, error) {
+func GetExtendedBuildInfo(
+	ctx *config.SubstitutionContext,
+	imageBuildInfo *config.ImageBuildInfo,
+	target string,
+	devContainerConfig *config.SubstitutedConfig,
+	log log.Logger,
+	forceBuild bool,
+) (*ExtendedBuildInfo, error) {
 	features, err := fetchFeatures(devContainerConfig.Config, log, forceBuild)
 	if err != nil {
 		return nil, fmt.Errorf("fetch features: %w", err)
 	}
 
-	mergedImageMetadataConfig, err := metadata.GetDevContainerMetadata(ctx, imageBuildInfo.Metadata, devContainerConfig, features)
+	mergedImageMetadataConfig, err := metadata.GetDevContainerMetadata(
+		ctx,
+		imageBuildInfo.Metadata,
+		devContainerConfig,
+		features,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("get dev container metadata: %w", err)
 	}
@@ -80,7 +92,12 @@ func GetExtendedBuildInfo(ctx *config.SubstitutionContext, imageBuildInfo *confi
 	effectiveImageBuildInfo := *imageBuildInfo
 	effectiveImageBuildInfo.Metadata = mergedImageMetadataConfig
 
-	buildInfo, err := getFeatureBuildOptions(contextPath, &effectiveImageBuildInfo, target, features)
+	buildInfo, err := getFeatureBuildOptions(
+		contextPath,
+		&effectiveImageBuildInfo,
+		target,
+		features,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -93,8 +110,17 @@ func GetExtendedBuildInfo(ctx *config.SubstitutionContext, imageBuildInfo *confi
 	}, nil
 }
 
-func getFeatureBuildOptions(contextPath string, imageBuildInfo *config.ImageBuildInfo, target string, features []*config.FeatureSet) (*BuildInfo, error) {
-	containerUser, remoteUser := findContainerUsers(imageBuildInfo.Metadata, "", imageBuildInfo.User)
+func getFeatureBuildOptions(
+	contextPath string,
+	imageBuildInfo *config.ImageBuildInfo,
+	target string,
+	features []*config.FeatureSet,
+) (*BuildInfo, error) {
+	containerUser, remoteUser := findContainerUsers(
+		imageBuildInfo.Metadata,
+		"",
+		imageBuildInfo.User,
+	)
 
 	// copy features
 	featureFolder := filepath.Join(contextPath, config.DevPodContextFeatureFolder)
@@ -104,14 +130,22 @@ func getFeatureBuildOptions(contextPath string, imageBuildInfo *config.ImageBuil
 	}
 
 	// write devcontainer-features.builtin.env, its important to have a terminating \n here as we append to that file later
-	err = os.WriteFile(filepath.Join(featureFolder, "devcontainer-features.builtin.env"), []byte(`_CONTAINER_USER=`+containerUser+`
-_REMOTE_USER=`+remoteUser+"\n"), 0o600)
+	err = os.WriteFile(
+		filepath.Join(featureFolder, "devcontainer-features.builtin.env"),
+		[]byte(`_CONTAINER_USER=`+containerUser+`
+_REMOTE_USER=`+remoteUser+"\n"),
+		0o600,
+	)
 	if err != nil {
 		return nil, err
 	}
 
 	// prepare dockerfile
-	dockerfileContent := strings.ReplaceAll(FEATURE_BASE_DOCKERFILE, "#{featureLayer}", getFeatureLayers(containerUser, remoteUser, features))
+	dockerfileContent := strings.ReplaceAll(
+		FEATURE_BASE_DOCKERFILE,
+		"#{featureLayer}",
+		getFeatureLayers(containerUser, remoteUser, features),
+	)
 	// get build syntax from Dockerfile or use default
 	syntax := "docker.io/docker/dockerfile:1.4"
 	if imageBuildInfo.Dockerfile != nil && imageBuildInfo.Dockerfile.Syntax != "" {
@@ -158,10 +192,18 @@ func copyFeaturesToDestination(features []*config.FeatureSet, targetDir string) 
 		}
 
 		installWrapperPath := filepath.Join(featureDir, "devcontainer-features-install.sh")
-		installWrapperContent := getFeatureInstallWrapperScript(feature.ConfigID, feature.Config, variables)
+		installWrapperContent := getFeatureInstallWrapperScript(
+			feature.ConfigID,
+			feature.Config,
+			variables,
+		)
 		err = os.WriteFile(installWrapperPath, []byte(installWrapperContent), 0o600)
 		if err != nil {
-			return fmt.Errorf("write install wrapper script for feature %s: %w", feature.ConfigID, err)
+			return fmt.Errorf(
+				"write install wrapper script for feature %s: %w",
+				feature.ConfigID,
+				err,
+			)
 		}
 	}
 
@@ -169,7 +211,12 @@ func copyFeaturesToDestination(features []*config.FeatureSet, targetDir string) 
 }
 
 func getFeatureSafeID(featureID string) string {
-	return strings.ToUpper(featureSafeIDRegex2.ReplaceAllString(featureSafeIDRegex1.ReplaceAllString(featureID, "_"), "_"))
+	return strings.ToUpper(
+		featureSafeIDRegex2.ReplaceAllString(
+			featureSafeIDRegex1.ReplaceAllString(featureID, "_"),
+			"_",
+		),
+	)
 }
 
 func getFeatureLayers(containerUser, remoteUser string, features []*config.FeatureSet) string {
@@ -203,7 +250,10 @@ func generateContainerEnvs(feature *config.FeatureSet) string {
 	return strings.Join(result, "\n")
 }
 
-func findContainerUsers(baseImageMetadata *config.ImageMetadataConfig, composeServiceUser, imageUser string) (string, string) {
+func findContainerUsers(
+	baseImageMetadata *config.ImageMetadataConfig,
+	composeServiceUser, imageUser string,
+) (string, string) {
 	reversed := config.ReverseSlice(baseImageMetadata.Config)
 	containerUser := ""
 	remoteUser := ""
@@ -233,7 +283,11 @@ func findContainerUsers(baseImageMetadata *config.ImageMetadataConfig, composeSe
 	return containerUser, remoteUser
 }
 
-func fetchFeatures(devContainerConfig *config.DevContainerConfig, log log.Logger, forceBuild bool) ([]*config.FeatureSet, error) {
+func fetchFeatures(
+	devContainerConfig *config.DevContainerConfig,
+	log log.Logger,
+	forceBuild bool,
+) ([]*config.FeatureSet, error) {
 	processor := &featureProcessor{
 		devContainerConfig: devContainerConfig,
 		log:                log,
@@ -263,7 +317,10 @@ func fetchFeatures(devContainerConfig *config.DevContainerConfig, log log.Logger
 	return featureSets, nil
 }
 
-func getUserFeatures(processor *featureProcessor, devContainerConfig *config.DevContainerConfig) (map[string]*config.FeatureSet, error) {
+func getUserFeatures(
+	processor *featureProcessor,
+	devContainerConfig *config.DevContainerConfig,
+) (map[string]*config.FeatureSet, error) {
 	userFeatures := map[string]*config.FeatureSet{}
 	for featureID, featureOptions := range devContainerConfig.Features {
 		featureSet, err := processor.processFeature(featureID, featureOptions)
@@ -281,7 +338,10 @@ type featureProcessor struct {
 	forceBuild         bool
 }
 
-func (p *featureProcessor) processFeature(featureID string, featureOptions any) (*config.FeatureSet, error) {
+func (p *featureProcessor) processFeature(
+	featureID string,
+	featureOptions any,
+) (*config.FeatureSet, error) {
 	featureFolder, err := ProcessFeatureID(featureID, p.devContainerConfig, p.log, p.forceBuild)
 	if err != nil {
 		return nil, fmt.Errorf("process feature ID %s: %w", featureID, err)
@@ -308,7 +368,10 @@ type featureDependencyResolver struct {
 	processor *featureProcessor
 }
 
-func (r *featureDependencyResolver) resolveFeatureDependency(featureID string, featureSet *config.FeatureSet) error {
+func (r *featureDependencyResolver) resolveFeatureDependency(
+	featureID string,
+	featureSet *config.FeatureSet,
+) error {
 	if r.resolved[featureID] != nil {
 		return nil // Already resolved
 	}
@@ -378,7 +441,10 @@ func normalizeFeatureID(featureID string) string {
 	return ref.String()
 }
 
-func getSortedFeatureSets(devContainer *config.DevContainerConfig, featureSets []*config.FeatureSet) ([]*config.FeatureSet, error) {
+func getSortedFeatureSets(
+	devContainer *config.DevContainerConfig,
+	featureSets []*config.FeatureSet,
+) ([]*config.FeatureSet, error) {
 	orderedFeatureSets, err := getOrderedFeatureSets(featureSets)
 	if err != nil {
 		return nil, err
@@ -391,7 +457,10 @@ func getSortedFeatureSets(devContainer *config.DevContainerConfig, featureSets [
 	return sortFeaturesByOverride(devContainer.OverrideFeatureInstallOrder, orderedFeatureSets), nil
 }
 
-func sortFeaturesByOverride(overrideOrder []string, featureSets []*config.FeatureSet) []*config.FeatureSet {
+func sortFeaturesByOverride(
+	overrideOrder []string,
+	featureSets []*config.FeatureSet,
+) []*config.FeatureSet {
 	orderedFeatures := make([]*config.FeatureSet, 0, len(featureSets))
 	seen := make(map[string]bool)
 
@@ -445,7 +514,9 @@ func getOrderedFeatureSets(features []*config.FeatureSet) ([]*config.FeatureSet,
 	return dependencyGraph.Sort()
 }
 
-func buildFeatureDependencyGraph(features []*config.FeatureSet) (*graph.Graph[*config.FeatureSet], error) {
+func buildFeatureDependencyGraph(
+	features []*config.FeatureSet,
+) (*graph.Graph[*config.FeatureSet], error) {
 	g := graph.NewGraph[*config.FeatureSet]()
 	featureLookup := buildFeatureLookupMap(features)
 	if err := g.AddNodes(featureLookup); err != nil {
@@ -465,7 +536,11 @@ func buildFeatureDependencyGraph(features []*config.FeatureSet) (*graph.Graph[*c
 	return g, nil
 }
 
-func addHardDependencies(g *graph.Graph[*config.FeatureSet], feature *config.FeatureSet, featureLookup map[string]*config.FeatureSet) error {
+func addHardDependencies(
+	g *graph.Graph[*config.FeatureSet],
+	feature *config.FeatureSet,
+	featureLookup map[string]*config.FeatureSet,
+) error {
 	for id := range feature.Config.DependsOn {
 		normalizedID := normalizeFeatureID(id)
 		if _, exists := featureLookup[normalizedID]; exists {
@@ -477,7 +552,11 @@ func addHardDependencies(g *graph.Graph[*config.FeatureSet], feature *config.Fea
 	return nil
 }
 
-func addSoftDependencies(g *graph.Graph[*config.FeatureSet], feature *config.FeatureSet, featureLookup map[string]*config.FeatureSet) error {
+func addSoftDependencies(
+	g *graph.Graph[*config.FeatureSet],
+	feature *config.FeatureSet,
+	featureLookup map[string]*config.FeatureSet,
+) error {
 	for _, id := range feature.Config.InstallsAfter {
 		normalizedID := normalizeFeatureID(id)
 		if _, exists := featureLookup[normalizedID]; !exists {

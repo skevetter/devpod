@@ -8,7 +8,13 @@ import (
 	"github.com/skevetter/log"
 )
 
-func newConnectionCounter(ctx context.Context, timeout time.Duration, onTimeout func(), address string, log log.Logger) *connectionCounter {
+func newConnectionCounter(
+	ctx context.Context,
+	timeout time.Duration,
+	onTimeout func(),
+	address string,
+	log log.Logger,
+) *connectionCounter {
 	return &connectionCounter{
 		ctx:       ctx,
 		address:   address,

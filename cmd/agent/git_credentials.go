@@ -78,7 +78,9 @@ func (cmd *GitCredentialsCmd) Run(ctx context.Context, args []string, log log.Lo
 	return nil
 }
 
-func getCredentialsFromWorkspaceServer(credentials *gitcredentials.GitCredentials) *gitcredentials.GitCredentials {
+func getCredentialsFromWorkspaceServer(
+	credentials *gitcredentials.GitCredentials,
+) *gitcredentials.GitCredentials {
 	if _, err := os.Stat(filepath.Join(container.RootDir, ts.RunnerProxySocket)); err != nil {
 		// workspace server is not running
 		return nil
@@ -92,10 +94,18 @@ func getCredentialsFromWorkspaceServer(credentials *gitcredentials.GitCredential
 		},
 	}
 
-	credentials, credentialsErr := doRequest(httpClient, credentials, "http://runner-proxy/git-credentials")
+	credentials, credentialsErr := doRequest(
+		httpClient,
+		credentials,
+		"http://runner-proxy/git-credentials",
+	)
 	if credentialsErr != nil {
 		// #nosec G302 -- TODO Consider using a more secure permission setting and ownership if needed.
-		file, err := os.OpenFile("/tmp/git-credentials-error.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+		file, err := os.OpenFile(
+			"/tmp/git-credentials-error.log",
+			os.O_APPEND|os.O_CREATE|os.O_WRONLY,
+			0o644,
+		)
 		if err != nil {
 			return nil
 		}
@@ -108,11 +118,22 @@ func getCredentialsFromWorkspaceServer(credentials *gitcredentials.GitCredential
 	return credentials
 }
 
-func getCredentialsFromLocalMachine(credentials *gitcredentials.GitCredentials, port int) *gitcredentials.GitCredentials {
-	credentials, credentialsErr := doRequest(devpodhttp.GetHTTPClient(), credentials, "http://localhost:"+strconv.Itoa(port)+"/git-credentials")
+func getCredentialsFromLocalMachine(
+	credentials *gitcredentials.GitCredentials,
+	port int,
+) *gitcredentials.GitCredentials {
+	credentials, credentialsErr := doRequest(
+		devpodhttp.GetHTTPClient(),
+		credentials,
+		"http://localhost:"+strconv.Itoa(port)+"/git-credentials",
+	)
 	if credentialsErr != nil {
 		// #nosec G302 -- TODO Consider using a more secure permission setting and ownership if needed.
-		file, err := os.OpenFile("/tmp/git-credentials-error.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+		file, err := os.OpenFile(
+			"/tmp/git-credentials-error.log",
+			os.O_APPEND|os.O_CREATE|os.O_WRONLY,
+			0o644,
+		)
 		if err != nil {
 			return nil
 		}
@@ -125,7 +146,11 @@ func getCredentialsFromLocalMachine(credentials *gitcredentials.GitCredentials, 
 	return credentials
 }
 
-func doRequest(httpClient *http.Client, credentials *gitcredentials.GitCredentials, url string) (*gitcredentials.GitCredentials, error) {
+func doRequest(
+	httpClient *http.Client,
+	credentials *gitcredentials.GitCredentials,
+	url string,
+) (*gitcredentials.GitCredentials, error) {
 	rawJSON, err := json.Marshal(credentials)
 	if err != nil {
 		return nil, fmt.Errorf("error marshalling credentials: %w", err)
@@ -144,7 +169,11 @@ func doRequest(httpClient *http.Client, credentials *gitcredentials.GitCredentia
 
 	// has the request succeeded?
 	if response.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("error reading credentials (%d): %s", response.StatusCode, string(raw))
+		return nil, fmt.Errorf(
+			"error reading credentials (%d): %s",
+			response.StatusCode,
+			string(raw),
+		)
 	}
 
 	credentials = &gitcredentials.GitCredentials{}

@@ -80,7 +80,11 @@ func (cmd *UpCmd) Run(ctx context.Context) error {
 	if err != nil {
 		return err
 	} else if instance == nil {
-		return fmt.Errorf("workspace %s not found in project %s. Looks like it does not exist anymore and you can delete it", info.ID, info.ProjectName)
+		return fmt.Errorf(
+			"workspace %s not found in project %s. Looks like it does not exist anymore and you can delete it",
+			info.ID,
+			info.ProjectName,
+		)
 	}
 
 	// Log current workspace information. This is both useful to the user to understand the workspace configuration
@@ -102,7 +106,11 @@ func (cmd *UpCmd) Run(ctx context.Context) error {
 	return cmd.up(ctx, instance, baseClient)
 }
 
-func (cmd *UpCmd) up(ctx context.Context, workspace *managementv1.DevPodWorkspaceInstance, client client.Client) error {
+func (cmd *UpCmd) up(
+	ctx context.Context,
+	workspace *managementv1.DevPodWorkspaceInstance,
+	client client.Client,
+) error {
 	options := platform.OptionsFromEnv(storagev1.DevPodFlagsUp)
 	if options != nil && os.Getenv("DEBUG") == "true" {
 		options.Add("debug", "true")
@@ -113,7 +121,14 @@ func (cmd *UpCmd) up(ctx context.Context, workspace *managementv1.DevPodWorkspac
 		return err
 	}
 
-	_, err = remotecommand.ExecuteConn(ctx, conn, cmd.streams.Stdin, cmd.streams.Stdout, cmd.streams.Stderr, cmd.Log)
+	_, err = remotecommand.ExecuteConn(
+		ctx,
+		conn,
+		cmd.streams.Stdin,
+		cmd.streams.Stdout,
+		cmd.streams.Stderr,
+		cmd.Log,
+	)
 	if err != nil {
 		return fmt.Errorf("error executing: %w", err)
 	}

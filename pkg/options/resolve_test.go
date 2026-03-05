@@ -659,7 +659,10 @@ func TestResolveOptions(t *testing.T) {
 
 	for _, testCase := range testCases {
 		fmt.Println(testCase.Name)
-		resolverOpts := []resolver.Option{resolver.WithSkipRequired(testCase.SkipRequired), resolver.WithResolveSubOptions()}
+		resolverOpts := []resolver.Option{
+			resolver.WithSkipRequired(testCase.SkipRequired),
+			resolver.WithResolveSubOptions(),
+		}
 		if !testCase.DontResolveLocal {
 			resolverOpts = append(resolverOpts, resolver.WithResolveLocal())
 		}
@@ -667,7 +670,12 @@ func TestResolveOptions(t *testing.T) {
 			resolverOpts = append(resolverOpts, resolver.WithResolveGlobal())
 		}
 		r := resolver.New(testCase.UserValues, testCase.ExtraValues, log.Default, resolverOpts...)
-		options, dynamicOptions, err := r.Resolve(context.Background(), testCase.ResolvedDynamicDefinitions, testCase.ProviderOptions, testCase.ResolvedValues)
+		options, dynamicOptions, err := r.Resolve(
+			context.Background(),
+			testCase.ResolvedDynamicDefinitions,
+			testCase.ProviderOptions,
+			testCase.ResolvedValues,
+		)
 		if !testCase.ExpectErr {
 			assert.NilError(t, err, testCase.Name)
 		} else if testCase.ExpectErr {

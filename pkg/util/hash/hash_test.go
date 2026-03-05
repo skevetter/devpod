@@ -383,19 +383,31 @@ func (s *HashTestSuite) TestDirectoryHash_RealWorldScenario_NodeProject() {
 	s.createFile("node_modules/lib/index.js", "module.exports = {}")
 	s.createFile("build.log", "build output")
 
-	hash1, err := DirectoryHash(s.tempDir, []string{"node_modules", "*.log"}, []string{"src", "package.json"})
+	hash1, err := DirectoryHash(
+		s.tempDir,
+		[]string{"node_modules", "*.log"},
+		[]string{"src", "package.json"},
+	)
 	require.NoError(s.T(), err)
 
 	// Change excluded files - hash should not change
 	s.createFile("node_modules/lib/index.js", "changed")
 	s.createFile("build.log", "changed")
-	hash2, err := DirectoryHash(s.tempDir, []string{"node_modules", "*.log"}, []string{"src", "package.json"})
+	hash2, err := DirectoryHash(
+		s.tempDir,
+		[]string{"node_modules", "*.log"},
+		[]string{"src", "package.json"},
+	)
 	require.NoError(s.T(), err)
 	assert.Equal(s.T(), hash1, hash2)
 
 	// Change included file - hash should change
 	s.createFile("src/index.js", "changed")
-	hash3, err := DirectoryHash(s.tempDir, []string{"node_modules", "*.log"}, []string{"src", "package.json"})
+	hash3, err := DirectoryHash(
+		s.tempDir,
+		[]string{"node_modules", "*.log"},
+		[]string{"src", "package.json"},
+	)
 	require.NoError(s.T(), err)
 	assert.NotEqual(s.T(), hash1, hash3)
 }

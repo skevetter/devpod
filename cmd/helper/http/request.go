@@ -34,7 +34,9 @@ func NewRequestCmd() *cobra.Command {
 	requestCmd.Flags().StringVarP(&cmd.Data, "data", "d", "", "Request Data")
 	requestCmd.Flags().StringVarP(&cmd.Method, "request", "X", "GET", "Request Type")
 	requestCmd.Flags().StringSliceVarP(&cmd.Headers, "header", "H", []string{}, "Extra Headers")
-	requestCmd.Flags().BoolVar(&cmd.FailOnErrorCode, "fail-on-error-code", true, "Let this command fail if the remote is returning an error code")
+	requestCmd.Flags().
+		BoolVar(&cmd.FailOnErrorCode, "fail-on-error-code", true,
+			"Let this command fail if the remote is returning an error code")
 	return requestCmd
 }
 
@@ -51,7 +53,10 @@ func (cmd *RequestCmd) Run(ctx context.Context, args []string) error {
 			return fmt.Errorf("unexpected header '%s', expected form 'HEADER: VALUE'", header)
 		}
 
-		httpHeader.Add(strings.TrimSpace(splitted[0]), strings.TrimSpace(strings.Join(splitted[1:], ":")))
+		httpHeader.Add(
+			strings.TrimSpace(splitted[0]),
+			strings.TrimSpace(strings.Join(splitted[1:], ":")),
+		)
 	}
 
 	request, err := http.NewRequest(cmd.Method, args[0], strings.NewReader(cmd.Data))

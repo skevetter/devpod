@@ -44,7 +44,12 @@ type Handler func(ctx context.Context, containerClient *ssh.Client) error
 
 // Run creates an "outer" tunnel to the host to start the SSH server so that the "inner" tunnel can
 // connect to the container over SSH.
-func (c *ContainerTunnel) Run(ctx context.Context, handler Handler, cfg *config.Config, envVars map[string]string) error {
+func (c *ContainerTunnel) Run(
+	ctx context.Context,
+	handler Handler,
+	cfg *config.Config,
+	envVars map[string]string,
+) error {
 	if handler == nil {
 		return nil
 	}
@@ -171,7 +176,11 @@ func (c *ContainerTunnel) updateConfig(ctx context.Context, sshClient *ssh.Clien
 
 			// update workspace remotely
 			buf := &bytes.Buffer{}
-			command := fmt.Sprintf("'%s' agent workspace update-config --workspace-info '%s'", c.client.AgentPath(), workspaceInfo)
+			command := fmt.Sprintf(
+				"'%s' agent workspace update-config --workspace-info '%s'",
+				c.client.AgentPath(),
+				workspaceInfo,
+			)
 			if agentInfo.Agent.DataPath != "" {
 				command += fmt.Sprintf(" --agent-dir '%s'", agentInfo.Agent.DataPath)
 			}
@@ -194,7 +203,12 @@ func (c *ContainerTunnel) updateConfig(ctx context.Context, sshClient *ssh.Clien
 }
 
 // runInContainer uses the connected SSH client to execute handler on the remote.
-func (c *ContainerTunnel) runInContainer(ctx context.Context, sshClient *ssh.Client, handler Handler, envVars map[string]string) error {
+func (c *ContainerTunnel) runInContainer(
+	ctx context.Context,
+	sshClient *ssh.Client,
+	handler Handler,
+	envVars map[string]string,
+) error {
 	// compress info
 	workspaceInfo, _, err := c.client.AgentInfo(provider.CLIOptions{})
 	if err != nil {
@@ -227,7 +241,11 @@ func (c *ContainerTunnel) runInContainer(ctx context.Context, sshClient *ssh.Cli
 		c.log.Debugf("Run container tunnel")
 		defer c.log.Debugf("Container tunnel exited")
 
-		command := fmt.Sprintf("'%s' agent container-tunnel --workspace-info '%s'", c.client.AgentPath(), workspaceInfo)
+		command := fmt.Sprintf(
+			"'%s' agent container-tunnel --workspace-info '%s'",
+			c.client.AgentPath(),
+			workspaceInfo,
+		)
 		if c.log.GetLevel() == logrus.DebugLevel {
 			command += " --debug"
 		}

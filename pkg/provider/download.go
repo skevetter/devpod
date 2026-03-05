@@ -85,7 +85,10 @@ func GetBinariesFrom(config *ProviderConfig, binariesDir string) (map[string]str
 		if !found {
 			return nil, fmt.Errorf(
 				"cannot find provider binary %s, because no binary location matched OS %s and ARCH %s",
-				binaryName, runtime.GOOS, runtime.GOARCH)
+				binaryName,
+				runtime.GOOS,
+				runtime.GOARCH,
+			)
 		}
 	}
 
@@ -276,7 +279,12 @@ func fromCache(binary *ProviderBinary, targetFolder string, log log.Logger) bool
 	}
 
 	if err := copy.File(cachedBinaryPath, binaryPath, filePerms); err != nil {
-		log.Warnf("error copying cached binary from %s to %s: %v", cachedBinaryPath, binaryPath, err)
+		log.Warnf(
+			"error copying cached binary from %s to %s: %v",
+			cachedBinaryPath,
+			binaryPath,
+			err,
+		)
 		return false
 	}
 

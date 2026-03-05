@@ -22,17 +22,24 @@ func (c *client) Delete(ctx context.Context, opt clientpkg.DeleteOptions) error 
 		return err
 	}
 
-	workspace, err := platform.FindInstance(ctx, baseClient, platform.FindInstanceOptions{UID: c.workspace.UID})
+	workspace, err := platform.FindInstance(
+		ctx,
+		baseClient,
+		platform.FindInstanceOptions{UID: c.workspace.UID},
+	)
 	if err != nil {
 		return err
 	} else if workspace == nil {
 		// delete the workspace folder
-		err = clientimplementation.DeleteWorkspaceFolder(clientimplementation.DeleteWorkspaceFolderParams{
-			Context:              c.workspace.Context,
-			WorkspaceID:          c.workspace.ID,
-			SSHConfigPath:        c.workspace.SSHConfigPath,
-			SSHConfigIncludePath: c.workspace.SSHConfigIncludePath,
-		}, c.log)
+		err = clientimplementation.DeleteWorkspaceFolder(
+			clientimplementation.DeleteWorkspaceFolderParams{
+				Context:              c.workspace.Context,
+				WorkspaceID:          c.workspace.ID,
+				SSHConfigPath:        c.workspace.SSHConfigPath,
+				SSHConfigIncludePath: c.workspace.SSHConfigIncludePath,
+			},
+			c.log,
+		)
 		if err != nil {
 			return err
 		}
@@ -60,7 +67,10 @@ func (c *client) Delete(ctx context.Context, opt clientpkg.DeleteOptions) error 
 	}
 
 	// delete the workspace
-	err = managementClient.Loft().ManagementV1().DevPodWorkspaceInstances(workspace.Namespace).Delete(ctx, workspace.Name, metav1.DeleteOptions{})
+	err = managementClient.Loft().
+		ManagementV1().
+		DevPodWorkspaceInstances(workspace.Namespace).
+		Delete(ctx, workspace.Name, metav1.DeleteOptions{})
 	if err != nil {
 		if !opt.Force {
 			return fmt.Errorf("delete workspace: %w", err)
@@ -72,12 +82,15 @@ func (c *client) Delete(ctx context.Context, opt clientpkg.DeleteOptions) error 
 	}
 
 	// delete the workspace folder
-	err = clientimplementation.DeleteWorkspaceFolder(clientimplementation.DeleteWorkspaceFolderParams{
-		Context:              c.workspace.Context,
-		WorkspaceID:          c.workspace.ID,
-		SSHConfigPath:        c.workspace.SSHConfigPath,
-		SSHConfigIncludePath: c.workspace.SSHConfigIncludePath,
-	}, c.log)
+	err = clientimplementation.DeleteWorkspaceFolder(
+		clientimplementation.DeleteWorkspaceFolderParams{
+			Context:              c.workspace.Context,
+			WorkspaceID:          c.workspace.ID,
+			SSHConfigPath:        c.workspace.SSHConfigPath,
+			SSHConfigIncludePath: c.workspace.SSHConfigIncludePath,
+		},
+		c.log,
+	)
 	if err != nil {
 		return err
 	}
@@ -90,20 +103,29 @@ func (c *client) Delete(ctx context.Context, opt clientpkg.DeleteOptions) error 
 
 	// wait until the workspace is deleted
 	c.log.Debugf("Waiting for workspace to get deleted...")
-	err = wait.PollUntilContextTimeout(ctx, time.Second, waitTimeout, false, func(ctx context.Context) (done bool, err error) {
-		workspaceInstance, err := managementClient.Loft().ManagementV1().DevPodWorkspaceInstances(workspace.Namespace).Get(ctx, workspace.Name, metav1.GetOptions{})
-		if kerrors.IsNotFound(err) {
-			return true, nil
-		} else if err != nil {
-			return false, fmt.Errorf("error getting workspace: %w", err)
-		} else if workspaceInstance.DeletionTimestamp == nil {
-			// this can occur if the workspace is already deleted and was recreated
-			return true, nil
-		}
+	err = wait.PollUntilContextTimeout(
+		ctx,
+		time.Second,
+		waitTimeout,
+		false,
+		func(ctx context.Context) (done bool, err error) {
+			workspaceInstance, err := managementClient.Loft().
+				ManagementV1().
+				DevPodWorkspaceInstances(workspace.Namespace).
+				Get(ctx, workspace.Name, metav1.GetOptions{})
+			if kerrors.IsNotFound(err) {
+				return true, nil
+			} else if err != nil {
+				return false, fmt.Errorf("error getting workspace: %w", err)
+			} else if workspaceInstance.DeletionTimestamp == nil {
+				// this can occur if the workspace is already deleted and was recreated
+				return true, nil
+			}
 
-		c.log.Debugf("Workspace is not deleted yet, waiting again...")
-		return false, nil
-	})
+			c.log.Debugf("Workspace is not deleted yet, waiting again...")
+			return false, nil
+		},
+	)
 	if err != nil {
 		return fmt.Errorf("error waiting for workspace to get deleted: %w", err)
 	}

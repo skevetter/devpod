@@ -94,7 +94,11 @@ func validateAndPreparePath(srcPath string) (string, error) {
 	return srcPath, nil
 }
 
-func collectFiles(srcPath string, pm *patternmatcher.PatternMatcher, includeFiles []string) ([]string, error) {
+func collectFiles(
+	srcPath string,
+	pm *patternmatcher.PatternMatcher,
+	includeFiles []string,
+) ([]string, error) {
 	retFiles := []string{}
 
 	// Normalize includeFiles once to forward slashes for consistent matching
@@ -115,7 +119,9 @@ func collectFiles(srcPath string, pm *patternmatcher.PatternMatcher, includeFile
 		if errors.Is(err, errFileReadOverLimit) {
 			return retFiles, fmt.Errorf(
 				"directory hash incomplete: exceeded limit of %d files (partial hash computed from first %d files): %w",
-				maxFilesToRead, len(retFiles), errFileReadOverLimit,
+				maxFilesToRead,
+				len(retFiles),
+				errFileReadOverLimit,
 			)
 		}
 		return nil, fmt.Errorf("failed to hash %s: %w", srcPath, err)

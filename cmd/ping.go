@@ -29,7 +29,15 @@ func NewPingCmd(flags *flags.GlobalFlags) *cobra.Command {
 			return cmd.Run(cobraCmd.Context(), args)
 		},
 		ValidArgsFunction: func(rootCmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-			return completion.GetWorkspaceSuggestions(rootCmd, cmd.Context, cmd.Provider, args, toComplete, cmd.Owner, log.Default)
+			return completion.GetWorkspaceSuggestions(
+				rootCmd,
+				cmd.Context,
+				cmd.Provider,
+				args,
+				toComplete,
+				cmd.Owner,
+				log.Default,
+			)
 		},
 		Hidden: true,
 	}
@@ -43,7 +51,15 @@ func (cmd *PingCmd) Run(ctx context.Context, args []string) error {
 		return err
 	}
 
-	client, err := workspace2.Get(ctx, devPodConfig, args, true, cmd.Owner, false, log.Default.ErrorStreamOnly())
+	client, err := workspace2.Get(
+		ctx,
+		devPodConfig,
+		args,
+		true,
+		cmd.Owner,
+		false,
+		log.Default.ErrorStreamOnly(),
+	)
 	if err != nil {
 		return err
 	}

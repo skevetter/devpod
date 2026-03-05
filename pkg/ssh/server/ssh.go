@@ -31,7 +31,14 @@ type server struct {
 	log         log.Logger
 }
 
-func NewServer(addr string, hostKey []byte, keys []ssh.PublicKey, workdir string, reuseSock string, log log.Logger) (Server, error) {
+func NewServer(
+	addr string,
+	hostKey []byte,
+	keys []ssh.PublicKey,
+	workdir string,
+	reuseSock string,
+	log log.Logger,
+) (Server, error) {
 	sh, err := shell.GetShell("")
 	if err != nil {
 		return nil, err

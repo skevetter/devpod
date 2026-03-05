@@ -336,7 +336,12 @@ func dequeue(queue *[]string) string {
 	return firstNode
 }
 
-func processNeighbors(edges map[string][]string, currentNode string, inDegree map[string]int, queue *[]string) {
+func processNeighbors(
+	edges map[string][]string,
+	currentNode string,
+	inDegree map[string]int,
+	queue *[]string,
+) {
 	for _, neighborNode := range edges[currentNode] {
 		inDegree[neighborNode]--
 		if inDegree[neighborNode] == 0 {

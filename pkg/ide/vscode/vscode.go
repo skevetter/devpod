@@ -130,7 +130,8 @@ func (o *VsCodeServer) InstallExtensions() error {
 
 	for _, ext := range o.extensions {
 		if err := o.installExtension(binPath, ext, writer, errWriter); err != nil {
-			o.log.WithFields(logrus.Fields{"extension": ext, "error": err}).Warn("failed installing extension")
+			o.log.WithFields(logrus.Fields{"extension": ext, "error": err}).
+				Warn("failed installing extension")
 		} else {
 			o.log.WithFields(logrus.Fields{"extension": ext}).Info("installed extension")
 		}
@@ -252,7 +253,8 @@ func (o *VsCodeServer) waitForServerBinary(location string) string {
 		}
 
 		if attempts == 0 || attempts%10 == 0 {
-			o.log.WithFields(logrus.Fields{"attempts": attempts}).Debug("waiting for server installation")
+			o.log.WithFields(logrus.Fields{"attempts": attempts}).
+				Debug("waiting for server installation")
 		}
 
 		time.Sleep(backoff)

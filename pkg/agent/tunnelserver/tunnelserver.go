@@ -31,7 +31,16 @@ import (
 	"google.golang.org/grpc/reflection"
 )
 
-func RunServicesServer(ctx context.Context, reader io.Reader, writer io.WriteCloser, allowGitCredentials, allowDockerCredentials bool, forwarder netstat.Forwarder, workspace *provider2.Workspace, log log.Logger, options ...Option) error {
+func RunServicesServer(
+	ctx context.Context,
+	reader io.Reader,
+	writer io.WriteCloser,
+	allowGitCredentials, allowDockerCredentials bool,
+	forwarder netstat.Forwarder,
+	workspace *provider2.Workspace,
+	log log.Logger,
+	options ...Option,
+) error {
 	opts := append(options, []Option{
 		WithForwarder(forwarder),
 		WithAllowGitCredentials(allowGitCredentials),
@@ -43,7 +52,15 @@ func RunServicesServer(ctx context.Context, reader io.Reader, writer io.WriteClo
 	return tunnelServ.Run(ctx, reader, writer)
 }
 
-func RunUpServer(ctx context.Context, reader io.Reader, writer io.WriteCloser, allowGitCredentials, allowDockerCredentials bool, workspace *provider2.Workspace, log log.Logger, options ...Option) (*config.Result, error) {
+func RunUpServer(
+	ctx context.Context,
+	reader io.Reader,
+	writer io.WriteCloser,
+	allowGitCredentials, allowDockerCredentials bool,
+	workspace *provider2.Workspace,
+	log log.Logger,
+	options ...Option,
+) (*config.Result, error) {
 	opts := append(options, []Option{
 		WithWorkspace(workspace),
 		WithAllowGitCredentials(allowGitCredentials),
@@ -54,7 +71,15 @@ func RunUpServer(ctx context.Context, reader io.Reader, writer io.WriteCloser, a
 	return tunnelServ.RunWithResult(ctx, reader, writer)
 }
 
-func RunSetupServer(ctx context.Context, reader io.Reader, writer io.WriteCloser, allowGitCredentials, allowDockerCredentials bool, mounts []*config.Mount, log log.Logger, options ...Option) (*config.Result, error) {
+func RunSetupServer(
+	ctx context.Context,
+	reader io.Reader,
+	writer io.WriteCloser,
+	allowGitCredentials, allowDockerCredentials bool,
+	mounts []*config.Mount,
+	log log.Logger,
+	options ...Option,
+) (*config.Result, error) {
 	opts := append(options, []Option{
 		WithMounts(mounts),
 		WithAllowGitCredentials(allowGitCredentials),
@@ -96,7 +121,11 @@ type tunnelServer struct {
 	platformOptions *devpod.PlatformOptions
 }
 
-func (t *tunnelServer) RunWithResult(ctx context.Context, reader io.Reader, writer io.WriteCloser) (*config.Result, error) {
+func (t *tunnelServer) RunWithResult(
+	ctx context.Context,
+	reader io.Reader,
+	writer io.WriteCloser,
+) (*config.Result, error) {
 	lis := stdio.NewStdioListener(reader, writer, false)
 	s := grpc.NewServer()
 	tunnel.RegisterTunnelServer(s, t)
@@ -119,7 +148,10 @@ func (t *tunnelServer) Run(ctx context.Context, reader io.Reader, writer io.Writ
 	return err
 }
 
-func (t *tunnelServer) ForwardPort(ctx context.Context, portRequest *tunnel.ForwardPortRequest) (*tunnel.ForwardPortResponse, error) {
+func (t *tunnelServer) ForwardPort(
+	ctx context.Context,
+	portRequest *tunnel.ForwardPortRequest,
+) (*tunnel.ForwardPortResponse, error) {
 	if t.forwarder == nil {
 		return nil, fmt.Errorf("cannot forward ports")
 	}
@@ -132,7 +164,10 @@ func (t *tunnelServer) ForwardPort(ctx context.Context, portRequest *tunnel.Forw
 	return &tunnel.ForwardPortResponse{}, nil
 }
 
-func (t *tunnelServer) StopForwardPort(ctx context.Context, portRequest *tunnel.StopForwardPortRequest) (*tunnel.StopForwardPortResponse, error) {
+func (t *tunnelServer) StopForwardPort(
+	ctx context.Context,
+	portRequest *tunnel.StopForwardPortRequest,
+) (*tunnel.StopForwardPortResponse, error) {
 	if t.forwarder == nil {
 		return nil, fmt.Errorf("cannot forward ports")
 	}
@@ -145,7 +180,10 @@ func (t *tunnelServer) StopForwardPort(ctx context.Context, portRequest *tunnel.
 	return &tunnel.StopForwardPortResponse{}, nil
 }
 
-func (t *tunnelServer) DockerCredentials(ctx context.Context, message *tunnel.Message) (*tunnel.Message, error) {
+func (t *tunnelServer) DockerCredentials(
+	ctx context.Context,
+	message *tunnel.Message,
+) (*tunnel.Message, error) {
 	if !t.allowDockerCredentials {
 		return nil, fmt.Errorf("docker credentials forbidden")
 	}
@@ -201,7 +239,10 @@ func (t *tunnelServer) GitUser(ctx context.Context, empty *tunnel.Empty) (*tunne
 	}, nil
 }
 
-func (t *tunnelServer) GitCredentials(ctx context.Context, message *tunnel.Message) (*tunnel.Message, error) {
+func (t *tunnelServer) GitCredentials(
+	ctx context.Context,
+	message *tunnel.Message,
+) (*tunnel.Message, error) {
 	t.log.WithFields(logrus.Fields{
 		"allowGitCredentials": t.allowGitCredentials,
 		"workspaceIsNil":      t.workspace == nil,
@@ -217,7 +258,9 @@ func (t *tunnelServer) GitCredentials(ctx context.Context, message *tunnel.Messa
 	}
 
 	if t.platformOptions != nil && t.platformOptions.Enabled {
-		gitHttpCredentials := append(t.platformOptions.UserCredentials.GitHttp, t.platformOptions.ProjectCredentials.GitHttp...)
+		gitHttpCredentials := append(
+			t.platformOptions.UserCredentials.GitHttp,
+			t.platformOptions.ProjectCredentials.GitHttp...)
 		if len(gitHttpCredentials) > 0 {
 			if len(gitHttpCredentials) == 1 {
 				credentials.Username = gitHttpCredentials[0].User
@@ -267,7 +310,10 @@ func (t *tunnelServer) GitCredentials(ctx context.Context, message *tunnel.Messa
 	return &tunnel.Message{Message: string(out)}, nil
 }
 
-func (t *tunnelServer) GitSSHSignature(ctx context.Context, message *tunnel.Message) (*tunnel.Message, error) {
+func (t *tunnelServer) GitSSHSignature(
+	ctx context.Context,
+	message *tunnel.Message,
+) (*tunnel.Message, error) {
 	signatureRequest := &gitsshsigning.GitSSHSignatureRequest{}
 	err := json.Unmarshal([]byte(message.Message), signatureRequest)
 	if err != nil {
@@ -287,7 +333,10 @@ func (t *tunnelServer) GitSSHSignature(ctx context.Context, message *tunnel.Mess
 	return &tunnel.Message{Message: string(out)}, nil
 }
 
-func (t *tunnelServer) LoftConfig(ctx context.Context, message *tunnel.Message) (*tunnel.Message, error) {
+func (t *tunnelServer) LoftConfig(
+	ctx context.Context,
+	message *tunnel.Message,
+) (*tunnel.Message, error) {
 	loftConfigRequest := &loftconfig.LoftConfigRequest{}
 	err := json.Unmarshal([]byte(message.Message), loftConfigRequest)
 	if err != nil {
@@ -315,7 +364,10 @@ func (t *tunnelServer) LoftConfig(ctx context.Context, message *tunnel.Message) 
 	return &tunnel.Message{Message: string(out)}, nil
 }
 
-func (t *tunnelServer) KubeConfig(ctx context.Context, message *tunnel.Message) (*tunnel.Message, error) {
+func (t *tunnelServer) KubeConfig(
+	ctx context.Context,
+	message *tunnel.Message,
+) (*tunnel.Message, error) {
 	if !t.allowKubeConfig {
 		return nil, fmt.Errorf("kube config forbidden")
 	}
@@ -328,7 +380,10 @@ func (t *tunnelServer) KubeConfig(ctx context.Context, message *tunnel.Message) 
 	return &tunnel.Message{Message: string(kubeConfig)}, nil
 }
 
-func (t *tunnelServer) GPGPublicKeys(ctx context.Context, message *tunnel.Message) (*tunnel.Message, error) {
+func (t *tunnelServer) GPGPublicKeys(
+	ctx context.Context,
+	message *tunnel.Message,
+) (*tunnel.Message, error) {
 	rawPubKeys, err := gpg.GetHostPubKey()
 	if err != nil {
 		return nil, fmt.Errorf("get gpg host public keys: %w", err)
@@ -339,7 +394,10 @@ func (t *tunnelServer) GPGPublicKeys(ctx context.Context, message *tunnel.Messag
 	return &tunnel.Message{Message: pubKeyArgument}, nil
 }
 
-func (t *tunnelServer) SendResult(ctx context.Context, result *tunnel.Message) (*tunnel.Empty, error) {
+func (t *tunnelServer) SendResult(
+	ctx context.Context,
+	result *tunnel.Message,
+) (*tunnel.Empty, error) {
 	parsedResult := &config.Result{}
 	err := json.Unmarshal([]byte(result.Message), parsedResult)
 	if err != nil {
@@ -372,10 +430,15 @@ func (t *tunnelServer) Log(ctx context.Context, message *tunnel.LogMessage) (*tu
 	return &tunnel.Empty{}, nil
 }
 
-func (t *tunnelServer) StreamWorkspace(message *tunnel.Empty, stream tunnel.Tunnel_StreamWorkspaceServer) error {
+func (t *tunnelServer) StreamWorkspace(
+	message *tunnel.Empty,
+	stream tunnel.Tunnel_StreamWorkspaceServer,
+) error {
 	if t.platformOptions != nil && t.platformOptions.Enabled && !t.allowPlatformOptions {
-		return fmt.Errorf("streaming workspace from local computer to platform workspace is not supported. " +
-			"Please specify a Git repository to clone instead")
+		return fmt.Errorf(
+			"streaming workspace from local computer to platform workspace is not supported. " +
+				"Please specify a Git repository to clone instead",
+		)
 	}
 	if t.workspace == nil {
 		return fmt.Errorf("workspace is nil")
@@ -403,10 +466,15 @@ func (t *tunnelServer) StreamWorkspace(message *tunnel.Empty, stream tunnel.Tunn
 	return buf.Flush()
 }
 
-func (t *tunnelServer) StreamMount(message *tunnel.StreamMountRequest, stream tunnel.Tunnel_StreamMountServer) error {
+func (t *tunnelServer) StreamMount(
+	message *tunnel.StreamMountRequest,
+	stream tunnel.Tunnel_StreamMountServer,
+) error {
 	if t.platformOptions != nil && t.platformOptions.Enabled && !t.allowPlatformOptions {
-		return fmt.Errorf("streaming mounts from local computer to platform workspace is not supported. " +
-			"Please specify a Git repository to clone instead")
+		return fmt.Errorf(
+			"streaming mounts from local computer to platform workspace is not supported. " +
+				"Please specify a Git repository to clone instead",
+		)
 	}
 
 	var mount *config.Mount

@@ -46,7 +46,9 @@ func (cmd *LogsDaemonCmd) Run(ctx context.Context, args []string) error {
 	if err != nil {
 		return err
 	} else if baseClient.WorkspaceConfig().Machine.ID == "" {
-		return fmt.Errorf("selected workspace is not a machine provider, there is not daemon running")
+		return fmt.Errorf(
+			"selected workspace is not a machine provider, there is not daemon running",
+		)
 	}
 
 	workspaceClient, ok := baseClient.(client.WorkspaceClient)
@@ -59,7 +61,12 @@ func (cmd *LogsDaemonCmd) Run(ctx context.Context, args []string) error {
 		return err
 	}
 
-	command := fmt.Sprintf("'%s' agent workspace logs-daemon --context '%s' --id '%s'", workspaceClient.AgentPath(), workspaceClient.Context(), workspaceClient.Workspace())
+	command := fmt.Sprintf(
+		"'%s' agent workspace logs-daemon --context '%s' --id '%s'",
+		workspaceClient.AgentPath(),
+		workspaceClient.Context(),
+		workspaceClient.Workspace(),
+	)
 	if agentInfo.Agent.DataPath != "" {
 		command += fmt.Sprintf(" --agent-dir '%s'", agentInfo.Agent.DataPath)
 	}

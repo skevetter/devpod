@@ -17,12 +17,19 @@ import (
 	"github.com/skevetter/log"
 )
 
-func NewMachineClient(devPodConfig *config.Config, provider *provider.ProviderConfig, machine *provider.Machine, log log.Logger) (client.MachineClient, error) {
+func NewMachineClient(
+	devPodConfig *config.Config,
+	provider *provider.ProviderConfig,
+	machine *provider.Machine,
+	log log.Logger,
+) (client.MachineClient, error) {
 	if !provider.IsMachineProvider() {
 		log.Error("provider is not a machine provider")
 		return nil, fmt.Errorf("Provider is not a machine provider. Use another provider")
 	} else if machine == nil {
-		return nil, fmt.Errorf("Machine does not exist. Perhaps it was deleted without the workspace being deleted")
+		return nil, fmt.Errorf(
+			"Machine does not exist. Perhaps it was deleted without the workspace being deleted",
+		)
 	}
 
 	mc := &machineClient{
@@ -106,7 +113,12 @@ func (e *machineExecutor) execute(ctx context.Context, cfg execConfig) error {
 }
 
 // lifecycleCommand executes a standard lifecycle operation (create/start/stop).
-func (e *machineExecutor) lifecycleCommand(ctx context.Context, name string, command types.StrArray, verb, pastVerb string) error {
+func (e *machineExecutor) lifecycleCommand(
+	ctx context.Context,
+	name string,
+	command types.StrArray,
+	verb, pastVerb string,
+) error {
 	writer := e.client.log.Writer(logrus.InfoLevel, false)
 	defer func() { _ = writer.Close() }()
 
@@ -133,13 +145,24 @@ func (s *machineClient) MachineConfig() *provider.Machine {
 	return provider.CloneMachine(s.machine)
 }
 
-func (s *machineClient) RefreshOptions(ctx context.Context, userOptionsRaw []string, reconfigure bool) error {
+func (s *machineClient) RefreshOptions(
+	ctx context.Context,
+	userOptionsRaw []string,
+	reconfigure bool,
+) error {
 	userOptions, err := provider.ParseOptions(userOptionsRaw)
 	if err != nil {
 		return fmt.Errorf("parse options: %w", err)
 	}
 
-	machine, err := options.ResolveAndSaveOptionsMachine(ctx, s.devPodConfig, s.config, s.machine, userOptions, s.log)
+	machine, err := options.ResolveAndSaveOptionsMachine(
+		ctx,
+		s.devPodConfig,
+		s.config,
+		s.machine,
+		userOptions,
+		s.log,
+	)
 	if err != nil {
 		return err
 	}
@@ -190,7 +213,10 @@ func (s *machineClient) Command(ctx context.Context, commandOptions client.Comma
 	})
 }
 
-func (s *machineClient) Status(ctx context.Context, options client.StatusOptions) (client.Status, error) {
+func (s *machineClient) Status(
+	ctx context.Context,
+	options client.StatusOptions,
+) (client.Status, error) {
 	stdout := &bytes.Buffer{}
 	stderr := &bytes.Buffer{}
 
@@ -201,7 +227,11 @@ func (s *machineClient) Status(ctx context.Context, options client.StatusOptions
 		stderr:  io.MultiWriter(stderr, s.log.Writer(logrus.InfoLevel, true)),
 	})
 	if err != nil {
-		return client.StatusNotFound, fmt.Errorf("get status: %s%s", strings.TrimSpace(stdout.String()), strings.TrimSpace(stderr.String()))
+		return client.StatusNotFound, fmt.Errorf(
+			"get status: %s%s",
+			strings.TrimSpace(stdout.String()),
+			strings.TrimSpace(stderr.String()),
+		)
 	}
 
 	parsedStatus, err := client.ParseStatus(stdout.String())
@@ -238,7 +268,8 @@ func (s *machineClient) Delete(ctx context.Context, options client.DeleteOptions
 		return err
 	}
 	if err != nil {
-		s.log.WithFields(logrus.Fields{"machineId": s.machine.ID, "err": err}).Errorf("failed to delete machine")
+		s.log.WithFields(logrus.Fields{"machineId": s.machine.ID, "err": err}).
+			Errorf("failed to delete machine")
 	}
 
 	return DeleteMachineFolder(s.machine.Context, s.machine.ID)

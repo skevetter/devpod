@@ -74,7 +74,11 @@ func (r *runner) Build(ctx context.Context, options provider.BuildOptions) (stri
 	}
 
 	if isDockerComposeConfig(substitutedConfig.Config) {
-		if err := dockerDriver.TagDevContainer(ctx, buildInfo.ImageName, prebuildImage); err != nil {
+		if err := dockerDriver.TagDevContainer(
+			ctx,
+			buildInfo.ImageName,
+			prebuildImage,
+		); err != nil {
 			return "", fmt.Errorf("tag image: %w", err)
 		}
 	}

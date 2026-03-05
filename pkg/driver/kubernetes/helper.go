@@ -66,18 +66,30 @@ func getPodTemplate(manifest string) (*corev1.Pod, error) {
 	// check if manifest is path
 	p, err := filepath.Abs(manifest)
 	if err != nil {
-		return nil, fmt.Errorf("parsing pod tempate failed failed: %w (inline) or %w (file)", errInline, err)
+		return nil, fmt.Errorf(
+			"parsing pod tempate failed failed: %w (inline) or %w (file)",
+			errInline,
+			err,
+		)
 	}
 	body, err := os.ReadFile(p)
 	if err != nil {
-		return nil, fmt.Errorf("parsing pod tempate failed failed: %w (inline) or %w (file)", errInline, err)
+		return nil, fmt.Errorf(
+			"parsing pod tempate failed failed: %w (inline) or %w (file)",
+			errInline,
+			err,
+		)
 	}
 	err = yaml.Unmarshal(body, pod)
 	if err == nil {
 		return pod, nil
 	}
 
-	return nil, fmt.Errorf("parsing pod tempate failed failed: %w (inline) or %w (file)", errInline, err)
+	return nil, fmt.Errorf(
+		"parsing pod tempate failed failed: %w (inline) or %w (file)",
+		errInline,
+		err,
+	)
 }
 
 func parseLabels(str string) (map[string]string, error) {
@@ -103,12 +115,19 @@ func parseLabels(str string) (map[string]string, error) {
 func parseResource(resourceName string) (string, resource.Quantity, error) {
 	splittedResource := strings.SplitN(resourceName, "=", 2)
 	if len(splittedResource) != 2 {
-		return "", resource.Quantity{}, fmt.Errorf("error parsing resource %s: expected form resource=quantity", resourceName)
+		return "", resource.Quantity{}, fmt.Errorf(
+			"error parsing resource %s: expected form resource=quantity",
+			resourceName,
+		)
 	}
 
 	quantity, err := resource.ParseQuantity(splittedResource[1])
 	if err != nil {
-		return "", resource.Quantity{}, fmt.Errorf("error parsing resource %s: %w", resourceName, err)
+		return "", resource.Quantity{}, fmt.Errorf(
+			"error parsing resource %s: %w",
+			resourceName,
+			err,
+		)
 	}
 
 	return splittedResource[0], quantity, nil

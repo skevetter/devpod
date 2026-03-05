@@ -47,7 +47,11 @@ func NewSleepCmd(globalFlags *flags.GlobalFlags) *cobra.Command {
 	}
 
 	c.Flags().StringVar(&cmd.Project, "project", "", "The project to use")
-	c.Flags().Int64Var(&cmd.ForceDuration, "prevent-wakeup", -1, "The amount of seconds this workspace should sleep until it can be woken up again (use 0 for infinite sleeping). During this time the space can only be woken up by `devpod pro wakeup`, manually deleting the annotation on the namespace or through the UI")
+	c.Flags().
+		Int64Var(&cmd.ForceDuration, "prevent-wakeup", -1,
+			"The amount of seconds this workspace should sleep until it can be woken up again (use 0 for infinite sleeping). "+
+				"During this time the space can only be woken up by `devpod pro wakeup`, "+
+				"manually deleting the annotation on the namespace or through the UI")
 	_ = c.MarkFlagRequired("project")
 	c.Flags().StringVar(&cmd.Host, "host", "", "The pro instance to use")
 	_ = c.MarkFlagRequired("host")
@@ -95,28 +99,43 @@ func (cmd *SleepCmd) Run(ctx context.Context, args []string) error {
 	}
 	workspaceInstance.Annotations[clusterv1.SleepModeForceAnnotation] = "true"
 	if cmd.ForceDuration >= 0 {
-		workspaceInstance.Annotations[clusterv1.SleepModeForceDurationAnnotation] = strconv.FormatInt(cmd.ForceDuration, 10)
+		workspaceInstance.Annotations[clusterv1.SleepModeForceDurationAnnotation] = strconv.FormatInt(
+			cmd.ForceDuration,
+			10,
+		)
 	}
 	patchData, err := patch.Data(workspaceInstance)
 	if err != nil {
 		return fmt.Errorf("create patch: %w", err)
 	}
 
-	_, err = managementClient.Loft().ManagementV1().DevPodWorkspaceInstances(project.ProjectNamespace(cmd.Project)).Patch(ctx, workspaceInstance.Name, patch.Type(), patchData, metav1.PatchOptions{})
+	_, err = managementClient.Loft().
+		ManagementV1().
+		DevPodWorkspaceInstances(project.ProjectNamespace(cmd.Project)).
+		Patch(ctx, workspaceInstance.Name, patch.Type(), patchData, metav1.PatchOptions{})
 	if err != nil {
 		return err
 	}
 
 	// wait for sleeping
 	cmd.Log.Info("Wait until workspace is sleeping...")
-	err = wait.PollUntilContextTimeout(ctx, time.Second, platform.Timeout(), false, func(ctx context.Context) (done bool, err error) {
-		workspaceInstance, err := managementClient.Loft().ManagementV1().DevPodWorkspaceInstances(project.ProjectNamespace(cmd.Project)).Get(ctx, workspaceInstance.Name, metav1.GetOptions{})
-		if err != nil {
-			return false, err
-		}
+	err = wait.PollUntilContextTimeout(
+		ctx,
+		time.Second,
+		platform.Timeout(),
+		false,
+		func(ctx context.Context) (done bool, err error) {
+			workspaceInstance, err := managementClient.Loft().
+				ManagementV1().
+				DevPodWorkspaceInstances(project.ProjectNamespace(cmd.Project)).
+				Get(ctx, workspaceInstance.Name, metav1.GetOptions{})
+			if err != nil {
+				return false, err
+			}
 
-		return workspaceInstance.Status.Phase == storagev1.InstanceSleeping, nil
-	})
+			return workspaceInstance.Status.Phase == storagev1.InstanceSleeping, nil
+		},
+	)
 	if err != nil {
 		return fmt.Errorf("error waiting for workspace to start sleeping: %w", err)
 	}

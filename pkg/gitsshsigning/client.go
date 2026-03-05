@@ -77,7 +77,8 @@ func sendSignatureRequest(requestBody []byte, log log.Logger) ([]byte, error) {
 	}
 
 	response, err := devpodhttp.GetHTTPClient().Post(
-		"http://localhost:"+strconv.Itoa(port)+"/git-ssh-signature", // TODO: build the url, don't hardcode localhost
+		"http://localhost:"+strconv.Itoa(port)+
+			"/git-ssh-signature", // TODO: build the url, don't hardcode localhost
 		"application/json",
 		bytes.NewReader(requestBody),
 	)

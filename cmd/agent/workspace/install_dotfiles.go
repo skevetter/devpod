@@ -38,9 +38,13 @@ func NewInstallDotfilesCmd(flags *flags.GlobalFlags) *cobra.Command {
 			return cmd.Run(context.Background())
 		},
 	}
-	installDotfilesCmd.Flags().StringVar(&cmd.Repository, "repository", "", "The dotfiles repository")
-	installDotfilesCmd.Flags().StringVar(&cmd.InstallScript, "install-script", "", "The dotfiles install command to execute")
-	installDotfilesCmd.Flags().BoolVar(&cmd.StrictHostKeyChecking, "strict-host-key-checking", false, "Set to enable strict host key checking for git cloning via SSH")
+	installDotfilesCmd.Flags().
+		StringVar(&cmd.Repository, "repository", "", "The dotfiles repository")
+	installDotfilesCmd.Flags().
+		StringVar(&cmd.InstallScript, "install-script", "", "The dotfiles install command to execute")
+	installDotfilesCmd.Flags().
+		BoolVar(&cmd.StrictHostKeyChecking, "strict-host-key-checking", false,
+			"Set to enable strict host key checking for git cloning via SSH")
 	return installDotfilesCmd
 }
 
@@ -54,7 +58,14 @@ func (cmd *InstallDotfilesCmd) Run(ctx context.Context) error {
 		logger.Infof("Cloning dotfiles %s", cmd.Repository)
 
 		gitInfo := git.NormalizeRepositoryGitInfo(cmd.Repository)
-		if err := git.CloneRepository(ctx, gitInfo, targetDir, "", cmd.StrictHostKeyChecking, logger); err != nil {
+		if err := git.CloneRepository(
+			ctx,
+			gitInfo,
+			targetDir,
+			"",
+			cmd.StrictHostKeyChecking,
+			logger,
+		); err != nil {
 			return err
 		}
 	} else {
@@ -160,7 +171,10 @@ func setupDotfiles(logger log.Logger) error {
 			if _, err := os.Lstat(filepath.Join(os.Getenv("HOME"), file.Name())); err == nil {
 				_ = os.Remove(filepath.Join(os.Getenv("HOME"), file.Name()))
 			}
-			err = os.Symlink(filepath.Join(pwd, file.Name()), filepath.Join(os.Getenv("HOME"), file.Name()))
+			err = os.Symlink(
+				filepath.Join(pwd, file.Name()),
+				filepath.Join(os.Getenv("HOME"), file.Name()),
+			)
 			if err != nil {
 				return err
 			}

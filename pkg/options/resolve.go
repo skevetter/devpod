@@ -180,7 +180,10 @@ func ResolveOptions(
 	// create new resolver
 	resolve := resolver.New(
 		userOptions,
-		provider.Merge(provider.GetBaseEnvironment(devConfig.DefaultContext, providerConfig.Name), binaryPaths),
+		provider.Merge(
+			provider.GetBaseEnvironment(devConfig.DefaultContext, providerConfig.Name),
+			binaryPaths,
+		),
 		log,
 		resolverOpts...,
 	)
@@ -241,7 +244,11 @@ func ResolveAgentConfig(
 	if providerConfig == nil || devConfig == nil {
 		return provider.ProviderAgentConfig{}
 	}
-	options := provider.ToOptions(workspace, machine, devConfig.ProviderOptions(providerConfig.Name))
+	options := provider.ToOptions(
+		workspace,
+		machine,
+		devConfig.ProviderOptions(providerConfig.Name),
+	)
 	agentConfig := providerConfig.Agent
 
 	resolveAgentBaseConfig(&agentConfig, options, devConfig)
@@ -258,17 +265,30 @@ func resolveAgentBaseConfig(
 	options map[string]string,
 	devConfig *config.Config,
 ) {
-	agentConfig.Dockerless.Image = resolver.ResolveDefaultValue(agentConfig.Dockerless.Image, options)
+	agentConfig.Dockerless.Image = resolver.ResolveDefaultValue(
+		agentConfig.Dockerless.Image,
+		options,
+	)
 	agentConfig.Dockerless.Disabled = types.StrBool(
 		resolver.ResolveDefaultValue(string(agentConfig.Dockerless.Disabled), options),
 	)
-	agentConfig.Dockerless.IgnorePaths = resolver.ResolveDefaultValue(agentConfig.Dockerless.IgnorePaths, options)
-	agentConfig.Dockerless.RegistryCache = devConfig.ContextOption(config.ContextOptionRegistryCache)
+	agentConfig.Dockerless.IgnorePaths = resolver.ResolveDefaultValue(
+		agentConfig.Dockerless.IgnorePaths,
+		options,
+	)
+	agentConfig.Dockerless.RegistryCache = devConfig.ContextOption(
+		config.ContextOptionRegistryCache,
+	)
 	agentConfig.Driver = resolver.ResolveDefaultValue(agentConfig.Driver, options)
-	agentConfig.Local = types.StrBool(resolver.ResolveDefaultValue(string(agentConfig.Local), options))
+	agentConfig.Local = types.StrBool(
+		resolver.ResolveDefaultValue(string(agentConfig.Local), options),
+	)
 }
 
-func resolveAgentDockerConfig(agentConfig *provider.ProviderAgentConfig, options map[string]string) {
+func resolveAgentDockerConfig(
+	agentConfig *provider.ProviderAgentConfig,
+	options map[string]string,
+) {
 	agentConfig.Docker.Path = resolver.ResolveDefaultValue(agentConfig.Docker.Path, options)
 	agentConfig.Docker.Builder = resolver.ResolveDefaultValue(agentConfig.Docker.Builder, options)
 	agentConfig.Docker.Install = types.StrBool(
@@ -277,7 +297,10 @@ func resolveAgentDockerConfig(agentConfig *provider.ProviderAgentConfig, options
 	agentConfig.Docker.Env = resolver.ResolveDefaultValues(agentConfig.Docker.Env, options)
 }
 
-func resolveAgentKubernetesConfig(agentConfig *provider.ProviderAgentConfig, options map[string]string) {
+func resolveAgentKubernetesConfig(
+	agentConfig *provider.ProviderAgentConfig,
+	options map[string]string,
+) {
 	k8s := &agentConfig.Kubernetes
 	k8s.KubernetesContext = resolver.ResolveDefaultValue(k8s.KubernetesContext, options)
 	k8s.KubernetesConfig = resolver.ResolveDefaultValue(k8s.KubernetesConfig, options)
@@ -297,7 +320,10 @@ func resolveAgentKubernetesConfig(agentConfig *provider.ProviderAgentConfig, opt
 	k8s.ClusterRole = resolver.ResolveDefaultValue(k8s.ClusterRole, options)
 	k8s.ServiceAccount = resolver.ResolveDefaultValue(k8s.ServiceAccount, options)
 	k8s.PodTimeout = resolver.ResolveDefaultValue(k8s.PodTimeout, options)
-	k8s.KubernetesPullSecretsEnabled = resolver.ResolveDefaultValue(k8s.KubernetesPullSecretsEnabled, options)
+	k8s.KubernetesPullSecretsEnabled = resolver.ResolveDefaultValue(
+		k8s.KubernetesPullSecretsEnabled,
+		options,
+	)
 	k8s.DiskSize = resolver.ResolveDefaultValue(k8s.DiskSize, options)
 }
 
@@ -323,7 +349,10 @@ func resolveAgentPathAndURL(
 		agentConfig.DownloadURL = resolveAgentDownloadURL(devConfig)
 	}
 	agentConfig.Timeout = resolver.ResolveDefaultValue(agentConfig.Timeout, options)
-	agentConfig.ContainerTimeout = resolver.ResolveDefaultValue(agentConfig.ContainerTimeout, options)
+	agentConfig.ContainerTimeout = resolver.ResolveDefaultValue(
+		agentConfig.ContainerTimeout,
+		options,
+	)
 }
 
 func resolveAgentCredentials(
@@ -342,7 +371,9 @@ func resolveAgentCredentials(
 	agentConfig.InjectDockerCredentials = types.StrBool(
 		resolver.ResolveDefaultValue(string(agentConfig.InjectDockerCredentials), options),
 	)
-	if dockerCredOpt := devConfig.ContextOption(config.ContextOptionSSHInjectDockerCredentials); dockerCredOpt != "" {
+	if dockerCredOpt := devConfig.ContextOption(
+		config.ContextOptionSSHInjectDockerCredentials,
+	); dockerCredOpt != "" {
 		agentConfig.InjectDockerCredentials = types.StrBool(dockerCredOpt)
 	}
 }
@@ -362,7 +393,11 @@ func resolveAgentDownloadURL(devConfig *config.Config) string {
 	return agent.DefaultAgentDownloadURL()
 }
 
-func filterResolvedOptions(resolvedOptions, beforeConfigOptions, providerValues map[string]config.OptionValue, providerOptions map[string]*types.Option, userOptions map[string]string) {
+func filterResolvedOptions(
+	resolvedOptions, beforeConfigOptions, providerValues map[string]config.OptionValue,
+	providerOptions map[string]*types.Option,
+	userOptions map[string]string,
+) {
 	for k := range resolvedOptions {
 		// check if user supplied
 		if userOptions != nil {

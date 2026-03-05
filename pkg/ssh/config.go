@@ -107,7 +107,13 @@ type proxyCommandBuilder struct {
 
 func newProxyCommandBuilder(execPath, context, user, workspace string) *proxyCommandBuilder {
 	return &proxyCommandBuilder{
-		baseCommand: fmt.Sprintf("\"%s\" ssh --stdio --context %s --user %s %s", execPath, context, user, workspace),
+		baseCommand: fmt.Sprintf(
+			"\"%s\" ssh --stdio --context %s --user %s %s",
+			execPath,
+			context,
+			user,
+			workspace,
+		),
 	}
 }
 
@@ -272,7 +278,11 @@ func addHostSection(config, execPath string, params addHostParams) (string, erro
 	return mergeSSHConfig(lines, newLines, position), nil
 }
 
-func GetUser(workspaceID string, sshConfigPath string, sshConfigIncludePath string) (string, error) {
+func GetUser(
+	workspaceID string,
+	sshConfigPath string,
+	sshConfigIncludePath string,
+) (string, error) {
 	path, err := ResolveSSHConfigPath(sshConfigPath)
 	if err != nil {
 		return "", fmt.Errorf("invalid ssh config path: %w", err)
@@ -304,7 +314,12 @@ func GetUser(workspaceID string, sshConfigPath string, sshConfigIncludePath stri
 	return user, nil
 }
 
-func RemoveFromConfig(workspaceID string, sshConfigPath string, sshConfigIncludePath string, log log.Logger) error {
+func RemoveFromConfig(
+	workspaceID string,
+	sshConfigPath string,
+	sshConfigIncludePath string,
+	log log.Logger,
+) error {
 	configLock.Lock()
 	defer configLock.Unlock()
 

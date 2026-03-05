@@ -26,7 +26,8 @@ func RunLifecycleHooks(ctx context.Context, setupInfo *config.Result, log log.Lo
 	remoteUser := config.GetRemoteUser(setupInfo)
 	probedEnv, err := config.ProbeUserEnv(ctx, mergedConfig.UserEnvProbe, remoteUser, log)
 	if err != nil {
-		log.WithFields(logrus.Fields{"error": err}).Error("failed to probe environment, this might lead to an incomplete setup of your workspace")
+		log.WithFields(logrus.Fields{"error": err}).
+			Error("failed to probe environment, this might lead to an incomplete setup of your workspace")
 	}
 	remoteEnv := mergeRemoteEnv(mergedConfig.RemoteEnv, probedEnv, remoteUser)
 
@@ -71,7 +72,13 @@ func RunLifecycleHooks(ctx context.Context, setupInfo *config.Result, log log.Lo
 	return nil
 }
 
-func run(commands []types.LifecycleHook, remoteUser, dir string, remoteEnv map[string]string, name, content string, log log.Logger) error {
+func run(
+	commands []types.LifecycleHook,
+	remoteUser, dir string,
+	remoteEnv map[string]string,
+	name, content string,
+	log log.Logger,
+) error {
 	if len(commands) == 0 {
 		return nil
 	}
@@ -148,11 +155,13 @@ func run(commands []types.LifecycleHook, remoteUser, dir string, remoteEnv map[s
 			wg.Wait()
 			err = cmd.Wait()
 			if err != nil {
-				log.WithFields(logrus.Fields{"command": cmd.Args, "error": err}).Debug("failed running postCreateCommand lifecycle script")
+				log.WithFields(logrus.Fields{"command": cmd.Args, "error": err}).
+					Debug("failed running postCreateCommand lifecycle script")
 				return fmt.Errorf("failed to run: %s, error: %w", strings.Join(c, " "), err)
 			}
 
-			log.WithFields(logrus.Fields{"command": k, "args": strings.Join(c, " ")}).Done("ran command")
+			log.WithFields(logrus.Fields{"command": k, "args": strings.Join(c, " ")}).
+				Done("ran command")
 		}
 	}
 
@@ -184,7 +193,11 @@ func containsError(line string) bool {
 	return strings.Contains(strings.ToLower(line), "error")
 }
 
-func mergeRemoteEnv(remoteEnv map[string]string, probedEnv map[string]string, remoteUser string) map[string]string {
+func mergeRemoteEnv(
+	remoteEnv map[string]string,
+	probedEnv map[string]string,
+	remoteUser string,
+) map[string]string {
 	retEnv := map[string]string{}
 
 	// Order matters here

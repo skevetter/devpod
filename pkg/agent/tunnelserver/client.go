@@ -12,7 +12,12 @@ import (
 	"google.golang.org/grpc/resolver"
 )
 
-func NewTunnelClient(reader io.Reader, writer io.WriteCloser, exitOnClose bool, exitCode int) (tunnel.TunnelClient, error) {
+func NewTunnelClient(
+	reader io.Reader,
+	writer io.WriteCloser,
+	exitOnClose bool,
+	exitCode int,
+) (tunnel.TunnelClient, error) {
 	pipe := stdio.NewStdioStream(reader, writer, exitOnClose, exitCode)
 
 	// After moving from deprecated grpc.Dial to grpc.NewClient we need to setup resolver first

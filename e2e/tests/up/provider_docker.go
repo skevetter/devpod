@@ -17,207 +17,287 @@ import (
 	"github.com/skevetter/log"
 )
 
-var _ = ginkgo.Describe("testing up command for docker customizations", ginkgo.Label("up-provider-docker"), func() {
-	var dtc *dockerTestContext
+var _ = ginkgo.Describe(
+	"testing up command for docker customizations",
+	ginkgo.Label("up-provider-docker"),
+	func() {
+		var dtc *dockerTestContext
 
-	ginkgo.BeforeEach(func(ctx context.Context) {
-		var err error
-		dtc = &dockerTestContext{}
-		dtc.initialDir, err = os.Getwd()
-		framework.ExpectNoError(err)
+		ginkgo.BeforeEach(func(ctx context.Context) {
+			var err error
+			dtc = &dockerTestContext{}
+			dtc.initialDir, err = os.Getwd()
+			framework.ExpectNoError(err)
 
-		dtc.dockerHelper = &docker.DockerHelper{DockerCommand: "docker", Log: log.Default}
-		dtc.f, err = setupDockerProvider(filepath.Join(dtc.initialDir, "bin"), "docker")
-		framework.ExpectNoError(err)
-	})
+			dtc.dockerHelper = &docker.DockerHelper{DockerCommand: "docker", Log: log.Default}
+			dtc.f, err = setupDockerProvider(filepath.Join(dtc.initialDir, "bin"), "docker")
+			framework.ExpectNoError(err)
+		})
 
-	ginkgo.It("existing image", func(ctx context.Context) {
-		_, err := dtc.setupAndUp(ctx, "tests/up/testdata/docker")
-		framework.ExpectNoError(err)
-	}, ginkgo.SpecTimeout(framework.GetTimeout()))
+		ginkgo.It("existing image", func(ctx context.Context) {
+			_, err := dtc.setupAndUp(ctx, "tests/up/testdata/docker")
+			framework.ExpectNoError(err)
+		}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
-	ginkgo.It("existing running container", func(ctx context.Context) {
-		tempDir, err := framework.CopyToTempDir("tests/up/testdata/no-devcontainer")
-		framework.ExpectNoError(err)
-		ginkgo.DeferCleanup(framework.CleanupTempDir, dtc.initialDir, tempDir)
-		ginkgo.DeferCleanup(dtc.f.DevPodWorkspaceDelete, tempDir)
+		ginkgo.It("existing running container", func(ctx context.Context) {
+			tempDir, err := framework.CopyToTempDir("tests/up/testdata/no-devcontainer")
+			framework.ExpectNoError(err)
+			ginkgo.DeferCleanup(framework.CleanupTempDir, dtc.initialDir, tempDir)
+			ginkgo.DeferCleanup(dtc.f.DevPodWorkspaceDelete, tempDir)
 
-		err = dtc.dockerHelper.Run(ctx, []string{"run", "-d", "--label", "devpod-e2e-test-container=true", "-w", "/workspaces/e2e", "alpine", "sleep", "infinity"}, nil, nil, nil)
-		framework.ExpectNoError(err)
+			err = dtc.dockerHelper.Run(
+				ctx,
+				[]string{
+					"run",
+					"-d",
+					"--label",
+					"devpod-e2e-test-container=true",
+					"-w",
+					"/workspaces/e2e",
+					"alpine",
+					"sleep",
+					"infinity",
+				},
+				nil,
+				nil,
+				nil,
+			)
+			framework.ExpectNoError(err)
 
-		var ids []string
-		gomega.Eventually(func() bool {
-			ids, err = dtc.dockerHelper.FindContainer(ctx, []string{"devpod-e2e-test-container=true"})
-			if err != nil || len(ids) != 1 {
-				return false
-			}
+			var ids []string
+			gomega.Eventually(func() bool {
+				ids, err = dtc.dockerHelper.FindContainer(
+					ctx,
+					[]string{"devpod-e2e-test-container=true"},
+				)
+				if err != nil || len(ids) != 1 {
+					return false
+				}
+				var containerDetails []container.InspectResponse
+				err = dtc.dockerHelper.Inspect(ctx, ids, "container", &containerDetails)
+				return err == nil && containerDetails[0].State.Running
+			}).Should(gomega.BeTrue())
+
+			ginkgo.DeferCleanup(dtc.dockerHelper.Remove, ids[0])
+			ginkgo.DeferCleanup(dtc.dockerHelper.Stop, ids[0])
+
 			var containerDetails []container.InspectResponse
 			err = dtc.dockerHelper.Inspect(ctx, ids, "container", &containerDetails)
-			return err == nil && containerDetails[0].State.Running
-		}).Should(gomega.BeTrue())
+			framework.ExpectNoError(err)
+			gomega.Expect(containerDetails[0].Config.WorkingDir).To(gomega.Equal("/workspaces/e2e"))
 
-		ginkgo.DeferCleanup(dtc.dockerHelper.Remove, ids[0])
-		ginkgo.DeferCleanup(dtc.dockerHelper.Stop, ids[0])
+			err = dtc.f.DevPodUp(
+				ctx,
+				tempDir,
+				"--source",
+				fmt.Sprintf("container:%s", containerDetails[0].ID),
+			)
+			framework.ExpectNoError(err)
+		}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
-		var containerDetails []container.InspectResponse
-		err = dtc.dockerHelper.Inspect(ctx, ids, "container", &containerDetails)
-		framework.ExpectNoError(err)
-		gomega.Expect(containerDetails[0].Config.WorkingDir).To(gomega.Equal("/workspaces/e2e"))
+		ginkgo.It("variables substitution", func(ctx context.Context) {
+			tempDir, err := dtc.setupAndUp(ctx, "tests/up/testdata/docker-variables",
+				"--init-env", "CUSTOM_VAR=custom_value",
+				"--init-env", "CUSTOM_IMAGE=alpine:latest")
+			framework.ExpectNoError(err)
 
-		err = dtc.f.DevPodUp(ctx, tempDir, "--source", fmt.Sprintf("container:%s", containerDetails[0].ID))
-		framework.ExpectNoError(err)
-	}, ginkgo.SpecTimeout(framework.GetTimeout()))
+			workspace, err := dtc.f.FindWorkspace(ctx, tempDir)
+			framework.ExpectNoError(err)
 
-	ginkgo.It("variables substitution", func(ctx context.Context) {
-		tempDir, err := dtc.setupAndUp(ctx, "tests/up/testdata/docker-variables",
-			"--init-env", "CUSTOM_VAR=custom_value",
-			"--init-env", "CUSTOM_IMAGE=alpine:latest")
-		framework.ExpectNoError(err)
+			ids, err := dtc.findWorkspaceContainer(ctx, workspace)
+			framework.ExpectNoError(err)
+			gomega.Expect(ids).To(gomega.HaveLen(1))
 
-		workspace, err := dtc.f.FindWorkspace(ctx, tempDir)
-		framework.ExpectNoError(err)
+			devContainerID, err := dtc.execSSHCapture(
+				ctx,
+				workspace.ID,
+				"cat $HOME/dev-container-id.out",
+			)
+			framework.ExpectNoError(err)
+			gomega.Expect(devContainerID).NotTo(gomega.BeEmpty())
 
-		ids, err := dtc.findWorkspaceContainer(ctx, workspace)
-		framework.ExpectNoError(err)
-		gomega.Expect(ids).To(gomega.HaveLen(1))
+			containerEnvPath, err := dtc.execSSHCapture(
+				ctx,
+				workspace.ID,
+				"cat $HOME/container-env-path.out",
+			)
+			framework.ExpectNoError(err)
+			gomega.Expect(containerEnvPath).To(gomega.ContainSubstring("/usr/local/bin"))
 
-		devContainerID, err := dtc.execSSHCapture(ctx, workspace.ID, "cat $HOME/dev-container-id.out")
-		framework.ExpectNoError(err)
-		gomega.Expect(devContainerID).NotTo(gomega.BeEmpty())
+			localEnvHome, err := dtc.execSSHCapture(
+				ctx,
+				workspace.ID,
+				"cat $HOME/local-env-home.out",
+			)
+			framework.ExpectNoError(err)
+			gomega.Expect(localEnvHome).To(gomega.Equal(os.Getenv("HOME")))
 
-		containerEnvPath, err := dtc.execSSHCapture(ctx, workspace.ID, "cat $HOME/container-env-path.out")
-		framework.ExpectNoError(err)
-		gomega.Expect(containerEnvPath).To(gomega.ContainSubstring("/usr/local/bin"))
+			localWorkspaceFolder, err := dtc.execSSHCapture(
+				ctx,
+				workspace.ID,
+				"cat $HOME/local-workspace-folder.out",
+			)
+			framework.ExpectNoError(err)
+			gomega.Expect(framework.CleanString(localWorkspaceFolder)).
+				To(gomega.Equal(framework.CleanString(tempDir)))
 
-		localEnvHome, err := dtc.execSSHCapture(ctx, workspace.ID, "cat $HOME/local-env-home.out")
-		framework.ExpectNoError(err)
-		gomega.Expect(localEnvHome).To(gomega.Equal(os.Getenv("HOME")))
+			localWorkspaceFolderBasename, err := dtc.execSSHCapture(
+				ctx,
+				workspace.ID,
+				"cat $HOME/local-workspace-folder-basename.out",
+			)
+			framework.ExpectNoError(err)
+			gomega.Expect(localWorkspaceFolderBasename).To(gomega.Equal(filepath.Base(tempDir)))
 
-		localWorkspaceFolder, err := dtc.execSSHCapture(ctx, workspace.ID, "cat $HOME/local-workspace-folder.out")
-		framework.ExpectNoError(err)
-		gomega.Expect(framework.CleanString(localWorkspaceFolder)).To(gomega.Equal(framework.CleanString(tempDir)))
+			containerWorkspaceFolder, err := dtc.execSSHCapture(
+				ctx,
+				workspace.ID,
+				"cat $HOME/container-workspace-folder.out",
+			)
+			framework.ExpectNoError(err)
+			gomega.Expect(framework.CleanString(containerWorkspaceFolder)).
+				To(gomega.Equal(framework.CleanString(path.Join("/workspaces", filepath.Base(tempDir)))))
 
-		localWorkspaceFolderBasename, err := dtc.execSSHCapture(ctx, workspace.ID, "cat $HOME/local-workspace-folder-basename.out")
-		framework.ExpectNoError(err)
-		gomega.Expect(localWorkspaceFolderBasename).To(gomega.Equal(filepath.Base(tempDir)))
+			containerWorkspaceFolderBasename, err := dtc.execSSHCapture(
+				ctx,
+				workspace.ID,
+				"cat $HOME/container-workspace-folder-basename.out",
+			)
+			framework.ExpectNoError(err)
+			gomega.Expect(containerWorkspaceFolderBasename).To(gomega.Equal(filepath.Base(tempDir)))
 
-		containerWorkspaceFolder, err := dtc.execSSHCapture(ctx, workspace.ID, "cat $HOME/container-workspace-folder.out")
-		framework.ExpectNoError(err)
-		gomega.Expect(framework.CleanString(containerWorkspaceFolder)).To(gomega.Equal(framework.CleanString(path.Join("/workspaces", filepath.Base(tempDir)))))
+			customVar, err := dtc.execSSHCapture(ctx, workspace.ID, "cat $HOME/custom-var.out")
+			framework.ExpectNoError(err)
+			gomega.Expect(customVar).To(gomega.Equal("custom_value"))
 
-		containerWorkspaceFolderBasename, err := dtc.execSSHCapture(ctx, workspace.ID, "cat $HOME/container-workspace-folder-basename.out")
-		framework.ExpectNoError(err)
-		gomega.Expect(containerWorkspaceFolderBasename).To(gomega.Equal(filepath.Base(tempDir)))
+			customImage, err := dtc.execSSHCapture(ctx, workspace.ID, "cat $HOME/custom-image.out")
+			framework.ExpectNoError(err)
+			gomega.Expect(customImage).To(gomega.Equal("alpine:latest"))
+		}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
-		customVar, err := dtc.execSSHCapture(ctx, workspace.ID, "cat $HOME/custom-var.out")
-		framework.ExpectNoError(err)
-		gomega.Expect(customVar).To(gomega.Equal("custom_value"))
+		ginkgo.It("mounts", func(ctx context.Context) {
+			tempDir, err := dtc.setupAndUp(ctx, "tests/up/testdata/docker-mounts", "--debug")
+			framework.ExpectNoError(err)
 
-		customImage, err := dtc.execSSHCapture(ctx, workspace.ID, "cat $HOME/custom-image.out")
-		framework.ExpectNoError(err)
-		gomega.Expect(customImage).To(gomega.Equal("alpine:latest"))
-	}, ginkgo.SpecTimeout(framework.GetTimeout()))
+			workspace, err := dtc.f.FindWorkspace(ctx, tempDir)
+			framework.ExpectNoError(err)
 
-	ginkgo.It("mounts", func(ctx context.Context) {
-		tempDir, err := dtc.setupAndUp(ctx, "tests/up/testdata/docker-mounts", "--debug")
-		framework.ExpectNoError(err)
+			ids, err := dtc.findWorkspaceContainer(ctx, workspace)
+			framework.ExpectNoError(err)
+			gomega.Expect(ids).To(gomega.HaveLen(1))
 
-		workspace, err := dtc.f.FindWorkspace(ctx, tempDir)
-		framework.ExpectNoError(err)
+			foo, err := dtc.execSSHCapture(ctx, workspace.ID, "cat $HOME/mnt1/foo.txt")
+			framework.ExpectNoError(err)
+			gomega.Expect(strings.TrimSpace(foo)).To(gomega.Equal("BAR"))
 
-		ids, err := dtc.findWorkspaceContainer(ctx, workspace)
-		framework.ExpectNoError(err)
-		gomega.Expect(ids).To(gomega.HaveLen(1))
+			bar, err := dtc.execSSHCapture(ctx, workspace.ID, "cat $HOME/mnt2/bar.txt")
+			framework.ExpectNoError(err)
+			gomega.Expect(strings.TrimSpace(bar)).To(gomega.Equal("FOO"))
+		}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
-		foo, err := dtc.execSSHCapture(ctx, workspace.ID, "cat $HOME/mnt1/foo.txt")
-		framework.ExpectNoError(err)
-		gomega.Expect(strings.TrimSpace(foo)).To(gomega.Equal("BAR"))
+		ginkgo.It("custom image", func(ctx context.Context) {
+			if runtime.GOOS == "windows" {
+				ginkgo.Skip("skipping on windows")
+			}
 
-		bar, err := dtc.execSSHCapture(ctx, workspace.ID, "cat $HOME/mnt2/bar.txt")
-		framework.ExpectNoError(err)
-		gomega.Expect(strings.TrimSpace(bar)).To(gomega.Equal("FOO"))
-	}, ginkgo.SpecTimeout(framework.GetTimeout()))
+			tempDir, err := dtc.setupAndUp(
+				ctx,
+				"tests/up/testdata/docker",
+				"--devcontainer-image",
+				"alpine",
+			)
+			framework.ExpectNoError(err)
 
-	ginkgo.It("custom image", func(ctx context.Context) {
-		if runtime.GOOS == "windows" {
-			ginkgo.Skip("skipping on windows")
-		}
+			out, err := dtc.execSSH(ctx, tempDir, "grep ^ID= /etc/os-release")
+			framework.ExpectNoError(err)
+			framework.ExpectEqual(out, "ID=alpine\n")
+		}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
-		tempDir, err := dtc.setupAndUp(ctx, "tests/up/testdata/docker", "--devcontainer-image", "alpine")
-		framework.ExpectNoError(err)
+		ginkgo.It("custom image skip build", func(ctx context.Context) {
+			tempDir, err := dtc.setupAndUp(
+				ctx,
+				"tests/up/testdata/docker-with-multi-stage-build",
+				"--devcontainer-image",
+				"alpine",
+			)
+			framework.ExpectNoError(err)
 
-		out, err := dtc.execSSH(ctx, tempDir, "grep ^ID= /etc/os-release")
-		framework.ExpectNoError(err)
-		framework.ExpectEqual(out, "ID=alpine\n")
-	}, ginkgo.SpecTimeout(framework.GetTimeout()))
+			out, err := dtc.execSSH(ctx, tempDir, "grep ^ID= /etc/os-release")
+			framework.ExpectNoError(err)
+			framework.ExpectEqual(out, "ID=alpine\n")
+		}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
-	ginkgo.It("custom image skip build", func(ctx context.Context) {
-		tempDir, err := dtc.setupAndUp(ctx, "tests/up/testdata/docker-with-multi-stage-build", "--devcontainer-image", "alpine")
-		framework.ExpectNoError(err)
+		ginkgo.It("extra devcontainer merge", func(ctx context.Context) {
+			tempDir, err := setupWorkspace(
+				"tests/up/testdata/docker-extra-devcontainer",
+				dtc.initialDir,
+				dtc.f,
+			)
+			framework.ExpectNoError(err)
 
-		out, err := dtc.execSSH(ctx, tempDir, "grep ^ID= /etc/os-release")
-		framework.ExpectNoError(err)
-		framework.ExpectEqual(out, "ID=alpine\n")
-	}, ginkgo.SpecTimeout(framework.GetTimeout()))
+			extraPath := path.Join(tempDir, "extra.json")
+			err = dtc.f.DevPodUp(ctx, tempDir, "--extra-devcontainer-path", extraPath)
+			framework.ExpectNoError(err)
 
-	ginkgo.It("extra devcontainer merge", func(ctx context.Context) {
-		tempDir, err := setupWorkspace("tests/up/testdata/docker-extra-devcontainer", dtc.initialDir, dtc.f)
-		framework.ExpectNoError(err)
+			out, err := dtc.execSSH(ctx, tempDir, "bash -l -c 'echo -n $BASE_VAR'")
+			framework.ExpectNoError(err)
+			framework.ExpectEqual(out, "base_value")
 
-		extraPath := path.Join(tempDir, "extra.json")
-		err = dtc.f.DevPodUp(ctx, tempDir, "--extra-devcontainer-path", extraPath)
-		framework.ExpectNoError(err)
+			out, err = dtc.execSSH(ctx, tempDir, "bash -l -c 'echo -n $EXTRA_VAR'")
+			framework.ExpectNoError(err)
+			framework.ExpectEqual(out, "extra_value")
 
-		out, err := dtc.execSSH(ctx, tempDir, "bash -l -c 'echo -n $BASE_VAR'")
-		framework.ExpectNoError(err)
-		framework.ExpectEqual(out, "base_value")
+			err = dtc.f.DevPodWorkspaceDelete(ctx, tempDir)
+			framework.ExpectNoError(err)
+		}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
-		out, err = dtc.execSSH(ctx, tempDir, "bash -l -c 'echo -n $EXTRA_VAR'")
-		framework.ExpectNoError(err)
-		framework.ExpectEqual(out, "extra_value")
+		ginkgo.It("extra devcontainer override", func(ctx context.Context) {
+			tempDir, err := setupWorkspace(
+				"tests/up/testdata/docker-extra-override",
+				dtc.initialDir,
+				dtc.f,
+			)
+			framework.ExpectNoError(err)
 
-		err = dtc.f.DevPodWorkspaceDelete(ctx, tempDir)
-		framework.ExpectNoError(err)
-	}, ginkgo.SpecTimeout(framework.GetTimeout()))
+			extraPath := path.Join(tempDir, "override.json")
+			err = dtc.f.DevPodUp(ctx, tempDir, "--extra-devcontainer-path", extraPath)
+			framework.ExpectNoError(err)
 
-	ginkgo.It("extra devcontainer override", func(ctx context.Context) {
-		tempDir, err := setupWorkspace("tests/up/testdata/docker-extra-override", dtc.initialDir, dtc.f)
-		framework.ExpectNoError(err)
+			out, err := dtc.execSSH(ctx, tempDir, "cat /tmp/test-var.out")
+			framework.ExpectNoError(err)
+			framework.ExpectEqual(strings.TrimSpace(out), "overridden_value")
 
-		extraPath := path.Join(tempDir, "override.json")
-		err = dtc.f.DevPodUp(ctx, tempDir, "--extra-devcontainer-path", extraPath)
-		framework.ExpectNoError(err)
+			err = dtc.f.DevPodWorkspaceDelete(ctx, tempDir)
+			framework.ExpectNoError(err)
+		}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
-		out, err := dtc.execSSH(ctx, tempDir, "cat /tmp/test-var.out")
-		framework.ExpectNoError(err)
-		framework.ExpectEqual(strings.TrimSpace(out), "overridden_value")
+		ginkgo.It("multi devcontainer selection", func(ctx context.Context) {
+			tempDir, err := setupWorkspace(
+				"tests/up/testdata/docker-multi-devcontainer",
+				dtc.initialDir,
+				dtc.f,
+			)
+			framework.ExpectNoError(err)
 
-		err = dtc.f.DevPodWorkspaceDelete(ctx, tempDir)
-		framework.ExpectNoError(err)
-	}, ginkgo.SpecTimeout(framework.GetTimeout()))
+			err = dtc.f.DevPodUp(ctx, tempDir, "--devcontainer-id", "python")
+			framework.ExpectNoError(err)
 
-	ginkgo.It("multi devcontainer selection", func(ctx context.Context) {
-		tempDir, err := setupWorkspace("tests/up/testdata/docker-multi-devcontainer", dtc.initialDir, dtc.f)
-		framework.ExpectNoError(err)
+			out, err := dtc.execSSH(ctx, tempDir, "bash -l -c 'echo -n $DEVCONTAINER_TYPE'")
+			framework.ExpectNoError(err)
+			framework.ExpectEqual(out, "python")
 
-		err = dtc.f.DevPodUp(ctx, tempDir, "--devcontainer-id", "python")
-		framework.ExpectNoError(err)
+			err = dtc.f.DevPodWorkspaceDelete(ctx, tempDir)
+			framework.ExpectNoError(err)
 
-		out, err := dtc.execSSH(ctx, tempDir, "bash -l -c 'echo -n $DEVCONTAINER_TYPE'")
-		framework.ExpectNoError(err)
-		framework.ExpectEqual(out, "python")
+			err = dtc.f.DevPodUp(ctx, tempDir, "--devcontainer-id", "go")
+			framework.ExpectNoError(err)
 
-		err = dtc.f.DevPodWorkspaceDelete(ctx, tempDir)
-		framework.ExpectNoError(err)
+			out, err = dtc.execSSH(ctx, tempDir, "bash -l -c 'echo -n $DEVCONTAINER_TYPE'")
+			framework.ExpectNoError(err)
+			framework.ExpectEqual(out, "go")
 
-		err = dtc.f.DevPodUp(ctx, tempDir, "--devcontainer-id", "go")
-		framework.ExpectNoError(err)
-
-		out, err = dtc.execSSH(ctx, tempDir, "bash -l -c 'echo -n $DEVCONTAINER_TYPE'")
-		framework.ExpectNoError(err)
-		framework.ExpectEqual(out, "go")
-
-		err = dtc.f.DevPodWorkspaceDelete(ctx, tempDir)
-		framework.ExpectNoError(err)
-	}, ginkgo.SpecTimeout(framework.GetTimeout()))
-})
+			err = dtc.f.DevPodWorkspaceDelete(ctx, tempDir)
+			framework.ExpectNoError(err)
+		}, ginkgo.SpecTimeout(framework.GetTimeout()))
+	},
+)

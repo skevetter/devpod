@@ -30,7 +30,8 @@ func NewCreateCmd(flags *flags.GlobalFlags) *cobra.Command {
 			return cmd.Run(context.Background(), args)
 		},
 	}
-	createCmd.Flags().StringSliceVar(&cmd.ProviderOptions, "provider-option", []string{}, "Provider option in the form KEY=VALUE")
+	createCmd.Flags().
+		StringSliceVar(&cmd.ProviderOptions, "provider-option", []string{}, "Provider option in the form KEY=VALUE")
 	return createCmd
 }
 
@@ -41,7 +42,12 @@ func (cmd *CreateCmd) Run(ctx context.Context, args []string) error {
 		return err
 	}
 
-	machineClient, err := workspace.ResolveMachine(devPodConfig, args, cmd.ProviderOptions, log.Default)
+	machineClient, err := workspace.ResolveMachine(
+		devPodConfig,
+		args,
+		cmd.ProviderOptions,
+		log.Default,
+	)
 	if err != nil {
 		return err
 	}

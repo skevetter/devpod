@@ -35,9 +35,12 @@ func NewSetupGPGCmd(flags *flags.GlobalFlags) *cobra.Command {
 			return cmd.Run(cobraCmd.Context(), log.Default.ErrorStreamOnly())
 		},
 	}
-	setupGPGCmd.Flags().StringVar(&cmd.OwnerTrust, "ownertrust", "", "GPG Owner trust to import in armor form")
-	setupGPGCmd.Flags().StringVar(&cmd.SocketPath, "socketpath", "", "path to the gpg socket forwarded")
-	setupGPGCmd.Flags().StringVar(&cmd.GitKey, "gitkey", "", "gpg key to use for git commit signing")
+	setupGPGCmd.Flags().
+		StringVar(&cmd.OwnerTrust, "ownertrust", "", "GPG Owner trust to import in armor form")
+	setupGPGCmd.Flags().
+		StringVar(&cmd.SocketPath, "socketpath", "", "path to the gpg socket forwarded")
+	setupGPGCmd.Flags().
+		StringVar(&cmd.GitKey, "gitkey", "", "gpg key to use for git commit signing")
 	return setupGPGCmd
 }
 

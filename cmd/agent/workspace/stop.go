@@ -38,7 +38,10 @@ func NewStopCmd(flags *flags.GlobalFlags) *cobra.Command {
 
 func (cmd *StopCmd) Run(ctx context.Context) error {
 	// get workspace
-	shouldExit, workspaceInfo, err := agent.WriteWorkspaceInfo(cmd.WorkspaceInfo, log.Default.ErrorStreamOnly())
+	shouldExit, workspaceInfo, err := agent.WriteWorkspaceInfo(
+		cmd.WorkspaceInfo,
+		log.Default.ErrorStreamOnly(),
+	)
 	if err != nil {
 		return fmt.Errorf("error parsing workspace info: %w", err)
 	} else if shouldExit {
@@ -54,7 +57,11 @@ func (cmd *StopCmd) Run(ctx context.Context) error {
 	return nil
 }
 
-func stopContainer(ctx context.Context, workspaceInfo *provider2.AgentWorkspaceInfo, log log.Logger) error {
+func stopContainer(
+	ctx context.Context,
+	workspaceInfo *provider2.AgentWorkspaceInfo,
+	log log.Logger,
+) error {
 	log.Debugf("stopping DevPod container")
 	runner, err := CreateRunner(workspaceInfo, log)
 	if err != nil {

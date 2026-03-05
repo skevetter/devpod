@@ -12,7 +12,12 @@ import (
 )
 
 // Open first finds the zed binary for the local platform and then opens the zed editor with the given workspace folder.
-func Open(ctx context.Context, values map[string]config.OptionValue, userName, workspaceFolder, workspaceID string, log log.Logger) error {
+func Open(
+	ctx context.Context,
+	values map[string]config.OptionValue,
+	userName, workspaceFolder, workspaceID string,
+	log log.Logger,
+) error {
 	log.Info("Opening Zed editor...")
 
 	if len(workspaceFolder) == 0 || workspaceFolder[0] != '/' {

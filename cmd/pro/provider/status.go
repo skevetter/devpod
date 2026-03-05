@@ -42,7 +42,12 @@ func NewStatusCmd(globalFlags *flags.GlobalFlags) *cobra.Command {
 	return c
 }
 
-func (cmd *StatusCmd) Run(ctx context.Context, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
+func (cmd *StatusCmd) Run(
+	ctx context.Context,
+	stdin io.Reader,
+	stdout io.Writer,
+	stderr io.Writer,
+) error {
 	baseClient, err := client.InitClientFromPath(ctx, cmd.Config)
 	if err != nil {
 		return err
@@ -71,7 +76,13 @@ func (cmd *StatusCmd) Run(ctx context.Context, stdin io.Reader, stdout io.Writer
 		return nil
 	}
 
-	conn, err := platform.DialInstance(baseClient, workspace, "getstatus", platform.OptionsFromEnv("DEVPOD_FLAGS_STATUS"), cmd.Log)
+	conn, err := platform.DialInstance(
+		baseClient,
+		workspace,
+		"getstatus",
+		platform.OptionsFromEnv("DEVPOD_FLAGS_STATUS"),
+		cmd.Log,
+	)
 	if err != nil {
 		return err
 	}

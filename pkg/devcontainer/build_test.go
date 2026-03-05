@@ -43,7 +43,12 @@ func TestFallbackContainerContextAndDockerfile(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		outContext, outDockerfile := getContainerContextAndDockerfile(testCase.localFolder, testCase.remoteFolder, testCase.context, testCase.dockerfile)
+		outContext, outDockerfile := getContainerContextAndDockerfile(
+			testCase.localFolder,
+			testCase.remoteFolder,
+			testCase.context,
+			testCase.dockerfile,
+		)
 		assert.Equal(t, outContext, testCase.expectedContext, testCase.name)
 		assert.Equal(t, outDockerfile, testCase.expectedDockerfile, testCase.name)
 	}

@@ -156,7 +156,11 @@ func SetUser(userName string, user *GitUser) error {
 
 		out, err := exec.Command(args[0], args[1:]...).CombinedOutput()
 		if err != nil {
-			return fmt.Errorf("set user.name '%s': %w", strings.Join(args, " "), command.WrapCommandError(out, err))
+			return fmt.Errorf(
+				"set user.name '%s': %w",
+				strings.Join(args, " "),
+				command.WrapCommandError(out, err),
+			)
 		}
 	}
 	if user.Email != "" {
@@ -170,7 +174,11 @@ func SetUser(userName string, user *GitUser) error {
 
 		out, err := exec.Command(args[0], args[1:]...).CombinedOutput()
 		if err != nil {
-			return fmt.Errorf("set user.email '%s': %w", strings.Join(args, " "), command.WrapCommandError(out, err))
+			return fmt.Errorf(
+				"set user.email '%s': %w",
+				strings.Join(args, " "),
+				command.WrapCommandError(out, err),
+			)
 		}
 	}
 	return nil
@@ -249,7 +257,8 @@ func GetHTTPPath(ctx context.Context, params GetHttpPathParameters) (string, err
 	// The actual format for the key is `credential.$PROTOCOL://$HOST.useHttpPath`, i.e. `credential.https://github.com.useHttpPath`
 	// We need to ignore the error as git will always exit with 1 if the key doesn't exist
 	configKey := fmt.Sprintf("credential.%s://%s.useHttpPath", params.Protocol, params.Host)
-	out, _ := git.CommandContext(ctx, git.GetDefaultExtraEnv(false), "config", "--get", configKey).Output()
+	out, _ := git.CommandContext(ctx, git.GetDefaultExtraEnv(false), "config", "--get", configKey).
+		Output()
 	if strings.TrimSpace(string(out)) != "true" {
 		return "", nil
 	}
@@ -264,7 +273,9 @@ func GetHTTPPath(ctx context.Context, params GetHttpPathParameters) (string, err
 }
 
 func SetupGpgGitKey(gitSignKey string) error {
-	gitConfigCmd := exec.Command("git", []string{"config", "--global", "user.signingKey", gitSignKey}...)
+	gitConfigCmd := exec.Command(
+		"git",
+		[]string{"config", "--global", "user.signingKey", gitSignKey}...)
 
 	out, err := gitConfigCmd.Output()
 	if err != nil {

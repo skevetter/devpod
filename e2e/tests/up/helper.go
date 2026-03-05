@@ -22,8 +22,14 @@ type baseTestContext struct {
 	initialDir   string
 }
 
-func (btc *baseTestContext) execSSHCapture(ctx context.Context, projectName, command string) (string, error) {
-	output, _, err := btc.f.ExecCommandCapture(ctx, []string{"ssh", "--command", command, projectName})
+func (btc *baseTestContext) execSSHCapture(
+	ctx context.Context,
+	projectName, command string,
+) (string, error) {
+	output, _, err := btc.f.ExecCommandCapture(
+		ctx,
+		[]string{"ssh", "--command", command, projectName},
+	)
 	return output, err
 }
 
@@ -35,12 +41,22 @@ type dockerTestContext struct {
 	baseTestContext
 }
 
-func (dtc *dockerTestContext) setupAndUp(ctx context.Context, testDataPath string, upArgs ...string) (string, error) {
+func (dtc *dockerTestContext) setupAndUp(
+	ctx context.Context,
+	testDataPath string,
+	upArgs ...string,
+) (string, error) {
 	return setupWorkspaceAndUp(ctx, testDataPath, dtc.initialDir, dtc.f, upArgs...)
 }
 
-func (dtc *dockerTestContext) findWorkspaceContainer(ctx context.Context, workspace *provider2.Workspace) ([]string, error) {
-	return dtc.dockerHelper.FindContainer(ctx, []string{fmt.Sprintf("%s=%s", config.DockerIDLabel, workspace.UID)})
+func (dtc *dockerTestContext) findWorkspaceContainer(
+	ctx context.Context,
+	workspace *provider2.Workspace,
+) ([]string, error) {
+	return dtc.dockerHelper.FindContainer(
+		ctx,
+		[]string{fmt.Sprintf("%s=%s", config.DockerIDLabel, workspace.UID)},
+	)
 }
 
 // Log scanning functions.
@@ -49,7 +65,11 @@ func findMessage(reader io.Reader, message string) error {
 	for scan.Scan() {
 		if line := scan.Bytes(); len(line) > 0 {
 			lineObject := &log.Line{}
-			if err := json.Unmarshal(line, lineObject); err == nil && strings.Contains(lineObject.Message, message) {
+			if err := json.Unmarshal(
+				line,
+				lineObject,
+			); err == nil &&
+				strings.Contains(lineObject.Message, message) {
 				return nil
 			}
 		}
@@ -87,7 +107,12 @@ func setupDockerProvider(binDir, dockerPath string) (*framework.Framework, error
 	return f, f.DevPodProviderUse(context.Background(), "docker")
 }
 
-func setupWorkspaceAndUp(ctx context.Context, testdataPath, initialDir string, f *framework.Framework, args ...string) (string, error) {
+func setupWorkspaceAndUp(
+	ctx context.Context,
+	testdataPath, initialDir string,
+	f *framework.Framework,
+	args ...string,
+) (string, error) {
 	tempDir, err := setupWorkspace(testdataPath, initialDir, f)
 	if err != nil {
 		return "", err

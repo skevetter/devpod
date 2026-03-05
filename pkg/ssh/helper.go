@@ -52,11 +52,22 @@ func StdioClient(reader io.Reader, writer io.WriteCloser, exitOnClose bool) (*ss
 	return StdioClientFromKeyBytesWithUser(nil, reader, writer, "", exitOnClose)
 }
 
-func StdioClientWithUser(reader io.Reader, writer io.WriteCloser, user string, exitOnClose bool) (*ssh.Client, error) {
+func StdioClientWithUser(
+	reader io.Reader,
+	writer io.WriteCloser,
+	user string,
+	exitOnClose bool,
+) (*ssh.Client, error) {
 	return StdioClientFromKeyBytesWithUser(nil, reader, writer, user, exitOnClose)
 }
 
-func StdioClientFromKeyBytesWithUser(keyBytes []byte, reader io.Reader, writer io.WriteCloser, user string, exitOnClose bool) (*ssh.Client, error) {
+func StdioClientFromKeyBytesWithUser(
+	keyBytes []byte,
+	reader io.Reader,
+	writer io.WriteCloser,
+	user string,
+	exitOnClose bool,
+) (*ssh.Client, error) {
 	conn := stdio.NewStdioStream(reader, writer, exitOnClose, 0)
 	clientConfig, err := ConfigFromKeyBytes(keyBytes)
 	if err != nil {

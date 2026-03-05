@@ -175,7 +175,10 @@ func (s *HTTPDownloadSource) buildDownloadURL(arch string) (string, error) {
 	return downloadURL, nil
 }
 
-func (s *HTTPDownloadSource) downloadFile(ctx context.Context, downloadURL string) (*http.Response, error) {
+func (s *HTTPDownloadSource) downloadFile(
+	ctx context.Context,
+	downloadURL string,
+) (*http.Response, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, downloadURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
@@ -194,7 +197,10 @@ func (s *HTTPDownloadSource) downloadFile(ctx context.Context, downloadURL strin
 	contentType := resp.Header.Get("Content-Type")
 	if strings.Contains(contentType, "text/html") {
 		_ = resp.Body.Close()
-		return nil, fmt.Errorf("received HTML instead of binary from %s (check if the download URL is correct)", downloadURL)
+		return nil, fmt.Errorf(
+			"received HTML instead of binary from %s (check if the download URL is correct)",
+			downloadURL,
+		)
 	}
 
 	return resp, nil
@@ -202,7 +208,10 @@ func (s *HTTPDownloadSource) downloadFile(ctx context.Context, downloadURL strin
 
 // cacheAndReturn streams the binary to the caller while simultaneously caching it.
 // The caller MUST fully read or close the returned reader to avoid goroutine leaks.
-func (s *HTTPDownloadSource) cacheAndReturn(arch string, body io.ReadCloser) (io.ReadCloser, error) {
+func (s *HTTPDownloadSource) cacheAndReturn(
+	arch string,
+	body io.ReadCloser,
+) (io.ReadCloser, error) {
 	pr, pw := io.Pipe()
 
 	go func() {
@@ -243,7 +252,12 @@ func (s *HTTPDownloadSource) prepareCacheDir(
 	return true
 }
 
-func (s *HTTPDownloadSource) streamAndCache(arch string, body io.ReadCloser, pw *io.PipeWriter, streamErr *error) {
+func (s *HTTPDownloadSource) streamAndCache(
+	arch string,
+	body io.ReadCloser,
+	pw *io.PipeWriter,
+	streamErr *error,
+) {
 	cachePath := s.Cache.pathFor(arch)
 	file, tmpPath, err := s.createTempFile(cachePath, body, pw, streamErr)
 	if err != nil {
@@ -293,7 +307,12 @@ func (s *HTTPDownloadSource) createTempFile(
 	return file, file.Name(), nil
 }
 
-func (s *HTTPDownloadSource) writeToFile(file *os.File, body io.ReadCloser, pw *io.PipeWriter, streamErr *error) bool {
+func (s *HTTPDownloadSource) writeToFile(
+	file *os.File,
+	body io.ReadCloser,
+	pw *io.PipeWriter,
+	streamErr *error,
+) bool {
 	mw := io.MultiWriter(file, pw)
 	if _, err := io.Copy(mw, body); err != nil {
 		*streamErr = err

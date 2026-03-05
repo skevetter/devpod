@@ -15,11 +15,19 @@ import (
 
 func (r *runner) getRawConfig(options provider2.CLIOptions) (*config.DevContainerConfig, error) {
 	if r.WorkspaceConfig.Workspace.DevContainerConfig != nil {
-		rawParsedConfig := config.CloneDevContainerConfig(r.WorkspaceConfig.Workspace.DevContainerConfig)
+		rawParsedConfig := config.CloneDevContainerConfig(
+			r.WorkspaceConfig.Workspace.DevContainerConfig,
+		)
 		if r.WorkspaceConfig.Workspace.DevContainerPath != "" {
-			rawParsedConfig.Origin = path.Join(filepath.ToSlash(r.LocalWorkspaceFolder), r.WorkspaceConfig.Workspace.DevContainerPath)
+			rawParsedConfig.Origin = path.Join(
+				filepath.ToSlash(r.LocalWorkspaceFolder),
+				r.WorkspaceConfig.Workspace.DevContainerPath,
+			)
 		} else {
-			rawParsedConfig.Origin = path.Join(filepath.ToSlash(r.LocalWorkspaceFolder), ".devcontainer.devpod.json")
+			rawParsedConfig.Origin = path.Join(
+				filepath.ToSlash(r.LocalWorkspaceFolder),
+				".devcontainer.devpod.json",
+			)
 		}
 		return rawParsedConfig, nil
 	} else if r.WorkspaceConfig.Workspace.Source.Container != "" {
@@ -50,7 +58,10 @@ func (r *runner) getRawConfig(options provider2.CLIOptions) (*config.DevContaine
 	// if a subpath is specified, let's move to it
 
 	if r.WorkspaceConfig.Workspace.Source.GitSubPath != "" {
-		localWorkspaceFolder = filepath.Join(r.LocalWorkspaceFolder, r.WorkspaceConfig.Workspace.Source.GitSubPath)
+		localWorkspaceFolder = filepath.Join(
+			r.LocalWorkspaceFolder,
+			r.WorkspaceConfig.Workspace.Source.GitSubPath,
+		)
 	}
 
 	// parse the devcontainer json
@@ -78,7 +89,10 @@ func (r *runner) getRawConfig(options provider2.CLIOptions) (*config.DevContaine
 			func(matches []string) (string, error) {
 				if len(matches) > 1 {
 					ids, _ := config.ListDevContainerIDs(localWorkspaceFolder)
-					return "", fmt.Errorf("multiple devcontainer configurations found. Use --devcontainer-id to select one: %v", ids)
+					return "", fmt.Errorf(
+						"multiple devcontainer configurations found. Use --devcontainer-id to select one: %v",
+						ids,
+					)
 				}
 				return matches[0], nil
 			},
@@ -96,7 +110,9 @@ func (r *runner) getRawConfig(options provider2.CLIOptions) (*config.DevContaine
 	return rawParsedConfig, nil
 }
 
-func (r *runner) getDefaultConfig(options provider2.CLIOptions) (*config.DevContainerConfig, error) {
+func (r *runner) getDefaultConfig(
+	options provider2.CLIOptions,
+) (*config.DevContainerConfig, error) {
 	defaultConfig := &config.DevContainerConfig{}
 	if options.FallbackImage != "" {
 		r.Log.Infof("Using fallback image %s", options.FallbackImage)
@@ -116,7 +132,9 @@ func (r *runner) getDefaultConfig(options provider2.CLIOptions) (*config.DevCont
 	return defaultConfig, nil
 }
 
-func (r *runner) getSubstitutedConfig(options provider2.CLIOptions) (*config.SubstitutedConfig, *config.SubstitutionContext, error) {
+func (r *runner) getSubstitutedConfig(
+	options provider2.CLIOptions,
+) (*config.SubstitutedConfig, *config.SubstitutionContext, error) {
 	rawConfig, err := r.getRawConfig(options)
 	if err != nil {
 		return nil, nil, err

@@ -29,7 +29,8 @@ func NewUpdateConfigCmd(flags *flags.GlobalFlags) *cobra.Command {
 			return cmd.Run(context.Background())
 		},
 	}
-	updateConfigCmd.Flags().StringVar(&cmd.WorkspaceInfo, "workspace-info", "", "The workspace info")
+	updateConfigCmd.Flags().
+		StringVar(&cmd.WorkspaceInfo, "workspace-info", "", "The workspace info")
 	_ = updateConfigCmd.MarkFlagRequired("workspace-info")
 	return updateConfigCmd
 }

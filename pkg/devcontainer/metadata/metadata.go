@@ -9,7 +9,12 @@ import (
 
 const ImageMetadataLabel = "devcontainer.metadata"
 
-func GetDevContainerMetadata(substitutionContext *config.SubstitutionContext, baseImageMetadata *config.ImageMetadataConfig, devContainerConfig *config.SubstitutedConfig, featuresConfig []*config.FeatureSet) (*config.ImageMetadataConfig, error) {
+func GetDevContainerMetadata(
+	substitutionContext *config.SubstitutionContext,
+	baseImageMetadata *config.ImageMetadataConfig,
+	devContainerConfig *config.SubstitutedConfig,
+	featuresConfig []*config.FeatureSet,
+) (*config.ImageMetadataConfig, error) {
 	// features
 	featuresRaw := []*config.ImageMetadata{}
 	for _, featureSet := range featuresConfig {
@@ -19,9 +24,14 @@ func GetDevContainerMetadata(substitutionContext *config.SubstitutionContext, ba
 	retImageMetadataConfig := &config.ImageMetadataConfig{}
 	retImageMetadataConfig.Raw = append(retImageMetadataConfig.Raw, baseImageMetadata.Raw...)
 	retImageMetadataConfig.Raw = append(retImageMetadataConfig.Raw, featuresRaw...)
-	retImageMetadataConfig.Raw = append(retImageMetadataConfig.Raw, DevContainerConfigToImageMetadata(devContainerConfig.Raw))
+	retImageMetadataConfig.Raw = append(
+		retImageMetadataConfig.Raw,
+		DevContainerConfigToImageMetadata(devContainerConfig.Raw),
+	)
 
-	retImageMetadataConfig.Config = append(retImageMetadataConfig.Config, baseImageMetadata.Config...)
+	retImageMetadataConfig.Config = append(
+		retImageMetadataConfig.Config,
+		baseImageMetadata.Config...)
 	for _, featureRaw := range featuresRaw {
 		featureConfig := &config.ImageMetadata{}
 		err := config.Substitute(substitutionContext, featureRaw, featureConfig)
@@ -31,7 +41,10 @@ func GetDevContainerMetadata(substitutionContext *config.SubstitutionContext, ba
 
 		retImageMetadataConfig.Config = append(retImageMetadataConfig.Config, featureConfig)
 	}
-	retImageMetadataConfig.Config = append(retImageMetadataConfig.Config, DevContainerConfigToImageMetadata(devContainerConfig.Config))
+	retImageMetadataConfig.Config = append(
+		retImageMetadataConfig.Config,
+		DevContainerConfigToImageMetadata(devContainerConfig.Config),
+	)
 	return retImageMetadataConfig, nil
 }
 
@@ -91,8 +104,13 @@ func DevContainerConfigToImageMetadata(devConfig *config.DevContainerConfig) *co
 	}
 }
 
-func GetImageMetadataFromContainer(containerDetails *config.ContainerDetails, substituteContext *config.SubstitutionContext, log log.Logger) (*config.ImageMetadataConfig, error) {
-	if containerDetails == nil || containerDetails.Config.Labels == nil || containerDetails.Config.Labels[ImageMetadataLabel] == "" {
+func GetImageMetadataFromContainer(
+	containerDetails *config.ContainerDetails,
+	substituteContext *config.SubstitutionContext,
+	log log.Logger,
+) (*config.ImageMetadataConfig, error) {
+	if containerDetails == nil || containerDetails.Config.Labels == nil ||
+		containerDetails.Config.Labels[ImageMetadataLabel] == "" {
 		return &config.ImageMetadataConfig{}, nil
 	}
 
@@ -120,7 +138,11 @@ func GetImageMetadataFromContainer(containerDetails *config.ContainerDetails, su
 	return imageMetadataConfig, nil
 }
 
-func GetImageMetadata(imageDetails *config.ImageDetails, substituteContext *config.SubstitutionContext, log log.Logger) (*config.ImageMetadataConfig, error) {
+func GetImageMetadata(
+	imageDetails *config.ImageDetails,
+	substituteContext *config.SubstitutionContext,
+	log log.Logger,
+) (*config.ImageMetadataConfig, error) {
 	if imageDetails == nil {
 		return &config.ImageMetadataConfig{}, nil
 	}
@@ -153,7 +175,10 @@ func GetImageMetadata(imageDetails *config.ImageDetails, substituteContext *conf
 	return imageMetadataConfig, nil
 }
 
-func substituteConfig(imageConfig *config.ImageMetadataConfig, substituteContext *config.SubstitutionContext) error {
+func substituteConfig(
+	imageConfig *config.ImageMetadataConfig,
+	substituteContext *config.SubstitutionContext,
+) error {
 	imageConfig.Config = []*config.ImageMetadata{}
 	for _, raw := range imageConfig.Raw {
 		imageMetadata := &config.ImageMetadata{}

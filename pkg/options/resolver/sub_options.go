@@ -16,7 +16,12 @@ import (
 	"github.com/skevetter/devpod/pkg/types"
 )
 
-func execOptionCommand(ctx context.Context, command string, resolvedOptions map[string]config.OptionValue, extraValues map[string]string) (*bytes.Buffer, error) {
+func execOptionCommand(
+	ctx context.Context,
+	command string,
+	resolvedOptions map[string]config.OptionValue,
+	extraValues map[string]string,
+) (*bytes.Buffer, error) {
 	stdout := &bytes.Buffer{}
 	stderr := &bytes.Buffer{}
 	env := os.Environ()
@@ -32,7 +37,12 @@ func execOptionCommand(ctx context.Context, command string, resolvedOptions map[
 	return stdout, nil
 }
 
-func resolveFromCommand(ctx context.Context, option *types.Option, resolvedOptions map[string]config.OptionValue, extraValues map[string]string) (config.OptionValue, error) {
+func resolveFromCommand(
+	ctx context.Context,
+	option *types.Option,
+	resolvedOptions map[string]config.OptionValue,
+	extraValues map[string]string,
+) (config.OptionValue, error) {
 	cmdOut, err := execOptionCommand(ctx, option.Command, resolvedOptions, extraValues)
 	if err != nil {
 		return config.OptionValue{}, fmt.Errorf("run command: %w", err)
@@ -43,7 +53,12 @@ func resolveFromCommand(ctx context.Context, option *types.Option, resolvedOptio
 	return optionValue, nil
 }
 
-func resolveSubOptions(ctx context.Context, option *types.Option, resolvedOptions map[string]config.OptionValue, extraValues map[string]string) (config.OptionDefinitions, error) {
+func resolveSubOptions(
+	ctx context.Context,
+	option *types.Option,
+	resolvedOptions map[string]config.OptionValue,
+	extraValues map[string]string,
+) (config.OptionDefinitions, error) {
 	cmdOut, err := execOptionCommand(ctx, option.SubOptionsCommand, resolvedOptions, extraValues)
 	if err != nil {
 		return nil, fmt.Errorf("run subOptionsCommand: %w", err)

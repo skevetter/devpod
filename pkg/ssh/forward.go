@@ -80,7 +80,10 @@ func portForwarding(
 	}()
 
 	counter := newConnectionCounter(ctx, exitAfterTimeout, func() {
-		log.Fatal("Stopping devpod up, because it stayed idle for a while. You can disable this via 'devpod context set-options -o EXIT_AFTER_TIMEOUT=false'")
+		log.Fatal(
+			"Stopping devpod up, because it stayed idle for a while. " +
+				"You can disable this via 'devpod context set-options -o EXIT_AFTER_TIMEOUT=false'",
+		)
 	}, srcAddr, log)
 	for {
 		// waiting for a new connection

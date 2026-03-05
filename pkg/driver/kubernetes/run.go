@@ -65,7 +65,10 @@ func (k *KubernetesDriver) RunDevContainer(
 		return err
 	} else if pvc == nil {
 		if options == nil {
-			return fmt.Errorf("no options provided and no persistent volume claim found for workspace '%s'", workspaceId)
+			return fmt.Errorf(
+				"no options provided and no persistent volume claim found for workspace '%s'",
+				workspaceId,
+			)
 		}
 
 		// create persistent volume claim
@@ -108,7 +111,12 @@ func (k *KubernetesDriver) runContainer(
 		if err != nil {
 			k.Log.Warn("Relative filepath: %v", err)
 		} else if strings.HasPrefix(rel, "..") {
-			k.Log.Warnf("Workspace volume mount needs to be the same as the workspace mount or a parent, skipping option. WorkspaceVolumeMount: %s, MountTarget: %s", k.options.WorkspaceVolumeMount, mount.Target)
+			k.Log.Warnf(
+				"Workspace volume mount needs to be the same as the workspace mount or a parent, skipping option. "+
+					"WorkspaceVolumeMount: %s, MountTarget: %s",
+				k.options.WorkspaceVolumeMount,
+				mount.Target,
+			)
 		} else {
 			mount.Target = k.options.WorkspaceVolumeMount
 			k.Log.Debugf("Using workspace volume mount: %s", k.options.WorkspaceVolumeMount)
@@ -142,7 +150,11 @@ func (k *KubernetesDriver) runContainer(
 		if mount.Type == "bind" || mount.Type == "volume" {
 			volumeMounts = append(volumeMounts, volumeMount)
 		} else {
-			k.Log.Warnf("Unsupported mount type '%s' in mount '%s', will skip", mount.Type, mount.String())
+			k.Log.Warnf(
+				"Unsupported mount type '%s' in mount '%s', will skip",
+				mount.Type,
+				mount.String(),
+			)
 		}
 	}
 
@@ -216,7 +228,8 @@ func (k *KubernetesDriver) runContainer(
 
 	// ensure pull secrets
 	pullSecretsCreated := false
-	if k.options.KubernetesPullSecretsEnabled == "true" && k.agentConfig.InjectDockerCredentials == "true" {
+	if k.options.KubernetesPullSecretsEnabled == "true" &&
+		k.agentConfig.InjectDockerCredentials == "true" {
 		pullSecretsCreated, err = k.EnsurePullSecret(ctx, getPullSecretsName(id), options.Image)
 		if err != nil {
 			return err
@@ -230,7 +243,19 @@ func (k *KubernetesDriver) runContainer(
 	pod.Spec.ServiceAccountName = serviceAccount
 	pod.Spec.NodeSelector = nodeSelector
 	pod.Spec.InitContainers = initContainers
-	pod.Spec.Containers = getContainers(pod, options.Image, options.Entrypoint, options.Cmd, envVars, volumeMounts, capabilities, resources, options.Privileged, k.options.StrictSecurity, daemonConfigSecretName)
+	pod.Spec.Containers = getContainers(
+		pod,
+		options.Image,
+		options.Entrypoint,
+		options.Cmd,
+		envVars,
+		volumeMounts,
+		capabilities,
+		resources,
+		options.Privileged,
+		k.options.StrictSecurity,
+		daemonConfigSecretName,
+	)
 	pod.Spec.Volumes = getVolumes(pod, id, daemonConfigSecretName)
 	// avoids a problem where attaching volumes with large repositories would cause an extremely long pod startup time
 	// because changing the ownership of all files takes longer than the kubelet expects it to
@@ -251,14 +276,20 @@ func (k *KubernetesDriver) runContainer(
 
 	if existingPod != nil {
 		existingOptions := &provider2.ProviderKubernetesDriverConfig{}
-		err := json.Unmarshal([]byte(existingPod.GetAnnotations()[DevPodLastAppliedAnnotation]), existingOptions)
+		err := json.Unmarshal(
+			[]byte(existingPod.GetAnnotations()[DevPodLastAppliedAnnotation]),
+			existingOptions,
+		)
 		if err != nil {
 			k.Log.Errorf("Error unmarshalling existing provider options, continuing...: %s", err)
 		}
 
 		// Nothing changed, can safely return
 		if optionsEqual(existingOptions, k.options) {
-			k.Log.Infof("Pod '%s' already exists and nothing changed, skipping update", existingPod.Name)
+			k.Log.Infof(
+				"Pod '%s' already exists and nothing changed, skipping update",
+				existingPod.Name,
+			)
 			return nil
 		}
 
@@ -375,10 +406,13 @@ func getContainers(
 		devPodContainer.Env = append(existingDevPodContainer.Env, devPodContainer.Env...)
 		devPodContainer.EnvFrom = existingDevPodContainer.EnvFrom
 		devPodContainer.Ports = existingDevPodContainer.Ports
-		devPodContainer.VolumeMounts = append(existingDevPodContainer.VolumeMounts, devPodContainer.VolumeMounts...)
+		devPodContainer.VolumeMounts = append(
+			existingDevPodContainer.VolumeMounts,
+			devPodContainer.VolumeMounts...)
 		devPodContainer.ImagePullPolicy = existingDevPodContainer.ImagePullPolicy
 
-		if devPodContainer.SecurityContext == nil && existingDevPodContainer.SecurityContext != nil {
+		if devPodContainer.SecurityContext == nil &&
+			existingDevPodContainer.SecurityContext != nil {
 			devPodContainer.SecurityContext = existingDevPodContainer.SecurityContext
 		}
 	}

@@ -51,7 +51,9 @@ func (r *runner) Stop(ctx context.Context) error {
 	}
 
 	if strings.ToLower(containerDetails.State.Status) == "running" {
-		if isDockerCompose, projectName := getDockerComposeProject(containerDetails); isDockerCompose {
+		if isDockerCompose, projectName := getDockerComposeProject(
+			containerDetails,
+		); isDockerCompose {
 			err = r.stopDockerCompose(ctx, projectName)
 			if err != nil {
 				return err

@@ -23,7 +23,11 @@ const (
 	ServiceLabel = "com.docker.compose.service"
 )
 
-func LoadDockerComposeProject(ctx context.Context, paths []string, envFiles []string) (*composetypes.Project, error) {
+func LoadDockerComposeProject(
+	ctx context.Context,
+	paths []string,
+	envFiles []string,
+) (*composetypes.Project, error) {
 	projectOptions, err := composecli.NewProjectOptions(
 		paths,
 		composecli.WithOsEnv,
@@ -120,7 +124,10 @@ func tryDockerComposeV1() (*ComposeHelper, error) {
 	}, nil
 }
 
-func (h *ComposeHelper) FindDevContainer(ctx context.Context, projectName, serviceName string) (*config.ContainerDetails, error) {
+func (h *ComposeHelper) FindDevContainer(
+	ctx context.Context,
+	projectName, serviceName string,
+) (*config.ContainerDetails, error) {
 	containerIDs, err := h.Docker.FindContainer(ctx, []string{
 		fmt.Sprintf("%s=%s", ProjectLabel, projectName),
 		fmt.Sprintf("%s=%s", ServiceLabel, serviceName),
@@ -145,7 +152,13 @@ func (h *ComposeHelper) FindDevContainer(ctx context.Context, projectName, servi
 	return nil, nil
 }
 
-func (h *ComposeHelper) Run(ctx context.Context, args []string, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
+func (h *ComposeHelper) Run(
+	ctx context.Context,
+	args []string,
+	stdin io.Reader,
+	stdout io.Writer,
+	stderr io.Writer,
+) error {
 	cmd := h.buildCmd(ctx, args...)
 	cmd.Stdin = stdin
 	cmd.Stdout = stdout
@@ -208,7 +221,10 @@ func (h *ComposeHelper) GetDefaultImage(projectName, serviceName string) (string
 	return fmt.Sprintf("%s-%s", projectName, serviceName), nil
 }
 
-func (h *ComposeHelper) FindProjectFiles(ctx context.Context, projectName string) ([]string, error) {
+func (h *ComposeHelper) FindProjectFiles(
+	ctx context.Context,
+	projectName string,
+) ([]string, error) {
 	buildArgs := []string{"--project-name", projectName}
 	buildArgs = append(buildArgs, "ls", "-a", "--filter", "name="+projectName, "--format", "json")
 

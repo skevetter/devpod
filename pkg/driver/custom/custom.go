@@ -36,7 +36,10 @@ type customDriver struct {
 }
 
 // FindDevContainer returns a running devcontainer details.
-func (c *customDriver) FindDevContainer(ctx context.Context, workspaceId string) (*config.ContainerDetails, error) {
+func (c *customDriver) FindDevContainer(
+	ctx context.Context,
+	workspaceId string,
+) (*config.ContainerDetails, error) {
 	writer := c.log.Writer(logrus.InfoLevel, false)
 	defer func() { _ = writer.Close() }()
 
@@ -70,7 +73,13 @@ func (c *customDriver) FindDevContainer(ctx context.Context, workspaceId string)
 }
 
 // CommandDevContainer runs the given command inside the devcontainer.
-func (c *customDriver) CommandDevContainer(ctx context.Context, workspaceId, user, command string, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
+func (c *customDriver) CommandDevContainer(
+	ctx context.Context,
+	workspaceId, user, command string,
+	stdin io.Reader,
+	stdout io.Writer,
+	stderr io.Writer,
+) error {
 	// run command
 	err := c.runCommand(
 		ctx,
@@ -118,7 +127,10 @@ func (c *customDriver) TargetArchitecture(ctx context.Context, workspaceId strin
 	// parse stdout
 	targetArchitecture := strings.ToLower(strings.TrimSpace(stdout.String()))
 	if targetArchitecture != "amd64" && targetArchitecture != "arm64" {
-		return "", fmt.Errorf("invalid target architecture %s, expected either arm64 or amd64", targetArchitecture)
+		return "", fmt.Errorf(
+			"invalid target architecture %s, expected either arm64 or amd64",
+			targetArchitecture,
+		)
 	}
 
 	return targetArchitecture, nil
@@ -197,7 +209,11 @@ func (c *customDriver) StopDevContainer(ctx context.Context, workspaceId string)
 }
 
 // RunDevContainer runs a devcontainer.
-func (c *customDriver) RunDevContainer(ctx context.Context, workspaceId string, options *driver.RunOptions) error {
+func (c *customDriver) RunDevContainer(
+	ctx context.Context,
+	workspaceId string,
+	options *driver.RunOptions,
+) error {
 	out, err := json.Marshal(options)
 	if err != nil {
 		return fmt.Errorf("marshal run options: %w", err)
@@ -242,7 +258,12 @@ func (c *customDriver) RunDevContainer(ctx context.Context, workspaceId string, 
 	return nil
 }
 
-func (c *customDriver) GetDevContainerLogs(ctx context.Context, workspaceID string, stdout io.Writer, stderr io.Writer) error {
+func (c *customDriver) GetDevContainerLogs(
+	ctx context.Context,
+	workspaceID string,
+	stdout io.Writer,
+	stderr io.Writer,
+) error {
 	// run command
 	err := c.runCommand(
 		ctx,
@@ -310,7 +331,10 @@ func (c *customDriver) runCommand(
 	})
 }
 
-func ToEnvironWithBinaries(workspace *provider.AgentWorkspaceInfo, log log.Logger) ([]string, error) {
+func ToEnvironWithBinaries(
+	workspace *provider.AgentWorkspaceInfo,
+	log log.Logger,
+) ([]string, error) {
 	// get binaries dir
 	binariesDir, err := agent.GetAgentBinariesDirFromWorkspaceDir(workspace.Origin)
 	if err != nil {
@@ -323,11 +347,20 @@ func ToEnvironWithBinaries(workspace *provider.AgentWorkspaceInfo, log log.Logge
 	// download binaries
 	agentBinaries, err := provider.DownloadBinaries(workspace.Agent.Binaries, binariesDir, log)
 	if err != nil {
-		return nil, fmt.Errorf("error downloading workspace %s binaries: %w", workspace.Workspace.ID, err)
+		return nil, fmt.Errorf(
+			"error downloading workspace %s binaries: %w",
+			workspace.Workspace.ID,
+			err,
+		)
 	}
 
 	// get environ
-	environ := provider.ToEnvironment(workspace.Workspace, workspace.Machine, workspace.Options, nil)
+	environ := provider.ToEnvironment(
+		workspace.Workspace,
+		workspace.Machine,
+		workspace.Options,
+		nil,
+	)
 	for k, v := range agentBinaries {
 		environ = append(environ, k+"="+v)
 	}

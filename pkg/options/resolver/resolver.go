@@ -28,7 +28,10 @@ func ResolveDefaultValue(val string, resolvedOptions map[string]string) string {
 	})
 }
 
-func ResolveDefaultValues(vals map[string]string, resolvedOptions map[string]string) map[string]string {
+func ResolveDefaultValues(
+	vals map[string]string,
+	resolvedOptions map[string]string,
+) map[string]string {
 	ret := make(map[string]string)
 	for k, v := range vals {
 		resolvedValue := ResolveDefaultValue(v, resolvedOptions)
@@ -60,7 +63,12 @@ type Resolver struct {
 
 type Option func(r *Resolver)
 
-func New(userOptions map[string]string, extraValues map[string]string, logger log.Logger, opts ...Option) *Resolver {
+func New(
+	userOptions map[string]string,
+	extraValues map[string]string,
+	logger log.Logger,
+	opts ...Option,
+) *Resolver {
 	if userOptions == nil {
 		userOptions = map[string]string{}
 	}
@@ -154,7 +162,11 @@ func (r *Resolver) Resolve(
 
 	// print unused user values
 	if !r.skipRequired {
-		printUnusedUserValues(r.userOptions, mergeMaps(optionDefinitions, newDynamicDefinitions), r.log)
+		printUnusedUserValues(
+			r.userOptions,
+			mergeMaps(optionDefinitions, newDynamicDefinitions),
+			r.log,
+		)
 	}
 
 	return resolvedOptions, newDynamicDefinitions, nil

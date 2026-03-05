@@ -49,9 +49,12 @@ func Substitute(substitutionCtx *SubstitutionContext, config any, out any) error
 	}
 
 	if substitutionCtx.ContainerWorkspaceFolder != "" {
-		substitutionCtx.ContainerWorkspaceFolder = ResolveString(substitutionCtx.ContainerWorkspaceFolder, func(match, variable string, args []string) string {
-			return replaceWithContext(isWindows, substitutionCtx, match, variable, args)
-		})
+		substitutionCtx.ContainerWorkspaceFolder = ResolveString(
+			substitutionCtx.ContainerWorkspaceFolder,
+			func(match, variable string, args []string) string {
+				return replaceWithContext(isWindows, substitutionCtx, match, variable, args)
+			},
+		)
 	}
 	retVal := substitute0(newVal, func(match, variable string, args []string) string {
 		return replaceWithContext(isWindows, substitutionCtx, match, variable, args)
@@ -85,7 +88,11 @@ func SubstituteContainerEnv(containerEnv map[string]string, config any, out any)
 	return nil
 }
 
-func replaceWithContainerEnv(containerEnv map[string]string, match, variable string, args []string) string {
+func replaceWithContainerEnv(
+	containerEnv map[string]string,
+	match, variable string,
+	args []string,
+) string {
 	switch variable {
 	case "containerEnv":
 		return lookupValue(false, containerEnv, args, match)
@@ -94,7 +101,12 @@ func replaceWithContainerEnv(containerEnv map[string]string, match, variable str
 	}
 }
 
-func replaceWithContext(isWindows bool, substitutionCtx *SubstitutionContext, match, variable string, args []string) string {
+func replaceWithContext(
+	isWindows bool,
+	substitutionCtx *SubstitutionContext,
+	match, variable string,
+	args []string,
+) string {
 	switch variable {
 	case "devcontainerId":
 		if substitutionCtx.DevContainerID != "" {

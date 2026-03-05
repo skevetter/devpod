@@ -33,11 +33,14 @@ func (c *client) Stop(ctx context.Context, opt clientpkg.StopOptions) error {
 	}
 
 	rawOptions, _ := json.Marshal(opt)
-	retStop, err := managementClient.Loft().ManagementV1().DevPodWorkspaceInstances(workspace.Namespace).Stop(ctx, workspace.Name, &managementv1.DevPodWorkspaceInstanceStop{
-		Spec: managementv1.DevPodWorkspaceInstanceStopSpec{
-			Options: string(rawOptions),
-		},
-	}, metav1.CreateOptions{})
+	retStop, err := managementClient.Loft().
+		ManagementV1().
+		DevPodWorkspaceInstances(workspace.Namespace).
+		Stop(ctx, workspace.Name, &managementv1.DevPodWorkspaceInstanceStop{
+			Spec: managementv1.DevPodWorkspaceInstanceStopSpec{
+				Options: string(rawOptions),
+			},
+		}, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("error stopping workspace: %w", err)
 	} else if retStop.Status.TaskID == "" {

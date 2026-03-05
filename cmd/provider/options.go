@@ -38,12 +38,22 @@ func NewOptionsCmd(flags *flags.GlobalFlags) *cobra.Command {
 			return cmd.Run(context.Background(), args)
 		},
 		ValidArgsFunction: func(rootCmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-			return completion.GetProviderSuggestions(rootCmd, cmd.Context, cmd.Provider, args, toComplete, cmd.Owner, log.Default)
+			return completion.GetProviderSuggestions(
+				rootCmd,
+				cmd.Context,
+				cmd.Provider,
+				args,
+				toComplete,
+				cmd.Owner,
+				log.Default,
+			)
 		},
 	}
 
-	optionsCmd.Flags().BoolVar(&cmd.Hidden, "hidden", false, "If true, will also show hidden options.")
-	optionsCmd.Flags().StringVar(&cmd.Output, "output", "plain", "The output format to use. Can be json or plain")
+	optionsCmd.Flags().
+		BoolVar(&cmd.Hidden, "hidden", false, "If true, will also show hidden options.")
+	optionsCmd.Flags().
+		StringVar(&cmd.Output, "output", "plain", "The output format to use. Can be json or plain")
 	return optionsCmd
 }
 
@@ -76,7 +86,11 @@ func (cmd *OptionsCmd) Run(ctx context.Context, args []string) error {
 		}
 	}
 
-	providerWithOptions, err := workspace.FindProvider(devPodConfig, providerName, log.Default.ErrorStreamOnly())
+	providerWithOptions, err := workspace.FindProvider(
+		devPodConfig,
+		providerName,
+		log.Default.ErrorStreamOnly(),
+	)
 	if err != nil {
 		return err
 	}
@@ -84,7 +98,12 @@ func (cmd *OptionsCmd) Run(ctx context.Context, args []string) error {
 	return printOptions(devPodConfig, providerWithOptions, cmd.Output, cmd.Hidden)
 }
 
-func printOptions(devPodConfig *config.Config, provider *workspace.ProviderWithOptions, format string, showHidden bool) error {
+func printOptions(
+	devPodConfig *config.Config,
+	provider *workspace.ProviderWithOptions,
+	format string,
+	showHidden bool,
+) error {
 	entryOptions := devPodConfig.ProviderOptions(provider.Config.Name)
 	dynamicOptions := devPodConfig.DynamicProviderOptionDefinitions(provider.Config.Name)
 	srcOptions := MergeDynamicOptions(provider.Config.Options, dynamicOptions)
@@ -146,7 +165,10 @@ func printOptions(devPodConfig *config.Config, provider *workspace.ProviderWithO
 }
 
 // MergeDynamicOptions merges the static provider options and dynamic options.
-func MergeDynamicOptions(options map[string]*types.Option, dynamicOptions config.OptionDefinitions) map[string]*types.Option {
+func MergeDynamicOptions(
+	options map[string]*types.Option,
+	dynamicOptions config.OptionDefinitions,
+) map[string]*types.Option {
 	retOptions := map[string]*types.Option{}
 	maps.Copy(retOptions, options)
 	maps.Copy(retOptions, dynamicOptions)

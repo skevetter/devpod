@@ -28,7 +28,12 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-var extraSearchLocations = []string{"/home/devpod/.devpod/agent", "/opt/devpod/agent", "/var/lib/devpod/agent", "/var/devpod/agent"}
+var extraSearchLocations = []string{
+	"/home/devpod/.devpod/agent",
+	"/opt/devpod/agent",
+	"/var/lib/devpod/agent",
+	"/var/devpod/agent",
+}
 
 var ErrFindAgentHomeFolder = fmt.Errorf("couldn't find devpod home directory")
 
@@ -268,7 +273,9 @@ func CloneRepositoryForWorkspace(
 	// remove the credential helper or otherwise we will receive strange errors within the container
 	defer func() {
 		if helper != "" {
-			if err := gitcredentials.RemoveHelperFromPath(gitcredentials.GetLocalGitConfigPath(workspaceDir)); err != nil {
+			if err := gitcredentials.RemoveHelperFromPath(
+				gitcredentials.GetLocalGitConfigPath(workspaceDir),
+			); err != nil {
 				log.Errorf("Remove git credential helper: %v", err)
 			}
 		}
@@ -278,7 +285,9 @@ func CloneRepositoryForWorkspace(
 	if !command.Exists("git") {
 		local, _ := agentConfig.Local.Bool()
 		if local {
-			return fmt.Errorf("seems like git isn't installed on your system. Please make sure to install git and make it available in the PATH")
+			return fmt.Errorf(
+				"seems like git isn't installed on your system. Please make sure to install git and make it available in the PATH",
+			)
 		}
 		if err := git.InstallBinary(log); err != nil {
 			return err
@@ -294,7 +303,9 @@ func CloneRepositoryForWorkspace(
 
 	// setup private ssh key if passed in
 	extraEnv := []string{}
-	gitSshCredentials := append(options.Platform.UserCredentials.GitSsh, options.Platform.ProjectCredentials.GitSsh...)
+	gitSshCredentials := append(
+		options.Platform.UserCredentials.GitSsh,
+		options.Platform.ProjectCredentials.GitSsh...)
 	if len(gitSshCredentials) > 0 {
 		keys := []string{}
 		for _, key := range gitSshCredentials {
@@ -310,7 +321,13 @@ func CloneRepositoryForWorkspace(
 	}
 
 	// run git command
-	gitInfo := git.NewGitInfo(source.GitRepository, source.GitBranch, source.GitCommit, source.GitPRReference, source.GitSubPath)
+	gitInfo := git.NewGitInfo(
+		source.GitRepository,
+		source.GitBranch,
+		source.GitCommit,
+		source.GitPRReference,
+		source.GitSubPath,
+	)
 
 	// should run with platform git cache?
 	platformGitcacheEnabled := options.Platform.Enabled && options.Platform.RunnerSocket != ""
@@ -334,7 +351,9 @@ func CloneRepositoryForWorkspace(
 		grpcClient, err := grpc.NewClient(
 			"unix://"+options.Platform.RunnerSocket,
 			grpc.WithTransportCredentials(insecure.NewCredentials()),
-			grpc.WithIdleTimeout(180*time.Minute), // cloning can take a long time for large monorepos
+			grpc.WithIdleTimeout(
+				180*time.Minute,
+			), // cloning can take a long time for large monorepos
 		)
 		if err != nil {
 			return fmt.Errorf("create platform gitcache client: %w", err)
@@ -348,7 +367,9 @@ func CloneRepositoryForWorkspace(
 			PRReference:       source.GitPRReference,
 			SubPath:           source.GitSubPath,
 			CredentialsHelper: helper,
-			ExtraEnv:          append(git.GetDefaultExtraEnv(options.StrictHostKeyChecking), extraEnv...),
+			ExtraEnv: append(
+				git.GetDefaultExtraEnv(options.StrictHostKeyChecking),
+				extraEnv...),
 		})
 		if err != nil {
 			return fmt.Errorf("marshal git options: %w", err)
@@ -369,7 +390,11 @@ func CloneRepositoryForWorkspace(
 
 			// cleanup workspace dir if clone failed, otherwise we won't try to clone again when rebuilding this workspace
 			if cleanupErr := cleanupWorkspaceDir(workspaceDir); cleanupErr != nil {
-				return fmt.Errorf("clone repository (with gitcache): %w, cleanup workspace: %w", err, cleanupErr)
+				return fmt.Errorf(
+					"clone repository (with gitcache): %w, cleanup workspace: %w",
+					err,
+					cleanupErr,
+				)
 			}
 			return fmt.Errorf("clone repository (with gitcache): %w", err)
 		}
@@ -380,7 +405,15 @@ func CloneRepositoryForWorkspace(
 		if options.Platform.GitSkipLFS {
 			log.Info("Skipping Git LFS")
 		}
-		err := git.CloneRepositoryWithEnv(ctx, gitInfo, extraEnv, workspaceDir, helper, options.StrictHostKeyChecking, log, getGitOptions(options)...)
+		err := git.CloneRepositoryWithEnv(
+			ctx,
+			gitInfo,
+			extraEnv,
+			workspaceDir,
+			helper,
+			options.StrictHostKeyChecking,
+			log,
+			getGitOptions(options)...)
 		if err != nil {
 			// cleanup workspace dir if clone failed, otherwise we won't try to clone again when rebuilding this workspace
 			if cleanupErr := cleanupWorkspaceDir(workspaceDir); cleanupErr != nil {
@@ -417,7 +450,10 @@ func getGitOptions(options provider2.CLIOptions) []git.Option {
 		gitOpts = append(gitOpts, git.WithCloneStrategy(options.GitCloneStrategy))
 	}
 	if options.Platform.GitCloneStrategy != "" {
-		gitOpts = append(gitOpts, git.WithCloneStrategy(git.CloneStrategy(options.Platform.GitCloneStrategy)))
+		gitOpts = append(
+			gitOpts,
+			git.WithCloneStrategy(git.CloneStrategy(options.Platform.GitCloneStrategy)),
+		)
 	}
 	if options.Platform.GitSkipLFS {
 		gitOpts = append(gitOpts, git.WithSkipLFS())

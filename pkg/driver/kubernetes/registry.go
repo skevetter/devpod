@@ -20,7 +20,8 @@ func GetRegistryFromImageName(imageName string) (string, error) {
 		return "", err
 	}
 
-	if !strings.ContainsRune(reference.FamiliarName(ref), '/') || repoInfo == "hub.docker.com" || repoInfo == "docker.io" {
+	if !strings.ContainsRune(reference.FamiliarName(ref), '/') || repoInfo == "hub.docker.com" ||
+		repoInfo == "docker.io" {
 		return OfficialDockerRegistry, nil
 	}
 

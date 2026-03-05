@@ -75,26 +75,30 @@ func (s *HelperTestSuite) TestGet_ServerError() {
 }
 
 func (s *HelperTestSuite) TestGet_WorkspaceServerFallback() {
-	primaryServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusNotFound)
-	}))
+	primaryServer := httptest.NewServer(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusNotFound)
+		}),
+	)
 	defer primaryServer.Close()
 
-	workspaceServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		s.Equal(http.MethodPost, r.Method)
-		s.Equal("/docker-credentials", r.URL.Path)
+	workspaceServer := httptest.NewServer(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			s.Equal(http.MethodPost, r.Method)
+			s.Equal("/docker-credentials", r.URL.Path)
 
-		request := &Request{}
-		err := json.NewDecoder(r.Body).Decode(request)
-		s.NoError(err)
-		s.Equal("docker.io", request.ServerURL)
+			request := &Request{}
+			err := json.NewDecoder(r.Body).Decode(request)
+			s.NoError(err)
+			s.Equal("docker.io", request.ServerURL)
 
-		_ = json.NewEncoder(w).Encode(&Credentials{
-			ServerURL: "docker.io",
-			Username:  "workspaceuser",
-			Secret:    "workspacepass",
-		})
-	}))
+			_ = json.NewEncoder(w).Encode(&Credentials{
+				ServerURL: "docker.io",
+				Username:  "workspaceuser",
+				Secret:    "workspacepass",
+			})
+		}),
+	)
 	defer workspaceServer.Close()
 
 	_ = os.Setenv("DEVPOD_WORKSPACE_CREDENTIALS_PORT", parsePortString(workspaceServer.URL))

@@ -45,7 +45,10 @@ type setupInfo struct {
 	workspaceConfigCompressed string
 }
 
-func (r *runner) setupContainer(ctx context.Context, params *setupContainerParams) (*config.Result, error) {
+func (r *runner) setupContainer(
+	ctx context.Context,
+	params *setupContainerParams,
+) (*config.Result, error) {
 	if err := r.injectAgentIntoContainer(ctx, params.timeout); err != nil {
 		return nil, err
 	}
@@ -66,7 +69,15 @@ func (r *runner) injectAgentIntoContainer(ctx context.Context, timeout time.Dura
 	err := agent.InjectAgent(&agent.InjectOptions{
 		Ctx: ctx,
 		Exec: func(ctx context.Context, command string, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
-			return r.Driver.CommandDevContainer(ctx, r.ID, containerRootUser, command, stdin, stdout, stderr)
+			return r.Driver.CommandDevContainer(
+				ctx,
+				r.ID,
+				containerRootUser,
+				command,
+				stdin,
+				stdout,
+				stderr,
+			)
 		},
 		IsLocal:                     false,
 		RemoteAgentPath:             agent.ContainerDevPodHelperLocation,
@@ -112,8 +123,13 @@ func (r *runner) buildResult(params *setupContainerParams) *config.Result {
 		ContainerDetails:    params.containerDetails,
 	}
 
-	if r.WorkspaceConfig.Agent.Local == stringTrue && r.WorkspaceConfig.CLIOptions.Platform.Enabled {
-		result.MergedConfig.Mounts = filterWorkspaceMounts(result.MergedConfig.Mounts, r.WorkspaceConfig.ContentFolder, r.Log)
+	if r.WorkspaceConfig.Agent.Local == stringTrue &&
+		r.WorkspaceConfig.CLIOptions.Platform.Enabled {
+		result.MergedConfig.Mounts = filterWorkspaceMounts(
+			result.MergedConfig.Mounts,
+			r.WorkspaceConfig.ContentFolder,
+			r.Log,
+		)
 	}
 
 	return result
@@ -141,7 +157,8 @@ func (r *runner) compressWorkspaceConfig() (string, error) {
 		Agent:            r.WorkspaceConfig.Agent,
 		ContentFolder:    r.WorkspaceConfig.ContentFolder,
 	}
-	if crane.ShouldUse(&r.WorkspaceConfig.CLIOptions) && r.WorkspaceConfig.Workspace.Source.GitRepository != "" {
+	if crane.ShouldUse(&r.WorkspaceConfig.CLIOptions) &&
+		r.WorkspaceConfig.Workspace.Source.GitRepository != "" {
 		workspaceConfig.PullFromInsideContainer = stringTrue
 	}
 
@@ -216,7 +233,11 @@ func (r *runner) isDebugMode() bool {
 	return r.Log.GetLevel() == logrus.DebugLevel
 }
 
-func (r *runner) executeSetup(ctx context.Context, result *config.Result, setupCommand string) (*config.Result, error) {
+func (r *runner) executeSetup(
+	ctx context.Context,
+	result *config.Result,
+	setupCommand string,
+) (*config.Result, error) {
 	runSetupServer := func(ctx context.Context, stdin io.WriteCloser, stdout io.Reader) (*config.Result, error) {
 		return tunnelserver.RunSetupServer(
 			ctx,
@@ -268,7 +289,11 @@ func (r *runner) buildSSHTunnelCommand() string {
 	}
 
 	if ide.ReusesAuthSock(r.WorkspaceConfig.Workspace.IDE.Name) {
-		args = append(args, "--reuse-ssh-auth-sock", shellescape.Quote(r.WorkspaceConfig.CLIOptions.SSHAuthSockID))
+		args = append(
+			args,
+			"--reuse-ssh-auth-sock",
+			shellescape.Quote(r.WorkspaceConfig.CLIOptions.SSHAuthSockID),
+		)
 	}
 	if r.isDebugMode() {
 		args = append(args, "--debug")
@@ -277,11 +302,18 @@ func (r *runner) buildSSHTunnelCommand() string {
 }
 
 func getRelativeDevContainerJson(origin, localWorkspaceFolder string) string {
-	relativePath := strings.TrimPrefix(filepath.ToSlash(origin), filepath.ToSlash(localWorkspaceFolder))
+	relativePath := strings.TrimPrefix(
+		filepath.ToSlash(origin),
+		filepath.ToSlash(localWorkspaceFolder),
+	)
 	return strings.TrimPrefix(relativePath, "/")
 }
 
-func filterWorkspaceMounts(mounts []*config.Mount, baseFolder string, log log.Logger) []*config.Mount {
+func filterWorkspaceMounts(
+	mounts []*config.Mount,
+	baseFolder string,
+	log log.Logger,
+) []*config.Mount {
 	retMounts := []*config.Mount{}
 	for _, mount := range mounts {
 		rel, err := filepath.Rel(baseFolder, mount.Source)

@@ -59,15 +59,27 @@ func StartServicesDaemon(ctx context.Context, opts StartServicesDaemonOptions) e
 	)
 }
 
-func getWorkspace(ctx context.Context, client client.DaemonClient) (*managementv1.DevPodWorkspaceInstance, error) {
+func getWorkspace(
+	ctx context.Context,
+	client client.DaemonClient,
+) (*managementv1.DevPodWorkspaceInstance, error) {
 	return daemon.NewLocalClient(client.Provider()).GetWorkspace(ctx, client.WorkspaceConfig().UID)
 }
 
-func getCredentialConfig(devPodConfig *config.Config, workspace *managementv1.DevPodWorkspaceInstance) credentialConfig {
+func getCredentialConfig(
+	devPodConfig *config.Config,
+	workspace *managementv1.DevPodWorkspaceInstance,
+) credentialConfig {
 	cfg := credentialConfig{
-		docker:          devPodConfig.ContextOption(config.ContextOptionSSHInjectDockerCredentials) == "true",
-		git:             devPodConfig.ContextOption(config.ContextOptionSSHInjectGitCredentials) == "true",
-		gitSSHSignature: devPodConfig.ContextOption(config.ContextOptionGitSSHSignatureForwarding) == "true",
+		docker: devPodConfig.ContextOption(
+			config.ContextOptionSSHInjectDockerCredentials,
+		) == "true",
+		git: devPodConfig.ContextOption(
+			config.ContextOptionSSHInjectGitCredentials,
+		) == "true",
+		gitSSHSignature: devPodConfig.ContextOption(
+			config.ContextOptionGitSSHSignatureForwarding,
+		) == "true",
 	}
 
 	if workspace == nil || workspace.Status.Instance == nil {

@@ -34,7 +34,10 @@ func NewStatusCmd(flags *flags.GlobalFlags) *cobra.Command {
 		Use:   "status [flags] [workspace-path|workspace-name]",
 		Short: "Shows the status of a workspace",
 		RunE: func(cobraCmd *cobra.Command, args []string) error {
-			_, err := clientimplementation.DecodeOptionsFromEnv(clientimplementation.DevPodFlagsStatus, &cmd.StatusOptions)
+			_, err := clientimplementation.DecodeOptionsFromEnv(
+				clientimplementation.DevPodFlagsStatus,
+				&cmd.StatusOptions,
+			)
 			if err != nil {
 				return fmt.Errorf("decode status options: %w", err)
 			}
@@ -54,18 +57,32 @@ func NewStatusCmd(flags *flags.GlobalFlags) *cobra.Command {
 			return cmd.Run(ctx, client, logger)
 		},
 		ValidArgsFunction: func(rootCmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-			return completion.GetWorkspaceSuggestions(rootCmd, cmd.Context, cmd.Provider, args, toComplete, cmd.Owner, log.Default)
+			return completion.GetWorkspaceSuggestions(
+				rootCmd,
+				cmd.Context,
+				cmd.Provider,
+				args,
+				toComplete,
+				cmd.Owner,
+				log.Default,
+			)
 		},
 	}
 
-	statusCmd.Flags().BoolVar(&cmd.ContainerStatus, "container-status", true, "If enabled shows the workspace container status as well")
+	statusCmd.Flags().
+		BoolVar(&cmd.ContainerStatus, "container-status", true, "If enabled shows the workspace container status as well")
 	statusCmd.Flags().StringVar(&cmd.Output, "output", "plain", "Status shows the workspace status")
-	statusCmd.Flags().StringVar(&cmd.Timeout, "timeout", "30s", "The timeout to wait until the status can be retrieved")
+	statusCmd.Flags().
+		StringVar(&cmd.Timeout, "timeout", "30s", "The timeout to wait until the status can be retrieved")
 	return statusCmd
 }
 
 // Run runs the command logic.
-func (cmd *StatusCmd) Run(ctx context.Context, client client2.BaseWorkspaceClient, log log.Logger) error {
+func (cmd *StatusCmd) Run(
+	ctx context.Context,
+	client client2.BaseWorkspaceClient,
+	log log.Logger,
+) error {
 	// parse timeout
 	if cmd.Timeout != "" {
 		duration, err := time.ParseDuration(cmd.Timeout)
@@ -88,11 +105,26 @@ func (cmd *StatusCmd) Run(ctx context.Context, client client2.BaseWorkspaceClien
 	case "plain":
 		switch instanceStatus {
 		case client2.StatusStopped:
-			log.Infof("Workspace '%s' is '%s', you can start it via 'devpod up %s'", client.Workspace(), instanceStatus, client.Workspace())
+			log.Infof(
+				"Workspace '%s' is '%s', you can start it via 'devpod up %s'",
+				client.Workspace(),
+				instanceStatus,
+				client.Workspace(),
+			)
 		case client2.StatusBusy:
-			log.Infof("Workspace '%s' is '%s', which means its currently unaccessible. This is usually resolved by waiting a couple of minutes", client.Workspace(), instanceStatus)
+			log.Infof(
+				"Workspace '%s' is '%s', which means its currently unaccessible. "+
+					"This is usually resolved by waiting a couple of minutes",
+				client.Workspace(),
+				instanceStatus,
+			)
 		case client2.StatusNotFound:
-			log.Infof("Workspace '%s' is '%s', you can create it via 'devpod up %s'", client.Workspace(), instanceStatus, client.Workspace())
+			log.Infof(
+				"Workspace '%s' is '%s', you can create it via 'devpod up %s'",
+				client.Workspace(),
+				instanceStatus,
+				client.Workspace(),
+			)
 		default:
 			log.Infof("Workspace '%s' is '%s'", client.Workspace(), instanceStatus)
 		}
@@ -109,7 +141,10 @@ func (cmd *StatusCmd) Run(ctx context.Context, client client2.BaseWorkspaceClien
 
 		fmt.Print(string(out))
 	default:
-		return fmt.Errorf("unexpected output format, choose either json or plain. Got %s", cmd.Output)
+		return fmt.Errorf(
+			"unexpected output format, choose either json or plain. Got %s",
+			cmd.Output,
+		)
 	}
 
 	return nil

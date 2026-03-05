@@ -76,7 +76,14 @@ var Options = ide.Options{
 
 const DefaultVSCodePort = 10800
 
-func NewOpenVSCodeServer(extensions []string, settings string, userName string, host, port string, values map[string]config.OptionValue, log log.Logger) *OpenVSCodeServer {
+func NewOpenVSCodeServer(
+	extensions []string,
+	settings string,
+	userName string,
+	host, port string,
+	values map[string]config.OptionValue,
+	log log.Logger,
+) *OpenVSCodeServer {
 	return &OpenVSCodeServer{
 		values:     values,
 		extensions: extensions,
@@ -266,7 +273,12 @@ func (o *OpenVSCodeServer) Start() error {
 
 	return single.Single("openvscode.pid", func() (*exec.Cmd, error) {
 		o.log.Infof("Starting openvscode in background...")
-		runCommand := fmt.Sprintf("%s server-local --without-connection-token --host '%s' --port '%s'", binaryPath, o.host, o.port)
+		runCommand := fmt.Sprintf(
+			"%s server-local --without-connection-token --host '%s' --port '%s'",
+			binaryPath,
+			o.host,
+			o.port,
+		)
 		args := []string{}
 		if o.userName != "" {
 			args = append(args, "su", o.userName, "-c", runCommand)

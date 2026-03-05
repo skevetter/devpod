@@ -119,7 +119,10 @@ func ExportMachine(context, machineID string) (*ExportMachineConfig, error) {
 	}, nil
 }
 
-func ExportProvider(devPodConfig *config.Config, context, providerID string) (*ExportProviderConfig, error) {
+func ExportProvider(
+	devPodConfig *config.Config,
+	context, providerID string,
+) (*ExportProviderConfig, error) {
 	providerDir, err := GetProviderDir(context, providerID)
 	if err != nil {
 		return nil, err
@@ -137,7 +140,9 @@ func ExportProvider(devPodConfig *config.Config, context, providerID string) (*E
 	}
 
 	var providerConfig *config.ProviderConfig
-	if devPodConfig != nil && devPodConfig.Contexts[context] != nil && devPodConfig.Contexts[context].Providers != nil && devPodConfig.Contexts[context].Providers[providerID] != nil {
+	if devPodConfig != nil && devPodConfig.Contexts[context] != nil &&
+		devPodConfig.Contexts[context].Providers != nil &&
+		devPodConfig.Contexts[context].Providers[providerID] != nil {
 		providerConfig = devPodConfig.Contexts[context].Providers[providerID]
 	}
 

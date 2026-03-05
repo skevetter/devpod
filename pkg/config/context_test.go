@@ -47,7 +47,9 @@ func TestCaseMergeContextOption(t *testing.T) {
 			in: &ContextConfig{
 				Options: map[string]OptionValue{},
 			},
-			environ: []string{fmt.Sprintf("%s=%s", ContextOptionSSHInjectDockerCredentials, "true")},
+			environ: []string{
+				fmt.Sprintf("%s=%s", ContextOptionSSHInjectDockerCredentials, "true"),
+			},
 			expected: &ContextConfig{
 				Options: map[string]OptionValue{
 					ContextOptionSSHInjectDockerCredentials: {
@@ -61,9 +63,12 @@ func TestCaseMergeContextOption(t *testing.T) {
 
 	for _, tc := range testCases {
 		MergeContextOptions(tc.in, tc.environ)
-		ok := assert.Check(t, cmp.DeepEqual(tc.expected, tc.in, gocmp.FilterPath(func(p gocmp.Path) bool {
-			return p.String() != "Filled"
-		}, gocmp.Ignore())))
+		ok := assert.Check(
+			t,
+			cmp.DeepEqual(tc.expected, tc.in, gocmp.FilterPath(func(p gocmp.Path) bool {
+				return p.String() != "Filled"
+			}, gocmp.Ignore())),
+		)
 		if !ok {
 			fmt.Println(tc.description)
 		}

@@ -15,7 +15,10 @@ import (
 )
 
 // NewKubernetesDriver constructs a struct capable of provisioning a workspace and it's resources using kubernetes.
-func NewKubernetesDriver(workspaceInfo *provider2.AgentWorkspaceInfo, log log.Logger) (driver.ReprovisioningDriver, error) {
+func NewKubernetesDriver(
+	workspaceInfo *provider2.AgentWorkspaceInfo,
+	log log.Logger,
+) (driver.ReprovisioningDriver, error) {
 	options := workspaceInfo.Agent.Kubernetes
 	if options.KubernetesConfig != "" {
 		log.Debugf("Use Kubernetes Config '%s'", options.KubernetesConfig)
@@ -58,9 +61,15 @@ func (k *KubernetesDriver) CanReprovision() bool {
 	return true
 }
 
-func (k *KubernetesDriver) getDevContainerPvc(ctx context.Context, id string) (*corev1.PersistentVolumeClaim, *DevContainerInfo, error) {
+func (k *KubernetesDriver) getDevContainerPvc(
+	ctx context.Context,
+	id string,
+) (*corev1.PersistentVolumeClaim, *DevContainerInfo, error) {
 	// try to find pvc
-	pvc, err := k.client.Client().CoreV1().PersistentVolumeClaims(k.namespace).Get(ctx, id, metav1.GetOptions{})
+	pvc, err := k.client.Client().
+		CoreV1().
+		PersistentVolumeClaims(k.namespace).
+		Get(ctx, id, metav1.GetOptions{})
 	if err != nil {
 		if kerrors.IsNotFound(err) {
 			return nil, nil, nil
@@ -111,9 +120,12 @@ func (k *KubernetesDriver) DeleteDevContainer(ctx context.Context, workspaceId s
 
 	// delete pvc
 	k.Log.Infof("Delete persistent volume claim '%s'...", workspaceId)
-	err = k.client.Client().CoreV1().PersistentVolumeClaims(k.namespace).Delete(ctx, workspaceId, metav1.DeleteOptions{
-		GracePeriodSeconds: &[]int64{5}[0],
-	})
+	err = k.client.Client().
+		CoreV1().
+		PersistentVolumeClaims(k.namespace).
+		Delete(ctx, workspaceId, metav1.DeleteOptions{
+			GracePeriodSeconds: &[]int64{5}[0],
+		})
 	if err != nil && !kerrors.IsNotFound(err) {
 		return fmt.Errorf("delete pvc: %w", err)
 	}
@@ -121,7 +133,10 @@ func (k *KubernetesDriver) DeleteDevContainer(ctx context.Context, workspaceId s
 	// delete role binding & service account
 	if k.options.ClusterRole != "" {
 		k.Log.Infof("Delete role binding '%s'...", workspaceId)
-		err = k.client.Client().RbacV1().RoleBindings(k.namespace).Delete(ctx, workspaceId, metav1.DeleteOptions{})
+		err = k.client.Client().
+			RbacV1().
+			RoleBindings(k.namespace).
+			Delete(ctx, workspaceId, metav1.DeleteOptions{})
 		if err != nil && !kerrors.IsNotFound(err) {
 			return fmt.Errorf("delete role binding: %w", err)
 		}
@@ -148,7 +163,13 @@ func (k *KubernetesDriver) DeleteDevContainer(ctx context.Context, workspaceId s
 	return nil
 }
 
-func (k *KubernetesDriver) CommandDevContainer(ctx context.Context, workspaceId, user, command string, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
+func (k *KubernetesDriver) CommandDevContainer(
+	ctx context.Context,
+	workspaceId, user, command string,
+	stdin io.Reader,
+	stdout io.Writer,
+	stderr io.Writer,
+) error {
 	workspaceId = getID(workspaceId)
 
 	var args []string
@@ -169,7 +190,12 @@ func (k *KubernetesDriver) CommandDevContainer(ctx context.Context, workspaceId,
 	})
 }
 
-func (k *KubernetesDriver) GetDevContainerLogs(ctx context.Context, workspaceID string, stdout io.Writer, stderr io.Writer) error {
+func (k *KubernetesDriver) GetDevContainerLogs(
+	ctx context.Context,
+	workspaceID string,
+	stdout io.Writer,
+	stderr io.Writer,
+) error {
 	workspaceID = getID(workspaceID)
 
 	logs, err := k.client.Logs(ctx, k.namespace, workspaceID, "devpod", true)

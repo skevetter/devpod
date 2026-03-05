@@ -52,11 +52,18 @@ func NewAddCmd(f *flags.GlobalFlags) *cobra.Command {
 		},
 	}
 
-	addCmd.Flags().BoolVar(&cmd.SingleMachine, "single-machine", false, "If enabled will use a single machine for all workspaces")
-	addCmd.Flags().StringVar(&cmd.Name, "name", "", "The name to use for this provider. If empty will use the name within the loaded config")
-	addCmd.Flags().StringVar(&cmd.FromExisting, "from-existing", "", "The name of an existing provider to use as a template. Needs to be used in conjunction with the --name flag")
-	addCmd.Flags().BoolVar(&cmd.Use, "use", true, "If enabled will automatically activate the provider")
-	addCmd.Flags().StringArrayVarP(&cmd.Options, "option", "o", []string{}, "Provider option in the form KEY=VALUE")
+	addCmd.Flags().
+		BoolVar(&cmd.SingleMachine, "single-machine", false, "If enabled will use a single machine for all workspaces")
+	addCmd.Flags().
+		StringVar(&cmd.Name, "name", "",
+			"The name to use for this provider. If empty will use the name within the loaded config")
+	addCmd.Flags().
+		StringVar(&cmd.FromExisting, "from-existing", "",
+			"The name of an existing provider to use as a template. Needs to be used in conjunction with the --name flag")
+	addCmd.Flags().
+		BoolVar(&cmd.Use, "use", true, "If enabled will automatically activate the provider")
+	addCmd.Flags().
+		StringArrayVarP(&cmd.Options, "option", "o", []string{}, "Provider option in the form KEY=VALUE")
 
 	return addCmd
 }
@@ -76,13 +83,22 @@ func (cmd *AddCmd) Run(ctx context.Context, devPodConfig *config.Config, args []
 	var providerConfig *provider.ProviderConfig
 	var options []string
 	if cmd.FromExisting != "" {
-		providerWithOptions, err := workspace.CloneProvider(devPodConfig, cmd.Name, cmd.FromExisting, log.Default)
+		providerWithOptions, err := workspace.CloneProvider(
+			devPodConfig,
+			cmd.Name,
+			cmd.FromExisting,
+			log.Default,
+		)
 		if err != nil {
 			return err
 		}
 
 		providerConfig = providerWithOptions.Config
-		options = mergeOptions(providerWithOptions.Config.Options, providerWithOptions.State.Options, cmd.Options)
+		options = mergeOptions(
+			providerWithOptions.Config.Options,
+			providerWithOptions.State.Options,
+			cmd.Options,
+		)
 	} else {
 		c, err := workspace.AddProvider(devPodConfig, cmd.Name, args[0], log.Default)
 		if err != nil {
@@ -130,7 +146,11 @@ func (cmd *AddCmd) Run(ctx context.Context, devPodConfig *config.Config, args []
 }
 
 // mergeOptions combines user options with existing options, user provided options take precedence.
-func mergeOptions(desiredOptions map[string]*types.Option, stateOptions map[string]config.OptionValue, userOptions []string) []string {
+func mergeOptions(
+	desiredOptions map[string]*types.Option,
+	stateOptions map[string]config.OptionValue,
+	userOptions []string,
+) []string {
 	retOptions := []string{}
 	for key := range desiredOptions {
 		userOption, ok := getUserOption(userOptions, key)

@@ -23,7 +23,8 @@ func (k *KubernetesDriver) EnsurePullSecret(
 	}
 
 	dockerCredentials, err := dockercredentials.GetAuthConfig(host)
-	if err != nil || dockerCredentials == nil || dockerCredentials.Username == "" || dockerCredentials.Secret == "" {
+	if err != nil || dockerCredentials == nil || dockerCredentials.Username == "" ||
+		dockerCredentials.Secret == "" {
 		k.Log.Debugf("Couldn't retrieve credentials for registry: %s", host)
 		return false, nil
 	}
@@ -34,7 +35,10 @@ func (k *KubernetesDriver) EnsurePullSecret(
 			return true, nil
 		}
 
-		k.Log.Debugf("Pull secret '%s' already exists, but is outdated. Recreating...", pullSecretName)
+		k.Log.Debugf(
+			"Pull secret '%s' already exists, but is outdated. Recreating...",
+			pullSecretName,
+		)
 		err := k.DeleteSecret(ctx, pullSecretName)
 		if err != nil {
 			return false, err
@@ -55,7 +59,10 @@ func (k *KubernetesDriver) ReadSecretContents(
 	pullSecretName string,
 	host string,
 ) (string, error) {
-	secret, err := k.client.Client().CoreV1().Secrets(k.namespace).Get(ctx, pullSecretName, metav1.GetOptions{})
+	secret, err := k.client.Client().
+		CoreV1().
+		Secrets(k.namespace).
+		Get(ctx, pullSecretName, metav1.GetOptions{})
 	if err != nil {
 		return "", fmt.Errorf("get secret: %w", err)
 	}
@@ -71,7 +78,10 @@ func (k *KubernetesDriver) DeleteSecret(
 		return nil
 	}
 
-	err := k.client.Client().CoreV1().Secrets(k.namespace).Delete(ctx, secretName, metav1.DeleteOptions{})
+	err := k.client.Client().
+		CoreV1().
+		Secrets(k.namespace).
+		Delete(ctx, secretName, metav1.DeleteOptions{})
 	if err != nil && !kerrors.IsNotFound(err) {
 		return fmt.Errorf("delete secret: %w", err)
 	}
@@ -79,7 +89,11 @@ func (k *KubernetesDriver) DeleteSecret(
 	return nil
 }
 
-func (k *KubernetesDriver) shouldRecreateSecret(ctx context.Context, dockerCredentials *dockercredentials.Credentials, pullSecretName, host string) bool {
+func (k *KubernetesDriver) shouldRecreateSecret(
+	ctx context.Context,
+	dockerCredentials *dockercredentials.Credentials,
+	pullSecretName, host string,
+) bool {
 	existingAuthToken, err := k.ReadSecretContents(ctx, pullSecretName, host)
 	if err != nil {
 		return true
@@ -91,7 +105,10 @@ func (k *KubernetesDriver) secretExists(
 	ctx context.Context,
 	secretName string,
 ) bool {
-	_, err := k.client.Client().CoreV1().Secrets(k.namespace).Get(ctx, secretName, metav1.GetOptions{})
+	_, err := k.client.Client().
+		CoreV1().
+		Secrets(k.namespace).
+		Get(ctx, secretName, metav1.GetOptions{})
 	return err == nil
 }
 

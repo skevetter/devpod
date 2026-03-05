@@ -59,7 +59,11 @@ func (r *Resolver) resolveOption(
 	}
 
 	// get existing values
-	userValue, userValueOk, beforeValue, beforeValueOk, err := r.getValue(optionName, option, resolvedOptionValues)
+	userValue, userValueOk, beforeValue, beforeValueOk, err := r.getValue(
+		optionName,
+		option,
+		resolvedOptionValues,
+	)
 	if err != nil {
 		return err
 	}
@@ -104,7 +108,10 @@ func (r *Resolver) resolveOption(
 	} else if option.Default != "" {
 		resolvedOptionValues[optionName] = config.OptionValue{
 			Children: beforeValue.Children,
-			Value:    ResolveDefaultValue(option.Default, combine(resolvedOptionValues, r.extraValues)),
+			Value: ResolveDefaultValue(
+				option.Default,
+				combine(resolvedOptionValues, r.extraValues),
+			),
 		}
 	} else if option.Command != "" {
 		optionValue, err := resolveFromCommand(ctx, option, resolvedOptionValues, r.extraValues)
@@ -126,7 +133,8 @@ func (r *Resolver) resolveOption(
 	}
 
 	// is required?
-	if !userValueOk && option.Required && resolvedOptionValues[optionName].Value == "" && !resolvedOptionValues[optionName].UserProvided {
+	if !userValueOk && option.Required && resolvedOptionValues[optionName].Value == "" &&
+		!resolvedOptionValues[optionName].UserProvided {
 		if r.skipRequired {
 			delete(resolvedOptionValues, optionName)
 			return r.graph.RemoveChildren(optionName)
@@ -175,7 +183,11 @@ func (r *Resolver) resolveOption(
 	return nil
 }
 
-func (r *Resolver) getValue(optionName string, option *types.Option, resolvedOptionValues map[string]config.OptionValue) (string, bool, config.OptionValue, bool, error) {
+func (r *Resolver) getValue(
+	optionName string,
+	option *types.Option,
+	resolvedOptionValues map[string]config.OptionValue,
+) (string, bool, config.OptionValue, bool, error) {
 	// check if user value exists
 	userValue, userValueOk := r.userOptions[optionName]
 
@@ -298,7 +310,12 @@ func (q *queue) isEmpty() bool {
 	return q.head >= len(q.items)
 }
 
-func resolveDynamicOptions(ctx context.Context, options config.OptionDefinitions, r *Resolver, optionValues map[string]config.OptionValue) error {
+func resolveDynamicOptions(
+	ctx context.Context,
+	options config.OptionDefinitions,
+	r *Resolver,
+	optionValues map[string]config.OptionValue,
+) error {
 	q := newQueue(len(options))
 	processed := make(map[string]bool)
 
@@ -338,7 +355,11 @@ func resolveDynamicOptions(ctx context.Context, options config.OptionDefinitions
 	return nil
 }
 
-func (r *Resolver) retrieveSubOptions(ctx context.Context, optionName string, options map[string]config.OptionValue) (config.OptionDefinitions, error) {
+func (r *Resolver) retrieveSubOptions(
+	ctx context.Context,
+	optionName string,
+	options map[string]config.OptionValue,
+) (config.OptionDefinitions, error) {
 	option, ok := r.graph.GetNode(optionName)
 	if !ok || !r.resolveSubOptions || option.SubOptionsCommand == "" {
 		return nil, nil
@@ -385,7 +406,11 @@ func (r *Resolver) retrieveSubOptions(ctx context.Context, optionName string, op
 	return suboptions, nil
 }
 
-func (r *Resolver) getChangedOptions(oldOptions config.OptionDefinitions, newOptions config.OptionDefinitions, resolvedOptionValues map[string]config.OptionValue) config.OptionDefinitions {
+func (r *Resolver) getChangedOptions(
+	oldOptions config.OptionDefinitions,
+	newOptions config.OptionDefinitions,
+	resolvedOptionValues map[string]config.OptionValue,
+) config.OptionDefinitions {
 	changedOptions := config.OptionDefinitions{}
 	for oldK, oldV := range oldOptions {
 		_, ok := newOptions[oldK]

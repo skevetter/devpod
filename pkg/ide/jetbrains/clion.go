@@ -28,8 +28,18 @@ var CLionOptions = ide.Options{
 	},
 }
 
-func NewCLionServer(userName string, values map[string]config.OptionValue, log log.Logger) *GenericJetBrainsServer {
-	amd64Download, arm64Download := getDownloadURLs(CLionOptions, values, CLionProductCode, CLionDownloadAmd64Template, CLionDownloadArm64Template)
+func NewCLionServer(
+	userName string,
+	values map[string]config.OptionValue,
+	log log.Logger,
+) *GenericJetBrainsServer {
+	amd64Download, arm64Download := getDownloadURLs(
+		CLionOptions,
+		values,
+		CLionProductCode,
+		CLionDownloadAmd64Template,
+		CLionDownloadArm64Template,
+	)
 	return newGenericServer(userName, &GenericOptions{
 		ID:            "clion",
 		DisplayName:   "CLion",

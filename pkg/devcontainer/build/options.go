@@ -96,13 +96,19 @@ func NewOptions(params NewOptionsParams) (*BuildOptions, error) {
 	}
 
 	// get build args and target
-	buildOptions.BuildArgs, buildOptions.Target = GetBuildArgsAndTarget(params.ParsedConfig, params.ExtendedBuildInfo)
+	buildOptions.BuildArgs, buildOptions.Target = GetBuildArgsAndTarget(
+		params.ParsedConfig,
+		params.ExtendedBuildInfo,
+	)
 
 	// get cli options
 	buildOptions.CliOpts = params.ParsedConfig.Config.GetOptions()
 
 	// get extended build info
-	buildOptions.Dockerfile, err = RewriteDockerfile(params.DockerfileContent, params.ExtendedBuildInfo)
+	buildOptions.Dockerfile, err = RewriteDockerfile(
+		params.DockerfileContent,
+		params.ExtendedBuildInfo,
+	)
 	if err != nil {
 		return nil, err
 	} else if buildOptions.Dockerfile == "" {
@@ -119,7 +125,10 @@ func NewOptions(params NewOptionsParams) (*BuildOptions, error) {
 		buildOptions.Images = append(buildOptions.Images, params.ImageName)
 	}
 	if params.Options.Repository != "" {
-		buildOptions.Images = append(buildOptions.Images, params.Options.Repository+":"+prebuildHash)
+		buildOptions.Images = append(
+			buildOptions.Images,
+			params.Options.Repository+":"+prebuildHash,
+		)
 	}
 	for _, prebuildRepository := range params.Options.PrebuildRepositories {
 		buildOptions.Images = append(buildOptions.Images, prebuildRepository+":"+prebuildHash)
@@ -133,10 +142,17 @@ func NewOptions(params NewOptionsParams) (*BuildOptions, error) {
 
 	// define cache args
 	if params.Options.RegistryCache != "" {
-		buildOptions.CacheFrom = []string{fmt.Sprintf("type=registry,ref=%s", params.Options.RegistryCache)}
+		buildOptions.CacheFrom = []string{
+			fmt.Sprintf("type=registry,ref=%s", params.Options.RegistryCache),
+		}
 		// only export cache on build not up, otherwise we slow down the workspace start time
 		if params.Options.ExportCache {
-			buildOptions.CacheTo = []string{fmt.Sprintf("type=registry,ref=%s,mode=max,image-manifest=true", params.Options.RegistryCache)}
+			buildOptions.CacheTo = []string{
+				fmt.Sprintf(
+					"type=registry,ref=%s,mode=max,image-manifest=true",
+					params.Options.RegistryCache,
+				),
+			}
 		}
 	} else {
 		buildOptions.BuildArgs["BUILDKIT_INLINE_CACHE"] = "1"
@@ -161,7 +177,8 @@ func GetBuildArgsAndTarget(
 	}
 
 	target := ""
-	if extendedBuildInfo != nil && extendedBuildInfo.FeaturesBuildInfo != nil && extendedBuildInfo.FeaturesBuildInfo.OverrideTarget != "" {
+	if extendedBuildInfo != nil && extendedBuildInfo.FeaturesBuildInfo != nil &&
+		extendedBuildInfo.FeaturesBuildInfo.OverrideTarget != "" {
 		target = extendedBuildInfo.FeaturesBuildInfo.OverrideTarget
 	} else if parsedConfig.Config.GetTarget() != "" {
 		target = parsedConfig.Config.GetTarget()
@@ -186,7 +203,10 @@ func RewriteDockerfile(
 		}, "\n"))
 
 		// write dockerfile with features
-		finalDockerfilePath := filepath.Join(featureBuildInfo.FeaturesFolder, "Dockerfile-with-features")
+		finalDockerfilePath := filepath.Join(
+			featureBuildInfo.FeaturesFolder,
+			"Dockerfile-with-features",
+		)
 		err := os.WriteFile(finalDockerfilePath, []byte(finalDockerfileContent), 0o600)
 		if err != nil {
 			return "", fmt.Errorf("write Dockerfile with features: %w", err)
@@ -200,5 +220,7 @@ func RewriteDockerfile(
 
 func GetImageName(localWorkspaceFolder, prebuildHash string) string {
 	imageHash := hash.String(localWorkspaceFolder)[:5]
-	return id.ToDockerImageName(filepath.Base(localWorkspaceFolder)) + "-" + imageHash + ":" + prebuildHash
+	return id.ToDockerImageName(
+		filepath.Base(localWorkspaceFolder),
+	) + "-" + imageHash + ":" + prebuildHash
 }

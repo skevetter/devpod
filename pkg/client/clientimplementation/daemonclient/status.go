@@ -8,7 +8,10 @@ import (
 	"github.com/skevetter/devpod/pkg/platform"
 )
 
-func (c *client) Status(ctx context.Context, opt clientpkg.StatusOptions) (clientpkg.Status, error) {
+func (c *client) Status(
+	ctx context.Context,
+	opt clientpkg.StatusOptions,
+) (clientpkg.Status, error) {
 	c.m.Lock()
 	defer c.m.Unlock()
 
@@ -18,7 +21,11 @@ func (c *client) Status(ctx context.Context, opt clientpkg.StatusOptions) (clien
 		return status, err
 	}
 
-	instance, err := platform.FindInstance(ctx, baseClient, platform.FindInstanceOptions{UID: c.workspace.UID})
+	instance, err := platform.FindInstance(
+		ctx,
+		baseClient,
+		platform.FindInstanceOptions{UID: c.workspace.UID},
+	)
 	if err != nil {
 		return status, err
 	} else if instance == nil {

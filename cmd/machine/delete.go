@@ -34,8 +34,10 @@ func NewDeleteCmd(flags *flags.GlobalFlags) *cobra.Command {
 		},
 	}
 
-	deleteCmd.Flags().StringVar(&cmd.GracePeriod, "grace-period", "", "The amount of time to give the command to delete the workspace")
-	deleteCmd.Flags().BoolVar(&cmd.Force, "force", false, "Delete workspace even if it is not found remotely anymore")
+	deleteCmd.Flags().
+		StringVar(&cmd.GracePeriod, "grace-period", "", "The amount of time to give the command to delete the workspace")
+	deleteCmd.Flags().
+		BoolVar(&cmd.Force, "force", false, "Delete workspace even if it is not found remotely anymore")
 	return deleteCmd
 }
 
@@ -52,7 +54,13 @@ func (cmd *DeleteCmd) Run(ctx context.Context, args []string) error {
 	}
 
 	// check if there are workspaces that still use this machine
-	workspaces, err := workspace.List(ctx, devPodConfig, false, platform.SelfOwnerFilter, log.Default)
+	workspaces, err := workspace.List(
+		ctx,
+		devPodConfig,
+		false,
+		platform.SelfOwnerFilter,
+		log.Default,
+	)
 	if err != nil {
 		return err
 	}
@@ -60,7 +68,13 @@ func (cmd *DeleteCmd) Run(ctx context.Context, args []string) error {
 	// search for workspace that uses this machine
 	for _, workspace := range workspaces {
 		if workspace.Machine.ID == machineClient.Machine() {
-			return fmt.Errorf("cannot delete machine '%s', because workspace '%s' is still using it. Please delete the workspace '%s' before deleting the machine", workspace.Machine.ID, workspace.ID, workspace.ID)
+			return fmt.Errorf(
+				"cannot delete machine '%s', because workspace '%s' is still using it. "+
+					"Please delete the workspace '%s' before deleting the machine",
+				workspace.Machine.ID,
+				workspace.ID,
+				workspace.ID,
+			)
 		}
 	}
 

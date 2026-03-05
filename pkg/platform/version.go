@@ -52,7 +52,10 @@ func GetDevPodVersion(url string) (string, error) {
 		return "", err
 	}
 	if version.DevPodVersion == "" {
-		return "", fmt.Errorf("unexpected version '%s', please use --version to define a provider version", version.DevPodVersion)
+		return "", fmt.Errorf(
+			"unexpected version '%s', please use --version to define a provider version",
+			version.DevPodVersion,
+		)
 	}
 
 	// make sure it starts with a v

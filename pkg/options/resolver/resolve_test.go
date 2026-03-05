@@ -38,7 +38,10 @@ func (suite *ResolveTestSuite) TestResolveOptions_HandlesRemovedNodeWithDangling
 	suite.Require().NoError(suite.resolver.graph.AddEdge("option1", "option2"))
 	suite.Require().NoError(suite.resolver.graph.RemoveNode("option2"))
 
-	result, err := suite.resolver.resolveOptions(context.Background(), map[string]config.OptionValue{})
+	result, err := suite.resolver.resolveOptions(
+		context.Background(),
+		map[string]config.OptionValue{},
+	)
 	suite.NoError(err)
 	suite.Len(result, 1)
 	suite.Equal("value1", result["option1"].Value)
@@ -52,7 +55,10 @@ func (suite *ResolveTestSuite) TestResolveOptions_WithDependencies() {
 	suite.Require().NoError(suite.resolver.graph.AddNode("option2", option2))
 	suite.Require().NoError(suite.resolver.graph.AddEdge("option1", "option2"))
 
-	result, err := suite.resolver.resolveOptions(context.Background(), map[string]config.OptionValue{})
+	result, err := suite.resolver.resolveOptions(
+		context.Background(),
+		map[string]config.OptionValue{},
+	)
 	suite.NoError(err)
 	suite.Len(result, 2)
 	suite.Equal("value1", result["option1"].Value)
@@ -68,7 +74,10 @@ func (suite *ResolveTestSuite) TestResolveOptions_MultipleNodes() {
 
 	suite.Require().NoError(suite.resolver.graph.AddNodes(nodes))
 
-	result, err := suite.resolver.resolveOptions(context.Background(), map[string]config.OptionValue{})
+	result, err := suite.resolver.resolveOptions(
+		context.Background(),
+		map[string]config.OptionValue{},
+	)
 	suite.NoError(err)
 	suite.Len(result, 3)
 	suite.Equal("value1", result["option1"].Value)

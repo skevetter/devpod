@@ -23,11 +23,15 @@ const (
 // WARN: Make sure this matches the regex in /desktop/src/views/Workspaces/CreateWorkspace/CreateWorkspaceInput.tsx!
 var (
 	// Updated regex pattern to support SSH-style Git URLs.
-	repoBaseRegEx    = `((?:(?:https?|git|ssh|file):\/\/)?\/?(?:[^@\/\n]+@)?(?:[^:\/\n]+)(?:[:\/][^\/\n]+)+(?:\.git)?)`
-	branchRegEx      = regexp.MustCompile(`^` + repoBaseRegEx + `@([a-zA-Z0-9\./\-\_]+)$`)
-	commitRegEx      = regexp.MustCompile(`^` + repoBaseRegEx + regexp.QuoteMeta(CommitDelimiter) + `([a-zA-Z0-9]+)$`)
+	repoBaseRegEx = `((?:(?:https?|git|ssh|file):\/\/)?\/?(?:[^@\/\n]+@)?(?:[^:\/\n]+)(?:[:\/][^\/\n]+)+(?:\.git)?)`
+	branchRegEx   = regexp.MustCompile(`^` + repoBaseRegEx + `@([a-zA-Z0-9\./\-\_]+)$`)
+	commitRegEx   = regexp.MustCompile(
+		`^` + repoBaseRegEx + regexp.QuoteMeta(CommitDelimiter) + `([a-zA-Z0-9]+)$`,
+	)
 	prReferenceRegEx = regexp.MustCompile(`^` + repoBaseRegEx + `@(` + PullRequestReference + `)$`)
-	subPathRegEx     = regexp.MustCompile(`^` + repoBaseRegEx + regexp.QuoteMeta(SubPathDelimiter) + `([a-zA-Z0-9\./\-\_]+)$`)
+	subPathRegEx     = regexp.MustCompile(
+		`^` + repoBaseRegEx + regexp.QuoteMeta(SubPathDelimiter) + `([a-zA-Z0-9\./\-\_]+)$`,
+	)
 )
 
 func NormalizeRepository(str string) (string, string, string, string, string) {
@@ -123,8 +127,24 @@ func NormalizeRepositoryGitInfo(str string) *GitInfo {
 	return NewGitInfo(repository, branch, commit, pr, subpath)
 }
 
-func CloneRepository(ctx context.Context, gitInfo *GitInfo, targetDir string, helper string, strictHostKeyChecking bool, log log.Logger, cloneOptions ...Option) error {
-	return CloneRepositoryWithEnv(ctx, gitInfo, nil, targetDir, helper, strictHostKeyChecking, log, cloneOptions...)
+func CloneRepository(
+	ctx context.Context,
+	gitInfo *GitInfo,
+	targetDir string,
+	helper string,
+	strictHostKeyChecking bool,
+	log log.Logger,
+	cloneOptions ...Option,
+) error {
+	return CloneRepositoryWithEnv(
+		ctx,
+		gitInfo,
+		nil,
+		targetDir,
+		helper,
+		strictHostKeyChecking,
+		log,
+		cloneOptions...)
 }
 
 func GetDefaultExtraEnv(strictHostKeyChecking bool) []string {
@@ -138,7 +158,16 @@ func GetDefaultExtraEnv(strictHostKeyChecking bool) []string {
 	return append(newExtraEnv, sshArgs)
 }
 
-func CloneRepositoryWithEnv(ctx context.Context, gitInfo *GitInfo, extraEnv []string, targetDir string, helper string, strictHostKeyChecking bool, log log.Logger, cloneOptions ...Option) error {
+func CloneRepositoryWithEnv(
+	ctx context.Context,
+	gitInfo *GitInfo,
+	extraEnv []string,
+	targetDir string,
+	helper string,
+	strictHostKeyChecking bool,
+	log log.Logger,
+	cloneOptions ...Option,
+) error {
 	cloner := NewClonerWithOpts(cloneOptions...)
 
 	// make sure to append the extra env so that they override existing env vars if set
@@ -153,7 +182,14 @@ func CloneRepositoryWithEnv(ctx context.Context, gitInfo *GitInfo, extraEnv []st
 		extraArgs = append(extraArgs, "--branch", gitInfo.Branch)
 	}
 
-	if err := cloner.Clone(ctx, gitInfo.Repository, targetDir, extraArgs, extraEnv, log); err != nil {
+	if err := cloner.Clone(
+		ctx,
+		gitInfo.Repository,
+		targetDir,
+		extraArgs,
+		extraEnv,
+		log,
+	); err != nil {
 		return err
 	}
 
@@ -168,7 +204,13 @@ func CloneRepositoryWithEnv(ctx context.Context, gitInfo *GitInfo, extraEnv []st
 	return nil
 }
 
-func checkoutPR(ctx context.Context, gitInfo *GitInfo, extraEnv []string, targetDir string, log log.Logger) error {
+func checkoutPR(
+	ctx context.Context,
+	gitInfo *GitInfo,
+	extraEnv []string,
+	targetDir string,
+	log log.Logger,
+) error {
 	log.Debugf("Fetching pull request : %s", gitInfo.PR)
 
 	prBranch := GetBranchNameForPR(gitInfo.PR)
@@ -195,7 +237,13 @@ func checkoutPR(ctx context.Context, gitInfo *GitInfo, extraEnv []string, target
 	return nil
 }
 
-func checkoutCommit(ctx context.Context, gitInfo *GitInfo, extraEnv []string, targetDir string, log log.Logger) error {
+func checkoutCommit(
+	ctx context.Context,
+	gitInfo *GitInfo,
+	extraEnv []string,
+	targetDir string,
+	log log.Logger,
+) error {
 	stdout := log.Writer(logrus.InfoLevel, false)
 	stderr := log.Writer(logrus.ErrorLevel, false)
 	defer func() { _ = stdout.Close() }()

@@ -65,7 +65,12 @@ func (v *Validator) CheckDeprecation(distro *Distro) {
 	deprecated := false
 	key := distro.ID + "." + distro.Version
 	switch key {
-	case "debian.stretch", "debian.jessie", "raspbian.stretch", "raspbian.jessie", "ubuntu.xenial", "ubuntu.trusty":
+	case "debian.stretch",
+		"debian.jessie",
+		"raspbian.stretch",
+		"raspbian.jessie",
+		"ubuntu.xenial",
+		"ubuntu.trusty":
 		deprecated = true
 	}
 

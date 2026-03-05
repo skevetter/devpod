@@ -7,7 +7,10 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-func (k *KubernetesDriver) FindDevContainer(ctx context.Context, workspaceId string) (*config.ContainerDetails, error) {
+func (k *KubernetesDriver) FindDevContainer(
+	ctx context.Context,
+	workspaceId string,
+) (*config.ContainerDetails, error) {
 	k.Log.Debugf("Finding devcontainer for workspace '%s'", workspaceId)
 	defer k.Log.Debugf("Done finding devcontainer for workspace '%s'", workspaceId)
 
@@ -24,7 +27,10 @@ func (k *KubernetesDriver) FindDevContainer(ctx context.Context, workspaceId str
 	pod, err := k.getPod(ctx, pvc.Name)
 	if err != nil {
 		k.Log.Infof("Error finding pod: %v", err)
-		k.Log.Warn("If the pod does not come up automatically it is stuck in an error state. Recreate the workspace to recover from this")
+		k.Log.Warn(
+			"If the pod does not come up automatically it is stuck in an error state. " +
+				"Recreate the workspace to recover from this",
+		)
 		pod = nil
 	}
 

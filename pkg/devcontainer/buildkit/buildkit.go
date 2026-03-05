@@ -16,7 +16,14 @@ import (
 	"github.com/skevetter/log"
 )
 
-func Build(ctx context.Context, client *buildkit.Client, writer io.Writer, platform string, options *build.BuildOptions, log log.Logger) error {
+func Build(
+	ctx context.Context,
+	client *buildkit.Client,
+	writer io.Writer,
+	platform string,
+	options *build.BuildOptions,
+	log log.Logger,
+) error {
 	dockerConfig, err := docker.LoadDockerConfig()
 	if err != nil {
 		return err
@@ -34,7 +41,14 @@ func Build(ctx context.Context, client *buildkit.Client, writer io.Writer, platf
 
 	// is context stream?
 	attachable := []session.Attachable{}
-	attachable = append(attachable, authprovider.NewDockerAuthProvider(authprovider.DockerAuthProviderConfig{AuthConfigProvider: authprovider.LoadAuthConfig(dockerConfig)}))
+	attachable = append(
+		attachable,
+		authprovider.NewDockerAuthProvider(
+			authprovider.DockerAuthProviderConfig{
+				AuthConfigProvider: authprovider.LoadAuthConfig(dockerConfig),
+			},
+		),
+	)
 
 	// create solve options
 	solveOptions := buildkit.SolveOpt{

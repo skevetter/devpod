@@ -69,7 +69,12 @@ func ConfigureCredentialsContainer(userName string, port int, log log.Logger) er
 
 const AzureContainerRegistryUsername = "00000000-0000-0000-0000-000000000000"
 
-func configureCredentials(userName, shebang string, targetDir, configDir string, port int, log log.Logger) error {
+func configureCredentials(
+	userName, shebang string,
+	targetDir, configDir string,
+	port int,
+	log log.Logger,
+) error {
 	binaryPath, err := os.Executable()
 	if err != nil {
 		return err
@@ -95,10 +100,20 @@ func configureCredentials(userName, shebang string, targetDir, configDir string,
 	var helperContent []byte
 	if runtime.GOOS == windowsOS {
 		escapedPath := strings.ReplaceAll(binaryPath, "%", "%%")
-		script := fmt.Sprintf("@echo off\r\n\"%s\" agent docker-credentials --port %d %%*\r\n", escapedPath, port)
+		script := fmt.Sprintf(
+			"@echo off\r\n\"%s\" agent docker-credentials --port %d %%*\r\n",
+			escapedPath,
+			port,
+		)
 		helperContent = []byte(script)
 	} else {
-		cmd := shellquote.Join(binaryPath, "agent", "docker-credentials", "--port", fmt.Sprintf("%d", port))
+		cmd := shellquote.Join(
+			binaryPath,
+			"agent",
+			"docker-credentials",
+			"--port",
+			fmt.Sprintf("%d", port),
+		)
 		helperContent = []byte(shebang + "\n" + cmd + ` "$@"` + "\n")
 	}
 
@@ -125,7 +140,14 @@ func configureCredentials(userName, shebang string, targetDir, configDir string,
 
 func ConfigureCredentialsDockerless(targetFolder string, port int, log log.Logger) (string, error) {
 	dockerConfigDir := filepath.Join(targetFolder, ".cache", random.String(6))
-	err := configureCredentials("", "#!/.dockerless/bin/sh", dockerConfigDir, dockerConfigDir, port, log)
+	err := configureCredentials(
+		"",
+		"#!/.dockerless/bin/sh",
+		dockerConfigDir,
+		dockerConfigDir,
+		port,
+		log,
+	)
 	if err != nil {
 		_ = os.RemoveAll(dockerConfigDir)
 		return "", err

@@ -35,7 +35,8 @@ func NewListCmd(flags *flags.GlobalFlags) *cobra.Command {
 		},
 	}
 
-	listCmd.Flags().StringVar(&cmd.Output, "output", "plain", "The output format to use. Can be json or plain")
+	listCmd.Flags().
+		StringVar(&cmd.Output, "output", "plain", "The output format to use. Can be json or plain")
 	return listCmd
 }
 
@@ -84,7 +85,10 @@ func (cmd *ListCmd) Run(ctx context.Context) error {
 		}
 		fmt.Print(string(out))
 	default:
-		return fmt.Errorf("unexpected output format, choose either json or plain. Got %s", cmd.Output)
+		return fmt.Errorf(
+			"unexpected output format, choose either json or plain. Got %s",
+			cmd.Output,
+		)
 	}
 
 	return nil

@@ -38,7 +38,13 @@ func NewStartCmd(flags *proflags.GlobalFlags) *cobra.Command {
 		Use:   "start",
 		Short: "Start the client daemon",
 		RunE: func(cobraCmd *cobra.Command, args []string) error {
-			devPodConfig, provider, err := findProProvider(cobraCmd.Context(), cmd.Context, cmd.Provider, cmd.Host, cmd.Log)
+			devPodConfig, provider, err := findProProvider(
+				cobraCmd.Context(),
+				cmd.Context,
+				cmd.Provider,
+				cmd.Host,
+				cmd.Log,
+			)
 			if err != nil {
 				return err
 			}
@@ -49,14 +55,29 @@ func NewStartCmd(flags *proflags.GlobalFlags) *cobra.Command {
 
 	c.Flags().StringVar(&cmd.Host, "host", "", "The pro instance to use")
 	_ = c.MarkFlagRequired("host")
-	_ = c.RegisterFlagCompletionFunc("host", func(rootCmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		return completion.GetPlatformHostSuggestions(rootCmd, cmd.Context, cmd.Provider, args, toComplete, cmd.Owner, cmd.Log)
-	})
+	_ = c.RegisterFlagCompletionFunc(
+		"host",
+		func(rootCmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+			return completion.GetPlatformHostSuggestions(
+				rootCmd,
+				cmd.Context,
+				cmd.Provider,
+				args,
+				toComplete,
+				cmd.Owner,
+				cmd.Log,
+			)
+		},
+	)
 
 	return c
 }
 
-func (cmd *StartCmd) Run(ctx context.Context, devPodConfig *config.Config, provider *providerpkg.ProviderConfig) error {
+func (cmd *StartCmd) Run(
+	ctx context.Context,
+	devPodConfig *config.Config,
+	provider *providerpkg.ProviderConfig,
+) error {
 	isDesktopControlled := os.Getenv("DEVPOD_UI") == "true"
 	dir, err := ensureDaemonDir(devPodConfig.DefaultContext, provider.Name)
 	if err != nil {

@@ -40,7 +40,12 @@ func NewLogsCmd(flags *flags.GlobalFlags) *cobra.Command {
 
 func (cmd *LogsCmd) Run(ctx context.Context) error {
 	// get workspace info
-	shouldExit, workspaceInfo, err := agent.ReadAgentWorkspaceInfo(cmd.AgentDir, cmd.Context, cmd.ID, log.Default.ErrorStreamOnly())
+	shouldExit, workspaceInfo, err := agent.ReadAgentWorkspaceInfo(
+		cmd.AgentDir,
+		cmd.Context,
+		cmd.ID,
+		log.Default.ErrorStreamOnly(),
+	)
 	if err != nil {
 		return err
 	} else if shouldExit {
@@ -49,7 +54,12 @@ func (cmd *LogsCmd) Run(ctx context.Context) error {
 	logger := log.Default.ErrorStreamOnly()
 
 	// create new runner
-	runner, err := devcontainer.NewRunner(agent.ContainerDevPodHelperLocation, agent.DefaultAgentDownloadURL(), workspaceInfo, logger)
+	runner, err := devcontainer.NewRunner(
+		agent.ContainerDevPodHelperLocation,
+		agent.DefaultAgentDownloadURL(),
+		workspaceInfo,
+		logger,
+	)
 	if err != nil {
 		return fmt.Errorf("create runner: %w", err)
 	}

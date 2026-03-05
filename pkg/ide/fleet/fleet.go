@@ -46,7 +46,11 @@ var Options = ide.Options{
 	},
 }
 
-func NewFleetServer(userName string, values map[string]config.OptionValue, log log.Logger) *FleetServer {
+func NewFleetServer(
+	userName string,
+	values map[string]config.OptionValue,
+	log log.Logger,
+) *FleetServer {
 	return &FleetServer{
 		values:   values,
 		userName: userName,
@@ -89,7 +93,11 @@ func (o *FleetServer) Install(projectDir string) error {
 	}
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != 200 {
-		return fmt.Errorf("unexpected status code while trying to download fleet from %s: %d", url, resp.StatusCode)
+		return fmt.Errorf(
+			"unexpected status code while trying to download fleet from %s: %d",
+			url,
+			resp.StatusCode,
+		)
 	}
 
 	f, err := os.OpenFile(fleetBinary, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o755) // #nosec G302,G304
@@ -129,12 +137,17 @@ func (o *FleetServer) Start(binaryPath, location, projectDir string) error {
 		if version == "latest" {
 			runCommand = fmt.Sprintf(
 				"%s launch workspace -- --projectDir '%s' --cache-path '%s' --auth=accept-everyone --publish --enableSmartMode",
-				binaryPath, projectDir, location,
+				binaryPath,
+				projectDir,
+				location,
 			)
 		} else {
 			runCommand = fmt.Sprintf(
 				"%s launch workspace --workspace-version %s -- --projectDir '%s' --cache-path '%s' --auth=accept-everyone --publish --enableSmartMode",
-				binaryPath, version, projectDir, location,
+				binaryPath,
+				version,
+				projectDir,
+				location,
 			)
 		}
 
@@ -171,7 +184,11 @@ func (o *FleetServer) Start(binaryPath, location, projectDir string) error {
 		if strings.Contains(text, "https://fleet.jetbrains.com/") {
 			index := strings.Index(text, "https://fleet.jetbrains.com/")
 			fleetURLFile := filepath.Join(location, FleetURLFileName)
-			err = os.WriteFile(fleetURLFile, []byte(strings.TrimSpace(text[index:])), 0o600) // #nosec G703
+			err = os.WriteFile(
+				fleetURLFile,
+				[]byte(strings.TrimSpace(text[index:])),
+				0o600,
+			) // #nosec G703
 			if err != nil {
 				return err
 			}
@@ -183,7 +200,11 @@ func (o *FleetServer) Start(binaryPath, location, projectDir string) error {
 		}
 	}
 
-	return fmt.Errorf("seems like there was an error starting up fleet: %s%s", stdoutBuffer.String(), stderrBuffer.String())
+	return fmt.Errorf(
+		"seems like there was an error starting up fleet: %s%s",
+		stdoutBuffer.String(),
+		stderrBuffer.String(),
+	)
 }
 
 func (o *FleetServer) startMonitor() error {

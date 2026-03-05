@@ -52,22 +52,32 @@ func NewLoginCmd(flags *proflags.GlobalFlags) *cobra.Command {
 		Short: "Log into a DevPod Pro instance",
 		RunE: func(_ *cobra.Command, args []string) error {
 			if len(args) != 1 {
-				return fmt.Errorf("please specify the DevPod Pro host, e.g. devpod pro login my-pro.my-domain.com")
+				return fmt.Errorf(
+					"please specify the DevPod Pro host, e.g. devpod pro login my-pro.my-domain.com",
+				)
 			}
 
 			return cmd.Run(context.Background(), args[0], log.Default)
 		},
 	}
 
-	loginCmd.Flags().StringVar(&cmd.AccessKey, "access-key", "", "If defined will use the given access key to login")
-	loginCmd.Flags().BoolVar(&cmd.Login, "login", true, "If enabled will automatically try to log into the Loft DevPod Pro")
-	loginCmd.Flags().BoolVar(&cmd.Use, "use", true, "If enabled will automatically activate the provider")
-	loginCmd.Flags().StringVar(&cmd.Provider, "provider", "", "Optional name how the DevPod Pro provider will be named")
-	loginCmd.Flags().StringVar(&cmd.Version, "version", "", "The version to use for the DevPod provider")
-	loginCmd.Flags().StringArrayVarP(&cmd.Options, "option", "o", []string{}, "Provider option in the form KEY=VALUE")
-	loginCmd.Flags().BoolVar(&cmd.ForceBrowser, "force-browser", false, "Force login through browser")
+	loginCmd.Flags().
+		StringVar(&cmd.AccessKey, "access-key", "", "If defined will use the given access key to login")
+	loginCmd.Flags().
+		BoolVar(&cmd.Login, "login", true, "If enabled will automatically try to log into the Loft DevPod Pro")
+	loginCmd.Flags().
+		BoolVar(&cmd.Use, "use", true, "If enabled will automatically activate the provider")
+	loginCmd.Flags().
+		StringVar(&cmd.Provider, "provider", "", "Optional name how the DevPod Pro provider will be named")
+	loginCmd.Flags().
+		StringVar(&cmd.Version, "version", "", "The version to use for the DevPod provider")
+	loginCmd.Flags().
+		StringArrayVarP(&cmd.Options, "option", "o", []string{}, "Provider option in the form KEY=VALUE")
+	loginCmd.Flags().
+		BoolVar(&cmd.ForceBrowser, "force-browser", false, "Force login through browser")
 
-	loginCmd.Flags().StringVar(&cmd.ProviderSource, "provider-source", "", "The source of the provider")
+	loginCmd.Flags().
+		StringVar(&cmd.ProviderSource, "provider-source", "", "The source of the provider")
 	_ = loginCmd.Flags().MarkHidden("provider-source")
 	return loginCmd
 }
@@ -131,7 +141,10 @@ func (cmd *LoginCmd) Run(ctx context.Context, fullURL string, log log.Logger) er
 			// alternative name
 			cmd.Provider = provider.ToProInstanceID("devpod-" + host)
 			if providers[cmd.Provider] != nil {
-				return fmt.Errorf("provider %s already exists, please choose a different name via --provider", cmd.Provider)
+				return fmt.Errorf(
+					"provider %s already exists, please choose a different name via --provider",
+					cmd.Provider,
+				)
 			}
 		}
 	}
@@ -152,7 +165,8 @@ func (cmd *LoginCmd) Run(ctx context.Context, fullURL string, log log.Logger) er
 		if err != nil {
 			return fmt.Errorf("invalid version %s: %w", remoteVersion, err)
 		}
-		if rv.LT(semver.Version{Major: 0, Minor: 6, Patch: 999}) && remoteVersion != versionpkg.DevVersion {
+		if rv.LT(semver.Version{Major: 0, Minor: 6, Patch: 999}) &&
+			remoteVersion != versionpkg.DevVersion {
 			log.Debug("remote version < 0.7.0, installing proxy provider")
 			// proxy providers are deprecated and shouldn't be used
 			// unless explicitly the server version is below 0.7.0
@@ -188,7 +202,16 @@ func (cmd *LoginCmd) Run(ctx context.Context, fullURL string, log log.Logger) er
 
 	// 2. Login to Loft
 	if cmd.Login {
-		err = login(ctx, devPodConfig, fullURL, cmd.Provider, cmd.AccessKey, false, cmd.ForceBrowser, log)
+		err = login(
+			ctx,
+			devPodConfig,
+			fullURL,
+			cmd.Provider,
+			cmd.AccessKey,
+			false,
+			cmd.ForceBrowser,
+			log,
+		)
 		if err != nil {
 			return err
 		}
@@ -219,7 +242,11 @@ func (cmd *LoginCmd) Run(ctx context.Context, fullURL string, log log.Logger) er
 	return nil
 }
 
-func (cmd *LoginCmd) addLoftProvider(devPodConfig *config.Config, url string, log log.Logger) error {
+func (cmd *LoginCmd) addLoftProvider(
+	devPodConfig *config.Config,
+	url string,
+	log log.Logger,
+) error {
 	// find out loft version
 	err := cmd.resolveProviderSource(url)
 	if err != nil {
@@ -270,7 +297,15 @@ func (cmd *LoginCmd) resolveProviderSource(url string) error {
 	return nil
 }
 
-func login(ctx context.Context, devPodConfig *config.Config, url string, providerName string, accessKey string, skipBrowserLogin, forceBrowser bool, log log.Logger) error {
+func login(
+	ctx context.Context,
+	devPodConfig *config.Config,
+	url string,
+	providerName string,
+	accessKey string,
+	skipBrowserLogin, forceBrowser bool,
+	log log.Logger,
+) error {
 	configPath, err := platform.LoftConfigPath(devPodConfig.DefaultContext, providerName)
 	if err != nil {
 		return err

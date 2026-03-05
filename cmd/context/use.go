@@ -33,7 +33,8 @@ func NewUseCmd(flags *flags.GlobalFlags) *cobra.Command {
 		},
 	}
 
-	useCmd.Flags().StringArrayVarP(&cmd.Options, "option", "o", []string{}, "context option in the form KEY=VALUE")
+	useCmd.Flags().
+		StringArrayVarP(&cmd.Options, "option", "o", []string{}, "context option in the form KEY=VALUE")
 	return useCmd
 }
 

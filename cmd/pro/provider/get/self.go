@@ -38,7 +38,12 @@ func NewSelfCmd(globalFlags *flags.GlobalFlags) *cobra.Command {
 	return c
 }
 
-func (cmd *SelfCmd) Run(ctx context.Context, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
+func (cmd *SelfCmd) Run(
+	ctx context.Context,
+	stdin io.Reader,
+	stdout io.Writer,
+	stderr io.Writer,
+) error {
 	baseClient, err := client.InitClientFromPath(ctx, cmd.Config)
 	if err != nil {
 		return err

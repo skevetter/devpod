@@ -39,8 +39,10 @@ func NewUpdateCmd(flags *flags.GlobalFlags) *cobra.Command {
 		},
 	}
 
-	updateCmd.Flags().BoolVar(&cmd.Use, "use", true, "If enabled will automatically activate the provider")
-	updateCmd.Flags().StringArrayVarP(&cmd.Options, "option", "o", []string{}, "Provider option in the form KEY=VALUE")
+	updateCmd.Flags().
+		BoolVar(&cmd.Use, "use", true, "If enabled will automatically activate the provider")
+	updateCmd.Flags().
+		StringArrayVarP(&cmd.Options, "option", "o", []string{}, "Provider option in the form KEY=VALUE")
 	return updateCmd
 }
 
@@ -55,7 +57,12 @@ func (cmd *UpdateCmd) Run(ctx context.Context, devPodConfig *config.Config, args
 		providerSource = args[1]
 	}
 
-	providerConfig, err := workspace.UpdateProvider(devPodConfig, args[0], providerSource, log.Default)
+	providerConfig, err := workspace.UpdateProvider(
+		devPodConfig,
+		args[0],
+		providerSource,
+		log.Default,
+	)
 	if err != nil {
 		return err
 	}
@@ -76,7 +83,10 @@ func (cmd *UpdateCmd) Run(ctx context.Context, devPodConfig *config.Config, args
 			Log:            log.Default,
 		})
 		if err != nil {
-			log.Default.Errorf("Error configuring provider, please retry with 'devpod provider use %s --reconfigure'", providerConfig.Name)
+			log.Default.Errorf(
+				"Error configuring provider, please retry with 'devpod provider use %s --reconfigure'",
+				providerConfig.Name,
+			)
 			return fmt.Errorf("configure provider: %w", err)
 		}
 

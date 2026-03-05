@@ -213,7 +213,12 @@ var AllowedIDEs = []AllowedIDE{
 	},
 }
 
-func RefreshIDEOptions(devPodConfig *config.Config, workspace *provider.Workspace, ide string, options []string) (*provider.Workspace, error) {
+func RefreshIDEOptions(
+	devPodConfig *config.Config,
+	workspace *provider.Workspace,
+	ide string,
+	options []string,
+) (*provider.Workspace, error) {
 	ide = strings.ToLower(ide)
 	if ide == "" {
 		if workspace.IDE.Name != "" {
@@ -312,7 +317,11 @@ func ParseOptions(options []string, ideOptions ide.Options) (map[string]config.O
 		value := strings.Join(splitted[1:], "=")
 		ideOption, ok := ideOptions[key]
 		if !ok {
-			return nil, fmt.Errorf("invalid option '%s', allowed options are: %v", key, allowedOptions)
+			return nil, fmt.Errorf(
+				"invalid option '%s', allowed options are: %v",
+				key,
+				allowedOptions,
+			)
 		}
 
 		if ideOption.ValidationPattern != "" {
@@ -326,14 +335,24 @@ func ParseOptions(options []string, ideOptions ide.Options) (map[string]config.O
 					return nil, fmt.Errorf("%s", ideOption.ValidationMessage)
 				}
 
-				return nil, fmt.Errorf("invalid value '%s' for option '%s', has to match the following regEx: %s", value, key, ideOption.ValidationPattern)
+				return nil, fmt.Errorf(
+					"invalid value '%s' for option '%s', has to match the following regEx: %s",
+					value,
+					key,
+					ideOption.ValidationPattern,
+				)
 			}
 		}
 
 		if len(ideOption.Enum) > 0 {
 			found := slices.Contains(ideOption.Enum, value)
 			if !found {
-				return nil, fmt.Errorf("invalid value '%s' for option '%s', has to match one of the following values: %v", value, key, ideOption.Enum)
+				return nil, fmt.Errorf(
+					"invalid value '%s' for option '%s', has to match one of the following values: %v",
+					value,
+					key,
+					ideOption.Enum,
+				)
 			}
 		}
 

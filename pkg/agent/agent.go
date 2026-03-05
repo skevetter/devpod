@@ -50,7 +50,9 @@ func DefaultAgentDownloadURL() string {
 	return defaultAgentDownloadURL + version.GetVersion()
 }
 
-func DecodeContainerWorkspaceInfo(workspaceInfoRaw string) (*provider2.ContainerWorkspaceInfo, string, error) {
+func DecodeContainerWorkspaceInfo(
+	workspaceInfoRaw string,
+) (*provider2.ContainerWorkspaceInfo, string, error) {
 	decoded, err := compress.Decompress(workspaceInfoRaw)
 	if err != nil {
 		return nil, "", fmt.Errorf("decode workspace info: %w", err)
@@ -80,7 +82,9 @@ func DecodeWorkspaceInfo(workspaceInfoRaw string) (*provider2.AgentWorkspaceInfo
 	return workspaceInfo, decoded, nil
 }
 
-func readAgentWorkspaceInfo(agentFolder, context, id string) (*provider2.AgentWorkspaceInfo, error) {
+func readAgentWorkspaceInfo(
+	agentFolder, context, id string,
+) (*provider2.AgentWorkspaceInfo, error) {
 	// get workspace folder
 	workspaceDir, err := GetAgentWorkspaceDir(agentFolder, context, id)
 	if err != nil {
@@ -109,7 +113,10 @@ func ParseAgentWorkspaceInfo(workspaceConfigFile string) (*provider2.AgentWorksp
 	return workspaceInfo, nil
 }
 
-func ReadAgentWorkspaceInfo(agentFolder, context, id string, log log.Logger) (bool, *provider2.AgentWorkspaceInfo, error) {
+func ReadAgentWorkspaceInfo(
+	agentFolder, context, id string,
+	log log.Logger,
+) (bool, *provider2.AgentWorkspaceInfo, error) {
 	log.WithFields(logrus.Fields{
 		"agentFolder": agentFolder,
 		"context":     context,
@@ -166,15 +173,25 @@ func ReadAgentWorkspaceInfo(agentFolder, context, id string, log log.Logger) (bo
 	return false, workspaceInfo, nil
 }
 
-func WorkspaceInfo(workspaceInfoEncoded string, log log.Logger) (bool, *provider2.AgentWorkspaceInfo, error) {
+func WorkspaceInfo(
+	workspaceInfoEncoded string,
+	log log.Logger,
+) (bool, *provider2.AgentWorkspaceInfo, error) {
 	return decodeWorkspaceInfoAndWrite(workspaceInfoEncoded, false, nil, log)
 }
 
-func WriteWorkspaceInfo(workspaceInfoEncoded string, log log.Logger) (bool, *provider2.AgentWorkspaceInfo, error) {
+func WriteWorkspaceInfo(
+	workspaceInfoEncoded string,
+	log log.Logger,
+) (bool, *provider2.AgentWorkspaceInfo, error) {
 	return WriteWorkspaceInfoAndDeleteOld(workspaceInfoEncoded, nil, log)
 }
 
-func WriteWorkspaceInfoAndDeleteOld(workspaceInfoEncoded string, deleteWorkspace func(workspaceInfo *provider2.AgentWorkspaceInfo, log log.Logger) error, log log.Logger) (bool, *provider2.AgentWorkspaceInfo, error) {
+func WriteWorkspaceInfoAndDeleteOld(
+	workspaceInfoEncoded string,
+	deleteWorkspace func(workspaceInfo *provider2.AgentWorkspaceInfo, log log.Logger) error,
+	log log.Logger,
+) (bool, *provider2.AgentWorkspaceInfo, error) {
 	return decodeWorkspaceInfoAndWrite(workspaceInfoEncoded, true, deleteWorkspace, log)
 }
 
@@ -223,7 +240,11 @@ func decodeWorkspaceInfoAndWrite(
 		"context":     workspaceInfo.Workspace.Context,
 		"workspaceId": workspaceInfo.Workspace.ID,
 	}).Debug("creating agent workspace directory")
-	workspaceDir, err := CreateAgentWorkspaceDir(workspaceInfo.Agent.DataPath, workspaceInfo.Workspace.Context, workspaceInfo.Workspace.ID)
+	workspaceDir, err := CreateAgentWorkspaceDir(
+		workspaceInfo.Agent.DataPath,
+		workspaceInfo.Workspace.Context,
+		workspaceInfo.Workspace.ID,
+	)
 	if err != nil {
 		log.WithFields(logrus.Fields{
 			"error":       err,
@@ -246,7 +267,8 @@ func decodeWorkspaceInfoAndWrite(
 		}).Debug("checking for existing workspace config")
 
 		oldWorkspaceInfo, _ := ParseAgentWorkspaceInfo(workspaceConfig)
-		if oldWorkspaceInfo != nil && oldWorkspaceInfo.Workspace.UID != workspaceInfo.Workspace.UID {
+		if oldWorkspaceInfo != nil &&
+			oldWorkspaceInfo.Workspace.UID != workspaceInfo.Workspace.UID {
 			// delete the old workspace
 			log.WithFields(logrus.Fields{
 				"workspaceId": oldWorkspaceInfo.Workspace.ID,
@@ -265,7 +287,11 @@ func decodeWorkspaceInfoAndWrite(
 
 			// recreate workspace folder again
 			log.Debug("recreating workspace directory after deletion")
-			workspaceDir, err = CreateAgentWorkspaceDir(workspaceInfo.Agent.DataPath, workspaceInfo.Workspace.Context, workspaceInfo.Workspace.ID)
+			workspaceDir, err = CreateAgentWorkspaceDir(
+				workspaceInfo.Agent.DataPath,
+				workspaceInfo.Workspace.Context,
+				workspaceInfo.Workspace.ID,
+			)
 			if err != nil {
 				log.WithFields(logrus.Fields{
 					"error":    err,
@@ -281,7 +307,8 @@ func decodeWorkspaceInfoAndWrite(
 	// We don't want to initialize the content folder with the value of the local workspace folder
 	// if we're running in proxy mode.
 	// We only have write access to /var/lib/loft/* by default causing nearly all local folders to run into permissions issues
-	if workspaceInfo.Workspace.Source.LocalFolder != "" && !workspaceInfo.CLIOptions.Platform.Enabled {
+	if workspaceInfo.Workspace.Source.LocalFolder != "" &&
+		!workspaceInfo.CLIOptions.Platform.Enabled {
 		log.WithFields(logrus.Fields{
 			"localFolder":     workspaceInfo.Workspace.Source.LocalFolder,
 			"workspaceOrigin": workspaceInfo.WorkspaceOrigin,
@@ -383,15 +410,20 @@ func writeWorkspaceInfo(file string, workspaceInfo *provider2.AgentWorkspaceInfo
 
 func rerunAsRoot(workspaceInfo *provider2.AgentWorkspaceInfo, log log.Logger) (bool, error) {
 	// check if root is required
-	if runtime.GOOS != "linux" || os.Getuid() == 0 || (workspaceInfo != nil && workspaceInfo.Agent.Local == "true") {
+	if runtime.GOOS != "linux" || os.Getuid() == 0 ||
+		(workspaceInfo != nil && workspaceInfo.Agent.Local == "true") {
 		return false, nil
 	}
 
 	// check if we can reach docker with no problems
 	dockerRootRequired := false
-	if workspaceInfo != nil && (workspaceInfo.Agent.Driver == "" || workspaceInfo.Agent.Driver == provider2.DockerDriver) {
+	if workspaceInfo != nil &&
+		(workspaceInfo.Agent.Driver == "" || workspaceInfo.Agent.Driver == provider2.DockerDriver) {
 		var err error
-		dockerRootRequired, err = dockerReachable(workspaceInfo.Agent.Docker.Path, workspaceInfo.Agent.Docker.Env)
+		dockerRootRequired, err = dockerReachable(
+			workspaceInfo.Agent.Docker.Path,
+			workspaceInfo.Agent.Docker.Env,
+		)
 		if err != nil {
 			log.WithFields(logrus.Fields{
 				"error": err,

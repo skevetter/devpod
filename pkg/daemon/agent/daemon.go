@@ -29,10 +29,18 @@ type DaemonConfig struct {
 	Timeout  string                 `json:"timeout"`
 }
 
-func BuildWorkspaceDaemonConfig(platformOptions devpod.PlatformOptions, workspaceConfig *provider2.Workspace, substitutionContext *config.SubstitutionContext, mergedConfig *config.MergedDevContainerConfig) (*DaemonConfig, error) {
+func BuildWorkspaceDaemonConfig(
+	platformOptions devpod.PlatformOptions,
+	workspaceConfig *provider2.Workspace,
+	substitutionContext *config.SubstitutionContext,
+	mergedConfig *config.MergedDevContainerConfig,
+) (*DaemonConfig, error) {
 	var workdir string
 	if workspaceConfig.Source.GitSubPath != "" {
-		substitutionContext.ContainerWorkspaceFolder = filepath.Join(substitutionContext.ContainerWorkspaceFolder, workspaceConfig.Source.GitSubPath)
+		substitutionContext.ContainerWorkspaceFolder = filepath.Join(
+			substitutionContext.ContainerWorkspaceFolder,
+			workspaceConfig.Source.GitSubPath,
+		)
 		workdir = substitutionContext.ContainerWorkspaceFolder
 	}
 	if workdir == "" && mergedConfig != nil {
@@ -62,8 +70,18 @@ func BuildWorkspaceDaemonConfig(platformOptions devpod.PlatformOptions, workspac
 	return daemonConfig, nil
 }
 
-func GetEncodedWorkspaceDaemonConfig(platformOptions devpod.PlatformOptions, workspaceConfig *provider2.Workspace, substitutionContext *config.SubstitutionContext, mergedConfig *config.MergedDevContainerConfig) (string, error) {
-	daemonConfig, err := BuildWorkspaceDaemonConfig(platformOptions, workspaceConfig, substitutionContext, mergedConfig)
+func GetEncodedWorkspaceDaemonConfig(
+	platformOptions devpod.PlatformOptions,
+	workspaceConfig *provider2.Workspace,
+	substitutionContext *config.SubstitutionContext,
+	mergedConfig *config.MergedDevContainerConfig,
+) (string, error) {
+	daemonConfig, err := BuildWorkspaceDaemonConfig(
+		platformOptions,
+		workspaceConfig,
+		substitutionContext,
+		mergedConfig,
+	)
 	if err != nil {
 		return "", err
 	}

@@ -29,7 +29,10 @@ func (btc *baseTestContext) execSSH(ctx context.Context, tempDir, command string
 	return btc.f.DevPodSSH(ctx, tempDir, command)
 }
 
-func (btc *baseTestContext) inspectContainer(ctx context.Context, ids []string) (*container.InspectResponse, error) {
+func (btc *baseTestContext) inspectContainer(
+	ctx context.Context,
+	ids []string,
+) (*container.InspectResponse, error) {
 	if len(ids) == 0 {
 		return nil, fmt.Errorf("no container IDs provided")
 	}
@@ -48,7 +51,11 @@ type testContext struct {
 	composeHelper *compose.ComposeHelper
 }
 
-func (tc *testContext) setupAndStartWorkspace(ctx context.Context, testDataPath string, upArgs ...string) (string, *provider2.Workspace, error) {
+func (tc *testContext) setupAndStartWorkspace(
+	ctx context.Context,
+	testDataPath string,
+	upArgs ...string,
+) (string, *provider2.Workspace, error) {
 	tempDir, err := setupWorkspace(testDataPath, tc.initialDir, tc.f)
 	if err != nil {
 		return "", nil, err
@@ -57,7 +64,10 @@ func (tc *testContext) setupAndStartWorkspace(ctx context.Context, testDataPath 
 	return tempDir, workspace, err
 }
 
-func (tc *testContext) getAppContainer(ctx context.Context, workspace *provider2.Workspace) ([]string, *container.InspectResponse, error) {
+func (tc *testContext) getAppContainer(
+	ctx context.Context,
+	workspace *provider2.Workspace,
+) ([]string, *container.InspectResponse, error) {
 	ids, err := findComposeContainer(ctx, tc.dockerHelper, tc.composeHelper, workspace.UID, "app")
 	if err != nil || len(ids) == 0 {
 		return ids, nil, err
@@ -66,7 +76,11 @@ func (tc *testContext) getAppContainer(ctx context.Context, workspace *provider2
 	return ids, detail, err
 }
 
-func (tc *testContext) verifyWorkspaceMount(ctx context.Context, workspace *provider2.Workspace, tempDir string) error {
+func (tc *testContext) verifyWorkspaceMount(
+	ctx context.Context,
+	workspace *provider2.Workspace,
+	tempDir string,
+) error {
 	_, detail, err := tc.getAppContainer(ctx, workspace)
 	if err != nil {
 		return err
@@ -96,21 +110,35 @@ func setupDockerProvider(binDir, dockerPath string) (*framework.Framework, error
 	return f, f.DevPodProviderUse(context.Background(), "docker")
 }
 
-func findComposeContainer(ctx context.Context, dockerHelper *docker.DockerHelper, composeHelper *compose.ComposeHelper, workspaceUID, serviceName string) ([]string, error) {
+func findComposeContainer(
+	ctx context.Context,
+	dockerHelper *docker.DockerHelper,
+	composeHelper *compose.ComposeHelper,
+	workspaceUID, serviceName string,
+) ([]string, error) {
 	return dockerHelper.FindContainer(ctx, []string{
 		fmt.Sprintf("%s=%s", compose.ProjectLabel, composeHelper.GetProjectName(workspaceUID)),
 		fmt.Sprintf("%s=%s", compose.ServiceLabel, serviceName),
 	})
 }
 
-func devPodUpAndFindWorkspace(ctx context.Context, f *framework.Framework, tempDir string, args ...string) (*provider2.Workspace, error) {
+func devPodUpAndFindWorkspace(
+	ctx context.Context,
+	f *framework.Framework,
+	tempDir string,
+	args ...string,
+) (*provider2.Workspace, error) {
 	if err := f.DevPodUp(ctx, append([]string{tempDir}, args...)...); err != nil {
 		return nil, err
 	}
 	return f.FindWorkspace(ctx, tempDir)
 }
 
-func getContainerUID(ctx context.Context, f *framework.Framework, workspaceDir, username string) int {
+func getContainerUID(
+	ctx context.Context,
+	f *framework.Framework,
+	workspaceDir, username string,
+) int {
 	out, err := f.DevPodSSH(ctx, workspaceDir, fmt.Sprintf("id -u %s", username))
 	framework.ExpectNoError(err)
 	uid, err := strconv.Atoi(strings.TrimSpace(out))
@@ -118,7 +146,11 @@ func getContainerUID(ctx context.Context, f *framework.Framework, workspaceDir, 
 	return uid
 }
 
-func getContainerGID(ctx context.Context, f *framework.Framework, workspaceDir, username string) int {
+func getContainerGID(
+	ctx context.Context,
+	f *framework.Framework,
+	workspaceDir, username string,
+) int {
 	out, err := f.DevPodSSH(ctx, workspaceDir, fmt.Sprintf("id -g %s", username))
 	framework.ExpectNoError(err)
 	gid, err := strconv.Atoi(strings.TrimSpace(out))
@@ -126,32 +158,49 @@ func getContainerGID(ctx context.Context, f *framework.Framework, workspaceDir, 
 	return gid
 }
 
-func verifyContainerUser(ctx context.Context, f *framework.Framework, workspaceDir, expectedUser string) {
+func verifyContainerUser(
+	ctx context.Context,
+	f *framework.Framework,
+	workspaceDir, expectedUser string,
+) {
 	out, err := f.DevPodSSH(ctx, workspaceDir, "whoami")
 	framework.ExpectNoError(err)
 	ginkgo.By(fmt.Sprintf("container user %s", strings.TrimSpace(out)))
-	gomega.Expect(strings.TrimSpace(out)).To(gomega.Equal(expectedUser), fmt.Sprintf("remote container user should be %s", expectedUser))
+	gomega.Expect(strings.TrimSpace(out)).
+		To(gomega.Equal(expectedUser), fmt.Sprintf("remote container user should be %s", expectedUser))
 }
 
-func verifyUIDMapping(containerUID, containerGID, hostUID, hostGID, defaultUID, defaultGID int, username string) {
-	ginkgo.By(fmt.Sprintf("container UID mapping: %s=%d, expected=%d", username, containerUID, hostUID))
-	ginkgo.By(fmt.Sprintf("container GID mapping: %s=%d, expected=%d", username, containerGID, hostGID))
+func verifyUIDMapping(
+	containerUID, containerGID, hostUID, hostGID, defaultUID, defaultGID int,
+	username string,
+) {
+	ginkgo.By(
+		fmt.Sprintf("container UID mapping: %s=%d, expected=%d", username, containerUID, hostUID),
+	)
+	ginkgo.By(
+		fmt.Sprintf("container GID mapping: %s=%d, expected=%d", username, containerGID, hostGID),
+	)
 
 	if hostUID == 0 {
 		ginkgo.By("running as root user on host")
-		gomega.Expect(containerUID).To(gomega.Equal(defaultUID), fmt.Sprintf("%s user UID should remain %d when host is root", username, defaultUID))
-		gomega.Expect(containerGID).To(gomega.Equal(defaultGID), fmt.Sprintf("%s user GID should remain %d when host is root", username, defaultGID))
+		gomega.Expect(containerUID).
+			To(gomega.Equal(defaultUID), fmt.Sprintf("%s user UID should remain %d when host is root", username, defaultUID))
+		gomega.Expect(containerGID).
+			To(gomega.Equal(defaultGID), fmt.Sprintf("%s user GID should remain %d when host is root", username, defaultGID))
 	} else {
 		ginkgo.By("running as non-root user on host")
-		gomega.Expect(containerUID).To(gomega.Equal(hostUID), fmt.Sprintf("%s user UID should match host user UID", username))
-		gomega.Expect(containerGID).To(gomega.Equal(hostGID), fmt.Sprintf("%s user GID should match host user GID", username))
+		gomega.Expect(containerUID).
+			To(gomega.Equal(hostUID), fmt.Sprintf("%s user UID should match host user UID", username))
+		gomega.Expect(containerGID).
+			To(gomega.Equal(hostGID), fmt.Sprintf("%s user GID should match host user GID", username))
 	}
 }
 
 func verifyHostFileAccess(filePath, expectedContent string) {
 	content, err := os.ReadFile(filePath)
 	framework.ExpectNoError(err)
-	gomega.Expect(string(content)).To(gomega.ContainSubstring(expectedContent), "host file should be accessible to host user")
+	gomega.Expect(string(content)).
+		To(gomega.ContainSubstring(expectedContent), "host file should be accessible to host user")
 }
 
 func verifyHostFileOwnership(filePath string, expectedUID, expectedGID int, isRootHost bool) {
@@ -160,9 +209,17 @@ func verifyHostFileOwnership(filePath string, expectedUID, expectedGID int, isRo
 	stat := info.Sys().(*syscall.Stat_t)
 
 	if isRootHost {
-		ginkgo.By(fmt.Sprintf("Host file ownership: uid=%d, gid=%d (container user owns files when host is root)", int(stat.Uid), int(stat.Gid)))
+		ginkgo.By(
+			fmt.Sprintf(
+				"Host file ownership: uid=%d, gid=%d (container user owns files when host is root)",
+				int(stat.Uid),
+				int(stat.Gid),
+			),
+		)
 	} else {
-		gomega.Expect(int(stat.Uid)).To(gomega.Equal(expectedUID), "host file UID should match expected UID")
-		gomega.Expect(int(stat.Gid)).To(gomega.Equal(expectedGID), "host file GID should match expected GID")
+		gomega.Expect(int(stat.Uid)).
+			To(gomega.Equal(expectedUID), "host file UID should match expected UID")
+		gomega.Expect(int(stat.Gid)).
+			To(gomega.Equal(expectedGID), "host file GID should match expected GID")
 	}
 }

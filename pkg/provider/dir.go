@@ -132,7 +132,13 @@ func GetProInstanceDir(context, proInstanceHost string) (string, error) {
 		return "", err
 	}
 
-	return filepath.Join(configDir, "contexts", context, "pro", ToProInstanceID(proInstanceHost)), nil
+	return filepath.Join(
+		configDir,
+		"contexts",
+		context,
+		"pro",
+		ToProInstanceID(proInstanceHost),
+	), nil
 }
 
 var (

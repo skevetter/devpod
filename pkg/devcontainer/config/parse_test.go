@@ -236,14 +236,18 @@ func TestParseDevContainerJSONWithSelector(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		config, err := ParseDevContainerJSONWithSelector(tmpDir, "", func(matches []string) (string, error) {
-			for _, match := range matches {
-				if filepath.Base(filepath.Dir(match)) == "python" {
-					return match, nil
+		config, err := ParseDevContainerJSONWithSelector(
+			tmpDir,
+			"",
+			func(matches []string) (string, error) {
+				for _, match := range matches {
+					if filepath.Base(filepath.Dir(match)) == "python" {
+						return match, nil
+					}
 				}
-			}
-			return "", errors.New("not found")
-		})
+				return "", errors.New("not found")
+			},
+		)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -304,9 +308,13 @@ func TestParseDevContainerJSONWithSelector(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		_, err := ParseDevContainerJSONWithSelector(tmpDir, "", func(matches []string) (string, error) {
-			return "", errors.New("selector failed")
-		})
+		_, err := ParseDevContainerJSONWithSelector(
+			tmpDir,
+			"",
+			func(matches []string) (string, error) {
+				return "", errors.New("selector failed")
+			},
+		)
 		if err == nil || err.Error() != "selector failed" {
 			t.Errorf("expected selector error, got %v", err)
 		}

@@ -45,7 +45,12 @@ func NewWorkspaceCmd(globalFlags *flags.GlobalFlags) *cobra.Command {
 	return c
 }
 
-func (cmd *WorkspaceCmd) Run(ctx context.Context, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
+func (cmd *WorkspaceCmd) Run(
+	ctx context.Context,
+	stdin io.Reader,
+	stdout io.Writer,
+	stderr io.Writer,
+) error {
 	baseClient, err := client.InitClientFromPath(ctx, cmd.Config)
 	if err != nil {
 		return err
@@ -68,7 +73,11 @@ func (cmd *WorkspaceCmd) Run(ctx context.Context, stdin io.Reader, stdout io.Wri
 			return err
 		}
 		if oldInstance == nil {
-			return fmt.Errorf("workspace instance %q not found in project %q", newInstance.GetName(), projectName)
+			return fmt.Errorf(
+				"workspace instance %q not found in project %q",
+				newInstance.GetName(),
+				projectName,
+			)
 		}
 
 		updatedInstance, err := updateInstance(ctx, baseClient, oldInstance, newInstance, cmd.Log)
@@ -93,7 +102,12 @@ func (cmd *WorkspaceCmd) Run(ctx context.Context, stdin io.Reader, stdout io.Wri
 	workspaceUID := os.Getenv(platform.WorkspaceUIDEnv)
 	project := os.Getenv(platform.ProjectEnv)
 	if workspaceUID == "" || workspaceID == "" || project == "" {
-		return fmt.Errorf("workspaceID, workspaceUID or project not found: %s, %s, %s", workspaceID, workspaceUID, project)
+		return fmt.Errorf(
+			"workspaceID, workspaceUID or project not found: %s, %s, %s",
+			workspaceID,
+			workspaceUID,
+			project,
+		)
 	}
 
 	opts := platform.FindInstanceOptions{UID: workspaceUID, ProjectName: project}
@@ -102,7 +116,11 @@ func (cmd *WorkspaceCmd) Run(ctx context.Context, stdin io.Reader, stdout io.Wri
 		return err
 	}
 	if oldInstance == nil {
-		return fmt.Errorf("workspace instance with UID %q not found in project %q", workspaceUID, project)
+		return fmt.Errorf(
+			"workspace instance with UID %q not found in project %q",
+			workspaceUID,
+			project,
+		)
 	}
 
 	newInstance, err := form.UpdateInstance(ctx, baseClient, oldInstance, cmd.Log)
@@ -118,7 +136,13 @@ func (cmd *WorkspaceCmd) Run(ctx context.Context, stdin io.Reader, stdout io.Wri
 	return nil
 }
 
-func updateInstance(ctx context.Context, client client.Client, oldInstance *managementv1.DevPodWorkspaceInstance, newInstance *managementv1.DevPodWorkspaceInstance, log log.Logger) (*managementv1.DevPodWorkspaceInstance, error) {
+func updateInstance(
+	ctx context.Context,
+	client client.Client,
+	oldInstance *managementv1.DevPodWorkspaceInstance,
+	newInstance *managementv1.DevPodWorkspaceInstance,
+	log log.Logger,
+) (*managementv1.DevPodWorkspaceInstance, error) {
 	// This ensures the template is kept up to date with configuration changes
 	if newInstance.Spec.TemplateRef != nil {
 		newInstance.Spec.TemplateRef.SyncOnce = true

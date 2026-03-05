@@ -18,7 +18,14 @@ import (
 	"mvdan.cc/sh/v3/syntax"
 )
 
-func RunEmulatedShell(ctx context.Context, command string, stdin io.Reader, stdout io.Writer, stderr io.Writer, env []string) error {
+func RunEmulatedShell(
+	ctx context.Context,
+	command string,
+	stdin io.Reader,
+	stdout io.Writer,
+	stderr io.Writer,
+	env []string,
+) error {
 	command = strings.ReplaceAll(command, "\r", "")
 
 	// Let's parse the complete command
@@ -51,13 +58,15 @@ func RunEmulatedShell(ctx context.Context, command string, stdin io.Reader, stdo
 				return defaultExecHandler(ctx, args)
 			}
 		}),
-		interp.OpenHandler(func(ctx context.Context, path string, flag int, perm os.FileMode) (io.ReadWriteCloser, error) {
-			if path == "/dev/null" {
-				return devNull{}, nil
-			}
+		interp.OpenHandler(
+			func(ctx context.Context, path string, flag int, perm os.FileMode) (io.ReadWriteCloser, error) {
+				if path == "/dev/null" {
+					return devNull{}, nil
+				}
 
-			return defaultOpenHandler(ctx, path, flag, perm)
-		}),
+				return defaultOpenHandler(ctx, path, flag, perm)
+			},
+		),
 	}
 
 	// Create shell runner

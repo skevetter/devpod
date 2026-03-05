@@ -35,7 +35,11 @@ func (w *WebsocketConn) setupDeadline() {
 	_ = w.ws.SetReadDeadline(time.Now().Add(PingWaitDuration))
 	w.ws.SetPingHandler(func(string) error {
 		w.m.Lock()
-		err := w.ws.WriteControl(websocket.PongMessage, []byte(""), time.Now().Add(PingWaitDuration))
+		err := w.ws.WriteControl(
+			websocket.PongMessage,
+			[]byte(""),
+			time.Now().Add(PingWaitDuration),
+		)
 		w.m.Unlock()
 		if err != nil {
 			return err

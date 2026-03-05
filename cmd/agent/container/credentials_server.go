@@ -55,9 +55,13 @@ func NewCredentialsServerCmd(flags *flags.GlobalFlags) *cobra.Command {
 			return cmd.Run(c.Context(), port)
 		},
 	}
-	credentialsServerCmd.Flags().BoolVar(&cmd.ConfigureGitHelper, "configure-git-helper", false, "If true will configure git helper")
-	credentialsServerCmd.Flags().BoolVar(&cmd.ConfigureDockerHelper, "configure-docker-helper", false, "If true will configure docker helper")
-	credentialsServerCmd.Flags().BoolVar(&cmd.ForwardPorts, "forward-ports", false, "If true will automatically try to forward open ports within the container")
+	credentialsServerCmd.Flags().
+		BoolVar(&cmd.ConfigureGitHelper, "configure-git-helper", false, "If true will configure git helper")
+	credentialsServerCmd.Flags().
+		BoolVar(&cmd.ConfigureDockerHelper, "configure-docker-helper", false, "If true will configure docker helper")
+	credentialsServerCmd.Flags().
+		BoolVar(&cmd.ForwardPorts, "forward-ports", false,
+			"If true will automatically try to forward open ports within the container")
 	credentialsServerCmd.Flags().StringVar(&cmd.GitUserSigningKey, "git-user-signing-key", "", "")
 	credentialsServerCmd.Flags().StringVar(&cmd.User, "user", "", "The user to use")
 	_ = credentialsServerCmd.MarkFlagRequired("user")
@@ -151,7 +155,11 @@ func (cmd *CredentialsServerCmd) Run(ctx context.Context, port int) error {
 	return credentials.RunCredentialsServer(ctx, port, tunnelClient, log)
 }
 
-func configureGitUserLocally(ctx context.Context, userName string, client tunnel.TunnelClient) error {
+func configureGitUserLocally(
+	ctx context.Context,
+	userName string,
+	client tunnel.TunnelClient,
+) error {
 	// get local credentials
 	localGitUser, err := gitcredentials.GetUser(userName)
 	if err != nil {

@@ -28,8 +28,18 @@ var PyCharmOptions = ide.Options{
 	},
 }
 
-func NewPyCharmServer(userName string, values map[string]config.OptionValue, log log.Logger) *GenericJetBrainsServer {
-	amd64Download, arm64Download := getDownloadURLs(PyCharmOptions, values, PycharmProductCode, PycharmDownloadAmd64Template, PycharmDownloadArm64Template)
+func NewPyCharmServer(
+	userName string,
+	values map[string]config.OptionValue,
+	log log.Logger,
+) *GenericJetBrainsServer {
+	amd64Download, arm64Download := getDownloadURLs(
+		PyCharmOptions,
+		values,
+		PycharmProductCode,
+		PycharmDownloadAmd64Template,
+		PycharmDownloadArm64Template,
+	)
 	return newGenericServer(userName, &GenericOptions{
 		ID:            "pycharm",
 		DisplayName:   "PyCharm",

@@ -77,41 +77,55 @@ func (cmd *PasswordCmd) Run() error {
 
 	// get user
 	cmd.Log.Infof("Resetting password of user %s", cmd.User)
-	user, err := managementClient.Loft().StorageV1().Users().Get(context.Background(), cmd.User, metav1.GetOptions{})
+	user, err := managementClient.Loft().
+		StorageV1().
+		Users().
+		Get(context.Background(), cmd.User, metav1.GetOptions{})
 	if err != nil && !kerrors.IsNotFound(err) {
 		return fmt.Errorf("get user: %w", err)
 	} else if kerrors.IsNotFound(err) {
 		// create user
 		if !cmd.Create {
-			return fmt.Errorf("user %s was not found, run with '--create' to create this user automatically", cmd.User)
+			return fmt.Errorf(
+				"user %s was not found, run with '--create' to create this user automatically",
+				cmd.User,
+			)
 		}
 
-		user, err = managementClient.Loft().StorageV1().Users().Create(context.Background(), &storagev1.User{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: cmd.User,
-			},
-			Spec: storagev1.UserSpec{
-				Username: cmd.User,
-				Subject:  cmd.User,
-				Groups: []string{
-					"system:masters",
+		user, err = managementClient.Loft().
+			StorageV1().
+			Users().
+			Create(context.Background(), &storagev1.User{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: cmd.User,
 				},
-				PasswordRef: &storagev1.SecretRef{
-					SecretName:      "loft-password-" + random.String(5),
-					SecretNamespace: "loft",
-					Key:             "password",
+				Spec: storagev1.UserSpec{
+					Username: cmd.User,
+					Subject:  cmd.User,
+					Groups: []string{
+						"system:masters",
+					},
+					PasswordRef: &storagev1.SecretRef{
+						SecretName:      "loft-password-" + random.String(5),
+						SecretNamespace: "loft",
+						Key:             "password",
+					},
 				},
-			},
-		}, metav1.CreateOptions{})
+			}, metav1.CreateOptions{})
 		if err != nil {
 			return err
 		}
 	}
 
 	// check if user had a password before
-	if user.Spec.PasswordRef == nil || user.Spec.PasswordRef.SecretName == "" || user.Spec.PasswordRef.SecretNamespace == "" || user.Spec.PasswordRef.Key == "" {
+	if user.Spec.PasswordRef == nil || user.Spec.PasswordRef.SecretName == "" ||
+		user.Spec.PasswordRef.SecretNamespace == "" ||
+		user.Spec.PasswordRef.Key == "" {
 		if !cmd.Force {
-			return fmt.Errorf("user %s had no password. If you want to force password creation, please run with the '--force' flag", cmd.User)
+			return fmt.Errorf(
+				"user %s had no password. If you want to force password creation, please run with the '--force' flag",
+				cmd.User,
+			)
 		}
 
 		user.Spec.PasswordRef = &storagev1.SecretRef{
@@ -119,7 +133,10 @@ func (cmd *PasswordCmd) Run() error {
 			SecretNamespace: "loft",
 			Key:             "password",
 		}
-		user, err = managementClient.Loft().StorageV1().Users().Update(context.Background(), user, metav1.UpdateOptions{})
+		user, err = managementClient.Loft().
+			StorageV1().
+			Users().
+			Update(context.Background(), user, metav1.UpdateOptions{})
 		if err != nil {
 			return fmt.Errorf("update user: %w", err)
 		}
@@ -147,19 +164,23 @@ func (cmd *PasswordCmd) Run() error {
 	passwordHash := fmt.Appendf(nil, "%x", sha256.Sum256([]byte(password)))
 
 	// check if secret exists
-	passwordSecret, err := managementClient.CoreV1().Secrets(user.Spec.PasswordRef.SecretNamespace).Get(context.Background(), user.Spec.PasswordRef.SecretName, metav1.GetOptions{})
+	passwordSecret, err := managementClient.CoreV1().
+		Secrets(user.Spec.PasswordRef.SecretNamespace).
+		Get(context.Background(), user.Spec.PasswordRef.SecretName, metav1.GetOptions{})
 	if err != nil && !kerrors.IsNotFound(err) {
 		return err
 	} else if kerrors.IsNotFound(err) {
-		_, err = managementClient.CoreV1().Secrets(user.Spec.PasswordRef.SecretNamespace).Create(context.Background(), &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      user.Spec.PasswordRef.SecretName,
-				Namespace: user.Spec.PasswordRef.SecretNamespace,
-			},
-			Data: map[string][]byte{
-				user.Spec.PasswordRef.Key: passwordHash,
-			},
-		}, metav1.CreateOptions{})
+		_, err = managementClient.CoreV1().
+			Secrets(user.Spec.PasswordRef.SecretNamespace).
+			Create(context.Background(), &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      user.Spec.PasswordRef.SecretName,
+					Namespace: user.Spec.PasswordRef.SecretNamespace,
+				},
+				Data: map[string][]byte{
+					user.Spec.PasswordRef.Key: passwordHash,
+				},
+			}, metav1.CreateOptions{})
 		if err != nil {
 			return fmt.Errorf("create password secret: %w", err)
 		}
@@ -168,7 +189,9 @@ func (cmd *PasswordCmd) Run() error {
 			passwordSecret.Data = map[string][]byte{}
 		}
 		passwordSecret.Data[user.Spec.PasswordRef.Key] = passwordHash
-		_, err = managementClient.CoreV1().Secrets(user.Spec.PasswordRef.SecretNamespace).Update(context.Background(), passwordSecret, metav1.UpdateOptions{})
+		_, err = managementClient.CoreV1().
+			Secrets(user.Spec.PasswordRef.SecretNamespace).
+			Update(context.Background(), passwordSecret, metav1.UpdateOptions{})
 		if err != nil {
 			return fmt.Errorf("update password secret: %w", err)
 		}

@@ -58,7 +58,10 @@ FROM ${BASE_IMAGE}:${BASE_VERSION}`
 	d, err := Parse(dockerfile)
 	s.NoError(err)
 
-	baseImage := d.FindBaseImage(map[string]string{"BASE_IMAGE": "alpine", "BASE_VERSION": "3.18"}, "")
+	baseImage := d.FindBaseImage(
+		map[string]string{"BASE_IMAGE": "alpine", "BASE_VERSION": "3.18"},
+		"",
+	)
 	s.Equal("alpine:3.18", baseImage)
 
 	baseImage = d.FindBaseImage(map[string]string{}, "")
@@ -245,13 +248,21 @@ USER $FINAL_USER`
 	d, err := Parse(dockerfile)
 	s.NoError(err)
 
-	user := d.FindUserStatement(map[string]string{"FINAL_USER": "testfinal"}, map[string]string{}, "")
+	user := d.FindUserStatement(
+		map[string]string{"FINAL_USER": "testfinal"},
+		map[string]string{},
+		"",
+	)
 	s.Equal("testfinal", user)
 
 	user = d.FindUserStatement(map[string]string{}, map[string]string{}, "middle")
 	s.Equal("middleuser", user)
 
-	user = d.FindUserStatement(map[string]string{"BASE_USER": "testbase"}, map[string]string{}, "base")
+	user = d.FindUserStatement(
+		map[string]string{"BASE_USER": "testbase"},
+		map[string]string{},
+		"base",
+	)
 	s.Equal("testbase", user)
 }
 
@@ -331,6 +342,9 @@ FROM ${REGISTRY}/${IMAGE}:${TAG}`
 	d, err := Parse(dockerfile)
 	s.NoError(err)
 
-	baseImage := d.FindBaseImage(map[string]string{"REGISTRY": "gcr.io", "IMAGE": "my/image", "TAG": "latest"}, "")
+	baseImage := d.FindBaseImage(
+		map[string]string{"REGISTRY": "gcr.io", "IMAGE": "my/image", "TAG": "latest"},
+		"",
+	)
 	s.Equal("gcr.io/my/image:latest", baseImage)
 }

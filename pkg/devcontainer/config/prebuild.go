@@ -148,7 +148,10 @@ func readDockerignore(contextDir string, dockerfile string) ([]string, error) {
 	return ensureDockerIgnoreAndDockerFile(excludes, dockerfile, dockerignorefilepath), nil
 }
 
-func ensureDockerIgnoreAndDockerFile(excludes []string, dockerfile, dockerignorefilepath string) []string {
+func ensureDockerIgnoreAndDockerFile(
+	excludes []string,
+	dockerfile, dockerignorefilepath string,
+) []string {
 	_, dockerignorefile := filepath.Split(dockerignorefilepath)
 	if keep, _ := patternmatcher.MatchesOrParentMatches(dockerignorefile, excludes); keep {
 		excludes = append(excludes, "!"+dockerignorefile)

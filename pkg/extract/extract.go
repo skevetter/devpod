@@ -165,5 +165,8 @@ func extractNext(tarReader *tar.Reader, destFolder string, options *Options) (bo
 }
 
 func getRelativeFromFullPath(fullpath string, prefix string) string {
-	return strings.TrimPrefix(strings.ReplaceAll(strings.ReplaceAll(fullpath[len(prefix):], "\\", "/"), "//", "/"), ".")
+	return strings.TrimPrefix(
+		strings.ReplaceAll(strings.ReplaceAll(fullpath[len(prefix):], "\\", "/"), "//", "/"),
+		".",
+	)
 }

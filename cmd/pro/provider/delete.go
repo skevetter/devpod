@@ -40,7 +40,12 @@ func NewDeleteCmd(globalFlags *flags.GlobalFlags) *cobra.Command {
 	return c
 }
 
-func (cmd *DeleteCmd) Run(ctx context.Context, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
+func (cmd *DeleteCmd) Run(
+	ctx context.Context,
+	stdin io.Reader,
+	stdout io.Writer,
+	stderr io.Writer,
+) error {
 	baseClient, err := client.InitClientFromPath(ctx, cmd.Config)
 	if err != nil {
 		return err
@@ -63,7 +68,10 @@ func (cmd *DeleteCmd) Run(ctx context.Context, stdin io.Reader, stdout io.Writer
 		return err
 	}
 
-	err = managementClient.Loft().ManagementV1().DevPodWorkspaceInstances(workspace.Namespace).Delete(ctx, workspace.Name, metav1.DeleteOptions{})
+	err = managementClient.Loft().
+		ManagementV1().
+		DevPodWorkspaceInstances(workspace.Namespace).
+		Delete(ctx, workspace.Name, metav1.DeleteOptions{})
 	if err != nil {
 		return fmt.Errorf("delete workspace: %w", err)
 	}

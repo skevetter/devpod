@@ -144,7 +144,11 @@ func setupOptionalFeatures(ctx context.Context, cfg *ContainerSetupConfig) {
 	}
 
 	if cfg.PlatformOptions != nil {
-		if err := setupPlatformGitCredentials(config.GetRemoteUser(cfg.SetupInfo), cfg.PlatformOptions, cfg.Log); err != nil {
+		if err := setupPlatformGitCredentials(
+			config.GetRemoteUser(cfg.SetupInfo),
+			cfg.PlatformOptions,
+			cfg.Log,
+		); err != nil {
 			cfg.Log.Errorf("setup platform git credentials: %v", err)
 		}
 	}
@@ -228,7 +232,8 @@ func patchEtcProfile() error {
 		return nil
 	}
 
-	out, err := exec.Command("sh", "-c", `sed -i -E 's/((^|\s)PATH=)([^\$]*)$/\1${PATH:-\3}/g' /etc/profile || true`).CombinedOutput()
+	out, err := exec.Command("sh", "-c", `sed -i -E 's/((^|\s)PATH=)([^\$]*)$/\1${PATH:-\3}/g' /etc/profile || true`).
+		CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("create remote environment: %v: %w", string(out), err)
 	}
@@ -335,7 +340,11 @@ func shouldSkipKubeConfig(tunnelClient tunnel.TunnelClient, log log.Logger) bool
 	info, err := os.Stat(markerPath)
 	if err == nil {
 		if info.Mode().Perm()&0o022 != 0 {
-			log.Warnf("ignoring insecure marker permissions: %s (%#o)", markerPath, info.Mode().Perm())
+			log.Warnf(
+				"ignoring insecure marker permissions: %s (%#o)",
+				markerPath,
+				info.Mode().Perm(),
+			)
 			return false
 		}
 		return true
@@ -354,7 +363,10 @@ func writeKubeConfig(setupInfo *config.Result, configData string) error {
 	}
 
 	kubeDir := filepath.Join(homeDir, ".kube")
-	if err := os.MkdirAll(kubeDir, 0o700); err != nil { // #nosec G301 -- kube directory should be user-private
+	if err := os.MkdirAll(
+		kubeDir,
+		0o700,
+	); err != nil { // #nosec G301 -- kube directory should be user-private
 		return err
 	}
 
@@ -415,7 +427,10 @@ func markerFileExists(markerName string, markerContent string) (bool, error) {
 	}
 
 	// write marker
-	_ = os.MkdirAll(filepath.Dir(markerName), 0o755) // #nosec G301 -- Standard directory permissions
+	_ = os.MkdirAll(
+		filepath.Dir(markerName),
+		0o755,
+	) // #nosec G301 -- Standard directory permissions
 	err = os.WriteFile(markerName, []byte(markerContent), 0o600)
 	if err != nil {
 		return false, fmt.Errorf("write marker: %w", err)
@@ -424,14 +439,19 @@ func markerFileExists(markerName string, markerContent string) (bool, error) {
 	return false, nil
 }
 
-func setupPlatformGitCredentials(userName string, platformOptions *devpod.PlatformOptions, log log.Logger) error {
+func setupPlatformGitCredentials(
+	userName string,
+	platformOptions *devpod.PlatformOptions,
+	log log.Logger,
+) error {
 	// platform is not enabled, skip
 	if !platformOptions.Enabled {
 		return nil
 	}
 
 	// setup platform git user
-	if platformOptions.UserCredentials.GitUser != "" && platformOptions.UserCredentials.GitEmail != "" {
+	if platformOptions.UserCredentials.GitUser != "" &&
+		platformOptions.UserCredentials.GitEmail != "" {
 		gitUser, err := gitcredentials.GetUser(userName)
 		if err == nil && gitUser.Name == "" && gitUser.Email == "" {
 			log.Info("Setup workspace git user and email")
@@ -460,7 +480,11 @@ func setupPlatformGitCredentials(userName string, platformOptions *devpod.Platfo
 	return nil
 }
 
-func setupPlatformGitHTTPCredentials(userName string, platformOptions *devpod.PlatformOptions, log log.Logger) error {
+func setupPlatformGitHTTPCredentials(
+	userName string,
+	platformOptions *devpod.PlatformOptions,
+	log log.Logger,
+) error {
 	if !platformOptions.Enabled || len(platformOptions.UserCredentials.GitHttp) == 0 {
 		return nil
 	}
@@ -478,7 +502,11 @@ func setupPlatformGitHTTPCredentials(userName string, platformOptions *devpod.Pl
 	return nil
 }
 
-func setupPlatformGitSSHKeys(userName string, platformOptions *devpod.PlatformOptions, log log.Logger) error {
+func setupPlatformGitSSHKeys(
+	userName string,
+	platformOptions *devpod.PlatformOptions,
+	log log.Logger,
+) error {
 	if !platformOptions.Enabled || len(platformOptions.UserCredentials.GitSsh) == 0 {
 		return nil
 	}

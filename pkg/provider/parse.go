@@ -68,7 +68,11 @@ func validate(config *ProviderConfig) error {
 	// validate option names
 	for optionName, optionValue := range config.Options {
 		if optionNameRegEx.MatchString(optionName) {
-			return fmt.Errorf("provider option '%s' can only consist of upper case letters, numbers or underscores. E.g. MY_OPTION, MY_OTHER_OPTION", optionName)
+			return fmt.Errorf(
+				"provider option '%s' can only consist of upper case letters, numbers or underscores. "+
+					"E.g. MY_OPTION, MY_OTHER_OPTION",
+				optionName,
+			)
 		}
 
 		// validate option validation
@@ -83,7 +87,10 @@ func validate(config *ProviderConfig) error {
 		}
 
 		if optionValue.Default != "" && optionValue.Command != "" {
-			return fmt.Errorf("default and command cannot be used together in option '%s'", optionName)
+			return fmt.Errorf(
+				"default and command cannot be used together in option '%s'",
+				optionName,
+			)
 		}
 
 		if optionValue.Global && optionValue.Cache != "" {
@@ -91,7 +98,10 @@ func validate(config *ProviderConfig) error {
 		}
 
 		if optionValue.Global && optionValue.Mutable {
-			return fmt.Errorf("global and mutable cannot be used together in option '%s'", optionName)
+			return fmt.Errorf(
+				"global and mutable cannot be used together in option '%s'",
+				optionName,
+			)
 		}
 
 		if optionValue.Cache != "" {
@@ -102,7 +112,11 @@ func validate(config *ProviderConfig) error {
 		}
 
 		if optionValue.Type != "" && !contains(allowedTypes, optionValue.Type) {
-			return fmt.Errorf("type can only be one of in option '%s': %v", optionName, allowedTypes)
+			return fmt.Errorf(
+				"type can only be one of in option '%s': %v",
+				optionName,
+				allowedTypes,
+			)
 		}
 
 		if optionValue.Cache != "" && optionValue.Command == "" {
@@ -214,7 +228,9 @@ func validateStandardProvider(config *ProviderConfig) error {
 }
 
 func validateAgentDriver(config *ProviderConfig) error {
-	if config.Agent.Driver != "" && config.Agent.Driver != CustomDriver && config.Agent.Driver != DockerDriver && config.Agent.Driver != KubernetesDriver {
+	if config.Agent.Driver != "" && config.Agent.Driver != CustomDriver &&
+		config.Agent.Driver != DockerDriver &&
+		config.Agent.Driver != KubernetesDriver {
 		return fmt.Errorf("agent.driver can only be docker, kubernetes or custom")
 	}
 
@@ -250,11 +266,21 @@ func validateExecCommands(config *ProviderConfig) error {
 		return fmt.Errorf("exec.command is required")
 	}
 
-	if err := validateExecPair("exec.create", "exec.delete", config.Exec.Create, config.Exec.Delete); err != nil {
+	if err := validateExecPair(
+		"exec.create",
+		"exec.delete",
+		config.Exec.Create,
+		config.Exec.Delete,
+	); err != nil {
 		return err
 	}
 
-	if err := validateExecPair("exec.start", "exec.stop", config.Exec.Start, config.Exec.Stop); err != nil {
+	if err := validateExecPair(
+		"exec.start",
+		"exec.stop",
+		config.Exec.Start,
+		config.Exec.Stop,
+	); err != nil {
 		return err
 	}
 
@@ -291,18 +317,34 @@ func validateOptionGroups(config *ProviderConfig) error {
 func validateBinaries(prefix string, binaries map[string][]*ProviderBinary) error {
 	for binaryName, binaryArr := range binaries {
 		if optionNameRegEx.MatchString(binaryName) {
-			return fmt.Errorf("binary name '%s' can only consist of upper case letters, numbers or underscores. E.g. MY_BINARY, KUBECTL", binaryName)
+			return fmt.Errorf(
+				"binary name '%s' can only consist of upper case letters, numbers or underscores. E.g. MY_BINARY, KUBECTL",
+				binaryName,
+			)
 		}
 
 		for _, binary := range binaryArr {
 			if binary.OS != "linux" && binary.OS != "darwin" && binary.OS != "windows" {
-				return fmt.Errorf("unsupported binary operating system '%s', must be 'linux', 'darwin' or 'windows'", binary.OS)
+				return fmt.Errorf(
+					"unsupported binary operating system '%s', must be 'linux', 'darwin' or 'windows'",
+					binary.OS,
+				)
 			}
 			if binary.Path == "" {
-				return fmt.Errorf("%s.%s.path required binary path, cannot be empty", prefix, binaryName)
+				return fmt.Errorf(
+					"%s.%s.path required binary path, cannot be empty",
+					prefix,
+					binaryName,
+				)
 			}
-			if binary.ArchivePath == "" && (strings.HasSuffix(binary.Path, ".gz") || strings.HasSuffix(binary.Path, ".tar") || strings.HasSuffix(binary.Path, ".tgz") || strings.HasSuffix(binary.Path, ".zip")) {
-				return fmt.Errorf("%s.%s.archivePath required because binary path is an archive", prefix, binaryName)
+			if binary.ArchivePath == "" &&
+				(strings.HasSuffix(binary.Path, ".gz") || strings.HasSuffix(binary.Path, ".tar") ||
+					strings.HasSuffix(binary.Path, ".tgz") || strings.HasSuffix(binary.Path, ".zip")) {
+				return fmt.Errorf(
+					"%s.%s.archivePath required because binary path is an archive",
+					prefix,
+					binaryName,
+				)
 			}
 			if binary.Arch == "" {
 				return fmt.Errorf("%s.%s.arch required, cannot be empty", prefix, binaryName)

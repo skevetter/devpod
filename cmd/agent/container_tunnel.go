@@ -42,8 +42,10 @@ func NewContainerTunnelCmd(flags *flags.GlobalFlags) *cobra.Command {
 		},
 	}
 
-	containerTunnelCmd.Flags().StringVar(&cmd.User, "user", "", "The user to create the tunnel with")
-	containerTunnelCmd.Flags().StringVar(&cmd.WorkspaceInfo, "workspace-info", "", "The workspace info")
+	containerTunnelCmd.Flags().
+		StringVar(&cmd.User, "user", "", "The user to create the tunnel with")
+	containerTunnelCmd.Flags().
+		StringVar(&cmd.WorkspaceInfo, "workspace-info", "", "The workspace info")
 	_ = containerTunnelCmd.MarkFlagRequired("workspace-info")
 	return containerTunnelCmd
 }
@@ -104,7 +106,12 @@ func (cmd *ContainerTunnelCmd) Run(ctx context.Context, log log.Logger) error {
 	return nil
 }
 
-func startDevContainer(ctx context.Context, workspaceConfig *provider2.AgentWorkspaceInfo, runner devcontainer.Runner, log log.Logger) error {
+func startDevContainer(
+	ctx context.Context,
+	workspaceConfig *provider2.AgentWorkspaceInfo,
+	runner devcontainer.Runner,
+	log log.Logger,
+) error {
 	containerDetails, err := runner.Find(ctx)
 	if err != nil {
 		return err
@@ -133,9 +140,18 @@ func startDevContainer(ctx context.Context, workspaceConfig *provider2.AgentWork
 	return nil
 }
 
-func StartContainer(ctx context.Context, runner devcontainer.Runner, log log.Logger, workspaceConfig *provider2.AgentWorkspaceInfo) (*config.Result, error) {
+func StartContainer(
+	ctx context.Context,
+	runner devcontainer.Runner,
+	log log.Logger,
+	workspaceConfig *provider2.AgentWorkspaceInfo,
+) (*config.Result, error) {
 	log.Debugf("starting DevPod container")
-	result, err := runner.Up(ctx, devcontainer.UpOptions{NoBuild: true}, workspaceConfig.InjectTimeout)
+	result, err := runner.Up(
+		ctx,
+		devcontainer.UpOptions{NoBuild: true},
+		workspaceConfig.InjectTimeout,
+	)
 	if err != nil {
 		return result, err
 	}

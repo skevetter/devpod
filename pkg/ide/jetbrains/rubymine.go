@@ -28,8 +28,18 @@ var RubyMineOptions = ide.Options{
 	},
 }
 
-func NewRubyMineServer(userName string, values map[string]config.OptionValue, log log.Logger) *GenericJetBrainsServer {
-	amd64Download, arm64Download := getDownloadURLs(RubyMineOptions, values, RubyMineProductCode, RubyMineDownloadAmd64Template, RubyMineDownloadArm64Template)
+func NewRubyMineServer(
+	userName string,
+	values map[string]config.OptionValue,
+	log log.Logger,
+) *GenericJetBrainsServer {
+	amd64Download, arm64Download := getDownloadURLs(
+		RubyMineOptions,
+		values,
+		RubyMineProductCode,
+		RubyMineDownloadAmd64Template,
+		RubyMineDownloadArm64Template,
+	)
 	return newGenericServer(userName, &GenericOptions{
 		ID:            "rubymine",
 		DisplayName:   "RubyMine",

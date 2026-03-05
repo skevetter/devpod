@@ -8,7 +8,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (k *KubernetesDriver) TargetArchitecture(ctx context.Context, workspaceId string) (string, error) {
+func (k *KubernetesDriver) TargetArchitecture(
+	ctx context.Context,
+	workspaceId string,
+) (string, error) {
 	if k.options.Architecture != "" {
 		return k.options.Architecture, nil
 	}
@@ -20,7 +23,10 @@ func (k *KubernetesDriver) TargetArchitecture(ctx context.Context, workspaceId s
 	nodes, err := k.client.Client().CoreV1().Nodes().List(ctx, metav1.ListOptions{})
 	if err != nil {
 		if kerrors.IsForbidden(err) {
-			return "", fmt.Errorf("you don't have permission to list nodes in the Kubernetes cluster, please set the cluster architecture manually via provider options")
+			return "", fmt.Errorf(
+				"you don't have permission to list nodes in the Kubernetes cluster, " +
+					"please set the cluster architecture manually via provider options",
+			)
 		}
 
 		return "", fmt.Errorf("list nodes: %w", err)
@@ -32,7 +38,9 @@ func (k *KubernetesDriver) TargetArchitecture(ctx context.Context, workspaceId s
 		if architecture == "" {
 			architecture = node.Status.NodeInfo.Architecture
 		} else if architecture != node.Status.NodeInfo.Architecture {
-			return "", fmt.Errorf("mixed architectures in the Kubernetes cluster, please set the cluster architecture manually via provider options")
+			return "", fmt.Errorf(
+				"mixed architectures in the Kubernetes cluster, please set the cluster architecture manually via provider options",
+			)
 		}
 	}
 

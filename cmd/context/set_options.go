@@ -38,7 +38,8 @@ func NewSetOptionsCmd(flags *flags.GlobalFlags) *cobra.Command {
 		},
 	}
 
-	setOptionsCmd.Flags().StringArrayVarP(&cmd.Options, "option", "o", []string{}, "context option in the form KEY=VALUE")
+	setOptionsCmd.Flags().
+		StringArrayVarP(&cmd.Options, "option", "o", []string{}, "context option in the form KEY=VALUE")
 	return setOptionsCmd
 }
 

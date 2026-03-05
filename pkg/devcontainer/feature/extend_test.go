@@ -92,7 +92,11 @@ func (suite *ExtendTestSuite) TestHasHardDependency() {
 
 	for _, testCase := range tests {
 		suite.Run(testCase.name, func() {
-			actualIsDuplicate := hasHardDependency(testCase.feature, testCase.originalID, testCase.normalizedID)
+			actualIsDuplicate := hasHardDependency(
+				testCase.feature,
+				testCase.originalID,
+				testCase.normalizedID,
+			)
 			suite.Equal(testCase.expectedIsDuplicate, actualIsDuplicate)
 		})
 	}
@@ -225,7 +229,13 @@ func (suite *ExtendTestSuite) TestComputeAutomaticFeatureOrder_ChainedDependenci
 	}
 	for i, expectedFeatureID := range expectedOrder {
 		if installationOrder[i].ConfigID != expectedFeatureID {
-			suite.Failf("Position mismatch", "Position %d: expected %s, got %s", i, expectedFeatureID, installationOrder[i].ConfigID)
+			suite.Failf(
+				"Position mismatch",
+				"Position %d: expected %s, got %s",
+				i,
+				expectedFeatureID,
+				installationOrder[i].ConfigID,
+			)
 		}
 	}
 }
@@ -290,8 +300,16 @@ func (suite *ExtendTestSuite) TestComputeFeatureOrder_NoOverride() {
 	}
 
 	features := []*config.FeatureSet{
-		{ConfigID: normalizeFeatureID("feature-a"), Config: &config.FeatureConfig{DependsOn: config.DependsOnField{"feature-b": map[string]any{}}}},
-		{ConfigID: normalizeFeatureID("feature-b"), Config: &config.FeatureConfig{DependsOn: config.DependsOnField{}}},
+		{
+			ConfigID: normalizeFeatureID("feature-a"),
+			Config: &config.FeatureConfig{
+				DependsOn: config.DependsOnField{"feature-b": map[string]any{}},
+			},
+		},
+		{
+			ConfigID: normalizeFeatureID("feature-b"),
+			Config:   &config.FeatureConfig{DependsOn: config.DependsOnField{}},
+		},
 	}
 
 	order, err := getSortedFeatureSets(devContainer, features)
@@ -301,7 +319,14 @@ func (suite *ExtendTestSuite) TestComputeFeatureOrder_NoOverride() {
 	expectedFeatureB := normalizeFeatureID("feature-b")
 	expectedFeatureA := normalizeFeatureID("feature-a")
 	if order[0].ConfigID != expectedFeatureB || order[1].ConfigID != expectedFeatureA {
-		suite.Failf("Order mismatch", "Expected [%s, %s], got [%s, %s]", expectedFeatureB, expectedFeatureA, order[0].ConfigID, order[1].ConfigID)
+		suite.Failf(
+			"Order mismatch",
+			"Expected [%s, %s], got [%s, %s]",
+			expectedFeatureB,
+			expectedFeatureA,
+			order[0].ConfigID,
+			order[1].ConfigID,
+		)
 	}
 }
 
@@ -313,7 +338,12 @@ func (suite *ExtendTestSuite) TestComputeFeatureOrder_WithOverride() {
 	}
 
 	features := []*config.FeatureSet{
-		{ConfigID: "feature-a", Config: &config.FeatureConfig{DependsOn: config.DependsOnField{"feature-b": map[string]any{}}}},
+		{
+			ConfigID: "feature-a",
+			Config: &config.FeatureConfig{
+				DependsOn: config.DependsOnField{"feature-b": map[string]any{}},
+			},
+		},
 		{ConfigID: "feature-b", Config: &config.FeatureConfig{DependsOn: config.DependsOnField{}}},
 	}
 
@@ -321,7 +351,12 @@ func (suite *ExtendTestSuite) TestComputeFeatureOrder_WithOverride() {
 	suite.Require().NoError(err)
 	suite.Len(order, 2)
 	if order[0].ConfigID != "feature-a" || order[1].ConfigID != "feature-b" {
-		suite.Failf("Order mismatch", "Expected [feature-a, feature-b], got [%s, %s]", order[0].ConfigID, order[1].ConfigID)
+		suite.Failf(
+			"Order mismatch",
+			"Expected [feature-a, feature-b], got [%s, %s]",
+			order[0].ConfigID,
+			order[1].ConfigID,
+		)
 	}
 }
 
@@ -333,7 +368,12 @@ func (suite *ExtendTestSuite) TestComputeFeatureOrder_PartialOverride() {
 	}
 
 	features := []*config.FeatureSet{
-		{ConfigID: "feature-a", Config: &config.FeatureConfig{DependsOn: config.DependsOnField{"feature-b": map[string]any{}}}},
+		{
+			ConfigID: "feature-a",
+			Config: &config.FeatureConfig{
+				DependsOn: config.DependsOnField{"feature-b": map[string]any{}},
+			},
+		},
 		{ConfigID: "feature-b", Config: &config.FeatureConfig{DependsOn: config.DependsOnField{}}},
 		{ConfigID: "feature-c", Config: &config.FeatureConfig{DependsOn: config.DependsOnField{}}},
 	}
@@ -360,7 +400,13 @@ func (suite *ExtendTestSuite) TestApplyManualOrdering() {
 	suite.Len(result, 3)
 	for i, expectedID := range expected {
 		if result[i].ConfigID != expectedID {
-			suite.Failf("Position mismatch", "Position %d: expected %s, got %s", i, expectedID, result[i].ConfigID)
+			suite.Failf(
+				"Position mismatch",
+				"Position %d: expected %s, got %s",
+				i,
+				expectedID,
+				result[i].ConfigID,
+			)
 		}
 	}
 }

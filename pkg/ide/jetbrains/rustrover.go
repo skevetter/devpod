@@ -28,8 +28,18 @@ var RustRoverOptions = ide.Options{
 	},
 }
 
-func NewRustRoverServer(userName string, values map[string]config.OptionValue, log log.Logger) *GenericJetBrainsServer {
-	amd64Download, arm64Download := getDownloadURLs(RustRoverOptions, values, RustRoverProductCode, RustRoverDownloadAmd64Template, RustRoverDownloadArm64Template)
+func NewRustRoverServer(
+	userName string,
+	values map[string]config.OptionValue,
+	log log.Logger,
+) *GenericJetBrainsServer {
+	amd64Download, arm64Download := getDownloadURLs(
+		RustRoverOptions,
+		values,
+		RustRoverProductCode,
+		RustRoverDownloadAmd64Template,
+		RustRoverDownloadArm64Template,
+	)
 	return newGenericServer(userName, &GenericOptions{
 		ID:            "rustrover",
 		DisplayName:   "RustRover",

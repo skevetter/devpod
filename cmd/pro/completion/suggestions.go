@@ -10,7 +10,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func GetPlatformHostSuggestions(rootCmd *cobra.Command, context, provider string, args []string, toComplete string, owner platform.OwnerFilter, logger log.Logger) ([]string, cobra.ShellCompDirective) {
+func GetPlatformHostSuggestions(
+	rootCmd *cobra.Command,
+	context, provider string,
+	args []string,
+	toComplete string,
+	owner platform.OwnerFilter,
+	logger log.Logger,
+) ([]string, cobra.ShellCompDirective) {
 	devPodConfig, err := config.LoadConfig(context, provider)
 	if err != nil {
 		return nil, cobra.ShellCompDirectiveError

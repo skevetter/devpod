@@ -75,7 +75,11 @@ func IsAvailable() bool {
 }
 
 // PullConfigFromSource pulls devcontainer config from configSource using git crane and returns config path.
-func PullConfigFromSource(workspaceInfo *provider2.AgentWorkspaceInfo, options *provider2.CLIOptions, log log.Logger) (string, error) {
+func PullConfigFromSource(
+	workspaceInfo *provider2.AgentWorkspaceInfo,
+	options *provider2.CLIOptions,
+	log log.Logger,
+) (string, error) {
 	var data string
 	var err error
 	if options.Platform.EnvironmentTemplate == "" {
@@ -110,7 +114,11 @@ func PullConfigFromSource(workspaceInfo *provider2.AgentWorkspaceInfo, options *
 	return writeContentToDirectory(workspaceInfo, content, log)
 }
 
-func writeContentToDirectory(workspaceInfo *provider2.AgentWorkspaceInfo, content *Content, _ log.Logger) (string, error) {
+func writeContentToDirectory(
+	workspaceInfo *provider2.AgentWorkspaceInfo,
+	content *Content,
+	_ log.Logger,
+) (string, error) {
 	path := workspaceInfo.ContentFolder
 	if path == "" {
 		path = createContentDirectory()

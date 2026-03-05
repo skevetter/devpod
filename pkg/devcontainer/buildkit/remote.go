@@ -136,7 +136,10 @@ func validateRemoteBuildOptions(options provider.BuildOptions) error {
 	return nil
 }
 
-func setupBuildKitClient(ctx context.Context, options provider.BuildOptions) (*client.Client, *client.Info, string, error) {
+func setupBuildKitClient(
+	ctx context.Context,
+	options provider.BuildOptions,
+) (*client.Client, *client.Info, string, error) {
 	remoteURL, err := url.Parse(options.CLIOptions.Platform.Build.RemoteAddress)
 	if err != nil {
 		return nil, nil, "", err
@@ -170,7 +173,10 @@ func setupBuildKitClient(ctx context.Context, options provider.BuildOptions) (*c
 	return c, info, certs.ParentDir, nil
 }
 
-func resolveImageReference(ctx context.Context, imageName string) (name.Reference, authn.Keychain, error) {
+func resolveImageReference(
+	ctx context.Context,
+	imageName string,
+) (name.Reference, authn.Keychain, error) {
 	ref, err := name.ParseReference(imageName)
 	if err != nil {
 		return nil, nil, fmt.Errorf("unable to resolve image %s: %w", imageName, err)
@@ -247,7 +253,12 @@ func setupRegistryAuth(ref name.Reference, keychain authn.Keychain) ([]session.A
 	}, nil
 }
 
-func prepareSolveOptions(ref name.Reference, keychain authn.Keychain, imageName string, opts BuildRemoteOptions) (client.SolveOpt, error) {
+func prepareSolveOptions(
+	ref name.Reference,
+	keychain authn.Keychain,
+	imageName string,
+	opts BuildRemoteOptions,
+) (client.SolveOpt, error) {
 	authSession, err := setupRegistryAuth(ref, keychain)
 	if err != nil {
 		return client.SolveOpt{}, err
@@ -300,7 +311,9 @@ func prepareSolveOptions(ref name.Reference, keychain authn.Keychain, imageName 
 	return solveOpts, nil
 }
 
-func setupCache(buildOpts *build.BuildOptions) ([]client.CacheOptionsEntry, []client.CacheOptionsEntry, error) {
+func setupCache(
+	buildOpts *build.BuildOptions,
+) ([]client.CacheOptionsEntry, []client.CacheOptionsEntry, error) {
 	cacheFrom, err := ParseCacheEntry(buildOpts.CacheFrom)
 	if err != nil {
 		return nil, nil, err
@@ -331,7 +344,11 @@ func setupLocalMounts(buildOpts *build.BuildOptions) (map[string]fsutil.FS, erro
 	}, nil
 }
 
-func configurePlatform(solveOpts *client.SolveOpt, buildOpts *build.BuildOptions, opts BuildRemoteOptions) {
+func configurePlatform(
+	solveOpts *client.SolveOpt,
+	buildOpts *build.BuildOptions,
+	opts BuildRemoteOptions,
+) {
 	if buildOpts.Target != "" {
 		solveOpts.FrontendAttrs["target"] = buildOpts.Target
 	}
@@ -401,7 +418,11 @@ type executeBuildParams struct {
 }
 
 func executeBuild(params executeBuildParams) error {
-	params.Logger.Infof("start building %s using platform builder (%s)", params.SolveOpts.Exports[0].Attrs[string(exptypes.OptKeyName)], params.Info.BuildkitVersion.Version)
+	params.Logger.Infof(
+		"start building %s using platform builder (%s)",
+		params.SolveOpts.Exports[0].Attrs[string(exptypes.OptKeyName)],
+		params.Info.BuildkitVersion.Version,
+	)
 
 	writer := params.Logger.Writer(logrus.InfoLevel, false)
 	defer func() { _ = writer.Close() }()
@@ -415,7 +436,12 @@ func executeBuild(params executeBuildParams) error {
 	return err
 }
 
-func getImageDetails(ctx context.Context, ref name.Reference, targetArch string, keychain authn.Keychain) (*config.ImageDetails, error) {
+func getImageDetails(
+	ctx context.Context,
+	ref name.Reference,
+	targetArch string,
+	keychain authn.Keychain,
+) (*config.ImageDetails, error) {
 	remoteImage, err := remote.Image(ref,
 		remote.WithAuthFromKeychain(keychain),
 		remote.WithPlatform(v1.Platform{Architecture: targetArch, OS: "linux"}),

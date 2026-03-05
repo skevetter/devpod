@@ -19,7 +19,11 @@ func Ping(ctx context.Context, ws *WebsocketConn) {
 	for {
 		select {
 		case <-time.After(time.Second * 10):
-			if err := ws.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(10*time.Second)); err != nil {
+			if err := ws.WriteControl(
+				websocket.PingMessage,
+				[]byte{},
+				time.Now().Add(10*time.Second),
+			); err != nil {
 				klog.FromContext(ctx).Error(err, "Error sending ping message")
 				return
 			}

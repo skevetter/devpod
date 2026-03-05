@@ -28,8 +28,18 @@ var GolandOptions = ide.Options{
 	},
 }
 
-func NewGolandServer(userName string, values map[string]config.OptionValue, log log.Logger) *GenericJetBrainsServer {
-	amd64Download, arm64Download := getDownloadURLs(GolandOptions, values, GolandProductCode, GolandDownloadAmd64Template, GolandDownloadArm64Template)
+func NewGolandServer(
+	userName string,
+	values map[string]config.OptionValue,
+	log log.Logger,
+) *GenericJetBrainsServer {
+	amd64Download, arm64Download := getDownloadURLs(
+		GolandOptions,
+		values,
+		GolandProductCode,
+		GolandDownloadAmd64Template,
+		GolandDownloadArm64Template,
+	)
 	return newGenericServer(userName, &GenericOptions{
 		ID:            "goland",
 		DisplayName:   "Goland",

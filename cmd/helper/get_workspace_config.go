@@ -51,13 +51,19 @@ func NewGetWorkspaceConfigCommand(flags *flags.GlobalFlags) *cobra.Command {
 		},
 	}
 
-	shellCmd.Flags().DurationVar(&cmd.timeout, "timeout", 10*time.Second, "Timeout for the command, 10 seconds by default")
-	shellCmd.Flags().IntVar(&cmd.maxDepth, "max-depth", 3, "Maximum depth to search for devcontainer files")
+	shellCmd.Flags().
+		DurationVar(&cmd.timeout, "timeout", 10*time.Second, "Timeout for the command, 10 seconds by default")
+	shellCmd.Flags().
+		IntVar(&cmd.maxDepth, "max-depth", 3, "Maximum depth to search for devcontainer files")
 
 	return shellCmd
 }
 
-func (cmd *GetWorkspaceConfigCommand) Run(ctx context.Context, devPodConfig *config.Config, args []string) error {
+func (cmd *GetWorkspaceConfigCommand) Run(
+	ctx context.Context,
+	devPodConfig *config.Config,
+	args []string,
+) error {
 	if len(args) != 1 {
 		return fmt.Errorf("workspace source is missing")
 	}
@@ -87,7 +93,14 @@ func (cmd *GetWorkspaceConfigCommand) Run(ctx context.Context, devPodConfig *con
 		_ = os.RemoveAll(tmpDir)
 	}()
 	go func() {
-		result, err := devcontainer.FindDevcontainerFiles(ctx, rawSource, tmpDir, cmd.maxDepth, devPodConfig.ContextOption(config.ContextOptionSSHStrictHostKeyChecking) == "true", logger)
+		result, err := devcontainer.FindDevcontainerFiles(
+			ctx,
+			rawSource,
+			tmpDir,
+			cmd.maxDepth,
+			devPodConfig.ContextOption(config.ContextOptionSSHStrictHostKeyChecking) == "true",
+			logger,
+		)
 		if err != nil {
 			errChan <- err
 			return

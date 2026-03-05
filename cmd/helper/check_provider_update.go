@@ -50,7 +50,11 @@ func NewCheckProviderUpdateCmd(flags *flags.GlobalFlags) *cobra.Command {
 	return shellCmd
 }
 
-func (cmd *CheckProviderUpdateCmd) Run(ctx context.Context, devPodConfig *config.Config, args []string) error {
+func (cmd *CheckProviderUpdateCmd) Run(
+	ctx context.Context,
+	devPodConfig *config.Config,
+	args []string,
+) error {
 	if len(args) != 1 {
 		return fmt.Errorf("provider is missing")
 	}
@@ -75,11 +79,15 @@ func (cmd *CheckProviderUpdateCmd) Run(ctx context.Context, devPodConfig *config
 	if err != nil {
 		return err
 	}
-	currentProviderVersion, err := semver.Parse(strings.TrimPrefix(currentProvider.Config.Version, "v"))
+	currentProviderVersion, err := semver.Parse(
+		strings.TrimPrefix(currentProvider.Config.Version, "v"),
+	)
 	if err != nil {
 		return err
 	}
-	latestProviderVersion, err := semver.Parse(strings.TrimPrefix(latestProviderConfig.Version, "v"))
+	latestProviderVersion, err := semver.Parse(
+		strings.TrimPrefix(latestProviderConfig.Version, "v"),
+	)
 	if err != nil {
 		return err
 	}
@@ -99,7 +107,10 @@ func (cmd *CheckProviderUpdateCmd) Run(ctx context.Context, devPodConfig *config
 	return nil
 }
 
-func loadLatestProvider(providerSourceRaw string, log log.Logger) (*provider.ProviderConfig, error) {
+func loadLatestProvider(
+	providerSourceRaw string,
+	log log.Logger,
+) (*provider.ProviderConfig, error) {
 	providerRaw, _, err := workspace.ResolveProvider(providerSourceRaw, log)
 	if err != nil {
 		return nil, fmt.Errorf("resolve provider: %w", err)

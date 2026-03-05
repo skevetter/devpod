@@ -39,7 +39,12 @@ var (
 	DevPodFlagsStatus = "DEVPOD_FLAGS_STATUS"
 )
 
-func New(devPodConfig *config.Config, prov *provider.ProviderConfig, workspace *provider.Workspace, log log.Logger) (clientpkg.DaemonClient, error) {
+func New(
+	devPodConfig *config.Config,
+	prov *provider.ProviderConfig,
+	workspace *provider.Workspace,
+	log log.Logger,
+) (clientpkg.DaemonClient, error) {
 	tsClient := &local.Client{
 		Socket:        daemon.GetSocketAddr(workspace.Provider.Name),
 		UseSocketOnly: true,
@@ -97,7 +102,11 @@ func (c *client) Context() string {
 	return c.workspace.Context
 }
 
-func (c *client) RefreshOptions(ctx context.Context, userOptionsRaw []string, reconfigure bool) error {
+func (c *client) RefreshOptions(
+	ctx context.Context,
+	userOptionsRaw []string,
+	reconfigure bool,
+) error {
 	c.m.Lock()
 	defer c.m.Unlock()
 
@@ -140,7 +149,13 @@ func (c *client) CheckWorkspaceReachable(ctx context.Context) error {
 		instance, getWorkspaceErr := c.localClient.GetWorkspace(ctx, c.workspace.UID)
 		// if we can't reach the daemon try to start the desktop app
 		if daemon.IsDaemonNotAvailableError(getWorkspaceErr) {
-			deeplink := fmt.Sprintf("devpod://open?workspace=%s&provider=%s&source=%s&ide=%s", c.workspace.ID, c.config.Name, c.workspace.Source.String(), c.workspace.IDE.Name)
+			deeplink := fmt.Sprintf(
+				"devpod://open?workspace=%s&provider=%s&source=%s&ide=%s",
+				c.workspace.ID,
+				c.config.Name,
+				c.workspace.Source.String(),
+				c.workspace.IDE.Name,
+			)
 			openErr := open.Run(deeplink)
 			if openErr != nil {
 				return getWorkspaceErr // inform user about daemon state
@@ -160,9 +175,17 @@ func (c *client) CheckWorkspaceReachable(ctx context.Context) error {
 		if getWorkspaceErr != nil {
 			return fmt.Errorf("couldn't get workspace: %w", getWorkspaceErr)
 		} else if instance.Status.Phase != storagev1.InstanceReady {
-			return fmt.Errorf("workspace is '%s', please run `devpod up %s` to start it again", instance.Status.Phase, c.workspace.ID)
+			return fmt.Errorf(
+				"workspace is '%s', please run `devpod up %s` to start it again",
+				instance.Status.Phase,
+				c.workspace.ID,
+			)
 		} else if instance.Status.LastWorkspaceStatus != storagev1.WorkspaceStatusRunning {
-			return fmt.Errorf("workspace is '%s', please run `devpod up %s` to start it again", instance.Status.LastWorkspaceStatus, c.workspace.ID)
+			return fmt.Errorf(
+				"workspace is '%s', please run `devpod up %s` to start it again",
+				instance.Status.LastWorkspaceStatus,
+				c.workspace.ID,
+			)
 		}
 
 		return fmt.Errorf("reach host: %w", err)
@@ -172,7 +195,10 @@ func (c *client) CheckWorkspaceReachable(ctx context.Context) error {
 	return nil
 }
 
-func (c *client) SSHClients(ctx context.Context, user string) (toolClient *ssh.Client, userClient *ssh.Client, err error) {
+func (c *client) SSHClients(
+	ctx context.Context,
+	user string,
+) (toolClient *ssh.Client, userClient *ssh.Client, err error) {
 	wAddr, err := c.getWorkspaceAddress()
 	if err != nil {
 		return nil, nil, fmt.Errorf("resolve workspace hostname: %w", err)
@@ -265,12 +291,20 @@ func (c *client) Ping(ctx context.Context, writer io.Writer) error {
 		if result.Err != "" {
 			return errors.New(result.Err)
 		}
-		latency := time.Duration(result.LatencySeconds * float64(time.Second)).Round(time.Millisecond)
+		latency := time.Duration(result.LatencySeconds * float64(time.Second)).
+			Round(time.Millisecond)
 		via := result.Endpoint
 		if result.DERPRegionID != 0 {
 			via = fmt.Sprintf("DERP(%s)", result.DERPRegionCode)
 		}
-		_, err = fmt.Fprintf(writer, "pong from %s (%s) via %v in %v\n", result.NodeName, result.NodeIP, via, latency)
+		_, err = fmt.Fprintf(
+			writer,
+			"pong from %s (%s) via %v in %v\n",
+			result.NodeName,
+			result.NodeIP,
+			via,
+			latency,
+		)
 		if err != nil {
 			return fmt.Errorf("failed to write ping result: %w", err)
 		}
@@ -299,5 +333,8 @@ func (c *client) getWorkspaceAddress() (ts.Addr, error) {
 		return ts.Addr{}, fmt.Errorf("workspace is not initialized")
 	}
 
-	return ts.NewAddr(ts.GetWorkspaceHostname(c.workspace.Pro.InstanceName, c.workspace.Pro.Project), sshServer.DefaultUserPort), nil
+	return ts.NewAddr(
+		ts.GetWorkspaceHostname(c.workspace.Pro.InstanceName, c.workspace.Pro.Project),
+		sshServer.DefaultUserPort,
+	), nil
 }

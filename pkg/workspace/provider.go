@@ -59,13 +59,19 @@ func LoadProviders(
 		return nil, nil, fmt.Errorf("no default provider found")
 	}
 	if retProviders[defaultContext.DefaultProvider] == nil {
-		return nil, nil, fmt.Errorf("provider with name %s not found", defaultContext.DefaultProvider)
+		return nil, nil, fmt.Errorf(
+			"provider with name %s not found",
+			defaultContext.DefaultProvider,
+		)
 	}
 
 	return retProviders[defaultContext.DefaultProvider], retProviders, nil
 }
 
-func LoadAllProviders(devPodConfig *config.Config, log log.Logger) (map[string]*ProviderWithOptions, error) {
+func LoadAllProviders(
+	devPodConfig *config.Config,
+	log log.Logger,
+) (map[string]*ProviderWithOptions, error) {
 	retProviders := map[string]*ProviderWithOptions{}
 
 	loadConfiguredProviders(devPodConfig, retProviders, log)
@@ -77,7 +83,11 @@ func LoadAllProviders(devPodConfig *config.Config, log log.Logger) (map[string]*
 	return retProviders, nil
 }
 
-func FindProvider(devPodConfig *config.Config, name string, log log.Logger) (*ProviderWithOptions, error) {
+func FindProvider(
+	devPodConfig *config.Config,
+	name string,
+	log log.Logger,
+) (*ProviderWithOptions, error) {
 	retProviders, err := LoadAllProviders(devPodConfig, log)
 	if err != nil {
 		return nil, err
@@ -209,7 +219,11 @@ func CloneProvider(
 	return sourceProvider, nil
 }
 
-func ResolveProviderSource(devPodConfig *config.Config, providerName string, log log.Logger) (string, error) {
+func ResolveProviderSource(
+	devPodConfig *config.Config,
+	providerName string,
+	log log.Logger,
+) (string, error) {
 	providerConfig, err := FindProvider(devPodConfig, providerName, log)
 	if err != nil {
 		return "", fmt.Errorf("find provider: %w", err)
@@ -223,14 +237,24 @@ func ResolveProviderSource(devPodConfig *config.Config, providerName string, log
 	return source, nil
 }
 
-func ResolveProvider(providerSource string, log log.Logger) ([]byte, *provider.ProviderSource, error) {
+func ResolveProvider(
+	providerSource string,
+	log log.Logger,
+) ([]byte, *provider.ProviderSource, error) {
 	retSource := &provider.ProviderSource{Raw: strings.TrimSpace(providerSource)}
 
 	if out, ok := resolveInternalProvider(providerSource, retSource); ok {
 		return out, retSource, nil
 	}
 
-	if out, err := tryResolveURLProvider(providerSource, retSource, log); hasOutputOrError(out, err) {
+	if out, err := tryResolveURLProvider(
+		providerSource,
+		retSource,
+		log,
+	); hasOutputOrError(
+		out,
+		err,
+	) {
 		return out, retSource, err
 	}
 
@@ -243,14 +267,20 @@ func ResolveProvider(providerSource string, log log.Logger) ([]byte, *provider.P
 		return out, source, err
 	}
 
-	return nil, nil, fmt.Errorf("provider type not recognized: specify a local file, url, or github repository")
+	return nil, nil, fmt.Errorf(
+		"provider type not recognized: specify a local file, url, or github repository",
+	)
 }
 
 func hasOutputOrError(out []byte, err error) bool {
 	return out != nil || err != nil
 }
 
-func tryResolveURLProvider(providerSource string, retSource *provider.ProviderSource, log log.Logger) ([]byte, error) {
+func tryResolveURLProvider(
+	providerSource string,
+	retSource *provider.ProviderSource,
+	log log.Logger,
+) ([]byte, error) {
 	out, ok, err := resolveURLProvider(providerSource, retSource, log)
 	if !ok {
 		return nil, nil
@@ -258,7 +288,10 @@ func tryResolveURLProvider(providerSource string, retSource *provider.ProviderSo
 	return out, err
 }
 
-func tryResolveFileProvider(providerSource string, retSource *provider.ProviderSource) ([]byte, error) {
+func tryResolveFileProvider(
+	providerSource string,
+	retSource *provider.ProviderSource,
+) ([]byte, error) {
 	out, ok, err := resolveFileProvider(providerSource, retSource)
 	if !ok {
 		return nil, nil
@@ -266,7 +299,10 @@ func tryResolveFileProvider(providerSource string, retSource *provider.ProviderS
 	return out, err
 }
 
-func downloadProviderGithub(originalPath string, log log.Logger) ([]byte, *provider.ProviderSource, error) {
+func downloadProviderGithub(
+	originalPath string,
+	log log.Logger,
+) ([]byte, *provider.ProviderSource, error) {
 	path := strings.TrimPrefix(originalPath, githubPrefix)
 
 	release := ""
@@ -317,7 +353,10 @@ func loadConfiguredProviders(
 			continue
 		}
 
-		providerConfig, err := provider.LoadProviderConfig(devPodConfig.DefaultContext, providerName)
+		providerConfig, err := provider.LoadProviderConfig(
+			devPodConfig.DefaultContext,
+			providerName,
+		)
 		if err != nil {
 			log.Warnf("error loading provider %s: %v", providerName, err)
 			continue
@@ -330,7 +369,10 @@ func loadConfiguredProviders(
 	}
 }
 
-func loadUnconfiguredProviders(devPodConfig *config.Config, retProviders map[string]*ProviderWithOptions) error {
+func loadUnconfiguredProviders(
+	devPodConfig *config.Config,
+	retProviders map[string]*ProviderWithOptions,
+) error {
 	providerDir, err := provider.GetProvidersDir(devPodConfig.DefaultContext)
 	if err != nil {
 		return err
@@ -355,7 +397,8 @@ func loadUnconfiguredProviders(devPodConfig *config.Config, retProviders map[str
 }
 
 func shouldSkipEntry(entry os.DirEntry, retProviders map[string]*ProviderWithOptions) bool {
-	return retProviders[entry.Name()] != nil || !entry.IsDir() || strings.HasPrefix(entry.Name(), dsStorePrefix)
+	return retProviders[entry.Name()] != nil || !entry.IsDir() ||
+		strings.HasPrefix(entry.Name(), dsStorePrefix)
 }
 
 func loadProviderEntry(
@@ -469,7 +512,10 @@ func checkProviderNotExists(devPodConfig *config.Config, providerName string) er
 }
 
 func downloadAndSaveProvider(p ProviderParams, providerConfig *provider.ProviderConfig) error {
-	binariesDir, err := provider.GetProviderBinariesDir(p.DevPodConfig.DefaultContext, providerConfig.Name)
+	binariesDir, err := provider.GetProviderBinariesDir(
+		p.DevPodConfig.DefaultContext,
+		providerConfig.Name,
+	)
 	if err != nil {
 		return fmt.Errorf("get binaries dir: %w", err)
 	}
@@ -479,7 +525,11 @@ func downloadAndSaveProvider(p ProviderParams, providerConfig *provider.Provider
 		return fmt.Errorf("get provider dir: %w", err)
 	}
 
-	if _, err := provider.DownloadBinaries(providerConfig.Binaries, binariesDir, p.Log); err != nil {
+	if _, err := provider.DownloadBinaries(
+		providerConfig.Binaries,
+		binariesDir,
+		p.Log,
+	); err != nil {
 		_ = os.RemoveAll(providerDir)
 		return fmt.Errorf("download binaries: %w", err)
 	}
@@ -518,7 +568,10 @@ func getProviderSource(src provider.ProviderSource, configName string) string {
 	}
 }
 
-func resolveInternalProvider(providerSource string, retSource *provider.ProviderSource) ([]byte, bool) {
+func resolveInternalProvider(
+	providerSource string,
+	retSource *provider.ProviderSource,
+) ([]byte, bool) {
 	internalProviders := providers.GetBuiltInProviders()
 	if internalProviders[providerSource] != "" {
 		retSource.Internal = true
@@ -532,7 +585,8 @@ func resolveURLProvider(
 	retSource *provider.ProviderSource,
 	log log.Logger,
 ) ([]byte, bool, error) {
-	if !strings.HasPrefix(providerSource, httpPrefix) && !strings.HasPrefix(providerSource, httpsPrefix) {
+	if !strings.HasPrefix(providerSource, httpPrefix) &&
+		!strings.HasPrefix(providerSource, httpsPrefix) {
 		return nil, false, nil
 	}
 
@@ -545,7 +599,10 @@ func resolveURLProvider(
 	return out, true, nil
 }
 
-func resolveFileProvider(providerSource string, retSource *provider.ProviderSource) ([]byte, bool, error) {
+func resolveFileProvider(
+	providerSource string,
+	retSource *provider.ProviderSource,
+) ([]byte, bool, error) {
 	if !strings.HasSuffix(providerSource, yamlExt) && !strings.HasSuffix(providerSource, ymlExt) {
 		return nil, false, nil
 	}

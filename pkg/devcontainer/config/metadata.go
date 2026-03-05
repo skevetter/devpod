@@ -8,18 +8,23 @@ type ImageMetadataConfig struct {
 type ImageMetadata struct {
 	ID                     string `json:"id,omitempty"`
 	Entrypoint             string `json:"entrypoint,omitempty"`
-	DevContainerConfigBase `json:",inline"`
-	DevContainerActions    `json:",inline"`
-	NonComposeBase         `json:",inline"`
+	DevContainerConfigBase `       json:",inline"`
+	DevContainerActions    `       json:",inline"`
+	NonComposeBase         `       json:",inline"`
 }
 
 // AddConfigToImageMetadata adds a configuration to the given image metadata and
 // used to generate the final image metadata.
-func AddConfigToImageMetadata(config *DevContainerConfig, imageMetadataConfig *ImageMetadataConfig) {
+func AddConfigToImageMetadata(
+	config *DevContainerConfig,
+	imageMetadataConfig *ImageMetadataConfig,
+) {
 	userMetadata := &ImageMetadata{}
 	userMetadata.DevContainerConfigBase = config.DevContainerConfigBase
 	userMetadata.DevContainerActions = config.DevContainerActions
 	userMetadata.NonComposeBase = config.NonComposeBase
-	imageMetadataConfig.Config = append([]*ImageMetadata{userMetadata}, imageMetadataConfig.Config...)
+	imageMetadataConfig.Config = append(
+		[]*ImageMetadata{userMetadata},
+		imageMetadataConfig.Config...)
 	imageMetadataConfig.Raw = append([]*ImageMetadata{userMetadata}, imageMetadataConfig.Raw...)
 }
