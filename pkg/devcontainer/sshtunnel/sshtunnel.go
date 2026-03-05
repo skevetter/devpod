@@ -19,6 +19,7 @@ import (
 	devsshagent "github.com/skevetter/devpod/pkg/ssh/agent"
 	"github.com/skevetter/log"
 	"golang.org/x/crypto/ssh"
+	"golang.org/x/sync/errgroup"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
@@ -64,38 +65,39 @@ func ExecuteCommand(ctx context.Context, opts ExecuteCommandOptions) (*config2.R
 	}
 	defer tc.cleanup()
 
-	// Inject SSH server helper
-	if err := executeSSHServerHelper(cancelCtx, &sshServerHelperParams{
-		opts:         opts,
-		stdinReader:  tc.sshPipes.stdinReader,
-		stdoutWriter: tc.sshPipes.stdoutWriter,
-	}); err != nil {
-		return nil, err
-	}
-
 	if opts.AddPrivateKeys {
 		addPrivateKeys(ctx, opts)
 	}
 
-	// Run SSH tunnel
-	errChan := make(chan error, 1)
-	go func() {
-		errChan <- runSSHTunnel(cancelCtx, tc)
-	}()
+	g := new(errgroup.Group)
+	var result *config2.Result
 
-	// Run gRPC server
-	result, err := tc.opts.TunnelServerFunc(
-		cancelCtx,
-		tc.grpcPipes.stdinWriter,
-		tc.grpcPipes.stdoutReader,
-	)
+	// SSH server helper
+	g.Go(func() error {
+		return executeSSHServerHelper(cancelCtx, &sshServerHelperParams{
+			opts:         opts,
+			stdinReader:  tc.sshPipes.stdinReader,
+			stdoutWriter: tc.sshPipes.stdoutWriter,
+		})
+	})
 
-	// Wait for SSH tunnel to finish
-	if tunnelErr := <-errChan; tunnelErr != nil && err == nil {
-		err = tunnelErr
-	}
+	// SSH tunnel
+	g.Go(func() error {
+		return runSSHTunnel(cancelCtx, tc)
+	})
 
-	return result, err
+	// gRPC server
+	g.Go(func() error {
+		var err error
+		result, err = tc.opts.TunnelServerFunc(
+			cancelCtx,
+			tc.grpcPipes.stdinWriter,
+			tc.grpcPipes.stdoutReader,
+		)
+		return err
+	})
+
+	return result, g.Wait()
 }
 
 func setupTunnelContext(
