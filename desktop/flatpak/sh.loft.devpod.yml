@@ -18,7 +18,6 @@ finish-args:
   - --talk-name=org.freedesktop.Notifications
   - --talk-name=org.kde.StatusNotifierWatcher
   - --filesystem=xdg-run/keyring
-  - --filesystem=xdg-run/podman
 
 modules:
   - shared-modules/libayatana-appindicator/libayatana-appindicator-gtk3.json
@@ -37,10 +36,14 @@ modules:
       - type: file
         url: https://github.com/skevetter/devpod/releases/download/${VERSION}/DevPod.metainfo.xml
         sha256: ${META_SHA256}
+
+      - type: file
+        path: devpod-wrapper
     build-commands:
       - ar -x *.deb
       - tar -xf data.tar.gz
-      - install -Dm755 usr/bin/devpod /app/bin/devpod
+      - install -Dm755 usr/bin/devpod /app/bin/devpod-bin
+      - install -Dm755 devpod-wrapper /app/bin/devpod
       - install -Dm755 "usr/bin/DevPod Desktop" /app/bin/sh.loft.devpod
       - install -Dm644 DevPod.desktop /app/share/applications/sh.loft.devpod.desktop
       - desktop-file-edit --set-key Exec --set-value sh.loft.devpod /app/share/applications/sh.loft.devpod.desktop
