@@ -8,15 +8,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"github.com/skevetter/log"
 	"github.com/skevetter/ssh"
 )
 
 func execNonPTY(sess ssh.Session, cmd *exec.Cmd, log log.Logger) (err error) {
-	log.WithFields(logrus.Fields{
-		"command": strings.Join(cmd.Args, " "),
-	}).Debug("execute SSH server command")
+	log.Debugf("execute SSH server command: %s", strings.Join(cmd.Args, " "))
 	// init pipes
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
@@ -77,7 +74,7 @@ func execPTY(
 	cmd *exec.Cmd,
 	log log.Logger,
 ) (err error) {
-	log.Debugf("Execute SSH server PTY command: %s", strings.Join(cmd.Args, " "))
+	log.Debugf("execute SSH server PTY command: %s", strings.Join(cmd.Args, " "))
 
 	cmd.Env = append(cmd.Env, fmt.Sprintf("TERM=%s", ptyReq.Term))
 	f, err := startPTY(cmd)
