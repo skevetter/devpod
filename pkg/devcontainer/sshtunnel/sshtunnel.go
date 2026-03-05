@@ -74,7 +74,7 @@ func ExecuteCommand(ctx context.Context, opts ExecuteCommandOptions) (*config2.R
 	var wg sync.WaitGroup
 
 	wg.Go(func() {
-		executeSSHServerHelper(ctx, &sshServerHelperParams{
+		executeSSHServerHelper(cancelCtx, &sshServerHelperParams{
 			opts:         opts,
 			stdinReader:  tc.sshPipes.stdinReader,
 			stdoutWriter: tc.sshPipes.stdoutWriter,
