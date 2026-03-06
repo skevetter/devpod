@@ -253,7 +253,7 @@ module.exports = {
     },
     {
       type: "link",
-      label: "maintained by skevetter",
+      label: "community maintained",
       href: "https://github.com/skevetter/devpod",
     },
   ],
