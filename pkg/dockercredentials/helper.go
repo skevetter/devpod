@@ -14,7 +14,12 @@ import (
 )
 
 const (
-	credentialsTimeout = 5 * time.Second
+	// Obtaining credentials might require human interaction, e.g., to log in
+	// using an OAuth flow. Use a sufficiently long timeout to allow for that.
+	// (The credential request is forwarded to the host, where the credentials
+	// are either obtained from a Docker configuration file, or obtained from
+	// a credential helper on the host -- the latter can take a while.)
+	credentialsTimeout = 10 * time.Minute
 	logFileName        = "credential-helper.log"
 )
 
