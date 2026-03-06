@@ -14,13 +14,15 @@ var _ = ginkgo.Describe(
 	ginkgo.Label("provider"),
 	ginkgo.Ordered,
 	func() {
-		ctx := context.Background()
-		initialDir, err := os.Getwd()
-		if err != nil {
-			panic(err)
-		}
+		var initialDir string
 
-		ginkgo.It("should add simple provider and delete it", func() {
+		ginkgo.BeforeEach(func() {
+			var err error
+			initialDir, err = os.Getwd()
+			framework.ExpectNoError(err)
+		})
+
+		ginkgo.It("should add simple provider and delete it", func(ctx context.Context) {
 			tempDir, err := framework.CopyToTempDir(
 				"tests/provider/testdata/simple-k8s-provider",
 			)
@@ -38,9 +40,9 @@ var _ = ginkgo.Describe(
 			framework.ExpectNoError(err)
 
 			// Ensure provider 1 exists but not provider X
-			err = f.DevPodProviderUse(context.Background(), "provider1")
+			err = f.DevPodProviderUse(ctx, "provider1")
 			framework.ExpectNoError(err)
-			err = f.DevPodProviderUse(context.Background(), "providerX")
+			err = f.DevPodProviderUse(ctx, "providerX")
 			framework.ExpectError(err)
 
 			// Cleanup: delete provider 1
@@ -48,16 +50,16 @@ var _ = ginkgo.Describe(
 			framework.ExpectNoError(err)
 
 			// Cleanup: ensure provider 1 is deleted
-			err = f.DevPodProviderUse(context.Background(), "provider1")
+			err = f.DevPodProviderUse(ctx, "provider1")
 			framework.ExpectError(err)
 		})
 
-		ginkgo.It("should add simple provider and update it", func() {
+		ginkgo.It("should add simple provider and update it", func(ctx context.Context) {
 			tempDir, err := framework.CopyToTempDir(
 				"tests/provider/testdata/simple-k8s-provider",
 			)
 			framework.ExpectNoError(err)
-			defer framework.CleanupTempDir(initialDir, tempDir)
+			ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
 
 			f := framework.NewDefaultFramework(initialDir + "/bin")
 
@@ -68,12 +70,12 @@ var _ = ginkgo.Describe(
 			// Add provider 2 and use it
 			err = f.DevPodProviderAdd(ctx, tempDir+"/provider2.yaml")
 			framework.ExpectNoError(err)
-			err = f.DevPodProviderUse(context.Background(), "provider2")
+			err = f.DevPodProviderUse(ctx, "provider2")
 			framework.ExpectNoError(err)
 
 			// Ensure provider 2 namespace parameter has the default value
 			ctx, cancel := context.WithDeadline(
-				context.Background(),
+				ctx,
 				time.Now().Add(30*time.Second),
 			)
 			err = f.DevPodProviderOptionsCheckNamespaceDescription(
@@ -86,7 +88,7 @@ var _ = ginkgo.Describe(
 
 			// Update provider 2 (change the namespace description value)
 			err = f.DevPodProviderUpdate(
-				context.Background(),
+				ctx,
 				"provider2",
 				tempDir+"/provider2-update.yaml",
 			)
@@ -94,7 +96,7 @@ var _ = ginkgo.Describe(
 
 			// Ensure that provider 2 was updated
 			ctx, cancel = context.WithDeadline(
-				context.Background(),
+				ctx,
 				time.Now().Add(30*time.Second),
 			)
 			err = f.DevPodProviderOptionsCheckNamespaceDescription(
@@ -106,15 +108,15 @@ var _ = ginkgo.Describe(
 			cancel()
 
 			// Cleanup: delete provider 2
-			err = f.DevPodProviderDelete(context.Background(), "provider2")
+			err = f.DevPodProviderDelete(ctx, "provider2")
 			framework.ExpectNoError(err)
 
 			// Cleanup: ensure provider 2 is deleted
-			err = f.DevPodProviderUse(context.Background(), "provider2")
+			err = f.DevPodProviderUse(ctx, "provider2")
 			framework.ExpectError(err)
 		})
 
-		ginkgo.It("should list all providers", func() {
+		ginkgo.It("should list all providers", func(ctx context.Context) {
 			tempDir, err := framework.CopyToTempDir(
 				"tests/provider/testdata/simple-k8s-provider",
 			)
@@ -131,16 +133,15 @@ var _ = ginkgo.Describe(
 			err = f.DevPodProviderAdd(ctx, tempDir+"/provider1.yaml")
 			framework.ExpectNoError(err)
 			// Ensure provider 1 exists
-			err = f.DevPodProviderUse(context.Background(), "provider1")
+			err = f.DevPodProviderUse(ctx, "provider1")
 			framework.ExpectNoError(err)
 
 			// Add .DS_Store file to tempDir
-			// #nosec G306 -- TODO Consider using a more secure permission setting and ownership if needed.
-			err = os.WriteFile(tempDir+"/.DS_Store", []byte("test"), 0o644)
+			err = os.WriteFile(tempDir+"/.DS_Store", []byte("test"), 0o644) // #nosec G306
 			framework.ExpectNoError(err)
 
 			// List providers
-			err = f.DevPodProviderList(context.Background())
+			err = f.DevPodProviderList(ctx)
 			framework.ExpectNoError(err)
 
 			// Cleanup: delete provider 1
@@ -148,11 +149,11 @@ var _ = ginkgo.Describe(
 			framework.ExpectNoError(err)
 
 			// Cleanup: ensure provider 1 is deleted
-			err = f.DevPodProviderUse(context.Background(), "provider1")
+			err = f.DevPodProviderUse(ctx, "provider1")
 			framework.ExpectError(err)
 		})
 
-		ginkgo.It("should parse options", func() {
+		ginkgo.It("should parse options", func(ctx context.Context) {
 			tempDir, err := framework.CopyToTempDir(
 				"tests/provider/testdata/simple-k8s-provider",
 			)
@@ -182,11 +183,11 @@ spec:
 			)
 			framework.ExpectNoError(err)
 			// Ensure provider exists
-			err = f.DevPodProviderUse(context.Background(), "provider3")
+			err = f.DevPodProviderUse(ctx, "provider3")
 			framework.ExpectNoError(err)
 
 			// look for template option
-			err = f.DevPodProviderFindOption(context.Background(), "provider3", podManifest)
+			err = f.DevPodProviderFindOption(ctx, "provider3", podManifest)
 			framework.ExpectNoError(err)
 
 			// Cleanup: delete provider
@@ -194,7 +195,7 @@ spec:
 			framework.ExpectNoError(err)
 
 			// Cleanup: ensure provider is deleted
-			err = f.DevPodProviderUse(context.Background(), "provider3")
+			err = f.DevPodProviderUse(ctx, "provider3")
 			framework.ExpectError(err)
 		})
 	},

@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/onsi/ginkgo/v2"
+	"github.com/onsi/gomega"
 	"github.com/skevetter/devpod/e2e/framework"
 )
 
@@ -119,7 +120,8 @@ var _ = ginkgo.Describe("devpod ssh test suite", ginkgo.Label("ssh"), ginkgo.Ord
 			framework.ExpectNoError(err)
 
 			ginkgo.DeferCleanup(func(cleanupCtx context.Context) {
-				_ = f.DevPodWorkspaceDelete(cleanupCtx, tempDir)
+				err = f.DevPodWorkspaceDelete(cleanupCtx, tempDir)
+				framework.ExpectNoError(err)
 				framework.CleanupTempDir(initialDir, tempDir)
 			})
 
@@ -163,10 +165,9 @@ var _ = ginkgo.Describe("devpod ssh test suite", ginkgo.Label("ssh"), ginkgo.Ord
 
 			ginkgo.GinkgoWriter.Println("Polling for port", port, "to be accessible")
 			address := net.JoinHostPort("localhost", strconv.Itoa(port))
-			var out string
-			pollReady := false
 
-			for range 30 {
+			var out string
+			gomega.Eventually(func() string {
 				conn, err := net.DialTimeout("tcp", address, 3*time.Second)
 				if err == nil {
 					_ = conn.SetReadDeadline(time.Now().Add(2 * time.Second))
@@ -175,19 +176,14 @@ var _ = ginkgo.Describe("devpod ssh test suite", ginkgo.Label("ssh"), ginkgo.Ord
 					_ = conn.Close()
 					if readErr == nil && n > 0 {
 						out = string(buf[:n])
-						pollReady = true
-						break
+						return out
 					}
 				}
-				time.Sleep(2 * time.Second)
-			}
-
-			framework.ExpectEqual(
-				pollReady,
-				true,
+				return ""
+			}, 60*time.Second, 2*time.Second).Should(
+				gomega.Equal("PONG\n"),
 				"Port forwarding failed to establish connection",
 			)
-			framework.ExpectEqual(out, "PONG\n", "Expected PONG response from server")
 			ginkgo.GinkgoWriter.Println("Port forwarding test successful")
 		},
 	)

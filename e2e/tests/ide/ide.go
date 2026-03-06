@@ -21,16 +21,15 @@ var _ = ginkgo.Describe("devpod ide test suite", ginkgo.Label("ide"), ginkgo.Ord
 		f := framework.NewDefaultFramework(initialDir + "/bin")
 		tempDir, err := framework.CopyToTempDir("tests/ide/testdata")
 		framework.ExpectNoError(err)
-		ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
 
-		_ = f.DevPodProviderDelete(ctx, "docker")
 		err = f.DevPodProviderAdd(ctx, "docker")
 		framework.ExpectNoError(err)
 		err = f.DevPodProviderUse(ctx, "docker")
 		framework.ExpectNoError(err)
 
 		ginkgo.DeferCleanup(func(cleanupCtx context.Context) {
-			_ = f.DevPodWorkspaceDelete(cleanupCtx, tempDir)
+			err = f.DevPodWorkspaceDelete(cleanupCtx, tempDir)
+			framework.ExpectNoError(err)
 		})
 
 		err = f.DevPodUpWithIDE(ctx, tempDir, "--open-ide=false", "--ide=vscode")

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/onsi/ginkgo/v2"
+	"github.com/onsi/gomega"
 	"github.com/skevetter/devpod/e2e/framework"
 )
 
@@ -33,9 +34,7 @@ var _ = ginkgo.Describe(
 				initialDir + "/tests/machineprovider/testdata/machineprovider",
 			)
 			framework.ExpectNoError(err)
-			ginkgo.DeferCleanup(func() {
-				_ = os.RemoveAll(tempDir)
-			})
+			ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
 
 			// create docker provider
 			err = f.DevPodProviderAdd(
@@ -44,8 +43,10 @@ var _ = ginkgo.Describe(
 			)
 			framework.ExpectNoError(err)
 			ginkgo.DeferCleanup(func(cleanupCtx context.Context) {
-				_ = f.DevPodWorkspaceDelete(cleanupCtx, tempDir)
-				_ = f.DevPodProviderDelete(cleanupCtx, "docker123")
+				err = f.DevPodWorkspaceDelete(cleanupCtx, tempDir)
+				framework.ExpectNoError(err)
+				err = f.DevPodProviderDelete(cleanupCtx, "docker123")
+				framework.ExpectNoError(err)
 			})
 
 			// wait for devpod workspace to come online (deadline: 30s)
@@ -104,18 +105,17 @@ var _ = ginkgo.Describe(
 				initialDir + "/tests/machineprovider/testdata/machineprovider2",
 			)
 			framework.ExpectNoError(err)
-			ginkgo.DeferCleanup(func() {
-				err = os.RemoveAll(tempDir)
-				framework.ExpectNoError(err)
-			})
+			ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
 
 			// create provider
 			_ = f.DevPodProviderDelete(ctx, "docker123")
 			err = f.DevPodProviderAdd(ctx, filepath.Join(tempDir, "provider.yaml"))
 			framework.ExpectNoError(err)
 			ginkgo.DeferCleanup(func(cleanupCtx context.Context) {
-				_ = f.DevPodWorkspaceDelete(cleanupCtx, tempDir)
-				_ = f.DevPodProviderDelete(cleanupCtx, "docker123")
+				err = f.DevPodWorkspaceDelete(cleanupCtx, tempDir)
+				framework.ExpectNoError(err)
+				err = f.DevPodProviderDelete(cleanupCtx, "docker123")
+				framework.ExpectNoError(err)
 			})
 
 			// wait for devpod workspace to come online (deadline: 30s)
@@ -158,21 +158,14 @@ var _ = ginkgo.Describe(
 			)
 
 			// wait until workspace is stopped again
-			now := time.Now()
-			for {
+			gomega.Eventually(func() string {
 				status, err := f.DevPodStatus(ctx, tempDir, "--container-status=false")
 				framework.ExpectNoError(err)
-				framework.ExpectEqual(
-					time.Since(now) < time.Minute*2,
-					true,
-					"machine did not shutdown in time",
-				)
-				if strings.EqualFold(status.State, "STOPPED") {
-					break
-				}
-
-				time.Sleep(time.Second * 2)
-			}
+				return strings.ToUpper(status.State)
+			}, time.Minute*2, time.Second*2).Should(
+				gomega.Equal("STOPPED"),
+				"machine did not shutdown in time",
+			)
 		}, ginkgo.SpecTimeout(framework.GetTimeout()*5))
 	},
 )

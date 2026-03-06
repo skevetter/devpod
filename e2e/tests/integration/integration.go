@@ -68,37 +68,27 @@ var _ = ginkgo.Describe(
 				framework.ExpectNoError(err)
 
 				authorizedKeysPath := filepath.Join(homeDir, ".ssh", "authorized_keys")
-				_, err = os.Stat(authorizedKeysPath)
-				if err != nil {
-					err = os.WriteFile(authorizedKeysPath, publicKey, 0o600)
-					framework.ExpectNoError(err)
-				} else {
-					f, err := os.OpenFile(os.Getenv("HOME")+"/.ssh/authorized_keys",
-						os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
-					framework.ExpectNoError(err)
-
-					defer func() { _ = f.Close() }()
-					_, err = f.Write(publicKey)
-					framework.ExpectNoError(err)
-				}
+				err = os.WriteFile(authorizedKeysPath, publicKey, 0o600)
+				framework.ExpectNoError(err)
 
 				f := framework.NewDefaultFramework(initialDir + "/bin")
 				// ensure we don't have the ssh provider present
-				err = f.DevPodProviderDelete(ctx, "ssh")
-				if err != nil {
+				if err := f.DevPodProviderDelete(ctx, "ssh"); err != nil {
 					ginkgo.GinkgoWriter.Println("warning: " + err.Error())
 				}
 
 				err = f.DevPodProviderAdd(ctx, "ssh", "-o", "HOST=localhost")
 				framework.ExpectNoError(err)
 				ginkgo.DeferCleanup(func(cleanupCtx context.Context) {
-					_ = f.DevPodProviderDelete(cleanupCtx, "ssh")
+					err = f.DevPodProviderDelete(cleanupCtx, "ssh")
+					framework.ExpectNoError(err)
 				})
 
 				err = f.DevPodUp(ctx, "tests/integration/testdata/")
 				framework.ExpectNoError(err)
 				ginkgo.DeferCleanup(func(cleanupCtx context.Context) {
-					_ = f.DevPodWorkspaceDelete(cleanupCtx, "testdata")
+					err = f.DevPodWorkspaceDelete(cleanupCtx, "testdata")
+					framework.ExpectNoError(err)
 				})
 
 				out, err := f.DevPodSSH(ctx, "testdata", "echo test")

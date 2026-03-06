@@ -55,7 +55,8 @@ var _ = ginkgo.Describe(
 			err = f.DevPodContextCreate(ctx, contextB)
 			framework.ExpectNoError(err)
 			ginkgo.DeferCleanup(func(cleanupCtx context.Context) {
-				_ = f.DevPodContextDelete(cleanupCtx, contextB)
+				err = f.DevPodContextDelete(cleanupCtx, contextB)
+				framework.ExpectNoError(err)
 			})
 
 			err = f.DevPodContextUse(ctx, contextA)
