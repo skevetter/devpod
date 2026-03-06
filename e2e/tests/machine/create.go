@@ -10,13 +10,15 @@ import (
 )
 
 var _ = ginkgo.Describe("devpod testing machine", ginkgo.Label("machine"), ginkgo.Ordered, func() {
-	ctx := context.Background()
-	initialDir, err := os.Getwd()
-	if err != nil {
-		panic(err)
-	}
+	var initialDir string
 
-	ginkgo.It("should add simple machine and then delete it", func() {
+	ginkgo.BeforeEach(func() {
+		var err error
+		initialDir, err = os.Getwd()
+		framework.ExpectNoError(err)
+	})
+
+	ginkgo.It("should add simple machine and then delete it", func(ctx context.Context) {
 		tempDir, err := framework.CopyToTempDir("tests/machine/testdata")
 		framework.ExpectNoError(err)
 		ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)

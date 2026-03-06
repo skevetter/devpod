@@ -51,9 +51,7 @@ var _ = ginkgo.Describe("devpod build test suite", ginkgo.Label("build"), ginkgo
 		dockerHelper = &docker.DockerHelper{DockerCommand: "docker", Log: log.Default}
 	})
 
-	ginkgo.It("build docker buildx", func() {
-		ctx := context.Background()
-
+	ginkgo.It("build docker buildx", func(ctx context.Context) {
 		f := framework.NewDefaultFramework(initialDir + "/bin")
 		tempDir, err := framework.CopyToTempDir("tests/build/testdata/docker")
 		framework.ExpectNoError(err)
@@ -137,9 +135,7 @@ var _ = ginkgo.Describe("devpod build test suite", ginkgo.Label("build"), ginkgo
 
 	ginkgo.It(
 		"should build image without repository specified if skip-push flag is set",
-		func() {
-			ctx := context.Background()
-
+		func(ctx context.Context) {
 			f := framework.NewDefaultFramework(initialDir + "/bin")
 			tempDir, err := framework.CopyToTempDir("tests/build/testdata/docker")
 			framework.ExpectNoError(err)
@@ -199,9 +195,7 @@ var _ = ginkgo.Describe("devpod build test suite", ginkgo.Label("build"), ginkgo
 
 	ginkgo.It(
 		"should build the image of the referenced service from the docker compose file",
-		func() {
-			ctx := context.Background()
-
+		func(ctx context.Context) {
 			f := framework.NewDefaultFramework(initialDir + "/bin")
 			tempDir, err := framework.CopyToTempDir("tests/build/testdata/docker-compose")
 			framework.ExpectNoError(err)
@@ -248,9 +242,7 @@ var _ = ginkgo.Describe("devpod build test suite", ginkgo.Label("build"), ginkgo
 		},
 	)
 
-	ginkgo.It("build docker internal buildkit", func() {
-		ctx := context.Background()
-
+	ginkgo.It("build docker internal buildkit", func(ctx context.Context) {
 		f := framework.NewDefaultFramework(initialDir + "/bin")
 		tempDir, err := framework.CopyToTempDir("tests/build/testdata/docker")
 		framework.ExpectNoError(err)
@@ -315,12 +307,10 @@ var _ = ginkgo.Describe("devpod build test suite", ginkgo.Label("build"), ginkgo
 		framework.ExpectNoError(err)
 	})
 
-	ginkgo.It("build kubernetes dockerless", func() {
+	ginkgo.It("build kubernetes dockerless", func(ctx context.Context) {
 		if runtime.GOOS == osWindows {
 			ginkgo.Skip("skipping on windows")
 		}
-
-		ctx := context.Background()
 
 		f := framework.NewDefaultFramework(initialDir + "/bin")
 		tempDir, err := framework.CopyToTempDir("tests/build/testdata/kubernetes")
@@ -350,8 +340,9 @@ var _ = ginkgo.Describe("devpod build test suite", ginkgo.Label("build"), ginkgo
 		framework.ExpectEqual(out, "test456", "should contain my-test")
 	})
 
-	ginkgo.It("rebuild kubernetes dockerless", func() {
+	ginkgo.It("rebuild kubernetes dockerless", func(ctx context.Context) {
 		validateKubernetesDeploymentWithoutDocker(
+			ctx,
 			initialDir,
 			func(ctx context.Context, f *framework.Framework, tempDir string) error {
 				return f.DevPodUpRecreate(ctx, tempDir)
@@ -359,8 +350,9 @@ var _ = ginkgo.Describe("devpod build test suite", ginkgo.Label("build"), ginkgo
 		)
 	})
 
-	ginkgo.It("reset kubernetes dockerless", func() {
+	ginkgo.It("reset kubernetes dockerless", func(ctx context.Context) {
 		validateKubernetesDeploymentWithoutDocker(
+			ctx,
 			initialDir,
 			func(ctx context.Context, f *framework.Framework, tempDir string) error {
 				return f.DevPodUpReset(ctx, tempDir)
@@ -370,14 +362,13 @@ var _ = ginkgo.Describe("devpod build test suite", ginkgo.Label("build"), ginkgo
 })
 
 func validateKubernetesDeploymentWithoutDocker(
+	ctx context.Context,
 	initialDir string,
 	action func(context.Context, *framework.Framework, string) error,
 ) {
 	if runtime.GOOS == osWindows {
 		ginkgo.Skip("skipping on Windows")
 	}
-
-	ctx := context.Background()
 
 	f := framework.NewDefaultFramework(initialDir + "/bin")
 	tempDir, err := framework.CopyToTempDir("tests/build/testdata/kubernetes")
