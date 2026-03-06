@@ -1,37 +1,54 @@
 #!/bin/sh
 
-# If we're outside the flatpak, we will run the flatpak command
-if [ -z "${FLATPAK_ID}" ]; then
-    flatpak run --command=devpod sh.loft.devpod "$@"
+APP_ID="sh.loft.devpod"
+APP_BIN="/app/bin/devpod-bin"
+
+remove_leftover_wrapper() {
+    script_path="$1"
+    case "$script_path" in
+        */*) ;;
+        *) script_path="$(command -v "$script_path" 2>/dev/null || true)" ;;
+    esac
+
+    [ -n "$script_path" ] && rm -i -- "$script_path"
+}
+
+run_from_host() {
+    flatpak run --command=devpod "$APP_ID" "$@"
     result="$?"
 
-    # In case of error check if the flatpak has been uninstalled, and prompt to
-    # clean up this leftover
-    if [ "${result}" -gt 0 ]; then # I: Check exit code directly with e.g. 'if ! mycmd;', not indirectly with $?.
-        if ! flatpak list --app | grep -q sh.loft.devpod; then
+    if [ "$result" -gt 0 ]; then
+        if ! command -v flatpak >/dev/null 2>&1; then
+            echo "flatpak is not available; cannot verify DevPod installation"
+        elif ! flatpak info "$APP_ID" >/dev/null 2>&1; then
             echo "Devpod flatpak is not installed anymore"
-            script_path="$0"
-            case "$script_path" in
-                */*) ;;
-                *) script_path="$(command -v "$script_path" 2>/dev/null || true)" ;;
-            esac
-            [ -n "$script_path" ] && rm -i -- "$script_path"
+            remove_leftover_wrapper "$0"
         fi
     fi
 
-    exit "${result}"
-fi
+    exit "$result"
+}
 
-# copy over the binary file if absent
-if [ ! -e "${XDG_DATA_HOME}/devpod" ]; then
-    /usr/bin/cp /app/bin/devpod-bin "${XDG_DATA_HOME}/devpod"
-else
-    # or if it differs IE after an update
-    if ! /usr/bin/cmp --silent /app/bin/devpod-bin "${XDG_DATA_HOME}/devpod"; then
-        /usr/bin/rm -f "${XDG_DATA_HOME}/devpod"
-        /usr/bin/cp /app/bin/devpod-bin "${XDG_DATA_HOME}/devpod"
+sync_host_binary() {
+    data_home="${XDG_DATA_HOME:-$HOME/.local/share}"
+    target="${data_home}/devpod"
+
+    /usr/bin/mkdir -p "$data_home"
+
+    if [ ! -e "$target" ] || ! /usr/bin/cmp --silent "$APP_BIN" "$target"; then
+        /usr/bin/rm -f "$target"
+        /usr/bin/cp "$APP_BIN" "$target"
     fi
-fi
-# We need to have it into this path so that the host is able to open it with flatpak-spawn
-#
-/usr/bin/flatpak-spawn --host "${XDG_DATA_HOME}/devpod" "$@"
+}
+
+main() {
+    if [ -z "${FLATPAK_ID}" ]; then
+        run_from_host "$@"
+    fi
+
+    sync_host_binary
+    data_home="${XDG_DATA_HOME:-$HOME/.local/share}"
+    exec /usr/bin/flatpak-spawn --host "${data_home}/devpod" "$@"
+}
+
+main "$@"
