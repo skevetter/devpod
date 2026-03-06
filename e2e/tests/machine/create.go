@@ -32,7 +32,7 @@ var _ = ginkgo.Describe("devpod testing machine", ginkgo.Label("machine"), ginkg
 		err = f.DevPodProviderAdd(ctx, tempDir+"/mock-provider.yaml")
 		framework.ExpectNoError(err)
 
-		ginkgo.By("Use mock provier")
+		ginkgo.By("Use mock provider")
 		err = f.DevPodProviderUse(context.Background(), "mock-provider")
 		framework.ExpectNoError(err)
 
