@@ -16,7 +16,7 @@ var _ = ginkgo.Describe(
 	func() {
 		var initialDir string
 
-		ginkgo.BeforeEach(func() {
+		ginkgo.BeforeAll(func() {
 			var err error
 			initialDir, err = os.Getwd()
 			framework.ExpectNoError(err)
@@ -74,12 +74,12 @@ var _ = ginkgo.Describe(
 			framework.ExpectNoError(err)
 
 			// Ensure provider 2 namespace parameter has the default value
-			ctx, cancel := context.WithDeadline(
+			checkCtx, cancel := context.WithDeadline(
 				ctx,
 				time.Now().Add(30*time.Second),
 			)
 			err = f.DevPodProviderOptionsCheckNamespaceDescription(
-				ctx,
+				checkCtx,
 				"provider2",
 				"The namespace to use",
 			)
@@ -95,12 +95,12 @@ var _ = ginkgo.Describe(
 			framework.ExpectNoError(err)
 
 			// Ensure that provider 2 was updated
-			ctx, cancel = context.WithDeadline(
+			checkCtx, cancel = context.WithDeadline(
 				ctx,
 				time.Now().Add(30*time.Second),
 			)
 			err = f.DevPodProviderOptionsCheckNamespaceDescription(
-				ctx,
+				checkCtx,
 				"provider2",
 				"Updated namespace parameter",
 			)

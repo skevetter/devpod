@@ -45,7 +45,9 @@ var _ = ginkgo.Describe(
 			ginkgo.DeferCleanup(func(cleanupCtx context.Context) {
 				err = f.DevPodWorkspaceDelete(cleanupCtx, tempDir)
 				framework.ExpectNoError(err)
-				err = f.DevPodProviderDelete(cleanupCtx, "docker123")
+			})
+			ginkgo.DeferCleanup(func(cleanupCtx context.Context) {
+				err = f.DevPodWorkspaceDelete(cleanupCtx, tempDir)
 				framework.ExpectNoError(err)
 			})
 

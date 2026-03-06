@@ -31,10 +31,12 @@ var _ = ginkgo.Describe(
 				err = f.DevPodContextCreate(ctx, "test-context")
 				framework.ExpectNoError(err)
 
-				err = f.DevPodContextUse(ctx, "test-context")
-				framework.ExpectNoError(err)
+				ginkgo.DeferCleanup(func(cleanupCtx context.Context) {
+					cleanupErr := f.DevPodContextDelete(cleanupCtx, "test-context")
+					framework.ExpectNoError(cleanupErr)
+				})
 
-				err = f.DevPodContextDelete(ctx, "test-context")
+				err = f.DevPodContextUse(ctx, "test-context")
 				framework.ExpectNoError(err)
 			},
 		)

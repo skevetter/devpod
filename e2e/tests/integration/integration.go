@@ -73,9 +73,7 @@ var _ = ginkgo.Describe(
 
 				f := framework.NewDefaultFramework(initialDir + "/bin")
 				// ensure we don't have the ssh provider present
-				if err := f.DevPodProviderDelete(ctx, "ssh"); err != nil {
-					ginkgo.GinkgoWriter.Println("warning: " + err.Error())
-				}
+				_ = f.DevPodProviderDelete(ctx, "ssh")
 
 				err = f.DevPodProviderAdd(ctx, "ssh", "-o", "HOST=localhost")
 				framework.ExpectNoError(err)
