@@ -91,13 +91,15 @@ var _ = ginkgo.Describe(
 
 				err = f.DevPodProviderAdd(ctx, "ssh", "-o", "HOST=localhost")
 				framework.ExpectNoError(err)
-				ginkgo.DeferCleanup(func() {
-					_ = f.DevPodProviderDelete(ctx, "ssh")
+				ginkgo.DeferCleanup(func(cleanupCtx context.Context) {
+					_ = f.DevPodProviderDelete(cleanupCtx, "ssh")
 				})
 
 				err = f.DevPodUp(ctx, "tests/integration/testdata/")
 				framework.ExpectNoError(err)
-				ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, ctx, "testdata")
+				ginkgo.DeferCleanup(func(cleanupCtx context.Context) {
+					_ = f.DevPodWorkspaceDelete(cleanupCtx, "testdata")
+				})
 
 				out, err := f.DevPodSSH(ctx, "testdata", "echo test")
 				framework.ExpectNoError(err)

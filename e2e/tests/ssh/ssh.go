@@ -114,7 +114,7 @@ var _ = ginkgo.Describe("devpod ssh test suite", ginkgo.Label("ssh"), ginkgo.Ord
 
 			f := framework.NewDefaultFramework(initialDir + "/bin")
 			_ = f.DevPodProviderAdd(ctx, "docker")
-			err = f.DevPodProviderUse(context.Background(), "docker")
+			err = f.DevPodProviderUse(ctx, "docker")
 			framework.ExpectNoError(err)
 
 			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, ctx, tempDir)
@@ -147,7 +147,7 @@ var _ = ginkgo.Describe("devpod ssh test suite", ginkgo.Label("ssh"), ginkgo.Ord
 			time.Sleep(3 * time.Second)
 
 			portForwardCtx, cancelPort := context.WithTimeout(
-				context.Background(),
+				ctx,
 				60*time.Second,
 			)
 			defer cancelPort()
