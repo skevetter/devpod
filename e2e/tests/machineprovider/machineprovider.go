@@ -44,11 +44,8 @@ var _ = ginkgo.Describe(
 			)
 			framework.ExpectNoError(err)
 			ginkgo.DeferCleanup(func(cleanupCtx context.Context) {
-				err = f.DevPodProviderDelete(cleanupCtx, "docker123")
-				framework.ExpectNoError(err)
-
-				err = f.DevPodWorkspaceDelete(cleanupCtx, tempDir)
-				framework.ExpectNoError(err)
+				_ = f.DevPodWorkspaceDelete(cleanupCtx, tempDir)
+				_ = f.DevPodProviderDelete(cleanupCtx, "docker123")
 			})
 
 			// wait for devpod workspace to come online (deadline: 30s)
@@ -117,11 +114,8 @@ var _ = ginkgo.Describe(
 			err = f.DevPodProviderAdd(ctx, filepath.Join(tempDir, "provider.yaml"))
 			framework.ExpectNoError(err)
 			ginkgo.DeferCleanup(func(cleanupCtx context.Context) {
-				err = f.DevPodProviderDelete(cleanupCtx, "docker123")
-				framework.ExpectNoError(err)
-
-				err = f.DevPodWorkspaceDelete(cleanupCtx, tempDir)
-				framework.ExpectNoError(err)
+				_ = f.DevPodWorkspaceDelete(cleanupCtx, tempDir)
+				_ = f.DevPodProviderDelete(cleanupCtx, "docker123")
 			})
 
 			// wait for devpod workspace to come online (deadline: 30s)

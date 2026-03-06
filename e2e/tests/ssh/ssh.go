@@ -37,9 +37,6 @@ var _ = ginkgo.Describe("devpod ssh test suite", ginkgo.Label("ssh"), ginkgo.Ord
 
 			ginkgo.DeferCleanup(func(cleanupCtx context.Context) {
 				_ = f.DevPodWorkspaceDelete(cleanupCtx, tempDir)
-			})
-
-			ginkgo.DeferCleanup(func(cleanupCtx context.Context) {
 				framework.CleanupTempDir(initialDir, tempDir)
 			})
 
