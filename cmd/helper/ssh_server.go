@@ -119,14 +119,14 @@ func (cmd *SSHServerCmd) Run(_ *cobra.Command, _ []string) error {
 					if err := os.WriteFile(
 						agent.ContainerActivityFile,
 						nil,
-						0o666,
+						0o777,
 					); err != nil { // #nosec G306
 						fmt.Fprintf(os.Stderr, "error writing file: %v\n", err)
 						return
 					}
 					if err := os.Chmod(
 						agent.ContainerActivityFile,
-						0o666,
+						0o777,
 					); err != nil { // #nosec G302
 						fmt.Fprintf(os.Stderr, "error setting file permissions: %v\n", err)
 						return

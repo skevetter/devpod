@@ -149,7 +149,7 @@ func isDirExecutable(dir string) (bool, error) {
 	}
 
 	// #nosec G301,G703 -- TODO Consider using a more secure permission setting and ownership if needed.
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := os.MkdirAll(dir, 0o777); err != nil {
 		return false, err
 	}
 
