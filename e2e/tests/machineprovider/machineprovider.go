@@ -43,11 +43,13 @@ var _ = ginkgo.Describe(
 				filepath.Join(tempDir, "provider.yaml"),
 			)
 			framework.ExpectNoError(err)
-			ginkgo.DeferCleanup(func() {
-				err = f.DevPodProviderDelete(context.Background(), "docker123")
+			ginkgo.DeferCleanup(func(cleanupCtx context.Context) {
+				err = f.DevPodProviderDelete(cleanupCtx, "docker123")
+				framework.ExpectNoError(err)
+
+				err = f.DevPodWorkspaceDelete(cleanupCtx, tempDir)
 				framework.ExpectNoError(err)
 			})
-			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), tempDir)
 
 			// wait for devpod workspace to come online (deadline: 30s)
 			err = f.DevPodUp(ctx, tempDir, "--debug")
@@ -114,11 +116,13 @@ var _ = ginkgo.Describe(
 			_ = f.DevPodProviderDelete(ctx, "docker123")
 			err = f.DevPodProviderAdd(ctx, filepath.Join(tempDir, "provider.yaml"))
 			framework.ExpectNoError(err)
-			ginkgo.DeferCleanup(func() {
-				err = f.DevPodProviderDelete(context.Background(), "docker123")
+			ginkgo.DeferCleanup(func(cleanupCtx context.Context) {
+				err = f.DevPodProviderDelete(cleanupCtx, "docker123")
+				framework.ExpectNoError(err)
+
+				err = f.DevPodWorkspaceDelete(cleanupCtx, tempDir)
 				framework.ExpectNoError(err)
 			})
-			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), tempDir)
 
 			// wait for devpod workspace to come online (deadline: 30s)
 			err = f.DevPodUp(ctx, tempDir, "--debug", "--daemon-interval=3s")
@@ -169,7 +173,7 @@ var _ = ginkgo.Describe(
 					true,
 					"machine did not shutdown in time",
 				)
-				if status.State == "Stopped" {
+				if strings.EqualFold(status.State, "STOPPED") {
 					break
 				}
 

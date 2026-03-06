@@ -100,11 +100,11 @@ var _ = ginkgo.Describe("devpod build test suite", ginkgo.Label("build"), ginkgo
 		// make sure images are there
 		prebuildHash, err := config.CalculatePrebuildHash(config.PrebuildHashParams{
 			Config:            cfg,
-			Platform:          "linux/amd64",
-			Architecture:      "amd64",
+			Platform:          "linux/" + runtime.GOARCH,
+			Architecture:      runtime.GOARCH,
 			ContextPath:       filepath.Dir(cfg.Origin),
 			DockerfilePath:    dockerfilePath,
-			DockerfileContent: modifiedDockerfileContents,
+			DockerfileContent: contentToParse,
 			BuildInfo:         info,
 			Log:               log.Default,
 		})
@@ -118,7 +118,7 @@ var _ = ginkgo.Describe("devpod build test suite", ginkgo.Label("build"), ginkgo
 			Architecture:      "arm64",
 			ContextPath:       filepath.Dir(cfg.Origin),
 			DockerfilePath:    dockerfilePath,
-			DockerfileContent: modifiedDockerfileContents,
+			DockerfileContent: contentToParse,
 			BuildInfo:         info,
 			Log:               log.Default,
 		})
@@ -179,7 +179,7 @@ var _ = ginkgo.Describe("devpod build test suite", ginkgo.Label("build"), ginkgo
 				Architecture:      runtime.GOARCH,
 				ContextPath:       filepath.Dir(cfg.Origin),
 				DockerfilePath:    dockerfilePath,
-				DockerfileContent: modifiedDockerfileContents,
+				DockerfileContent: contentToParse,
 				BuildInfo:         info,
 				Log:               log.Default,
 			})

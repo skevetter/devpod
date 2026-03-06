@@ -36,7 +36,9 @@ var _ = ginkgo.Describe("devpod ssh test suite", ginkgo.Label("ssh"), ginkgo.Ord
 			err = f.DevPodProviderUse(ctx, "docker")
 			framework.ExpectNoError(err)
 
-			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, ctx, tempDir)
+			ginkgo.DeferCleanup(func(cleanupCtx context.Context) {
+				_ = f.DevPodWorkspaceDelete(cleanupCtx, tempDir)
+			})
 
 			// Start up devpod workspace
 			devpodUpDeadline := time.Now().Add(5 * time.Minute)
@@ -117,7 +119,9 @@ var _ = ginkgo.Describe("devpod ssh test suite", ginkgo.Label("ssh"), ginkgo.Ord
 			err = f.DevPodProviderUse(ctx, "docker")
 			framework.ExpectNoError(err)
 
-			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, ctx, tempDir)
+			ginkgo.DeferCleanup(func(cleanupCtx context.Context) {
+				_ = f.DevPodWorkspaceDelete(cleanupCtx, tempDir)
+			})
 
 			source := rand.NewSource(time.Now().UnixNano())
 			rng := rand.New(source) // #nosec G404 -- weak random is fine for test port selection

@@ -97,8 +97,7 @@ var _ = ginkgo.Describe(
 				ginkgo.Fail("IDE was not set in context-b as expected")
 			}
 
-			err = os.Setenv("DEVPOD_CONTEXT", contextB)
-			framework.ExpectNoError(err)
+			ginkgo.GinkgoT().Setenv("DEVPOD_CONTEXT", contextB)
 
 			output, err = f.DevPodIDEList(ctx, "--output", "json")
 			framework.ExpectNoError(err)
