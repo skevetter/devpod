@@ -20,6 +20,25 @@ const (
 	osWindows        = "windows"
 )
 
+func prepareDockerfileContent(dockerfilePath string) (string, error) {
+	dockerfileContent, err := os.ReadFile(dockerfilePath) // #nosec G304 -- test file path
+	if err != nil {
+		return "", err
+	}
+	_, modifiedDockerfileContents, err := dockerfile.EnsureFinalStageName(
+		string(dockerfileContent),
+		config.DockerfileDefaultTarget,
+	)
+	if err != nil {
+		return "", err
+	}
+	contentToParse := modifiedDockerfileContents
+	if contentToParse == "" {
+		contentToParse = string(dockerfileContent)
+	}
+	return contentToParse, nil
+}
+
 func getDevcontainerConfig(dir string) *config.DevContainerConfig {
 	return &config.DevContainerConfig{
 		DevContainerConfigBase: config.DevContainerConfigBase{
@@ -60,23 +79,14 @@ var _ = ginkgo.Describe("devpod build test suite", ginkgo.Label("build"), ginkgo
 		_ = f.DevPodProviderDelete(ctx, "docker")
 		err = f.DevPodProviderAdd(ctx, "docker")
 		framework.ExpectNoError(err)
-		err = f.DevPodProviderUse(context.Background(), "docker")
+		err = f.DevPodProviderUse(ctx, "docker")
 		framework.ExpectNoError(err)
 
 		cfg := getDevcontainerConfig(tempDir)
 
 		dockerfilePath := tempDir + "/.devcontainer/Dockerfile"
-		dockerfileContent, err := os.ReadFile(dockerfilePath) // #nosec G304 -- test file path
+		contentToParse, err := prepareDockerfileContent(dockerfilePath)
 		framework.ExpectNoError(err)
-		_, modifiedDockerfileContents, err := dockerfile.EnsureFinalStageName(
-			string(dockerfileContent),
-			config.DockerfileDefaultTarget,
-		)
-		framework.ExpectNoError(err)
-		contentToParse := modifiedDockerfileContents
-		if contentToParse == "" {
-			contentToParse = string(dockerfileContent)
-		}
 
 		// do the build
 		platforms := "linux/amd64,linux/arm64"
@@ -100,8 +110,8 @@ var _ = ginkgo.Describe("devpod build test suite", ginkgo.Label("build"), ginkgo
 		// make sure images are there
 		prebuildHash, err := config.CalculatePrebuildHash(config.PrebuildHashParams{
 			Config:            cfg,
-			Platform:          "linux/" + runtime.GOARCH,
-			Architecture:      runtime.GOARCH,
+			Platform:          "linux/amd64",
+			Architecture:      "amd64",
 			ContextPath:       filepath.Dir(cfg.Origin),
 			DockerfilePath:    dockerfilePath,
 			DockerfileContent: contentToParse,
@@ -144,24 +154,15 @@ var _ = ginkgo.Describe("devpod build test suite", ginkgo.Label("build"), ginkgo
 			_ = f.DevPodProviderDelete(ctx, "docker")
 			err = f.DevPodProviderAdd(ctx, "docker")
 			framework.ExpectNoError(err)
-			err = f.DevPodProviderUse(context.Background(), "docker")
+			err = f.DevPodProviderUse(ctx, "docker")
 			framework.ExpectNoError(err)
 			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), tempDir)
 
 			cfg := getDevcontainerConfig(tempDir)
 
 			dockerfilePath := tempDir + "/.devcontainer/Dockerfile"
-			dockerfileContent, err := os.ReadFile(dockerfilePath) // #nosec G304 -- test file path
+			contentToParse, err := prepareDockerfileContent(dockerfilePath)
 			framework.ExpectNoError(err)
-			_, modifiedDockerfileContents, err := dockerfile.EnsureFinalStageName(
-				string(dockerfileContent),
-				config.DockerfileDefaultTarget,
-			)
-			framework.ExpectNoError(err)
-			contentToParse := modifiedDockerfileContents
-			if contentToParse == "" {
-				contentToParse = string(dockerfileContent)
-			}
 
 			// do the build
 			err = f.DevPodBuild(ctx, tempDir, "--skip-push")
@@ -204,7 +205,7 @@ var _ = ginkgo.Describe("devpod build test suite", ginkgo.Label("build"), ginkgo
 			_ = f.DevPodProviderDelete(ctx, "docker")
 			err = f.DevPodProviderAdd(ctx, "docker")
 			framework.ExpectNoError(err)
-			err = f.DevPodProviderUse(context.Background(), "docker")
+			err = f.DevPodProviderUse(ctx, "docker")
 			framework.ExpectNoError(err)
 
 			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), tempDir)
@@ -219,9 +220,7 @@ var _ = ginkgo.Describe("devpod build test suite", ginkgo.Label("build"), ginkgo
 
 	ginkgo.It(
 		"should build docker-compose with features when build context differs from devcontainer location",
-		func() {
-			ctx := context.Background()
-
+		func(ctx context.Context) {
 			f := framework.NewDefaultFramework(initialDir + "/bin")
 			tempDir, err := framework.CopyToTempDir(
 				"tests/build/testdata/docker-compose-features-context",
@@ -232,7 +231,7 @@ var _ = ginkgo.Describe("devpod build test suite", ginkgo.Label("build"), ginkgo
 			_ = f.DevPodProviderDelete(ctx, "docker")
 			err = f.DevPodProviderAdd(ctx, "docker")
 			framework.ExpectNoError(err)
-			err = f.DevPodProviderUse(context.Background(), "docker")
+			err = f.DevPodProviderUse(ctx, "docker")
 			framework.ExpectNoError(err)
 
 			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), tempDir)
@@ -251,7 +250,7 @@ var _ = ginkgo.Describe("devpod build test suite", ginkgo.Label("build"), ginkgo
 		_ = f.DevPodProviderDelete(ctx, "docker")
 		err = f.DevPodProviderAdd(ctx, "docker")
 		framework.ExpectNoError(err)
-		err = f.DevPodProviderUse(context.Background(), "docker")
+		err = f.DevPodProviderUse(ctx, "docker")
 		framework.ExpectNoError(err)
 
 		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), tempDir)
@@ -259,17 +258,8 @@ var _ = ginkgo.Describe("devpod build test suite", ginkgo.Label("build"), ginkgo
 		cfg := getDevcontainerConfig(tempDir)
 
 		dockerfilePath := tempDir + "/.devcontainer/Dockerfile"
-		dockerfileContent, err := os.ReadFile(dockerfilePath) // #nosec G304 -- test file path
+		contentToParse, err := prepareDockerfileContent(dockerfilePath)
 		framework.ExpectNoError(err)
-		_, modifiedDockerfileContents, err := dockerfile.EnsureFinalStageName(
-			string(dockerfileContent),
-			config.DockerfileDefaultTarget,
-		)
-		framework.ExpectNoError(err)
-		contentToParse := modifiedDockerfileContents
-		if contentToParse == "" {
-			contentToParse = string(dockerfileContent)
-		}
 
 		prebuildRepo := prebuildRepoName
 
@@ -321,7 +311,7 @@ var _ = ginkgo.Describe("devpod build test suite", ginkgo.Label("build"), ginkgo
 		err = f.DevPodProviderAdd(ctx, "kubernetes")
 		framework.ExpectNoError(err)
 		err = f.DevPodProviderUse(
-			context.Background(),
+			ctx,
 			"kubernetes",
 			"-o",
 			"KUBERNETES_NAMESPACE=devpod",
@@ -379,7 +369,7 @@ func validateKubernetesDeploymentWithoutDocker(
 	err = f.DevPodProviderAdd(ctx, "kubernetes")
 	framework.ExpectNoError(err)
 	err = f.DevPodProviderUse(
-		context.Background(),
+		ctx,
 		"kubernetes",
 		"-o",
 		"KUBERNETES_NAMESPACE=devpod",

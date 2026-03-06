@@ -29,7 +29,6 @@ var _ = ginkgo.Describe("devpod ssh test suite", ginkgo.Label("ssh"), ginkgo.Ord
 		func(ctx context.Context) {
 			tempDir, err := framework.CopyToTempDir("tests/ssh/testdata/local-test")
 			framework.ExpectNoError(err)
-			defer framework.CleanupTempDir(initialDir, tempDir)
 
 			f := framework.NewDefaultFramework(initialDir + "/bin")
 			_ = f.DevPodProviderAdd(ctx, "docker")
@@ -38,6 +37,10 @@ var _ = ginkgo.Describe("devpod ssh test suite", ginkgo.Label("ssh"), ginkgo.Ord
 
 			ginkgo.DeferCleanup(func(cleanupCtx context.Context) {
 				_ = f.DevPodWorkspaceDelete(cleanupCtx, tempDir)
+			})
+
+			ginkgo.DeferCleanup(func(cleanupCtx context.Context) {
+				framework.CleanupTempDir(initialDir, tempDir)
 			})
 
 			// Start up devpod workspace
@@ -112,7 +115,6 @@ var _ = ginkgo.Describe("devpod ssh test suite", ginkgo.Label("ssh"), ginkgo.Ord
 
 			tempDir, err := framework.CopyToTempDir("tests/ssh/testdata/forward-test")
 			framework.ExpectNoError(err)
-			defer framework.CleanupTempDir(initialDir, tempDir)
 
 			f := framework.NewDefaultFramework(initialDir + "/bin")
 			_ = f.DevPodProviderAdd(ctx, "docker")
@@ -121,6 +123,7 @@ var _ = ginkgo.Describe("devpod ssh test suite", ginkgo.Label("ssh"), ginkgo.Ord
 
 			ginkgo.DeferCleanup(func(cleanupCtx context.Context) {
 				_ = f.DevPodWorkspaceDelete(cleanupCtx, tempDir)
+				framework.CleanupTempDir(initialDir, tempDir)
 			})
 
 			source := rand.NewSource(time.Now().UnixNano())
