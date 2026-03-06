@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/creativeprojects/go-selfupdate"
 	"github.com/skevetter/devpod/pkg/version"
@@ -20,7 +21,7 @@ func Upgrade(ctx context.Context, targetVersion string, dryRun bool, logger log.
 		return err
 	}
 
-	if release.Version() == version.GetVersion() {
+	if release.Version() == strings.TrimLeft(version.GetVersion(), "v") {
 		if _, err := fmt.Fprintf(
 			os.Stdout,
 			"devpod version %s is already up-to-date\n",
