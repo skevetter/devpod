@@ -2,7 +2,7 @@
 
 # If we're outside the flatpak, we will run the flatpak command
 if [ -z "${FLATPAK_ID}" ]; then
-    flatpak run --branch=master --arch=x86_64 --command=devpod sh.loft.devpod "$@"
+    flatpak run --command=devpod sh.loft.devpod "$@"
     result="$?"
 
     # In case of error check if the flatpak has been uninstalled, and prompt to
@@ -10,7 +10,12 @@ if [ -z "${FLATPAK_ID}" ]; then
     if [ "${result}" -gt 0 ]; then # I: Check exit code directly with e.g. 'if ! mycmd;', not indirectly with $?.
         if ! flatpak list --app | grep -q sh.loft.devpod; then
             echo "Devpod flatpak is not installed anymore"
-            rm -i "$0"
+            script_path="$0"
+            case "$script_path" in
+                */*) ;;
+                *) script_path="$(command -v "$script_path" 2>/dev/null || true)" ;;
+            esac
+            [ -n "$script_path" ] && rm -i -- "$script_path"
         fi
     fi
 
