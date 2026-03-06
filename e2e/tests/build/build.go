@@ -75,6 +75,10 @@ var _ = ginkgo.Describe("devpod build test suite", ginkgo.Label("build"), ginkgo
 			config.DockerfileDefaultTarget,
 		)
 		framework.ExpectNoError(err)
+		contentToParse := modifiedDockerfileContents
+		if contentToParse == "" {
+			contentToParse = string(dockerfileContent)
+		}
 
 		// do the build
 		platforms := "linux/amd64,linux/arm64"
@@ -91,7 +95,7 @@ var _ = ginkgo.Describe("devpod build test suite", ginkgo.Label("build"), ginkgo
 		framework.ExpectNoError(err)
 
 		// parse the dockerfile
-		file, err := dockerfile.Parse(modifiedDockerfileContents)
+		file, err := dockerfile.Parse(contentToParse)
 		framework.ExpectNoError(err)
 		info := &config.ImageBuildInfo{Dockerfile: file}
 
@@ -121,8 +125,7 @@ var _ = ginkgo.Describe("devpod build test suite", ginkgo.Label("build"), ginkgo
 			Log:               log.Default,
 		})
 		framework.ExpectNoError(err)
-		_, err = dockerHelper.InspectImage(ctx, prebuildRepoName+":"+prebuildHash, false)
-		framework.ExpectNoError(err)
+
 		details, err := dockerHelper.InspectImage(ctx, prebuildRepoName+":"+prebuildHash, false)
 		framework.ExpectNoError(err)
 		framework.ExpectEqual(
@@ -159,13 +162,17 @@ var _ = ginkgo.Describe("devpod build test suite", ginkgo.Label("build"), ginkgo
 				config.DockerfileDefaultTarget,
 			)
 			framework.ExpectNoError(err)
+			contentToParse := modifiedDockerfileContents
+			if contentToParse == "" {
+				contentToParse = string(dockerfileContent)
+			}
 
 			// do the build
 			err = f.DevPodBuild(ctx, tempDir, "--skip-push")
 			framework.ExpectNoError(err)
 
 			// parse the dockerfile
-			file, err := dockerfile.Parse(modifiedDockerfileContents)
+			file, err := dockerfile.Parse(contentToParse)
 			framework.ExpectNoError(err)
 			info := &config.ImageBuildInfo{Dockerfile: file}
 
@@ -267,6 +274,10 @@ var _ = ginkgo.Describe("devpod build test suite", ginkgo.Label("build"), ginkgo
 			config.DockerfileDefaultTarget,
 		)
 		framework.ExpectNoError(err)
+		contentToParse := modifiedDockerfileContents
+		if contentToParse == "" {
+			contentToParse = string(dockerfileContent)
+		}
 
 		prebuildRepo := prebuildRepoName
 
@@ -283,18 +294,18 @@ var _ = ginkgo.Describe("devpod build test suite", ginkgo.Label("build"), ginkgo
 		framework.ExpectNoError(err)
 
 		// parse the dockerfile
-		file, err := dockerfile.Parse(modifiedDockerfileContents)
+		file, err := dockerfile.Parse(contentToParse)
 		framework.ExpectNoError(err)
 		info := &config.ImageBuildInfo{Dockerfile: file}
 
 		// make sure images are there
 		prebuildHash, err := config.CalculatePrebuildHash(config.PrebuildHashParams{
 			Config:            cfg,
-			Platform:          "linux/amd64",
-			Architecture:      "amd64",
+			Platform:          "linux/" + runtime.GOARCH,
+			Architecture:      runtime.GOARCH,
 			ContextPath:       filepath.Dir(cfg.Origin),
 			DockerfilePath:    dockerfilePath,
-			DockerfileContent: modifiedDockerfileContents,
+			DockerfileContent: contentToParse,
 			BuildInfo:         info,
 			Log:               log.Default,
 		})
@@ -305,9 +316,8 @@ var _ = ginkgo.Describe("devpod build test suite", ginkgo.Label("build"), ginkgo
 	})
 
 	ginkgo.It("build kubernetes dockerless", func() {
-		// skip windows for now
 		if runtime.GOOS == osWindows {
-			return
+			ginkgo.Skip("skipping on windows")
 		}
 
 		ctx := context.Background()
@@ -364,7 +374,7 @@ func validateKubernetesDeploymentWithoutDocker(
 	action func(context.Context, *framework.Framework, string) error,
 ) {
 	if runtime.GOOS == osWindows {
-		return
+		ginkgo.Skip("skipping on Windows")
 	}
 
 	ctx := context.Background()

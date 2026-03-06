@@ -37,18 +37,10 @@ var _ = ginkgo.Describe(
 				_ = os.RemoveAll(tempDir)
 			})
 
-			tempDirLocation, err := os.MkdirTemp("", "")
-			framework.ExpectNoError(err)
-			ginkgo.DeferCleanup(func() {
-				_ = os.RemoveAll(tempDirLocation)
-			})
-
 			// create docker provider
 			err = f.DevPodProviderAdd(
 				ctx,
 				filepath.Join(tempDir, "provider.yaml"),
-				"-o",
-				"LOCATION="+tempDirLocation,
 			)
 			framework.ExpectNoError(err)
 			ginkgo.DeferCleanup(func() {
@@ -103,10 +95,6 @@ var _ = ginkgo.Describe(
 				"Test123",
 				"workspace content does not match",
 			)
-
-			// delete workspace
-			err = f.DevPodWorkspaceDelete(ctx, tempDir)
-			framework.ExpectNoError(err)
 		}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
 		ginkgo.It("test devpod inactivity timeout", func(ctx context.Context) {
@@ -119,13 +107,6 @@ var _ = ginkgo.Describe(
 			framework.ExpectNoError(err)
 			ginkgo.DeferCleanup(func() {
 				err = os.RemoveAll(tempDir)
-				framework.ExpectNoError(err)
-			})
-
-			tempDirLocation, err := os.MkdirTemp("", "")
-			framework.ExpectNoError(err)
-			ginkgo.DeferCleanup(func() {
-				err = os.RemoveAll(tempDirLocation)
 				framework.ExpectNoError(err)
 			})
 
@@ -142,11 +123,6 @@ var _ = ginkgo.Describe(
 			// wait for devpod workspace to come online (deadline: 30s)
 			err = f.DevPodUp(ctx, tempDir, "--debug", "--daemon-interval=3s")
 			framework.ExpectNoError(err)
-			ginkgo.DeferCleanup(func() {
-				// delete workspace
-				err = f.DevPodWorkspaceDelete(context.Background(), tempDir)
-				framework.ExpectNoError(err)
-			})
 
 			// check status
 			status, err := f.DevPodStatus(ctx, tempDir, "--container-status=false")

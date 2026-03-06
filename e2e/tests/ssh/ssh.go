@@ -16,38 +16,37 @@ import (
 )
 
 var _ = ginkgo.Describe("devpod ssh test suite", ginkgo.Label("ssh"), ginkgo.Ordered, func() {
-	ctx := context.Background()
-	initialDir, err := os.Getwd()
-	if err != nil {
-		panic(err)
-	}
+	var initialDir string
+
+	ginkgo.BeforeEach(func() {
+		var err error
+		initialDir, err = os.Getwd()
+		framework.ExpectNoError(err)
+	})
 
 	ginkgo.It(
 		"should start a new workspace with a docker provider (default) and SSH into it",
-		func() {
+		func(ctx context.Context) {
 			tempDir, err := framework.CopyToTempDir("tests/ssh/testdata/local-test")
 			framework.ExpectNoError(err)
 			defer framework.CleanupTempDir(initialDir, tempDir)
 
 			f := framework.NewDefaultFramework(initialDir + "/bin")
 			_ = f.DevPodProviderAdd(ctx, "docker")
-			err = f.DevPodProviderUse(context.Background(), "docker")
+			err = f.DevPodProviderUse(ctx, "docker")
 			framework.ExpectNoError(err)
 
-			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), tempDir)
+			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, ctx, tempDir)
 
 			// Start up devpod workspace
 			devpodUpDeadline := time.Now().Add(5 * time.Minute)
-			devpodUpCtx, cancel := context.WithDeadline(context.Background(), devpodUpDeadline)
+			devpodUpCtx, cancel := context.WithDeadline(ctx, devpodUpDeadline)
 			defer cancel()
 			err = f.DevPodUp(devpodUpCtx, tempDir)
 			framework.ExpectNoError(err)
 
 			devpodSSHDeadline := time.Now().Add(20 * time.Second)
-			devpodSSHCtx, cancelSSH := context.WithDeadline(
-				context.Background(),
-				devpodSSHDeadline,
-			)
+			devpodSSHCtx, cancelSSH := context.WithDeadline(ctx, devpodSSHDeadline)
 			defer cancelSSH()
 			err = f.DevPodSSHEchoTestString(devpodSSHCtx, tempDir)
 			framework.ExpectNoError(err)
@@ -104,9 +103,9 @@ var _ = ginkgo.Describe("devpod ssh test suite", ginkgo.Label("ssh"), ginkgo.Ord
 
 	ginkgo.It(
 		"should start a new workspace with a docker provider (default) and forward a port into it",
-		func() {
+		func(ctx context.Context) {
 			if runtime.GOOS == "windows" {
-				return
+				ginkgo.Skip("skipping on windows")
 			}
 
 			tempDir, err := framework.CopyToTempDir("tests/ssh/testdata/forward-test")
@@ -118,25 +117,31 @@ var _ = ginkgo.Describe("devpod ssh test suite", ginkgo.Label("ssh"), ginkgo.Ord
 			err = f.DevPodProviderUse(context.Background(), "docker")
 			framework.ExpectNoError(err)
 
-			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), tempDir)
+			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, ctx, tempDir)
 
 			source := rand.NewSource(time.Now().UnixNano())
 			rng := rand.New(source) // #nosec G404 -- weak random is fine for test port selection
 			port := rng.Intn(1000) + 50000
 
-			devpodUpCtx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+			devpodUpCtx, cancel := context.WithTimeout(ctx, 5*time.Minute)
 			defer cancel()
 			err = f.DevPodUp(devpodUpCtx, tempDir)
 			framework.ExpectNoError(err)
 
 			ginkgo.GinkgoWriter.Println("Starting pong service on port", port)
+			// Create a cancelable context for the server command
+			serverCtx, serverCancel := context.WithCancel(ctx)
+			defer serverCancel()
 			// #nosec G204 -- test command with controlled arguments
-			serverCmd := exec.CommandContext(ctx, f.DevpodBinDir+"/"+f.DevpodBinName,
+			serverCmd := exec.CommandContext(serverCtx, f.DevpodBinDir+"/"+f.DevpodBinName,
 				"ssh", tempDir, "--command",
 				"go run /workspaces/"+filepath.Base(tempDir)+"/server.go "+strconv.Itoa(port),
 			)
 			err = serverCmd.Start()
 			framework.ExpectNoError(err)
+			go func() {
+				_ = serverCmd.Wait()
+			}()
 
 			ginkgo.GinkgoWriter.Println("Waiting for server to start")
 			time.Sleep(3 * time.Second)

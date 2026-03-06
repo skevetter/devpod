@@ -14,29 +14,38 @@ var _ = ginkgo.Describe(
 	ginkgo.Label("context"),
 	ginkgo.Ordered,
 	func() {
-		ctx := context.Background()
-		initialDir, err := os.Getwd()
-		framework.ExpectNoError(err)
+		var initialDir string
 
-		ginkgo.It("create a new context, switch to it and delete afterwards", func() {
-			f := framework.NewDefaultFramework(initialDir + "/bin")
-
-			err = f.DevPodContextCreate(ctx, "test-context")
-			framework.ExpectNoError(err)
-
-			err = f.DevPodContextUse(context.Background(), "test-context")
-			framework.ExpectNoError(err)
-
-			err = f.DevPodContextDelete(context.Background(), "test-context")
+		ginkgo.BeforeAll(func() {
+			var err error
+			initialDir, err = os.Getwd()
 			framework.ExpectNoError(err)
 		})
 
-		ginkgo.It("should use shared context in IDE commands", func() {
+		ginkgo.It(
+			"create a new context, switch to it and delete afterwards",
+			func(ctx context.Context) {
+				f := framework.NewDefaultFramework(initialDir + "/bin")
+
+				var err error
+				err = f.DevPodContextCreate(ctx, "test-context")
+				framework.ExpectNoError(err)
+
+				err = f.DevPodContextUse(ctx, "test-context")
+				framework.ExpectNoError(err)
+
+				err = f.DevPodContextDelete(ctx, "test-context")
+				framework.ExpectNoError(err)
+			},
+		)
+
+		ginkgo.It("should use shared context in IDE commands", func(ctx context.Context) {
 			f := framework.NewDefaultFramework(initialDir + "/bin")
 
 			contextA := "test-ctx-a-ide"
 			contextB := "test-ctx-b-ide"
 
+			var err error
 			err = f.DevPodContextCreate(ctx, contextA)
 			framework.ExpectNoError(err)
 
