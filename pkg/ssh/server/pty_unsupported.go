@@ -8,7 +8,7 @@ import (
 	"os/exec"
 )
 
-func startPTY(cmd *exec.Cmd) (*os.File, error) {
+func startPTY(cmd *exec.Cmd, w, h int) (*os.File, error) {
 	return nil, fmt.Errorf("pty is currently not supported on windows")
 }
 
