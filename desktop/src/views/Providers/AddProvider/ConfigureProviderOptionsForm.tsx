@@ -112,7 +112,7 @@ function ProviderOptionsForm(props: TProviderOptionsFormProps) {
       ;(await client.providers.configure(providerID, config)).unwrap()
 
       if (newName && newName !== providerID) {
-        await rename.run({ oldProviderID: providerID, newProviderID: newName })
+        rename.run({ oldProviderID: providerID, newProviderID: newName })
 
         navigate(Routes.toProvider(newName), { replace: true })
       } else {
@@ -236,7 +236,7 @@ function ConfigureOptionsForm({
           useAsDefaultProvider: useAsDefault,
           options: filterOptions(data, allOptions),
         },
-        newName: typeof name === "string" ? name : undefined,
+        newName: typeof name === "string" && name.trim() !== "" ? name : undefined,
       })
     })(event)
   }

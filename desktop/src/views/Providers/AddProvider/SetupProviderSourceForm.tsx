@@ -102,7 +102,7 @@ export function SetupProviderSourceForm({
   const onSubmit = useCallback<SubmitHandler<TFormValues>>(
     async (data) => {
       const providerSource = data[FieldName.PROVIDER_SOURCE].trim()
-      const maybeProviderName = data[FieldName.PROVIDER_NAME]?.trim()
+      const maybeProviderName = data[FieldName.PROVIDER_NAME]?.trim() || undefined
 
       const providerIDRes = await client.providers.newID(providerSource)
       let preferredProviderName: string | undefined
@@ -379,9 +379,10 @@ export function SetupProviderSourceForm({
                       },
                       validate: {
                         unique: (value) => {
-                          if (value === undefined || value === "") return true
+                          const trimmedValue = value?.trim()
+                          if (trimmedValue === undefined || trimmedValue === "") return true
 
-                          return providers?.[value] === undefined ? true : "Name must be unique"
+                          return providers?.[trimmedValue] === undefined ? true : "Name must be unique"
                         },
                       },
                       maxLength: { value: 32, message: "Name cannot be longer than 32 characters" },

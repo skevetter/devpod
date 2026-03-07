@@ -70,7 +70,7 @@ func validateProviderName(newName string) error {
 	if strings.TrimSpace(newName) == "" {
 		return fmt.Errorf("provider name cannot be empty")
 	}
-	if provider.ProviderNameRegEx.MatchString(newName) {
+	if !provider.ProviderNameRegEx.MatchString(newName) {
 		return fmt.Errorf("provider name can only include lowercase letters, numbers or dashes")
 	}
 	if len(newName) > 32 {
@@ -221,15 +221,16 @@ func checkProviderRenameable(devPodConfig *config.Config, oldName string) error 
 	}
 
 	proInstances, err := workspace.ListProInstances(devPodConfig, log.Default)
-	if err == nil {
-		for _, inst := range proInstances {
-			if inst.Provider == oldName {
-				return fmt.Errorf(
-					"cannot rename provider %s: it is used by pro instance %s",
-					oldName,
-					inst.Host,
-				)
-			}
+	if err != nil {
+		return fmt.Errorf("listing pro instances: %w", err)
+	}
+	for _, inst := range proInstances {
+		if inst.Provider == oldName {
+			return fmt.Errorf(
+				"cannot rename provider %s: it is used by pro instance %s",
+				oldName,
+				inst.Host,
+			)
 		}
 	}
 
