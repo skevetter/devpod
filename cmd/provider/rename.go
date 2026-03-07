@@ -70,7 +70,7 @@ func validateProviderName(newName string) error {
 	if strings.TrimSpace(newName) == "" {
 		return fmt.Errorf("provider name cannot be empty")
 	}
-	if !provider.ProviderNameRegEx.MatchString(newName) {
+	if provider.ProviderNameRegEx.MatchString(newName) {
 		return fmt.Errorf("provider name can only include lowercase letters, numbers or dashes")
 	}
 	if len(newName) > 32 {
