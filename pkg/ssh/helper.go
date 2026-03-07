@@ -219,8 +219,8 @@ func handleRunError(ctx context.Context, err error, command string) error {
 
 	// Provide context for common errors
 	if errors.Is(err, io.EOF) {
-		return fmt.Errorf("SSH session closed unexpectedly (EOF) while running: %s", command)
+		return fmt.Errorf("SSH session closed unexpectedly while running %s: %w", command, err)
 	}
 
-	return fmt.Errorf("SSH command failed: %w (command: %s)", err, command)
+	return fmt.Errorf("SSH command failed while running %s: %w", command, err)
 }
