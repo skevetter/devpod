@@ -539,10 +539,15 @@ spec:
 				gomega.Expect(exists).
 					To(gomega.BeTrue(), "option %s should exist after rename", key)
 
-				beforeMap, ok1 := beforeVal.(map[string]any)
-				afterMap, ok2 := afterVal.(map[string]any)
-				if ok1 && ok2 {
-					gomega.Expect(afterMap["value"]).To(gomega.Equal(beforeMap["value"]),
+				beforeMap := beforeVal.(map[string]any)
+				afterMap := afterVal.(map[string]any)
+
+				beforeV, hasBefore := beforeMap["value"]
+				afterV, hasAfter := afterMap["value"]
+				gomega.Expect(hasAfter).To(gomega.Equal(hasBefore),
+					"option %s value presence should be preserved", key)
+				if hasBefore {
+					gomega.Expect(afterV).To(gomega.Equal(beforeV),
 						"option %s value should be preserved", key)
 				}
 			}
