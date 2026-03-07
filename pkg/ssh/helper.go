@@ -167,7 +167,7 @@ func Run(opts RunOptions) error {
 
 	err = sess.Run(opts.Command)
 	if err != nil {
-		return handleRunError(err, opts.Command)
+		return handleRunError(opts.Context, err, opts.Command)
 	}
 
 	return nil
@@ -189,7 +189,13 @@ func setupContextCancellation(ctx context.Context, sess *ssh.Session) error {
 	return nil
 }
 
-func handleRunError(err error, command string) error {
+func handleRunError(ctx context.Context, err error, command string) error {
+	// If the context was cancelled, EOF and other errors are expected
+	// from the session tearing down.
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+
 	// Check for exit errors with exit codes
 	var exitErr *ssh.ExitError
 	if errors.As(err, &exitErr) {
