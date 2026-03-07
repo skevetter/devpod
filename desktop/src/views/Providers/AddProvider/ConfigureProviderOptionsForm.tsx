@@ -112,8 +112,7 @@ function ProviderOptionsForm(props: TProviderOptionsFormProps) {
       ;(await client.providers.configure(providerID, config)).unwrap()
 
       if (newName && newName !== providerID) {
-        rename.run({ oldProviderID: providerID, newProviderID: newName })
-
+        await rename.run({ oldProviderID: providerID, newProviderID: newName })
         navigate(Routes.toProvider(newName), { replace: true })
       } else {
         await queryClient.invalidateQueries(QueryKeys.PROVIDERS)
