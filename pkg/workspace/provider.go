@@ -702,12 +702,10 @@ func SwitchProvider(
 	}
 
 	if status != client2.StatusStopped && status != client2.StatusNotFound {
-		revert()
-		return fmt.Errorf(
-			"workspace %s is in state %s and cannot be switched. Allowed only Stopped or NotFound",
-			workspace.ID,
-			status,
-		)
+		if err := client.Stop(ctx, client2.StopOptions{}); err != nil {
+			revert()
+			return fmt.Errorf("failed to stop workspace %s before switching: %w", workspace.ID, err)
+		}
 	}
 
 	return nil

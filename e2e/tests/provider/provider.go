@@ -366,11 +366,7 @@ spec:
 				err = f.DevPodUp(ctx, tempDir)
 				framework.ExpectNoError(err)
 
-				// Stop the workspace before renaming (running workspaces cannot be switched).
-				err = f.DevPodStop(ctx, tempDir)
-				framework.ExpectNoError(err)
-
-				// Rename provider.
+				// Rename provider (running workspaces are stopped automatically).
 				err = f.DevPodProviderRename(ctx, providerName, renamedProviderName)
 				framework.ExpectNoError(err)
 
