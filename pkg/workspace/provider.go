@@ -772,19 +772,44 @@ func revertProviderConfigName(devPodConfig *config.Config, oldName, newName stri
 }
 
 // migrateProviderState moves the provider's entry in the config Providers map
-// from oldName to newName and persists the change.
+// from oldName to newName, rewrites any option values that embed the old
+// provider directory path, and persists the change.
 func migrateProviderState(devPodConfig *config.Config, oldName, newName string) error {
 	ctx := devPodConfig.Current()
-	if ctx.Providers[oldName] != nil {
-		ctx.Providers[newName] = ctx.Providers[oldName]
-		delete(ctx.Providers, oldName)
+	if ctx.Providers[oldName] == nil {
+		return nil
 	}
+
+	ctx.Providers[newName] = ctx.Providers[oldName]
+	delete(ctx.Providers, oldName)
+
+	// Rewrite option values that reference the old provider directory.
+	oldDir, _ := provider.GetProviderDir(devPodConfig.DefaultContext, oldName)
+	newDir, _ := provider.GetProviderDir(devPodConfig.DefaultContext, newName)
+	if oldDir != "" && newDir != "" {
+		rewriteOptionPaths(ctx.Providers[newName].Options, oldDir, newDir)
+	}
+
 	if err := config.SaveConfig(devPodConfig); err != nil {
-		if ctx.Providers[newName] != nil {
-			ctx.Providers[oldName] = ctx.Providers[newName]
-			delete(ctx.Providers, newName)
+		// Undo the map move and path rewrite on failure.
+		if oldDir != "" && newDir != "" {
+			rewriteOptionPaths(ctx.Providers[newName].Options, newDir, oldDir)
 		}
+		ctx.Providers[oldName] = ctx.Providers[newName]
+		delete(ctx.Providers, newName)
 		return fmt.Errorf("save config: %w", err)
 	}
 	return nil
+}
+
+// rewriteOptionPaths replaces occurrences of oldDir with newDir in every
+// option value. This keeps absolute paths (e.g. SSH key paths) valid after
+// a provider directory rename.
+func rewriteOptionPaths(opts map[string]config.OptionValue, oldDir, newDir string) {
+	for k, v := range opts {
+		if strings.Contains(v.Value, oldDir) {
+			v.Value = strings.ReplaceAll(v.Value, oldDir, newDir)
+			opts[k] = v
+		}
+	}
 }

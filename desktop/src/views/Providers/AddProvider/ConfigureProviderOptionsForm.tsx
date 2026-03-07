@@ -115,7 +115,7 @@ function ProviderOptionsForm(props: TProviderOptionsFormProps) {
         await rename.run({ oldProviderID: providerID, newProviderID: newName })
         navigate(Routes.toProvider(newName), { replace: true })
       } else {
-        await queryClient.invalidateQueries(QueryKeys.PROVIDERS)
+        await queryClient.invalidateQueries({ queryKey: QueryKeys.PROVIDERS })
       }
     },
     [queryClient, navigate, rename]
@@ -275,6 +275,7 @@ function ConfigureOptionsForm({
                 <FormLabel>Provider Name</FormLabel>
                 <Input
                   {...formMethods.register(FieldName.NAME, {
+                    required: "Name is required",
                     pattern: {
                       value: PROVIDER_NAME_REGEX,
                       message: "Name can only contain lowercase letters, numbers and hyphens",

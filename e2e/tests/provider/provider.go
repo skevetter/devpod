@@ -293,7 +293,7 @@ spec:
 		})
 
 		ginkgo.It(
-			"should rename a provider with an associated stopped workspace",
+			"should rename a provider with an associated running workspace",
 			func(ctx context.Context) {
 				f := framework.NewDefaultFramework(initialDir + "/bin")
 
