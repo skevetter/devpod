@@ -652,12 +652,28 @@ func buildGithubURL(path, release string) string {
 }
 
 // SwitchProvider updates the provider name for the given workspace with client locking.
+// It persists the new provider name before resolving the client so that FindProvider
+// can locate the already-renamed provider directory.
 func SwitchProvider(
 	ctx context.Context,
 	devPodConfig *config.Config,
 	workspace *provider.Workspace,
 	newProviderName string,
 ) error {
+	oldProviderName := workspace.Provider.Name
+	workspace.Provider.Name = newProviderName
+
+	err := provider.SaveWorkspaceConfig(workspace)
+	if err != nil {
+		workspace.Provider.Name = oldProviderName
+		return fmt.Errorf("failed to save workspace config: %w", err)
+	}
+
+	revert := func() {
+		workspace.Provider.Name = oldProviderName
+		_ = provider.SaveWorkspaceConfig(workspace)
+	}
+
 	client, err := Get(
 		ctx,
 		devPodConfig,
@@ -668,35 +684,30 @@ func SwitchProvider(
 		log.Default,
 	)
 	if err != nil {
+		revert()
 		return fmt.Errorf("failed to get client for workspace %s: %w", workspace.ID, err)
 	}
 
 	err = client.Lock(ctx)
 	if err != nil {
+		revert()
 		return fmt.Errorf("failed to lock workspace %s: %w", workspace.ID, err)
 	}
 
 	defer client.Unlock()
 	status, err := client.Status(ctx, client2.StatusOptions{ContainerStatus: true})
 	if err != nil {
+		revert()
 		return fmt.Errorf("failed to get status for workspace %s: %w", workspace.ID, err)
 	}
 
 	if status != client2.StatusStopped && status != client2.StatusNotFound {
+		revert()
 		return fmt.Errorf(
 			"workspace %s is in state %s and cannot be switched. Allowed only Stopped or NotFound",
 			workspace.ID,
 			status,
 		)
-	}
-
-	oldProviderName := workspace.Provider.Name
-	workspace.Provider.Name = newProviderName
-
-	err = provider.SaveWorkspaceConfig(workspace)
-	if err != nil {
-		workspace.Provider.Name = oldProviderName
-		return fmt.Errorf("failed to save workspace config: %w", err)
 	}
 
 	return nil
