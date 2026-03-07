@@ -19,6 +19,11 @@ import (
 	"github.com/skevetter/log/terminal"
 )
 
+// ListMachines returns all machines configured in the given DevPod context.
+func ListMachines(devPodConfig *config.Config, log log.Logger) ([]*providerpkg.Machine, error) {
+	return listMachines(devPodConfig, log)
+}
+
 func listMachines(devPodConfig *config.Config, log log.Logger) ([]*providerpkg.Machine, error) {
 	machineDir, err := providerpkg.GetMachinesDir(devPodConfig.DefaultContext)
 	if err != nil {

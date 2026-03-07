@@ -161,6 +161,7 @@ function ConfigureOptionsForm({
 }: TConfigureOptionsFormProps) {
   const loadingBgColor = useColorModeValue("whiteAlpha.400", "blackAlpha.400")
   const [provider] = useProvider(providerID)
+  const [[providers]] = useProviders()
 
   const formMethods = useForm<TFieldValues>({
     defaultValues: {
@@ -235,7 +236,7 @@ function ConfigureOptionsForm({
           useAsDefaultProvider: useAsDefault,
           options: filterOptions(data, allOptions),
         },
-        newName: name as string,
+        newName: typeof name === "string" ? name : undefined,
       })
     })(event)
   }
@@ -270,6 +271,7 @@ function ConfigureOptionsForm({
       <Form aria-readonly={true} onSubmit={handleSubmit}>
         <VStack align="start" width="full">
           <VStack align="start" spacing={8} position="relative" width="full">
+            {!workspace && (
             <FormControl isInvalid={!!formMethods.formState.errors[FieldName.NAME]}>
               <FormLabel>Provider Name</FormLabel>
               <Input
@@ -282,12 +284,21 @@ function ConfigureOptionsForm({
                     value: 32,
                     message: "Name cannot be longer than 32 characters",
                   },
+                  validate: {
+                    unique: (value) => {
+                      if (!value || value === providerID) return true
+                      const name = value as string
+
+                      return providers?.[name] === undefined ? true : "Name must be unique"
+                    },
+                  },
                 })}
               />
               <FormErrorMessage>
                 {formMethods.formState.errors[FieldName.NAME]?.message}
               </FormErrorMessage>
             </FormControl>
+            )}
             <Center
               opacity={isRefreshing ? "1" : "0"}
               pointerEvents={isRefreshing ? "auto" : "none"}

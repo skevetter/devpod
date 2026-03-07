@@ -14,115 +14,58 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// RenameCmd holds the cmd flags.
+// RenameCmd implements the provider rename command.
 type RenameCmd struct {
 	*flags.GlobalFlags
 }
 
-// NewRenameCmd creates a new command.
+// NewRenameCmd creates a new command for renaming a provider.
 func NewRenameCmd(globalFlags *flags.GlobalFlags) *cobra.Command {
 	cmd := &RenameCmd{
 		GlobalFlags: globalFlags,
 	}
 
 	return &cobra.Command{
-		Use:   "rename",
+		Use:   "rename <current-name> <new-name>",
 		Short: "Rename a provider",
-		Long: `Renames a provider by cloning it with the new name, automatically rebinds all workspaces
-that are bound to it to use the new provider name, and cleans up the old provider.
-
-Example:
-  devpod provider rename my-provider my-new-provider
-`,
-		Args: cobra.ExactArgs(2),
+		Args:  cobra.ExactArgs(2),
 		RunE: func(cobraCmd *cobra.Command, args []string) error {
-			return cmd.Run(cobraCmd, args)
+			return cmd.Run(cobraCmd.Context(), args)
 		},
 	}
 }
 
-// getWorkspacesToRebind gathers workspaces that need to be rebound from provider name.
-func getWorkspacesToRebind(devPodConfig *config.Config, name string) ([]*provider.Workspace, error) {
-	workspaces, err := workspace.ListLocalWorkspaces(devPodConfig.DefaultContext, false, log.Default)
-	if err != nil {
-		return nil, fmt.Errorf("listing workspaces: %w", err)
-	}
-	var workspacesToRebind []*provider.Workspace
-	for _, ws := range workspaces {
-		if ws.Provider.Name == name {
-			workspacesToRebind = append(workspacesToRebind, ws)
-		}
+// Run validates inputs, loads config, and executes the provider rename.
+func (cmd *RenameCmd) Run(ctx context.Context, args []string) error {
+	oldName, newName := args[0], args[1]
+
+	if oldName == newName {
+		return fmt.Errorf("new name is the same as the current name")
 	}
 
-	if len(workspacesToRebind) > 0 {
-		log.Default.Infof("rebinding %d workspace(s) from provider '%s'", len(workspacesToRebind), name)
-	} else {
-		log.Default.Info("no workspaces found that are bound to this provider")
+	if err := validateProviderName(newName); err != nil {
+		return err
 	}
 
-	return workspacesToRebind, nil
-}
-
-// rebindWorkspaces updates the provider name for the given workspaces and saves the configurations.
-func rebindWorkspaces(
-	devPodConfig *config.Config,
-	workspacesToRebind []*provider.Workspace,
-	newName string,
-) ([]*provider.Workspace, error) {
-	var aggregateError error
-	var successfulRebinds []*provider.Workspace
-
-	for _, ws := range workspacesToRebind {
-		log.Default.Infof("rebinding workspace %s to provider %s", ws.ID, newName)
-
-		err := workspace.SwitchProvider(context.Background(), devPodConfig, ws, newName)
-		if err != nil {
-			log.Default.Errorf("failed to rebind workspace %s: %v", ws.ID, err)
-			aggregateError = errors.Join(aggregateError, err)
-		} else {
-			successfulRebinds = append(successfulRebinds, ws)
-		}
-	}
-	return successfulRebinds, aggregateError
-}
-
-// checks if default provider is touched by rename and updates default provider to newName.
-func adjustDefaultProvider(devPodConfig *config.Config, oldName string, newName string) error {
-	if devPodConfig.Current().DefaultProvider == oldName {
-		devPodConfig.Current().DefaultProvider = newName
-		err := config.SaveConfig(devPodConfig)
-		if err != nil {
-			devPodConfig.Current().DefaultProvider = oldName
-			log.Default.Errorf("failed to update default provider to %s: %v", newName, err)
-			return err
-		} else {
-			log.Default.Infof("updated default provider from %s to %s", oldName, newName)
-		}
-	}
-	return nil
-}
-
-func rollback(
-	devPodConfig *config.Config,
-	workspacesTouched []*provider.Workspace,
-	oldName string,
-	newName string,
-) error {
-	log.Default.Info("rolling back changes")
-	var _, err = rebindWorkspaces(devPodConfig, workspacesTouched, oldName)
+	devPodConfig, err := config.LoadConfig(cmd.Context, cmd.Provider)
 	if err != nil {
 		return err
 	}
 
-	err = DeleteProviderConfig(devPodConfig, newName, true)
-	if err == nil {
-		log.Default.Infof("cloned provider %s deleted successfully", newName)
+	if err := checkProviderRenameable(devPodConfig, oldName); err != nil {
+		return err
 	}
 
-	return err
+	if devPodConfig.Current().Providers[newName] != nil {
+		return fmt.Errorf("provider %s already exists", newName)
+	}
+
+	return executeRename(ctx, devPodConfig, oldName, newName)
 }
 
-// validateProviderName validates the new provider name.
+// validateProviderName checks that the given name is non-empty, matches the
+// allowed character set (lowercase letters, numbers, dashes), and does not
+// exceed the maximum length of 32 characters.
 func validateProviderName(newName string) error {
 	if strings.TrimSpace(newName) == "" {
 		return fmt.Errorf("provider name cannot be empty")
@@ -136,85 +79,206 @@ func validateProviderName(newName string) error {
 	return nil
 }
 
-// cloneAndRebindProvider handles the core logic of cloning and rebinding workspaces.
-func cloneAndRebindProvider(
+// getWorkspacesForProvider returns all local workspaces whose provider matches
+// the given name.
+func getWorkspacesForProvider(
 	devPodConfig *config.Config,
-	oldName,
-	newName string,
-	workspacesToRebind []*provider.Workspace) ([]*provider.Workspace, error) {
-	log.Default.Info("renaming provider using clone and rebinding workspaces")
-
-	_, cloneErr := workspace.CloneProvider(devPodConfig, newName, oldName, log.Default)
-	if cloneErr != nil {
-		return nil, fmt.Errorf("failed to clone provider: %w", cloneErr)
+	providerName string,
+) ([]*provider.Workspace, error) {
+	workspaces, err := workspace.ListLocalWorkspaces(
+		devPodConfig.DefaultContext,
+		false,
+		log.Default,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("listing workspaces: %w", err)
 	}
-
-	log.Default.Infof("provider successfully cloned from %s to %s", oldName, newName)
-
-	successfulRebinds, renameErr := rebindWorkspaces(devPodConfig, workspacesToRebind, newName)
-
-	if renameErr == nil {
-		renameErr = adjustDefaultProvider(devPodConfig, oldName, newName)
+	var matched []*provider.Workspace
+	for _, ws := range workspaces {
+		if ws.Provider.Name == providerName {
+			matched = append(matched, ws)
+		}
 	}
-
-	return successfulRebinds, renameErr
+	return matched, nil
 }
 
-// cleanupOldProvider deletes the old provider after successful rename.
-func cleanupOldProvider(devPodConfig *config.Config, oldName, newName string) error {
-	deleteErr := DeleteProviderConfig(devPodConfig, oldName, true)
-	if deleteErr != nil {
-		log.Default.Errorf("failed to delete old provider %s: %v", oldName, deleteErr)
-		return fmt.Errorf("failed to delete old provider after successful rename: %w", deleteErr)
+// getMachinesForProvider returns all machines whose provider matches the given
+// name.
+func getMachinesForProvider(
+	devPodConfig *config.Config,
+	providerName string,
+) ([]*provider.Machine, error) {
+	machines, err := workspace.ListMachines(devPodConfig, log.Default)
+	if err != nil {
+		return nil, fmt.Errorf("listing machines: %w", err)
+	}
+	var matched []*provider.Machine
+	for _, m := range machines {
+		if m.Provider.Name == providerName {
+			matched = append(matched, m)
+		}
+	}
+	return matched, nil
+}
+
+// switchWorkspaces updates each workspace to reference the new provider name.
+// It stops on the first failure and returns the successfully switched
+// workspaces so the caller can roll them back.
+func switchWorkspaces(
+	ctx context.Context,
+	devPodConfig *config.Config,
+	workspaces []*provider.Workspace,
+	newName string,
+) ([]*provider.Workspace, error) {
+	var switched []*provider.Workspace
+	for _, ws := range workspaces {
+		if err := workspace.SwitchProvider(ctx, devPodConfig, ws, newName); err != nil {
+			return switched, fmt.Errorf("failed to switch workspace %s: %w", ws.ID, err)
+		}
+		switched = append(switched, ws)
+	}
+	return switched, nil
+}
+
+// switchMachines updates each machine to reference the new provider name.
+// It stops on the first failure and returns the successfully switched
+// machines so the caller can roll them back.
+func switchMachines(machines []*provider.Machine, newName string) ([]*provider.Machine, error) {
+	var switched []*provider.Machine
+	for _, m := range machines {
+		oldName := m.Provider.Name
+		m.Provider.Name = newName
+		if err := provider.SaveMachineConfig(m); err != nil {
+			m.Provider.Name = oldName
+			return switched, fmt.Errorf("failed to switch machine %s: %w", m.ID, err)
+		}
+		switched = append(switched, m)
+	}
+	return switched, nil
+}
+
+// adjustDefaultProvider updates the default provider setting if it currently
+// points to oldName. Returns true if the default was changed.
+func adjustDefaultProvider(devPodConfig *config.Config, oldName, newName string) (bool, error) {
+	if devPodConfig.Current().DefaultProvider != oldName {
+		return false, nil
+	}
+	devPodConfig.Current().DefaultProvider = newName
+	if err := config.SaveConfig(devPodConfig); err != nil {
+		devPodConfig.Current().DefaultProvider = oldName
+		return false, err
+	}
+	return true, nil
+}
+
+// rollbackState tracks the mutations performed during a rename so they can be
+// undone if a later step fails.
+type rollbackState struct {
+	devPodConfig       *config.Config
+	switchedWorkspaces []*provider.Workspace
+	switchedMachines   []*provider.Machine
+	defaultChanged     bool
+	oldName, newName   string
+}
+
+// execute reverts all recorded mutations in reverse order: default provider,
+// workspaces, machines, and finally the provider directory move.
+func (r *rollbackState) execute(ctx context.Context) error {
+	log.Default.Info("rolling back changes")
+	var errs error
+
+	if r.defaultChanged {
+		r.devPodConfig.Current().DefaultProvider = r.oldName
+		if err := config.SaveConfig(r.devPodConfig); err != nil {
+			errs = errors.Join(errs, fmt.Errorf("rollback default provider: %w", err))
+		}
 	}
 
-	log.Default.Infof("old provider %s deleted successfully", oldName)
+	_, err := switchWorkspaces(ctx, r.devPodConfig, r.switchedWorkspaces, r.oldName)
+	errs = errors.Join(errs, err)
 
-	_, err := workspace.FindProvider(devPodConfig, newName, log.Default)
+	_, err = switchMachines(r.switchedMachines, r.oldName)
+	errs = errors.Join(errs, err)
+
+	if moveErr := workspace.MoveProvider(r.devPodConfig, r.newName, r.oldName); moveErr != nil {
+		errs = errors.Join(errs, fmt.Errorf("rollback move provider: %w", moveErr))
+	}
+
+	return errs
+}
+
+// checkProviderRenameable verifies that the provider exists, is not a pro
+// provider, is not backing a pro instance, and has configuration state.
+func checkProviderRenameable(devPodConfig *config.Config, oldName string) error {
+	providerWithOptions, err := workspace.FindProvider(devPodConfig, oldName, log.Default)
 	if err != nil {
-		return fmt.Errorf("failed to load renamed provider %s: %w", newName, err)
+		return fmt.Errorf("provider %s not found", oldName)
+	}
+
+	if providerWithOptions.Config.IsProxyProvider() ||
+		providerWithOptions.Config.IsDaemonProvider() {
+		return fmt.Errorf("cannot rename a pro provider; pro providers are managed by the platform")
+	}
+
+	proInstances, err := workspace.ListProInstances(devPodConfig, log.Default)
+	if err == nil {
+		for _, inst := range proInstances {
+			if inst.Provider == oldName {
+				return fmt.Errorf(
+					"cannot rename provider %s: it is used by pro instance %s",
+					oldName,
+					inst.Host,
+				)
+			}
+		}
+	}
+
+	if devPodConfig.Current().Providers[oldName] == nil {
+		return fmt.Errorf("provider %s has no configuration state", oldName)
 	}
 
 	return nil
 }
 
-// Run executes the command.
-func (cmd *RenameCmd) Run(cobraCmd *cobra.Command, args []string) error {
-	oldName := args[0]
-	newName := args[1]
-
-	if err := validateProviderName(newName); err != nil {
-		return err
-	}
-
-	devPodConfig, err := config.LoadConfig(cmd.Context, cmd.Provider)
+// executeRename performs the rename: moves the provider directory, switches all
+// associated workspaces and machines, and adjusts the default provider. If any
+// step fails the entire operation is rolled back.
+func executeRename(
+	ctx context.Context,
+	devPodConfig *config.Config,
+	oldName, newName string,
+) error {
+	workspaces, err := getWorkspacesForProvider(devPodConfig, oldName)
 	if err != nil {
 		return err
 	}
 
-	workspacesToRebind, err := getWorkspacesToRebind(devPodConfig, oldName)
+	machines, err := getMachinesForProvider(devPodConfig, oldName)
 	if err != nil {
 		return err
 	}
 
-	_, newProviderExists := devPodConfig.Current().Providers[newName]
-	if newProviderExists {
-		return fmt.Errorf("provider %s already exists", newName)
+	if err := workspace.MoveProvider(devPodConfig, oldName, newName); err != nil {
+		return fmt.Errorf("moving provider: %w", err)
 	}
 
-	successfulRebinds, renameErr := cloneAndRebindProvider(devPodConfig, oldName, newName, workspacesToRebind)
+	rb := &rollbackState{devPodConfig: devPodConfig, oldName: oldName, newName: newName}
 
-	if renameErr != nil {
-		log.Default.Errorf("failed to rename provider %s to %s: %v", oldName, newName, renameErr)
-		err = rollback(devPodConfig, successfulRebinds, oldName, newName)
-		return errors.Join(renameErr, err)
-	}
-
-	err = cleanupOldProvider(devPodConfig, oldName, newName)
+	rb.switchedWorkspaces, err = switchWorkspaces(ctx, devPodConfig, workspaces, newName)
 	if err != nil {
-		return err
+		return errors.Join(err, rb.execute(ctx))
 	}
 
-	log.Default.Donef("successfully renamed provider %s to %s and rebound all associated workspaces", oldName, newName)
+	rb.switchedMachines, err = switchMachines(machines, newName)
+	if err != nil {
+		return errors.Join(err, rb.execute(ctx))
+	}
+
+	rb.defaultChanged, err = adjustDefaultProvider(devPodConfig, oldName, newName)
+	if err != nil {
+		return errors.Join(err, rb.execute(ctx))
+	}
+
+	log.Default.Donef("renamed provider %s to %s", oldName, newName)
 	return nil
 }

@@ -14,11 +14,10 @@ import (
 	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/download"
 	devpodhttp "github.com/skevetter/devpod/pkg/http"
+	"github.com/skevetter/devpod/pkg/platform"
 	"github.com/skevetter/devpod/pkg/provider"
 	"github.com/skevetter/devpod/pkg/types"
 	"github.com/skevetter/devpod/providers"
-
-	"github.com/skevetter/devpod/pkg/platform"
 	"github.com/skevetter/log"
 )
 
@@ -659,7 +658,15 @@ func SwitchProvider(
 	workspace *provider.Workspace,
 	newProviderName string,
 ) error {
-	client, err := Get(ctx, devPodConfig, []string{workspace.ID}, false, platform.AllOwnerFilter, false, log.Default)
+	client, err := Get(
+		ctx,
+		devPodConfig,
+		[]string{workspace.ID},
+		false,
+		platform.AllOwnerFilter,
+		false,
+		log.Default,
+	)
 	if err != nil {
 		return fmt.Errorf("failed to get client for workspace %s: %w", workspace.ID, err)
 	}
@@ -676,8 +683,11 @@ func SwitchProvider(
 	}
 
 	if status != client2.StatusStopped && status != client2.StatusNotFound {
-		return fmt.Errorf("workspace %s is in state %s and cannot be switched. Allowed only Stopped or NotFound",
-			workspace.ID, status)
+		return fmt.Errorf(
+			"workspace %s is in state %s and cannot be switched. Allowed only Stopped or NotFound",
+			workspace.ID,
+			status,
+		)
 	}
 
 	oldProviderName := workspace.Provider.Name
@@ -689,5 +699,83 @@ func SwitchProvider(
 		return fmt.Errorf("failed to save workspace config: %w", err)
 	}
 
+	return nil
+}
+
+// MoveProvider renames a provider's directory on disk and migrates its state
+// in config.json. This preserves all options, initialized flag, and other state
+// that CloneProvider would lose.
+func MoveProvider(devPodConfig *config.Config, oldName, newName string) error {
+	oldDir, err := provider.GetProviderDir(devPodConfig.DefaultContext, oldName)
+	if err != nil {
+		return fmt.Errorf("get old provider dir: %w", err)
+	}
+
+	newDir, err := provider.GetProviderDir(devPodConfig.DefaultContext, newName)
+	if err != nil {
+		return fmt.Errorf("get new provider dir: %w", err)
+	}
+
+	if err := os.Rename(oldDir, newDir); err != nil {
+		return fmt.Errorf("rename provider dir: %w", err)
+	}
+
+	if err := updateProviderConfigName(devPodConfig, newName); err != nil {
+		_ = os.Rename(newDir, oldDir)
+		return err
+	}
+
+	if err := migrateProviderState(devPodConfig, oldName, newName); err != nil {
+		// Revert the config name before moving the directory back to avoid
+		// a corrupted provider.json (dir at old path but name field says new name).
+		_ = revertProviderConfigName(devPodConfig, oldName, newName)
+		_ = os.Rename(newDir, oldDir)
+		return err
+	}
+
+	return nil
+}
+
+// updateProviderConfigName loads the provider config from the new directory and
+// updates its Name field to match the new directory name.
+func updateProviderConfigName(devPodConfig *config.Config, newName string) error {
+	providerConfig, err := provider.LoadProviderConfig(devPodConfig.DefaultContext, newName)
+	if err != nil {
+		return fmt.Errorf("load provider config after move: %w", err)
+	}
+	providerConfig.Name = newName
+	if err := provider.SaveProviderConfig(devPodConfig.DefaultContext, providerConfig); err != nil {
+		return fmt.Errorf("save provider config: %w", err)
+	}
+	return nil
+}
+
+// revertProviderConfigName restores the provider config Name field back to
+// oldName. This is used during rollback when migrateProviderState fails after
+// updateProviderConfigName has already written the new name.
+func revertProviderConfigName(devPodConfig *config.Config, oldName, newName string) error {
+	providerConfig, err := provider.LoadProviderConfig(devPodConfig.DefaultContext, newName)
+	if err != nil {
+		return fmt.Errorf("load provider config for revert: %w", err)
+	}
+	providerConfig.Name = oldName
+	return provider.SaveProviderConfig(devPodConfig.DefaultContext, providerConfig)
+}
+
+// migrateProviderState moves the provider's entry in the config Providers map
+// from oldName to newName and persists the change.
+func migrateProviderState(devPodConfig *config.Config, oldName, newName string) error {
+	ctx := devPodConfig.Current()
+	if ctx.Providers[oldName] != nil {
+		ctx.Providers[newName] = ctx.Providers[oldName]
+		delete(ctx.Providers, oldName)
+	}
+	if err := config.SaveConfig(devPodConfig); err != nil {
+		if ctx.Providers[newName] != nil {
+			ctx.Providers[oldName] = ctx.Providers[newName]
+			delete(ctx.Providers, newName)
+		}
+		return fmt.Errorf("save config: %w", err)
+	}
 	return nil
 }
