@@ -52,7 +52,7 @@ func (cmd *RenameCmd) Run(ctx context.Context, args []string) error {
 		return err
 	}
 
-	if err := checkProviderRenameable(devPodConfig, oldName); err != nil {
+	if err := validateProviderRename(devPodConfig, oldName); err != nil {
 		return err
 	}
 
@@ -60,7 +60,7 @@ func (cmd *RenameCmd) Run(ctx context.Context, args []string) error {
 		return fmt.Errorf("provider %s already exists", newName)
 	}
 
-	return executeRename(ctx, devPodConfig, oldName, newName)
+	return renameProvider(ctx, devPodConfig, oldName, newName)
 }
 
 // validateProviderName checks that the given name is non-empty, matches the
@@ -157,9 +157,9 @@ func switchMachines(machines []*provider.Machine, newName string) ([]*provider.M
 	return switched, nil
 }
 
-// adjustDefaultProvider updates the default provider setting if it currently
+// setDefaultProvider updates the default provider setting if it currently
 // points to oldName. Returns true if the default was changed.
-func adjustDefaultProvider(devPodConfig *config.Config, oldName, newName string) (bool, error) {
+func setDefaultProvider(devPodConfig *config.Config, oldName, newName string) (bool, error) {
 	if devPodConfig.Current().DefaultProvider != oldName {
 		return false, nil
 	}
@@ -171,9 +171,9 @@ func adjustDefaultProvider(devPodConfig *config.Config, oldName, newName string)
 	return true, nil
 }
 
-// rollbackState tracks the mutations performed during a rename so they can be
+// renameState tracks the mutations performed during a rename so they can be
 // undone if a later step fails.
-type rollbackState struct {
+type renameState struct {
 	devPodConfig       *config.Config
 	switchedWorkspaces []*provider.Workspace
 	switchedMachines   []*provider.Machine
@@ -181,9 +181,9 @@ type rollbackState struct {
 	oldName, newName   string
 }
 
-// execute reverts all recorded mutations in reverse order: default provider,
+// restoreProviderState reverts all recorded mutations in reverse order: default provider,
 // workspaces, machines, and finally the provider directory move.
-func (r *rollbackState) execute(ctx context.Context) error {
+func (r *renameState) restoreProviderState(ctx context.Context) error {
 	log.Default.Info("rolling back changes")
 	var errs error
 
@@ -207,9 +207,9 @@ func (r *rollbackState) execute(ctx context.Context) error {
 	return errs
 }
 
-// checkProviderRenameable verifies that the provider exists, is not a pro
+// validateProviderRename verifies that the provider exists, is not a pro
 // provider, is not backing a pro instance, and has configuration state.
-func checkProviderRenameable(devPodConfig *config.Config, oldName string) error {
+func validateProviderRename(devPodConfig *config.Config, oldName string) error {
 	providerWithOptions, err := workspace.FindProvider(devPodConfig, oldName, log.Default)
 	if err != nil {
 		return fmt.Errorf("provider %s not found", oldName)
@@ -241,10 +241,10 @@ func checkProviderRenameable(devPodConfig *config.Config, oldName string) error 
 	return nil
 }
 
-// executeRename performs the rename: moves the provider directory, switches all
+// renameProvider performs the rename: moves the provider directory, switches all
 // associated workspaces and machines, and adjusts the default provider. If any
 // step fails the entire operation is rolled back.
-func executeRename(
+func renameProvider(
 	ctx context.Context,
 	devPodConfig *config.Config,
 	oldName, newName string,
@@ -263,21 +263,21 @@ func executeRename(
 		return fmt.Errorf("moving provider: %w", err)
 	}
 
-	rb := &rollbackState{devPodConfig: devPodConfig, oldName: oldName, newName: newName}
+	rb := &renameState{devPodConfig: devPodConfig, oldName: oldName, newName: newName}
 
 	rb.switchedWorkspaces, err = switchWorkspaces(ctx, devPodConfig, workspaces, newName)
 	if err != nil {
-		return errors.Join(err, rb.execute(ctx))
+		return errors.Join(err, rb.restoreProviderState(ctx))
 	}
 
 	rb.switchedMachines, err = switchMachines(machines, newName)
 	if err != nil {
-		return errors.Join(err, rb.execute(ctx))
+		return errors.Join(err, rb.restoreProviderState(ctx))
 	}
 
-	rb.defaultChanged, err = adjustDefaultProvider(devPodConfig, oldName, newName)
+	rb.defaultChanged, err = setDefaultProvider(devPodConfig, oldName, newName)
 	if err != nil {
-		return errors.Join(err, rb.execute(ctx))
+		return errors.Join(err, rb.restoreProviderState(ctx))
 	}
 
 	log.Default.Donef("renamed provider %s to %s", oldName, newName)
