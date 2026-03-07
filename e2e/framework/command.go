@@ -247,6 +247,35 @@ func (f *Framework) DevPodProviderDelete(ctx context.Context, args ...string) er
 	return nil
 }
 
+// DevPodProviderRename executes the `devpod provider rename` command in the test framework.
+func (f *Framework) DevPodProviderRename(
+	ctx context.Context,
+	oldName, newName string,
+	args ...string,
+) error {
+	baseArgs := []string{"provider", "rename", oldName, newName}
+	baseArgs = append(baseArgs, args...)
+	err := f.ExecCommand(ctx, false, false, "", baseArgs)
+	if err != nil {
+		return fmt.Errorf("devpod provider rename failed: %s", err.Error())
+	}
+
+	return nil
+}
+
+// DevPodProviderOptionsJSON executes `devpod provider options --output json` and returns the raw JSON.
+func (f *Framework) DevPodProviderOptionsJSON(
+	ctx context.Context,
+	providerName string,
+) (string, error) {
+	args := []string{"provider", "options", providerName, "--output", "json"}
+	stdout, _, err := f.ExecCommandCapture(ctx, args)
+	if err != nil {
+		return "", fmt.Errorf("devpod provider options failed: %s", err.Error())
+	}
+	return stdout, nil
+}
+
 func (f *Framework) DevPodProviderUpdate(ctx context.Context, args ...string) error {
 	baseArgs := []string{"provider", "update"}
 	baseArgs = append(baseArgs, args...)

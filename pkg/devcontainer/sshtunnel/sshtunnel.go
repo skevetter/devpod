@@ -151,6 +151,18 @@ func waitForTunnelCompletion(tc *tunnelContext) (*config2.Result, error) {
 
 	tc.opts.Log.Debug("SSH tunnel execution completed")
 
+	// When the tunnel server received a valid result the agent work is done.
+	// The SSH session closing with EOF at this point is expected, not an error.
+	if result != nil {
+		filtered := errs[:0]
+		for _, e := range errs {
+			if !errors.Is(e, io.EOF) {
+				filtered = append(filtered, e)
+			}
+		}
+		errs = filtered
+	}
+
 	// Return first error or combine multiple errors
 	if len(errs) == 0 {
 		return result, nil

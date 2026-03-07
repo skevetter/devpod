@@ -10,11 +10,13 @@ import {
   FormErrorMessage,
   FormHelperText,
   HStack,
+  Input,
   SimpleGrid,
   Spinner,
   Tooltip,
   VStack,
   useColorModeValue,
+  FormLabel,
 } from "@chakra-ui/react"
 import styled from "@emotion/styled"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
@@ -28,9 +30,11 @@ import {
   useState,
 } from "react"
 import { DefaultValues, FormProvider, UseFormReturn, useForm } from "react-hook-form"
+import { useNavigate } from "react-router"
+import { Routes } from "../../../routes.constants"
 import { useBorderColor } from "@/Theme"
 import { client } from "@/client"
-import { useProvider } from "@/contexts"
+import { useProvider, useProviders } from "@/contexts"
 import { exists, useFormErrors } from "@/lib"
 import { QueryKeys } from "@/queryKeys"
 import {
@@ -44,6 +48,7 @@ import {
 import { canCreateMachine } from "../helpers"
 import { OptionFormField } from "./OptionFormField"
 import { useProviderDisplayOptions } from "./useProviderOptions"
+import { PROVIDER_NAME_REGEX } from "../../../lib/validation"
 
 const Form = styled.form`
   width: 100%;
@@ -53,6 +58,7 @@ const Form = styled.form`
 const FieldName = {
   REUSE_MACHINE: "reuseMachine",
   USE_AS_DEFAULT: "useAsDefault",
+  NAME: "name",
 } as const
 
 type TFieldValues = Readonly<{
@@ -62,6 +68,7 @@ type TFieldValues = Readonly<{
 }>
 type TCommonProps = Readonly<{
   providerID: TProviderID
+  name?: string
   isModal?: boolean
   addProvider?: boolean
   isDefault?: boolean
@@ -96,12 +103,22 @@ export function ConfigureProviderOptionsForm(props: TConfigureProviderOptionsFor
 type TProviderOptionsFormProps = TWithoutWorkspace
 function ProviderOptionsForm(props: TProviderOptionsFormProps) {
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
+  const [, { rename }] = useProviders()
+
   const handleSave: TConfigureOptionsFormProps["onSave"] = useCallback(
-    async ({ providerID, config }) => {
+    async ({ providerID, config, newName }) => {
+      // Configure first, then rename to prevent UI route inconsistencies
       ;(await client.providers.configure(providerID, config)).unwrap()
-      await queryClient.invalidateQueries(QueryKeys.PROVIDERS)
+
+      if (newName && newName !== providerID) {
+        await rename.run({ oldProviderID: providerID, newProviderID: newName })
+        navigate(Routes.toProvider(newName), { replace: true })
+      } else {
+        await queryClient.invalidateQueries({ queryKey: QueryKeys.PROVIDERS })
+      }
     },
-    [queryClient]
+    [queryClient, navigate, rename]
   )
 
   return <ConfigureOptionsForm {...props} onSave={handleSave} />
@@ -119,7 +136,11 @@ function WorkspaceProviderOptionsForm({ workspace, ...props }: TWorkspaceProvide
 type TConfigureOptionsFormProps = TConfigureProviderOptionsFormProps &
   Readonly<{
     onSave: (
-      args: Readonly<{ providerID: TProviderID; config: TConfigureProviderConfig }>
+      args: Readonly<{
+        providerID: TProviderID
+        config: TConfigureProviderConfig
+        newName?: string
+      }>
     ) => Promise<void>
   }>
 function ConfigureOptionsForm({
@@ -128,6 +149,7 @@ function ConfigureOptionsForm({
   onFinish,
   isDefault,
   reuseMachine,
+  name,
   addProvider = false,
   isModal = false,
   showBottomActionBar = true,
@@ -138,11 +160,13 @@ function ConfigureOptionsForm({
 }: TConfigureOptionsFormProps) {
   const loadingBgColor = useColorModeValue("whiteAlpha.400", "blackAlpha.400")
   const [provider] = useProvider(providerID)
+  const [[providers]] = useProviders()
 
   const formMethods = useForm<TFieldValues>({
     defaultValues: {
       reuseMachine,
       useAsDefault: isDefault,
+      name: name,
     },
   })
   const { reuseMachineError, useAsDefaultError } = useFormErrors(
@@ -159,13 +183,13 @@ function ConfigureOptionsForm({
   } = useOptions(providerID, provider, workspace, suggestedOptions, formMethods)
 
   const {
-    status,
+    status: configureStatus,
     error: configureError,
     mutate: configureProvider,
   } = useMutation<
     void,
     Error,
-    Readonly<{ providerID: TProviderID; config: TConfigureProviderConfig }>
+    Readonly<{ providerID: TProviderID; config: TConfigureProviderConfig; newName?: string }>
   >({
     mutationFn: onSave,
     onSuccess(_, { config: { options } }) {
@@ -203,7 +227,7 @@ function ConfigureOptionsForm({
     event.preventDefault()
 
     formMethods.handleSubmit((data) => {
-      const { useAsDefault, reuseMachine } = data
+      const { useAsDefault, reuseMachine, name } = data
       configureProvider({
         providerID,
         config: {
@@ -211,6 +235,7 @@ function ConfigureOptionsForm({
           useAsDefaultProvider: useAsDefault,
           options: filterOptions(data, allOptions),
         },
+        newName: typeof name === "string" && name.trim() !== "" ? name : undefined,
       })
     })(event)
   }
@@ -245,6 +270,35 @@ function ConfigureOptionsForm({
       <Form aria-readonly={true} onSubmit={handleSubmit}>
         <VStack align="start" width="full">
           <VStack align="start" spacing={8} position="relative" width="full">
+            {!workspace && (
+              <FormControl isInvalid={!!formMethods.formState.errors[FieldName.NAME]}>
+                <FormLabel>Provider Name</FormLabel>
+                <Input
+                  {...formMethods.register(FieldName.NAME, {
+                    required: "Name is required",
+                    pattern: {
+                      value: PROVIDER_NAME_REGEX,
+                      message: "Name can only contain lowercase letters, numbers and hyphens",
+                    },
+                    maxLength: {
+                      value: 32,
+                      message: "Name cannot be longer than 32 characters",
+                    },
+                    validate: {
+                      unique: (value) => {
+                        if (!value || value === providerID) return true
+                        const name = value as string
+
+                        return providers?.[name] === undefined ? true : "Name must be unique"
+                      },
+                    },
+                  })}
+                />
+                <FormErrorMessage>
+                  {formMethods.formState.errors[FieldName.NAME]?.message}
+                </FormErrorMessage>
+              </FormControl>
+            )}
             <Center
               opacity={isRefreshing ? "1" : "0"}
               pointerEvents={isRefreshing ? "auto" : "none"}
@@ -354,10 +408,10 @@ function ConfigureOptionsForm({
                   <Button
                     type="submit"
                     variant="primary"
-                    isLoading={formMethods.formState.isSubmitting || status === "loading"}
+                    isLoading={formMethods.formState.isSubmitting || configureStatus === "loading"}
                     isDisabled={!formMethods.formState.isValid || isRefreshing}
                     rightIcon={
-                      status === "success" && !formMethods.formState.isDirty ? (
+                      configureStatus === "success" && !formMethods.formState.isDirty ? (
                         <CheckIcon />
                       ) : undefined
                     }
@@ -502,8 +556,7 @@ function useOptions(
       })
     }
     // only rerun when suggestedOptions changes
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [suggestedOptions])
+  }, [suggestedOptions, formMethods, refreshSubOptionsMutation])
 
   useEffect(() => {
     const workspaceOptions = workspace?.provider?.options
@@ -528,8 +581,12 @@ function useOptions(
       refreshSubOptionsMutation({ options: changedOptions })
     }
     // only rerun when workspace options change
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [workspace?.provider?.options])
+  }, [
+    workspace?.provider?.options,
+    formMethods,
+    refreshSubOptionsMutation,
+    setIsEditingWorkspaceOptions,
+  ])
 
   const allOptions = useMemo(() => {
     if (refreshOptions) {

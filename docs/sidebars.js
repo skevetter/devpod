@@ -139,6 +139,10 @@ module.exports = {
           type: "doc",
           id: "managing-providers/delete-provider",
         },
+        {
+          type: "doc",
+          id: "managing-providers/rename-provider",
+        },
       ],
     },
     {
