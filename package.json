@@ -2,6 +2,6 @@
   "name": "devpod",
   "private": true,
   "devDependencies": {
-    "@biomejs/biome": "2.4.5"
+    "@biomejs/biome": "2.4.6"
   }
 }
