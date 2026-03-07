@@ -272,32 +272,32 @@ function ConfigureOptionsForm({
         <VStack align="start" width="full">
           <VStack align="start" spacing={8} position="relative" width="full">
             {!workspace && (
-            <FormControl isInvalid={!!formMethods.formState.errors[FieldName.NAME]}>
-              <FormLabel>Provider Name</FormLabel>
-              <Input
-                {...formMethods.register(FieldName.NAME, {
-                  pattern: {
-                    value: PROVIDER_NAME_REGEX,
-                    message: "Name can only contain lowercase letters, numbers and hyphens",
-                  },
-                  maxLength: {
-                    value: 32,
-                    message: "Name cannot be longer than 32 characters",
-                  },
-                  validate: {
-                    unique: (value) => {
-                      if (!value || value === providerID) return true
-                      const name = value as string
-
-                      return providers?.[name] === undefined ? true : "Name must be unique"
+              <FormControl isInvalid={!!formMethods.formState.errors[FieldName.NAME]}>
+                <FormLabel>Provider Name</FormLabel>
+                <Input
+                  {...formMethods.register(FieldName.NAME, {
+                    pattern: {
+                      value: PROVIDER_NAME_REGEX,
+                      message: "Name can only contain lowercase letters, numbers and hyphens",
                     },
-                  },
-                })}
-              />
-              <FormErrorMessage>
-                {formMethods.formState.errors[FieldName.NAME]?.message}
-              </FormErrorMessage>
-            </FormControl>
+                    maxLength: {
+                      value: 32,
+                      message: "Name cannot be longer than 32 characters",
+                    },
+                    validate: {
+                      unique: (value) => {
+                        if (!value || value === providerID) return true
+                        const name = value as string
+
+                        return providers?.[name] === undefined ? true : "Name must be unique"
+                      },
+                    },
+                  })}
+                />
+                <FormErrorMessage>
+                  {formMethods.formState.errors[FieldName.NAME]?.message}
+                </FormErrorMessage>
+              </FormControl>
             )}
             <Center
               opacity={isRefreshing ? "1" : "0"}

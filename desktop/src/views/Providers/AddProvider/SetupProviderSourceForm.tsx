@@ -382,7 +382,9 @@ export function SetupProviderSourceForm({
                           const trimmedValue = value?.trim()
                           if (trimmedValue === undefined || trimmedValue === "") return true
 
-                          return providers?.[trimmedValue] === undefined ? true : "Name must be unique"
+                          return providers?.[trimmedValue] === undefined
+                            ? true
+                            : "Name must be unique"
                         },
                       },
                       maxLength: { value: 32, message: "Name cannot be longer than 32 characters" },
