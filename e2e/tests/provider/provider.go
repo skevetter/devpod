@@ -209,15 +209,15 @@ spec:
 			err = f.DevPodProviderAdd(ctx, tempDir+"/provider1.yaml", "--name", providerName)
 			framework.ExpectNoError(err)
 
-			err = f.DevPodProviderUse(context.Background(), providerName)
+			err = f.DevPodProviderUse(ctx, providerName)
 			framework.ExpectNoError(err)
 
-			err = f.DevPodProviderRename(context.Background(), providerName, renamedProviderName)
+			err = f.DevPodProviderRename(ctx, providerName, renamedProviderName)
 			framework.ExpectNoError(err)
 
-			err = f.DevPodProviderUse(context.Background(), providerName)
+			err = f.DevPodProviderUse(ctx, providerName)
 			framework.ExpectError(err)
-			err = f.DevPodProviderUse(context.Background(), renamedProviderName)
+			err = f.DevPodProviderUse(ctx, renamedProviderName)
 			framework.ExpectNoError(err)
 
 			err = f.DevPodProviderDelete(ctx, renamedProviderName)
@@ -260,15 +260,15 @@ spec:
 				framework.ExpectNoError(err)
 
 				err = f.DevPodProviderRename(
-					context.Background(),
+					ctx,
 					providerToRename,
 					existingProvider,
 				)
 				framework.ExpectError(err)
 
-				err = f.DevPodProviderUse(context.Background(), providerToRename)
+				err = f.DevPodProviderUse(ctx, providerToRename)
 				framework.ExpectNoError(err)
-				err = f.DevPodProviderUse(context.Background(), existingProvider)
+				err = f.DevPodProviderUse(ctx, existingProvider)
 				framework.ExpectNoError(err)
 
 				err = f.DevPodProviderDelete(ctx, providerToRename)
@@ -288,7 +288,7 @@ spec:
 			framework.ExpectNoError(err)
 
 			// Attempt to rename non-existent provider.
-			err = f.DevPodProviderRename(context.Background(), nonExistentProvider, newName)
+			err = f.DevPodProviderRename(ctx, nonExistentProvider, newName)
 			framework.ExpectError(err)
 		})
 
@@ -385,10 +385,10 @@ spec:
 			err = f.DevPodProviderAdd(ctx, tempDir+"/provider1.yaml", "--name", providerName)
 			framework.ExpectNoError(err)
 
-			err = f.DevPodProviderRename(context.Background(), providerName, "invalid/name6")
+			err = f.DevPodProviderRename(ctx, providerName, "invalid/name6")
 			framework.ExpectError(err)
 
-			err = f.DevPodProviderUse(context.Background(), providerName)
+			err = f.DevPodProviderUse(ctx, providerName)
 			framework.ExpectNoError(err)
 
 			err = f.DevPodProviderDelete(ctx, providerName)
