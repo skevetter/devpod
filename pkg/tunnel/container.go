@@ -6,6 +6,7 @@ package tunnel
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -258,7 +259,11 @@ func (c *ContainerTunnel) runInContainer(
 			Stderr:  writer,
 			EnvVars: envVars,
 		}); err != nil {
-			c.log.Errorf("Error tunneling to container: %v", err)
+			if errors.Is(err, context.Canceled) {
+				c.log.Debugf("container tunnel closed: %v", err)
+			} else {
+				c.log.Errorf("error tunneling to container: %v", err)
+			}
 			return
 		}
 	}()
