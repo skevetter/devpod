@@ -571,8 +571,7 @@ func (cmd *SSHCmd) startTunnel(
 
 	// Traffic is coming in from the outside, we need to forward it to the container
 	if cmd.Stdio {
-		return devssh.Run(devssh.RunOptions{
-			Context: ctx,
+		return devssh.Run(ctx, devssh.RunOptions{
 			Client:  containerClient,
 			Command: command,
 			Stdin:   os.Stdin,
@@ -595,8 +594,7 @@ func (cmd *SSHCmd) startTunnel(
 			if cmd.SSHKeepAliveInterval != DisableSSHKeepAlive {
 				go startSSHKeepAlive(ctx, containerClient, cmd.SSHKeepAliveInterval, log)
 			}
-			return devssh.Run(devssh.RunOptions{
-				Context: ctx,
+			return devssh.Run(ctx, devssh.RunOptions{
 				Client:  containerClient,
 				Command: command,
 				Stdin:   stdin,
@@ -753,8 +751,7 @@ func (cmd *SSHCmd) setupGPGAgent(
 
 	writer := log.ErrorStreamOnly().Writer(logrus.InfoLevel, false)
 	defer func() { _ = writer.Close() }()
-	err = devssh.Run(devssh.RunOptions{
-		Context: ctx,
+	err = devssh.Run(ctx, devssh.RunOptions{
 		Client:  containerClient,
 		Command: command,
 		Stdout:  writer,

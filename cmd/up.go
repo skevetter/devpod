@@ -808,8 +808,7 @@ func (cmd *UpCmd) devPodUpMachine(
 		})
 	}
 
-	return sshtunnel.ExecuteCommand(sshtunnel.ExecuteCommandOptions{
-		Ctx:            ctx,
+	return sshtunnel.ExecuteCommand(ctx, sshtunnel.ExecuteCommandOptions{
 		Client:         client,
 		AddPrivateKeys: devPodConfig.ContextOption(config.ContextOptionSSHAddPrivateKeys) == "true",
 		AgentInject:    agentInjectFunc,

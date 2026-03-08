@@ -102,7 +102,6 @@ func ConfigFromKeyBytes(keyBytes []byte) (*ssh.ClientConfig, error) {
 }
 
 type RunOptions struct {
-	Context context.Context
 	Client  *ssh.Client
 	Command string
 	Stdin   io.Reader
@@ -129,9 +128,6 @@ func (e *ExitError) Unwrap() error {
 }
 
 func (opts *RunOptions) validate() error {
-	if opts.Context == nil {
-		return fmt.Errorf("context is required")
-	}
 	if opts.Client == nil {
 		return fmt.Errorf("SSH client is required")
 	}
@@ -141,7 +137,7 @@ func (opts *RunOptions) validate() error {
 	return nil
 }
 
-func Run(opts RunOptions) error {
+func Run(ctx context.Context, opts RunOptions) error {
 	if err := opts.validate(); err != nil {
 		return err
 	}
@@ -157,7 +153,7 @@ func Run(opts RunOptions) error {
 		_ = sess.Setenv(k, v) // Ignore errors - command should work without env vars
 	}
 
-	if err := setupContextCancellation(opts.Context, sess); err != nil {
+	if err := setupContextCancellation(ctx, sess); err != nil {
 		return err
 	}
 
@@ -167,7 +163,7 @@ func Run(opts RunOptions) error {
 
 	err = sess.Run(opts.Command)
 	if err != nil {
-		return handleRunError(opts.Context, err, opts.Command)
+		return handleRunError(ctx, err, opts.Command)
 	}
 
 	return nil

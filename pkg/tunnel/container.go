@@ -187,8 +187,7 @@ func (c *ContainerTunnel) updateConfig(ctx context.Context, sshClient *ssh.Clien
 			}
 
 			c.log.Debugf("Run command in container: %s", command)
-			err = devssh.Run(devssh.RunOptions{
-				Context: ctx,
+			err = devssh.Run(ctx, devssh.RunOptions{
 				Client:  sshClient,
 				Command: command,
 				Stdout:  buf,
@@ -250,8 +249,7 @@ func (c *ContainerTunnel) runInContainer(
 		if c.log.GetLevel() == logrus.DebugLevel {
 			command += " --debug"
 		}
-		if err := devssh.Run(devssh.RunOptions{
-			Context: cancelCtx,
+		if err := devssh.Run(cancelCtx, devssh.RunOptions{
 			Client:  sshClient,
 			Command: command,
 			Stdin:   stdinReader,

@@ -185,8 +185,7 @@ func runServicesIteration(
 
 	command := buildCredentialsCommand(opts)
 
-	err = devssh.Run(devssh.RunOptions{
-		Context: cancelCtx,
+	err = devssh.Run(cancelCtx, devssh.RunOptions{
 		Client:  opts.ContainerClient,
 		Command: command,
 		Stdin:   stdinReader,
@@ -265,8 +264,7 @@ func forwardDevContainerPorts(p portForwardParams) ([]string, error) {
 func getContainerResult(p portForwardParams) (*config2.Result, error) {
 	stdout := &bytes.Buffer{}
 	stderr := &bytes.Buffer{}
-	err := devssh.Run(devssh.RunOptions{
-		Context: p.ctx,
+	err := devssh.Run(p.ctx, devssh.RunOptions{
 		Client:  p.containerClient,
 		Command: "cat " + setup.ResultLocation,
 		Stdout:  stdout,
