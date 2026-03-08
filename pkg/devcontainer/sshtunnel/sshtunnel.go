@@ -67,7 +67,7 @@ func ExecuteCommand(ctx context.Context, opts ExecuteCommandOptions) (*config2.R
 	opts.Log.Debugf("starting SSH tunnel execution: ssh=%q workspace=%q addKeys=%v",
 		opts.SSHCommand, opts.Command, opts.AddPrivateKeys)
 
-	ctx, cancel := context.WithCancel(ctx)
+	cancelCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	ts, err := setupTunnelContext(opts)
@@ -83,14 +83,14 @@ func ExecuteCommand(ctx context.Context, opts ExecuteCommandOptions) (*config2.R
 	})
 
 	if opts.AddPrivateKeys {
-		addPrivateKeys(ctx, opts)
+		addPrivateKeys(cancelCtx, opts)
 	}
 
 	wg.Go(func() {
-		ts.tunnelDone <- runSSHTunnel(ctx, cancel, ts)
+		ts.tunnelDone <- runSSHTunnel(cancelCtx, cancel, ts)
 	})
 
-	result, err := waitForTunnelCompletion(ctx, ts)
+	result, err := waitForTunnelCompletion(cancelCtx, ts)
 	wg.Wait()
 
 	return result, err
