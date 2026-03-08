@@ -62,7 +62,7 @@
   },
   "devDependencies": {
     "@eslint/compat": "2.0.3",
-    "@eslint/eslintrc": "3.3.4",
+    "@eslint/eslintrc": "3.3.5",
     "@eslint/js": "10.0.1",
     "@tanstack/eslint-plugin-query": "4.43.0",
     "@tauri-apps/cli": "2.10.1",
