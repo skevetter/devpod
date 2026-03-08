@@ -39,27 +39,44 @@ func Delete(ctx context.Context, opts DeleteOptions) (string, error) {
 		return id, err
 	}
 
-	force := opts.Force || opts.ClientDelete.Force
-	ignoreNotFound := opts.IgnoreNotFound || opts.ClientDelete.IgnoreNotFound
-	if !force {
-		unlock, err := lockIfNeeded(ctx, client, opts)
-		if err != nil {
-			return "", err
-		}
-		defer unlock()
-
-		status, err := client.Status(ctx, client2.StatusOptions{})
-		if err != nil {
-			return "", err
-		}
-		if status == client2.StatusNotFound && !ignoreNotFound {
-			return "", fmt.Errorf(
-				"workspace not found, use --force to delete anyway",
-			)
-		}
+	if err := checkBeforeDelete(ctx, client, opts); err != nil {
+		return "", err
 	}
 
 	return deleteWorkspace(ctx, client, opts)
+}
+
+// checkBeforeDelete acquires the lock and verifies the workspace exists
+// unless force-deletion is requested.
+func checkBeforeDelete(
+	ctx context.Context,
+	client client2.BaseWorkspaceClient,
+	opts DeleteOptions,
+) error {
+	force := opts.Force || opts.ClientDelete.Force
+	if force {
+		return nil
+	}
+
+	unlock, err := lockIfNeeded(ctx, client, opts)
+	if err != nil {
+		return err
+	}
+	defer unlock()
+
+	status, err := client.Status(ctx, client2.StatusOptions{})
+	if err != nil {
+		return err
+	}
+
+	ignoreNotFound := opts.IgnoreNotFound || opts.ClientDelete.IgnoreNotFound
+	if status == client2.StatusNotFound && !ignoreNotFound {
+		return fmt.Errorf(
+			"workspace not found, use --force to delete anyway",
+		)
+	}
+
+	return nil
 }
 
 // lockIfNeeded acquires the workspace lock when not running on a platform and
