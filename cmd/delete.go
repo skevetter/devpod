@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/cmd/completion"
 	"github.com/skevetter/devpod/cmd/flags"
 	client2 "github.com/skevetter/devpod/pkg/client"
@@ -80,46 +79,37 @@ If the workspace is not found, you can use the --ignore-not-found flag to treat 
 // Run runs the command logic.
 func (cmd *DeleteCmd) Run(ctx context.Context, devPodConfig *config.Config, args []string) error {
 	if len(args) == 0 {
-		workspaceName, err := workspace.Delete(ctx, workspace.DeleteOptions{
-			DevPodConfig:   devPodConfig,
-			Args:           args,
-			IgnoreNotFound: cmd.IgnoreNotFound,
-			Force:          cmd.Force,
-			ClientDelete:   cmd.DeleteOptions,
-			Owner:          cmd.Owner,
-			Log:            log.Default,
-		})
+		workspaceName, err := cmd.deleteWorkspace(ctx, devPodConfig, args)
 		if err != nil {
 			return err
 		}
-		log.WithFields(logrus.Fields{
-			"workspace": workspaceName,
-		})
-		log.Default.Donef("deleted workspace")
+		log.Default.Donef("deleted workspace %s", workspaceName)
 		return nil
 	}
 
 	for _, arg := range args {
-		workspaceName, err := workspace.Delete(ctx, workspace.DeleteOptions{
-			DevPodConfig:   devPodConfig,
-			Args:           []string{arg},
-			IgnoreNotFound: cmd.IgnoreNotFound,
-			Force:          cmd.Force,
-			ClientDelete:   cmd.DeleteOptions,
-			Owner:          cmd.Owner,
-			Log:            log.Default,
-		})
+		workspaceName, err := cmd.deleteWorkspace(ctx, devPodConfig, []string{arg})
 		if err != nil {
-			log.WithFields(logrus.Fields{
-				"workspace": arg,
-				"err":       err,
-			}).Error("failed to delete workspace")
+			log.Default.Errorf("failed to delete workspace %s: %v", workspaceName, err)
 			continue
 		}
-		log.WithFields(logrus.Fields{
-			"workspace": workspaceName,
-		})
-		log.Default.Donef("deleted workspace")
+		log.Default.Donef("deleted workspace %s", workspaceName)
 	}
 	return nil
+}
+
+func (cmd *DeleteCmd) deleteWorkspace(
+	ctx context.Context,
+	devPodConfig *config.Config,
+	args []string,
+) (string, error) {
+	return workspace.Delete(ctx, workspace.DeleteOptions{
+		DevPodConfig:   devPodConfig,
+		Args:           args,
+		IgnoreNotFound: cmd.IgnoreNotFound,
+		Force:          cmd.Force,
+		ClientDelete:   cmd.DeleteOptions,
+		Owner:          cmd.Owner,
+		Log:            log.Default,
+	})
 }

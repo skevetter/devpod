@@ -162,12 +162,11 @@ func cleanupLocalWorkspaces(
 			go func(w provider.Workspace) {
 				defer wg.Done()
 				client, err := workspace.Get(ctx, workspace.GetOptions{
-					DevPodConfig:   devPodConfig,
-					Args:           []string{w.ID},
-					ChangeLastUsed: true,
-					Owner:          owner,
-					LocalOnly:      true,
-					Log:            log,
+					DevPodConfig: devPodConfig,
+					Args:         []string{w.ID},
+					Owner:        owner,
+					LocalOnly:    true,
+					Log:          log,
 				})
 				if err != nil {
 					log.WithFields(logrus.Fields{

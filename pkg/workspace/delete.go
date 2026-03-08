@@ -39,7 +39,9 @@ func Delete(ctx context.Context, opts DeleteOptions) (string, error) {
 		return id, err
 	}
 
-	if !opts.Force {
+	force := opts.Force || opts.ClientDelete.Force
+	ignoreNotFound := opts.IgnoreNotFound || opts.ClientDelete.IgnoreNotFound
+	if !force {
 		unlock, err := lockIfNeeded(ctx, client, opts)
 		if err != nil {
 			return "", err
@@ -50,7 +52,7 @@ func Delete(ctx context.Context, opts DeleteOptions) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		if status == client2.StatusNotFound {
+		if status == client2.StatusNotFound && !ignoreNotFound {
 			return "", fmt.Errorf(
 				"workspace not found, use --force to delete anyway",
 			)
@@ -247,7 +249,7 @@ func hasOtherWorkspaces(
 	machineName string,
 	opts DeleteOptions,
 ) (bool, error) {
-	workspaces, err := List(ctx, opts.DevPodConfig, false, platform.SelfOwnerFilter, opts.Log)
+	workspaces, err := List(ctx, opts.DevPodConfig, false, opts.Owner, opts.Log)
 	if err != nil {
 		return false, err
 	}

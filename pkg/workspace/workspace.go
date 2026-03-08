@@ -177,6 +177,7 @@ func Get(ctx context.Context, opts GetOptions) (client.BaseWorkspaceClient, erro
 				sshConfigPath:        "",
 				sshConfigIncludePath: "",
 				owner:                opts.Owner,
+				localOnly:            opts.LocalOnly,
 			},
 			opts.Log,
 		)
@@ -707,6 +708,7 @@ type selectWorkspaceParams struct {
 	sshConfigPath        string
 	sshConfigIncludePath string
 	owner                platform.OwnerFilter
+	localOnly            bool
 }
 
 func selectWorkspace(
@@ -719,7 +721,15 @@ func selectWorkspace(
 		return nil, nil, nil, errProvideWorkspaceArg
 	}
 
-	workspaces, err := List(ctx, devPodConfig, false, params.owner, log)
+	var (
+		workspaces []*providerpkg.Workspace
+		err        error
+	)
+	if params.localOnly {
+		workspaces, err = ListLocalWorkspaces(devPodConfig.DefaultContext, false, log)
+	} else {
+		workspaces, err = List(ctx, devPodConfig, false, params.owner, log)
+	}
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("list workspaces: %w", err)
 	}
