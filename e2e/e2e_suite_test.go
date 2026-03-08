@@ -9,6 +9,7 @@ import (
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	"github.com/skevetter/devpod/e2e/framework"
+
 	// Register tests.
 	_ "github.com/skevetter/devpod/e2e/tests/build"
 	_ "github.com/skevetter/devpod/e2e/tests/context"
@@ -22,7 +23,6 @@ import (
 	_ "github.com/skevetter/devpod/e2e/tests/up"
 	_ "github.com/skevetter/devpod/e2e/tests/up-features"
 	_ "github.com/skevetter/devpod/e2e/tests/upgrade"
-	_ "github.com/skevetter/devpod/e2e/tests/workspace"
 )
 
 // TestRunE2ETests checks configuration parameters (specified through flags) and then runs
