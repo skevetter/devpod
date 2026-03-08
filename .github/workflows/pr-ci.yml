@@ -341,10 +341,10 @@ jobs:
 
           kind create cluster --name "${{ steps.uuid.outputs.result }}" --image kindest/node:v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a
 
-      # NOTE: engineerd/setup-kind does not work on Windows runners
+      # NOTE: skevetter/setup-kind does not work on Windows runners
       - name: setup kind
         if: matrix.install-kind == true && runner.os != 'Windows' && (matrix.requires-secret == false || needs.can-read-secret.outputs.secret-set == 'true')
-        uses: engineerd/setup-kind@v0.6.2
+        uses: skevetter/setup-kind@v1
         with:
           name: ${{ steps.uuid.outputs.result }}
           version: v0.24.0
