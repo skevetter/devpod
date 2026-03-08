@@ -225,7 +225,11 @@ func isExpectedError(err error) bool {
 // executeSSHServerHelper injects the agent and runs the SSH server helper
 // command. It returns a single goroutineResult; the caller sends it to
 // helperDone.
-func executeSSHServerHelper(ctx context.Context, cancel context.CancelFunc, tc *tunnelContext) sshTunnelResult {
+func executeSSHServerHelper(
+	ctx context.Context,
+	cancel context.CancelFunc,
+	tc *tunnelContext,
+) sshTunnelResult {
 	defer tc.opts.Log.Debug("done executing SSH server helper command")
 	defer cancel()
 
@@ -260,7 +264,11 @@ func addPrivateKeys(ctx context.Context, opts ExecuteCommandOptions) {
 // runSSHTunnel creates the SSH client, establishes a session, and runs the
 // agent command. It returns a single goroutineResult; the caller sends it to
 // tunnelDone.
-func runSSHTunnel(ctx context.Context, cancel context.CancelFunc, tc *tunnelContext) sshTunnelResult {
+func runSSHTunnel(
+	ctx context.Context,
+	cancel context.CancelFunc,
+	tc *tunnelContext,
+) sshTunnelResult {
 	defer cancel()
 
 	tc.opts.Log.Debug("creating SSH client")
@@ -357,7 +365,11 @@ func setupSSHAgentForwarding(
 // runCommandInSSHTunnel runs the agent command over the SSH tunnel and returns
 // the result. EOF errors preserve the underlying io.EOF so the caller can
 // distinguish expected session closure from real failures.
-func runCommandInSSHTunnel(ctx context.Context, tc *tunnelContext, sshClient *ssh.Client) sshTunnelResult {
+func runCommandInSSHTunnel(
+	ctx context.Context,
+	tc *tunnelContext,
+	sshClient *ssh.Client,
+) sshTunnelResult {
 	streamer := NewTunnelLogStreamer(tc.opts.Log)
 	defer func() { _ = streamer.Close() }()
 
