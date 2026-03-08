@@ -79,6 +79,7 @@ func ExecuteCommand(ctx context.Context, opts ExecuteCommandOptions) (*config2.R
 	var wg sync.WaitGroup
 
 	wg.Go(func() {
+		// helper receives parent ctx; it calls cancel() to signal tunnel goroutine
 		ts.helperDone <- executeSSHServerHelper(ctx, cancel, ts)
 	})
 

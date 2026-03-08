@@ -270,7 +270,7 @@ func (cmd *SSHCmd) jumpContainerTailscale(
 	// Handle GPG agent forwarding
 	if cmd.GPGAgentForwarding ||
 		devPodConfig.ContextOption(config.ContextOptionGPGAgentForwarding) == "true" {
-		if gpg.IsGpgTunnelRunning(cmd.User, ctx, toolSSHClient, log) {
+		if gpg.IsGpgTunnelRunning(ctx, cmd.User, toolSSHClient, log) {
 			log.Debugf("[GPG] exporting already running, skipping")
 		} else if err := cmd.setupGPGAgent(ctx, toolSSHClient, log); err != nil {
 			return err
@@ -530,7 +530,7 @@ func (cmd *SSHCmd) startTunnel(
 		devPodConfig.ContextOption(config.ContextOptionGPGAgentForwarding) == "true" {
 		// Check if a forwarding is already enabled and running, in that case
 		// we skip the forwarding and keep using the original one
-		if gpg.IsGpgTunnelRunning(cmd.User, ctx, containerClient, log) {
+		if gpg.IsGpgTunnelRunning(ctx, cmd.User, containerClient, log) {
 			log.Debugf("[GPG] exporting already running, skipping")
 		} else {
 			err := cmd.setupGPGAgent(ctx, containerClient, log)

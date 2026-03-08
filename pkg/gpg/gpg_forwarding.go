@@ -24,8 +24,8 @@ type GPGConf struct {
 }
 
 func IsGpgTunnelRunning(
-	user string,
 	ctx context.Context,
+	user string,
 	client *ssh.Client,
 	log log.Logger,
 ) bool {
