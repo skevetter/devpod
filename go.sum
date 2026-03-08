@@ -656,8 +656,8 @@ github.com/sirupsen/logrus v1.9.4 h1:TsZE7l11zFCLZnZ+teH4Umoq5BhEIfIzfRDZ1Uzql2w
 github.com/sirupsen/logrus v1.9.4/go.mod h1:ftWc9WdOfJ0a92nsE2jF5u5ZwH8Bv2zdeOC42RjbV2g=
 github.com/skevetter/log v0.0.0-20260106023547-bfd26ab1367c h1:2IjLo9V6TLV2rORRKKu+NVMSrOAEeuS4KJPk3v9e1rs=
 github.com/skevetter/log v0.0.0-20260106023547-bfd26ab1367c/go.mod h1:Aqjwx8xRSxBWtTYXK3EzxManSgYZl7FaSh8J5LvTAK0=
-github.com/skevetter/ssh v0.0.8 h1:YH9ENxRgfA3wGogxzBx16gQbSiR39sqCx36t8wLnQlw=
-github.com/skevetter/ssh v0.0.8/go.mod h1:Kwjgc5zB58WGC40nP1rBQIPYoNnhkAwmkf/OvErc0ow=
+github.com/skevetter/ssh v0.1.0 h1:+Kcb77Z8WHc+uiHVF9JJCMZjdFiY+o/Tn2Pz7pGyIDs=
+github.com/skevetter/ssh v0.1.0/go.mod h1:Kwjgc5zB58WGC40nP1rBQIPYoNnhkAwmkf/OvErc0ow=
 github.com/skevetter/tailscale v1.92.2 h1:9P3GFPhZJpnoHzgwk86kK1fNNB8ibOIgkkHqt3ARaRM=
 github.com/skevetter/tailscale v1.92.2/go.mod h1:dYlHLLo1QUXtOCpXiIe8fdkZVAcQZFnjfwTdXI25fDc=
 github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966 h1:JIAuq3EEf9cgbU6AtGPK4CTG3Zf6CKMNqf0MHTggAUA=
