@@ -65,7 +65,7 @@ func (cmd *DeleteCmd) Run(cobraCmd *cobra.Command, args []string) error {
 	}
 
 	ctx := cobraCmd.Context()
-	if len(args) == 0 {
+	if len(args) <= 1 {
 		return cmd.deleteSingle(ctx, devPodConfig, args)
 	}
 
@@ -78,7 +78,7 @@ func (cmd *DeleteCmd) loadConfig() (*config.Config, error) {
 		&cmd.DeleteOptions,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("decode up options: %w", err)
+		return nil, fmt.Errorf("decode delete options: %w", err)
 	}
 
 	if err := clientimplementation.DecodePlatformOptionsFromEnv(&cmd.Platform); err != nil {
@@ -122,7 +122,7 @@ func (cmd *DeleteCmd) deleteMultiple(
 
 	if len(errs) > 0 {
 		return fmt.Errorf(
-			"%d workspace(s) failed to delete, run with --ignore-not-found to ignore not found errors: %v",
+			"%d workspace(s) failed to delete: %v",
 			len(errs),
 			errs,
 		)

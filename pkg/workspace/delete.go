@@ -39,44 +39,48 @@ func Delete(ctx context.Context, opts DeleteOptions) (string, error) {
 		return id, err
 	}
 
-	if err := checkBeforeDelete(ctx, client, opts); err != nil {
+	unlock, err := checkBeforeDelete(ctx, client, opts)
+	if err != nil {
 		return "", err
 	}
+	defer unlock()
 
 	return deleteWorkspace(ctx, client, opts)
 }
 
 // checkBeforeDelete acquires the lock and verifies the workspace exists
-// unless force-deletion is requested.
+// unless force-deletion is requested. It returns an unlock function that
+// must be called by the caller (typically deferred) to release the lock.
 func checkBeforeDelete(
 	ctx context.Context,
 	client client2.BaseWorkspaceClient,
 	opts DeleteOptions,
-) error {
+) (func(), error) {
 	force := opts.Force || opts.ClientDelete.Force
 	if force {
-		return nil
+		return func() {}, nil
 	}
 
 	unlock, err := lockIfNeeded(ctx, client, opts)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	defer unlock()
 
 	status, err := client.Status(ctx, client2.StatusOptions{})
 	if err != nil {
-		return err
+		unlock()
+		return nil, err
 	}
 
 	ignoreNotFound := opts.IgnoreNotFound || opts.ClientDelete.IgnoreNotFound
 	if status == client2.StatusNotFound && !ignoreNotFound {
-		return fmt.Errorf(
+		unlock()
+		return nil, fmt.Errorf(
 			"workspace not found, use --force to delete anyway",
 		)
 	}
 
-	return nil
+	return unlock, nil
 }
 
 // lockIfNeeded acquires the workspace lock when not running on a platform and
