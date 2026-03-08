@@ -91,11 +91,7 @@ func (cmd *DeleteCmd) Run(ctx context.Context, devPodConfig *config.Config, args
 	for _, arg := range args {
 		workspaceName, err := cmd.deleteWorkspace(ctx, devPodConfig, []string{arg})
 		if err != nil {
-			log.Default.Errorf("failed to delete workspace %s: %v", workspaceName, err)
-			errors = append(
-				errors,
-				fmt.Errorf("failed to delete workspace %s: %w", workspaceName, err),
-			)
+			errors = append(errors, fmt.Errorf("failed to delete workspace %s: %w", arg, err))
 			continue
 		}
 		log.Default.Donef("deleted workspace %s", workspaceName)
