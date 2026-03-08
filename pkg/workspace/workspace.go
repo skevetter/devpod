@@ -156,66 +156,63 @@ func getWorkspaceClient(
 	}
 }
 
-// Get tries to retrieve an already existing workspace.
-func Get(
-	ctx context.Context,
-	devPodConfig *config.Config,
-	args []string,
-	changeLastUsed bool,
-	owner platform.OwnerFilter,
-	localOnly bool,
-	log log.Logger,
-) (client.BaseWorkspaceClient, error) {
-	var (
-		provider  *providerpkg.ProviderConfig
-		workspace *providerpkg.Workspace
-		machine   *providerpkg.Machine
-		err       error
-	)
+// GetOptions holds the parameters for retrieving an existing workspace.
+type GetOptions struct {
+	DevPodConfig   *config.Config
+	Args           []string
+	ChangeLastUsed bool
+	Owner          platform.OwnerFilter
+	LocalOnly      bool
+	Log            log.Logger
+}
 
-	// check if we have no args
-	if len(args) == 0 {
-		provider, workspace, machine, err = selectWorkspace(
+// Get tries to retrieve an already existing workspace.
+func Get(ctx context.Context, opts GetOptions) (client.BaseWorkspaceClient, error) {
+	if len(opts.Args) == 0 {
+		provider, workspace, machine, err := selectWorkspace(
 			ctx,
-			devPodConfig,
+			opts.DevPodConfig,
 			selectWorkspaceParams{
-				changeLastUsed:       changeLastUsed,
+				changeLastUsed:       opts.ChangeLastUsed,
 				sshConfigPath:        "",
 				sshConfigIncludePath: "",
-				owner:                owner,
+				owner:                opts.Owner,
 			},
-			log,
+			opts.Log,
 		)
 		if err != nil {
 			return nil, err
-		}
-	} else {
-		if localOnly {
-			workspace = findLocalWorkspace(ctx, devPodConfig, args, "", log)
-		} else {
-			workspace = findWorkspace(ctx, devPodConfig, args, "", owner, log)
-		}
-		if workspace == nil {
-			return nil, fmt.Errorf("workspace %s doesn't exist", args[0])
 		}
 
-		provider, workspace, machine, err = loadExistingWorkspace(
-			devPodConfig,
-			workspace.ID,
-			changeLastUsed,
-			log,
-		)
-		if err != nil {
-			return nil, err
-		}
+		return getWorkspaceClient(opts.DevPodConfig, provider, workspace, machine, opts.Log)
 	}
 
-	client, err := getWorkspaceClient(devPodConfig, provider, workspace, machine, log)
+	workspace := findWorkspaceByArgs(ctx, opts)
+	if workspace == nil {
+		return nil, fmt.Errorf("workspace not found for args: %v", opts.Args)
+	}
+
+	provider, workspace, machine, err := loadExistingWorkspace(
+		opts.DevPodConfig,
+		workspace.ID,
+		opts.ChangeLastUsed,
+		opts.Log,
+	)
 	if err != nil {
 		return nil, err
 	}
 
-	return client, nil
+	return getWorkspaceClient(opts.DevPodConfig, provider, workspace, machine, opts.Log)
+}
+
+func findWorkspaceByArgs(
+	ctx context.Context,
+	opts GetOptions,
+) *providerpkg.Workspace {
+	if opts.LocalOnly {
+		return findLocalWorkspace(ctx, opts.DevPodConfig, opts.Args, "", opts.Log)
+	}
+	return findWorkspace(ctx, opts.DevPodConfig, opts.Args, "", opts.Owner, opts.Log)
 }
 
 // Exists checks if the given workspace already exists.

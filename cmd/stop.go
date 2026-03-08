@@ -42,15 +42,12 @@ func NewStopCmd(flags *flags.GlobalFlags) *cobra.Command {
 				return fmt.Errorf("decode platform options: %w", err)
 			}
 
-			client, err := workspace2.Get(
-				ctx,
-				devPodConfig,
-				args,
-				false,
-				cmd.Owner,
-				false,
-				log.Default,
-			)
+			client, err := workspace2.Get(ctx, workspace2.GetOptions{
+				DevPodConfig: devPodConfig,
+				Args:         args,
+				Owner:        cmd.Owner,
+				Log:          log.Default,
+			})
 			if err != nil {
 				return err
 			}

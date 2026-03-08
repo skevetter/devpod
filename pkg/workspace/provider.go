@@ -674,15 +674,12 @@ func SwitchProvider(
 		_ = provider.SaveWorkspaceConfig(workspace)
 	}
 
-	client, err := Get(
-		ctx,
-		devPodConfig,
-		[]string{workspace.ID},
-		false,
-		platform.AllOwnerFilter,
-		false,
-		log.Default,
-	)
+	client, err := Get(ctx, GetOptions{
+		DevPodConfig: devPodConfig,
+		Args:         []string{workspace.ID},
+		Owner:        platform.AllOwnerFilter,
+		Log:          log.Default,
+	})
 	if err != nil {
 		revert()
 		return fmt.Errorf("failed to get client for workspace %s: %w", workspace.ID, err)
