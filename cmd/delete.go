@@ -80,16 +80,15 @@ If the workspace is not found, you can use the --ignore-not-found flag to treat 
 // Run runs the command logic.
 func (cmd *DeleteCmd) Run(ctx context.Context, devPodConfig *config.Config, args []string) error {
 	if len(args) == 0 {
-		workspaceName, err := workspace.Delete(
-			ctx,
-			devPodConfig,
-			args,
-			cmd.IgnoreNotFound,
-			cmd.Force,
-			cmd.DeleteOptions,
-			cmd.Owner,
-			log.Default,
-		)
+		workspaceName, err := workspace.Delete(ctx, workspace.DeleteOptions{
+			DevPodConfig:   devPodConfig,
+			Args:           args,
+			IgnoreNotFound: cmd.IgnoreNotFound,
+			Force:          cmd.Force,
+			ClientDelete:   cmd.DeleteOptions,
+			Owner:          cmd.Owner,
+			Log:            log.Default,
+		})
 		if err != nil {
 			return err
 		}
@@ -101,16 +100,15 @@ func (cmd *DeleteCmd) Run(ctx context.Context, devPodConfig *config.Config, args
 	}
 
 	for _, arg := range args {
-		workspaceName, err := workspace.Delete(
-			ctx,
-			devPodConfig,
-			[]string{arg},
-			cmd.IgnoreNotFound,
-			cmd.Force,
-			cmd.DeleteOptions,
-			cmd.Owner,
-			log.Default,
-		)
+		workspaceName, err := workspace.Delete(ctx, workspace.DeleteOptions{
+			DevPodConfig:   devPodConfig,
+			Args:           []string{arg},
+			IgnoreNotFound: cmd.IgnoreNotFound,
+			Force:          cmd.Force,
+			ClientDelete:   cmd.DeleteOptions,
+			Owner:          cmd.Owner,
+			Log:            log.Default,
+		})
 		if err != nil {
 			log.WithFields(logrus.Fields{
 				"workspace": arg,

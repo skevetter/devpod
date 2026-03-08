@@ -42,7 +42,12 @@ func (cmd *LogsDaemonCmd) Run(ctx context.Context, args []string) error {
 		return err
 	}
 
-	baseClient, err := workspace.Get(ctx, devPodConfig, args, false, cmd.Owner, false, log.Default)
+	baseClient, err := workspace.Get(ctx, workspace.GetOptions{
+		DevPodConfig: devPodConfig,
+		Args:         args,
+		Owner:        cmd.Owner,
+		Log:          log.Default,
+	})
 	if err != nil {
 		return err
 	} else if baseClient.WorkspaceConfig().Machine.ID == "" {

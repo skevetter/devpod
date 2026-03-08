@@ -110,7 +110,12 @@ func (cmd *TroubleshootCmd) Run(ctx context.Context, args []string) {
 		)
 	}
 
-	workspaceClient, err := workspace.Get(ctx, info.Config, args, false, cmd.Owner, false, logger)
+	workspaceClient, err := workspace.Get(ctx, workspace.GetOptions{
+		DevPodConfig: info.Config,
+		Args:         args,
+		Owner:        cmd.Owner,
+		Log:          logger,
+	})
 	if err == nil {
 		info.Workspace = workspaceClient.WorkspaceConfig()
 		info.WorkspaceStatus, err = workspaceClient.Status(ctx, client.StatusOptions{})
