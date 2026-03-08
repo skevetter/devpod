@@ -12,7 +12,7 @@ export function useProviderManager(): TProviderManager {
     mutationFn: async ({ providerID }: TWithProviderID) =>
       (await client.providers.remove(providerID)).unwrap(),
     onMutate({ providerID }) {
-      queryClient.cancelQueries(QueryKeys.PROVIDERS)
+      queryClient.cancelQueries({ queryKey: QueryKeys.PROVIDERS })
       const oldProviderSnapshot = queryClient.getQueryData<TProviders>(QueryKeys.PROVIDERS)?.[
         providerID
       ]
@@ -36,7 +36,7 @@ export function useProviderManager(): TProviderManager {
       }
     },
     onSuccess(_, { providerID }) {
-      queryClient.invalidateQueries(QueryKeys.provider(providerID))
+      queryClient.invalidateQueries({ queryKey: QueryKeys.provider(providerID) })
     },
   })
 
@@ -49,7 +49,7 @@ export function useProviderManager(): TProviderManager {
       newProviderID: string
     }) => (await client.providers.rename(oldProviderID, newProviderID)).unwrap(),
     onMutate({ oldProviderID, newProviderID }) {
-      queryClient.cancelQueries(QueryKeys.PROVIDERS)
+      queryClient.cancelQueries({ queryKey: QueryKeys.PROVIDERS })
       const oldProviders = queryClient.getQueryData<TProviders>(QueryKeys.PROVIDERS)
       const oldProviderData = oldProviders?.[oldProviderID]
 
@@ -89,9 +89,9 @@ export function useProviderManager(): TProviderManager {
       }
     },
     onSuccess(_, { oldProviderID, newProviderID }) {
-      queryClient.invalidateQueries(QueryKeys.provider(oldProviderID))
-      queryClient.invalidateQueries(QueryKeys.provider(newProviderID))
-      queryClient.invalidateQueries(QueryKeys.PROVIDERS)
+      queryClient.invalidateQueries({ queryKey: QueryKeys.provider(oldProviderID) })
+      queryClient.invalidateQueries({ queryKey: QueryKeys.provider(newProviderID) })
+      queryClient.invalidateQueries({ queryKey: QueryKeys.PROVIDERS })
     },
   })
 
