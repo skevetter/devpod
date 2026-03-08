@@ -30,27 +30,8 @@ func NewDeleteCmd(flags *flags.GlobalFlags) *cobra.Command {
 		Short: "Deletes an existing workspace",
 		Long: `Deletes an existing workspace. You can specify the workspace by its path or name.
 If the workspace is not found, you can use the --ignore-not-found flag to treat it as a successful delete.`,
-		RunE: func(_ *cobra.Command, args []string) error {
-			_, err := clientimplementation.DecodeOptionsFromEnv(
-				clientimplementation.DevPodFlagsDelete,
-				&cmd.DeleteOptions,
-			)
-			if err != nil {
-				return fmt.Errorf("decode up options: %w", err)
-			}
-
-			ctx := context.Background()
-			devPodConfig, err := config.LoadConfig(cmd.Context, cmd.Provider)
-			if err != nil {
-				return err
-			}
-
-			err = clientimplementation.DecodePlatformOptionsFromEnv(&cmd.Platform)
-			if err != nil {
-				return fmt.Errorf("decode platform options: %w", err)
-			}
-
-			return cmd.Run(ctx, devPodConfig, args)
+		RunE: func(cobraCmd *cobra.Command, args []string) error {
+			return cmd.Run(cobraCmd, args)
 		},
 		ValidArgsFunction: func(
 			rootCmd *cobra.Command, args []string, toComplete string,
@@ -77,32 +58,76 @@ If the workspace is not found, you can use the --ignore-not-found flag to treat 
 }
 
 // Run runs the command logic.
-func (cmd *DeleteCmd) Run(ctx context.Context, devPodConfig *config.Config, args []string) error {
-	if len(args) == 0 {
-		workspaceName, err := cmd.deleteWorkspace(ctx, devPodConfig, args)
-		if err != nil {
-			return err
-		}
-		log.Default.Donef("deleted workspace %s", workspaceName)
-		return nil
+func (cmd *DeleteCmd) Run(cobraCmd *cobra.Command, args []string) error {
+	devPodConfig, err := cmd.loadConfig()
+	if err != nil {
+		return err
 	}
 
-	var errors []error
+	ctx := cobraCmd.Context()
+	if len(args) == 0 {
+		return cmd.deleteSingle(ctx, devPodConfig, args)
+	}
+
+	return cmd.deleteMultiple(ctx, devPodConfig, args)
+}
+
+func (cmd *DeleteCmd) loadConfig() (*config.Config, error) {
+	_, err := clientimplementation.DecodeOptionsFromEnv(
+		clientimplementation.DevPodFlagsDelete,
+		&cmd.DeleteOptions,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("decode up options: %w", err)
+	}
+
+	if err := clientimplementation.DecodePlatformOptionsFromEnv(&cmd.Platform); err != nil {
+		return nil, fmt.Errorf("decode platform options: %w", err)
+	}
+
+	return config.LoadConfig(cmd.Context, cmd.Provider)
+}
+
+func (cmd *DeleteCmd) deleteSingle(
+	ctx context.Context,
+	devPodConfig *config.Config,
+	args []string,
+) error {
+	name, err := cmd.deleteWorkspace(ctx, devPodConfig, args)
+	if err != nil {
+		return err
+	}
+
+	log.Default.Donef("deleted workspace %s", name)
+
+	return nil
+}
+
+func (cmd *DeleteCmd) deleteMultiple(
+	ctx context.Context,
+	devPodConfig *config.Config,
+	args []string,
+) error {
+	var errs []error
 	for _, arg := range args {
-		workspaceName, err := cmd.deleteWorkspace(ctx, devPodConfig, []string{arg})
+		name, err := cmd.deleteWorkspace(ctx, devPodConfig, []string{arg})
 		if err != nil {
-			errors = append(errors, fmt.Errorf("failed to delete workspace %s: %w", arg, err))
+			errs = append(errs, fmt.Errorf("failed to delete workspace %s: %w", arg, err))
+
 			continue
 		}
-		log.Default.Donef("deleted workspace %s", workspaceName)
+
+		log.Default.Donef("deleted workspace %s", name)
 	}
-	if len(errors) > 0 {
+
+	if len(errs) > 0 {
 		return fmt.Errorf(
 			"%d workspace(s) failed to delete, run with --ignore-not-found to ignore not found errors: %v",
-			len(errors),
-			errors,
+			len(errs),
+			errs,
 		)
 	}
+
 	return nil
 }
 
