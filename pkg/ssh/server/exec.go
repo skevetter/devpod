@@ -74,13 +74,29 @@ func execPTY(
 	cmd *exec.Cmd,
 	log log.Logger,
 ) (err error) {
+	// Disable the gliderlabs/ssh minimal PTY emulation (NL→CRNL conversion
+	// in session.Write). When a real PTY is allocated, the kernel's line
+	// discipline already performs NL→CRNL translation on output. The
+	// gliderlabs/ssh library doesn't know this and applies its own conversion,
+	// resulting in double translation (\n → \r\r\n) that corrupts terminal
+	// escape sequences.
+	//
+	// This manifests as rendering corruption in full-screen TUI programs
+	// (e.g. Neovim split windows, tmux panes) when connected via DevPod SSH,
+	// while docker exec -it and direct SSH work fine because they bypass
+	// gliderlabs/ssh entirely.
+	//
+	// The fix was ported from coder/ssh (Coder's fork of gliderlabs/ssh):
+	//   - Coder issue:  https://github.com/coder/coder/issues/3371
+	//   - Neovim issue: https://github.com/neovim/neovim/issues/3875
+	sess.DisablePTYEmulation()
 	log.Debugf("execute SSH server PTY command: %s", strings.Join(cmd.Args, " "))
 	cmd.Env = append(cmd.Env, fmt.Sprintf("TERM=%s", ptyReq.Term))
 	// Start the PTY with the client's terminal dimensions. pty.Start
 	// (without size) creates the PTY with OS defaults (typically 80x24) which
 	// causes rendering corruption in TUI programs (e.g. Neovim split buffers).
 	//
-	// Similar PTY solutions used in other Go projects:
+	// Similar PTY solutions used in other projects:
 	//   - coder/wsep:           https://github.com/coder/wsep/blob/master/localexec_unix.go#L64
 	//   - wavetermdev/waveterm: https://github.com/wavetermdev/waveterm/blob/main/pkg/shellexec/shellexec.go#L168
 	//   - jumpserver/koko:      https://github.com/jumpserver/koko/blob/dev/pkg/localcommand/local_command.go#L49
