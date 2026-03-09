@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/skevetter/devpod/pkg/pty"
 	"github.com/skevetter/log"
 	"github.com/skevetter/ssh"
 )
@@ -56,50 +57,89 @@ func execNonPTY(sess ssh.Session, cmd *exec.Cmd, log log.Logger) (err error) {
 	return cmd.Wait()
 }
 
+// ptySession holds the state for a PTY-backed SSH session.
+type ptySession struct {
+	pc        pty.PTYCmd
+	proc      pty.Process
+	closeOnce sync.Once
+}
+
+func (p *ptySession) close() error {
+	var err error
+	p.closeOnce.Do(func() { err = p.pc.Close() })
+	return err
+}
+
+// handleSignalsAndResize forwards SSH signals and window resize events
+// to the PTY process until both channels are closed.
+func (p *ptySession) handleSignalsAndResize(
+	sigs <-chan ssh.Signal,
+	winCh <-chan ssh.Window,
+	log log.Logger,
+) {
+	for sigs != nil || winCh != nil {
+		select {
+		case sig, ok := <-sigs:
+			if !ok {
+				sigs = nil
+				continue
+			}
+			_ = p.proc.Signal(osSignalFrom(sig))
+		case win, ok := <-winCh:
+			if !ok {
+				winCh = nil
+				continue
+			}
+			if err := p.pc.Resize(
+				uint16(win.Height), //nolint:gosec // G115: SSH window dimensions fit uint16
+				uint16(win.Width),  //nolint:gosec // G115: SSH window dimensions fit uint16
+			); err != nil {
+				log.Debugf("failed to resize pty: %v", err)
+			}
+		}
+	}
+}
+
+// ptyExecParams holds the parameters for a PTY session execution.
+type ptyExecParams struct {
+	sess   ssh.Session
+	ptyReq ssh.Pty
+	winCh  <-chan ssh.Window
+	cmd    *exec.Cmd
+	log    log.Logger
+}
+
 // execPTY executes a command with a PTY, handling terminal resize events and
-// SSH signal forwarding in a combined select loop. Output is copied on the
-// main goroutine to ensure all buffered data is flushed before cmd.Wait().
+// SSH signal forwarding. Output is copied on the main goroutine to ensure all
+// buffered data is flushed before process.Wait().
 //
-// DisablePTYEmulation disables the gliderlabs/ssh minimal PTY emulation
-// (NL→CRNL conversion in session.Write). When a real PTY is allocated, the
-// kernel's line discipline already performs NL→CRNL translation on output.
-// The gliderlabs/ssh library doesn't know this and applies its own conversion,
-// resulting in double translation (\n → \r\r\n) that corrupts terminal
-// escape sequences.
+// DisablePTYEmulation prevents double NL→CRNL translation. The kernel's line
+// discipline already performs this; the gliderlabs/ssh library's own conversion
+// would corrupt terminal escape sequences.
 //
-// The fix was ported from coder/ssh (Coder's fork of gliderlabs/ssh):
+// Ported from coder/ssh (Coder's fork of gliderlabs/ssh):
 //   - Coder issue:  https://github.com/coder/coder/issues/3371
 //   - Neovim issue: https://github.com/neovim/neovim/issues/3875
-//
-// Loosely modeled after Coder's startPTYSession:
-//   - https://github.com/coder/coder/blob/main/agent/agentssh/agentssh.go
-func execPTY(
-	sess ssh.Session,
-	ptyReq ssh.Pty,
-	winCh <-chan ssh.Window,
-	cmd *exec.Cmd,
-	log log.Logger,
-) (retErr error) {
-	log.Debugf("execute SSH server PTY command: %s", strings.Join(cmd.Args, " "))
-	sess.DisablePTYEmulation()
-	cmd.Env = append(cmd.Env, fmt.Sprintf("TERM=%s", ptyReq.Term))
+func execPTY(p ptyExecParams) (retErr error) {
+	p.log.Debugf("execute SSH server PTY command: %s", strings.Join(p.cmd.Args, " "))
+	p.sess.DisablePTYEmulation()
 
-	f, err := startPTY(cmd, ptyReq.Window.Width, ptyReq.Window.Height)
+	ptycmd := &pty.Cmd{
+		Path: p.cmd.Path,
+		Args: p.cmd.Args,
+		Env:  append(p.cmd.Env, fmt.Sprintf("TERM=%s", p.ptyReq.Term)),
+		Dir:  p.cmd.Dir,
+	}
+
+	pc, proc, err := pty.Start(ptycmd, pty.WithPTYOption(pty.WithSSHRequest(p.ptyReq)))
 	if err != nil {
 		return fmt.Errorf("start pty: %w", err)
 	}
-	var closeOnce sync.Once
-	closePty := func() error {
-		var err error
-		closeOnce.Do(func() {
-			err = f.Close()
-		})
-		return err
-	}
+
+	ps := &ptySession{pc: pc, proc: proc}
 	defer func() {
-		closeErr := closePty()
-		if closeErr != nil {
-			log.Debugf("failed to close pty: %v", closeErr)
+		if closeErr := ps.close(); closeErr != nil {
+			p.log.Debugf("failed to close pty: %v", closeErr)
 			if retErr == nil {
 				retErr = closeErr
 			}
@@ -107,42 +147,21 @@ func execPTY(
 	}()
 
 	sigs := make(chan ssh.Signal, 1)
-	sess.Signals(sigs)
+	p.sess.Signals(sigs)
 	defer func() {
-		sess.Signals(nil)
+		p.sess.Signals(nil)
 		close(sigs)
 	}()
-	go func() {
-		for {
-			if sigs == nil && winCh == nil {
-				return
-			}
-			select {
-			case sig, ok := <-sigs:
-				if !ok {
-					sigs = nil
-					continue
-				}
-				forwardSignal(log, sig, cmd.Process)
-			case win, ok := <-winCh:
-				if !ok {
-					winCh = nil
-					continue
-				}
-				if err := setWinSize(f, win.Width, win.Height); err != nil {
-					log.Debugf("failed to resize pty: %v", err)
-				}
-			}
-		}
-	}()
+
+	go ps.handleSignalsAndResize(sigs, p.winCh, p.log)
 
 	go func() {
-		_, _ = io.Copy(f, sess)
-		_ = closePty()
+		_, _ = io.Copy(pc.InputWriter(), p.sess)
+		_ = ps.close()
 	}()
 
 	// Copy output on main goroutine to ensure all data is flushed before Wait.
-	_, _ = io.Copy(sess, f)
+	_, _ = io.Copy(p.sess, pc.OutputReader())
 
-	return cmd.Wait()
+	return proc.Wait()
 }

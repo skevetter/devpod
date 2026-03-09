@@ -17,3 +17,7 @@ func cmdSysProcAttr() *syscall.SysProcAttr {
 func forwardSignal(log log.Logger, sig ssh.Signal, proc *os.Process) {
 	log.Debugf("signal forwarding not supported on windows, ignoring %s", sig)
 }
+
+func osSignalFrom(_ ssh.Signal) os.Signal {
+	return syscall.SIGTERM
+}

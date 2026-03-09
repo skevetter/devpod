@@ -110,7 +110,13 @@ func (s *containerServer) handler(sess ssh.Session) {
 	}
 
 	if isPty {
-		err = execPTY(sess, ptyReq, winCh, cmd, s.log)
+		err = execPTY(ptyExecParams{
+			sess:   sess,
+			ptyReq: ptyReq,
+			winCh:  winCh,
+			cmd:    cmd,
+			log:    s.log,
+		})
 	} else {
 		err = execNonPTY(sess, cmd, s.log)
 	}
