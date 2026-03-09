@@ -493,6 +493,7 @@ jobs:
             librsvg2-dev
 
           rustup target add wasm32-unknown-unknown
+          cargo install tauri-cli --version "^2.0.0" --locked
 
       - name: install desktop dependencies
         working-directory: ./desktop
