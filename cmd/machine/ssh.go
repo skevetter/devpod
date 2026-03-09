@@ -65,7 +65,7 @@ type RunSSHSessionOptions struct {
 	Stderr          io.Writer
 }
 
-// NewSSHCmd creates a new destroy command.
+// NewSSHCmd creates a new ssh command.
 func NewSSHCmd(flags *flags.GlobalFlags) *cobra.Command {
 	cmd := &SSHCmd{
 		GlobalFlags: flags,

@@ -272,6 +272,9 @@ type ProviderCommands struct {
 	// Status retrieves the server status
 	Status types.StrArray `json:"status,omitempty"`
 
+	// Describe retrieves the server description
+	Describe types.StrArray `json:"describe,omitempty"`
+
 	// Proxy proxies commands
 	Proxy *ProxyCommands `json:"proxy,omitempty"`
 

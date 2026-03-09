@@ -694,6 +694,27 @@ func (s *workspaceClient) getContainerStatus(ctx context.Context) (client.Status
 	return parsed, nil
 }
 
+func (s *workspaceClient) Describe(ctx context.Context) (string, error) {
+	s.m.Lock()
+	defer s.m.Unlock()
+
+	// check if provider has 'describe' command
+	if s.isMachineProvider() && len(s.config.Exec.Describe) > 0 {
+		if s.machine == nil {
+			return client.DescriptionNotFound, nil
+		}
+
+		machineClient, err := NewMachineClient(s.devPodConfig, s.config, s.machine, s.log)
+		if err != nil {
+			return client.DescriptionNotFound, err
+		}
+
+		return machineClient.Describe(ctx)
+	}
+
+	return client.DescriptionNotFound, nil
+}
+
 func (s *workspaceClient) isMachineProvider() bool {
 	return len(s.config.Exec.Create) > 0
 }

@@ -16,7 +16,7 @@ type StartCmd struct {
 	*flags.GlobalFlags
 }
 
-// NewStartCmd creates a new destroy command.
+// NewStartCmd creates a new start command.
 func NewStartCmd(flags *flags.GlobalFlags) *cobra.Command {
 	cmd := &StartCmd{
 		GlobalFlags: flags,

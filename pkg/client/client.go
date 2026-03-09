@@ -47,6 +47,9 @@ type Client interface {
 	// Create creates a new workspace
 	Create(ctx context.Context, options CreateOptions) error
 
+	// Describe retrieves the virtual machine description
+	Describe(ctx context.Context) (string, error)
+
 	// Start starts the workspace
 	Start(ctx context.Context, options StartOptions) error
 
@@ -188,6 +191,10 @@ const (
 	StatusBusy     = "Busy"
 	StatusStopped  = "Stopped"
 	StatusNotFound = "NotFound"
+)
+
+const (
+	DescriptionNotFound = "{}"
 )
 
 func ParseStatus(in string) (Status, error) {

@@ -20,7 +20,7 @@ type StatusCmd struct {
 	Output string
 }
 
-// NewStatusCmd creates a new destroy command.
+// NewStatusCmd creates a new status command.
 func NewStatusCmd(flags *flags.GlobalFlags) *cobra.Command {
 	cmd := &StatusCmd{
 		GlobalFlags: flags,
@@ -33,7 +33,7 @@ func NewStatusCmd(flags *flags.GlobalFlags) *cobra.Command {
 		},
 	}
 
-	statusCmd.Flags().StringVar(&cmd.Output, "output", "plain", "Status shows the machine status")
+	statusCmd.Flags().StringVar(&cmd.Output, "output", "plain", "Output format: plain or json")
 	return statusCmd
 }
 

@@ -242,6 +242,27 @@ func (s *machineClient) Status(
 	return parsedStatus, nil
 }
 
+func (s *machineClient) Describe(ctx context.Context) (string, error) {
+	stdout := &bytes.Buffer{}
+	stderr := &bytes.Buffer{}
+
+	err := s.executor.execute(ctx, execConfig{
+		name:    "describe",
+		command: s.config.Exec.Describe,
+		stdout:  stdout,
+		stderr:  io.MultiWriter(stderr, s.log.Writer(logrus.InfoLevel, true)),
+	})
+	if err != nil {
+		return client.DescriptionNotFound, fmt.Errorf(
+			"describe: %s%s",
+			strings.TrimSpace(stdout.String()),
+			strings.TrimSpace(stderr.String()),
+		)
+	}
+
+	return strings.TrimSpace(stdout.String()), nil
+}
+
 func (s *machineClient) Delete(ctx context.Context, options client.DeleteOptions) error {
 	if options.GracePeriod != "" {
 		if duration, err := time.ParseDuration(options.GracePeriod); err == nil {

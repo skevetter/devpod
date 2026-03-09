@@ -23,7 +23,7 @@ type ListCmd struct {
 	Output string
 }
 
-// NewListCmd creates a new destroy command.
+// NewListCmd creates a new list command.
 func NewListCmd(flags *flags.GlobalFlags) *cobra.Command {
 	cmd := &ListCmd{
 		GlobalFlags: flags,
