@@ -44,13 +44,7 @@ func startPTY(cmd *exec.Cmd, w, h int) (*os.File, error) {
 	cmd.Stdin = tty
 	cmd.Stdout = tty
 	cmd.Stderr = tty
-	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Setpgid:   true,
-		Setsid:    true,
-		Setctty:   true,
-		Ctty:      int(tty.Fd()), //#nosec G115 -- tty fd is always a small non-negative int
-		Pdeathsig: syscall.SIGHUP,
-	}
+	cmd.SysProcAttr = ptySysProcAttr(tty.Fd())
 
 	if err := cmd.Start(); err != nil {
 		_ = ptmx.Close()
