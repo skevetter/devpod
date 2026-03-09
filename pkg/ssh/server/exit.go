@@ -38,5 +38,14 @@ func exitCode(err error) int {
 		return 1
 	}
 
-	return exitErr.ExitCode()
+	code := exitErr.ExitCode()
+	if code == -1 {
+		// Map -1 to 255 to match OpenSSH behavior. -1 would be
+		// transmitted as uint32(4294967295).
+		// OpenSSH returns 255 for this case, and the shell does the same.
+		//   - https://github.com/coder/coder/blob/main/agent/agentssh/agentssh.go
+		//   - https://github.com/openssh/openssh-portable/blob/master/session.c
+		code = 255
+	}
+	return code
 }

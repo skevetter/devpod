@@ -5,139 +5,135 @@ import (
 	"io"
 	"os/exec"
 	"strings"
-	"sync"
-	"time"
 
 	"github.com/skevetter/log"
 	"github.com/skevetter/ssh"
 )
 
+// execNonPTY executes a command without a PTY, wiring stdout/stderr directly
+// to the SSH session and using a StdinPipe to avoid blocking on stdin.
+//
+// Process group isolation (SysProcAttr) ensures child processes can be
+// properly signaled on shutdown. SSH client signals are forwarded to the
+// process.
+//
+// Modeled after Coder's startNonPTYSession:
+//   - https://github.com/coder/coder/blob/main/agent/agentssh/agentssh.go
 func execNonPTY(sess ssh.Session, cmd *exec.Cmd, log log.Logger) (err error) {
 	log.Debugf("execute SSH server command: %s", strings.Join(cmd.Args, " "))
-	// init pipes
+
+	cmd.SysProcAttr = cmdSysProcAttr()
+	cmd.Stdout = sess
+	cmd.Stderr = sess.Stderr()
+
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
 		return err
 	}
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		return err
-	}
-	stderr, err := cmd.StderrPipe()
-	if err != nil {
-		return err
-	}
 
-	// start the command
-	err = cmd.Start()
-	if err != nil {
+	go func() {
+		_, _ = io.Copy(stdin, sess)
+		_ = stdin.Close()
+	}()
+
+	if err = cmd.Start(); err != nil {
 		return fmt.Errorf("start command: %w", err)
 	}
 
+	sigs := make(chan ssh.Signal, 1)
+	sess.Signals(sigs)
+	defer func() {
+		sess.Signals(nil)
+		close(sigs)
+	}()
 	go func() {
-		defer func() { _ = stdin.Close() }()
-
-		_, err := io.Copy(stdin, sess)
-		if err != nil {
-			log.Debugf("Error piping stdin: %v", err)
+		for sig := range sigs {
+			forwardSignal(log, sig, cmd.Process)
 		}
 	}()
 
-	waitGroup := sync.WaitGroup{}
-	waitGroup.Go(func() {
-		_, err := io.Copy(sess, stdout)
-		if err != nil {
-			log.Debugf("Error piping stdout: %v", err)
-		}
-	})
-
-	waitGroup.Go(func() {
-		_, err := io.Copy(sess.Stderr(), stderr)
-		if err != nil {
-			log.Debugf("Error piping stderr: %v", err)
-		}
-	})
-
-	waitGroup.Wait()
-	err = cmd.Wait()
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return cmd.Wait()
 }
 
+// execPTY executes a command with a PTY, handling terminal resize events and
+// SSH signal forwarding in a combined select loop. Output is copied on the
+// main goroutine to ensure all buffered data is flushed before cmd.Wait().
+//
+// DisablePTYEmulation disables the gliderlabs/ssh minimal PTY emulation
+// (NL→CRNL conversion in session.Write). When a real PTY is allocated, the
+// kernel's line discipline already performs NL→CRNL translation on output.
+// The gliderlabs/ssh library doesn't know this and applies its own conversion,
+// resulting in double translation (\n → \r\r\n) that corrupts terminal
+// escape sequences.
+//
+// The fix was ported from coder/ssh (Coder's fork of gliderlabs/ssh):
+//   - Coder issue:  https://github.com/coder/coder/issues/3371
+//   - Neovim issue: https://github.com/neovim/neovim/issues/3875
+//
+// Modeled after Coder's startPTYSession:
+//   - https://github.com/coder/coder/blob/main/agent/agentssh/agentssh.go
 func execPTY(
 	sess ssh.Session,
 	ptyReq ssh.Pty,
 	winCh <-chan ssh.Window,
 	cmd *exec.Cmd,
 	log log.Logger,
-) (err error) {
-	// Disable the gliderlabs/ssh minimal PTY emulation (NL→CRNL conversion
-	// in session.Write). When a real PTY is allocated, the kernel's line
-	// discipline already performs NL→CRNL translation on output. The
-	// gliderlabs/ssh library doesn't know this and applies its own conversion,
-	// resulting in double translation (\n → \r\r\n) that corrupts terminal
-	// escape sequences.
-	//
-	// This manifests as rendering corruption in full-screen TUI programs
-	// (e.g. Neovim split windows, tmux panes) when connected via DevPod SSH,
-	// while docker exec -it and direct SSH work fine because they bypass
-	// gliderlabs/ssh entirely.
-	//
-	// The fix was ported from coder/ssh (Coder's fork of gliderlabs/ssh):
-	//   - Coder issue:  https://github.com/coder/coder/issues/3371
-	//   - Neovim issue: https://github.com/neovim/neovim/issues/3875
-	sess.DisablePTYEmulation()
+) (retErr error) {
 	log.Debugf("execute SSH server PTY command: %s", strings.Join(cmd.Args, " "))
+	sess.DisablePTYEmulation()
 	cmd.Env = append(cmd.Env, fmt.Sprintf("TERM=%s", ptyReq.Term))
-	// Start the PTY with the client's terminal dimensions. pty.Start
-	// (without size) creates the PTY with OS defaults (typically 80x24) which
-	// causes rendering corruption in TUI programs (e.g. Neovim split buffers).
-	//
-	// Similar PTY solutions used in other projects:
-	//   - coder/wsep:           https://github.com/coder/wsep/blob/master/localexec_unix.go#L64
-	//   - wavetermdev/waveterm: https://github.com/wavetermdev/waveterm/blob/main/pkg/shellexec/shellexec.go#L168
-	//   - jumpserver/koko:      https://github.com/jumpserver/koko/blob/dev/pkg/localcommand/local_command.go#L49
-	//   - daytonaio/daytona:
-	//       https://github.com/daytonaio/daytona/blob/main/apps/daemon/pkg/toolbox/process/pty/session.go#L61
+
 	f, err := startPTY(cmd, ptyReq.Window.Width, ptyReq.Window.Height)
 	if err != nil {
 		return fmt.Errorf("start pty: %w", err)
 	}
-	defer func() { _ = f.Close() }()
+	defer func() {
+		closeErr := f.Close()
+		if closeErr != nil {
+			log.Debugf("failed to close pty: %v", closeErr)
+			if retErr == nil {
+				retErr = closeErr
+			}
+		}
+	}()
 
+	sigs := make(chan ssh.Signal, 1)
+	sess.Signals(sigs)
+	defer func() {
+		sess.Signals(nil)
+		close(sigs)
+	}()
 	go func() {
-		for win := range winCh {
-			setWinSize(f, win.Width, win.Height)
+		for {
+			if sigs == nil && winCh == nil {
+				return
+			}
+			select {
+			case sig, ok := <-sigs:
+				if !ok {
+					sigs = nil
+					continue
+				}
+				forwardSignal(log, sig, cmd.Process)
+			case win, ok := <-winCh:
+				if !ok {
+					winCh = nil
+					continue
+				}
+				if err := setWinSize(f, win.Width, win.Height); err != nil {
+					log.Debugf("failed to resize pty: %v", err)
+				}
+			}
 		}
 	}()
 
 	go func() {
-		defer func() { _ = f.Close() }()
-
-		// copy stdin
 		_, _ = io.Copy(f, sess)
+		_ = f.Close()
 	}()
 
-	stdoutDoneChan := make(chan struct{})
-	go func() {
-		defer func() { _ = f.Close() }()
-		defer close(stdoutDoneChan)
+	// Copy output on main goroutine to ensure all data is flushed before Wait.
+	_, _ = io.Copy(sess, f)
 
-		// copy stdout
-		_, _ = io.Copy(sess, f)
-	}()
-
-	err = cmd.Wait()
-	if err != nil {
-		return err
-	}
-
-	select {
-	case <-stdoutDoneChan:
-	case <-time.After(time.Second):
-	}
-	return nil
+	return cmd.Wait()
 }
