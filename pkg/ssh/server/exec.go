@@ -5,6 +5,7 @@ import (
 	"io"
 	"os/exec"
 	"strings"
+	"sync"
 
 	"github.com/skevetter/log"
 	"github.com/skevetter/ssh"
@@ -17,7 +18,7 @@ import (
 // properly signaled on shutdown. SSH client signals are forwarded to the
 // process.
 //
-// Modeled after Coder's startNonPTYSession:
+// Loosely modeled after Coder's startNonPTYSession:
 //   - https://github.com/coder/coder/blob/main/agent/agentssh/agentssh.go
 func execNonPTY(sess ssh.Session, cmd *exec.Cmd, log log.Logger) (err error) {
 	log.Debugf("execute SSH server command: %s", strings.Join(cmd.Args, " "))
@@ -70,7 +71,7 @@ func execNonPTY(sess ssh.Session, cmd *exec.Cmd, log log.Logger) (err error) {
 //   - Coder issue:  https://github.com/coder/coder/issues/3371
 //   - Neovim issue: https://github.com/neovim/neovim/issues/3875
 //
-// Modeled after Coder's startPTYSession:
+// Loosely modeled after Coder's startPTYSession:
 //   - https://github.com/coder/coder/blob/main/agent/agentssh/agentssh.go
 func execPTY(
 	sess ssh.Session,
@@ -87,8 +88,16 @@ func execPTY(
 	if err != nil {
 		return fmt.Errorf("start pty: %w", err)
 	}
+	var closeOnce sync.Once
+	closePty := func() error {
+		var err error
+		closeOnce.Do(func() {
+			err = f.Close()
+		})
+		return err
+	}
 	defer func() {
-		closeErr := f.Close()
+		closeErr := closePty()
 		if closeErr != nil {
 			log.Debugf("failed to close pty: %v", closeErr)
 			if retErr == nil {
@@ -129,7 +138,7 @@ func execPTY(
 
 	go func() {
 		_, _ = io.Copy(f, sess)
-		_ = f.Close()
+		_ = closePty()
 	}()
 
 	// Copy output on main goroutine to ensure all data is flushed before Wait.
