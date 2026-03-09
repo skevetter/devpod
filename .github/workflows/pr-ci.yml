@@ -545,7 +545,7 @@ jobs:
       - name: download desktop linux artifact
         uses: actions/download-artifact@v8
         with:
-          name: desktop-ubuntu-latest-amd64
+          name: desktop-ubuntu-22.04-amd64
           path: /tmp/devpod/
 
       # Use GITHUB_WORKSPACE in containers because the path differs from github.workspace
