@@ -165,10 +165,10 @@ func setupDotfiles(ctx context.Context, logger log.Logger) error {
 
 	logger.Info("Finished script locations, trying to link the files")
 
-	return linkDotfiles(logger)
+	return linkDotfiles(ctx, logger)
 }
 
-func linkDotfiles(logger log.Logger) error {
+func linkDotfiles(ctx context.Context, logger log.Logger) error {
 	files, err := os.ReadDir(".")
 	if err != nil {
 		return err
@@ -181,25 +181,32 @@ func linkDotfiles(logger log.Logger) error {
 
 	home := os.Getenv("HOME")
 	for _, file := range files {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
 		if !strings.HasPrefix(file.Name(), ".") || file.IsDir() {
 			continue
 		}
-
-		logger.Debugf("linking %s in home", file.Name())
-
-		dest := filepath.Join(home, file.Name())
-		// #nosec G703
-		if _, err := os.Lstat(dest); err == nil {
-			if removeErr := os.Remove(dest); removeErr != nil {
-				logger.Debugf("failed to remove %s: %v", dest, removeErr)
-			}
-		}
-		if err := os.Symlink(filepath.Join(pwd, file.Name()), dest); err != nil {
+		if err := linkDotfile(
+			logger,
+			filepath.Join(pwd, file.Name()),
+			filepath.Join(home, file.Name()),
+		); err != nil {
 			return err
 		}
 	}
 
 	return nil
+}
+
+func linkDotfile(logger log.Logger, src, dest string) error {
+	logger.Debugf("linking %s in home", filepath.Base(dest))
+	if _, err := os.Lstat(dest); err == nil { // #nosec G703
+		if removeErr := os.Remove(dest); removeErr != nil { // #nosec G703
+			logger.Debugf("failed to remove %s: %v", dest, removeErr)
+		}
+	}
+	return os.Symlink(src, dest)
 }
 
 func ensureExecutable(ctx context.Context, path string) error {

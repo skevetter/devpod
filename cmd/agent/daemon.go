@@ -73,10 +73,12 @@ func (cmd *DaemonCmd) patrol(ctx context.Context, log log.Logger) {
 
 	// loop over workspace configs and check their last ModTime
 	for {
+		timer := time.NewTimer(interval)
 		select {
 		case <-ctx.Done():
+			timer.Stop()
 			return
-		case <-time.After(interval):
+		case <-timer.C:
 			cmd.doOnce(ctx, log)
 		}
 	}
@@ -208,10 +210,9 @@ func (cmd *DaemonCmd) initialTouch(log log.Logger) {
 	// check when the last touch was
 	now := time.Now()
 	for _, match := range matches {
-		err := os.Chtimes(match, now, now)
-		if err != nil {
-			log.Errorf("error touching workspace config %s: %v", pattern, err)
-			return
+		if err := os.Chtimes(match, now, now); err != nil {
+			log.Errorf("error touching workspace config %s: %v", match, err)
+			continue
 		}
 	}
 }

@@ -199,19 +199,24 @@ func (cmd *PasswordCmd) fillPasswordRef(user *storagev1.User) error {
 		)
 	}
 
-	if user.Spec.PasswordRef == nil {
-		user.Spec.PasswordRef = &storagev1.SecretRef{}
-	}
-	if user.Spec.PasswordRef.SecretName == "" {
-		user.Spec.PasswordRef.SecretName = "loft-password-" + random.String(5)
-	}
-	if user.Spec.PasswordRef.SecretNamespace == "" {
-		user.Spec.PasswordRef.SecretNamespace = "loft"
-	}
-	if user.Spec.PasswordRef.Key == "" {
-		user.Spec.PasswordRef.Key = "password"
-	}
+	user.Spec.PasswordRef = defaultPasswordRef(user.Spec.PasswordRef)
 	return nil
+}
+
+func defaultPasswordRef(ref *storagev1.SecretRef) *storagev1.SecretRef {
+	if ref == nil {
+		ref = &storagev1.SecretRef{}
+	}
+	if ref.SecretName == "" {
+		ref.SecretName = "loft-password-" + random.String(5)
+	}
+	if ref.SecretNamespace == "" {
+		ref.SecretNamespace = "loft"
+	}
+	if ref.Key == "" {
+		ref.Key = "password"
+	}
+	return ref
 }
 
 func (cmd *PasswordCmd) resolvePassword() (string, error) {

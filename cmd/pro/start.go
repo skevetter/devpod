@@ -232,34 +232,59 @@ func (cmd *StartCmd) appendHostArgs(extraArgs []string) []string {
 	return extraArgs
 }
 
-func (cmd *StartCmd) buildUpgradeArgs() ([]string, error) {
-	extraArgs := []string{}
+func (cmd *StartCmd) buildUpgradeArgs() (extraArgs []string, cleanup func(), err error) {
+	cleanup = func() {}
 	extraArgs = cmd.appendHostArgs(extraArgs)
 	if cmd.Password != "" {
-		extraArgs = append(extraArgs, "--set", "admin.password="+cmd.Password)
+		valuesFile, ferr := writePasswordValuesFile(cmd.Password)
+		if ferr != nil {
+			return nil, nil, ferr
+		}
+		cleanup = func() { _ = os.Remove(valuesFile) }
+		extraArgs = append(extraArgs, "--values", valuesFile)
 	}
+	extraArgs = cmd.appendReleaseArgs(extraArgs)
+
+	if cmd.Values != "" {
+		absValuesPath, err := filepath.Abs(cmd.Values)
+		if err != nil {
+			cleanup()
+			return nil, nil, err
+		}
+		extraArgs = append(extraArgs, "--values", absValuesPath)
+	}
+
+	return extraArgs, cleanup, nil
+}
+
+func (cmd *StartCmd) appendReleaseArgs(extraArgs []string) []string {
 	if cmd.Version != "" {
 		extraArgs = append(extraArgs, "--version", cmd.Version)
 	}
 	if cmd.Product != "" {
 		extraArgs = append(extraArgs, "--set", "product="+cmd.Product)
 	}
-
-	// Do not use --reuse-values if --reset flag is provided because this
-	// should be a new install and it will cause issues with `helm template`
 	if !cmd.Reset && cmd.ReuseValues {
 		extraArgs = append(extraArgs, "--reuse-values")
 	}
+	return extraArgs
+}
 
-	if cmd.Values != "" {
-		absValuesPath, err := filepath.Abs(cmd.Values)
-		if err != nil {
-			return nil, err
-		}
-		extraArgs = append(extraArgs, "--values", absValuesPath)
+func writePasswordValuesFile(password string) (string, error) {
+	f, err := os.CreateTemp("", "devpod-values-*.yaml")
+	if err != nil {
+		return "", fmt.Errorf("create temp values file: %w", err)
 	}
-
-	return extraArgs, nil
+	name := f.Name()
+	if _, err := fmt.Fprintf(f, "admin:\n  password: %q\n", password); err != nil {
+		_ = os.Remove(name)
+		return "", fmt.Errorf("write temp values file: %w", err)
+	}
+	if err := f.Close(); err != nil {
+		_ = os.Remove(name)
+		return "", fmt.Errorf("close temp values file: %w", err)
+	}
+	return name, nil
 }
 
 func (cmd *StartCmd) retryUpgradeAfterPurge(
@@ -282,27 +307,7 @@ func (cmd *StartCmd) retryUpgradeAfterPurge(
 		return err
 	}
 
-	kubectlDelete := exec.CommandContext(ctx,
-		"kubectl",
-		"delete",
-		"-f",
-		"-",
-		"--context",
-		cmd.Context,
-		"--ignore-not-found=true",
-		"--grace-period=0",
-		"--force",
-	)
-
-	buffer := bytes.Buffer{}
-	buffer.Write([]byte(manifests))
-
-	kubectlDelete.Stdin = &buffer
-	kubectlDelete.Stdout = os.Stdout
-	kubectlDelete.Stderr = os.Stderr
-
-	// Ignoring potential errors here
-	_ = kubectlDelete.Run()
+	cmd.purgeManifests(ctx, manifests)
 
 	// Retry Loft installation
 	err = upgradeRelease(
@@ -330,10 +335,11 @@ func (cmd *StartCmd) retryUpgradeAfterPurge(
 }
 
 func (cmd *StartCmd) upgrade(ctx context.Context) error {
-	extraArgs, err := cmd.buildUpgradeArgs()
+	extraArgs, cleanup, err := cmd.buildUpgradeArgs()
 	if err != nil {
 		return err
 	}
+	defer cleanup()
 
 	chartName := cmd.ChartPath
 	chartRepo := ""
@@ -358,6 +364,20 @@ func (cmd *StartCmd) upgrade(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func (cmd *StartCmd) purgeManifests(ctx context.Context, manifests string) {
+	kubectlDelete := exec.CommandContext(ctx, // #nosec G204 -- args are internally constructed
+		"kubectl", "delete", "-f", "-",
+		"--context", cmd.Context,
+		"--namespace", cmd.Namespace,
+		"--ignore-not-found=true",
+		"--grace-period=0", "--force",
+	)
+	kubectlDelete.Stdin = strings.NewReader(manifests)
+	kubectlDelete.Stdout = os.Stdout
+	kubectlDelete.Stderr = os.Stderr
+	_ = kubectlDelete.Run()
 }
 
 func (cmd *StartCmd) success(ctx context.Context) error {
