@@ -36,7 +36,7 @@ func NewGitSSHSignatureHelperCmd(flags *flags.GlobalFlags) *cobra.Command {
 	gitSshSignatureHelperCmd := &cobra.Command{
 		Use:   "git-ssh-signature-helper [signing-key-path]",
 		Short: "used to inject git ssh signature helper",
-		RunE: func(cobraCmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, args []string) error {
 			usr, err := user.Current()
 			if err != nil {
 				return err

@@ -33,11 +33,7 @@ func NewListCmd(flags *flags.GlobalFlags) *cobra.Command {
 		Aliases: []string{"ls"},
 		Short:   "Lists existing workspaces",
 		Args:    cobra.NoArgs,
-		RunE: func(cobraCmd *cobra.Command, args []string) error {
-			if len(args) > 0 {
-				return fmt.Errorf("no arguments are allowed for this command")
-			}
-
+		RunE: func(cobraCmd *cobra.Command, _ []string) error {
 			return cmd.Run(cobraCmd.Context())
 		},
 	}

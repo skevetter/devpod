@@ -159,6 +159,20 @@ func (cmd *PasswordCmd) ensurePasswordRef(
 		return nil
 	}
 
+	// If PasswordRef exists with name and namespace but missing key, just default the key
+	if user.Spec.PasswordRef != nil && user.Spec.PasswordRef.SecretName != "" &&
+		user.Spec.PasswordRef.SecretNamespace != "" {
+		user.Spec.PasswordRef.Key = "password"
+		_, err := managementClient.Loft().
+			StorageV1().
+			Users().
+			Update(ctx, user, metav1.UpdateOptions{})
+		if err != nil {
+			return fmt.Errorf("update user: %w", err)
+		}
+		return nil
+	}
+
 	if !cmd.Force {
 		return fmt.Errorf(
 			"user %s had no password. If you want to force password creation, please run with the '--force' flag",

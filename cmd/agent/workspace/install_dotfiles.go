@@ -83,12 +83,15 @@ func (cmd *InstallDotfilesCmd) Run(ctx context.Context) error {
 		logger.Infof("Executing install script %s", cmd.InstallScript)
 		command := "./" + strings.TrimPrefix(cmd.InstallScript, "./")
 
-		err := ensureExecutable(command)
+		err := ensureExecutable(ctx, command)
 		if err != nil {
 			return fmt.Errorf("failed to make install script %s executable: %w", command, err)
 		}
 
-		scriptCmd := exec.Command(command)
+		scriptCmd := exec.CommandContext(
+			ctx,
+			command,
+		) // #nosec G204 -- user-provided dotfile install script
 		writer := logger.Writer(logrus.InfoLevel, false)
 		scriptCmd.Stdout = writer
 		scriptCmd.Stderr = writer
@@ -98,7 +101,7 @@ func (cmd *InstallDotfilesCmd) Run(ctx context.Context) error {
 
 	logger.Debugf("Install script not specified, trying known locations")
 
-	return setupDotfiles(logger)
+	return setupDotfiles(ctx, logger)
 }
 
 var installScriptPaths = []string{
@@ -112,7 +115,7 @@ var installScriptPaths = []string{
 	"./setup/setup",
 }
 
-func setupDotfiles(logger log.Logger) error {
+func setupDotfiles(ctx context.Context, logger log.Logger) error {
 	installScriptPaths = slices.DeleteFunc(installScriptPaths, func(path string) bool {
 		if _, err := os.Stat(path); os.IsNotExist(err) {
 			return true
@@ -123,7 +126,7 @@ func setupDotfiles(logger log.Logger) error {
 
 	for _, installScriptPath := range installScriptPaths {
 		writer := logger.Writer(logrus.InfoLevel, false)
-		err := ensureExecutable(installScriptPath)
+		err := ensureExecutable(ctx, installScriptPath)
 		if err != nil {
 			logger.WithFields(logrus.Fields{
 				"scriptPath": installScriptPath,
@@ -135,7 +138,10 @@ func setupDotfiles(logger log.Logger) error {
 		logger.WithFields(logrus.Fields{
 			"scriptPath": installScriptPath,
 		}).Debug("executing dotfile install script")
-		scriptCmd := exec.Command(installScriptPath)
+		scriptCmd := exec.CommandContext(
+			ctx,
+			installScriptPath,
+		) // #nosec G204 -- user-provided dotfile install script
 		scriptCmd.Stdout = writer
 		scriptCmd.Stderr = writer
 		if err := scriptCmd.Run(); err != nil {
@@ -152,6 +158,10 @@ func setupDotfiles(logger log.Logger) error {
 
 	logger.Info("Finished script locations, trying to link the files")
 
+	return linkDotfiles(logger)
+}
+
+func linkDotfiles(logger log.Logger) error {
 	files, err := os.ReadDir(".")
 	if err != nil {
 		return err
@@ -162,36 +172,47 @@ func setupDotfiles(logger log.Logger) error {
 		return err
 	}
 
-	// link dotfiles in directory to home
+	home := os.Getenv("HOME")
 	for _, file := range files {
-		if strings.HasPrefix(file.Name(), ".") && !file.IsDir() {
-			logger.Debugf("linking %s in home", file.Name())
+		if !strings.HasPrefix(file.Name(), ".") || file.IsDir() {
+			continue
+		}
 
-			// remove existing symlink and relink
-			if _, err := os.Lstat(filepath.Join(os.Getenv("HOME"), file.Name())); err == nil {
-				_ = os.Remove(filepath.Join(os.Getenv("HOME"), file.Name()))
-			}
-			err = os.Symlink(
-				filepath.Join(pwd, file.Name()),
-				filepath.Join(os.Getenv("HOME"), file.Name()),
-			)
-			if err != nil {
-				return err
-			}
+		logger.Debugf("linking %s in home", file.Name())
+
+		dest := filepath.Join(home, file.Name())
+		// #nosec G703
+		if _, err := os.Lstat(
+			dest,
+		); err == nil {
+			_ = os.Remove(dest)
+		}
+		if err := os.Symlink(filepath.Join(pwd, file.Name()), dest); err != nil {
+			return err
 		}
 	}
 
 	return nil
 }
 
-func ensureExecutable(path string) error {
-	checkCmd := exec.Command("test", "-f", path)
+func ensureExecutable(ctx context.Context, path string) error {
+	checkCmd := exec.CommandContext(
+		ctx,
+		"test",
+		"-f",
+		path,
+	) // #nosec G204 -- user-provided dotfile path
 	err := checkCmd.Run()
 	if err != nil {
 		return fmt.Errorf("install script %s not found: %w", path, err)
 	}
 
-	chmodCmd := exec.Command("chmod", "+x", path)
+	chmodCmd := exec.CommandContext(
+		ctx,
+		"chmod",
+		"+x",
+		path,
+	) // #nosec G204 -- user-provided dotfile path
 	err = chmodCmd.Run()
 	if err != nil {
 		return fmt.Errorf("failed to make install script %s executable: %w", path, err)

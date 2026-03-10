@@ -325,6 +325,9 @@ func login(
 
 	// log in
 	url = strings.TrimSuffix(url, "/")
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	if accessKey != "" && !forceBrowser {
 		err = loader.LoginWithAccessKey(url, accessKey, true, true)
 	} else {

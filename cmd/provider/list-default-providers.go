@@ -19,8 +19,26 @@ type ListAvailableCmd struct {
 	*flags.GlobalFlags
 }
 
-func getDevpodProviderList() error {
-	req, err := http.NewRequest(
+// NewListAvailableCmd creates a new command.
+func NewListAvailableCmd(flags *flags.GlobalFlags) *cobra.Command {
+	cmd := &ListAvailableCmd{
+		GlobalFlags: flags,
+	}
+	listAvailableCmd := &cobra.Command{
+		Use:   "list-available",
+		Short: "List providers available for installation",
+		Args:  cobra.NoArgs,
+		RunE: func(cobraCmd *cobra.Command, args []string) error {
+			return cmd.Run(cobraCmd.Context())
+		},
+	}
+
+	return listAvailableCmd
+}
+
+// Run runs the command logic.
+func (cmd *ListAvailableCmd) Run(ctx context.Context) error {
+	req, err := http.NewRequestWithContext(ctx,
 		"GET",
 		"https://api.github.com/users/skevetter/repos?per_page=100",
 		nil,
@@ -54,26 +72,4 @@ func getDevpodProviderList() error {
 	}
 
 	return nil
-}
-
-// NewListAvailableCmd creates a new command.
-func NewListAvailableCmd(flags *flags.GlobalFlags) *cobra.Command {
-	cmd := &ListAvailableCmd{
-		GlobalFlags: flags,
-	}
-	listAvailableCmd := &cobra.Command{
-		Use:   "list-available",
-		Short: "List providers available for installation",
-		Args:  cobra.NoArgs,
-		RunE: func(cobraCmd *cobra.Command, args []string) error {
-			return cmd.Run(cobraCmd.Context())
-		},
-	}
-
-	return listAvailableCmd
-}
-
-// Run runs the command logic.
-func (cmd *ListAvailableCmd) Run(ctx context.Context) error {
-	return getDevpodProviderList()
 }

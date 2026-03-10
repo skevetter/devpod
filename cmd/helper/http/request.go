@@ -59,7 +59,12 @@ func (cmd *RequestCmd) Run(ctx context.Context, args []string) error {
 		)
 	}
 
-	request, err := http.NewRequest(cmd.Method, args[0], strings.NewReader(cmd.Data))
+	request, err := http.NewRequestWithContext(
+		ctx,
+		cmd.Method,
+		args[0],
+		strings.NewReader(cmd.Data),
+	)
 	if err != nil {
 		return err
 	}
