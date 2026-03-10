@@ -88,7 +88,9 @@ func (p *ptySession) handleSignalsAndResize(
 				sigs = nil
 				continue
 			}
-			_ = p.proc.Signal(osSignalFrom(sig))
+			if err := p.proc.Signal(osSignalFrom(sig)); err != nil {
+				log.Debugf("failed to signal pty process: %v", err)
+			}
 		case win, ok := <-winCh:
 			if !ok {
 				winCh = nil

@@ -78,13 +78,14 @@ func newConPty(opt ...Option) (*ptyWindows, error) {
 		return nil, err
 	}
 
-	// Default dimensions
+	// Default dimensions. Capped at 32767 because COORD uses SHORT (signed 16-bit).
+	// https://learn.microsoft.com/en-us/windows/console/coord-str
 	width, height := 80, 80
 	if opts.sshReq != nil {
-		if w := opts.sshReq.Window.Width; w > 0 && w <= 65535 {
+		if w := opts.sshReq.Window.Width; w > 0 && w <= 32767 {
 			width = w
 		}
-		if h := opts.sshReq.Window.Height; h > 0 && h <= 65535 {
+		if h := opts.sshReq.Window.Height; h > 0 && h <= 32767 {
 			height = h
 		}
 	}
@@ -164,6 +165,13 @@ func (p *ptyWindows) Resize(height uint16, width uint16) error {
 	defer p.closeMutex.Unlock()
 	if p.closed || p.console == windows.InvalidHandle {
 		return ErrClosed
+	}
+	// COORD fields are SHORT (signed 16-bit, max 32767). Values above this
+	// wrap negative and produce invalid dimensions.
+	// https://learn.microsoft.com/en-us/windows/console/coord-str
+	// https://learn.microsoft.com/en-us/windows/win32/winprog/windows-data-types
+	if height > 32767 || width > 32767 {
+		return fmt.Errorf("pty: dimensions %dx%d exceed maximum (32767)", width, height)
 	}
 	// Taken from: https://github.com/microsoft/hcsshim/blob/54a5ad86808d761e3e396aff3e2022840f39f9a8/internal/winapi/zsyscall_windows.go#L144
 	ret, _, err := procResizePseudoConsole.Call(
