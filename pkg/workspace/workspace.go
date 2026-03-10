@@ -442,7 +442,7 @@ func createWorkspace(
 			}
 
 			// create machine
-			err = machineClient.Create(ctx, client.CreateOptions{})
+			err = machineClient.Create(ctx)
 			if err != nil {
 				_ = clientimplementation.DeleteMachineFolder(
 					machineConfig.Context,

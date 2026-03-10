@@ -55,14 +55,14 @@ func NewTroubleshootCmd(flags *flags.GlobalFlags) *cobra.Command {
 
 func (cmd *TroubleshootCmd) Run(ctx context.Context, args []string) {
 	// (ThomasK33): We're creating an anonymous struct here, so that we group
-	// everything and then we can serialize it in one call.
+	// everything so that we can serialize it in one call.
 	var info struct {
 		CLIVersion            string
 		Config                *config.Config
 		Providers             map[string]provider.ProviderWithDefault
 		DevPodProInstances    []DevPodProInstance
 		Workspace             *pkgprovider.Workspace
-		WorkspaceStatus       client.Status
+		WorkspaceStatus       string
 		WorkspaceTroubleshoot *managementv1.DevPodWorkspaceInstanceTroubleshoot
 		DaemonStatus          *daemon.Status
 

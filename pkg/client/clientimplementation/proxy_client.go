@@ -384,7 +384,7 @@ func (s *proxyClient) Delete(ctx context.Context, opt client.DeleteOptions) erro
 func (s *proxyClient) Status(
 	ctx context.Context,
 	options client.StatusOptions,
-) (client.Status, error) {
+) (string, error) {
 	s.m.Lock()
 	defer s.m.Unlock()
 

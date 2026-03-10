@@ -187,11 +187,11 @@ func (s *machineClient) Context() string {
 	return s.machine.Context
 }
 
-func (s *machineClient) Create(ctx context.Context, options client.CreateOptions) error {
+func (s *machineClient) Create(ctx context.Context) error {
 	return s.executor.lifecycleCommand(ctx, "create", s.config.Exec.Create, "creating", "created")
 }
 
-func (s *machineClient) Start(ctx context.Context, options client.StartOptions) error {
+func (s *machineClient) Start(ctx context.Context) error {
 	return s.executor.lifecycleCommand(ctx, "start", s.config.Exec.Start, "starting", "started")
 }
 
@@ -216,7 +216,7 @@ func (s *machineClient) Command(ctx context.Context, commandOptions client.Comma
 func (s *machineClient) Status(
 	ctx context.Context,
 	options client.StatusOptions,
-) (client.Status, error) {
+) (string, error) {
 	stdout := &bytes.Buffer{}
 	stderr := &bytes.Buffer{}
 

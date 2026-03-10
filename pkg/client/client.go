@@ -23,7 +23,7 @@ type BaseClient interface {
 	RefreshOptions(ctx context.Context, userOptions []string, reconfigure bool) error
 
 	// Status retrieves the workspace status
-	Status(ctx context.Context, options StatusOptions) (Status, error)
+	Status(ctx context.Context, options StatusOptions) (string, error)
 
 	// Stop stops the workspace
 	Stop(ctx context.Context, options StopOptions) error
@@ -45,13 +45,13 @@ type Client interface {
 	AgentURL() string
 
 	// Create creates a new workspace
-	Create(ctx context.Context, options CreateOptions) error
+	Create(ctx context.Context) error
 
 	// Describe retrieves the virtual machine description
 	Describe(ctx context.Context) (string, error)
 
 	// Start starts the workspace
-	Start(ctx context.Context, options StartOptions) error
+	Start(ctx context.Context) error
 
 	// Command creates an SSH tunnel into the workspace
 	Command(ctx context.Context, options CommandOptions) error
@@ -135,12 +135,6 @@ type WorkspaceClient interface {
 	AgentInfo(options provider.CLIOptions) (string, *provider.AgentWorkspaceInfo, error)
 }
 
-type InitOptions struct{}
-
-type ValidateOptions struct{}
-
-type StartOptions struct{}
-
 type StopOptions struct {
 	Platform devpod.PlatformOptions `json:"platform"`
 }
@@ -152,8 +146,6 @@ type DeleteOptions struct {
 	Force          bool   `json:"force,omitempty"`
 	GracePeriod    string `json:"gracePeriod,omitempty"`
 }
-
-type CreateOptions struct{}
 
 type StatusOptions struct {
 	ContainerStatus bool `json:"containerStatus,omitempty"`
@@ -182,10 +174,6 @@ type SshOptions struct {
 	Stdout io.Writer
 }
 
-type ImportWorkspaceOptions map[string]string
-
-type Status string
-
 const (
 	StatusRunning  = "Running"
 	StatusBusy     = "Busy"
@@ -193,11 +181,7 @@ const (
 	StatusNotFound = "NotFound"
 )
 
-const (
-	DescriptionNotFound = "{}"
-)
-
-func ParseStatus(in string) (Status, error) {
+func ParseStatus(in string) (string, error) {
 	in = strings.ToUpper(strings.TrimSpace(in))
 	switch in {
 	case "RUNNING":
@@ -216,6 +200,10 @@ func ParseStatus(in string) (Status, error) {
 		)
 	}
 }
+
+const (
+	DescriptionNotFound = "{}"
+)
 
 type WorkspaceStatus struct {
 	ID       string `json:"id,omitempty"`

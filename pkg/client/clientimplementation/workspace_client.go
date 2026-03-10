@@ -324,7 +324,7 @@ func (s *workspaceClient) Unlock() {
 	}
 }
 
-func (s *workspaceClient) Create(ctx context.Context, options client.CreateOptions) error {
+func (s *workspaceClient) Create(ctx context.Context) error {
 	s.m.Lock()
 	defer s.m.Unlock()
 
@@ -353,7 +353,7 @@ func (s *workspaceClient) Create(ctx context.Context, options client.CreateOptio
 	}
 
 	// create the machine
-	return machineClient.Create(ctx, client.CreateOptions{})
+	return machineClient.Create(ctx)
 }
 
 func (s *workspaceClient) Delete(ctx context.Context, opt client.DeleteOptions) error {
@@ -469,7 +469,7 @@ func (s *workspaceClient) isMachineRunning(ctx context.Context) (bool, error) {
 	return false, nil
 }
 
-func (s *workspaceClient) Start(ctx context.Context, options client.StartOptions) error {
+func (s *workspaceClient) Start(ctx context.Context) error {
 	s.m.Lock()
 	defer s.m.Unlock()
 
@@ -482,7 +482,7 @@ func (s *workspaceClient) Start(ctx context.Context, options client.StartOptions
 		return err
 	}
 
-	return machineClient.Start(ctx, options)
+	return machineClient.Start(ctx)
 }
 
 func (s *workspaceClient) Stop(ctx context.Context, opt client.StopOptions) error {
@@ -559,7 +559,7 @@ func (s *workspaceClient) Command(
 func (s *workspaceClient) Status(
 	ctx context.Context,
 	options client.StatusOptions,
-) (client.Status, error) {
+) (string, error) {
 	s.m.Lock()
 	defer s.m.Unlock()
 
@@ -609,6 +609,27 @@ func (s *workspaceClient) Status(
 	return client.StatusNotFound, nil
 }
 
+func (s *workspaceClient) Describe(ctx context.Context) (string, error) {
+	s.m.Lock()
+	defer s.m.Unlock()
+
+	// check if provider has 'describe' command
+	if s.isMachineProvider() && len(s.config.Exec.Describe) > 0 {
+		if s.machine == nil {
+			return client.DescriptionNotFound, nil
+		}
+
+		machineClient, err := NewMachineClient(s.devPodConfig, s.config, s.machine, s.log)
+		if err != nil {
+			return client.DescriptionNotFound, err
+		}
+
+		return machineClient.Describe(ctx)
+	}
+
+	return client.DescriptionNotFound, nil
+}
+
 func (s *workspaceClient) initLock() error {
 	s.workspaceLockOnce.Do(func() {
 		s.m.Lock()
@@ -640,7 +661,7 @@ func (s *workspaceClient) initLock() error {
 	return s.workspaceLockErr
 }
 
-func (s *workspaceClient) getContainerStatus(ctx context.Context) (client.Status, error) {
+func (s *workspaceClient) getContainerStatus(ctx context.Context) (string, error) {
 	stdout := &bytes.Buffer{}
 	buf := &bytes.Buffer{}
 	compressed, info, err := s.compressedAgentInfo(provider.CLIOptions{})
@@ -692,27 +713,6 @@ func (s *workspaceClient) getContainerStatus(ctx context.Context) (client.Status
 		"parsed": parsed,
 	}).Debug("container status command output")
 	return parsed, nil
-}
-
-func (s *workspaceClient) Describe(ctx context.Context) (string, error) {
-	s.m.Lock()
-	defer s.m.Unlock()
-
-	// check if provider has 'describe' command
-	if s.isMachineProvider() && len(s.config.Exec.Describe) > 0 {
-		if s.machine == nil {
-			return client.DescriptionNotFound, nil
-		}
-
-		machineClient, err := NewMachineClient(s.devPodConfig, s.config, s.machine, s.log)
-		if err != nil {
-			return client.DescriptionNotFound, err
-		}
-
-		return machineClient.Describe(ctx)
-	}
-
-	return client.DescriptionNotFound, nil
 }
 
 func (s *workspaceClient) isMachineProvider() bool {
@@ -933,7 +933,7 @@ func handleStoppedStatus(
 	create bool,
 ) error {
 	if create {
-		err := workspaceClient.Start(ctx, client.StartOptions{})
+		err := workspaceClient.Start(ctx)
 		if err != nil {
 			return fmt.Errorf("start workspace: %w", err)
 		}
@@ -948,7 +948,7 @@ func handleNotFoundStatus(
 	create bool,
 ) error {
 	if create {
-		err := workspaceClient.Create(ctx, client.CreateOptions{})
+		err := workspaceClient.Create(ctx)
 		if err != nil {
 			return err
 		}

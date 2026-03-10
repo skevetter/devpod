@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/skevetter/devpod/cmd/flags"
-	"github.com/skevetter/devpod/pkg/client"
 	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/workspace"
 	"github.com/skevetter/log"
@@ -44,7 +43,7 @@ func (cmd *StartCmd) Run(ctx context.Context, args []string) error {
 		return err
 	}
 
-	err = machineClient.Start(ctx, client.StartOptions{})
+	err = machineClient.Start(ctx)
 	if err != nil {
 		return err
 	}
