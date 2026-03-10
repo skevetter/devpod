@@ -81,14 +81,32 @@ func (cmd *PasswordCmd) Run(ctx context.Context) error {
 		return err
 	}
 
+	// Compute desired PasswordRef in-memory (no API call)
+	refChanged, err := cmd.ensurePasswordRef(user)
+	if err != nil {
+		return err
+	}
+
 	password, err := cmd.resolvePassword()
 	if err != nil {
 		return err
 	}
 
+	// Write secret before persisting the user's PasswordRef
 	passwordHash := fmt.Appendf(nil, "%x", sha256.Sum256([]byte(password)))
 	if err := cmd.upsertPasswordSecret(ctx, managementClient, user, passwordHash); err != nil {
 		return err
+	}
+
+	// Now persist the user's PasswordRef if it was changed
+	if refChanged {
+		_, err = managementClient.Loft().
+			StorageV1().
+			Users().
+			Update(ctx, user, metav1.UpdateOptions{})
+		if err != nil {
+			return fmt.Errorf("update user: %w", err)
+		}
 	}
 
 	cmd.Log.WithFields(logrus.Fields{
@@ -129,11 +147,6 @@ func (cmd *PasswordCmd) resolveUser(
 					Groups: []string{
 						"system:masters",
 					},
-					PasswordRef: &storagev1.SecretRef{
-						SecretName:      "loft-password-" + random.String(5),
-						SecretNamespace: "loft",
-						Key:             "password",
-					},
 				},
 			}, metav1.CreateOptions{})
 		if err != nil {
@@ -141,35 +154,21 @@ func (cmd *PasswordCmd) resolveUser(
 		}
 	}
 
-	if err := cmd.ensurePasswordRef(ctx, managementClient, user); err != nil {
-		return nil, err
-	}
-
 	return user, nil
 }
 
-func (cmd *PasswordCmd) ensurePasswordRef(
-	ctx context.Context,
-	managementClient kube.Interface,
-	user *storagev1.User,
-) error {
+// ensurePasswordRef fills in the user's PasswordRef in-memory.
+// Returns true if the ref was changed and needs persisting.
+func (cmd *PasswordCmd) ensurePasswordRef(user *storagev1.User) (bool, error) {
 	if hasCompletePasswordRef(user) {
-		return nil
+		return false, nil
 	}
 
 	if err := cmd.fillPasswordRef(user); err != nil {
-		return err
+		return false, err
 	}
 
-	_, err := managementClient.Loft().
-		StorageV1().
-		Users().
-		Update(ctx, user, metav1.UpdateOptions{})
-	if err != nil {
-		return fmt.Errorf("update user: %w", err)
-	}
-
-	return nil
+	return true, nil
 }
 
 func hasCompletePasswordRef(user *storagev1.User) bool {

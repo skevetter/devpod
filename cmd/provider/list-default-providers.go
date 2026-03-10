@@ -57,6 +57,10 @@ func (cmd *ListAvailableCmd) Run(ctx context.Context) error {
 		return err
 	}
 
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return fmt.Errorf("unexpected status code %d: %s", resp.StatusCode, string(result))
+	}
+
 	var jsonResult []map[string]any
 	err = json.Unmarshal(result, &jsonResult)
 	if err != nil {
@@ -65,9 +69,12 @@ func (cmd *ListAvailableCmd) Run(ctx context.Context) error {
 
 	_, _ = fmt.Fprintln(os.Stdout, "List of available providers from skevetter:")
 	for _, v := range jsonResult {
-		if strings.Contains(v["name"].(string), "devpod-provider") {
-			name := strings.TrimPrefix(v["name"].(string), "devpod-provider-")
-			_, _ = fmt.Fprintln(os.Stdout, "\t", name)
+		name, ok := v["name"].(string)
+		if !ok || name == "" {
+			continue
+		}
+		if strings.Contains(name, "devpod-provider") {
+			_, _ = fmt.Fprintln(os.Stdout, "\t", strings.TrimPrefix(name, "devpod-provider-"))
 		}
 	}
 

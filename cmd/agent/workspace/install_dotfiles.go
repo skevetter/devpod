@@ -132,6 +132,9 @@ func setupDotfiles(ctx context.Context, logger log.Logger) error {
 				"scriptPath": installScriptPath,
 				"error":      err,
 			}).Debug("install script not found")
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
 			continue
 		}
 
@@ -148,6 +151,9 @@ func setupDotfiles(ctx context.Context, logger log.Logger) error {
 			logger.WithFields(logrus.Fields{
 				"error": err,
 			}).Debug("script execution failed")
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
 			continue
 		}
 

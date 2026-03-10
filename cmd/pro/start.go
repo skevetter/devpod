@@ -153,7 +153,7 @@ func (cmd *StartCmd) Run(ctx context.Context) error {
 		cmd.LocalPort = "9898"
 	}
 
-	err := cmd.prepare()
+	err := cmd.prepare(ctx)
 	if err != nil {
 		return err
 	}
@@ -891,84 +891,19 @@ func (cmd *StartCmd) prepareInstall(ctx context.Context) error {
 	return uninstall(ctx, cmd.KubeClient, cmd.RestConfig, cmd.Context, cmd.Namespace, log.Discard)
 }
 
-func (cmd *StartCmd) prepare() error {
+func (cmd *StartCmd) prepare(ctx context.Context) error {
 	loader, err := client.NewClientFromPath(cmd.Config)
 	if err != nil {
 		return err
 	}
-	loftConfig := loader.Config()
 
-	// first load the kube config
-	kubeClientConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
-		clientcmd.NewDefaultClientConfigLoadingRules(),
-		&clientcmd.ConfigOverrides{},
-	)
-
-	// load the raw config
-	kubeConfig, err := kubeClientConfig.RawConfig()
+	kubeClientConfig, err := cmd.resolveKubeConfig(loader)
 	if err != nil {
-		return fmt.Errorf(
-			"there is an error loading your current kube config (%w), please make sure you have access "+
-				"to a kubernetes cluster and the command `kubectl get namespaces` is working",
-			err,
-		)
+		return err
 	}
 
-	// we switch the context to the install config
-	contextToLoad := kubeConfig.CurrentContext
-	if cmd.Context != "" {
-		contextToLoad = cmd.Context
-	} else if loftConfig.LastInstallContext != "" && loftConfig.LastInstallContext != contextToLoad {
-		contextToLoad, err = cmd.Log.Question(&survey.QuestionOptions{
-			Question:     "Seems like you try to use 'devpod pro start' with a different kubernetes context than before. Please choose which kubernetes context you want to use",
-			DefaultValue: contextToLoad,
-			Options:      []string{contextToLoad, loftConfig.LastInstallContext},
-		})
-		if err != nil {
-			return err
-		}
-	}
-	cmd.Context = contextToLoad
-
-	loftConfig.LastInstallContext = contextToLoad
-	_ = loader.Save()
-
-	// kube client config
-	kubeClientConfig = clientcmd.NewNonInteractiveClientConfig(
-		kubeConfig,
-		contextToLoad,
-		&clientcmd.ConfigOverrides{},
-		clientcmd.NewDefaultClientConfigLoadingRules(),
-	)
-
-	// test for helm and kubectl
-	_, err = exec.LookPath("helm")
-	if err != nil {
-		return fmt.Errorf(
-			"seems like helm is not installed. Helm is required for the installation of loft. " +
-				"Please visit https://helm.sh/docs/intro/install/ for install instructions",
-		)
-	}
-
-	output, err := exec.Command("helm", "version").CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("seems like there are issues with your helm client: \n\n%s", output)
-	}
-
-	_, err = exec.LookPath("kubectl")
-	if err != nil {
-		return fmt.Errorf(
-			"seems like kubectl is not installed. Kubectl is required for the installation of loft. " +
-				"Please visit https://kubernetes.io/docs/tasks/tools/install-kubectl/ for install instructions",
-		)
-	}
-
-	output, err = exec.Command("kubectl", "version", "--context", contextToLoad).CombinedOutput()
-	if err != nil {
-		return fmt.Errorf(
-			"seems like kubectl cannot connect to your Kubernetes cluster: \n\n%s",
-			output,
-		)
+	if err := checkCLITools(cmd.Context); err != nil {
+		return err
 	}
 
 	cmd.RestConfig, err = kubeClientConfig.ClientConfig()
@@ -991,11 +926,90 @@ func (cmd *StartCmd) prepare() error {
 	// Check if cluster has RBAC correctly configured
 	_, err = cmd.KubeClient.RbacV1().
 		ClusterRoles().
-		Get(context.Background(), "cluster-admin", metav1.GetOptions{})
+		Get(ctx, "cluster-admin", metav1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf(
 			"error retrieving cluster role 'cluster-admin': %w. Please make sure RBAC is correctly configured in your cluster",
 			err,
+		)
+	}
+
+	return nil
+}
+
+func (cmd *StartCmd) resolveKubeConfig(
+	loader client.Client,
+) (clientcmd.ClientConfig, error) {
+	loftConfig := loader.Config()
+
+	kubeClientConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
+		clientcmd.NewDefaultClientConfigLoadingRules(),
+		&clientcmd.ConfigOverrides{},
+	)
+
+	kubeConfig, err := kubeClientConfig.RawConfig()
+	if err != nil {
+		return nil, fmt.Errorf(
+			"there is an error loading your current kube config (%w), please make sure you have access "+
+				"to a kubernetes cluster and the command `kubectl get namespaces` is working",
+			err,
+		)
+	}
+
+	contextToLoad := kubeConfig.CurrentContext
+	if cmd.Context != "" {
+		contextToLoad = cmd.Context
+	} else if loftConfig.LastInstallContext != "" && loftConfig.LastInstallContext != contextToLoad {
+		contextToLoad, err = cmd.Log.Question(&survey.QuestionOptions{
+			Question:     "Seems like you try to use 'devpod pro start' with a different kubernetes context than before. Please choose which kubernetes context you want to use",
+			DefaultValue: contextToLoad,
+			Options:      []string{contextToLoad, loftConfig.LastInstallContext},
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+	cmd.Context = contextToLoad
+
+	loftConfig.LastInstallContext = contextToLoad
+	_ = loader.Save()
+
+	return clientcmd.NewNonInteractiveClientConfig(
+		kubeConfig,
+		contextToLoad,
+		&clientcmd.ConfigOverrides{},
+		clientcmd.NewDefaultClientConfigLoadingRules(),
+	), nil
+}
+
+func checkCLITools(kubeContext string) error {
+	_, err := exec.LookPath("helm")
+	if err != nil {
+		return fmt.Errorf(
+			"seems like helm is not installed. Helm is required for the installation of loft. " +
+				"Please visit https://helm.sh/docs/intro/install/ for install instructions",
+		)
+	}
+
+	output, err := exec.Command("helm", "version").CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("seems like there are issues with your helm client: \n\n%s", output)
+	}
+
+	_, err = exec.LookPath("kubectl")
+	if err != nil {
+		return fmt.Errorf(
+			"seems like kubectl is not installed. Kubectl is required for the installation of loft. " +
+				"Please visit https://kubernetes.io/docs/tasks/tools/install-kubectl/ for install instructions",
+		)
+	}
+
+	kubectlCmd := exec.Command("kubectl", "version", "--context", kubeContext) // #nosec G204
+	output, err = kubectlCmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf(
+			"seems like kubectl cannot connect to your Kubernetes cluster: \n\n%s",
+			output,
 		)
 	}
 
