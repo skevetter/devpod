@@ -88,21 +88,29 @@ func (p *ptySession) handleSignalsAndResize(
 				sigs = nil
 				continue
 			}
-			if err := p.proc.Signal(osSignalFrom(sig)); err != nil {
-				log.Debugf("failed to signal pty process: %v", err)
-			}
+			p.forwardSignal(sig, log)
 		case win, ok := <-winCh:
 			if !ok {
 				winCh = nil
 				continue
 			}
-			if err := p.pc.Resize(
-				uint16(win.Height), //nolint:gosec // G115: SSH window dimensions fit uint16
-				uint16(win.Width),  //nolint:gosec // G115: SSH window dimensions fit uint16
-			); err != nil {
-				log.Debugf("failed to resize pty: %v", err)
-			}
+			p.resizePTY(win, log)
 		}
+	}
+}
+
+func (p *ptySession) forwardSignal(sig ssh.Signal, log log.Logger) {
+	if err := p.proc.Signal(osSignalFrom(sig)); err != nil {
+		log.Debugf("failed to signal pty process: %v", err)
+	}
+}
+
+func (p *ptySession) resizePTY(win ssh.Window, log log.Logger) {
+	if err := p.pc.Resize(
+		uint16(win.Height), //nolint:gosec // G115: SSH window dimensions fit uint16
+		uint16(win.Width),  //nolint:gosec // G115: SSH window dimensions fit uint16
+	); err != nil {
+		log.Debugf("failed to resize pty: %v", err)
 	}
 }
 
