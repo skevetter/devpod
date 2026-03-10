@@ -153,23 +153,35 @@ func (cmd *PasswordCmd) ensurePasswordRef(
 	managementClient kube.Interface,
 	user *storagev1.User,
 ) error {
-	if user.Spec.PasswordRef != nil && user.Spec.PasswordRef.SecretName != "" &&
-		user.Spec.PasswordRef.SecretNamespace != "" &&
-		user.Spec.PasswordRef.Key != "" {
+	if hasCompletePasswordRef(user) {
 		return nil
 	}
 
+	if err := cmd.fillPasswordRef(user); err != nil {
+		return err
+	}
+
+	_, err := managementClient.Loft().
+		StorageV1().
+		Users().
+		Update(ctx, user, metav1.UpdateOptions{})
+	if err != nil {
+		return fmt.Errorf("update user: %w", err)
+	}
+
+	return nil
+}
+
+func hasCompletePasswordRef(user *storagev1.User) bool {
+	ref := user.Spec.PasswordRef
+	return ref != nil && ref.SecretName != "" && ref.SecretNamespace != "" && ref.Key != ""
+}
+
+func (cmd *PasswordCmd) fillPasswordRef(user *storagev1.User) error {
+	ref := user.Spec.PasswordRef
 	// If PasswordRef exists with name and namespace but missing key, just default the key
-	if user.Spec.PasswordRef != nil && user.Spec.PasswordRef.SecretName != "" &&
-		user.Spec.PasswordRef.SecretNamespace != "" {
-		user.Spec.PasswordRef.Key = "password"
-		_, err := managementClient.Loft().
-			StorageV1().
-			Users().
-			Update(ctx, user, metav1.UpdateOptions{})
-		if err != nil {
-			return fmt.Errorf("update user: %w", err)
-		}
+	if ref != nil && ref.SecretName != "" && ref.SecretNamespace != "" {
+		ref.Key = "password"
 		return nil
 	}
 
@@ -185,14 +197,6 @@ func (cmd *PasswordCmd) ensurePasswordRef(
 		SecretNamespace: "loft",
 		Key:             "password",
 	}
-	_, err := managementClient.Loft().
-		StorageV1().
-		Users().
-		Update(ctx, user, metav1.UpdateOptions{})
-	if err != nil {
-		return fmt.Errorf("update user: %w", err)
-	}
-
 	return nil
 }
 
