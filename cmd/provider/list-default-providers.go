@@ -38,31 +38,7 @@ func NewListAvailableCmd(flags *flags.GlobalFlags) *cobra.Command {
 
 // Run runs the command logic.
 func (cmd *ListAvailableCmd) Run(ctx context.Context) error {
-	req, err := http.NewRequestWithContext(ctx,
-		"GET",
-		"https://api.github.com/users/skevetter/repos?per_page=100",
-		nil,
-	)
-	if err != nil {
-		return err
-	}
-	resp, err := devpodhttp.GetHTTPClient().Do(req)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = resp.Body.Close() }()
-
-	result, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("unexpected status code %d: %s", resp.StatusCode, string(result))
-	}
-
-	var jsonResult []map[string]any
-	err = json.Unmarshal(result, &jsonResult)
+	jsonResult, err := fetchProviderRepos(ctx)
 	if err != nil {
 		return err
 	}
@@ -79,4 +55,36 @@ func (cmd *ListAvailableCmd) Run(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func fetchProviderRepos(ctx context.Context) ([]map[string]any, error) {
+	req, err := http.NewRequestWithContext(ctx,
+		"GET",
+		"https://api.github.com/users/skevetter/repos?per_page=100",
+		nil,
+	)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := devpodhttp.GetHTTPClient().Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	result, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("unexpected status code %d: %s", resp.StatusCode, string(result))
+	}
+
+	var jsonResult []map[string]any
+	if err := json.Unmarshal(result, &jsonResult); err != nil {
+		return nil, err
+	}
+
+	return jsonResult, nil
 }

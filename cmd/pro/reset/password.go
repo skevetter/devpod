@@ -99,14 +99,8 @@ func (cmd *PasswordCmd) Run(ctx context.Context) error {
 	}
 
 	// Now persist the user's PasswordRef if it was changed
-	if refChanged {
-		_, err = managementClient.Loft().
-			StorageV1().
-			Users().
-			Update(ctx, user, metav1.UpdateOptions{})
-		if err != nil {
-			return fmt.Errorf("update user: %w", err)
-		}
+	if err := cmd.persistPasswordRef(ctx, managementClient, user, refChanged); err != nil {
+		return err
 	}
 
 	cmd.Log.WithFields(logrus.Fields{
@@ -159,6 +153,25 @@ func (cmd *PasswordCmd) resolveUser(
 
 // ensurePasswordRef fills in the user's PasswordRef in-memory.
 // Returns true if the ref was changed and needs persisting.
+func (cmd *PasswordCmd) persistPasswordRef(
+	ctx context.Context,
+	managementClient kube.Interface,
+	user *storagev1.User,
+	changed bool,
+) error {
+	if !changed {
+		return nil
+	}
+	_, err := managementClient.Loft().
+		StorageV1().
+		Users().
+		Update(ctx, user, metav1.UpdateOptions{})
+	if err != nil {
+		return fmt.Errorf("update user: %w", err)
+	}
+	return nil
+}
+
 func (cmd *PasswordCmd) ensurePasswordRef(user *storagev1.User) (bool, error) {
 	if hasCompletePasswordRef(user) {
 		return false, nil
