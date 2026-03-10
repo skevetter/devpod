@@ -38,12 +38,12 @@ func NewCheckProviderUpdateCmd(flags *flags.GlobalFlags) *cobra.Command {
 	shellCmd := &cobra.Command{
 		Use:   "check-provider-update",
 		Short: "Check if a provider update is available",
-		RunE: func(_ *cobra.Command, args []string) error {
+		RunE: func(cobraCmd *cobra.Command, args []string) error {
 			devPodConfig, err := config.LoadConfig(cmd.Context, cmd.Provider)
 			if err != nil {
 				return err
 			}
-			return cmd.Run(context.Background(), devPodConfig, args)
+			return cmd.Run(cobraCmd.Context(), devPodConfig, args)
 		},
 	}
 

@@ -24,8 +24,8 @@ func NewInspectCmd(flags *flags.GlobalFlags) *cobra.Command {
 	stopCmd := &cobra.Command{
 		Use:   "inspect",
 		Short: "Inspects an existing machine",
-		RunE: func(_ *cobra.Command, args []string) error {
-			return cmd.Run(context.Background(), args)
+		RunE: func(cobraCmd *cobra.Command, args []string) error {
+			return cmd.Run(cobraCmd.Context(), args)
 		},
 	}
 

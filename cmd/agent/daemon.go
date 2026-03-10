@@ -34,8 +34,8 @@ func NewDaemonCmd(flags *flags.GlobalFlags) *cobra.Command {
 		Use:   "daemon",
 		Short: "Watches for activity and stops the server due to inactivity",
 		Args:  cobra.NoArgs,
-		RunE: func(_ *cobra.Command, _ []string) error {
-			return cmd.Run(context.Background())
+		RunE: func(cobraCmd *cobra.Command, _ []string) error {
+			return cmd.Run(cobraCmd.Context())
 		},
 	}
 	daemonCmd.Flags().

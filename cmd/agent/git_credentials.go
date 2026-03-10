@@ -36,8 +36,8 @@ func NewGitCredentialsCmd(flags *flags.GlobalFlags) *cobra.Command {
 	gitCredentialsCmd := &cobra.Command{
 		Use:   "git-credentials",
 		Short: "Retrieves git-credentials from the local machine",
-		RunE: func(_ *cobra.Command, args []string) error {
-			return cmd.Run(context.Background(), args, log.Default.ErrorStreamOnly())
+		RunE: func(cobraCmd *cobra.Command, args []string) error {
+			return cmd.Run(cobraCmd.Context(), args, log.Default.ErrorStreamOnly())
 		},
 	}
 	gitCredentialsCmd.Flags().IntVar(&cmd.Port, "port", 0, "If specified, will use the given port")

@@ -67,8 +67,8 @@ func NewSetupContainerCmd(flags *flags.GlobalFlags) *cobra.Command {
 		Use:   "setup",
 		Short: "Sets up a container",
 		Args:  cobra.NoArgs,
-		RunE: func(_ *cobra.Command, args []string) error {
-			return cmd.Run(context.Background())
+		RunE: func(cobraCmd *cobra.Command, args []string) error {
+			return cmd.Run(cobraCmd.Context())
 		},
 	}
 	setupContainerCmd.Flags().

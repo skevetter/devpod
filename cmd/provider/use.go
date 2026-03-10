@@ -37,12 +37,12 @@ func NewUseCmd(flags *flags.GlobalFlags) *cobra.Command {
 	useCmd := &cobra.Command{
 		Use:   "use [name]",
 		Short: "Configure an existing provider and set as default",
-		RunE: func(_ *cobra.Command, args []string) error {
+		RunE: func(cobraCmd *cobra.Command, args []string) error {
 			if len(args) != 1 {
 				return fmt.Errorf("please specify the provider to use")
 			}
 
-			return cmd.Run(context.Background(), args[0])
+			return cmd.Run(cobraCmd.Context(), args[0])
 		},
 		ValidArgsFunction: func(rootCmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 			return completion.GetProviderSuggestions(

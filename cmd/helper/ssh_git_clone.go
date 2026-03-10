@@ -22,8 +22,8 @@ func NewSSHGitCloneCmd() *cobra.Command {
 	sshCmd := &cobra.Command{
 		Use:   "ssh-git-clone",
 		Short: "Drop-in ssh replacement in GIT_SSH_COMMAND",
-		RunE: func(_ *cobra.Command, args []string) error {
-			return cmd.Run(context.Background(), args)
+		RunE: func(cobraCmd *cobra.Command, args []string) error {
+			return cmd.Run(cobraCmd.Context(), args)
 		},
 	}
 

@@ -26,8 +26,8 @@ func NewCreateCmd(flags *flags.GlobalFlags) *cobra.Command {
 	createCmd := &cobra.Command{
 		Use:   "create [name]",
 		Short: "Creates a new machine",
-		RunE: func(_ *cobra.Command, args []string) error {
-			return cmd.Run(context.Background(), args)
+		RunE: func(cobraCmd *cobra.Command, args []string) error {
+			return cmd.Run(cobraCmd.Context(), args)
 		},
 	}
 	createCmd.Flags().

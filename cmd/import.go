@@ -43,14 +43,13 @@ func NewImportCmd(flags *flags.GlobalFlags) *cobra.Command {
 		Short:  "Imports a workspace configuration",
 		Args:   cobra.NoArgs,
 		Hidden: true,
-		RunE: func(_ *cobra.Command, args []string) error {
-			ctx := context.Background()
+		RunE: func(cobraCmd *cobra.Command, args []string) error {
 			devPodConfig, err := config.LoadConfig(cmd.Context, cmd.Provider)
 			if err != nil {
 				return err
 			}
 
-			return cmd.Run(ctx, devPodConfig, log.Default)
+			return cmd.Run(cobraCmd.Context(), devPodConfig, log.Default)
 		},
 	}
 

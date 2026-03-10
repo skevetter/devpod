@@ -32,14 +32,14 @@ func NewUseCmd(flags *flags.GlobalFlags) *cobra.Command {
 		Long: `Configure the default IDE to use
 
 Available IDEs can be listed with 'devpod ide list'`,
-		RunE: func(_ *cobra.Command, args []string) error {
+		RunE: func(cobraCmd *cobra.Command, args []string) error {
 			if len(args) != 1 {
 				return fmt.Errorf(
 					"please specify the ide to use, list available IDEs with 'devpod ide list'",
 				)
 			}
 
-			return cmd.Run(context.Background(), args[0])
+			return cmd.Run(cobraCmd.Context(), args[0])
 		},
 	}
 

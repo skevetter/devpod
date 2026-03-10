@@ -20,8 +20,8 @@ func NewShellCmd() *cobra.Command {
 	shellCmd := &cobra.Command{
 		Use:   "sh",
 		Short: "Executes a command in a shell",
-		RunE: func(_ *cobra.Command, args []string) error {
-			return cmd.Run(context.Background(), args)
+		RunE: func(cobraCmd *cobra.Command, args []string) error {
+			return cmd.Run(cobraCmd.Context(), args)
 		},
 	}
 

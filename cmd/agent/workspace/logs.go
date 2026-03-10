@@ -28,8 +28,8 @@ func NewLogsCmd(flags *flags.GlobalFlags) *cobra.Command {
 		Use:   "logs",
 		Short: "Returns the workspace container logs",
 		Args:  cobra.NoArgs,
-		RunE: func(_ *cobra.Command, _ []string) error {
-			return cmd.Run(context.Background())
+		RunE: func(cobraCmd *cobra.Command, _ []string) error {
+			return cmd.Run(cobraCmd.Context())
 		},
 	}
 	c.Flags().StringVar(&cmd.ID, "id", "", "The workspace id")

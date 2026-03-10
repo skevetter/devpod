@@ -34,7 +34,7 @@ func NewGitSSHSignatureCmd(flags *flags.GlobalFlags) *cobra.Command {
 
 	gitSshSignatureCmd := &cobra.Command{
 		Use: "git-ssh-signature",
-		RunE: func(_ *cobra.Command, args []string) error {
+		RunE: func(cobraCmd *cobra.Command, args []string) error {
 			logger := log.GetInstance()
 
 			if len(args) < 1 {

@@ -27,8 +27,8 @@ func NewLogsDaemonCmd(flags *flags.GlobalFlags) *cobra.Command {
 	startCmd := &cobra.Command{
 		Use:   "logs-daemon",
 		Short: "Prints the daemon logs on the machine",
-		RunE: func(_ *cobra.Command, args []string) error {
-			return cmd.Run(context.Background(), args)
+		RunE: func(cobraCmd *cobra.Command, args []string) error {
+			return cmd.Run(cobraCmd.Context(), args)
 		},
 	}
 

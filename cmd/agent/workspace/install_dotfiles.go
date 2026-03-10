@@ -34,8 +34,8 @@ func NewInstallDotfilesCmd(flags *flags.GlobalFlags) *cobra.Command {
 		Use:   "install-dotfiles",
 		Short: "installs input dotfiles in the container",
 		Args:  cobra.NoArgs,
-		RunE: func(_ *cobra.Command, _ []string) error {
-			return cmd.Run(context.Background())
+		RunE: func(cobraCmd *cobra.Command, _ []string) error {
+			return cmd.Run(cobraCmd.Context())
 		},
 	}
 	installDotfilesCmd.Flags().

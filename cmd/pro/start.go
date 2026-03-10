@@ -100,8 +100,8 @@ func NewStartCmd(flags *proflags.GlobalFlags) *cobra.Command {
 	startCmd := &cobra.Command{
 		Use:   "start",
 		Short: "Start a Devpod Pro instance",
-		RunE: func(_ *cobra.Command, args []string) error {
-			return cmd.Run(context.Background())
+		RunE: func(cobraCmd *cobra.Command, args []string) error {
+			return cmd.Run(cobraCmd.Context())
 		},
 	}
 
@@ -1355,14 +1355,14 @@ func uninstall(
 
 	err = kubeClient.CoreV1().
 		Secrets(namespace).
-		Delete(context.Background(), "loft-user-secret-admin", metav1.DeleteOptions{})
+		Delete(ctx, "loft-user-secret-admin", metav1.DeleteOptions{})
 	if err != nil && !kerrors.IsNotFound(err) {
 		return err
 	}
 
 	err = kubeClient.CoreV1().
 		Secrets(namespace).
-		Delete(context.Background(), LoftRouterDomainSecret, metav1.DeleteOptions{})
+		Delete(ctx, LoftRouterDomainSecret, metav1.DeleteOptions{})
 	if err != nil && !kerrors.IsNotFound(err) {
 		return err
 	}

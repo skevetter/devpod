@@ -33,8 +33,8 @@ func NewListCmd(flags *flags.GlobalFlags) *cobra.Command {
 		Aliases: []string{"ls"},
 		Short:   "List available providers",
 		Args:    cobra.NoArgs,
-		RunE: func(_ *cobra.Command, args []string) error {
-			return cmd.Run(context.Background())
+		RunE: func(cobraCmd *cobra.Command, args []string) error {
+			return cmd.Run(cobraCmd.Context())
 		},
 	}
 

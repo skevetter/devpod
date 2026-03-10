@@ -65,8 +65,8 @@ func NewListAvailableCmd(flags *flags.GlobalFlags) *cobra.Command {
 		Use:   "list-available",
 		Short: "List providers available for installation",
 		Args:  cobra.NoArgs,
-		RunE: func(_ *cobra.Command, args []string) error {
-			return cmd.Run(context.Background())
+		RunE: func(cobraCmd *cobra.Command, args []string) error {
+			return cmd.Run(cobraCmd.Context())
 		},
 	}
 

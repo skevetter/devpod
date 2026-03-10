@@ -37,8 +37,8 @@ func NewContainerTunnelCmd(flags *flags.GlobalFlags) *cobra.Command {
 		Use:   "container-tunnel",
 		Short: "Starts a new container ssh tunnel",
 		Args:  cobra.NoArgs,
-		RunE: func(_ *cobra.Command, _ []string) error {
-			return cmd.Run(context.TODO(), log.Default.ErrorStreamOnly())
+		RunE: func(cobraCmd *cobra.Command, _ []string) error {
+			return cmd.Run(cobraCmd.Context(), log.Default.ErrorStreamOnly())
 		},
 	}
 

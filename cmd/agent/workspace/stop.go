@@ -27,8 +27,8 @@ func NewStopCmd(flags *flags.GlobalFlags) *cobra.Command {
 		Use:   "stop",
 		Short: "Stops a workspace on the remote server",
 		Args:  cobra.NoArgs,
-		RunE: func(_ *cobra.Command, _ []string) error {
-			return cmd.Run(context.Background())
+		RunE: func(cobraCmd *cobra.Command, _ []string) error {
+			return cmd.Run(cobraCmd.Context())
 		},
 	}
 	stopCmd.Flags().StringVar(&cmd.WorkspaceInfo, "workspace-info", "", "The workspace info")

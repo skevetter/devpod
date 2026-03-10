@@ -26,8 +26,8 @@ func NewDockerCredentialsCmd(flags *flags.GlobalFlags) *cobra.Command {
 	dockerCredentialsCmd := &cobra.Command{
 		Use:   "docker-credentials",
 		Short: "Retrieves docker-credentials from the local machine",
-		RunE: func(_ *cobra.Command, args []string) error {
-			return cmd.Run(context.Background(), args, log.Default.ErrorStreamOnly())
+		RunE: func(cobraCmd *cobra.Command, args []string) error {
+			return cmd.Run(cobraCmd.Context(), args, log.Default.ErrorStreamOnly())
 		},
 	}
 	dockerCredentialsCmd.Flags().

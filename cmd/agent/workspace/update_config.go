@@ -25,8 +25,8 @@ func NewUpdateConfigCmd(flags *flags.GlobalFlags) *cobra.Command {
 		Use:   "update-config",
 		Short: "Updates the workspace config",
 		Args:  cobra.NoArgs,
-		RunE: func(_ *cobra.Command, _ []string) error {
-			return cmd.Run(context.Background())
+		RunE: func(cobraCmd *cobra.Command, _ []string) error {
+			return cmd.Run(cobraCmd.Context())
 		},
 	}
 	updateConfigCmd.Flags().

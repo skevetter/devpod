@@ -28,8 +28,8 @@ func NewUpdateCmd(flags *flags.GlobalFlags) *cobra.Command {
 	updateCmd := &cobra.Command{
 		Use:   "update [name] [URL or path]",
 		Short: "Updates a provider in DevPod",
-		RunE: func(_ *cobra.Command, args []string) error {
-			ctx := context.Background()
+		RunE: func(cobraCmd *cobra.Command, args []string) error {
+			ctx := cobraCmd.Context()
 			devPodConfig, err := config.LoadConfig(cmd.Context, cmd.Provider)
 			if err != nil {
 				return err

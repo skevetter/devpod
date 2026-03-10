@@ -33,13 +33,13 @@ func NewSetOptionsCmd(f *flags.GlobalFlags) *cobra.Command {
 	setOptionsCmd := &cobra.Command{
 		Use:   "set-options [provider]",
 		Short: "Sets options for the given provider. Similar to 'devpod provider use', but does not switch the default provider.",
-		RunE: func(_ *cobra.Command, args []string) error {
+		RunE: func(cobraCmd *cobra.Command, args []string) error {
 			logger := log.Logger(log.Default)
 			if cmd.Dry {
 				logger = log.Default.ErrorStreamOnly()
 			}
 
-			return cmd.Run(context.Background(), args, logger)
+			return cmd.Run(cobraCmd.Context(), args, logger)
 		},
 		ValidArgsFunction: func(rootCmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 			return completion.GetProviderSuggestions(

@@ -28,8 +28,8 @@ func NewBuildCmd(flags *flags.GlobalFlags) *cobra.Command {
 		Use:   "build",
 		Short: "Builds a devcontainer",
 		Args:  cobra.NoArgs,
-		RunE: func(_ *cobra.Command, _ []string) error {
-			return cmd.Run(context.Background())
+		RunE: func(cobraCmd *cobra.Command, _ []string) error {
+			return cmd.Run(cobraCmd.Context())
 		},
 	}
 	buildCmd.Flags().StringVar(&cmd.WorkspaceInfo, "workspace-info", "", "The workspace info")

@@ -24,7 +24,7 @@ func NewSetOptionsCmd(flags *flags.GlobalFlags) *cobra.Command {
 	setOptionsCmd := &cobra.Command{
 		Use:   "set-options",
 		Short: "Set options for a DevPod context",
-		RunE: func(_ *cobra.Command, args []string) error {
+		RunE: func(cobraCmd *cobra.Command, args []string) error {
 			if len(args) > 1 {
 				return fmt.Errorf("please specify the context")
 			}
@@ -34,7 +34,7 @@ func NewSetOptionsCmd(flags *flags.GlobalFlags) *cobra.Command {
 				devPodContext = args[0]
 			}
 
-			return cmd.Run(context.Background(), devPodContext)
+			return cmd.Run(cobraCmd.Context(), devPodContext)
 		},
 	}
 

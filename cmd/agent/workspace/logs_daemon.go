@@ -29,8 +29,8 @@ func NewLogsDaemonCmd(flags *flags.GlobalFlags) *cobra.Command {
 		Use:   "logs-daemon",
 		Short: "Returns the daemon logs",
 		Args:  cobra.NoArgs,
-		RunE: func(_ *cobra.Command, _ []string) error {
-			return cmd.Run(context.Background())
+		RunE: func(cobraCmd *cobra.Command, _ []string) error {
+			return cmd.Run(cobraCmd.Context())
 		},
 	}
 	logsDaemonCmd.Flags().StringVar(&cmd.ID, "id", "", "The workspace id")
