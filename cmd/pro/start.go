@@ -287,6 +287,8 @@ func (cmd *StartCmd) retryUpgradeAfterPurge(
 		"delete",
 		"-f",
 		"-",
+		"--context",
+		cmd.Context,
 		"--ignore-not-found=true",
 		"--grace-period=0",
 		"--force",

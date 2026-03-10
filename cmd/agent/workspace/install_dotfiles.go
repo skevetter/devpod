@@ -189,10 +189,10 @@ func linkDotfiles(logger log.Logger) error {
 
 		dest := filepath.Join(home, file.Name())
 		// #nosec G703
-		if _, err := os.Lstat(
-			dest,
-		); err == nil {
-			_ = os.Remove(dest)
+		if _, err := os.Lstat(dest); err == nil {
+			if removeErr := os.Remove(dest); removeErr != nil {
+				logger.Debugf("failed to remove %s: %v", dest, removeErr)
+			}
 		}
 		if err := os.Symlink(filepath.Join(pwd, file.Name()), dest); err != nil {
 			return err

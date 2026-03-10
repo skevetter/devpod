@@ -199,10 +199,17 @@ func (cmd *PasswordCmd) fillPasswordRef(user *storagev1.User) error {
 		)
 	}
 
-	user.Spec.PasswordRef = &storagev1.SecretRef{
-		SecretName:      "loft-password-" + random.String(5),
-		SecretNamespace: "loft",
-		Key:             "password",
+	if user.Spec.PasswordRef == nil {
+		user.Spec.PasswordRef = &storagev1.SecretRef{}
+	}
+	if user.Spec.PasswordRef.SecretName == "" {
+		user.Spec.PasswordRef.SecretName = "loft-password-" + random.String(5)
+	}
+	if user.Spec.PasswordRef.SecretNamespace == "" {
+		user.Spec.PasswordRef.SecretNamespace = "loft"
+	}
+	if user.Spec.PasswordRef.Key == "" {
+		user.Spec.PasswordRef.Key = "password"
 	}
 	return nil
 }
