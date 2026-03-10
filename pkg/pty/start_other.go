@@ -10,18 +10,42 @@ import (
 	"syscall"
 )
 
+// maxStartRetries limits the number of retry attempts for the macOS PTY race
+// condition workaround. On macOS (darwin), the kernel can occasionally close
+// the PTY file descriptor between allocation and process start, causing a
+// "bad file descriptor" error from exec. This is a known kernel race that is
+// transient, so retrying a small number of times resolves it reliably.
+// Env is saved and restored before each retry because appendPtyEnv appends
+// to it, and without restoration entries would accumulate across attempts.
+const maxStartRetries = 3
+
 func startPty(cmdPty *Cmd, opt ...StartOption) (*otherPty, Process, error) {
 	var opts startOptions
 	for _, o := range opt {
 		o(&opts)
 	}
 
+	for attempt := 0; ; attempt++ {
+		origEnv := cmdPty.Env
+		opty, proc, err := tryStartPty(cmdPty, opts)
+		if err == nil {
+			return opty, proc, nil
+		}
+		if attempt < maxStartRetries && runtime.GOOS == "darwin" &&
+			strings.Contains(err.Error(), "bad file descriptor") {
+			cmdPty.Env = origEnv
+			continue
+		}
+		return nil, nil, err
+	}
+}
+
+func tryStartPty(cmdPty *Cmd, opts startOptions) (*otherPty, Process, error) {
 	opty, err := newPty(opts.ptyOpts...)
 	if err != nil {
 		return nil, nil, fmt.Errorf("newPty failed: %w", err)
 	}
 
-	origEnv := cmdPty.Env
 	appendPtyEnv(cmdPty, opty)
 
 	if cmdPty.Context == nil {
@@ -35,11 +59,6 @@ func startPty(cmdPty *Cmd, opt ...StartOption) (*otherPty, Process, error) {
 
 	if err := cmdExec.Start(); err != nil {
 		_ = opty.Close()
-		if runtime.GOOS == "darwin" && strings.Contains(err.Error(), "bad file descriptor") {
-			// macOS kernel race: PTY occasionally closes before use. Retry.
-			cmdPty.Env = origEnv
-			return startPty(cmdPty, opt...)
-		}
 		return nil, nil, fmt.Errorf("start: %w", err)
 	}
 

@@ -47,6 +47,13 @@ func newPty(opt ...Option) (PTY, error) {
 // newConPty creates a PTY backed by a Windows PseudoConsole (ConPTY). This
 // should only be used when a process will be attached via Start().
 func newConPty(opt ...Option) (*ptyWindows, error) {
+	// CreatePseudoConsole requires Windows 10 version 1809 (build 17763) or later.
+	// https://learn.microsoft.com/en-us/windows/console/createpseudoconsole#requirements
+	vsn := windows.RtlGetVersion()
+	if vsn.MajorVersion < 10 || vsn.BuildNumber < 17763 {
+		return nil, fmt.Errorf("ConPTY not supported (build %d < 17763)", vsn.BuildNumber)
+	}
+
 	var opts ptyOptions
 	for _, o := range opt {
 		o(&opts)
@@ -54,6 +61,9 @@ func newConPty(opt ...Option) (*ptyWindows, error) {
 
 	pty := &ptyWindows{
 		opts: opts,
+		// Initialize to InvalidHandle so closeConsoleNoLock's guard check
+		// skips ClosePseudoConsole if CreatePseudoConsole never succeeded.
+		console: windows.InvalidHandle,
 	}
 
 	var err error

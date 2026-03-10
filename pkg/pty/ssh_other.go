@@ -114,8 +114,7 @@ func applyTerminalMode(logger *log.Logger, tios *termios.TTY, c uint8, v uint32)
 		return
 	}
 	if _, ok := tios.CC[k]; ok {
-		// #nosec G115 - Safe conversion, terminal control chars are in uint8 range
-		tios.CC[k] = uint8(v)
+		tios.CC[k] = clampUint8(logger, k, v)
 		return
 	}
 	if _, ok := tios.Opts[k]; ok {
@@ -125,4 +124,14 @@ func applyTerminalMode(logger *log.Logger, tios *termios.TTY, c uint8, v uint32)
 	if logger != nil {
 		logger.Printf("unsupported terminal mode: k=%s, c=%d, v=%d", k, c, v)
 	}
+}
+
+func clampUint8(logger *log.Logger, k string, v uint32) uint8 {
+	if v > 255 {
+		if logger != nil {
+			logger.Printf("terminal mode CC[%s] value %d exceeds uint8 range, clamping", k, v)
+		}
+		return 255
+	}
+	return uint8(v) //#nosec G115 -- bounds checked above
 }

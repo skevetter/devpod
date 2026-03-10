@@ -53,14 +53,16 @@ func startPty(cmd *Cmd, opt ...StartOption) (_ PTYCmd, _ Process, retErr error) 
 			_ = winPty.Close()
 		}
 	}()
+	env := cmd.Env
 	if winPty.opts.sshReq != nil {
-		cmd.Env = append(cmd.Env, fmt.Sprintf("SSH_TTY=%s", winPty.Name()))
+		env = append(env, fmt.Sprintf("SSH_TTY=%s", winPty.Name()))
 	}
 
 	attrs, err := windows.NewProcThreadAttributeList(1)
 	if err != nil {
 		return nil, nil, err
 	}
+	defer attrs.Delete()
 	// Taken from: https://github.com/microsoft/hcsshim/blob/2314362e977aa03b3ed245a4beb12d00422af0e2/internal/winapi/process.go#L6
 	err = attrs.Update(0x20016, unsafe.Pointer(winPty.console), unsafe.Sizeof(winPty.console))
 	if err != nil {
@@ -80,7 +82,7 @@ func startPty(cmd *Cmd, opt ...StartOption) (_ PTYCmd, _ Process, retErr error) 
 		false,
 		// https://docs.microsoft.com/en-us/windows/win32/procthread/process-creation-flags#create_unicode_environment
 		windows.CREATE_UNICODE_ENVIRONMENT|windows.EXTENDED_STARTUPINFO_PRESENT,
-		createEnvBlock(addCriticalEnv(dedupEnvCase(true, cmd.Env))),
+		createEnvBlock(addCriticalEnv(dedupEnvCase(true, env))),
 		dirPtr,
 		&startupInfo.StartupInfo,
 		&processInfo,

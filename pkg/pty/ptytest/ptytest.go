@@ -122,15 +122,26 @@ func newExpecter(t *testing.T, r io.Reader, name string) outExpecter {
 		ex.logf("closed out: %v", err)
 	}()
 
-	go func() {
-		defer close(logDone)
-		s := bufio.NewScanner(logr)
-		for s.Scan() {
-			ex.logf("%q", stripansi.Strip(s.Text()))
-		}
-	}()
+	go drainLog(&ex, logr, logDone)
 
 	return ex
+}
+
+// drainLog reads lines from logr and logs them. Uses bufio.NewReader instead
+// of bufio.Scanner to avoid the 64KiB default token limit that causes Scanner
+// to stop on long lines.
+func drainLog(ex *outExpecter, logr io.Reader, done chan struct{}) {
+	defer close(done)
+	r := bufio.NewReader(logr)
+	for {
+		line, err := r.ReadString('\n')
+		if line != "" {
+			ex.logf("%q", stripansi.Strip(strings.TrimRight(line, "\n")))
+		}
+		if err != nil {
+			return
+		}
+	}
 }
 
 type outExpecter struct {
@@ -252,8 +263,6 @@ func (e *outExpecter) ReadRune(ctx context.Context) rune {
 }
 
 // ReadLine reads output until a newline is encountered.
-//
-//nolint:cyclop // Line-reading state machine with CR/LF handling.
 func (e *outExpecter) ReadLine(ctx context.Context) string {
 	e.t.Helper()
 
@@ -264,26 +273,12 @@ func (e *outExpecter) ReadLine(ctx context.Context) string {
 			if err != nil {
 				return err
 			}
-			if r == '\n' {
+			if r == '\n' || r == '\r' {
+				if r == '\r' {
+					consumeOptionalLF(rd)
+				}
 				return nil
 			}
-			if r == '\r' {
-				b, _ := rd.Peek(1)
-				if len(b) == 0 {
-					return nil
-				}
-
-				r, _ = utf8.DecodeRune(b)
-				if r == '\n' {
-					_, _, err = rd.ReadRune()
-					if err != nil {
-						return err
-					}
-				}
-
-				return nil
-			}
-
 			_, err = buffer.WriteRune(r)
 			if err != nil {
 				return err
@@ -296,6 +291,16 @@ func (e *outExpecter) ReadLine(ctx context.Context) string {
 	}
 	e.logf("matched newline = %q", buffer.String())
 	return buffer.String()
+}
+
+// consumeOptionalLF reads and discards a '\n' if it immediately follows a '\r'.
+func consumeOptionalLF(rd *bufio.Reader) {
+	b, _ := rd.Peek(1)
+	if len(b) > 0 {
+		if r, _ := utf8.DecodeRune(b); r == '\n' {
+			_, _, _ = rd.ReadRune()
+		}
+	}
 }
 
 // ReadAll returns all buffered output.
@@ -478,16 +483,18 @@ func newStdbuf() *stdbuf {
 	return &stdbuf{more: make(chan struct{}, 1)}
 }
 
-// ReadAll returns all buffered data.
+// ReadAll returns all buffered data, even if the writer has errored.
+// This ensures callers can drain remaining bytes after an error before
+// observing the terminal condition on subsequent reads.
 func (b *stdbuf) ReadAll() []byte {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
-	if b.err != nil {
+	if len(b.b) == 0 {
 		return nil
 	}
 	p := append([]byte(nil), b.b...)
-	b.b = b.b[len(b.b):]
+	b.b = b.b[:0]
 	return p
 }
 

@@ -48,8 +48,10 @@ func TestStartOtherSuite(t *testing.T) {
 }
 
 func (s *StartOtherSuite) TestEcho() {
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
 	p, ps := ptytest.Start(s.T(), pty.Command("echo", "test"))
-	p.ExpectMatchContext(context.Background(), "test")
+	p.ExpectMatchContext(ctx, "test")
 	s.Require().NoError(ps.Wait())
 	s.Require().NoError(p.Close())
 }

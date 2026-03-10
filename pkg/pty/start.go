@@ -33,11 +33,12 @@ type Cmd struct {
 }
 
 func CommandContext(ctx context.Context, name string, arg ...string) *Cmd {
+	// Env is intentionally left nil so exec.Cmd inherits the parent process
+	// environment. A non-nil empty slice would clear all environment variables.
 	return &Cmd{
 		Context: ctx,
 		Path:    name,
 		Args:    append([]string{name}, arg...),
-		Env:     make([]string, 0),
 	}
 }
 

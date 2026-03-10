@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"strings"
 	"sync"
@@ -33,14 +34,17 @@ func execNonPTY(sess ssh.Session, cmd *exec.Cmd, log log.Logger) (err error) {
 		return err
 	}
 
+	// Start before launching the stdin copier goroutine; if Start fails the
+	// goroutine would block forever on a pipe with no reader.
+	if err = cmd.Start(); err != nil {
+		_ = stdin.Close()
+		return fmt.Errorf("start command: %w", err)
+	}
+
 	go func() {
 		_, _ = io.Copy(stdin, sess)
 		_ = stdin.Close()
 	}()
-
-	if err = cmd.Start(); err != nil {
-		return fmt.Errorf("start command: %w", err)
-	}
 
 	sigs := make(chan ssh.Signal, 1)
 	sess.Signals(sigs)
@@ -62,12 +66,12 @@ type ptySession struct {
 	pc        pty.PTYCmd
 	proc      pty.Process
 	closeOnce sync.Once
+	closeErr  error
 }
 
 func (p *ptySession) close() error {
-	var err error
-	p.closeOnce.Do(func() { err = p.pc.Close() })
-	return err
+	p.closeOnce.Do(func() { p.closeErr = p.pc.Close() })
+	return p.closeErr
 }
 
 // handleSignalsAndResize forwards SSH signals and window resize events
@@ -124,10 +128,19 @@ func execPTY(p ptyExecParams) (retErr error) {
 	p.log.Debugf("execute SSH server PTY command: %s", strings.Join(p.cmd.Args, " "))
 	p.sess.DisablePTYEmulation()
 
+	// Build an explicit Env so we can inject TERM without losing inherited
+	// variables. A nil Env means "inherit parent" in exec.Cmd; appending to
+	// nil would create a slice with only TERM, clearing everything else.
+	env := p.cmd.Env
+	if env != nil {
+		env = append(env, fmt.Sprintf("TERM=%s", p.ptyReq.Term))
+	} else {
+		env = append(os.Environ(), fmt.Sprintf("TERM=%s", p.ptyReq.Term))
+	}
 	ptycmd := &pty.Cmd{
 		Path: p.cmd.Path,
 		Args: p.cmd.Args,
-		Env:  append(p.cmd.Env, fmt.Sprintf("TERM=%s", p.ptyReq.Term)),
+		Env:  env,
 		Dir:  p.cmd.Dir,
 	}
 
