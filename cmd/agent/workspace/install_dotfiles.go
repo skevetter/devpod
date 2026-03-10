@@ -116,7 +116,8 @@ var installScriptPaths = []string{
 }
 
 func setupDotfiles(ctx context.Context, logger log.Logger) error {
-	installScriptPaths = slices.DeleteFunc(installScriptPaths, func(path string) bool {
+	scripts := slices.Clone(installScriptPaths)
+	scripts = slices.DeleteFunc(scripts, func(path string) bool {
 		if _, err := os.Stat(path); os.IsNotExist(err) {
 			return true
 		}
@@ -124,7 +125,7 @@ func setupDotfiles(ctx context.Context, logger log.Logger) error {
 		return false
 	})
 
-	for _, installScriptPath := range installScriptPaths {
+	for _, installScriptPath := range scripts {
 		writer := logger.Writer(logrus.InfoLevel, false)
 		err := ensureExecutable(ctx, installScriptPath)
 		if err != nil {

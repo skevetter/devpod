@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	storagev1 "github.com/loft-sh/api/v4/pkg/apis/storage/v1"
-	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/cmd/pro/flags"
 	"github.com/skevetter/devpod/pkg/platform/kube"
 	"github.com/skevetter/devpod/pkg/random"
@@ -20,7 +19,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
-// PasswordCmd holds the lags.
+// PasswordCmd holds the flags.
 type PasswordCmd struct {
 	*flags.GlobalFlags
 
@@ -103,9 +102,6 @@ func (cmd *PasswordCmd) Run(ctx context.Context) error {
 		return err
 	}
 
-	cmd.Log.WithFields(logrus.Fields{
-		"user": cmd.User,
-	})
 	cmd.Log.Done("reset user password")
 	return nil
 }
@@ -151,8 +147,7 @@ func (cmd *PasswordCmd) resolveUser(
 	return user, nil
 }
 
-// ensurePasswordRef fills in the user's PasswordRef in-memory.
-// Returns true if the ref was changed and needs persisting.
+// persistPasswordRef updates the user resource if the PasswordRef was changed.
 func (cmd *PasswordCmd) persistPasswordRef(
 	ctx context.Context,
 	managementClient kube.Interface,
@@ -246,7 +241,7 @@ func (cmd *PasswordCmd) upsertPasswordSecret(
 		Secrets(ref.SecretNamespace).
 		Get(ctx, ref.SecretName, metav1.GetOptions{})
 	if err != nil && !kerrors.IsNotFound(err) {
-		return err
+		return fmt.Errorf("get password secret: %w", err)
 	}
 
 	if kerrors.IsNotFound(err) {

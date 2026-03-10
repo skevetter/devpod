@@ -49,8 +49,8 @@ func (cmd *ListAvailableCmd) Run(ctx context.Context) error {
 		if !ok || name == "" {
 			continue
 		}
-		if strings.Contains(name, "devpod-provider") {
-			_, _ = fmt.Fprintln(os.Stdout, "\t", strings.TrimPrefix(name, "devpod-provider-"))
+		if after, ok0 := strings.CutPrefix(name, "devpod-provider-"); ok0 {
+			_, _ = fmt.Fprintln(os.Stdout, "\t", after)
 		}
 	}
 

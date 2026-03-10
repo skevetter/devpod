@@ -902,7 +902,7 @@ func (cmd *StartCmd) prepare(ctx context.Context) error {
 		return err
 	}
 
-	if err := checkCLITools(cmd.Context); err != nil {
+	if err := checkCLITools(ctx, cmd.Context); err != nil {
 		return err
 	}
 
@@ -982,7 +982,7 @@ func (cmd *StartCmd) resolveKubeConfig(
 	), nil
 }
 
-func checkCLITools(kubeContext string) error {
+func checkCLITools(ctx context.Context, kubeContext string) error {
 	_, err := exec.LookPath("helm")
 	if err != nil {
 		return fmt.Errorf(
@@ -1004,7 +1004,13 @@ func checkCLITools(kubeContext string) error {
 		)
 	}
 
-	kubectlCmd := exec.Command("kubectl", "version", "--context", kubeContext) // #nosec G204
+	kubectlCmd := exec.CommandContext(
+		ctx,
+		"kubectl",
+		"version",
+		"--context",
+		kubeContext,
+	) // #nosec G204
 	output, err = kubectlCmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf(

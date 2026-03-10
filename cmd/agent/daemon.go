@@ -55,7 +55,7 @@ func (cmd *DaemonCmd) Run(ctx context.Context) error {
 	// start patrolling
 	cmd.patrol(ctx, logger)
 
-	return ctx.Err()
+	return nil
 }
 
 func (cmd *DaemonCmd) patrol(ctx context.Context, log log.Logger) {
