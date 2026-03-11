@@ -10,7 +10,6 @@ import (
 	"os/exec"
 	"os/signal"
 	"strings"
-	"sync"
 	"syscall"
 	"time"
 
@@ -22,6 +21,7 @@ import (
 	"github.com/skevetter/devpod/pkg/ts"
 	"github.com/skevetter/log"
 	"github.com/spf13/cobra"
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -52,15 +52,10 @@ func NewDaemonCmd() *cobra.Command {
 }
 
 func (cmd *DaemonCmd) Run(c *cobra.Command, args []string) error {
-	ctx := c.Context()
-	errChan := make(chan error, 4)
-	var wg sync.WaitGroup
-
 	if err := cmd.loadConfig(); err != nil {
 		return err
 	}
 
-	// Prepare timeout if specified.
 	var timeoutDuration time.Duration
 	if cmd.Config.Timeout != "" {
 		var err error
@@ -82,55 +77,56 @@ func (cmd *DaemonCmd) Run(c *cobra.Command, args []string) error {
 		}
 	}
 
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
+	ctx, stop := signal.NotifyContext(c.Context(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
 
+	g, ctx := errgroup.WithContext(ctx)
 	var tasksStarted bool
 
 	// Start process reaper.
 	if os.Getpid() == 1 {
-		wg.Add(1)
-		go runReaper(ctx, &wg)
+		g.Go(func() error {
+			agentd.RunProcessReaper()
+			<-ctx.Done()
+			return nil
+		})
 	}
 
 	// Start Tailscale networking server.
 	if cmd.shouldRunNetworkServer() {
 		tasksStarted = true
-		wg.Add(1)
-		go runNetworkServer(ctx, cmd, errChan, &wg)
+		g.Go(func() error {
+			return runNetworkServer(ctx, cmd)
+		})
 	}
 
 	// Start timeout monitor.
 	if timeoutDuration > 0 {
 		tasksStarted = true
-		wg.Add(1)
-		go runTimeoutMonitor(ctx, timeoutDuration, errChan, &wg)
+		g.Go(func() error {
+			return runTimeoutMonitor(ctx, timeoutDuration)
+		})
 	}
 
 	// Start ssh server.
 	if cmd.shouldRunSsh() {
 		tasksStarted = true
-		wg.Add(1)
-		go runSshServer(ctx, cmd, errChan, &wg)
+		g.Go(func() error {
+			return runSshServer(ctx, cmd)
+		})
 	}
 
 	// In case no task is configured, just wait indefinitely.
 	if !tasksStarted {
-		wg.Go(func() {
+		g.Go(func() error {
 			<-ctx.Done()
+			return nil
 		})
 	}
 
-	// Listen for OS termination signals.
-	go handleSignals(ctx, errChan)
-
-	// Wait until an error (or termination signal) occurs.
-	err := <-errChan
-	cancel()
-	wg.Wait()
-
+	err := g.Wait()
 	if err != nil {
-		cmd.Log.Errorf("Daemon error: %v", err)
+		cmd.Log.Errorf("daemon error: %v", err)
 		os.Exit(1)
 	}
 	os.Exit(0)
@@ -184,35 +180,24 @@ func (cmd *DaemonCmd) shouldRunSsh() bool {
 	return cmd.Config.Ssh.Workdir != "" || cmd.Config.Ssh.User != ""
 }
 
-// runReaper starts the process reaper and waits for context cancellation.
-func runReaper(ctx context.Context, wg *sync.WaitGroup) {
-	defer wg.Done()
-	agentd.RunProcessReaper()
-	<-ctx.Done()
-}
-
 // runTimeoutMonitor monitors the activity file and signals an error if the timeout is exceeded.
 func runTimeoutMonitor(
 	ctx context.Context,
 	duration time.Duration,
-	errChan chan<- error,
-	wg *sync.WaitGroup,
-) {
-	defer wg.Done()
+) error {
 	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
 	for {
 		select {
 		case <-ctx.Done():
-			return
+			return nil
 		case <-ticker.C:
 			stat, err := os.Stat(agent.ContainerActivityFile)
 			if err != nil {
 				continue
 			}
 			if !stat.ModTime().Add(duration).After(time.Now()) {
-				errChan <- errors.New("timeout reached, terminating daemon")
-				return
+				return errors.New("timeout reached, terminating daemon")
 			}
 		}
 	}
@@ -222,13 +207,9 @@ func runTimeoutMonitor(
 func runNetworkServer(
 	ctx context.Context,
 	cmd *DaemonCmd,
-	errChan chan<- error,
-	wg *sync.WaitGroup,
-) {
-	defer wg.Done()
+) error {
 	if err := os.MkdirAll(RootDir, os.ModePerm); err != nil {
-		errChan <- err
-		return
+		return err
 	}
 	logger := initLogging()
 	config := client.NewConfig()
@@ -237,8 +218,7 @@ func runNetworkServer(
 	config.Insecure = true
 	baseClient := client.NewClientFromConfig(config)
 	if err := baseClient.RefreshSelf(ctx); err != nil {
-		errChan <- fmt.Errorf("failed to refresh client: %w", err)
-		return
+		return fmt.Errorf("failed to refresh client: %w", err)
 	}
 	tsServer := ts.NewWorkspaceServer(&ts.WorkspaceServerConfig{
 		AccessKey:     cmd.Config.Platform.AccessKey,
@@ -251,17 +231,17 @@ func runNetworkServer(
 		},
 	}, logger)
 	if err := tsServer.Start(ctx); err != nil {
-		errChan <- fmt.Errorf("network server: %w", err)
+		return fmt.Errorf("network server: %w", err)
 	}
+	return nil
 }
 
-// runSshServer starts the SSH server.
-func runSshServer(ctx context.Context, cmd *DaemonCmd, errChan chan<- error, wg *sync.WaitGroup) {
-	defer wg.Done()
+// runSshServer starts the SSH server, sending SIGTERM on context cancellation
+// with a grace period before force-killing.
+func runSshServer(ctx context.Context, cmd *DaemonCmd) error {
 	binaryPath, err := os.Executable()
 	if err != nil {
-		errChan <- err
-		return
+		return err
 	}
 
 	args := []string{"agent", "container", "ssh-server"}
@@ -272,45 +252,18 @@ func runSshServer(ctx context.Context, cmd *DaemonCmd, errChan chan<- error, wg 
 		args = append(args, "--remote-user", cmd.Config.Ssh.User)
 	}
 
-	sshCmd := exec.Command(binaryPath, args...)
+	sshCmd := exec.CommandContext(ctx, binaryPath, args...) // #nosec G204
 	sshCmd.Stdout = os.Stdout
 	sshCmd.Stderr = os.Stderr
-
-	if err := sshCmd.Start(); err != nil {
-		errChan <- fmt.Errorf("failed to start SSH server: %w", err)
-		return
+	sshCmd.Cancel = func() error {
+		return sshCmd.Process.Signal(syscall.SIGTERM)
 	}
+	sshCmd.WaitDelay = 5 * time.Second // Graceful shutdown before force-killing.
 
-	done := make(chan struct{})
-	go func() {
-		select {
-		case <-ctx.Done():
-			if sshCmd.Process != nil {
-				if err := sshCmd.Process.Signal(syscall.SIGTERM); err != nil {
-					errChan <- fmt.Errorf("failed to send SIGTERM to SSH server: %w", err)
-				}
-			}
-		case <-done:
-		}
-	}()
-
-	if err := sshCmd.Wait(); err != nil {
-		errChan <- fmt.Errorf("SSH server exited abnormally: %w", err)
-		close(done)
-		return
+	if err := sshCmd.Run(); err != nil && ctx.Err() == nil {
+		return fmt.Errorf("SSH server exited abnormally: %w", err)
 	}
-	close(done)
-}
-
-// handleSignals listens for OS termination signals and sends an error through errChan.
-func handleSignals(ctx context.Context, errChan chan<- error) {
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
-	select {
-	case sig := <-sigChan:
-		errChan <- fmt.Errorf("received signal: %v", sig)
-	case <-ctx.Done():
-	}
+	return nil
 }
 
 // initLogging initializes logging and returns a combined logger.
