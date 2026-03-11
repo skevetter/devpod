@@ -53,7 +53,7 @@ func RunCredentialsServer(
 				http.Error(writer, err.Error(), http.StatusInternalServerError)
 			}
 		case "/gpg-public-keys":
-			err := handleGPGPublicKeysRequest(ctx, writer, request, client, log)
+			err := handleGPGPublicKeysRequest(ctx, writer, client, log)
 			if err != nil {
 				http.Error(writer, err.Error(), http.StatusInternalServerError)
 			}
@@ -206,7 +206,6 @@ func handleLoftPlatformCredentialsRequest(
 func handleGPGPublicKeysRequest(
 	ctx context.Context,
 	writer http.ResponseWriter,
-	request *http.Request,
 	client tunnel.TunnelClient,
 	log log.Logger,
 ) error {

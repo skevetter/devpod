@@ -211,7 +211,7 @@ func findWorkspaceByArgs(
 	opts GetOptions,
 ) *providerpkg.Workspace {
 	if opts.LocalOnly {
-		return findLocalWorkspace(ctx, opts.DevPodConfig, opts.Args, "", opts.Log)
+		return findLocalWorkspace(opts.DevPodConfig, opts.Args, "", opts.Log)
 	}
 	return findWorkspace(ctx, opts.DevPodConfig, opts.Args, "", opts.Owner, opts.Log)
 }
@@ -629,7 +629,6 @@ func ensureWorkspaceID(args []string, workspaceID string) string {
 }
 
 func findLocalWorkspace(
-	ctx context.Context,
 	devPodConfig *config.Config,
 	args []string,
 	workspaceID string,

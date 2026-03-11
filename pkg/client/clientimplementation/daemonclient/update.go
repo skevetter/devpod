@@ -23,7 +23,7 @@ func (c *client) updateInstance(ctx context.Context) error {
 	if oldInstance == nil {
 		return fmt.Errorf("unable to find old workspace instance")
 	}
-	newInstance, err := updateInstanceInteractive(ctx, baseClient, oldInstance, c.log)
+	newInstance, err := updateInstanceInteractive(ctx, baseClient, oldInstance)
 	if err != nil {
 		return err
 	}

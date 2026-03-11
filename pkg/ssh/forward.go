@@ -34,7 +34,7 @@ func PortForward(
 
 	return portForwarding(
 		ctx, client, listener,
-		localNetwork, localAddr, remoteNetwork, remoteAddr,
+		localAddr, remoteNetwork, remoteAddr,
 		exitAfterTimeout, log, forward,
 	)
 }
@@ -54,7 +54,7 @@ func ReversePortForward(
 
 	return portForwarding(
 		ctx, client, listener,
-		remoteNetwork, remoteAddr, localNetwork, localAddr,
+		remoteAddr, localNetwork, localAddr,
 		exitAfterTimeout, log, reverseForward,
 	)
 }
@@ -63,7 +63,7 @@ func portForwarding(
 	ctx context.Context,
 	client *ssh.Client,
 	listener net.Listener,
-	srcNetwork, srcAddr, dstNetwork, dstAddr string,
+	srcAddr, dstNetwork, dstAddr string,
 	exitAfterTimeout time.Duration,
 	log log.Logger,
 	forwardFn ForwardingFunction,

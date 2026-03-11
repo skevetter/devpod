@@ -148,7 +148,7 @@ func doProbe(
 	log log.Logger,
 ) (map[string]string, error) {
 	args := preferredShell
-	args = append(args, getShellArgs(userEnvProbe, userName, probeCmd)...)
+	args = append(args, getShellArgs(userEnvProbe, probeCmd)...)
 
 	timeoutCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
@@ -171,7 +171,7 @@ func doProbe(
 	return retEnv, nil
 }
 
-func getShellArgs(userEnvProbe UserEnvProbe, user, command string) []string {
+func getShellArgs(userEnvProbe UserEnvProbe, command string) []string {
 	args := []string{}
 	switch userEnvProbe {
 	case LoginInteractiveShellProbe:

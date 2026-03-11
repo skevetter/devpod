@@ -132,7 +132,6 @@ func updateInstanceInteractive(
 	ctx context.Context,
 	baseClient platformclient.Client,
 	instance *managementv1.DevPodWorkspaceInstance,
-	log log.Logger,
 ) (*managementv1.DevPodWorkspaceInstance, error) {
 	formCtx, cancelForm := context.WithCancel(ctx)
 	defer cancelForm()

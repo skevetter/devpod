@@ -226,7 +226,7 @@ func listProWorkspacesForProvider(
 			log,
 		)
 	} else if providerConfig.IsDaemonProvider() {
-		instances, err = listInstancesDaemonProvider(ctx, provider, owner, log)
+		instances, err = listInstancesDaemonProvider(ctx, provider, owner)
 	} else {
 		return nil, fmt.Errorf("cannot list pro workspaces with provider %s", provider)
 	}
@@ -396,7 +396,6 @@ func listInstancesDaemonProvider(
 	ctx context.Context,
 	provider string,
 	owner platform.OwnerFilter,
-	log log.Logger,
 ) ([]managementv1.DevPodWorkspaceInstance, error) {
 	return daemon.NewLocalClient(provider).ListWorkspaces(ctx, owner)
 }

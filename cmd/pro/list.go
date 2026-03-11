@@ -94,7 +94,7 @@ func (cmd *ListCmd) Run(ctx context.Context) error {
 			entry := &proTableEntry{
 				ProInstance:  proInstance,
 				Context:      devPodConfig.DefaultContext,
-				Capabilities: getCapabilities(ctx, devPodConfig, proInstance, log.Discard),
+				Capabilities: getCapabilities(devPodConfig, proInstance, log.Discard),
 			}
 			if cmd.Login {
 				err = checkLogin(ctx, devPodConfig, proInstance)
@@ -162,7 +162,6 @@ func checkLogin(
 }
 
 func getCapabilities(
-	ctx context.Context,
 	devPodConfig *config.Config,
 	proInstance *provider.ProInstance,
 	log log.Logger,

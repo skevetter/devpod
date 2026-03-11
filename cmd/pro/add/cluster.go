@@ -114,7 +114,7 @@ func (cmd *ClusterCmd) Run(ctx context.Context, args []string) error {
 		return fmt.Errorf("get pro version: %w", err)
 	}
 
-	user, team := getUserOrTeam(ctx, baseClient)
+	user, team := getUserOrTeam(baseClient)
 
 	_, err = managementClient.Loft().ManagementV1().Clusters().Create(ctx, &managementv1.Cluster{
 		ObjectMeta: metav1.ObjectMeta{
@@ -344,7 +344,7 @@ func ensureHost(devPodConfig *config.Config, host string, log log.Logger) (strin
 	return h, nil
 }
 
-func getUserOrTeam(ctx context.Context, baseClient client.Client) (string, string) {
+func getUserOrTeam(baseClient client.Client) (string, string) {
 	var user, team string
 
 	self := baseClient.Self()

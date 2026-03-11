@@ -90,7 +90,7 @@ func (cmd *DaemonCmd) Run(c *cobra.Command, args []string) error {
 	// Start process reaper.
 	if os.Getpid() == 1 {
 		wg.Add(1)
-		go runReaper(ctx, errChan, &wg)
+		go runReaper(ctx, &wg)
 	}
 
 	// Start Tailscale networking server.
@@ -185,7 +185,7 @@ func (cmd *DaemonCmd) shouldRunSsh() bool {
 }
 
 // runReaper starts the process reaper and waits for context cancellation.
-func runReaper(ctx context.Context, errChan chan<- error, wg *sync.WaitGroup) {
+func runReaper(ctx context.Context, wg *sync.WaitGroup) {
 	defer wg.Done()
 	agentd.RunProcessReaper()
 	<-ctx.Done()
