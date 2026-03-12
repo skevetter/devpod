@@ -94,7 +94,7 @@ func GetDevPodKeysDir() string {
 	}
 
 	tempDir := os.TempDir()
-	return filepath.Join(tempDir, "devpod-ssh")
+	return filepath.Join(tempDir, config.BinaryName+"-ssh")
 }
 
 func GetDevPodHostKey() (string, error) {

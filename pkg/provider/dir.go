@@ -21,7 +21,7 @@ const (
 	ProInstanceConfigFile = "pro.json"
 	ProviderConfigFile    = "provider.json"
 
-	DaemonStateFile = "devpod_ts.state"
+	DaemonStateFile = config.BinaryName + "_ts.state"
 )
 
 func GetProInstancesDir(context string) (string, error) {

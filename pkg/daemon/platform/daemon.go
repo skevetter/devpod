@@ -222,7 +222,7 @@ func dialLocal(l *localServer) dialFunc {
 type clientType string
 
 var (
-	devPodClientType    clientType = "devpod"
+	devPodClientType    clientType = clientType(config.BinaryName)
 	tailscaleClientType clientType = "tailscale"
 )
 

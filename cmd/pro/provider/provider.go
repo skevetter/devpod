@@ -42,7 +42,7 @@ func NewProProviderCmd(globalFlags *flags.GlobalFlags) *cobra.Command {
 			if os.Getenv(config.UIEnvVar) == "true" {
 				cmd.VisitParents(func(c *cobra.Command) {
 					// find the root command
-					if c.Name() == "devpod" {
+					if c.Name() == config.BinaryName {
 						if c.Annotations == nil {
 							c.Annotations = map[string]string{}
 						}

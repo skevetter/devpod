@@ -3,9 +3,11 @@ package config
 import (
 	"maps"
 	"slices"
+
+	pkgconfig "github.com/skevetter/devpod/pkg/config"
 )
 
-const UserLabel = "devpod.user"
+const UserLabel = pkgconfig.BinaryName + ".user"
 
 type Result struct {
 	DevContainerConfigWithPath *DevContainerConfigWithPath `json:"DevContainerConfigWithPath"`
@@ -66,12 +68,13 @@ func GetRemoteUser(result *Result) string {
 }
 
 func GetDevPodCustomizations(parsedConfig *DevContainerConfig) *DevPodCustomizations {
-	if parsedConfig.Customizations == nil || parsedConfig.Customizations["devpod"] == nil {
+	if parsedConfig.Customizations == nil ||
+		parsedConfig.Customizations[pkgconfig.BinaryName] == nil {
 		return &DevPodCustomizations{}
 	}
 
 	devPod := &DevPodCustomizations{}
-	err := Convert(parsedConfig.Customizations["devpod"], devPod)
+	err := Convert(parsedConfig.Customizations[pkgconfig.BinaryName], devPod)
 	if err != nil {
 		return &DevPodCustomizations{}
 	}

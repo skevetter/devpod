@@ -19,6 +19,9 @@ const ConfigDirName = "." + RepoName
 // UIEnvVar is the environment variable indicating the desktop UI is active.
 const UIEnvVar = "DEVPOD_UI"
 
+// DebugEnvVar is the environment variable to enable debug logging.
+const DebugEnvVar = "DEVPOD_DEBUG"
+
 func GetConfigDir() (string, error) {
 	homeDir := os.Getenv(DEVPOD_HOME)
 	if homeDir != "" {

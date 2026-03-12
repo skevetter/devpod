@@ -1,6 +1,7 @@
 package flags
 
 import (
+	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/platform"
 	flag "github.com/spf13/pflag"
 )
@@ -24,7 +25,7 @@ func SetGlobalFlags(flags *flag.FlagSet) *GlobalFlags {
 
 	flags.StringVar(
 		&globalFlags.DevPodHome,
-		"devpod-home",
+		config.BinaryName+"-home",
 		"",
 		"If defined will override the default devpod home",
 	)

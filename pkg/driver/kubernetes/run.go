@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	pkgconfig "github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	"github.com/skevetter/devpod/pkg/driver"
 	provider2 "github.com/skevetter/devpod/pkg/provider"
@@ -19,17 +20,17 @@ import (
 )
 
 const (
-	DevContainerName  = "devpod"
-	InitContainerName = "devpod-init"
+	DevContainerName  = pkgconfig.BinaryName
+	InitContainerName = pkgconfig.BinaryName + "-init"
 )
 
 const (
-	DevPodCreatedLabel      = "devpod.sh/created"
-	DevPodWorkspaceLabel    = "devpod.sh/workspace"
-	DevPodWorkspaceUIDLabel = "devpod.sh/workspace-uid"
+	DevPodCreatedLabel      = pkgconfig.BinaryName + ".sh/created"
+	DevPodWorkspaceLabel    = pkgconfig.BinaryName + ".sh/workspace"
+	DevPodWorkspaceUIDLabel = pkgconfig.BinaryName + ".sh/workspace-uid"
 
-	DevPodInfoAnnotation                   = "devpod.sh/info"
-	DevPodLastAppliedAnnotation            = "devpod.sh/last-applied-configuration"
+	DevPodInfoAnnotation                   = pkgconfig.BinaryName + ".sh/info"
+	DevPodLastAppliedAnnotation            = pkgconfig.BinaryName + ".sh/last-applied-configuration"
 	ClusterAutoscalerSaveToEvictAnnotation = "cluster-autoscaler.kubernetes.io/safe-to-evict"
 )
 
@@ -364,8 +365,8 @@ func getContainers(
 ) []corev1.Container {
 	if daemonConfigSecretName != "" {
 		volumeMounts = append(volumeMounts, corev1.VolumeMount{
-			Name:      "devpod-daemon-config",
-			MountPath: "/var/run/secrets/devpod",
+			Name:      DevContainerName + "-daemon-config",
+			MountPath: "/var/run/secrets/" + DevContainerName,
 		})
 	}
 	devPodContainer := corev1.Container{
@@ -424,7 +425,7 @@ func getContainers(
 func getVolumes(pod *corev1.Pod, id string, daemonConfigSecretName string) []corev1.Volume {
 	volumes := []corev1.Volume{
 		{
-			Name: "devpod",
+			Name: DevContainerName,
 			VolumeSource: corev1.VolumeSource{
 				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
 					ClaimName: id,
@@ -435,7 +436,7 @@ func getVolumes(pod *corev1.Pod, id string, daemonConfigSecretName string) []cor
 
 	if daemonConfigSecretName != "" {
 		volumes = append(volumes, corev1.Volume{
-			Name: "devpod-daemon-config",
+			Name: DevContainerName + "-daemon-config",
 			VolumeSource: corev1.VolumeSource{
 				Secret: &corev1.SecretVolumeSource{
 					SecretName: daemonConfigSecretName,
@@ -458,9 +459,9 @@ func getVolumeMount(idx int, mount *config.Mount) corev1.VolumeMount {
 	}
 
 	return corev1.VolumeMount{
-		Name:      "devpod",
+		Name:      DevContainerName,
 		MountPath: mount.Target,
-		SubPath:   fmt.Sprintf("devpod/%s", subPath),
+		SubPath:   fmt.Sprintf(DevContainerName+"/%s", subPath),
 	}
 }
 
@@ -520,15 +521,15 @@ func (k *KubernetesDriver) StartDevContainer(ctx context.Context, workspaceId st
 }
 
 func getID(workspaceID string) string {
-	return "devpod-" + workspaceID
+	return DevContainerName + "-" + workspaceID
 }
 
 func getPullSecretsName(workspaceID string) string {
-	return fmt.Sprintf("devpod-pull-secret-%s", workspaceID)
+	return fmt.Sprintf(DevContainerName+"-pull-secret-%s", workspaceID)
 }
 
 func getDaemonSecretName(workspaceID string) string {
-	return fmt.Sprintf("devpod-daemon-secret-%s", workspaceID)
+	return fmt.Sprintf(DevContainerName+"-daemon-secret-%s", workspaceID)
 }
 
 func optionsEqual(a, b *provider2.ProviderKubernetesDriverConfig) bool {

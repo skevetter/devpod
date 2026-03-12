@@ -4,12 +4,20 @@ import (
 	"fmt"
 	"os/exec"
 
+	pkgconfig "github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/platform/client"
 	"github.com/skevetter/log"
 )
 
 func AuthDevpodCliToPlatform(config *client.Config, logger log.Logger) error {
-	cmd := exec.Command("devpod", "pro", "login", "--access-key", config.AccessKey, config.Host)
+	cmd := exec.Command( // #nosec G204 -- binary name is a compile-time constant
+		pkgconfig.BinaryName,
+		"pro",
+		"login",
+		"--access-key",
+		config.AccessKey,
+		config.Host,
+	)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		logger.Debugf("Failed executing `devpod pro login`: %w, output: %s", err, out)

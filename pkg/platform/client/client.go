@@ -19,6 +19,7 @@ import (
 	managementv1 "github.com/loft-sh/api/v4/pkg/apis/management/v1"
 	storagev1 "github.com/loft-sh/api/v4/pkg/apis/storage/v1"
 	"github.com/loft-sh/api/v4/pkg/auth"
+	pkgconfig "github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/platform/kube"
 	"github.com/skevetter/devpod/pkg/platform/project"
 	"github.com/skevetter/devpod/pkg/util"
@@ -328,7 +329,7 @@ func (c *client) Login(host string, insecure bool, log log.Logger) error {
 			msg += " --insecure"
 		}
 		msg += "'"
-		log.Infof(msg, host, "devpod pro login", host)
+		log.Infof(msg, host, pkgconfig.BinaryName+" pro login", host)
 		log.Infof("Logging into DevPod Pro...")
 
 		key = <-keyChannel
@@ -512,7 +513,7 @@ func GetRestConfig(host, token string, insecure bool) (*rest.Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	config.UserAgent = "devpod/" + version.GetVersion()
+	config.UserAgent = pkgconfig.BinaryName + "/" + version.GetVersion()
 
 	return config, nil
 }

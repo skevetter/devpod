@@ -32,7 +32,7 @@ const (
 	tarSuffix   = ".tar"
 	tgzSuffix   = ".tgz"
 	zipSuffix   = ".zip"
-	cacheDir    = "devpod-binaries"
+	cacheDir    = config.BinaryName + "-binaries"
 )
 
 var (
@@ -588,7 +588,7 @@ func extractZipArchive(body io.ReadCloser, targetFolder, targetPath string) (str
 }
 
 func downloadToTempFile(reader io.Reader) (string, error) {
-	tempFile, err := os.CreateTemp("", "devpod-archive-*")
+	tempFile, err := os.CreateTemp("", config.BinaryName+"-archive-*")
 	if err != nil {
 		return "", err
 	}
