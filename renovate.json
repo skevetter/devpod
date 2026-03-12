@@ -63,6 +63,10 @@
       "allowedVersions": "v2.4.0"
     },
     {
+      "matchPackageNames": ["@loft-enterprise/client"],
+      "allowedVersions": "<=4.4.1"
+    },
+    {
       "matchPackageNames": [
         "actions/upload-artifact",
         "actions/download-artifact"

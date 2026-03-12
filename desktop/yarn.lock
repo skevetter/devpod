@@ -1752,10 +1752,9 @@
     tar-fs "^3.0.9"
     ws "^8.18.2"
 
-"@loft-enterprise/client@https://github.com/loft-sh/loft-javascript-client#v4.7.1":
+"@loft-enterprise/client@https://github.com/loft-sh/loft-javascript-client#v4.4.1":
   version "0.1.0"
-  uid "76acdca884e135ed04b5276748bf808b5dbbe220"
-  resolved "https://github.com/loft-sh/loft-javascript-client#76acdca884e135ed04b5276748bf808b5dbbe220"
+  resolved "https://github.com/loft-sh/loft-javascript-client#72ad6a3e7b6f2aa0ea4ecc31c448fd6c3fd41f62"
   dependencies:
     "@kubernetes/client-node" "1.2.0"
     js-cookie "3.0.1"
