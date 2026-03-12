@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/skevetter/devpod/cmd/flags"
+	"github.com/skevetter/devpod/pkg/config"
 	devpodhttp "github.com/skevetter/devpod/pkg/http"
 	"github.com/spf13/cobra"
 )
@@ -43,13 +44,13 @@ func (cmd *ListAvailableCmd) Run(ctx context.Context) error {
 		return err
 	}
 
-	_, _ = fmt.Fprintln(os.Stdout, "List of available providers from skevetter:")
+	_, _ = fmt.Fprintln(os.Stdout, "List of available providers from "+config.RepoOwner+":")
 	for _, v := range jsonResult {
 		name, ok := v["name"].(string)
 		if !ok || name == "" {
 			continue
 		}
-		if after, ok0 := strings.CutPrefix(name, "devpod-provider-"); ok0 {
+		if after, ok0 := strings.CutPrefix(name, config.ProviderPrefix); ok0 {
 			_, _ = fmt.Fprintln(os.Stdout, "\t", after)
 		}
 	}
@@ -60,7 +61,7 @@ func (cmd *ListAvailableCmd) Run(ctx context.Context) error {
 func fetchProviderRepos(ctx context.Context) ([]map[string]any, error) {
 	req, err := http.NewRequestWithContext(ctx,
 		"GET",
-		"https://api.github.com/users/skevetter/repos?per_page=100",
+		config.GitHubAPIUserURL+"/repos?per_page=100",
 		nil,
 	)
 	if err != nil {

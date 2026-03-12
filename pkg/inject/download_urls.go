@@ -3,11 +3,13 @@ package inject
 import (
 	"net/url"
 	"strings"
+
+	"github.com/skevetter/devpod/pkg/config"
 )
 
 const (
-	AmdUrl             = "devpod-linux-amd64"
-	ArmUrl             = "devpod-linux-arm64"
+	AmdUrl             = config.BinaryName + "-linux-amd64"
+	ArmUrl             = config.BinaryName + "-linux-arm64"
 	BinNamePlaceholder = "${BIN_NAME}"
 )
 
