@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/provider"
 	"github.com/skevetter/devpod/pkg/util"
 	"golang.org/x/crypto/ssh"
@@ -84,7 +85,7 @@ func GetPrivateKeyRaw(context, workspaceID string) ([]byte, error) {
 func GetDevPodKeysDir() string {
 	dir, err := util.UserHomeDir()
 	if err == nil {
-		tempDir := filepath.Join(dir, ".devpod", "keys")
+		tempDir := filepath.Join(dir, config.ConfigDirName, "keys")
 		// #nosec G301 -- TODO Consider using a more secure permission setting and ownership if needed.
 		err = os.MkdirAll(tempDir, 0o755)
 		if err == nil {

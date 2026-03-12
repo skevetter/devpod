@@ -24,11 +24,14 @@ import (
 
 const DefaultInactivityTimeout = time.Minute * 20
 
-const ContainerDevPodHelperLocation = "/usr/local/bin/devpod"
+// ContainerDataDir is the base directory for DevPod data inside containers.
+const ContainerDataDir = "/var/" + config.BinaryName
 
-const RemoteDevPodHelperLocation = "/tmp/devpod"
+const ContainerDevPodHelperLocation = "/usr/local/bin/" + config.BinaryName
 
-const ContainerActivityFile = "/tmp/devpod.activity"
+const RemoteDevPodHelperLocation = "/tmp/" + config.BinaryName
+
+const ContainerActivityFile = "/tmp/" + config.BinaryName + ".activity"
 
 var defaultAgentDownloadURL = config.GitHubReleasesURL + "/download/"
 

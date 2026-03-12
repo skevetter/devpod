@@ -16,6 +16,7 @@ import (
 
 	"github.com/loft-sh/api/v4/pkg/devpod"
 	"github.com/sirupsen/logrus"
+	"github.com/skevetter/devpod/pkg/agent"
 	"github.com/skevetter/devpod/pkg/agent/tunnel"
 	"github.com/skevetter/devpod/pkg/command"
 	copy2 "github.com/skevetter/devpod/pkg/copy"
@@ -336,7 +337,7 @@ func shouldSkipKubeConfig(tunnelClient tunnel.TunnelClient, log log.Logger) bool
 		return true
 	}
 
-	markerPath := filepath.Join("/var/devpod", "setupKubeConfig.marker")
+	markerPath := filepath.Join(agent.ContainerDataDir, "setupKubeConfig.marker")
 	info, err := os.Stat(markerPath)
 	if err == nil {
 		if info.Mode().Perm()&0o022 != 0 {
@@ -418,7 +419,7 @@ func ensureKubeConfigMaps(config *clientcmdapi.Config) *clientcmdapi.Config {
 }
 
 func markerFileExists(markerName string, markerContent string) (bool, error) {
-	markerName = filepath.Join("/var/devpod", markerName+".marker")
+	markerName = filepath.Join(agent.ContainerDataDir, markerName+".marker")
 	t, err := os.ReadFile(markerName)
 	if err != nil && !os.IsNotExist(err) {
 		return false, err

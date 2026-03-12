@@ -26,8 +26,6 @@ const (
 	PanicSeverity   ErrorSeverityType = "panic"
 )
 
-const UIEnvVar = "DEVPOD_UI"
-
 var UIEventsExceptions []string = []string{
 	"devpod list",
 	"devpod status",
@@ -103,7 +101,7 @@ func (d *cliCollector) RecordCLI(err error) {
 		return
 	}
 	cmd := d.cmd.CommandPath()
-	isUI := os.Getenv(UIEnvVar) == "true"
+	isUI := os.Getenv(config.UIEnvVar) == "true"
 	// Ignore certain commands triggered by DevPod Desktop
 	if isUI {
 		if slices.Contains(UIEventsExceptions, cmd) {

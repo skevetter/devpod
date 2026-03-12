@@ -7,13 +7,15 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/cmd/flags"
+	"github.com/skevetter/devpod/pkg/agent"
+	"github.com/skevetter/devpod/pkg/config"
 	helperssh "github.com/skevetter/devpod/pkg/ssh/server"
 	"github.com/skevetter/devpod/pkg/ssh/server/port"
 	"github.com/skevetter/log"
 	"github.com/spf13/cobra"
 )
 
-const BaseLogDir = "/var/devpod"
+var BaseLogDir = agent.ContainerDataDir
 
 // SSHServerCmd holds the ssh server cmd flags.
 type SSHServerCmd struct {
@@ -74,7 +76,7 @@ func getFileLogger(remoteUser string, debug bool) log.Logger {
 	}
 	fallback := log.NewDiscardLogger(logLevel)
 
-	targetFolder := filepath.Join(os.TempDir(), ".devpod")
+	targetFolder := filepath.Join(os.TempDir(), config.ConfigDirName)
 	if remoteUser != "" {
 		targetFolder = filepath.Join(BaseLogDir, remoteUser)
 	}
