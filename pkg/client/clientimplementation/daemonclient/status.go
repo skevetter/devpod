@@ -11,11 +11,11 @@ import (
 func (c *client) Status(
 	ctx context.Context,
 	opt clientpkg.StatusOptions,
-) (string, error) {
+) (clientpkg.Status, error) {
 	c.m.Lock()
 	defer c.m.Unlock()
 
-	status := clientpkg.StatusNotFound
+	status := clientpkg.Status(clientpkg.StatusNotFound)
 	baseClient, err := c.initPlatformClient(ctx)
 	if err != nil {
 		return status, err
@@ -32,5 +32,5 @@ func (c *client) Status(
 		return status, fmt.Errorf("couldn't find workspace")
 	}
 
-	return string(instance.Status.LastWorkspaceStatus), nil
+	return clientpkg.Status(instance.Status.LastWorkspaceStatus), nil
 }

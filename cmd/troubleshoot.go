@@ -62,7 +62,7 @@ func (cmd *TroubleshootCmd) Run(ctx context.Context, args []string) {
 		Providers             map[string]provider.ProviderWithDefault
 		DevPodProInstances    []DevPodProInstance
 		Workspace             *pkgprovider.Workspace
-		WorkspaceStatus       string
+		WorkspaceStatus       client.Status
 		WorkspaceTroubleshoot *managementv1.DevPodWorkspaceInstanceTroubleshoot
 		DaemonStatus          *daemon.Status
 

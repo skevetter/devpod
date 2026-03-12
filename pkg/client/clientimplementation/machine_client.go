@@ -216,7 +216,7 @@ func (s *machineClient) Command(ctx context.Context, commandOptions client.Comma
 func (s *machineClient) Status(
 	ctx context.Context,
 	options client.StatusOptions,
-) (string, error) {
+) (client.Status, error) {
 	stdout := &bytes.Buffer{}
 	stderr := &bytes.Buffer{}
 

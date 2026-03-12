@@ -559,7 +559,7 @@ func (s *workspaceClient) Command(
 func (s *workspaceClient) Status(
 	ctx context.Context,
 	options client.StatusOptions,
-) (string, error) {
+) (client.Status, error) {
 	s.m.Lock()
 	defer s.m.Unlock()
 
@@ -661,7 +661,7 @@ func (s *workspaceClient) initLock() error {
 	return s.workspaceLockErr
 }
 
-func (s *workspaceClient) getContainerStatus(ctx context.Context) (string, error) {
+func (s *workspaceClient) getContainerStatus(ctx context.Context) (client.Status, error) {
 	stdout := &bytes.Buffer{}
 	buf := &bytes.Buffer{}
 	compressed, info, err := s.compressedAgentInfo(provider.CLIOptions{})

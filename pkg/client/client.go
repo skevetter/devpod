@@ -23,7 +23,7 @@ type BaseClient interface {
 	RefreshOptions(ctx context.Context, userOptions []string, reconfigure bool) error
 
 	// Status retrieves the workspace status
-	Status(ctx context.Context, options StatusOptions) (string, error)
+	Status(ctx context.Context, options StatusOptions) (Status, error)
 
 	// Stop stops the workspace
 	Stop(ctx context.Context, options StopOptions) error
@@ -174,6 +174,8 @@ type SshOptions struct {
 	Stdout io.Writer
 }
 
+type Status string
+
 const (
 	StatusRunning  = "Running"
 	StatusBusy     = "Busy"
@@ -181,7 +183,7 @@ const (
 	StatusNotFound = "NotFound"
 )
 
-func ParseStatus(in string) (string, error) {
+func ParseStatus(in string) (Status, error) {
 	in = strings.ToUpper(strings.TrimSpace(in))
 	switch in {
 	case "RUNNING":
