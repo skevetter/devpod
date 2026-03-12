@@ -32,7 +32,7 @@ var globalFlags *flags.GlobalFlags
 // NewRootCmd returns a new root command.
 func NewRootCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:           "devpod",
+		Use:           config.BinaryName,
 		Short:         "DevPod",
 		SilenceUsage:  true,
 		SilenceErrors: true,

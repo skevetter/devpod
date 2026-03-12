@@ -85,7 +85,7 @@ func (cmd *GetWorkspaceConfigCommand) Run(
 	done := make(chan *devcontainer.GetWorkspaceConfigResult, 1)
 	errChan := make(chan error, 1)
 
-	tmpDir, err := os.MkdirTemp("", "devpod")
+	tmpDir, err := os.MkdirTemp("", config.BinaryName)
 	if err != nil {
 		return err
 	}

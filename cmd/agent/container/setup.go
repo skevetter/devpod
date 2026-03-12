@@ -31,6 +31,7 @@ import (
 	"github.com/skevetter/devpod/pkg/dockercredentials"
 	"github.com/skevetter/devpod/pkg/extract"
 	"github.com/skevetter/devpod/pkg/git"
+	"github.com/skevetter/devpod/pkg/gitcredentials"
 	"github.com/skevetter/devpod/pkg/ide/fleet"
 	"github.com/skevetter/devpod/pkg/ide/jetbrains"
 	"github.com/skevetter/devpod/pkg/ide/jupyter"
@@ -347,7 +348,7 @@ func (cmd *SetupContainerCmd) startContainerDaemon(
 		return nil
 	}
 
-	return command.StartBackgroundOnce("devpod.daemon", func() (*exec.Cmd, error) {
+	return command.StartBackgroundOnce(config2.BinaryName+".daemon", func() (*exec.Cmd, error) {
 		logger.Debugf(
 			"start devpod container daemon with inactivity timeout %s",
 			workspaceInfo.ContainerTimeout,
@@ -630,7 +631,7 @@ func configureSystemGitCredentials(
 	}
 
 	gitCredentials := fmt.Sprintf("!'%s' agent git-credentials --port %d", binaryPath, serverPort)
-	_ = os.Setenv("DEVPOD_GIT_HELPER_PORT", strconv.Itoa(serverPort))
+	_ = os.Setenv(gitcredentials.EnvGitHelperPort, strconv.Itoa(serverPort))
 
 	err = git.CommandContext(ctx, git.GetDefaultExtraEnv(false), "config", "--system", "--add",
 		"credential.helper", gitCredentials).

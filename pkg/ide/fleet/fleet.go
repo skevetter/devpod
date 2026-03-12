@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	FleetURLFileName    = "devpod-fleet.url.txt"
+	FleetURLFileName    = config.BinaryName + "-fleet.url.txt"
 	VersionOption       = "VERSION"
 	DownloadAmd64Option = "DOWNLOAD_AMD64"
 	DownloadArm64Option = "DOWNLOAD_ARM64"

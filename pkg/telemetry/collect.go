@@ -27,17 +27,17 @@ const (
 )
 
 var UIEventsExceptions []string = []string{
-	"devpod list",
-	"devpod status",
-	"devpod provider list",
-	"devpod pro list",
-	"devpod pro check-health",
-	"devpod pro check-update",
-	"devpod ide list",
-	"devpod ide use",
-	"devpod provider use",
-	"devpod version",
-	"devpod context options",
+	config.BinaryName + " list",
+	config.BinaryName + " status",
+	config.BinaryName + " provider list",
+	config.BinaryName + " pro list",
+	config.BinaryName + " pro check-health",
+	config.BinaryName + " pro check-update",
+	config.BinaryName + " ide list",
+	config.BinaryName + " ide use",
+	config.BinaryName + " provider use",
+	config.BinaryName + " version",
+	config.BinaryName + " context options",
 }
 
 // skip everything in pro mode.
@@ -152,9 +152,9 @@ func (d *cliCollector) RecordCLI(err error) {
 			isPro = true
 		}
 	}
-	eventType := "devpod_cli"
+	eventType := config.BinaryName + "_cli"
 	if isPro {
-		eventType = "devpod_cli_runner"
+		eventType = config.BinaryName + "_cli_runner"
 	}
 
 	// build the event and record

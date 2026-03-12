@@ -362,7 +362,7 @@ func (cmd *UpCmd) configureWorkspace(
 ) error {
 	if cmd.ConfigureSSH {
 		devPodHome := ""
-		if envDevPodHome, ok := os.LookupEnv("DEVPOD_HOME"); ok {
+		if envDevPodHome, ok := os.LookupEnv(config.DEVPOD_HOME); ok {
 			devPodHome = envDevPodHome
 		}
 		setupGPGAgentForwarding := cmd.GPGAgentForwarding ||
@@ -1574,7 +1574,7 @@ func setupGitSSHSignature(
 		client.Workspace(),
 		"--command",
 		shellescape.QuoteCommand(
-			[]string{"devpod", "agent", "git-ssh-signature-helper", signingKey},
+			[]string{config.BinaryName, "agent", "git-ssh-signature-helper", signingKey},
 		),
 	).CombinedOutput()
 	if err != nil {

@@ -138,7 +138,7 @@ func (cmd *LoginCmd) Run(ctx context.Context, fullURL string, log log.Logger) er
 		// provider already exists?
 		if providers[cmd.Provider] != nil {
 			// alternative name
-			cmd.Provider = provider.ToProInstanceID("devpod-" + host)
+			cmd.Provider = provider.ToProInstanceID(config.BinaryName + "-" + host)
 			if providers[cmd.Provider] != nil {
 				return fmt.Errorf(
 					"provider %s already exists, please choose a different name via --provider",

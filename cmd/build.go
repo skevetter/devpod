@@ -77,7 +77,7 @@ func NewBuildCmd(flags *flags.GlobalFlags) *cobra.Command {
 
 			// create a temporary workspace
 			exists := workspace2.Exists(ctx, devPodConfig, args, "", cmd.Owner, log.Default)
-			sshConfigFile, err := os.CreateTemp("", "devpodssh.config")
+			sshConfigFile, err := os.CreateTemp("", config.BinaryName+"ssh.config")
 			if err != nil {
 				return err
 			}

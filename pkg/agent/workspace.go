@@ -153,7 +153,7 @@ func isDirExecutable(dir string) (bool, error) {
 		return false, err
 	}
 
-	testFile := filepath.Join(dir, "devpod_test.sh")
+	testFile := filepath.Join(dir, config.BinaryName+"_test.sh")
 	// #nosec G306,G703 -- TODO Consider using a more secure permission setting and ownership if needed.
 	if err := os.WriteFile(testFile, []byte(`#!/bin/sh
 echo DevPod

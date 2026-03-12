@@ -272,7 +272,7 @@ func (cmd *StartCmd) appendReleaseArgs(extraArgs []string) []string {
 }
 
 func writePasswordValuesFile(password string) (string, error) {
-	f, err := os.CreateTemp("", "devpod-values-*.yaml")
+	f, err := os.CreateTemp("", config.BinaryName+"-values-*.yaml")
 	if err != nil {
 		return "", fmt.Errorf("create temp values file: %w", err)
 	}
