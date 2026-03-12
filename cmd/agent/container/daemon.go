@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	RootDir          = "/var/devpod"
+	RootDir          = agent.ContainerDataDir
 	DaemonConfigPath = "/var/run/secrets/devpod/daemon_config"
 )
 

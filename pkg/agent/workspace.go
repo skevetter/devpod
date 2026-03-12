@@ -29,10 +29,10 @@ import (
 )
 
 var extraSearchLocations = []string{
-	"/home/devpod/.devpod/agent",
+	"/home/devpod/" + config.ConfigDirName + "/agent",
 	"/opt/devpod/agent",
 	"/var/lib/devpod/agent",
-	"/var/devpod/agent",
+	ContainerDataDir + "/agent",
 }
 
 var ErrFindAgentHomeFolder = fmt.Errorf("couldn't find devpod home directory")
@@ -65,7 +65,7 @@ func findDir(agentFolder string, validate func(path string) bool) string {
 	// check home folder first
 	homeDir, _ := util.UserHomeDir()
 	if homeDir != "" {
-		homeDir = filepath.Join(homeDir, ".devpod", "agent")
+		homeDir = filepath.Join(homeDir, config.ConfigDirName, "agent")
 		if validate(homeDir) {
 			return homeDir
 		}
@@ -74,7 +74,7 @@ func findDir(agentFolder string, validate func(path string) bool) string {
 	// check root folder
 	homeDir, _ = command.GetHome("root")
 	if homeDir != "" {
-		homeDir = filepath.Join(homeDir, ".devpod", "agent")
+		homeDir = filepath.Join(homeDir, config.ConfigDirName, "agent")
 		if validate(homeDir) {
 			return homeDir
 		}

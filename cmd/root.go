@@ -105,7 +105,7 @@ func Execute() {
 				rootCmd.Annotations[agent.AgentExecutedAnnotation] != "true" {
 				if terminal.IsTerminalIn {
 					log2.Default.Error("Try using the --debug flag to see a more verbose output")
-				} else if os.Getenv(telemetry.UIEnvVar) == "true" {
+				} else if os.Getenv(config.UIEnvVar) == "true" {
 					log2.Default.Error(
 						"Try enabling Debug mode under Settings to see a more verbose output",
 					)

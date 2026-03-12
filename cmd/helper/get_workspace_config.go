@@ -74,7 +74,7 @@ func (cmd *GetWorkspaceConfigCommand) Run(
 		level = logrus.DebugLevel
 	}
 	var logger log.Logger = log.NewStdoutLogger(os.Stdin, os.Stdout, os.Stderr, level)
-	if os.Getenv("DEVPOD_UI") == "true" {
+	if os.Getenv(config.UIEnvVar) == "true" {
 		logger = log.Discard
 	}
 	logger.Debugf("Resolving devcontainer config for source: %s", rawSource)
