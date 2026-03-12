@@ -93,7 +93,7 @@ func (o *GenericJetBrainsServer) OpenGateway(workspaceFolder, workspaceID string
 			o.getDirectory(path.Join("/", "home", o.userName)),
 		) + `&projectPath=` + url.QueryEscape(
 			workspaceFolder,
-		) + `&host=` + workspaceID + `.devpod&port=22&user=` + url.QueryEscape(
+		) + `&host=` + workspaceID + config2.SSHHostSuffix + `&port=22&user=` + url.QueryEscape(
 			o.userName,
 		) + `&type=ssh&deploy=false`,
 	)

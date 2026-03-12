@@ -11,6 +11,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/util"
 	"github.com/skevetter/log"
 	"github.com/skevetter/log/scanner"
@@ -48,7 +49,7 @@ func ConfigureSSHConfig(params SSHConfigParams) error {
 
 	newFile, err := addHost(addHostParams{
 		path:       targetPath,
-		host:       params.Workspace + "." + "devpod",
+		host:       params.Workspace + config.SSHHostSuffix,
 		user:       params.User,
 		context:    params.Context,
 		workspace:  params.Workspace,
@@ -328,7 +329,7 @@ func RemoveFromConfig(
 		targetPath = sshConfigIncludePath
 	}
 
-	newFile, err := removeFromConfig(targetPath, workspaceID+"."+"devpod")
+	newFile, err := removeFromConfig(targetPath, workspaceID+config.SSHHostSuffix)
 	if err != nil {
 		return fmt.Errorf("parse ssh config: %w", err)
 	}

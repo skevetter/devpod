@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/skevetter/devpod/pkg/config"
 	devpodhttp "github.com/skevetter/devpod/pkg/http"
 	"github.com/skevetter/log"
 )
@@ -64,7 +65,7 @@ func (c *BinaryCache) Set(arch string, data io.Reader) error {
 }
 
 func (c *BinaryCache) pathFor(arch string) string {
-	return filepath.Join(c.BaseDir, "devpod-"+osLinux+"-"+arch)
+	return filepath.Join(c.BaseDir, config.BinaryName+"-"+osLinux+"-"+arch)
 }
 
 func (c *BinaryCache) atomicWrite(path string, data io.Reader) error {
@@ -167,7 +168,7 @@ func (s *HTTPDownloadSource) SourceName() string {
 }
 
 func (s *HTTPDownloadSource) buildDownloadURL(arch string) (string, error) {
-	binaryName := "devpod-" + osLinux + "-" + arch
+	binaryName := config.BinaryName + "-" + osLinux + "-" + arch
 	downloadURL, err := url.JoinPath(s.BaseURL, binaryName)
 	if err != nil {
 		return "", fmt.Errorf("failed to construct download URL: %w", err)

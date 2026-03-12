@@ -24,7 +24,7 @@ func Open(
 		workspaceFolder = fmt.Sprintf("/%s", workspaceFolder)
 	}
 
-	sshHost := fmt.Sprintf("%s.devpod%s", workspaceID, workspaceFolder)
+	sshHost := workspaceID + config.SSHHostSuffix + workspaceFolder
 	openURL := fmt.Sprintf("zed://ssh/%s", sshHost)
 	err := open.Run(openURL)
 	if err != nil {
