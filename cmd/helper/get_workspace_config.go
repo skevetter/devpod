@@ -74,7 +74,7 @@ func (cmd *GetWorkspaceConfigCommand) Run(
 		level = logrus.DebugLevel
 	}
 	var logger log.Logger = log.NewStdoutLogger(os.Stdin, os.Stdout, os.Stderr, level)
-	if os.Getenv("DEVPOD_UI") == "true" {
+	if os.Getenv(config.UIEnvVar) == "true" {
 		logger = log.Discard
 	}
 	logger.Debugf("Resolving devcontainer config for source: %s", rawSource)
@@ -85,7 +85,7 @@ func (cmd *GetWorkspaceConfigCommand) Run(
 	done := make(chan *devcontainer.GetWorkspaceConfigResult, 1)
 	errChan := make(chan error, 1)
 
-	tmpDir, err := os.MkdirTemp("", "devpod")
+	tmpDir, err := os.MkdirTemp("", config.BinaryName)
 	if err != nil {
 		return err
 	}

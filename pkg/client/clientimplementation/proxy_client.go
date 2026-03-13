@@ -28,7 +28,7 @@ import (
 )
 
 var (
-	DevPodDebug = "DEVPOD_DEBUG"
+	DevPodDebug = config.DebugEnvVar
 
 	DevPodPlatformOptions = "DEVPOD_PLATFORM_OPTIONS"
 

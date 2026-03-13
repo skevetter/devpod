@@ -32,7 +32,7 @@ var globalFlags *flags.GlobalFlags
 // NewRootCmd returns a new root command.
 func NewRootCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:           "devpod",
+		Use:           config.BinaryName,
 		Short:         "DevPod",
 		SilenceUsage:  true,
 		SilenceErrors: true,
@@ -105,7 +105,7 @@ func Execute() {
 				rootCmd.Annotations[agent.AgentExecutedAnnotation] != "true" {
 				if terminal.IsTerminalIn {
 					log2.Default.Error("Try using the --debug flag to see a more verbose output")
-				} else if os.Getenv(telemetry.UIEnvVar) == "true" {
+				} else if os.Getenv(config.UIEnvVar) == "true" {
 					log2.Default.Error(
 						"Try enabling Debug mode under Settings to see a more verbose output",
 					)

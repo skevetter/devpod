@@ -25,6 +25,7 @@ import (
 	"github.com/skevetter/devpod/pkg/dockercredentials"
 	"github.com/skevetter/devpod/pkg/dockerinstall"
 	"github.com/skevetter/devpod/pkg/extract"
+	"github.com/skevetter/devpod/pkg/gitcredentials"
 	"github.com/skevetter/devpod/pkg/provider"
 	"github.com/skevetter/devpod/pkg/util"
 	"github.com/skevetter/log"
@@ -683,7 +684,7 @@ func configureCredentials(cfg credentialsConfig) (string, string, error) {
 			binaryPath,
 			serverPort,
 		)
-		_ = os.Setenv("DEVPOD_GIT_HELPER_PORT", strconv.Itoa(serverPort))
+		_ = os.Setenv(gitcredentials.EnvGitHelperPort, strconv.Itoa(serverPort))
 	}
 
 	return dockerCredentials, gitCredentials, nil

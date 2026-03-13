@@ -7,11 +7,10 @@ import (
 	"strings"
 
 	"github.com/creativeprojects/go-selfupdate"
+	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/version"
 	"github.com/skevetter/log"
 )
-
-const defaultRepository = "skevetter/devpod"
 
 // Upgrade downloads the latest release from github and replaces devpod if a new version is found.
 // If dryRun is true, it only shows what would be downloaded without actually upgrading.
@@ -72,7 +71,7 @@ func detectRelease(
 		return nil, nil, fmt.Errorf("initialize updater: %w", err)
 	}
 
-	repo := selfupdate.ParseSlug(defaultRepository)
+	repo := selfupdate.ParseSlug(config.RepoSlug)
 
 	if targetVersion != "" {
 		release, err := detectSpecificVersion(ctx, updater, repo, targetVersion)

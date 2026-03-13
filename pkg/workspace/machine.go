@@ -259,7 +259,7 @@ func createMachine(context, machineID, providerName string) (*providerpkg.Machin
 }
 
 func SingleMachineName(devPodConfig *config.Config, provider string, log log.Logger) string {
-	legacyMachineName := "devpod-shared-" + provider
+	legacyMachineName := config.BinaryName + "-shared-" + provider
 	machines, err := listMachines(devPodConfig, log)
 	if err == nil {
 		for _, machine := range machines {
@@ -270,7 +270,7 @@ func SingleMachineName(devPodConfig *config.Config, provider string, log log.Log
 	}
 
 	return encoding.SafeConcatNameMax(
-		[]string{"devpod-shared", provider, encoding.GetMachineUIDShort(log)},
+		[]string{config.BinaryName + "-shared", provider, encoding.GetMachineUIDShort(log)},
 		encoding.MachineUIDLength,
 	)
 }
