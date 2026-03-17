@@ -1,6 +1,7 @@
 package compose
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -67,7 +68,7 @@ func NewComposeHelper(dockerHelper *docker.DockerHelper) (*ComposeHelper, error)
 		return helper, nil
 	}
 
-	if helper, err := tryDockerComposeV1(); err == nil {
+	if helper, err := tryDockerComposeV1(dockerHelper.Log); err == nil {
 		helper.Docker = dockerHelper
 		return helper, nil
 	}
@@ -87,9 +88,17 @@ func tryDockerComposeV2(dockerCmd string, log log.Logger) (*ComposeHelper, error
 		return nil, fmt.Errorf("docker compose not available")
 	}
 
-	out, err := exec.Command(dockerCmd, "compose", "version", "--short").CombinedOutput()
+	cmd := exec.Command(dockerCmd, "compose", "version", "--short")
+	out, stderr, err := runCmdCapture(cmd)
+	if len(stderr) > 0 {
+		log.Warnf("%s: %s", strings.TrimSpace(string(stderr)), strings.TrimSpace(string(out)))
+	}
 	if err != nil {
-		return nil, fmt.Errorf("failed to get docker compose version %s: %w", string(out), err)
+		return nil, fmt.Errorf(
+			"failed to get docker compose version %s: %w",
+			strings.TrimSpace(string(stderr)),
+			err,
+		)
 	}
 
 	helper := &ComposeHelper{
@@ -98,23 +107,34 @@ func tryDockerComposeV2(dockerCmd string, log log.Logger) (*ComposeHelper, error
 		Args:    []string{"compose"},
 	}
 
-	out, err = exec.Command(dockerCmd, "buildx", "version").CombinedOutput()
-	if err != nil {
+	bxOut, bxErrOut, bxErr := runCmdCapture(exec.Command(dockerCmd, "buildx", "version"))
+	if len(bxErrOut) > 0 {
+		log.Warnf("docker buildx printed to stderr: %s", strings.TrimSpace(string(bxErrOut)))
+	}
+	if bxErr != nil {
 		// Gracefully handle missing buildx as users might only use compose for running existing images
-		log.Errorf("docker buildx not available %s: %w", string(out), err)
+		log.Errorf("docker buildx not available: %v (%s)", bxErr, strings.TrimSpace(string(bxOut)))
 	}
 
 	return helper, nil
 }
 
-func tryDockerComposeV1() (*ComposeHelper, error) {
+func tryDockerComposeV1(log log.Logger) (*ComposeHelper, error) {
 	if _, err := exec.LookPath("docker-compose"); err != nil {
 		return nil, fmt.Errorf("docker-compose not found in PATH")
 	}
 
-	out, err := exec.Command("docker-compose", "version", "--short").CombinedOutput()
+	cmd := exec.Command("docker-compose", "version", "--short")
+	out, stderr, err := runCmdCapture(cmd)
+	if len(stderr) > 0 {
+		log.Warnf("%s: %s", strings.TrimSpace(string(stderr)), strings.TrimSpace(string(out)))
+	}
 	if err != nil {
-		return nil, fmt.Errorf("failed to get docker-compose version %s: %w", string(out), err)
+		return nil, fmt.Errorf(
+			"failed to get docker-compose version %s: %w",
+			strings.TrimSpace(string(stderr)),
+			err,
+		)
 	}
 
 	return &ComposeHelper{
@@ -182,9 +202,16 @@ func (h *ComposeHelper) Stop(ctx context.Context, projectName string, args []str
 	buildArgs = append(buildArgs, args...)
 	buildArgs = append(buildArgs, "stop")
 
-	out, err := h.buildCmd(ctx, buildArgs...).CombinedOutput()
+	out, stderr, err := runCmdCapture(h.buildCmd(ctx, buildArgs...))
+	if len(stderr) > 0 && h != nil && h.Docker != nil && h.Docker.Log != nil {
+		h.Docker.Log.Warnf(
+			"%s: %s",
+			strings.TrimSpace(string(stderr)),
+			strings.TrimSpace(string(out)),
+		)
+	}
 	if err != nil {
-		return fmt.Errorf("%s: %w", string(out), err)
+		return fmt.Errorf("%s: %w", strings.TrimSpace(string(stderr)), err)
 	}
 
 	return nil
@@ -195,9 +222,16 @@ func (h *ComposeHelper) Remove(ctx context.Context, projectName string, args []s
 	buildArgs = append(buildArgs, args...)
 	buildArgs = append(buildArgs, "down")
 
-	out, err := h.buildCmd(ctx, buildArgs...).CombinedOutput()
+	out, stderr, err := runCmdCapture(h.buildCmd(ctx, buildArgs...))
+	if len(stderr) > 0 && h != nil && h.Docker != nil && h.Docker.Log != nil {
+		h.Docker.Log.Warnf(
+			"%s: %s",
+			strings.TrimSpace(string(stderr)),
+			strings.TrimSpace(string(out)),
+		)
+	}
 	if err != nil {
-		return fmt.Errorf("%s: %w", string(out), err)
+		return fmt.Errorf("%s: %w", strings.TrimSpace(string(stderr)), err)
 	}
 
 	return nil
@@ -228,9 +262,16 @@ func (h *ComposeHelper) FindProjectFiles(
 	buildArgs := []string{"--project-name", projectName}
 	buildArgs = append(buildArgs, "ls", "-a", "--filter", "name="+projectName, "--format", "json")
 
-	rawOut, err := h.buildCmd(ctx, buildArgs...).CombinedOutput()
+	rawOut, stderr, err := runCmdCapture(h.buildCmd(ctx, buildArgs...))
+	if len(stderr) > 0 && h != nil && h.Docker != nil && h.Docker.Log != nil {
+		h.Docker.Log.Warnf(
+			"%s: %s",
+			strings.TrimSpace(string(stderr)),
+			strings.TrimSpace(string(rawOut)),
+		)
+	}
 	if err != nil {
-		return nil, fmt.Errorf("%s: %w", string(rawOut), err)
+		return nil, fmt.Errorf("%s: %w", strings.TrimSpace(string(stderr)), err)
 	}
 
 	type composeOutput struct {
@@ -277,13 +318,21 @@ func (h *ComposeHelper) buildCmd(ctx context.Context, args ...string) *exec.Cmd 
 	return exec.CommandContext(ctx, h.Command, allArgs...)
 }
 
+// runCmdCapture runs the provided command, capturing stdout and stderr separately.
+func runCmdCapture(cmd *exec.Cmd) ([]byte, []byte, error) {
+	var stderrBuf bytes.Buffer
+	cmd.Stderr = &stderrBuf
+	out, err := cmd.Output()
+	return out, stderrBuf.Bytes(), err
+}
+
 // parseVersion extracts and parses the semver portion from version strings.
 // Handles non-standard formats like Ubuntu packages (2.37.1+ds1-0ubuntu2~24.04.1)
 // and desktop versions (2.40.3-desktop.1) by extracting only major.minor.patch.
 func parseVersion(version string) (semver.Version, error) {
 	version = strings.TrimPrefix(version, "v")
-	re := regexp.MustCompile(`^(\d+\.\d+\.\d+)`)
-	matches := re.FindStringSubmatch(version)
+	re := regexp.MustCompile(`(\d+\.\d+\.\d+)`)
+	matches := re.FindStringSubmatch(strings.TrimSpace(version))
 	if len(matches) < 2 {
 		return semver.Version{}, fmt.Errorf("invalid version format: %s", version)
 	}
