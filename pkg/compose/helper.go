@@ -113,7 +113,8 @@ func tryDockerComposeV2(dockerCmd string, log log.Logger) (*ComposeHelper, error
 	}
 	if bxErr != nil {
 		// Gracefully handle missing buildx as users might only use compose for running existing images
-		log.Errorf("docker buildx not available: %v (%s)", bxErr, strings.TrimSpace(string(bxOut)))
+		log.Errorf("docker buildx not available: %v (%s %s)",
+			bxErr, strings.TrimSpace(string(bxOut)), strings.TrimSpace(string(bxErrOut)))
 	}
 
 	return helper, nil
