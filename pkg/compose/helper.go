@@ -203,7 +203,7 @@ func (h *ComposeHelper) Stop(ctx context.Context, projectName string, args []str
 	buildArgs = append(buildArgs, "stop")
 
 	out, stderr, err := runCmdCapture(h.buildCmd(ctx, buildArgs...))
-	if len(stderr) > 0 && h != nil && h.Docker != nil && h.Docker.Log != nil {
+	if len(stderr) > 0 && h.Docker != nil && h.Docker.Log != nil {
 		h.Docker.Log.Warnf(
 			"%s: %s",
 			strings.TrimSpace(string(stderr)),
@@ -223,7 +223,7 @@ func (h *ComposeHelper) Remove(ctx context.Context, projectName string, args []s
 	buildArgs = append(buildArgs, "down")
 
 	out, stderr, err := runCmdCapture(h.buildCmd(ctx, buildArgs...))
-	if len(stderr) > 0 && h != nil && h.Docker != nil && h.Docker.Log != nil {
+	if len(stderr) > 0 && h.Docker != nil && h.Docker.Log != nil {
 		h.Docker.Log.Warnf(
 			"%s: %s",
 			strings.TrimSpace(string(stderr)),
@@ -263,7 +263,7 @@ func (h *ComposeHelper) FindProjectFiles(
 	buildArgs = append(buildArgs, "ls", "-a", "--filter", "name="+projectName, "--format", "json")
 
 	rawOut, stderr, err := runCmdCapture(h.buildCmd(ctx, buildArgs...))
-	if len(stderr) > 0 && h != nil && h.Docker != nil && h.Docker.Log != nil {
+	if len(stderr) > 0 && h.Docker != nil && h.Docker.Log != nil {
 		h.Docker.Log.Warnf(
 			"%s: %s",
 			strings.TrimSpace(string(stderr)),
