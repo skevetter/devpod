@@ -16,6 +16,7 @@ import (
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/sirupsen/logrus"
+	pkgconfig "github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	"github.com/skevetter/devpod/pkg/extract"
 	devpodhttp "github.com/skevetter/devpod/pkg/http"
@@ -383,5 +384,5 @@ func tryDownload(url, destFile string, httpHeaders map[string]string) error {
 
 func getFeaturesTempFolder(id string) string {
 	hashedID := hash.String(id)[:10]
-	return filepath.Join(os.TempDir(), "devpod", "features", hashedID)
+	return filepath.Join(os.TempDir(), pkgconfig.BinaryName, "features", hashedID)
 }

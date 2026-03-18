@@ -12,6 +12,7 @@ import (
 	"runtime"
 
 	"github.com/sirupsen/logrus"
+	"github.com/skevetter/devpod/pkg/agent"
 	"github.com/skevetter/devpod/pkg/command"
 	config2 "github.com/skevetter/devpod/pkg/config"
 	copy2 "github.com/skevetter/devpod/pkg/copy"
@@ -93,7 +94,7 @@ func (o *GenericJetBrainsServer) OpenGateway(workspaceFolder, workspaceID string
 			o.getDirectory(path.Join("/", "home", o.userName)),
 		) + `&projectPath=` + url.QueryEscape(
 			workspaceFolder,
-		) + `&host=` + workspaceID + `.devpod&port=22&user=` + url.QueryEscape(
+		) + `&host=` + workspaceID + config2.SSHHostSuffix + `&port=22&user=` + url.QueryEscape(
 			o.userName,
 		) + `&type=ssh&deploy=false`,
 	)
@@ -113,7 +114,7 @@ func (o *GenericJetBrainsServer) GetVolume() string {
 }
 
 func (o *GenericJetBrainsServer) getDownloadFolder() string {
-	return fmt.Sprintf("/var/devpod/%s", o.options.ID)
+	return filepath.Join(agent.ContainerDataDir, o.options.ID)
 }
 
 func (o *GenericJetBrainsServer) Install(setupInfo *config.Result) error {

@@ -16,6 +16,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/command"
 	"github.com/skevetter/devpod/pkg/compress"
+	"github.com/skevetter/devpod/pkg/config"
 	provider2 "github.com/skevetter/devpod/pkg/provider"
 	"github.com/skevetter/devpod/pkg/version"
 	"github.com/skevetter/log"
@@ -23,13 +24,16 @@ import (
 
 const DefaultInactivityTimeout = time.Minute * 20
 
-const ContainerDevPodHelperLocation = "/usr/local/bin/devpod"
+// ContainerDataDir is the base directory for DevPod data inside containers.
+const ContainerDataDir = "/var/" + config.BinaryName
 
-const RemoteDevPodHelperLocation = "/tmp/devpod"
+const ContainerDevPodHelperLocation = "/usr/local/bin/" + config.BinaryName
 
-const ContainerActivityFile = "/tmp/devpod.activity"
+const RemoteDevPodHelperLocation = "/tmp/" + config.BinaryName
 
-const defaultAgentDownloadURL = "https://github.com/skevetter/devpod/releases/download/"
+const ContainerActivityFile = "/tmp/" + config.BinaryName + ".activity"
+
+var defaultAgentDownloadURL = config.GitHubReleasesURL + "/download/"
 
 const EnvDevPodAgentURL = "DEVPOD_AGENT_URL"
 
@@ -44,7 +48,7 @@ func DefaultAgentDownloadURL() string {
 	}
 
 	if version.GetVersion() == version.DevVersion {
-		return "https://github.com/skevetter/devpod/releases/latest/download"
+		return config.GitHubReleasesURL + "/latest/download"
 	}
 
 	return defaultAgentDownloadURL + version.GetVersion()

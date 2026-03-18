@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/log"
 	"tailscale.com/client/local"
 	"tailscale.com/ipn"
@@ -22,11 +23,11 @@ func GetClientHostname(userName string) (string, error) {
 		return "", err
 	}
 	osHostname = strings.ToLower(strings.ReplaceAll(osHostname, ".", "-"))
-	return fmt.Sprintf("devpod.%s.%s.client", osHostname, userName), nil
+	return fmt.Sprintf(config.BinaryName+".%s.%s.client", osHostname, userName), nil
 }
 
 func GetWorkspaceHostname(name, namespace string) string {
-	return fmt.Sprintf("devpod.%s.%s.workspace", name, namespace)
+	return fmt.Sprintf(config.BinaryName+".%s.%s.workspace", name, namespace)
 }
 
 func ParseWorkspaceHostname(hostname string) (name string, project string, err error) {

@@ -28,7 +28,7 @@ const (
 	yamlExt        = ".yaml"
 	ymlExt         = ".yml"
 	dsStorePrefix  = ".DS_Store"
-	providerPrefix = "skevetter/devpod-provider-"
+	providerPrefix = config.ProviderPrefix
 )
 
 var ErrNoWorkspaceFound = errors.New("no workspace found")
