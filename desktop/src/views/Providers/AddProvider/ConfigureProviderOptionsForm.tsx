@@ -1,4 +1,9 @@
-import { BottomActionBar, BottomActionBarError, CollapsibleSection } from "@/components"
+import {
+  BottomActionBar,
+  BottomActionBarError,
+  CollapsibleSection,
+  ErrorMessageBox,
+} from "@/components"
 import { CheckIcon } from "@chakra-ui/icons"
 import {
   Box,
@@ -261,7 +266,15 @@ function ConfigureOptionsForm({
     [provider?.config]
   )
 
-  if (!exists(provider) || !allOptions) {
+  if (!exists(provider)) {
+    return <Spinner style={{ margin: "0 auto 3rem auto" }} />
+  }
+
+  if (!allOptions) {
+    if (error) {
+      return <ErrorMessageBox error={error} />
+    }
+
     return <Spinner style={{ margin: "0 auto 3rem auto" }} />
   }
 
