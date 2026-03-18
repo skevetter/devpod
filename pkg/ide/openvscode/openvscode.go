@@ -47,7 +47,7 @@ var Options = ide.Options{
 	},
 	BindAddressOption: {
 		Name:        BindAddressOption,
-		Description: "The address to bind VSCode web to locally. E.g. 0.0.0.0:12345",
+		Description: "The address to bind VSCode web to locally, e.g. 0.0.0.0:12345",
 		Default:     "",
 	},
 	VersionOption: {

@@ -26,7 +26,7 @@ func NewUpdateCmd(flags *flags.GlobalFlags) *cobra.Command {
 		GlobalFlags: flags,
 	}
 	updateCmd := &cobra.Command{
-		Use:   "update [name] [URL or path]",
+		Use:   "update [name] [name, GitHub link, URL or path]",
 		Short: "Updates a provider in DevPod",
 		RunE: func(cobraCmd *cobra.Command, args []string) error {
 			ctx := cobraCmd.Context()
@@ -48,8 +48,8 @@ func NewUpdateCmd(flags *flags.GlobalFlags) *cobra.Command {
 
 func (cmd *UpdateCmd) Run(ctx context.Context, devPodConfig *config.Config, args []string) error {
 	if len(args) != 1 && len(args) != 2 {
-		return fmt.Errorf("please specify either a local file, URL or Git repository. " +
-			"E.g. devpod provider update my-provider skevetter/devpod-provider-gcloud")
+		return fmt.Errorf("please specify either a local file, URL or Git repository, " +
+			"e.g. devpod provider update my-provider skevetter/devpod-provider-gcloud")
 	}
 
 	providerSource := ""

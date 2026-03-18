@@ -35,9 +35,9 @@ options:
     default: 10Gi
     global: true
   KUBERNETES_CONTEXT:
-    description: The kubernetes context to use. E.g. my-kube-context
+    description: The kubernetes context to use, e.g. my-kube-context
   KUBERNETES_CONFIG:
-    description: The kubernetes config to use. E.g. /path/to/my/kube/config.yaml
+    description: The kubernetes config to use, e.g. /path/to/my/kube/config.yaml
   KUBERNETES_PULL_SECRETS_ENABLED:
     description: If true, DevPod will create Kubernetes pull secrets from your injected Docker credentials for private registries. This setting requires the global Docker credentials forwarding setting (SSH_INJECT_DOCKER_CREDENTIALS) to be enabled. If Docker credential injection is disabled, pull secrets cannot be created regardless of this setting.
     default: "true"
@@ -66,23 +66,23 @@ options:
     description: If defined, DevPod will use the given storage class to create the persistent volume claim. You will need to ensure the storage class exists in your cluster!
     global: true
   PVC_ACCESS_MODE:
-    description: If defined, DevPod will use the given access mode to create the persistent volume claim. You will need to ensure the storage class support the given access mode!. E.g. RWO or ROX or RWX or RWOP
+    description: If defined, DevPod will use the given access mode to create the persistent volume claim. You will need to ensure the storage class support the given access mode, e.g. RWO or ROX or RWX or RWOP
     global: true
   PVC_ANNOTATIONS:
     description: If defined, DevPod will use add the given annotations to the main workspace pvc
     global: true
   NODE_SELECTOR:
-    description: The node selector to use for the workspace pod. E.g. my-label=value,my-label-2=value-2
+    description: The node selector to use for the workspace pod, e.g. my-label=value,my-label-2=value-2
     global: true
   RESOURCES:
-    description: The resources to use for the workspace container. E.g. requests.cpu=500m,limits.memory=5Gi,limits.gpu-vendor.example/example-gpu=1
+    description: The resources to use for the workspace container, e.g. requests.cpu=500m,limits.memory=5Gi,limits.gpu-vendor.example/example-gpu=1
     global: true
   POD_MANIFEST_TEMPLATE:
-    description: Pod manifest template file path used as template to build the devpod pod. E.g. /path/pod_manifest.yaml. Alternatively can be an inline yaml string.
+    description: Pod manifest template file path used as template to build the devpod pod, e.g. /path/pod_manifest.yaml. Alternatively can be an inline yaml string.
     global: true
     type: multiline
   LABELS:
-    description: The labels to use for the workspace pod. E.g. devpod.sh/example=value,devpod.sh/example2=value2
+    description: The labels to use for the workspace pod, e.g. devpod.sh/example=value,devpod.sh/example2=value2
     global: true
   DOCKERLESS_IMAGE:
     description: The dockerless image to use.
@@ -99,7 +99,7 @@ options:
     description: Sets the path of the workspace volume mount. By default it is the root of your workspace source code, usually /workspaces/$WORKSPACE_ID. If you intend to create multi-repo workspaces or need additional files throughout the lifecycle of the workspace, set this option to a parent directory of the workspace mount.
     type: string
   ARCHITECTURE:
-    description: The cpu architecture to use for the workspace pod. E.g. amd64, arm64, etc.
+    description: The cpu architecture to use for the workspace pod, e.g. amd64, arm64, etc.
     type: string
 agent:
   containerInactivityTimeout: ${INACTIVITY_TIMEOUT}

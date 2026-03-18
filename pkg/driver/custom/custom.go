@@ -360,6 +360,7 @@ func ToEnvironWithBinaries(
 		workspace.Machine,
 		workspace.Options,
 		nil,
+		"",
 	)
 	for k, v := range agentBinaries {
 		environ = append(environ, k+"="+v)

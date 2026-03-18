@@ -69,8 +69,8 @@ func validate(config *ProviderConfig) error {
 	for optionName, optionValue := range config.Options {
 		if optionNameRegEx.MatchString(optionName) {
 			return fmt.Errorf(
-				"provider option '%s' can only consist of upper case letters, numbers or underscores. "+
-					"E.g. MY_OPTION, MY_OTHER_OPTION",
+				"provider option '%s' can only consist of upper case letters, numbers or underscores, "+
+					"e.g. MY_OPTION, MY_OTHER_OPTION",
 				optionName,
 			)
 		}
@@ -318,7 +318,7 @@ func validateBinaries(prefix string, binaries map[string][]*ProviderBinary) erro
 	for binaryName, binaryArr := range binaries {
 		if optionNameRegEx.MatchString(binaryName) {
 			return fmt.Errorf(
-				"binary name '%s' can only consist of upper case letters, numbers or underscores. E.g. MY_BINARY, KUBECTL",
+				"binary name '%s' can only consist of upper case letters, numbers or underscores, e.g. MY_BINARY, KUBECTL",
 				binaryName,
 			)
 		}
