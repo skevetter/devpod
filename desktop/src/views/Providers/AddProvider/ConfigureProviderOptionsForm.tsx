@@ -1,4 +1,9 @@
-import { BottomActionBar, BottomActionBarError, CollapsibleSection, ErrorMessageBox } from "@/components"
+import {
+  BottomActionBar,
+  BottomActionBarError,
+  CollapsibleSection,
+  ErrorMessageBox,
+} from "@/components"
 import { CheckIcon } from "@chakra-ui/icons"
 import {
   Box,
