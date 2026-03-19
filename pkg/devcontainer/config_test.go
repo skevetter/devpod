@@ -216,7 +216,7 @@ func (s *SubstituteTestSuite) TestSubstitute_AdditionalFeaturesOverridesExisting
 	s.NoError(err)
 	s.Len(result.Config.Features, 1)
 	nodeOpts, ok := result.Config.Features["ghcr.io/devcontainers/features/node:1"].(map[string]any)
-	s.True(ok)
+	s.Require().True(ok, "expected feature options to be map[string]any")
 	s.Equal("22", nodeOpts["version"])
 }
 
