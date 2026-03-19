@@ -137,6 +137,9 @@ func NewBuildCmd(flags *flags.GlobalFlags) *cobra.Command {
 	buildCmd.Flags().
 		StringVar(&cmd.DevContainerPath, "devcontainer-path", "", "The path to the devcontainer.json relative to the project")
 	buildCmd.Flags().
+		StringVar(&cmd.AdditionalFeatures, "additional-features", "",
+			`Additional features to apply to the dev container (JSON as per "features" section in devcontainer.json)`)
+	buildCmd.Flags().
 		StringSliceVar(&cmd.ProviderOptions, "provider-option", []string{}, "Provider option in the form KEY=VALUE")
 	buildCmd.Flags().
 		BoolVar(&cmd.SkipDelete, "skip-delete", false, "If true will not delete the workspace after building it")
