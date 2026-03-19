@@ -25,14 +25,6 @@ export function useDownloadLogs() {
       }
 
       await client.copyFile(actionLogFile, targetFile)
-
-      // Due to permissions restrictions with tauri-apps/plugin-opener, the
-      // saved log file cannot be opened since it can be saved to any
-      // user-specified location.
-      // This can be re-enabled if the code is re-implemented to save logs in a
-      // fixed location, like $APPDATA
-
-      // client.open(targetFile)
     },
     onError(error) {
       toast({
@@ -40,6 +32,14 @@ export function useDownloadLogs() {
         status: "error",
         isClosable: true,
         duration: 30_000, // 30 sec
+      })
+    },
+    onSuccess() {
+      toast({
+        title: "Logs saved successfully",
+        status: "success",
+        isClosable: true,
+        duration: 5_000,
       })
     },
   })

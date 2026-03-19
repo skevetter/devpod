@@ -69,14 +69,6 @@ export function useStoreTroubleshoot() {
       const out = await zip.generateAsync({ type: "uint8array" })
 
       await client.writeFile([targetFolder, "devpod_troubleshoot.zip"], out)
-
-      // Due to permissions restrictions with tauri-apps/plugin-opener, the
-      // saved troubleshoot file's target folder cannot be openedsince it can be
-      // any user-specified location.
-      // This can be re-enabled if the code is re-implemented to save the
-      // troubleshoot file to a fixed location, like $APPDATA
-
-      // client.open(targetFolder)
     },
     onError(error) {
       toast({
@@ -84,6 +76,14 @@ export function useStoreTroubleshoot() {
         status: "error",
         isClosable: true,
         duration: 30_000, // 30 sec
+      })
+    },
+    onSuccess() {
+      toast({
+        title: "Troubleshooting data saved successfully",
+        status: "success",
+        isClosable: true,
+        duration: 5_000,
       })
     },
   })
