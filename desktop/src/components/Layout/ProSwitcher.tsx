@@ -49,7 +49,7 @@ export function ProSwitcher() {
 
   const backgroundColor = useColorModeValue("white", "gray.900")
   const handleAnnouncementClicked = () => {
-    client.open("https://devpod.sh/pro")
+    client.openUrl("https://devpod.sh/pro")
   }
   const { experimental_devPodPro } = useSettings()
   const isProUnauthenticated = proInstances?.some(({ authenticated }) => !authenticated)
@@ -248,7 +248,7 @@ function EmptyProInstances({ onConnect }: TEmptyProInstancesProps) {
       <Text lineHeight={"1.2rem"} fontSize="sm" color="gray.500">
         You don&apos;t have any Pro instances set up. Connect to an existing Instance or create a
         new one. <br />
-        <Link color="primary.600" onClick={() => client.open("https://devpod.sh/pro")}>
+        <Link color="primary.600" onClick={() => client.openUrl("https://devpod.sh/pro")}>
           Learn more
         </Link>
       </Text>

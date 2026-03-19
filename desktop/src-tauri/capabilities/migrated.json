@@ -9,8 +9,20 @@
     "core:default",
     "process:allow-exit",
     "process:allow-restart",
+    "opener:allow-default-urls",
+    {
+      "identifier": "opener:allow-open-path",
+      "allow": [
+        {
+          "path": "$APPDATA"
+        },
+        {
+          "path": "$APPLOG/*"
+        }
+      ]
+    },
+    "opener:allow-open-url",
     "os:default",
-    "shell:allow-open",
     "shell:allow-kill",
     "shell:allow-spawn",
     {

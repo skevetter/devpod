@@ -8,7 +8,7 @@ import JSZip from "jszip"
 
 export function useStoreTroubleshoot() {
   const toast = useToast()
-  const { mutate, isLoading: isStoring } = useMutation({
+  const { mutate, isPending: isStoring } = useMutation({
     mutationFn: async ({
       workspace,
       workspaceActions,
@@ -24,7 +24,7 @@ export function useStoreTroubleshoot() {
 
       // user cancelled "save file" dialog
       if (targetFolder === null) {
-        return
+        return false
       }
 
       const unwrappedLogFiles: [src: [string], targetFolder: string][] = logFiles
@@ -70,7 +70,7 @@ export function useStoreTroubleshoot() {
 
       await client.writeFile([targetFolder, "devpod_troubleshoot.zip"], out)
 
-      client.open(targetFolder)
+      return true
     },
     onError(error) {
       toast({
@@ -79,6 +79,16 @@ export function useStoreTroubleshoot() {
         isClosable: true,
         duration: 30_000, // 30 sec
       })
+    },
+    onSuccess(fileWasSaved) {
+      if (fileWasSaved) {
+        toast({
+          title: "Troubleshooting data saved successfully",
+          status: "success",
+          isClosable: true,
+          duration: 5_000,
+        })
+      }
     },
   })
 

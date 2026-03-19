@@ -98,7 +98,7 @@ export function useWelcomeModal() {
                     cloud. It&apos;s also possible to extend DevPod and write your own custom
                     providers. <br />
                     For more information, head over to our{" "}
-                    <Link onClick={() => client.open("https://devpod.sh/docs")}>
+                    <Link onClick={() => client.openUrl("https://devpod.sh/docs")}>
                       documentation.
                     </Link>
                   </Text>
@@ -118,7 +118,9 @@ export function useWelcomeModal() {
                     DevPod ships with a powerful CLI that allows you to create, manage and connect
                     to your workspaces and providers. You can either{" "}
                     <Link
-                      onClick={() => client.open("https://github.com/skevetter/devpod/releases")}>
+                      onClick={() =>
+                        client.openUrl("https://github.com/skevetter/devpod/releases")
+                      }>
                       download the standalone binary
                     </Link>{" "}
                     or directly add it to your <Code>$PATH</Code>.

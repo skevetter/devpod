@@ -33,6 +33,7 @@ import { Controller, ControllerRenderProps } from "react-hook-form"
 import { useNavigate } from "react-router"
 import { Link as RouterLink } from "react-router-dom"
 import { useBorderColor } from "@/Theme"
+import { client } from "@/client/client"
 import { RECOMMENDED_PROVIDER_SOURCES, SIDEBAR_WIDTH } from "@/constants"
 import { useProvider, useProviders, useWorkspace, useWorkspaces } from "@/contexts"
 import { Plus } from "@/icons"
@@ -204,8 +205,9 @@ export function CreateWorkspace() {
                   create a workspace from can be a source as long as it adheres to the{" "}
                   <Link
                     fontWeight="bold"
-                    target="_blank"
-                    href="https://containers.dev/implementors/json_reference/">
+                    onClick={() =>
+                      client.openUrl("https://containers.dev/implementors/json_reference/")
+                    }>
                     Dev Container standard
                   </Link>
                   .

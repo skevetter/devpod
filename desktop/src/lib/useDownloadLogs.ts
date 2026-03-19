@@ -6,7 +6,7 @@ import * as dialog from "@tauri-apps/plugin-dialog"
 
 export function useDownloadLogs() {
   const toast = useToast()
-  const { mutate, isLoading: isDownloading } = useMutation({
+  const { mutate, isPending: isDownloading } = useMutation({
     mutationFn: async ({ actionID }: { actionID: TActionID }) => {
       const actionLogFile = (await client.workspaces.getActionLogFile(actionID)).unwrap()
 
@@ -21,11 +21,12 @@ export function useDownloadLogs() {
 
       // user cancelled "save file" dialog
       if (targetFile === null) {
-        return
+        return false
       }
 
       await client.copyFile(actionLogFile, targetFile)
-      client.open(targetFile)
+
+      return true
     },
     onError(error) {
       toast({
@@ -34,6 +35,16 @@ export function useDownloadLogs() {
         isClosable: true,
         duration: 30_000, // 30 sec
       })
+    },
+    onSuccess(fileWasSaved) {
+      if (fileWasSaved) {
+        toast({
+          title: "Logs saved successfully",
+          status: "success",
+          isClosable: true,
+          duration: 5_000,
+        })
+      }
     },
   })
 
