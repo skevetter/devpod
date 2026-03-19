@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"maps"
 	"os"
-	"slices"
 	"path"
 	"path/filepath"
+	"slices"
 
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	"github.com/skevetter/devpod/pkg/devcontainer/crane"
