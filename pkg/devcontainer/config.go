@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"maps"
 	"os"
+	"slices"
 	"path"
 	"path/filepath"
 
@@ -209,7 +210,7 @@ func (r *runner) substitute(
 		r.Log.Infof(
 			"Merged %d additional feature(s): %v",
 			len(additionalFeatures),
-			additionalFeatures,
+			slices.Collect(maps.Keys(additionalFeatures)),
 		)
 	}
 
