@@ -179,7 +179,7 @@ export function AddGitHTTPCredentials({ isDisabled, onCreate }: TCreateGitHTTPCr
               DevOps. If you&apos;re not sure if you need this, leave it empty. Read more in the{" "}
               <Link
                 onClick={() =>
-                  globalClient.open(
+                  globalClient.openUrl(
                     "https://git-scm.com/docs/gitcredentials#Documentation/gitcredentials.txt-useHttpPath"
                   )
                 }>
