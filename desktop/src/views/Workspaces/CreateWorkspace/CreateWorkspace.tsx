@@ -205,7 +205,6 @@ export function CreateWorkspace() {
                   create a workspace from can be a source as long as it adheres to the{" "}
                   <Link
                     fontWeight="bold"
-                    target="_blank"
                     onClick={() => client.openUrl("https://containers.dev/implementors/json_reference/")}>
                     Dev Container standard
                   </Link>
