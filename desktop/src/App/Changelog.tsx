@@ -32,7 +32,7 @@ export function Changelog({ rawMarkdown }: TChangeLogProps) {
               props: {
                 onClick: (e: TLinkClickEvent) => {
                   e.preventDefault()
-                  client.open(e.target.href)
+                  client.openUrl(e.target.href)
                 },
               },
             },

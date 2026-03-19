@@ -7,7 +7,7 @@ export function LoftOSSBadge() {
       display="flex"
       alignItems="center"
       justifyContent="start"
-      onClick={() => client.open("https://github.com/skevetter/devpod")}>
+      onClick={() => client.openUrl("https://github.com/skevetter/devpod")}>
       <Text fontSize="sm" variant="muted" marginRight="2">
         community maintained
       </Text>

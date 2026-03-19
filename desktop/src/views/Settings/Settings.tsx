@@ -392,7 +392,7 @@ function UpdateSettings() {
             {downloadLink && (
               <Text fontSize="sm" width="full">
                 Visit{" "}
-                <Link onClick={() => client.open(downloadLink)} fontSize="sm">
+                <Link onClick={() => client.openUrl(downloadLink)} fontSize="sm">
                   Github
                 </Link>{" "}
                 to download {selectedVersion}
