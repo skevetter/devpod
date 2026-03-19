@@ -1,6 +1,7 @@
 package devcontainer
 
 import (
+	"encoding/json"
 	"fmt"
 	"maps"
 	"os"
@@ -190,6 +191,26 @@ func (r *runner) substitute(
 		parsedConfig.Dockerfile = ""
 		parsedConfig.DockerfileContainer = config.DockerfileContainer{}
 		parsedConfig.ImageContainer = config.ImageContainer{Image: options.DevContainerImage}
+	}
+
+	// merge additional features from CLI flag
+	if options.AdditionalFeatures != "" {
+		additionalFeatures := make(map[string]any)
+		if err := json.Unmarshal(
+			[]byte(options.AdditionalFeatures),
+			&additionalFeatures,
+		); err != nil {
+			return nil, nil, fmt.Errorf("parse --additional-features JSON: %w", err)
+		}
+		if parsedConfig.Features == nil {
+			parsedConfig.Features = make(map[string]any)
+		}
+		maps.Copy(parsedConfig.Features, additionalFeatures)
+		r.Log.Infof(
+			"Merged %d additional feature(s): %v",
+			len(additionalFeatures),
+			additionalFeatures,
+		)
 	}
 
 	parsedConfig.Origin = configFile
