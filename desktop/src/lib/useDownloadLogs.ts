@@ -21,10 +21,12 @@ export function useDownloadLogs() {
 
       // user cancelled "save file" dialog
       if (targetFile === null) {
-        return
+        return false
       }
 
       await client.copyFile(actionLogFile, targetFile)
+
+      return true
     },
     onError(error) {
       toast({
@@ -34,13 +36,15 @@ export function useDownloadLogs() {
         duration: 30_000, // 30 sec
       })
     },
-    onSuccess() {
-      toast({
-        title: "Logs saved successfully",
-        status: "success",
-        isClosable: true,
-        duration: 5_000,
-      })
+    onSuccess(fileWasSaved) {
+      if (fileWasSaved) {
+        toast({
+          title: "Logs saved successfully",
+          status: "success",
+          isClosable: true,
+          duration: 5_000,
+        })
+      }
     },
   })
 
