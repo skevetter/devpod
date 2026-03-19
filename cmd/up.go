@@ -179,6 +179,9 @@ func (cmd *UpCmd) registerDevContainerFlags(upCmd *cobra.Command) {
 	upCmd.Flags().
 		StringVar(&cmd.FallbackImage, "fallback-image", "",
 			"The fallback image to use if no devcontainer configuration has been detected")
+	upCmd.Flags().
+		StringVar(&cmd.AdditionalFeatures, "additional-features", "",
+			`Additional features to apply to the dev container (JSON as per "features" section in devcontainer.json)`)
 }
 
 func (cmd *UpCmd) registerIDEFlags(upCmd *cobra.Command) {
