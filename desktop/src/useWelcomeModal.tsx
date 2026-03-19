@@ -118,7 +118,9 @@ export function useWelcomeModal() {
                     DevPod ships with a powerful CLI that allows you to create, manage and connect
                     to your workspaces and providers. You can either{" "}
                     <Link
-                      onClick={() => client.openUrl("https://github.com/skevetter/devpod/releases")}>
+                      onClick={() =>
+                        client.openUrl("https://github.com/skevetter/devpod/releases")
+                      }>
                       download the standalone binary
                     </Link>{" "}
                     or directly add it to your <Code>$PATH</Code>.
