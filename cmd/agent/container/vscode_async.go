@@ -38,7 +38,6 @@ func NewVSCodeAsyncCmd() *cobra.Command {
 
 // Run runs the command logic.
 func (cmd *VSCodeAsyncCmd) Run(_ *cobra.Command, _ []string) error {
-	log.Default.Debugf("Start setting up container...")
 	decompressed, err := compress.Decompress(cmd.SetupInfo)
 	if err != nil {
 		return err
@@ -50,7 +49,6 @@ func (cmd *VSCodeAsyncCmd) Run(_ *cobra.Command, _ []string) error {
 		return err
 	}
 
-	// install IDE
 	err = setupVSCodeExtensions(setupInfo, vscode.Flavor(cmd.Flavor), log.Default)
 	if err != nil {
 		return err
