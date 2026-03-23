@@ -267,15 +267,19 @@ function ConfigureOptionsForm({
   )
 
   if (!exists(provider)) {
-    return <Spinner style={{ margin: "0 auto 3rem auto" }} />
+    return error ? (
+      <ErrorMessageBox error={error} />
+    ) : (
+      <Spinner style={{ margin: "0 auto 3rem auto" }} />
+    )
   }
 
   if (!allOptions) {
-    if (error) {
-      return <ErrorMessageBox error={error} />
-    }
-
-    return <Spinner style={{ margin: "0 auto 3rem auto" }} />
+    return error ? (
+      <ErrorMessageBox error={error} />
+    ) : (
+      <Spinner style={{ margin: "0 auto 3rem auto" }} />
+    )
   }
 
   return (
