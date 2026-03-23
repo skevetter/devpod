@@ -266,15 +266,7 @@ function ConfigureOptionsForm({
     [provider?.config]
   )
 
-  if (!exists(provider)) {
-    return error ? (
-      <ErrorMessageBox error={error} />
-    ) : (
-      <Spinner style={{ margin: "0 auto 3rem auto" }} />
-    )
-  }
-
-  if (!allOptions) {
+  if (!exists(provider) || !allOptions) {
     return error ? (
       <ErrorMessageBox error={error} />
     ) : (
