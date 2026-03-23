@@ -43,7 +43,7 @@ var _ = ginkgo.Describe(
 			)
 		})
 
-		ginkgo.Context("with rootfull podman", func() {
+		ginkgo.Context("with rootful podman", func() {
 			var f *framework.Framework
 
 			ginkgo.BeforeEach(func(ctx context.Context) {

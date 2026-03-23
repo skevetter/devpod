@@ -33,7 +33,7 @@ func NewSSHServerCmd(flags *flags.GlobalFlags) *cobra.Command {
 	}
 	sshCmd := &cobra.Command{
 		Use:   "ssh-server",
-		Short: "Starts the container ssh server",
+		Short: "Starts the container SSH server",
 		Args:  cobra.NoArgs,
 		RunE:  cmd.Run,
 	}
