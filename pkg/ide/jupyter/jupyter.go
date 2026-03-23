@@ -8,7 +8,6 @@ import (
 	"github.com/skevetter/devpod/pkg/command"
 	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/ide"
-	"github.com/skevetter/devpod/pkg/single"
 	"github.com/skevetter/log"
 )
 
@@ -107,7 +106,7 @@ func (o *JupyterNotbookServer) installNotebook() error {
 }
 
 func (o *JupyterNotbookServer) Start() error {
-	return single.Single("jupyter.pid", func() (*exec.Cmd, error) {
+	return command.StartWithLockAndLogging("jupyter", func() (*exec.Cmd, error) {
 		o.log.Infof("Starting jupyter notebook in background...")
 		runCommand := fmt.Sprintf(
 			"jupyter notebook --ip='*' --NotebookApp.notebook_dir='%s' --NotebookApp.token='' "+

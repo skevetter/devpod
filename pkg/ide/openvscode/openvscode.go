@@ -16,7 +16,6 @@ import (
 	devpodhttp "github.com/skevetter/devpod/pkg/http"
 	"github.com/skevetter/devpod/pkg/ide"
 	"github.com/skevetter/devpod/pkg/ide/vscode"
-	"github.com/skevetter/devpod/pkg/single"
 	"github.com/skevetter/devpod/pkg/util"
 	"github.com/skevetter/log"
 )
@@ -271,7 +270,7 @@ func (o *OpenVSCodeServer) Start() error {
 		return fmt.Errorf("find binary: %w", err)
 	}
 
-	return single.Single("openvscode.pid", func() (*exec.Cmd, error) {
+	return command.StartWithLockAndLogging("openvscode", func() (*exec.Cmd, error) {
 		o.log.Infof("Starting openvscode in background...")
 		runCommand := fmt.Sprintf(
 			"%s server-local --without-connection-token --host '%s' --port '%s'",

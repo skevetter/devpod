@@ -19,7 +19,6 @@ import (
 	copypkg "github.com/skevetter/devpod/pkg/copy"
 	devpodhttp "github.com/skevetter/devpod/pkg/http"
 	"github.com/skevetter/devpod/pkg/ide"
-	"github.com/skevetter/devpod/pkg/single"
 	"github.com/skevetter/log"
 )
 
@@ -143,7 +142,7 @@ func (o *RStudioServer) Install() error {
 }
 
 func (o *RStudioServer) Start() error {
-	return single.Single("rstudio.pid", func() (*exec.Cmd, error) {
+	return command.StartWithLockAndLogging("rstudio", func() (*exec.Cmd, error) {
 		o.log.Info("Starting RStudio...")
 		runCommand := "rstudio-server start"
 		args := []string{}

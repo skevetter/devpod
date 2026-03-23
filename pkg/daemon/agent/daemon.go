@@ -11,9 +11,9 @@ import (
 	"runtime"
 
 	"github.com/loft-sh/api/v4/pkg/devpod"
+	"github.com/skevetter/devpod/pkg/command"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	provider2 "github.com/skevetter/devpod/pkg/provider"
-	"github.com/skevetter/devpod/pkg/single"
 	"github.com/skevetter/log"
 	"github.com/takama/daemon"
 )
@@ -123,7 +123,7 @@ func InstallDaemon(agentDir string, interval string, log log.Logger) error {
 	if err != nil && !errors.Is(err, daemon.ErrAlreadyRunning) {
 		log.Warnf("Error starting service: %v", err)
 
-		err = single.Single("daemon.pid", func() (*exec.Cmd, error) {
+		err = command.StartWithLockAndLogging("daemon", func() (*exec.Cmd, error) {
 			executable, err := os.Executable()
 			if err != nil {
 				return nil, err

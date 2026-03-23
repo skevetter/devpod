@@ -15,7 +15,6 @@ import (
 	copy2 "github.com/skevetter/devpod/pkg/copy"
 	devpodhttp "github.com/skevetter/devpod/pkg/http"
 	"github.com/skevetter/devpod/pkg/ide"
-	"github.com/skevetter/devpod/pkg/single"
 	"github.com/skevetter/devpod/pkg/util"
 	"github.com/skevetter/log"
 	"github.com/skevetter/log/scanner"
@@ -129,7 +128,7 @@ func (o *FleetServer) Start(binaryPath, location, projectDir string) error {
 	var readCloser io.ReadCloser
 	stderrBuffer := &bytes.Buffer{}
 
-	err := single.Single("fleet.pid", func() (*exec.Cmd, error) {
+	err := command.StartWithLockAndLogging("fleet", func() (*exec.Cmd, error) {
 		o.log.Infof("Starting fleet in background...")
 		// Determine version of fleet to use
 		var runCommand string
@@ -213,7 +212,7 @@ func (o *FleetServer) startMonitor() error {
 		return err
 	}
 
-	return single.Single("fleet-monitor.pid", func() (*exec.Cmd, error) {
+	return command.StartWithLockAndLogging("fleet-monitor", func() (*exec.Cmd, error) {
 		o.log.Infof("starting fleet monitor in background")
 		runCommand := fmt.Sprintf("%s helper fleet-server --workspaceid %s", self, "test")
 		args := []string{}

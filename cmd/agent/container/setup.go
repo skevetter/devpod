@@ -38,7 +38,6 @@ import (
 	"github.com/skevetter/devpod/pkg/ide/rstudio"
 	"github.com/skevetter/devpod/pkg/ide/vscode"
 	provider2 "github.com/skevetter/devpod/pkg/provider"
-	"github.com/skevetter/devpod/pkg/single"
 	"github.com/skevetter/devpod/pkg/ts"
 	"github.com/skevetter/log"
 	"github.com/spf13/cobra"
@@ -348,7 +347,7 @@ func (cmd *SetupContainerCmd) startContainerDaemon(
 		return nil
 	}
 
-	return single.Single("devpod.daemon.pid", func() (*exec.Cmd, error) {
+	return command.StartWithLockAndLogging("devpod.daemon", func() (*exec.Cmd, error) {
 		logger.Debugf(
 			"start devpod container daemon with inactivity timeout %s",
 			workspaceInfo.ContainerTimeout,
@@ -527,24 +526,27 @@ func (cmd *SetupContainerCmd) setupVSCode(
 		return nil
 	}
 
-	return single.Single(fmt.Sprintf("%s-async.pid", flavor), func() (*exec.Cmd, error) {
-		log.Infof(
-			"installing extensions in the background: %s",
-			strings.Join(vsCodeConfiguration.Extensions, ","),
-		)
-		binaryPath, err := os.Executable()
-		if err != nil {
-			return nil, err
-		}
+	return command.StartWithLockAndLogging(
+		fmt.Sprintf("%s-async", flavor),
+		func() (*exec.Cmd, error) {
+			log.Infof(
+				"installing extensions in the background: %s",
+				strings.Join(vsCodeConfiguration.Extensions, ","),
+			)
+			binaryPath, err := os.Executable()
+			if err != nil {
+				return nil, err
+			}
 
-		args := []string{
-			"agent", "container", "vscode-async",
-			"--setup-info", cmd.SetupInfo,
-			"--flavor", string(flavor),
-		}
+			args := []string{
+				"agent", "container", "vscode-async",
+				"--setup-info", cmd.SetupInfo,
+				"--flavor", string(flavor),
+			}
 
-		return exec.Command(binaryPath, args...), nil
-	})
+			//nolint:gosec // binaryPath is from os.Executable(), not user input
+			return exec.Command(binaryPath, args...), nil
+		})
 }
 
 func (cmd *SetupContainerCmd) setupOpenVSCode(
@@ -583,7 +585,7 @@ func (cmd *SetupContainerCmd) setupOpenVSCode(
 
 	// install extensions in background
 	if len(vsCodeConfiguration.Extensions) > 0 {
-		err = single.Single("openvscode-async.pid", func() (*exec.Cmd, error) {
+		err = command.StartWithLockAndLogging("openvscode-async", func() (*exec.Cmd, error) {
 			log.Infof(
 				"installing extensions in the background: %s",
 				strings.Join(vsCodeConfiguration.Extensions, ","),
