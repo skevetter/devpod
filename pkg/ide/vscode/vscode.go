@@ -202,11 +202,6 @@ func (o *VsCodeServer) installExtension(binPath, extension string, stdout, stder
 func (o *VsCodeServer) buildExtensionCommand(binPath, extension string) *exec.Cmd {
 	args := []string{"--install-extension", extension}
 
-	// VS Code stable/insiders use serve-local subcommand
-	if o.flavor == FlavorStable || o.flavor == FlavorInsiders {
-		args = append([]string{"serve-local", "--accept-server-license-terms"}, args...)
-	}
-
 	if o.userName != "" {
 		cmd := shellquote.Join(append([]string{binPath}, args...)...)
 		return exec.Command("su", o.userName, "-c", cmd)
