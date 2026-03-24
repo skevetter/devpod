@@ -41,6 +41,20 @@ sync_host_binary() {
     fi
 }
 
+env_to_args() {
+    value="${DEVPOD_ADDITIONAL_ENV_VARS:-}"
+    [ -z "$value" ] && return
+
+    old_ifs="$IFS"
+    IFS=','
+    for entry in $value; do
+        case "$entry" in
+            *=*) printf '%s\n' "--env=${entry}" ;;
+        esac
+    done
+    IFS="$old_ifs"
+}
+
 main() {
     if [ -z "${FLATPAK_ID}" ]; then
         run_from_host "$@"
@@ -48,7 +62,14 @@ main() {
 
     sync_host_binary
     data_home="${XDG_DATA_HOME:-$HOME/.local/share}"
-    exec /usr/bin/flatpak-spawn --host "${data_home}/devpod" "$@"
+
+    env_args=""
+    for arg in $(env_to_args); do
+        env_args="$env_args $arg"
+    done
+
+    # shellcheck disable=SC2086
+    exec /usr/bin/flatpak-spawn $env_args --host "${data_home}/devpod" "$@"
 }
 
 main "$@"
