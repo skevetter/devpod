@@ -50,14 +50,20 @@ type flavorConfig struct {
 	binName     string
 }
 
+// Map of VS Code flavors. The correct configuration options can be found in
+// `resources/app/product.json` of the VS Code fork.
+//
+// - Display name
+// - Server directory, matching serverDataFolderName in `product.json`.
+// - Server binary name, matching serverApplicationName in `product.json`.
 var flavorConfigs = map[Flavor]flavorConfig{
 	FlavorStable:      {"VS Code", ".vscode-server", "code-server"},
 	FlavorInsiders:    {"VS Code Insiders", ".vscode-server-insiders", "code-server-insiders"},
 	FlavorCursor:      {"Cursor", ".cursor-server", "cursor-server"},
-	FlavorPositron:    {"positron", ".positron-server", "positron"},
-	FlavorCodium:      {"VSCodium", ".vscodium-server", "codium"},
-	FlavorWindsurf:    {"Windsurf", ".windsurf-server", "windsurf"},
-	FlavorAntigravity: {"Antigravity", ".antigravity-server", "agy"},
+	FlavorPositron:    {"positron", ".positron-server", "positron-server"},
+	FlavorCodium:      {"VSCodium", ".vscodium-server", "codium-server"},
+	FlavorWindsurf:    {"Windsurf", ".windsurf-server", "windsurf-server"},
+	FlavorAntigravity: {"Antigravity", ".antigravity-server", "antigravity-server"},
 }
 
 func (f Flavor) DisplayName() string {
