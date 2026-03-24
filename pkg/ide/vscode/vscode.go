@@ -276,8 +276,17 @@ func (o *VsCodeServer) findInDir(root, binName string) string {
 			return filepath.SkipDir
 		}
 
-		depth := strings.Count(strings.TrimPrefix(path, root), string(filepath.Separator))
+		pathRelative := strings.TrimPrefix(path, root)
+		depth := strings.Count(pathRelative, string(filepath.Separator))
 		if depth > maxSearchDepth {
+			return filepath.SkipDir
+		}
+
+		// The VS Code server gets installed into a staging directory, which is
+		// later renamed. Do not consider the staging directory a valid
+		// destination, as it won't be valid by the time the server binary is
+		// called.
+		if d.IsDir() && strings.Contains(pathRelative, ".staging") {
 			return filepath.SkipDir
 		}
 
