@@ -233,12 +233,21 @@ class Client {
     dir: Extract<keyof typeof fs.BaseDirectory, "AppData" | "AppLog">
   ): Promise<void> {
     try {
-      let p = await this.getDir(dir)
+      const p = await this.getDir(dir)
+      const targets = [p]
+
       if (dir === "AppLog") {
-        p = await path.join(p, "DevPod.log")
+        targets.unshift(await path.join(p, "DevPod.log"))
       }
 
-      opener.openPath(p)
+      for (const target of targets) {
+        try {
+          await opener.openPath(target)
+          return
+        } catch {
+          // try next target
+        }
+      }
     } catch {
       // noop for now
     }
