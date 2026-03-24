@@ -38,9 +38,12 @@ func StartWithLockAndLogging(commandName string, createCommand CreateCommand) er
 		_ = fileLock.Unlock()
 	}(fileLock)
 
-	err = isProcessRunning(pidFile)
+	running, err := isProcessRunning(pidFile)
 	if err != nil {
 		return err
+	}
+	if running {
+		return nil
 	}
 
 	// create command
@@ -64,24 +67,24 @@ func StartWithLockAndLogging(commandName string, createCommand CreateCommand) er
 	return nil
 }
 
-func isProcessRunning(pidFile string) error {
+func isProcessRunning(pidFile string) (bool, error) {
 	// check if marker file is there
 	pid, err := os.ReadFile(pidFile) // #nosec G304: not user input
 	if err != nil {
 		if !os.IsNotExist(err) {
-			return err
+			return false, err
 		}
 	} else {
 		// check if process id exists
 		isRunning, err := IsRunning(string(pid))
 		if err != nil {
-			return err
+			return false, err
 		} else if isRunning {
-			return nil
+			return true, nil
 		}
 	}
 
-	return nil
+	return false, nil
 }
 
 func startAndRecordPid(cmd *exec.Cmd, pidFile string) error {
