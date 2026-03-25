@@ -1,25 +1,28 @@
 package command
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
-	"time"
 
 	"github.com/gofrs/flock"
 )
 
 type CreateCommand func() (*exec.Cmd, error)
 
-// StartWithLockAndLogging starts CreateCommand returned by createCommand but
+// StartWithLockAndLogging starts the command produced by createCommand but
 // does not wait for it to complete.
-// It ensures that only a single command named commandName runs at any time and
-// does nothing otherwise.
+// It ensures that only a single command named commandName runs at any time.
+// If the lock cannot be acquired or a process is already running (as
+// determined by its recorded PID), the function returns nil without starting
+// a new process.
 // The PID of the process it starts is recorded in TMPDIR/commandName.pid,
-// while the stdout and stderr are redirected to TMPDIR/commandName.streams.
-// These output files are not cleaned up.
+// while stdout and stderr are redirected to TMPDIR/commandName.streams if
+// they are not already set on the command.
+// The .pid, .streams, and .lock files in TMPDIR are not cleaned up.
 func StartWithLockAndLogging(commandName string, createCommand CreateCommand) error {
 	lockFile := filepath.Join(os.TempDir(), commandName+".lock")
 	pidFile := filepath.Join(os.TempDir(), commandName+".pid")
@@ -34,9 +37,11 @@ func StartWithLockAndLogging(commandName string, createCommand CreateCommand) er
 	} else if !locked {
 		return nil
 	}
-	defer func(fileLock *flock.Flock) {
-		_ = fileLock.Unlock()
-	}(fileLock)
+	defer func() {
+		if unlockErr := fileLock.Unlock(); unlockErr != nil {
+			fmt.Fprintf(os.Stderr, "warning: failed to release lock %s: %v\n", lockFile, unlockErr)
+		}
+	}()
 
 	running, err := isProcessRunning(pidFile)
 	if err != nil {
@@ -46,81 +51,57 @@ func StartWithLockAndLogging(commandName string, createCommand CreateCommand) er
 		return nil
 	}
 
-	// create command
 	cmd, err := createCommand()
 	if err != nil {
 		return err
 	}
 
-	// pipe streams into file.streams
-	err = redirectStreams(cmd, streamsFile)
+	streamsF, err := openStreamsFile(cmd, streamsFile)
 	if err != nil {
 		return err
 	}
 
-	// start process
-	err = startAndRecordPid(cmd, pidFile)
-	if err != nil {
-		return err
+	if err := cmd.Start(); err != nil {
+		streamsF.Close()
+		return fmt.Errorf("start process: %w", err)
+	}
+	// Close the parent's copy of the streams fd. After Start() forks, the
+	// child has its own copy; the parent no longer needs it.
+	streamsF.Close()
+
+	if err := os.WriteFile(pidFile, []byte(strconv.Itoa(cmd.Process.Pid)), 0o600); err != nil {
+		// Process is running but untracked. Kill it to prevent orphans.
+		_ = cmd.Process.Kill()
+		return fmt.Errorf("write pid file (process killed to prevent orphan): %w", err)
 	}
 
 	return nil
 }
 
 func isProcessRunning(pidFile string) (bool, error) {
-	// check if marker file is there
 	pid, err := os.ReadFile(pidFile) // #nosec G304: not user input
 	if err != nil {
-		if !os.IsNotExist(err) {
-			return false, err
+		if errors.Is(err, os.ErrNotExist) {
+			return false, nil
 		}
-	} else {
-		// check if process id exists
-		isRunning, err := IsRunning(string(pid))
-		if err != nil {
-			return false, err
-		} else if isRunning {
-			return true, nil
-		}
+		return false, fmt.Errorf("read pid file %s: %w", pidFile, err)
 	}
 
-	return false, nil
+	isRunning, err := IsRunning(string(pid))
+	if err != nil {
+		// PID file is corrupt or contains an invalid PID.
+		// Treat as "not running" and clean up the stale file.
+		_ = os.Remove(pidFile)
+		return false, nil
+	}
+
+	return isRunning, nil
 }
 
-func startAndRecordPid(cmd *exec.Cmd, pidFile string) error {
-	err := cmd.Start()
-	if err != nil {
-		return err
-	}
-
-	err = writePidToFile(cmd, pidFile)
-	if err != nil {
-		return err
-	}
-
-	// release process resources
-	err = cmd.Process.Release()
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func writePidToFile(cmd *exec.Cmd, pidFile string) error {
-	// wait until we have a process id
-	for cmd.Process.Pid < 0 {
-		time.Sleep(time.Millisecond)
-	}
-
-	// write pid to file
-	return os.WriteFile(pidFile, []byte(strconv.Itoa(cmd.Process.Pid)), 0o600)
-}
-
-func redirectStreams(cmd *exec.Cmd, streamsFile string) error {
+func openStreamsFile(cmd *exec.Cmd, streamsFile string) (*os.File, error) {
 	f, err := os.Create(streamsFile) // #nosec G304: not user input
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if cmd.Stderr == nil {
 		cmd.Stderr = f
@@ -128,5 +109,5 @@ func redirectStreams(cmd *exec.Cmd, streamsFile string) error {
 	if cmd.Stdout == nil {
 		cmd.Stdout = f
 	}
-	return nil
+	return f, nil
 }
