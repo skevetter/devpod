@@ -122,7 +122,7 @@ var AllowedIDEs = []AllowedIDE{
 	},
 	{
 		Name:        config.IDEGoland,
-		DisplayName: "Goland",
+		DisplayName: "GoLand",
 		Options:     jetbrains.GolandOptions,
 		Icon:        "https://devpod.sh/assets/goland.svg",
 		Group:       config.IDEGroupJetBrains,
