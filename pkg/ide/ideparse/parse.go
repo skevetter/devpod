@@ -86,7 +86,7 @@ var AllowedIDEs = []AllowedIDE{
 	},
 	{
 		Name:        config.IDEIntellij,
-		DisplayName: "Intellij",
+		DisplayName: "IntelliJ IDEA",
 		Options:     jetbrains.IntellijOptions,
 		Icon:        "https://devpod.sh/assets/intellij.svg",
 		Group:       config.IDEGroupJetBrains,
@@ -197,7 +197,7 @@ var AllowedIDEs = []AllowedIDE{
 	},
 	{
 		Name:         config.IDEWindsurf,
-		DisplayName:  "Windsurf",
+		DisplayName:  "Windsurf Editor",
 		Options:      vscode.Options,
 		Icon:         "https://devpod.sh/assets/windsurf.svg",
 		Experimental: true,
@@ -205,7 +205,7 @@ var AllowedIDEs = []AllowedIDE{
 	},
 	{
 		Name:         config.IDEAntigravity,
-		DisplayName:  "Antigravity",
+		DisplayName:  "Google Antigravity",
 		Options:      vscode.Options,
 		Icon:         "https://devpod.sh/assets/antigravity.svg",
 		Experimental: true,
