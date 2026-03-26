@@ -56,24 +56,33 @@ func StartWithLockAndLogging(commandName string, createCommand CreateCommand) er
 		return err
 	}
 
+	return startCommand(cmd, pidFile, streamsFile)
+}
+
+func startCommand(cmd *exec.Cmd, pidFile, streamsFile string) error {
 	streamsF, err := openStreamsFile(cmd, streamsFile)
 	if err != nil {
 		return err
 	}
 
 	if err := cmd.Start(); err != nil {
-		streamsF.Close()
+		closeFile(streamsF)
 		return fmt.Errorf("start process: %w", err)
 	}
 	// Close the parent's copy of the streams fd. After Start() forks, the
 	// child has its own copy; the parent no longer needs it.
-	streamsF.Close()
+	closeFile(streamsF)
 
 	if err := os.WriteFile(pidFile, []byte(strconv.Itoa(cmd.Process.Pid)), 0o600); err != nil {
-		// Process is running but untracked. Kill it to prevent orphans.
+		// Process is running but untracked. Kill and reap it to prevent orphans/zombies.
 		_ = cmd.Process.Kill()
+		_ = cmd.Wait()
 		return fmt.Errorf("write pid file (process killed to prevent orphan): %w", err)
 	}
+
+	// Release the process handle so the child runs independently of this
+	// parent process. After release, we cannot wait for or signal it.
+	_ = cmd.Process.Release()
 
 	return nil
 }
@@ -99,6 +108,9 @@ func isProcessRunning(pidFile string) (bool, error) {
 }
 
 func openStreamsFile(cmd *exec.Cmd, streamsFile string) (*os.File, error) {
+	if cmd.Stdout != nil && cmd.Stderr != nil {
+		return nil, nil
+	}
 	f, err := os.Create(streamsFile) // #nosec G304: not user input
 	if err != nil {
 		return nil, err
@@ -110,4 +122,10 @@ func openStreamsFile(cmd *exec.Cmd, streamsFile string) (*os.File, error) {
 		cmd.Stdout = f
 	}
 	return f, nil
+}
+
+func closeFile(f *os.File) {
+	if f != nil {
+		_ = f.Close()
+	}
 }
