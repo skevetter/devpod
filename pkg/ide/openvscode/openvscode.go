@@ -270,7 +270,7 @@ func (o *OpenVSCodeServer) Start() error {
 		return fmt.Errorf("find binary: %w", err)
 	}
 
-	return command.StartWithLockAndLogging("openvscode", func() (*exec.Cmd, error) {
+	return command.StartBackgroundOnce("openvscode", func() (*exec.Cmd, error) {
 		o.log.Infof("Starting openvscode in background...")
 		runCommand := fmt.Sprintf(
 			"%s server-local --without-connection-token --host '%s' --port '%s'",

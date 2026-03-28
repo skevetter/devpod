@@ -347,7 +347,7 @@ func (cmd *SetupContainerCmd) startContainerDaemon(
 		return nil
 	}
 
-	return command.StartWithLockAndLogging("devpod.daemon", func() (*exec.Cmd, error) {
+	return command.StartBackgroundOnce("devpod.daemon", func() (*exec.Cmd, error) {
 		logger.Debugf(
 			"start devpod container daemon with inactivity timeout %s",
 			workspaceInfo.ContainerTimeout,
@@ -526,7 +526,7 @@ func (cmd *SetupContainerCmd) setupVSCode(
 		return nil
 	}
 
-	return command.StartWithLockAndLogging(
+	return command.StartBackgroundOnce(
 		fmt.Sprintf("%s-async", flavor),
 		func() (*exec.Cmd, error) {
 			log.Infof(
@@ -585,7 +585,7 @@ func (cmd *SetupContainerCmd) setupOpenVSCode(
 
 	// install extensions in background
 	if len(vsCodeConfiguration.Extensions) > 0 {
-		err = command.StartWithLockAndLogging("openvscode-async", func() (*exec.Cmd, error) {
+		err = command.StartBackgroundOnce("openvscode-async", func() (*exec.Cmd, error) {
 			log.Infof(
 				"installing extensions in the background: %s",
 				strings.Join(vsCodeConfiguration.Extensions, ","),

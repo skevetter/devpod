@@ -123,7 +123,7 @@ func InstallDaemon(agentDir string, interval string, log log.Logger) error {
 	if err != nil && !errors.Is(err, daemon.ErrAlreadyRunning) {
 		log.Warnf("Error starting service: %v", err)
 
-		err = command.StartWithLockAndLogging("daemon", func() (*exec.Cmd, error) {
+		err = command.StartBackgroundOnce("devpod.daemon", func() (*exec.Cmd, error) {
 			executable, err := os.Executable()
 			if err != nil {
 				return nil, err

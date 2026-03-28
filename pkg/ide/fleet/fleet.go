@@ -128,7 +128,7 @@ func (o *FleetServer) Start(binaryPath, location, projectDir string) error {
 	var readCloser io.ReadCloser
 	stderrBuffer := &bytes.Buffer{}
 
-	err := command.StartWithLockAndLogging("fleet", func() (*exec.Cmd, error) {
+	err := command.StartBackgroundOnce("fleet", func() (*exec.Cmd, error) {
 		o.log.Infof("Starting fleet in background...")
 		// Determine version of fleet to use
 		var runCommand string
@@ -212,7 +212,7 @@ func (o *FleetServer) startMonitor() error {
 		return err
 	}
 
-	return command.StartWithLockAndLogging("fleet-monitor", func() (*exec.Cmd, error) {
+	return command.StartBackgroundOnce("fleet-monitor", func() (*exec.Cmd, error) {
 		o.log.Infof("starting fleet monitor in background")
 		runCommand := fmt.Sprintf("%s helper fleet-server --workspaceid %s", self, "test")
 		args := []string{}

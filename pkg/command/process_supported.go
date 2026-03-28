@@ -35,7 +35,7 @@ func kill(pid string) error {
 	}
 
 	_ = syscall.Kill(parsedPid, syscall.SIGTERM)
-	time.Sleep(2000)
+	time.Sleep(2 * time.Second)
 	_ = syscall.Kill(parsedPid, syscall.SIGKILL)
 	return nil
 }

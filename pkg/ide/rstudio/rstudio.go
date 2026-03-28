@@ -142,7 +142,7 @@ func (o *RStudioServer) Install() error {
 }
 
 func (o *RStudioServer) Start() error {
-	return command.StartWithLockAndLogging("rstudio", func() (*exec.Cmd, error) {
+	return command.StartBackgroundOnce("rstudio", func() (*exec.Cmd, error) {
 		o.log.Info("Starting RStudio...")
 		runCommand := "rstudio-server start"
 		args := []string{}

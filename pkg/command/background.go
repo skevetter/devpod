@@ -13,17 +13,14 @@ import (
 
 type CreateCommand func() (*exec.Cmd, error)
 
-// StartWithLockAndLogging starts the command produced by createCommand but
-// does not wait for it to complete.
-// It ensures that only a single command named commandName runs at any time.
-// If the lock cannot be acquired or a process is already running (as
-// determined by its recorded PID), the function returns nil without starting
-// a new process.
-// The PID of the process it starts is recorded in TMPDIR/commandName.pid,
-// while stdout and stderr are redirected to TMPDIR/commandName.streams if
-// they are not already set on the command.
-// The .pid, .streams, and .lock files in TMPDIR are not cleaned up.
-func StartWithLockAndLogging(commandName string, createCommand CreateCommand) error {
+// StartBackgroundOnce starts a background process, ensuring only one instance
+// with the given commandName runs at a time. If a process is already running
+// (determined by PID file), or the lock cannot be acquired, it returns nil.
+//
+// Process output is redirected to TMPDIR/commandName.streams unless the
+// command already has Stdout/Stderr configured. The PID is recorded in
+// TMPDIR/commandName.pid. These files are not cleaned up on exit.
+func StartBackgroundOnce(commandName string, createCommand CreateCommand) error {
 	lockFile := filepath.Join(os.TempDir(), commandName+".lock")
 	pidFile := filepath.Join(os.TempDir(), commandName+".pid")
 	streamsFile := filepath.Join(os.TempDir(), commandName+".streams")
@@ -108,7 +105,7 @@ func isProcessRunning(pidFile string) (bool, error) {
 }
 
 func openStreamsFile(cmd *exec.Cmd, streamsFile string) (*os.File, error) {
-	if cmd.Stdout != nil && cmd.Stderr != nil {
+	if cmd.Stdout != nil || cmd.Stderr != nil {
 		return nil, nil
 	}
 	f, err := os.Create(streamsFile) // #nosec G304: not user input
