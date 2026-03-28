@@ -32,7 +32,7 @@ func NewGitSSHSignatureCmd(flags *flags.GlobalFlags) *cobra.Command {
 		GlobalFlags: flags,
 	}
 
-	gitSshSignatureCmd := &cobra.Command{
+	gitSSHSignatureCmd := &cobra.Command{
 		Use: "git-ssh-signature",
 		// Allow unknown flags so that git can pass any ssh-keygen flags
 		// (e.g. -U for stdin input) without cobra rejecting them.
@@ -59,10 +59,10 @@ func NewGitSSHSignatureCmd(flags *flags.GlobalFlags) *cobra.Command {
 		},
 	}
 
-	gitSshSignatureCmd.Flags().StringVarP(&cmd.CertPath, "file", "f", "", "Path to the private key")
-	gitSshSignatureCmd.Flags().StringVarP(&cmd.Namespace, "namespace", "n", "", "Namespace")
-	gitSshSignatureCmd.Flags().
+	gitSSHSignatureCmd.Flags().StringVarP(&cmd.CertPath, "file", "f", "", "Path to the private key")
+	gitSSHSignatureCmd.Flags().StringVarP(&cmd.Namespace, "namespace", "n", "", "Namespace")
+	gitSSHSignatureCmd.Flags().
 		StringVarP(&cmd.Command, "command", "Y", "sign", "Command - should be 'sign'")
 
-	return gitSshSignatureCmd
+	return gitSSHSignatureCmd
 }
