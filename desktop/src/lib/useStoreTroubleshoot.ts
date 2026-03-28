@@ -1,4 +1,5 @@
 import { client } from "@/client/client"
+import { BINARY_NAME } from "@/client/repo"
 import { TActionObj } from "@/contexts/DevPodContext/action"
 import { TWorkspace } from "@/types"
 import { useToast } from "@chakra-ui/react"
@@ -68,7 +69,7 @@ export function useStoreTroubleshoot() {
 
       const out = await zip.generateAsync({ type: "uint8array" })
 
-      await client.writeFile([targetFolder, "devpod_troubleshoot.zip"], out)
+      await client.writeFile([targetFolder, `${BINARY_NAME}_troubleshoot.zip`], out)
 
       return true
     },
