@@ -57,7 +57,7 @@ func NewRootCmd() *cobra.Command {
 			}
 
 			if globalFlags.DevPodHome != "" {
-				_ = os.Setenv(config.DEVPOD_HOME, globalFlags.DevPodHome)
+				_ = os.Setenv(config.EnvHome, globalFlags.DevPodHome)
 			}
 
 			devPodConfig, err := config.LoadConfig(globalFlags.Context, globalFlags.Provider)
@@ -69,7 +69,7 @@ func NewRootCmd() *cobra.Command {
 		},
 		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
 			if globalFlags.DevPodHome != "" {
-				_ = os.Unsetenv(config.DEVPOD_HOME)
+				_ = os.Unsetenv(config.EnvHome)
 			}
 
 			return nil
@@ -105,7 +105,7 @@ func Execute() {
 				rootCmd.Annotations[agent.AgentExecutedAnnotation] != "true" {
 				if terminal.IsTerminalIn {
 					log2.Default.Error("Try using the --debug flag to see a more verbose output")
-				} else if os.Getenv(config.UIEnvVar) == "true" {
+				} else if os.Getenv(config.EnvUI) == "true" {
 					log2.Default.Error(
 						"Try enabling Debug mode under Settings to see a more verbose output",
 					)

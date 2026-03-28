@@ -12,13 +12,11 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/agent/tunnel"
+	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/log"
 )
 
-const (
-	DefaultPort              = "12049"
-	CredentialsServerPortEnv = "DEVPOD_CREDENTIALS_SERVER_PORT" // #nosec G101
-)
+const DefaultPort = "12049"
 
 func RunCredentialsServer(
 	ctx context.Context,
@@ -85,7 +83,7 @@ func RunCredentialsServer(
 }
 
 func GetPort() (int, error) {
-	strPort := cmp.Or(os.Getenv(CredentialsServerPortEnv), DefaultPort)
+	strPort := cmp.Or(os.Getenv(config.EnvCredentialsServerPort), DefaultPort)
 	port, err := strconv.Atoi(strPort)
 	if err != nil {
 		return 0, fmt.Errorf("convert port %s: %w", strPort, err)

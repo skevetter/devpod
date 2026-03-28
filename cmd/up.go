@@ -362,7 +362,7 @@ func (cmd *UpCmd) configureWorkspace(
 ) error {
 	if cmd.ConfigureSSH {
 		devPodHome := ""
-		if envDevPodHome, ok := os.LookupEnv(config.DEVPOD_HOME); ok {
+		if envDevPodHome, ok := os.LookupEnv(config.EnvHome); ok {
 			devPodHome = envDevPodHome
 		}
 		setupGPGAgentForwarding := cmd.GPGAgentForwarding ||

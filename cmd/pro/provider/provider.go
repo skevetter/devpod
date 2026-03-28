@@ -39,7 +39,7 @@ func NewProProviderCmd(globalFlags *flags.GlobalFlags) *cobra.Command {
 
 			// Disable debug hints if we execute pro commands from DevPod Desktop
 			// We're reusing the agent.AgentExecutedAnnotation for simplicity, could rename in the future
-			if os.Getenv(config.UIEnvVar) == "true" {
+			if os.Getenv(config.EnvUI) == "true" {
 				cmd.VisitParents(func(c *cobra.Command) {
 					// find the root command
 					if c.Name() == config.BinaryName {

@@ -55,7 +55,7 @@ type CLICollector interface {
 func StartCLI(devPodConfig *config.Config, cmd *cobra.Command) {
 	telemetryOpt := devPodConfig.ContextOption(config.ContextOptionTelemetry)
 	if telemetryOpt == "false" || version.GetVersion() == version.DevVersion ||
-		os.Getenv(config.DisableTelemetryEnvVar) == "true" {
+		os.Getenv(config.EnvDisableTelemetry) == "true" {
 		return
 	}
 
@@ -101,7 +101,7 @@ func (d *cliCollector) RecordCLI(err error) {
 		return
 	}
 	cmd := d.cmd.CommandPath()
-	isUI := os.Getenv(config.UIEnvVar) == "true"
+	isUI := os.Getenv(config.EnvUI) == "true"
 	// Ignore certain commands triggered by DevPod Desktop
 	if isUI {
 		if slices.Contains(UIEventsExceptions, cmd) {

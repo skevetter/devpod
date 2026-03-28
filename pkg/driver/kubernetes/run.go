@@ -173,7 +173,7 @@ func (k *KubernetesDriver) runContainer(
 	daemonConfig := ""
 	for k, v := range options.Env {
 		// filter out daemon config, that's going to be mounted through a secret
-		if k == config.WorkspaceDaemonConfigExtraEnvVar {
+		if k == pkgconfig.EnvWorkspaceDaemonConfig {
 			daemonConfig = v
 			continue
 		}

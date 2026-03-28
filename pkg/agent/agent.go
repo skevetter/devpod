@@ -35,14 +35,10 @@ const ContainerActivityFile = "/tmp/" + config.BinaryName + ".activity"
 
 var defaultAgentDownloadURL = config.GitHubReleasesURL + "/download/"
 
-const EnvDevPodAgentURL = "DEVPOD_AGENT_URL"
-
-const EnvDevPodAgentPreferDownload = "DEVPOD_AGENT_PREFER_DOWNLOAD"
-
 const WorkspaceBusyFile = "workspace.lock"
 
 func DefaultAgentDownloadURL() string {
-	devPodAgentURL := os.Getenv(EnvDevPodAgentURL)
+	devPodAgentURL := os.Getenv(config.EnvAgentURL)
 	if devPodAgentURL != "" {
 		return strings.TrimRight(devPodAgentURL, "/")
 	}

@@ -52,7 +52,7 @@ func findDir(agentFolder string, validate func(path string) bool) string {
 	}
 
 	// check environment
-	homeFolder := os.Getenv(config.DEVPOD_HOME)
+	homeFolder := os.Getenv(config.EnvHome)
 	if homeFolder != "" {
 		homeFolder = filepath.Join(homeFolder, "agent")
 		if !validate(homeFolder) {

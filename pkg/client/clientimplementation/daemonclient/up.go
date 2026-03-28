@@ -46,7 +46,7 @@ func (c *client) Up(ctx context.Context, opt clientpkg.UpOptions) (*config.Resul
 
 	// check if the workspace is migrated and we need to force recreate or reset
 	if instance.Annotations["loft.sh/migrated"] == "true" && !opt.Recreate && !opt.Reset {
-		if os.Getenv(devpodconfig.UIEnvVar) == "true" {
+		if os.Getenv(devpodconfig.EnvUI) == "true" {
 			return nil, fmt.Errorf(
 				"workspace %s is migrated and needs to be rebuild or reset. "+
 					"Please click on rebuild or reset on the workspace to do this",

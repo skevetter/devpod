@@ -10,13 +10,11 @@ import (
 	"strings"
 
 	"github.com/skevetter/devpod/pkg/command"
+	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/file"
 	"github.com/skevetter/devpod/pkg/git"
 	"github.com/skevetter/log/scanner"
 )
-
-// EnvGitHelperPort is the environment variable for the git credential helper port.
-const EnvGitHelperPort = "DEVPOD_GIT_HELPER_PORT"
 
 type GitCredentials struct {
 	Protocol string `json:"protocol,omitempty"`
@@ -213,7 +211,7 @@ func GetUser(userName string) (*GitUser, error) {
 
 func GetCredentials(requestObj *GitCredentials) (*GitCredentials, error) {
 	// run in git helper mode if we have a port
-	gitHelperPort := os.Getenv(EnvGitHelperPort)
+	gitHelperPort := os.Getenv(config.EnvGitHelperPort)
 	if gitHelperPort != "" {
 		binaryPath, err := os.Executable()
 		if err != nil {

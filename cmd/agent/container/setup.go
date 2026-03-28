@@ -31,7 +31,6 @@ import (
 	"github.com/skevetter/devpod/pkg/dockercredentials"
 	"github.com/skevetter/devpod/pkg/extract"
 	"github.com/skevetter/devpod/pkg/git"
-	"github.com/skevetter/devpod/pkg/gitcredentials"
 	"github.com/skevetter/devpod/pkg/ide/fleet"
 	"github.com/skevetter/devpod/pkg/ide/jetbrains"
 	"github.com/skevetter/devpod/pkg/ide/jupyter"
@@ -631,7 +630,7 @@ func configureSystemGitCredentials(
 	}
 
 	gitCredentials := fmt.Sprintf("!'%s' agent git-credentials --port %d", binaryPath, serverPort)
-	_ = os.Setenv(gitcredentials.EnvGitHelperPort, strconv.Itoa(serverPort))
+	_ = os.Setenv(config2.EnvGitHelperPort, strconv.Itoa(serverPort))
 
 	err = git.CommandContext(ctx, git.GetDefaultExtraEnv(false), "config", "--system", "--add",
 		"credential.helper", gitCredentials).

@@ -28,14 +28,12 @@ import (
 )
 
 var (
-	DevPodDebug = config.DebugEnvVar
-
-	DevPodPlatformOptions = "DEVPOD_PLATFORM_OPTIONS"
-
-	DevPodFlagsUp     = "DEVPOD_FLAGS_UP"
-	DevPodFlagsSsh    = "DEVPOD_FLAGS_SSH"
-	DevPodFlagsDelete = "DEVPOD_FLAGS_DELETE"
-	DevPodFlagsStatus = "DEVPOD_FLAGS_STATUS"
+	DevPodDebug           = config.EnvDebug
+	DevPodPlatformOptions = config.EnvPlatformOptions
+	DevPodFlagsUp         = config.EnvFlagsUp
+	DevPodFlagsSsh        = config.EnvFlagsSSH
+	DevPodFlagsDelete     = config.EnvFlagsDelete
+	DevPodFlagsStatus     = config.EnvFlagsStatus
 )
 
 const (

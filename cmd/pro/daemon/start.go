@@ -78,7 +78,7 @@ func (cmd *StartCmd) Run(
 	devPodConfig *config.Config,
 	provider *providerpkg.ProviderConfig,
 ) error {
-	isDesktopControlled := os.Getenv(config.UIEnvVar) == "true"
+	isDesktopControlled := os.Getenv(config.EnvUI) == "true"
 	dir, err := ensureDaemonDir(devPodConfig.DefaultContext, provider.Name)
 	if err != nil {
 		return err

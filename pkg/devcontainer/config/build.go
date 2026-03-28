@@ -12,7 +12,7 @@ const (
 	DevPodContextFeatureFolder      = pkgconfig.ConfigDirName + "-internal"
 	DevPodDockerlessBuildInfoFolder = "/workspaces/.dockerless"
 
-	WorkspaceDaemonConfigExtraEnvVar = "DEVPOD_WORKSPACE_DAEMON_CONFIG"
+	WorkspaceDaemonConfigExtraEnvVar = pkgconfig.EnvWorkspaceDaemonConfig
 )
 
 func GetDockerLabelForID(id string) []string {

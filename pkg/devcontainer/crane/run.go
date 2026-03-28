@@ -22,7 +22,7 @@ const (
 	EnvironmentCrane = "environment"
 
 	defaultBinName     = config.BinaryName + "-crane"
-	envDevPodCraneName = "DEVPOD_CRANE_NAME"
+	envDevPodCraneName = config.EnvCraneName
 	tmpDirTemplate     = config.BinaryName + "-crane-*"
 )
 

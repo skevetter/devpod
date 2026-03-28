@@ -15,9 +15,9 @@ import (
 const (
 	// general.
 	DEVPOD           = "DEVPOD"
-	DEVPOD_OS        = "DEVPOD_OS"
-	DEVPOD_ARCH      = "DEVPOD_ARCH"
-	DEVPOD_LOG_LEVEL = "DEVPOD_LOG_LEVEL"
+	DEVPOD_OS        = config.EnvOS
+	DEVPOD_ARCH      = config.EnvArch
+	DEVPOD_LOG_LEVEL = config.EnvLogLevel
 
 	// workspace.
 	WORKSPACE_ID       = "WORKSPACE_ID"

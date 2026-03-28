@@ -194,7 +194,7 @@ func initLogging(rootDir string, debug bool) log.Logger {
 
 	logPath := filepath.Join(rootDir, "daemon.log")
 	logger := log.NewFileLogger(logPath, logLevel)
-	if os.Getenv(config.UIEnvVar) != "true" {
+	if os.Getenv(config.EnvUI) != "true" {
 		logger = devpodlog.NewCombinedLogger(
 			logLevel,
 			logger,

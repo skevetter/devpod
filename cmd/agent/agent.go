@@ -68,7 +68,7 @@ func AgentPersistentPreRunE(
 	}
 
 	if globalFlags.DevPodHome != "" {
-		_ = os.Setenv(config.DEVPOD_HOME, globalFlags.DevPodHome)
+		_ = os.Setenv(config.EnvHome, globalFlags.DevPodHome)
 	}
 
 	// apply environment

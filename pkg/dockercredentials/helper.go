@@ -125,7 +125,7 @@ func (h *Helper) getFromCredentialsServer(serverURL string) (string, string, err
 }
 
 func (h *Helper) getFromWorkspaceServer(serverURL string) (string, string, error) {
-	workspacePort := os.Getenv(config.WorkspaceCredentialsPortEnv)
+	workspacePort := os.Getenv(config.EnvWorkspaceCredentialsPort)
 	if workspacePort == "" {
 		return "", "", fmt.Errorf("no workspace port")
 	}

@@ -7,29 +7,11 @@ import (
 	"github.com/skevetter/devpod/pkg/util"
 )
 
-// Override devpod home.
-const DEVPOD_HOME = "DEVPOD_HOME"
-
-// Override config path.
-const DEVPOD_CONFIG = "DEVPOD_CONFIG"
-
 // ConfigDirName is the hidden directory name used for DevPod configuration.
 const ConfigDirName = "." + RepoName
 
-// UIEnvVar is the environment variable indicating the desktop UI is active.
-const UIEnvVar = "DEVPOD_UI"
-
-// DebugEnvVar is the environment variable to enable debug logging.
-const DebugEnvVar = "DEVPOD_DEBUG"
-
-// DisableTelemetryEnvVar is the environment variable to disable telemetry.
-const DisableTelemetryEnvVar = "DEVPOD_DISABLE_TELEMETRY"
-
-// WorkspaceCredentialsPortEnv is the environment variable for the workspace credentials server port.
-const WorkspaceCredentialsPortEnv = "DEVPOD_WORKSPACE_CREDENTIALS_PORT" // #nosec G101
-
 func GetConfigDir() (string, error) {
-	homeDir := os.Getenv(DEVPOD_HOME)
+	homeDir := os.Getenv(EnvHome)
 	if homeDir != "" {
 		return homeDir, nil
 	}
@@ -44,7 +26,7 @@ func GetConfigDir() (string, error) {
 }
 
 func GetConfigPath() (string, error) {
-	configOrigin := os.Getenv(DEVPOD_CONFIG)
+	configOrigin := os.Getenv(EnvConfig)
 	if configOrigin == "" {
 		configDir, err := GetConfigDir()
 		if err != nil {
