@@ -74,7 +74,7 @@ func (cmd *DeleteCmd) Run(cobraCmd *cobra.Command, args []string) error {
 
 func (cmd *DeleteCmd) loadConfig() (*config.Config, error) {
 	_, err := clientimplementation.DecodeOptionsFromEnv(
-		clientimplementation.DevPodFlagsDelete,
+		config.EnvFlagsDelete,
 		&cmd.DeleteOptions,
 	)
 	if err != nil {

@@ -12,6 +12,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/agent"
 	"github.com/skevetter/devpod/pkg/client/clientimplementation"
+	pkgconfig "github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	"github.com/skevetter/devpod/pkg/driver"
 	"github.com/skevetter/devpod/pkg/provider"
@@ -317,7 +318,7 @@ func (c *customDriver) runCommand(
 
 	// set debug level
 	if log.GetLevel() == logrus.DebugLevel {
-		environ = append(environ, clientimplementation.DevPodDebug+"=true")
+		environ = append(environ, pkgconfig.EnvDebug+"=true")
 	}
 
 	// run the command

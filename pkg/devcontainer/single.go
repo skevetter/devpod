@@ -22,8 +22,6 @@ var dockerlessImage = "ghcr.io/loft-sh/dockerless:0.2.0"
 const (
 	DevPodExtraEnvVar           = "DEVPOD"
 	RemoteContainersExtraEnvVar = "REMOTE_CONTAINERS"
-	WorkspaceIDExtraEnvVar      = pkgconfig.EnvWorkspaceID
-	WorkspaceUIDExtraEnvVar     = pkgconfig.EnvWorkspaceUID
 
 	DefaultEntrypoint = `
 while ! command -v /usr/local/bin/devpod >/dev/null 2>&1; do
@@ -399,11 +397,11 @@ func (r *runner) addExtraEnvVars(env map[string]string) map[string]string {
 	env[RemoteContainersExtraEnvVar] = "true"
 	if r.WorkspaceConfig != nil && r.WorkspaceConfig.Workspace != nil &&
 		r.WorkspaceConfig.Workspace.ID != "" {
-		env[WorkspaceIDExtraEnvVar] = r.WorkspaceConfig.Workspace.ID
+		env[pkgconfig.EnvWorkspaceID] = r.WorkspaceConfig.Workspace.ID
 	}
 	if r.WorkspaceConfig != nil && r.WorkspaceConfig.Workspace != nil &&
 		r.WorkspaceConfig.Workspace.UID != "" {
-		env[WorkspaceUIDExtraEnvVar] = r.WorkspaceConfig.Workspace.UID
+		env[pkgconfig.EnvWorkspaceUID] = r.WorkspaceConfig.Workspace.UID
 	}
 
 	return env

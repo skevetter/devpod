@@ -794,7 +794,7 @@ func RunCommand(opts RunCommandOptions) error {
 
 	// Add debug env var if logger provided and in debug mode
 	if opts.Log != nil && opts.Log.GetLevel() == logrus.DebugLevel {
-		opts.Environ = append(opts.Environ, DevPodDebug+"=true")
+		opts.Environ = append(opts.Environ, config.EnvDebug+"=true")
 	}
 
 	// use shell if command length is equal 1

@@ -27,15 +27,6 @@ import (
 	"github.com/skevetter/log/terminal"
 )
 
-var (
-	DevPodDebug           = config.EnvDebug
-	DevPodPlatformOptions = config.EnvPlatformOptions
-	DevPodFlagsUp         = config.EnvFlagsUp
-	DevPodFlagsSsh        = config.EnvFlagsSSH
-	DevPodFlagsDelete     = config.EnvFlagsDelete
-	DevPodFlagsStatus     = config.EnvFlagsStatus
-)
-
 const (
 	lockTimeout = 5 * time.Minute
 	lockRetry   = time.Second
@@ -274,7 +265,7 @@ func (s *proxyClient) Ssh(ctx context.Context, opt client.SshOptions) error {
 	return s.executor.executeWithJSONLog(ctx, execParams{
 		name:     "ssh",
 		command:  s.config.Exec.Proxy.Ssh,
-		extraEnv: EncodeOptions(opt, DevPodFlagsSsh),
+		extraEnv: EncodeOptions(opt, config.EnvFlagsSSH),
 		stdin:    opt.Stdin,
 		stdout:   opt.Stdout,
 	})
@@ -292,7 +283,7 @@ func (s *proxyClient) Stop(ctx context.Context, opt client.StopOptions) error {
 }
 
 func (s *proxyClient) Up(ctx context.Context, opt client.UpOptions) error {
-	opts := EncodeOptions(opt.CLIOptions, DevPodFlagsUp)
+	opts := EncodeOptions(opt.CLIOptions, config.EnvFlagsUp)
 	if opt.Debug {
 		opts["DEBUG"] = "true"
 	}
@@ -361,7 +352,7 @@ func (s *proxyClient) Delete(ctx context.Context, opt client.DeleteOptions) erro
 	err := s.executor.executeWithJSONLog(ctx, execParams{
 		name:     "delete",
 		command:  s.config.Exec.Proxy.Delete,
-		extraEnv: EncodeOptions(opt, DevPodFlagsDelete),
+		extraEnv: EncodeOptions(opt, config.EnvFlagsDelete),
 		stdout:   io.Discard,
 	})
 	if err != nil && !opt.Force {
@@ -397,7 +388,7 @@ func (s *proxyClient) Status(
 		Machine:   nil,
 		Options:   s.devPodConfig.ProviderOptions(s.config.Name),
 		Config:    s.config,
-		ExtraEnv:  EncodeOptions(options, DevPodFlagsStatus),
+		ExtraEnv:  EncodeOptions(options, config.EnvFlagsStatus),
 		Stdin:     nil,
 		Stdout:    io.MultiWriter(stdout, buf),
 		Stderr:    buf,
@@ -457,7 +448,7 @@ func DecodeOptionsFromEnv(name string, into any) (bool, error) {
 }
 
 func DecodePlatformOptionsFromEnv(into *devpod.PlatformOptions) error {
-	raw := os.Getenv(DevPodPlatformOptions)
+	raw := os.Getenv(config.EnvPlatformOptions)
 	if raw == "" {
 		return nil
 	}

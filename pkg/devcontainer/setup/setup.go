@@ -29,10 +29,6 @@ import (
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 )
 
-const (
-	ResultLocation = pkgconfig.DevContainerResultPath
-)
-
 type ContainerSetupConfig struct {
 	SetupInfo         *config.Result
 	ExtraWorkspaceEnv []string
@@ -92,17 +88,20 @@ func writeResultFile(cfg *ContainerSetupConfig) {
 		return
 	}
 
-	existing, _ := os.ReadFile(ResultLocation)
+	existing, _ := os.ReadFile(pkgconfig.DevContainerResultPath)
 	if string(rawBytes) == string(existing) {
 		return
 	}
 
-	if err := os.MkdirAll(filepath.Dir(ResultLocation), 0o755); err != nil { // #nosec G301
-		cfg.Log.Warnf("error create %s: %v", filepath.Dir(ResultLocation), err)
+	if err := os.MkdirAll( // #nosec G301
+		filepath.Dir(pkgconfig.DevContainerResultPath),
+		0o755,
+	); err != nil {
+		cfg.Log.Warnf("error create %s: %v", filepath.Dir(pkgconfig.DevContainerResultPath), err)
 	}
 
-	if err := os.WriteFile(ResultLocation, rawBytes, 0o600); err != nil {
-		cfg.Log.Warnf("error write result to %s: %v", ResultLocation, err)
+	if err := os.WriteFile(pkgconfig.DevContainerResultPath, rawBytes, 0o600); err != nil {
+		cfg.Log.Warnf("error write result to %s: %v", pkgconfig.DevContainerResultPath, err)
 	}
 }
 

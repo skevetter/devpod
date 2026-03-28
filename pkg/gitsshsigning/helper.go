@@ -20,9 +20,7 @@ devpod agent git-ssh-signature "$@"
 `
 )
 
-var (
-	HelperScriptPath  = pkgconfig.SSHSignatureHelperPath
-	GitConfigTemplate = `
+var GitConfigTemplate = `
 [gpg "ssh"]
 	program = ` + pkgconfig.SSHSignatureHelperName + `
 [gpg]
@@ -30,7 +28,6 @@ var (
 [user]
 	signingkey = %s
 `
-)
 
 // ConfigureHelper sets up the Git SSH signing helper script and updates the Git configuration for the specified user.
 //
@@ -64,7 +61,7 @@ func ConfigureHelper(userName, gitSigningKey string, log log.Logger) error {
 
 // RemoveHelper removes the git SSH signing helper script and any related configuration.
 func RemoveHelper(userName string) error {
-	if err := os.Remove(HelperScriptPath); err != nil && !os.IsNotExist(err) {
+	if err := os.Remove(pkgconfig.SSHSignatureHelperPath); err != nil && !os.IsNotExist(err) {
 		return err
 	}
 
@@ -86,7 +83,7 @@ func createHelperScript() error {
 		"sudo",
 		"bash",
 		"-c",
-		fmt.Sprintf("echo '%s' > %s", HelperScript, HelperScriptPath),
+		fmt.Sprintf("echo '%s' > %s", HelperScript, pkgconfig.SSHSignatureHelperPath),
 	)
 	if err := cmd.Run(); err != nil {
 		return err
@@ -95,7 +92,8 @@ func createHelperScript() error {
 }
 
 func makeScriptExecutable() error {
-	return exec.Command("sudo", "chmod", "+x", HelperScriptPath).Run()
+	cmd := exec.Command("sudo", "chmod", "+x", pkgconfig.SSHSignatureHelperPath) // #nosec G204
+	return cmd.Run()
 }
 
 func getGitConfigPath(userName string) (string, error) {

@@ -1300,7 +1300,7 @@ func configureSSH(client client2.BaseWorkspaceClient, params configureSSHParams)
 func mergeDevPodUpOptions(baseOptions *provider2.CLIOptions) error {
 	oldOptions := *baseOptions
 	found, err := clientimplementation.DecodeOptionsFromEnv(
-		clientimplementation.DevPodFlagsUp,
+		config.EnvFlagsUp,
 		baseOptions,
 	)
 	if err != nil {

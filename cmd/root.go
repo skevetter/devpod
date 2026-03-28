@@ -17,7 +17,6 @@ import (
 	"github.com/skevetter/devpod/cmd/pro"
 	"github.com/skevetter/devpod/cmd/provider"
 	"github.com/skevetter/devpod/cmd/use"
-	"github.com/skevetter/devpod/pkg/client/clientimplementation"
 	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/telemetry"
 	log2 "github.com/skevetter/log"
@@ -52,7 +51,7 @@ func NewRootCmd() *cobra.Command {
 				log2.Default.SetLevel(logrus.FatalLevel)
 			} else if globalFlags.Debug {
 				log2.Default.SetLevel(logrus.DebugLevel)
-			} else if os.Getenv(clientimplementation.DevPodDebug) == "true" {
+			} else if os.Getenv(config.EnvDebug) == "true" {
 				log2.Default.SetLevel(logrus.DebugLevel)
 			}
 

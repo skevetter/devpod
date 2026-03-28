@@ -10,13 +10,14 @@ import (
 	"github.com/skevetter/devpod/cmd/pro/provider/list"
 	"github.com/skevetter/devpod/cmd/pro/provider/update"
 	"github.com/skevetter/devpod/cmd/pro/provider/watch"
-	"github.com/skevetter/devpod/pkg/client/clientimplementation"
 	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/platform"
 	"github.com/skevetter/devpod/pkg/platform/client"
 	"github.com/skevetter/log"
 	"github.com/spf13/cobra"
 )
+
+const envTrueValue = "true"
 
 // NewProProviderCmd creates a new cobra command.
 func NewProProviderCmd(globalFlags *flags.GlobalFlags) *cobra.Command {
@@ -33,20 +34,20 @@ func NewProProviderCmd(globalFlags *flags.GlobalFlags) *cobra.Command {
 
 			log.Default.SetFormat(log.JSONFormat)
 
-			if os.Getenv(clientimplementation.DevPodDebug) == "true" {
+			if os.Getenv(config.EnvDebug) == envTrueValue {
 				globalFlags.Debug = true
 			}
 
 			// Disable debug hints if we execute pro commands from DevPod Desktop
 			// We're reusing the agent.AgentExecutedAnnotation for simplicity, could rename in the future
-			if os.Getenv(config.EnvUI) == "true" {
+			if os.Getenv(config.EnvUI) == envTrueValue {
 				cmd.VisitParents(func(c *cobra.Command) {
 					// find the root command
 					if c.Name() == config.BinaryName {
 						if c.Annotations == nil {
 							c.Annotations = map[string]string{}
 						}
-						c.Annotations[agent.AgentExecutedAnnotation] = "true"
+						c.Annotations[agent.AgentExecutedAnnotation] = envTrueValue
 					}
 				})
 			}
