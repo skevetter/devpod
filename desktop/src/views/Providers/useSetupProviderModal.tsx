@@ -40,7 +40,7 @@ export function useSetupProviderModal() {
         return
       }
 
-      // Reset state to prevent stale values from previous modal usage
+      // reset state to prevent stale values from previous modal usage
       setSuggestedProvider(suggestedProvider)
       setCloneProviderInfo(cloneProviderInfo)
       setWasDismissed(false)
