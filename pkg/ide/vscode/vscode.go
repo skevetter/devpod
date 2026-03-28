@@ -50,14 +50,20 @@ type flavorConfig struct {
 	binName     string
 }
 
+// Map of VS Code flavors. The correct configuration options can be found in
+// `resources/app/product.json` of the VS Code fork.
+//
+// - Display name
+// - Server directory, matching serverDataFolderName in `product.json`.
+// - Server binary name, matching serverApplicationName in `product.json`.
 var flavorConfigs = map[Flavor]flavorConfig{
 	FlavorStable:      {"VS Code", ".vscode-server", "code-server"},
 	FlavorInsiders:    {"VS Code Insiders", ".vscode-server-insiders", "code-server-insiders"},
 	FlavorCursor:      {"Cursor", ".cursor-server", "cursor-server"},
-	FlavorPositron:    {"positron", ".positron-server", "positron"},
-	FlavorCodium:      {"VSCodium", ".vscodium-server", "codium"},
-	FlavorWindsurf:    {"Windsurf", ".windsurf-server", "windsurf"},
-	FlavorAntigravity: {"Antigravity", ".antigravity-server", "agy"},
+	FlavorPositron:    {"positron", ".positron-server", "positron-server"},
+	FlavorCodium:      {"VSCodium", ".vscodium-server", "codium-server"},
+	FlavorWindsurf:    {"Windsurf", ".windsurf-server", "windsurf-server"},
+	FlavorAntigravity: {"Antigravity", ".antigravity-server", "antigravity-server"},
 }
 
 func (f Flavor) DisplayName() string {
@@ -202,11 +208,6 @@ func (o *VsCodeServer) installExtension(binPath, extension string, stdout, stder
 func (o *VsCodeServer) buildExtensionCommand(binPath, extension string) *exec.Cmd {
 	args := []string{"--install-extension", extension}
 
-	// VS Code stable/insiders use serve-local subcommand
-	if o.flavor == FlavorStable || o.flavor == FlavorInsiders {
-		args = append([]string{"serve-local", "--accept-server-license-terms"}, args...)
-	}
-
 	if o.userName != "" {
 		cmd := shellquote.Join(append([]string{binPath}, args...)...)
 		return exec.Command("su", o.userName, "-c", cmd)
@@ -281,8 +282,17 @@ func (o *VsCodeServer) findInDir(root, binName string) string {
 			return filepath.SkipDir
 		}
 
-		depth := strings.Count(strings.TrimPrefix(path, root), string(filepath.Separator))
+		pathRelative := strings.TrimPrefix(path, root)
+		depth := strings.Count(pathRelative, string(filepath.Separator))
 		if depth > maxSearchDepth {
+			return filepath.SkipDir
+		}
+
+		// The VS Code server gets installed into a staging directory, which is
+		// later renamed. Do not consider the staging directory a valid
+		// destination, as it won't be valid by the time the server binary is
+		// called.
+		if d.IsDir() && strings.Contains(pathRelative, ".staging") {
 			return filepath.SkipDir
 		}
 

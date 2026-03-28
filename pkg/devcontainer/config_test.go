@@ -6,6 +6,7 @@ import (
 
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	provider2 "github.com/skevetter/devpod/pkg/provider"
+	"github.com/skevetter/log"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -22,6 +23,7 @@ func (s *SubstituteTestSuite) SetupTest() {
 	s.runner = &runner{
 		ID:                   "test-id",
 		LocalWorkspaceFolder: "/workspace",
+		Log:                  log.Discard,
 		WorkspaceConfig: &provider2.AgentWorkspaceInfo{
 			Workspace: &provider2.Workspace{
 				ID: "test-workspace",
@@ -159,4 +161,89 @@ func (s *SubstituteTestSuite) TestSubstitute_MissingVariable() {
 	s.NoError(err)
 	s.Equal("", result.Config.Image)
 	s.NotContains(ctx.Env, "NONEXISTENT")
+}
+
+func (s *SubstituteTestSuite) TestSubstitute_AdditionalFeatures() {
+	rawConfig := &config.DevContainerConfig{
+		ImageContainer: config.ImageContainer{Image: "alpine:latest"},
+	}
+	options := provider2.CLIOptions{
+		AdditionalFeatures: `{"ghcr.io/devcontainers/features/git:1": {}}`,
+	}
+
+	result, _, err := s.runner.substitute(options, rawConfig)
+
+	s.NoError(err)
+	s.Contains(result.Config.Features, "ghcr.io/devcontainers/features/git:1")
+}
+
+func (s *SubstituteTestSuite) TestSubstitute_AdditionalFeaturesMergesWithExisting() {
+	rawConfig := &config.DevContainerConfig{
+		ImageContainer: config.ImageContainer{Image: "alpine:latest"},
+		DevContainerConfigBase: config.DevContainerConfigBase{
+			Features: map[string]any{
+				"ghcr.io/devcontainers/features/node:1": map[string]any{"version": "20"},
+			},
+		},
+	}
+	options := provider2.CLIOptions{
+		AdditionalFeatures: `{"ghcr.io/devcontainers/features/git:1": {}}`,
+	}
+
+	result, _, err := s.runner.substitute(options, rawConfig)
+
+	s.NoError(err)
+	s.Len(result.Config.Features, 2)
+	s.Contains(result.Config.Features, "ghcr.io/devcontainers/features/node:1")
+	s.Contains(result.Config.Features, "ghcr.io/devcontainers/features/git:1")
+}
+
+func (s *SubstituteTestSuite) TestSubstitute_AdditionalFeaturesOverridesExisting() {
+	rawConfig := &config.DevContainerConfig{
+		ImageContainer: config.ImageContainer{Image: "alpine:latest"},
+		DevContainerConfigBase: config.DevContainerConfigBase{
+			Features: map[string]any{
+				"ghcr.io/devcontainers/features/node:1": map[string]any{"version": "18"},
+			},
+		},
+	}
+	options := provider2.CLIOptions{
+		AdditionalFeatures: `{"ghcr.io/devcontainers/features/node:1": {"version": "22"}}`,
+	}
+
+	result, _, err := s.runner.substitute(options, rawConfig)
+
+	s.NoError(err)
+	s.Len(result.Config.Features, 1)
+	nodeOpts, ok := result.Config.Features["ghcr.io/devcontainers/features/node:1"].(map[string]any)
+	s.Require().True(ok, "expected feature options to be map[string]any")
+	s.Equal("22", nodeOpts["version"])
+}
+
+func (s *SubstituteTestSuite) TestSubstitute_AdditionalFeaturesInvalidJSON() {
+	rawConfig := &config.DevContainerConfig{
+		ImageContainer: config.ImageContainer{Image: "alpine:latest"},
+	}
+	options := provider2.CLIOptions{
+		AdditionalFeatures: `{invalid json`,
+	}
+
+	_, _, err := s.runner.substitute(options, rawConfig)
+
+	s.Error(err)
+	s.Contains(err.Error(), "--additional-features")
+}
+
+func (s *SubstituteTestSuite) TestSubstitute_AdditionalFeaturesEmpty() {
+	rawConfig := &config.DevContainerConfig{
+		ImageContainer: config.ImageContainer{Image: "alpine:latest"},
+	}
+	options := provider2.CLIOptions{
+		AdditionalFeatures: "",
+	}
+
+	result, _, err := s.runner.substitute(options, rawConfig)
+
+	s.NoError(err)
+	s.Nil(result.Config.Features)
 }

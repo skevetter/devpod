@@ -48,7 +48,22 @@ main() {
 
     sync_host_binary
     data_home="${XDG_DATA_HOME:-$HOME/.local/share}"
-    exec /usr/bin/flatpak-spawn --host "${data_home}/devpod" "$@"
+
+    # Start with env flags, then --host, binary, then the original CLI args.
+    set -- "--host" "${data_home}/devpod" "$@"
+    value="${DEVPOD_ADDITIONAL_ENV_VARS:-}"
+    if [ -n "$value" ]; then
+        old_ifs="$IFS"
+        IFS=','
+        for entry in $value; do
+            case "$entry" in
+                *=*) set -- "--env=${entry}" "$@" ;;
+            esac
+        done
+        IFS="$old_ifs"
+    fi
+
+    exec /usr/bin/flatpak-spawn "$@"
 }
 
 main "$@"
