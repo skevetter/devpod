@@ -101,7 +101,11 @@ func InstallDaemon(agentDir string, interval string, log log.Logger) error {
 	}
 
 	// check if admin
-	service, err := daemon.New(pkgconfig.BinaryName, "DevPod Agent Service", daemon.SystemDaemon)
+	service, err := daemon.New(
+		pkgconfig.BinaryName,
+		pkgconfig.DaemonServiceDescription,
+		daemon.SystemDaemon,
+	)
 	if err != nil {
 		return err
 	}
@@ -149,7 +153,11 @@ func RemoveDaemon() error {
 	}
 
 	// check if admin
-	service, err := daemon.New(pkgconfig.BinaryName, "DevPod Agent Service", daemon.SystemDaemon)
+	service, err := daemon.New(
+		pkgconfig.BinaryName,
+		pkgconfig.DaemonServiceDescription,
+		daemon.SystemDaemon,
+	)
 	if err != nil {
 		return err
 	}

@@ -446,7 +446,7 @@ func VerifyVersion(baseClient Client) error {
 		return fmt.Errorf(
 			"unsupported %[1]s version %[2]s. Please downgrade your CLI to below v%[3]d.0.0 to support this version, "+
 				"as %[1]s v%[3]d.0.0 and newer versions are incompatible with v%[4]d.x.x",
-			"DevPod Pro",
+			pkgconfig.ProductNamePro,
 			v.Version,
 			cliVersion.Major,
 			backendMajor,
@@ -455,7 +455,7 @@ func VerifyVersion(baseClient Client) error {
 		return fmt.Errorf(
 			"unsupported %[1]s version %[2]s. Please upgrade your CLI to v%[3]d.0.0 or above to support this version, "+
 				"as %[1]s v%[3]d.0.0 and newer versions are incompatible with v%[4]d.x.x",
-			"DevPod Pro",
+			pkgconfig.ProductNamePro,
 			v.Version,
 			backendMajor,
 			cliVersion.Major,

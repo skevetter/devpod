@@ -19,6 +19,7 @@ import (
 	"github.com/skevetter/devpod/pkg/agent"
 	"github.com/skevetter/devpod/pkg/agent/tunnel"
 	"github.com/skevetter/devpod/pkg/command"
+	pkgconfig "github.com/skevetter/devpod/pkg/config"
 	copy2 "github.com/skevetter/devpod/pkg/copy"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	"github.com/skevetter/devpod/pkg/envfile"
@@ -29,7 +30,7 @@ import (
 )
 
 const (
-	ResultLocation = "/var/run/devpod/result.json"
+	ResultLocation = pkgconfig.DevContainerResultPath
 )
 
 type ContainerSetupConfig struct {

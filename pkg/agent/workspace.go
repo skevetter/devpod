@@ -426,20 +426,22 @@ func CloneRepositoryForWorkspace(
 	log.Done("cloned repository")
 
 	// Get .devpodignore files to exclude
-	f, err := os.Open(filepath.Join(workspaceDir, ".devpodignore"))
+	f, err := os.Open(
+		filepath.Join(workspaceDir, config.IgnoreFileName),
+	) // #nosec G304 -- path is controlled by the application, not user input
 	if err != nil {
 		return nil
 	}
 	excludes, err := ignorefile.ReadAll(f)
 	if err != nil {
-		log.Warn(".devpodignore file is invalid : ", err)
+		log.Warn(config.IgnoreFileName+" file is invalid : ", err)
 		return nil
 	}
 	// Remove files from workspace content folder
 	for _, exclude := range excludes {
 		_ = os.RemoveAll(filepath.Join(workspaceDir, exclude))
 	}
-	log.Debug("Ignore files from .devpodignore ", excludes)
+	log.Debug("Ignore files from "+config.IgnoreFileName+" ", excludes)
 
 	return nil
 }

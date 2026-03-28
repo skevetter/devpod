@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/skevetter/devpod/pkg/command"
+	pkgconfig "github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/file"
 	"github.com/skevetter/log"
 )
@@ -17,10 +18,13 @@ const (
 
 devpod agent git-ssh-signature "$@"
 `
-	HelperScriptPath  = "/usr/local/bin/devpod-ssh-signature"
+)
+
+var (
+	HelperScriptPath  = pkgconfig.SSHSignatureHelperPath
 	GitConfigTemplate = `
 [gpg "ssh"]
-	program = devpod-ssh-signature
+	program = ` + pkgconfig.SSHSignatureHelperName + `
 [gpg]
 	format = ssh
 [user]
@@ -108,7 +112,7 @@ func updateGitConfig(gitConfigPath, userName, gitSigningKey string) error {
 		return err
 	}
 
-	if !strings.Contains(configContent, "program = devpod-ssh-signature") {
+	if !strings.Contains(configContent, "program = "+pkgconfig.SSHSignatureHelperName) {
 		newConfig := fmt.Sprintf(GitConfigTemplate, gitSigningKey)
 		newContent := removeSignatureHelper(configContent) + newConfig
 		if err := writeGitConfig(gitConfigPath, newContent, userName); err != nil {

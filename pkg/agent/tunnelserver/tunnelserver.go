@@ -15,6 +15,7 @@ import (
 	"github.com/moby/patternmatcher/ignorefile"
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/agent/tunnel"
+	pkgconfig "github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	"github.com/skevetter/devpod/pkg/dockercredentials"
 	"github.com/skevetter/devpod/pkg/extract"
@@ -446,13 +447,13 @@ func (t *tunnelServer) StreamWorkspace(
 
 	// Get .devpodignore files to exclude
 	excludes := []string{}
-	f, err := os.Open(filepath.Join(t.workspace.Source.LocalFolder, ".devpodignore"))
+	f, err := os.Open(filepath.Join(t.workspace.Source.LocalFolder, pkgconfig.IgnoreFileName))
 	if err == nil {
 		excludes, err = ignorefile.ReadAll(f)
 		if err != nil {
 			t.log.WithFields(logrus.Fields{
 				"error": err,
-			}).Warn("error reading .devpodignore file")
+			}).Warn("error reading " + pkgconfig.IgnoreFileName + " file")
 		}
 	}
 
@@ -491,13 +492,13 @@ func (t *tunnelServer) StreamMount(
 	// Get .devpodignore files to exclude
 	excludes := []string{}
 	if t.workspace != nil {
-		f, err := os.Open(filepath.Join(t.workspace.Source.LocalFolder, ".devpodignore"))
+		f, err := os.Open(filepath.Join(t.workspace.Source.LocalFolder, pkgconfig.IgnoreFileName))
 		if err == nil {
 			excludes, err = ignorefile.ReadAll(f)
 			if err != nil {
 				t.log.WithFields(logrus.Fields{
 					"error": err,
-				}).Warn("error reading .devpodignore file")
+				}).Warn("error reading " + pkgconfig.IgnoreFileName + " file")
 			}
 		}
 	}

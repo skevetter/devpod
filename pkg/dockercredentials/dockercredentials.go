@@ -92,7 +92,7 @@ func configureCredentials(
 	}
 
 	// write credentials helper
-	helperName := "docker-credential-devpod"
+	helperName := pkgconfig.DockerCredentialHelperName
 	if runtime.GOOS == windowsOS {
 		helperName += ".cmd"
 	}

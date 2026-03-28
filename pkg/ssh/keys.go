@@ -19,9 +19,9 @@ import (
 )
 
 var (
-	DevPodSSHHostKeyFile    = "id_devpod_rsa_host"
-	DevPodSSHPrivateKeyFile = "id_devpod_rsa"
-	DevPodSSHPublicKeyFile  = "id_devpod_rsa.pub"
+	DevPodSSHHostKeyFile    = "id_" + config.BinaryName + "_rsa_host"
+	DevPodSSHPrivateKeyFile = "id_" + config.BinaryName + "_rsa"
+	DevPodSSHPublicKeyFile  = "id_" + config.BinaryName + "_rsa.pub"
 )
 
 var keyLock sync.Mutex

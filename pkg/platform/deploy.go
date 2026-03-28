@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	pkgconfig "github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/log"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -45,11 +46,11 @@ func WaitForPodReady(
 				LabelSelector: "app=loft",
 			})
 			if err != nil {
-				log.Warnf("Error trying to retrieve %s pod: %v", "DevPod Pro", err)
+				log.Warnf("Error trying to retrieve %s pod: %v", pkgconfig.ProductNamePro, err)
 				return false, nil
 			} else if len(pods.Items) == 0 {
 				if time.Now().After(now.Add(time.Second * 10)) {
-					log.Infof("Still waiting for a %s pod...", "DevPod Pro")
+					log.Infof("Still waiting for a %s pod...", pkgconfig.ProductNamePro)
 					now = time.Now()
 				}
 				return false, nil
@@ -90,7 +91,7 @@ func WaitForPodReady(
 					if err != nil {
 						return false, fmt.Errorf(
 							"there seems to be an issue with %s starting up: %s (%s). Please reach out to our support at https://loft.sh/",
-							"DevPod Pro",
+							pkgconfig.ProductNamePro,
 							message,
 							reason,
 						)
@@ -103,7 +104,7 @@ func WaitForPodReady(
 							"%[1]s logs: \n%[2]v \nThere seems to be an issue with %[1]s starting up. "+
 								"Looks like you try to install %[1]s into an air-gapped environment, "+
 								"please reach out to our support at https://loft.sh/ for an offline license",
-							"DevPod Pro",
+							pkgconfig.ProductNamePro,
 							string(out),
 						)
 					}
@@ -111,7 +112,7 @@ func WaitForPodReady(
 					return false, fmt.Errorf(
 						"%[1]s logs: \n%v \nThere seems to be an issue with %[1]s starting up: %[2]s (%[3]s). "+
 							"Please reach out to our support at https://loft.sh/",
-						"DevPod Pro",
+						pkgconfig.ProductNamePro,
 						string(out),
 						message,
 						reason,
@@ -120,20 +121,20 @@ func WaitForPodReady(
 					if containerStatus.State.Waiting.Message != "" {
 						log.Infof(
 							"Please keep waiting, %s container is still starting up: %s (%s)",
-							"DevPod Pro",
+							pkgconfig.ProductNamePro,
 							containerStatus.State.Waiting.Message,
 							containerStatus.State.Waiting.Reason,
 						)
 					} else if containerStatus.State.Waiting.Reason != "" {
 						log.Infof(
 							"Please keep waiting, %s container is still starting up: %s",
-							"DevPod Pro",
+							pkgconfig.ProductNamePro,
 							containerStatus.State.Waiting.Reason,
 						)
 					} else {
 						log.Infof(
 							"Please keep waiting, %s container is still starting up...",
-							"DevPod Pro",
+							pkgconfig.ProductNamePro,
 						)
 					}
 
