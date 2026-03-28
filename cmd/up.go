@@ -15,6 +15,7 @@ import (
 	"strings"
 	"syscall"
 
+	"al.essio.dev/pkg/shellescape"
 	"github.com/blang/semver/v4"
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/cmd/flags"
@@ -1565,7 +1566,10 @@ func setupGitSSHSignature(
 		"--context",
 		client.Context(),
 		client.Workspace(),
-		"--command", fmt.Sprintf("devpod agent git-ssh-signature-helper %s", signingKey),
+		"--command",
+		shellescape.QuoteCommand(
+			[]string{"devpod", "agent", "git-ssh-signature-helper", signingKey},
+		),
 	).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("setup git ssh signature helper: %w, output: %s", err, string(out))

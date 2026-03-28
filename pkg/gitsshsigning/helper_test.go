@@ -56,3 +56,36 @@ func (s *HelperTestSuite) TestRemoveSignatureHelper_NoGpgSections() {
 
 	assert.Equal(s.T(), input, result)
 }
+
+func (s *HelperTestSuite) TestRemoveSignatureHelper_PreservesUserOwnedGpgSSHKeys() {
+	input := strings.Join([]string{
+		"[user]", "\tname = Test User",
+		`[gpg "ssh"]`, "\tprogram = devpod-ssh-signature",
+		"\tallowedSignersFile = ~/.ssh/allowed_signers",
+		"[commit]", "\tgpgsign = true",
+	}, "\n")
+
+	result := removeSignatureHelper(input)
+
+	assert.NotContains(s.T(), result, "devpod-ssh-signature")
+	assert.Contains(s.T(), result, `[gpg "ssh"]`,
+		"section header should be preserved when user keys remain")
+	assert.Contains(s.T(), result, "allowedSignersFile",
+		"user-owned key should be preserved")
+	assert.Contains(s.T(), result, "[commit]")
+}
+
+func (s *HelperTestSuite) TestRemoveSignatureHelper_DropsEmptyGpgSSHSection() {
+	input := strings.Join([]string{
+		"[user]", "\tname = Test User",
+		`[gpg "ssh"]`, "\tprogram = devpod-ssh-signature",
+		"[commit]", "\tgpgsign = true",
+	}, "\n")
+
+	result := removeSignatureHelper(input)
+
+	assert.NotContains(s.T(), result, "devpod-ssh-signature")
+	assert.NotContains(s.T(), result, `[gpg "ssh"]`,
+		"empty section should be dropped entirely")
+	assert.Contains(s.T(), result, "[commit]")
+}

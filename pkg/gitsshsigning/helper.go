@@ -10,7 +10,6 @@ import (
 	"github.com/skevetter/devpod/pkg/command"
 	"github.com/skevetter/devpod/pkg/file"
 	"github.com/skevetter/log"
-	"github.com/skevetter/log/scanner"
 )
 
 const (
@@ -150,41 +149,72 @@ func removeGitConfigHelper(gitConfigPath, userName string) error {
 }
 
 func removeSignatureHelper(content string) string {
-	scan := scanner.NewScanner(strings.NewReader(content))
 	inGpgSSHSection := false
 	inGpgSection := false
-	out := []string{}
+	var gpgSSHBuffer []string
+	var out []string
 
-	for scan.Scan() {
-		line := scan.Text()
+	for line := range strings.Lines(content) {
+		line = strings.TrimRight(line, "\n")
 		trimmed := strings.TrimSpace(line)
 
-		// Track section transitions
-		if len(trimmed) > 0 && trimmed[0] == '[' {
+		if isSectionHeader(trimmed) {
+			if inGpgSSHSection {
+				out = append(out, filterGpgSSHSection(gpgSSHBuffer)...)
+				gpgSSHBuffer = nil
+			}
 			inGpgSSHSection = trimmed == `[gpg "ssh"]`
 			inGpgSection = trimmed == "[gpg]"
-
-			// Skip the entire [gpg "ssh"] section header (devpod-managed)
 			if inGpgSSHSection {
+				gpgSSHBuffer = append(gpgSSHBuffer, line)
 				continue
 			}
 		}
 
-		// Skip all lines inside [gpg "ssh"] section
 		if inGpgSSHSection {
+			gpgSSHBuffer = append(gpgSSHBuffer, line)
 			continue
 		}
 
-		// Inside [gpg] section, only skip devpod-managed keys
-		if inGpgSection && len(trimmed) > 0 && trimmed[0] != '[' {
-			if strings.HasPrefix(trimmed, "format = ssh") ||
-				strings.HasPrefix(trimmed, "program = devpod-ssh-signature") {
-				continue
-			}
+		if !isDevpodManagedGpgKey(inGpgSection, trimmed) {
+			out = append(out, line)
 		}
+	}
 
-		out = append(out, line)
+	if inGpgSSHSection {
+		out = append(out, filterGpgSSHSection(gpgSSHBuffer)...)
 	}
 
 	return strings.Join(out, "\n")
+}
+
+func isSectionHeader(trimmed string) bool {
+	return len(trimmed) > 0 && trimmed[0] == '['
+}
+
+func isDevpodManagedGpgKey(inGpgSection bool, trimmed string) bool {
+	if !inGpgSection || len(trimmed) == 0 || trimmed[0] == '[' {
+		return false
+	}
+	return strings.HasPrefix(trimmed, "format = ssh") ||
+		strings.HasPrefix(trimmed, "program = devpod-ssh-signature")
+}
+
+// filterGpgSSHSection removes devpod-managed keys from a buffered [gpg "ssh"]
+// section. Returns the header + remaining user keys, or nil if no user keys remain.
+func filterGpgSSHSection(lines []string) []string {
+	if len(lines) == 0 {
+		return nil
+	}
+	var kept []string
+	for _, line := range lines[1:] {
+		trimmed := strings.TrimSpace(line)
+		if !strings.HasPrefix(trimmed, "program = devpod-ssh-signature") {
+			kept = append(kept, line)
+		}
+	}
+	if len(kept) == 0 {
+		return nil
+	}
+	return append([]string{lines[0]}, kept...)
 }
