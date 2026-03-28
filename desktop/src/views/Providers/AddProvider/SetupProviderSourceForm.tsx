@@ -113,20 +113,22 @@ export function SetupProviderSourceForm({
       removeDanglingProviders()
       // custom name taken
       if (maybeProviderName !== undefined && providers?.[maybeProviderName] !== undefined) {
-        setValue(
-          FieldName.PROVIDER_NAME,
-          `${maybeProviderName}-${randomString(8)}`,
-          DEFAULT_VAL_OPTS
-        )
+        const generatedName = `${maybeProviderName}-${randomString(8)}`
+        setValue(FieldName.PROVIDER_NAME, generatedName, DEFAULT_VAL_OPTS)
+        addProvider({
+          rawProviderSource: providerSource,
+          config: { name: generatedName },
+        })
         // preferred ID available
       } else if (maybeProviderName === undefined && preferredProviderName !== undefined) {
         // preferred ID taken
         if (providers?.[preferredProviderName] !== undefined) {
-          setValue(
-            FieldName.PROVIDER_NAME,
-            `${preferredProviderName}-${randomString(8)}`,
-            DEFAULT_VAL_OPTS
-          )
+          const generatedName = `${preferredProviderName}-${randomString(8)}`
+          setValue(FieldName.PROVIDER_NAME, generatedName, DEFAULT_VAL_OPTS)
+          addProvider({
+            rawProviderSource: providerSource,
+            config: { name: generatedName },
+          })
         } else {
           // preferred ID available
           setValue(FieldName.PROVIDER_NAME, undefined, DEFAULT_VAL_OPTS)

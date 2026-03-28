@@ -118,12 +118,15 @@ function ProviderOptionsForm(props: TProviderOptionsFormProps) {
 
       if (newName && newName !== providerID) {
         await rename.run({ oldProviderID: providerID, newProviderID: newName })
-        navigate(Routes.toProvider(newName), { replace: true })
-      } else {
-        await queryClient.invalidateQueries({ queryKey: QueryKeys.PROVIDERS })
+        // Navigate to the provider detail page when NOT in a modal flow.
+        // In the modal flow, onFinish handles closing the modal.
+        if (!props.isModal) {
+          navigate(Routes.toProvider(newName), { replace: true })
+        }
       }
+      await queryClient.invalidateQueries({ queryKey: QueryKeys.PROVIDERS })
     },
-    [queryClient, navigate, rename]
+    [queryClient, navigate, rename, props.isModal]
   )
 
   return <ConfigureOptionsForm {...props} onSave={handleSave} />

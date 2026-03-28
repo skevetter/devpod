@@ -40,14 +40,11 @@ export function useSetupProviderModal() {
         return
       }
 
-      if (suggestedProvider) {
-        setSuggestedProvider(suggestedProvider)
-      }
-
-      if (cloneProviderInfo) {
-        setCloneProviderInfo(cloneProviderInfo)
-      }
-
+      // Reset state to prevent stale values from previous modal usage
+      setSuggestedProvider(suggestedProvider)
+      setCloneProviderInfo(cloneProviderInfo)
+      setWasDismissed(false)
+      setCurrentProviderID(null)
       setIsStrict(isStrict)
       onOpen()
     },
