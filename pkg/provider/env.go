@@ -12,37 +12,6 @@ import (
 	log2 "github.com/skevetter/log"
 )
 
-const (
-	// workspace.
-	WorkspaceID        = "WORKSPACE_ID"
-	WorkspaceUID       = "WORKSPACE_UID"
-	WorkspacePicture   = "WORKSPACE_PICTURE"
-	WorkspaceFolder    = "WORKSPACE_FOLDER"
-	WorkspaceContext   = "WORKSPACE_CONTEXT"
-	WorkspaceOrigin    = "WORKSPACE_ORIGIN"
-	WorkspaceSourceEnv = "WORKSPACE_SOURCE"
-	WorkspaceProvider  = "WORKSPACE_PROVIDER"
-
-	// machine.
-	MachineID       = "MACHINE_ID"
-	MachineContext  = "MACHINE_CONTEXT"
-	MachineFolder   = "MACHINE_FOLDER"
-	MachineProvider = "MACHINE_PROVIDER"
-
-	// provider.
-	ProviderID      = "PROVIDER_ID"
-	ProviderContext = "PROVIDER_CONTEXT"
-	ProviderFolder  = "PROVIDER_FOLDER"
-
-	// pro.
-	LoftProject       = "LOFT_PROJECT"
-	LoftFilterByOwner = "LOFT_FILTER_BY_OWNER"
-)
-
-const (
-	DevcontainerID = "DEVCONTAINER_ID"
-)
-
 func combineOptions(
 	resolvedOptions map[string]config.OptionValue,
 	otherOptions map[string]config.OptionValue,
@@ -95,34 +64,39 @@ func ToOptionsWorkspace(workspace *Workspace) map[string]string {
 	retVars := map[string]string{}
 	if workspace != nil {
 		if workspace.ID != "" {
-			retVars[WorkspaceID] = workspace.ID
+			retVars[config.EnvProviderWorkspaceID] = workspace.ID
 		}
 		if workspace.UID != "" {
-			retVars[WorkspaceUID] = workspace.UID
+			retVars[config.EnvProviderWorkspaceUID] = workspace.UID
 		}
-		retVars[WorkspaceFolder], _ = GetWorkspaceDir(workspace.Context, workspace.ID)
-		retVars[WorkspaceFolder] = filepath.ToSlash(retVars[WorkspaceFolder])
+		retVars[config.EnvProviderWorkspaceFolder], _ = GetWorkspaceDir(
+			workspace.Context,
+			workspace.ID,
+		)
+		retVars[config.EnvProviderWorkspaceFolder] = filepath.ToSlash(
+			retVars[config.EnvProviderWorkspaceFolder],
+		)
 		if workspace.Context != "" {
-			retVars[WorkspaceContext] = workspace.Context
-			retVars[MachineContext] = workspace.Context
+			retVars[config.EnvProviderWorkspaceContext] = workspace.Context
+			retVars[config.EnvProviderMachineContext] = workspace.Context
 		}
 		if workspace.Origin != "" {
-			retVars[WorkspaceOrigin] = filepath.ToSlash(workspace.Origin)
+			retVars[config.EnvProviderWorkspaceOrigin] = filepath.ToSlash(workspace.Origin)
 		}
 		if workspace.Picture != "" {
-			retVars[WorkspacePicture] = workspace.Picture
+			retVars[config.EnvProviderWorkspacePicture] = workspace.Picture
 		}
-		retVars[WorkspaceSourceEnv] = workspace.Source.String()
+		retVars[config.EnvProviderWorkspaceSource] = workspace.Source.String()
 		if workspace.Provider.Name != "" {
-			retVars[WorkspaceProvider] = workspace.Provider.Name
+			retVars[config.EnvProviderWorkspaceProvider] = workspace.Provider.Name
 		}
 		if workspace.Machine.ID != "" {
-			retVars[MachineID] = workspace.Machine.ID
+			retVars[config.EnvProviderMachineID] = workspace.Machine.ID
 			machineDir, _ := GetMachineDir(workspace.Context, workspace.Machine.ID)
-			retVars[MachineFolder] = filepath.ToSlash(machineDir)
+			retVars[config.EnvProviderMachineFolder] = filepath.ToSlash(machineDir)
 		}
 		if workspace.Pro != nil && workspace.Pro.Project != "" {
-			retVars[LoftProject] = workspace.Pro.Project
+			retVars[config.EnvLoftProject] = workspace.Pro.Project
 		}
 		maps.Copy(retVars, GetBaseEnvironment(workspace.Context, workspace.Provider.Name))
 	}
@@ -133,15 +107,17 @@ func ToOptionsMachine(machine *Machine) map[string]string {
 	retVars := map[string]string{}
 	if machine != nil {
 		if machine.ID != "" {
-			retVars[MachineID] = machine.ID
+			retVars[config.EnvProviderMachineID] = machine.ID
 		}
-		retVars[MachineFolder], _ = GetMachineDir(machine.Context, machine.ID)
-		retVars[MachineFolder] = filepath.ToSlash(retVars[MachineFolder])
+		retVars[config.EnvProviderMachineFolder], _ = GetMachineDir(machine.Context, machine.ID)
+		retVars[config.EnvProviderMachineFolder] = filepath.ToSlash(
+			retVars[config.EnvProviderMachineFolder],
+		)
 		if machine.Context != "" {
-			retVars[MachineContext] = machine.Context
+			retVars[config.EnvProviderMachineContext] = machine.Context
 		}
 		if machine.Provider.Name != "" {
-			retVars[MachineProvider] = machine.Provider.Name
+			retVars[config.EnvProviderMachineProvider] = machine.Provider.Name
 		}
 		maps.Copy(retVars, GetBaseEnvironment(machine.Context, machine.Provider.Name))
 	}
@@ -180,10 +156,10 @@ func GetBaseEnvironment(context, provider string) map[string]string {
 	retVars[config.EnvBinaryPath] = filepath.ToSlash(devPodBinary)
 	retVars[config.EnvOS] = runtime.GOOS
 	retVars[config.EnvArch] = runtime.GOARCH
-	retVars[ProviderID] = provider
-	retVars[ProviderContext] = context
+	retVars[config.EnvProviderID] = provider
+	retVars[config.EnvProviderContext] = context
 	providerFolder, _ := GetProviderDir(context, provider)
-	retVars[ProviderFolder] = filepath.ToSlash(providerFolder)
+	retVars[config.EnvProviderFolder] = filepath.ToSlash(providerFolder)
 	retVars[config.EnvLogLevel] = log2.Default.GetLevel().String()
 	return retVars
 }

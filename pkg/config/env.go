@@ -83,4 +83,60 @@ const (
 
 	// EnvProviderPrefix is the prefix for provider-specific option env vars (append provider name + "_").
 	EnvProviderPrefix = EnvPrefix + "PROVIDER_"
+
+	// --- Provider-scoped env vars (set when running provider commands) ---.
+
+	// EnvProviderWorkspaceID is the workspace identifier passed to providers.
+	EnvProviderWorkspaceID = "WORKSPACE_ID"
+
+	// EnvProviderWorkspaceUID is the workspace UID passed to providers.
+	EnvProviderWorkspaceUID = "WORKSPACE_UID"
+
+	// EnvProviderWorkspacePicture is the workspace picture URL passed to providers.
+	EnvProviderWorkspacePicture = "WORKSPACE_PICTURE"
+
+	// EnvProviderWorkspaceFolder is the workspace folder path passed to providers.
+	EnvProviderWorkspaceFolder = "WORKSPACE_FOLDER"
+
+	// EnvProviderWorkspaceContext is the workspace context passed to providers.
+	EnvProviderWorkspaceContext = "WORKSPACE_CONTEXT"
+
+	// EnvProviderWorkspaceOrigin is the workspace origin passed to providers.
+	EnvProviderWorkspaceOrigin = "WORKSPACE_ORIGIN"
+
+	// EnvProviderWorkspaceSource is the workspace source passed to providers.
+	EnvProviderWorkspaceSource = "WORKSPACE_SOURCE"
+
+	// EnvProviderWorkspaceProvider is the workspace provider name passed to providers.
+	EnvProviderWorkspaceProvider = "WORKSPACE_PROVIDER"
+
+	// EnvProviderMachineID is the machine identifier passed to providers.
+	EnvProviderMachineID = "MACHINE_ID"
+
+	// EnvProviderMachineContext is the machine context passed to providers.
+	EnvProviderMachineContext = "MACHINE_CONTEXT"
+
+	// EnvProviderMachineFolder is the machine folder path passed to providers.
+	EnvProviderMachineFolder = "MACHINE_FOLDER"
+
+	// EnvProviderMachineProvider is the machine provider name passed to providers.
+	EnvProviderMachineProvider = "MACHINE_PROVIDER"
+
+	// EnvProviderID is the provider identifier passed to providers.
+	EnvProviderID = "PROVIDER_ID"
+
+	// EnvProviderContext is the provider context passed to providers.
+	EnvProviderContext = "PROVIDER_CONTEXT"
+
+	// EnvProviderFolder is the provider folder path passed to providers.
+	EnvProviderFolder = "PROVIDER_FOLDER"
+
+	// EnvLoftProject is the Loft project name for pro features.
+	EnvLoftProject = "LOFT_PROJECT"
+
+	// EnvLoftFilterByOwner enables filtering by owner in Loft.
+	EnvLoftFilterByOwner = "LOFT_FILTER_BY_OWNER"
+
+	// EnvDevcontainerID is the devcontainer identifier.
+	EnvDevcontainerID = "DEVCONTAINER_ID"
 )
