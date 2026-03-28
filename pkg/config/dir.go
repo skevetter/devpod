@@ -22,6 +22,12 @@ const UIEnvVar = "DEVPOD_UI"
 // DebugEnvVar is the environment variable to enable debug logging.
 const DebugEnvVar = "DEVPOD_DEBUG"
 
+// DisableTelemetryEnvVar is the environment variable to disable telemetry.
+const DisableTelemetryEnvVar = "DEVPOD_DISABLE_TELEMETRY"
+
+// WorkspaceCredentialsPortEnv is the environment variable for the workspace credentials server port.
+const WorkspaceCredentialsPortEnv = "DEVPOD_WORKSPACE_CREDENTIALS_PORT" // #nosec G101
+
 func GetConfigDir() (string, error) {
 	homeDir := os.Getenv(DEVPOD_HOME)
 	if homeDir != "" {

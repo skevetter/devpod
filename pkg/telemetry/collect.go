@@ -55,7 +55,7 @@ type CLICollector interface {
 func StartCLI(devPodConfig *config.Config, cmd *cobra.Command) {
 	telemetryOpt := devPodConfig.ContextOption(config.ContextOptionTelemetry)
 	if telemetryOpt == "false" || version.GetVersion() == version.DevVersion ||
-		os.Getenv("DEVPOD_DISABLE_TELEMETRY") == "true" {
+		os.Getenv(config.DisableTelemetryEnvVar) == "true" {
 		return
 	}
 

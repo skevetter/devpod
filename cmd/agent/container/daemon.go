@@ -15,6 +15,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/agent"
+	config2 "github.com/skevetter/devpod/pkg/config"
 	agentd "github.com/skevetter/devpod/pkg/daemon/agent"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	"github.com/skevetter/devpod/pkg/platform/client"
@@ -26,7 +27,7 @@ import (
 
 const (
 	RootDir          = agent.ContainerDataDir
-	DaemonConfigPath = "/var/run/secrets/devpod/daemon_config"
+	DaemonConfigPath = "/var/run/secrets/" + config2.BinaryName + "/daemon_config"
 )
 
 type DaemonCmd struct {
