@@ -13,9 +13,6 @@ import (
 )
 
 const (
-	// general.
-	DEVPOD = "DEVPOD"
-
 	// workspace.
 	WORKSPACE_ID       = "WORKSPACE_ID"
 	WORKSPACE_UID      = "WORKSPACE_UID"
@@ -180,7 +177,7 @@ func GetBaseEnvironment(context, provider string) map[string]string {
 
 	// devpod binary
 	devPodBinary, _ := os.Executable()
-	retVars[DEVPOD] = filepath.ToSlash(devPodBinary)
+	retVars[config.EnvBinaryPath] = filepath.ToSlash(devPodBinary)
 	retVars[config.EnvOS] = runtime.GOOS
 	retVars[config.EnvArch] = runtime.GOARCH
 	retVars[PROVIDER_ID] = provider

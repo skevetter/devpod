@@ -3,6 +3,9 @@ package config
 // Environment variable constants used throughout the application.
 // All constants follow the EnvXxx naming convention.
 const (
+	// EnvBinaryPath is set to the path of the DevPod binary.
+	EnvBinaryPath = "DEVPOD"
+
 	// EnvHome overrides the default DevPod home directory.
 	EnvHome = "DEVPOD_HOME"
 
