@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/onsi/ginkgo/v2"
@@ -103,6 +104,81 @@ var _ = ginkgo.Describe("devpod ssh test suite", ginkgo.Label("ssh"), ginkgo.Ord
 	// 	}
 	// 	framework.ExpectNoError(err)
 	// })
+
+	ginkgo.It(
+		"should set up git SSH signature helper in workspace",
+		func(ctx context.Context) {
+			if runtime.GOOS == "windows" {
+				ginkgo.Skip("skipping on windows")
+			}
+
+			tempDir, err := framework.CopyToTempDir("tests/ssh/testdata/ssh-signing")
+			framework.ExpectNoError(err)
+
+			f := framework.NewDefaultFramework(initialDir + "/bin")
+			_ = f.DevPodProviderAdd(ctx, "docker")
+			err = f.DevPodProviderUse(ctx, "docker")
+			framework.ExpectNoError(err)
+
+			ginkgo.DeferCleanup(func(cleanupCtx context.Context) {
+				_ = f.DevPodWorkspaceDelete(cleanupCtx, tempDir)
+				framework.CleanupTempDir(initialDir, tempDir)
+			})
+
+			// Generate a temporary SSH key for signing
+			sshKeyDir, err := os.MkdirTemp("", "devpod-ssh-signing-test")
+			framework.ExpectNoError(err)
+			defer func() { _ = os.RemoveAll(sshKeyDir) }()
+
+			keyPath := filepath.Join(sshKeyDir, "id_ed25519")
+			// #nosec G204 -- test command with controlled arguments
+			err = exec.Command(
+				"ssh-keygen", "-t", "ed25519", "-f", keyPath, "-N", "", "-q",
+			).Run()
+			framework.ExpectNoError(err)
+
+			// Start workspace with git-ssh-signing-key flag
+			devpodUpCtx, cancel := context.WithTimeout(ctx, 5*time.Minute)
+			defer cancel()
+			err = f.DevPodUp(devpodUpCtx, tempDir,
+				"--git-ssh-signing-key", keyPath+".pub",
+			)
+			framework.ExpectNoError(err)
+
+			sshCtx, cancelSSH := context.WithTimeout(ctx, 20*time.Second)
+			defer cancelSSH()
+
+			// Verify the helper script was installed
+			out, err := f.DevPodSSH(sshCtx, tempDir,
+				"test -x /usr/local/bin/devpod-ssh-signature && echo EXISTS",
+			)
+			framework.ExpectNoError(err)
+			gomega.Expect(strings.TrimSpace(out)).To(
+				gomega.Equal("EXISTS"),
+				"devpod-ssh-signature helper script should be installed and executable",
+			)
+
+			// Verify git config has the SSH signing program set
+			out, err = f.DevPodSSH(sshCtx, tempDir,
+				"git config --global gpg.ssh.program",
+			)
+			framework.ExpectNoError(err)
+			gomega.Expect(strings.TrimSpace(out)).To(
+				gomega.Equal("devpod-ssh-signature"),
+				"git gpg.ssh.program should be set to devpod-ssh-signature",
+			)
+
+			// Verify git config has gpg format set to ssh
+			out, err = f.DevPodSSH(sshCtx, tempDir,
+				"git config --global gpg.format",
+			)
+			framework.ExpectNoError(err)
+			gomega.Expect(strings.TrimSpace(out)).To(
+				gomega.Equal("ssh"),
+				"git gpg.format should be set to ssh",
+			)
+		},
+	)
 
 	ginkgo.It(
 		"should start a new workspace with a docker provider (default) and forward a port into it",

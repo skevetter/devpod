@@ -1,0 +1,4 @@
+{
+  "name": "SSH Signing Test",
+  "image": "mcr.microsoft.com/devcontainers/go:1"
+}
