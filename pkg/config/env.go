@@ -74,4 +74,13 @@ const (
 
 	// EnvSubdomain is the subdomain configuration for DevPod Pro.
 	EnvSubdomain = "DEVPOD_SUBDOMAIN"
+
+	// EnvPrefix is the base prefix for all DevPod environment variables.
+	EnvPrefix = "DEVPOD_"
+
+	// EnvIDEPrefix is the prefix for IDE-specific option env vars (append IDE name + "_").
+	EnvIDEPrefix = EnvPrefix + "IDE_"
+
+	// EnvProviderPrefix is the prefix for provider-specific option env vars (append provider name + "_").
+	EnvProviderPrefix = EnvPrefix + "PROVIDER_"
 )

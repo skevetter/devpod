@@ -87,7 +87,7 @@ func setOptions(
 	userOptions = options2.InheritOptionsFromEnvironment(
 		userOptions,
 		ideOptions,
-		"DEVPOD_IDE_"+ide+"_",
+		config.EnvIDEPrefix+ide+"_",
 	)
 
 	optionValues, err := ideparse.ParseOptions(userOptions, ideOptions)

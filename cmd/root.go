@@ -166,13 +166,13 @@ func inheritFlagsFromEnvironment(flags *flag.FlagSet) {
 		// calculate environment variable name from flag name
 		suffix := strings.ToUpper(strings.ReplaceAll(flag.Name, "-", "_"))
 
-		// do not prepend "DEVPOD_" to the environment variable name if the flag name starts with "devpod"
+		// do not prepend the env prefix if the flag name already starts with it
 		// (applies to one flag - "devpod-home").
 		var environmentVariable string
-		if strings.HasPrefix(suffix, "DEVPOD_") {
+		if strings.HasPrefix(suffix, config.EnvPrefix) {
 			environmentVariable = suffix
 		} else {
-			environmentVariable = "DEVPOD_" + suffix
+			environmentVariable = config.EnvPrefix + suffix
 		}
 
 		if value, exists := os.LookupEnv(environmentVariable); exists {
