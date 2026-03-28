@@ -313,7 +313,7 @@ func (c *customDriver) runCommand(
 	if err != nil {
 		return err
 	}
-	environ = append(environ, provider.DEVCONTAINER_ID+"="+workspaceId)
+	environ = append(environ, provider.DevcontainerID+"="+workspaceId)
 	environ = append(environ, extraEnv...)
 
 	// set debug level

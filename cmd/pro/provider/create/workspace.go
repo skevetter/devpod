@@ -81,10 +81,10 @@ func (cmd *WorkspaceCmd) Run(
 	}
 
 	// Info through env, right now only used by CLI
-	workspaceID := os.Getenv(provider.WORKSPACE_ID)
-	workspaceUID := os.Getenv(provider.WORKSPACE_UID)
-	workspaceFolder := os.Getenv(provider.WORKSPACE_FOLDER)
-	workspaceContext := os.Getenv(provider.WORKSPACE_CONTEXT)
+	workspaceID := os.Getenv(provider.WorkspaceID)
+	workspaceUID := os.Getenv(provider.WorkspaceUID)
+	workspaceFolder := os.Getenv(provider.WorkspaceFolder)
+	workspaceContext := os.Getenv(provider.WorkspaceContext)
 	workspacePicture := os.Getenv(platform.WorkspacePictureEnv)
 	workspaceSource := os.Getenv(platform.WorkspaceSourceEnv)
 	if workspaceUID == "" || workspaceID == "" || workspaceFolder == "" {
