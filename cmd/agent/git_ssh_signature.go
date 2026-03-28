@@ -34,6 +34,11 @@ func NewGitSSHSignatureCmd(flags *flags.GlobalFlags) *cobra.Command {
 
 	gitSshSignatureCmd := &cobra.Command{
 		Use: "git-ssh-signature",
+		// Allow unknown flags so that git can pass any ssh-keygen flags
+		// (e.g. -U for stdin input) without cobra rejecting them.
+		FParseErrWhitelist: cobra.FParseErrWhitelist{
+			UnknownFlags: true,
+		},
 		RunE: func(_ *cobra.Command, args []string) error {
 			logger := log.GetInstance()
 

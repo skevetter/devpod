@@ -383,7 +383,7 @@ func (cmd *UpCmd) configureWorkspace(
 	}
 
 	if cmd.GitSSHSigningKey != "" {
-		if err := setupGitSSHSignature(cmd.GitSSHSigningKey, client, log); err != nil {
+		if err := setupGitSSHSignature(cmd.GitSSHSigningKey, client); err != nil {
 			return err
 		}
 	}
@@ -1539,7 +1539,6 @@ func collectDotfilesScriptEnvKeyvaluePairs(envFiles []string) ([]string, error) 
 func setupGitSSHSignature(
 	signingKey string,
 	client client2.BaseWorkspaceClient,
-	log log.Logger,
 ) error {
 	execPath, err := os.Executable()
 	if err != nil {
@@ -1555,7 +1554,8 @@ func setupGitSSHSignature(
 		remoteUser = "root"
 	}
 
-	err = exec.Command(
+	// #nosec G204 -- execPath is from os.Executable(), not user input
+	out, err := exec.Command(
 		execPath,
 		"ssh",
 		"--agent-forwarding=true",
@@ -1566,9 +1566,9 @@ func setupGitSSHSignature(
 		client.Context(),
 		client.Workspace(),
 		"--command", fmt.Sprintf("devpod agent git-ssh-signature-helper %s", signingKey),
-	).Run()
+	).CombinedOutput()
 	if err != nil {
-		log.Error("failure in setting up git ssh signature helper")
+		return fmt.Errorf("setup git ssh signature helper: %w, output: %s", err, string(out))
 	}
 	return nil
 }

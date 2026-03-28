@@ -151,24 +151,38 @@ func removeGitConfigHelper(gitConfigPath, userName string) error {
 
 func removeSignatureHelper(content string) string {
 	scan := scanner.NewScanner(strings.NewReader(content))
-	isGpgSetup := false
+	inGpgSSHSection := false
+	inGpgSection := false
 	out := []string{}
 
 	for scan.Scan() {
 		line := scan.Text()
-		if strings.TrimSpace(line) == "[gpg \"ssh\"]" {
-			isGpgSetup = true
-			continue
-		} else if strings.TrimSpace(line) == "[gpg]" {
-			isGpgSetup = true
-		} else if isGpgSetup {
-			trimmed := strings.TrimSpace(line)
-			if len(trimmed) > 0 && trimmed[0] == '[' {
-				isGpgSetup = false
-			} else {
+		trimmed := strings.TrimSpace(line)
+
+		// Track section transitions
+		if len(trimmed) > 0 && trimmed[0] == '[' {
+			inGpgSSHSection = trimmed == `[gpg "ssh"]`
+			inGpgSection = trimmed == "[gpg]"
+
+			// Skip the entire [gpg "ssh"] section header (devpod-managed)
+			if inGpgSSHSection {
 				continue
 			}
 		}
+
+		// Skip all lines inside [gpg "ssh"] section
+		if inGpgSSHSection {
+			continue
+		}
+
+		// Inside [gpg] section, only skip devpod-managed keys
+		if inGpgSection && len(trimmed) > 0 && trimmed[0] != '[' {
+			if strings.HasPrefix(trimmed, "format = ssh") ||
+				strings.HasPrefix(trimmed, "program = devpod-ssh-signature") {
+				continue
+			}
+		}
+
 		out = append(out, line)
 	}
 
