@@ -43,8 +43,8 @@ require (
 	github.com/loft-sh/programming-language-detection v0.0.5
 	github.com/mattn/go-isatty v0.0.20
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d
-	github.com/moby/buildkit v0.28.0
-	github.com/moby/patternmatcher v0.6.0
+	github.com/moby/buildkit v0.28.1
+	github.com/moby/patternmatcher v0.6.1
 	github.com/moby/term v0.5.2
 	github.com/onsi/ginkgo/v2 v2.28.1
 	github.com/onsi/gomega v1.39.1
