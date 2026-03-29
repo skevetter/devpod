@@ -318,7 +318,7 @@ func (c *customDriver) runCommand(
 
 	// set debug level
 	if log.GetLevel() == logrus.DebugLevel {
-		environ = append(environ, pkgconfig.EnvDebug+"=true")
+		environ = append(environ, pkgconfig.EnvDebug+"="+pkgconfig.BoolTrue)
 	}
 
 	// run the command

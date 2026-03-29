@@ -210,7 +210,7 @@ func filterGpgSSHSection(lines []string) []string {
 	var kept []string
 	for _, line := range lines[1:] {
 		trimmed := strings.TrimSpace(line)
-		if !strings.HasPrefix(trimmed, "program = devpod-ssh-signature") {
+		if !strings.HasPrefix(trimmed, "program = "+pkgconfig.SSHSignatureHelperName) {
 			kept = append(kept, line)
 		}
 	}

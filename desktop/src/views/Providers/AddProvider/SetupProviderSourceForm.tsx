@@ -559,7 +559,9 @@ function mapCommunityProviderInfo(
 }
 
 function stripDevpodPrefix(rawCommunityProvider: string): string {
-  return rawCommunityProvider.replace(PROVIDER_PREFIX, "")
+  return rawCommunityProvider.startsWith(PROVIDER_PREFIX)
+    ? rawCommunityProvider.slice(PROVIDER_PREFIX.length)
+    : rawCommunityProvider
 }
 
 function sortCommunityProviderInfo(a: TCommunityProviderInfo, b: TCommunityProviderInfo): number {

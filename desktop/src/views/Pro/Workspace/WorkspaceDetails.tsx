@@ -439,7 +439,7 @@ function PodStatus({ podStatus }: { podStatus: StorageV1DevPodWorkspaceInstanceP
     // check container status first
     const containerStatus = podStatus.containerStatuses?.find(
       (container) =>
-        container.name === "devpod" &&
+        container.name === CONTAINER_NAME &&
         (container.state?.waiting?.reason || container.state?.terminated?.reason)
     )
     if (containerStatus) {

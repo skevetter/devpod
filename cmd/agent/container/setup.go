@@ -349,7 +349,8 @@ func (cmd *SetupContainerCmd) startContainerDaemon(
 
 	return command.StartBackgroundOnce(config2.BinaryName+".daemon", func() (*exec.Cmd, error) {
 		logger.Debugf(
-			"start devpod container daemon with inactivity timeout %s",
+			"start %s container daemon with inactivity timeout %s",
+			config2.BinaryName,
 			workspaceInfo.ContainerTimeout,
 		)
 		binaryPath, err := os.Executable()

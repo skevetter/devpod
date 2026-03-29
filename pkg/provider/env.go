@@ -69,13 +69,8 @@ func ToOptionsWorkspace(workspace *Workspace) map[string]string {
 		if workspace.UID != "" {
 			retVars[config.EnvProviderWorkspaceUID] = workspace.UID
 		}
-		retVars[config.EnvProviderWorkspaceFolder], _ = GetWorkspaceDir(
-			workspace.Context,
-			workspace.ID,
-		)
-		retVars[config.EnvProviderWorkspaceFolder] = filepath.ToSlash(
-			retVars[config.EnvProviderWorkspaceFolder],
-		)
+		workspaceFolder, _ := GetWorkspaceDir(workspace.Context, workspace.ID)
+		retVars[config.EnvProviderWorkspaceFolder] = filepath.ToSlash(workspaceFolder)
 		if workspace.Context != "" {
 			retVars[config.EnvProviderWorkspaceContext] = workspace.Context
 			retVars[config.EnvProviderMachineContext] = workspace.Context

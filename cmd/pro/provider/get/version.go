@@ -69,7 +69,7 @@ func (cmd *VersionCmd) Run(
 	}
 	providerID := os.Getenv(config.EnvProviderID)
 	if providerID == "" {
-		return fmt.Errorf("provider ID %s not defined", providerID)
+		return fmt.Errorf("provider ID env var %s not defined", config.EnvProviderID)
 	}
 
 	// get our own version

@@ -112,7 +112,7 @@ func (cmd *UpCmd) up(
 	client client.Client,
 ) error {
 	options := platform.OptionsFromEnv(storagev1.DevPodFlagsUp)
-	if options != nil && os.Getenv("DEBUG") == config.BoolTrue {
+	if options != nil && os.Getenv(config.EnvDebug) == config.BoolTrue {
 		options.Add("debug", config.BoolTrue)
 	}
 
