@@ -29,10 +29,10 @@ import (
 )
 
 var extraSearchLocations = []string{
-	"/home/devpod/.devpod/agent",
+	"/home/devpod/" + config.ConfigDirName + "/agent",
 	"/opt/devpod/agent",
 	"/var/lib/devpod/agent",
-	"/var/devpod/agent",
+	ContainerDataDir + "/agent",
 }
 
 var ErrFindAgentHomeFolder = fmt.Errorf("couldn't find devpod home directory")
@@ -52,7 +52,7 @@ func findDir(agentFolder string, validate func(path string) bool) string {
 	}
 
 	// check environment
-	homeFolder := os.Getenv(config.DEVPOD_HOME)
+	homeFolder := os.Getenv(config.EnvHome)
 	if homeFolder != "" {
 		homeFolder = filepath.Join(homeFolder, "agent")
 		if !validate(homeFolder) {
@@ -65,7 +65,7 @@ func findDir(agentFolder string, validate func(path string) bool) string {
 	// check home folder first
 	homeDir, _ := util.UserHomeDir()
 	if homeDir != "" {
-		homeDir = filepath.Join(homeDir, ".devpod", "agent")
+		homeDir = filepath.Join(homeDir, config.ConfigDirName, "agent")
 		if validate(homeDir) {
 			return homeDir
 		}
@@ -74,7 +74,7 @@ func findDir(agentFolder string, validate func(path string) bool) string {
 	// check root folder
 	homeDir, _ = command.GetHome("root")
 	if homeDir != "" {
-		homeDir = filepath.Join(homeDir, ".devpod", "agent")
+		homeDir = filepath.Join(homeDir, config.ConfigDirName, "agent")
 		if validate(homeDir) {
 			return homeDir
 		}
@@ -153,7 +153,7 @@ func isDirExecutable(dir string) (bool, error) {
 		return false, err
 	}
 
-	testFile := filepath.Join(dir, "devpod_test.sh")
+	testFile := filepath.Join(dir, config.BinaryName+"_test.sh")
 	// #nosec G306,G703 -- TODO Consider using a more secure permission setting and ownership if needed.
 	if err := os.WriteFile(testFile, []byte(`#!/bin/sh
 echo DevPod
@@ -426,20 +426,22 @@ func CloneRepositoryForWorkspace(
 	log.Done("cloned repository")
 
 	// Get .devpodignore files to exclude
-	f, err := os.Open(filepath.Join(workspaceDir, ".devpodignore"))
+	f, err := os.Open(
+		filepath.Join(workspaceDir, config.IgnoreFileName),
+	) // #nosec G304 -- path is controlled by the application, not user input
 	if err != nil {
 		return nil
 	}
 	excludes, err := ignorefile.ReadAll(f)
 	if err != nil {
-		log.Warn(".devpodignore file is invalid : ", err)
+		log.Warn(config.IgnoreFileName+" file is invalid : ", err)
 		return nil
 	}
 	// Remove files from workspace content folder
 	for _, exclude := range excludes {
 		_ = os.RemoveAll(filepath.Join(workspaceDir, exclude))
 	}
-	log.Debug("Ignore files from .devpodignore ", excludes)
+	log.Debug("Ignore files from "+config.IgnoreFileName+" ", excludes)
 
 	return nil
 }

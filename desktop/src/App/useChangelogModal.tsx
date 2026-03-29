@@ -14,9 +14,10 @@ import { useEffect, useMemo, useState } from "react"
 import { Release } from "@/gen"
 import { useReleases } from "@/lib"
 import { useVersion } from "@/lib/useVersion"
+import { BINARY_NAME } from "@/client/repo"
 import { Changelog } from "./Changelog"
 
-const LAST_INSTALLED_VERSION_KEY = "devpod-last-installed-version"
+const LAST_INSTALLED_VERSION_KEY = `${BINARY_NAME}-last-installed-version`
 
 export function useChangelogModal(isReady: boolean) {
   const currentVersion = useVersion()

@@ -23,7 +23,6 @@ import (
 
 const (
 	PROVIDER_BINARY = "PRO_PROVIDER"
-	providerRepo    = "skevetter/devpod"
 )
 
 // LoginCmd holds the login cmd flags.
@@ -126,7 +125,7 @@ func (cmd *LoginCmd) Run(ctx context.Context, fullURL string, log log.Logger) er
 	} else {
 		// find a provider name
 		if cmd.Provider == "" {
-			cmd.Provider = "devpod-pro"
+			cmd.Provider = config.ProReleaseName
 		}
 		cmd.Provider = provider.ToProInstanceID(cmd.Provider)
 
@@ -139,7 +138,7 @@ func (cmd *LoginCmd) Run(ctx context.Context, fullURL string, log log.Logger) er
 		// provider already exists?
 		if providers[cmd.Provider] != nil {
 			// alternative name
-			cmd.Provider = provider.ToProInstanceID("devpod-" + host)
+			cmd.Provider = provider.ToProInstanceID(config.BinaryName + "-" + host)
 			if providers[cmd.Provider] != nil {
 				return fmt.Errorf(
 					"provider %s already exists, please choose a different name via --provider",
@@ -257,7 +256,7 @@ func (cmd *LoginCmd) addLoftProvider(
 	log.Infof("Add DevPod Pro provider...")
 
 	// is development?
-	if cmd.ProviderSource == providerRepo+"@v0.0.0" {
+	if cmd.ProviderSource == config.RepoSlug+"@v0.0.0" {
 		log.Debugf("Add development provider")
 		_, err = workspace.AddProviderRaw(workspace.ProviderParams{
 			DevPodConfig: devPodConfig,
@@ -284,7 +283,7 @@ func (cmd *LoginCmd) resolveProviderSource(url string) error {
 		return nil
 	}
 	if cmd.Version != "" {
-		cmd.ProviderSource = providerRepo + "@" + cmd.Version
+		cmd.ProviderSource = config.RepoSlug + "@" + cmd.Version
 		return nil
 	}
 
@@ -292,7 +291,7 @@ func (cmd *LoginCmd) resolveProviderSource(url string) error {
 	if err != nil {
 		return fmt.Errorf("get version: %w", err)
 	}
-	cmd.ProviderSource = providerRepo + "@" + version
+	cmd.ProviderSource = config.RepoSlug + "@" + version
 
 	return nil
 }

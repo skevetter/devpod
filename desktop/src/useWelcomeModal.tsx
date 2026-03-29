@@ -16,11 +16,12 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { useNavigate } from "react-router"
 import { client } from "./client"
+import { BINARY_NAME, GITHUB_RELEASES_URL, WEBSITE_DOCS_URL } from "./client/repo"
 import { LoftOSSBadge, Step, Steps, useInstallCLI } from "./components"
 import { Briefcase, CommandLine, DevpodWordmark } from "./icons"
 import { Routes } from "./routes.constants"
 
-const IS_FIRST_VISIT_KEY = "devpod-is-first-visit"
+const IS_FIRST_VISIT_KEY = `${BINARY_NAME}-is-first-visit`
 
 export function useWelcomeModal() {
   const navigate = useNavigate()
@@ -98,9 +99,7 @@ export function useWelcomeModal() {
                     cloud. It&apos;s also possible to extend DevPod and write your own custom
                     providers. <br />
                     For more information, head over to our{" "}
-                    <Link onClick={() => client.openUrl("https://devpod.sh/docs")}>
-                      documentation.
-                    </Link>
+                    <Link onClick={() => client.openUrl(WEBSITE_DOCS_URL)}>documentation.</Link>
                   </Text>
 
                   <Text fontWeight="bold">Let&apos;s set you up!</Text>
@@ -117,10 +116,7 @@ export function useWelcomeModal() {
                   <Text>
                     DevPod ships with a powerful CLI that allows you to create, manage and connect
                     to your workspaces and providers. You can either{" "}
-                    <Link
-                      onClick={() =>
-                        client.openUrl("https://github.com/skevetter/devpod/releases")
-                      }>
+                    <Link onClick={() => client.openUrl(GITHUB_RELEASES_URL)}>
                       download the standalone binary
                     </Link>{" "}
                     or directly add it to your <Code>$PATH</Code>.

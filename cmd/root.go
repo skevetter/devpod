@@ -17,7 +17,6 @@ import (
 	"github.com/skevetter/devpod/cmd/pro"
 	"github.com/skevetter/devpod/cmd/provider"
 	"github.com/skevetter/devpod/cmd/use"
-	"github.com/skevetter/devpod/pkg/client/clientimplementation"
 	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/telemetry"
 	log2 "github.com/skevetter/log"
@@ -32,7 +31,7 @@ var globalFlags *flags.GlobalFlags
 // NewRootCmd returns a new root command.
 func NewRootCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:           "devpod",
+		Use:           config.BinaryName,
 		Short:         "DevPod",
 		SilenceUsage:  true,
 		SilenceErrors: true,
@@ -52,12 +51,12 @@ func NewRootCmd() *cobra.Command {
 				log2.Default.SetLevel(logrus.FatalLevel)
 			} else if globalFlags.Debug {
 				log2.Default.SetLevel(logrus.DebugLevel)
-			} else if os.Getenv(clientimplementation.DevPodDebug) == "true" {
+			} else if os.Getenv(config.EnvDebug) == config.BoolTrue {
 				log2.Default.SetLevel(logrus.DebugLevel)
 			}
 
 			if globalFlags.DevPodHome != "" {
-				_ = os.Setenv(config.DEVPOD_HOME, globalFlags.DevPodHome)
+				_ = os.Setenv(config.EnvHome, globalFlags.DevPodHome)
 			}
 
 			devPodConfig, err := config.LoadConfig(globalFlags.Context, globalFlags.Provider)
@@ -69,7 +68,7 @@ func NewRootCmd() *cobra.Command {
 		},
 		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
 			if globalFlags.DevPodHome != "" {
-				_ = os.Unsetenv(config.DEVPOD_HOME)
+				_ = os.Unsetenv(config.EnvHome)
 			}
 
 			return nil
@@ -102,10 +101,10 @@ func Execute() {
 			log2.Default.Fatalf("%+v", err)
 		} else {
 			if rootCmd.Annotations == nil ||
-				rootCmd.Annotations[agent.AgentExecutedAnnotation] != "true" {
+				rootCmd.Annotations[agent.AgentExecutedAnnotation] != config.BoolTrue {
 				if terminal.IsTerminalIn {
 					log2.Default.Error("Try using the --debug flag to see a more verbose output")
-				} else if os.Getenv(telemetry.UIEnvVar) == "true" {
+				} else if os.Getenv(config.EnvUI) == config.BoolTrue {
 					log2.Default.Error(
 						"Try enabling Debug mode under Settings to see a more verbose output",
 					)
@@ -167,13 +166,13 @@ func inheritFlagsFromEnvironment(flags *flag.FlagSet) {
 		// calculate environment variable name from flag name
 		suffix := strings.ToUpper(strings.ReplaceAll(flag.Name, "-", "_"))
 
-		// do not prepend "DEVPOD_" to the environment variable name if the flag name starts with "devpod"
+		// do not prepend the env prefix if the flag name already starts with it
 		// (applies to one flag - "devpod-home").
 		var environmentVariable string
-		if strings.HasPrefix(suffix, "DEVPOD_") {
+		if strings.HasPrefix(suffix, config.EnvPrefix) {
 			environmentVariable = suffix
 		} else {
-			environmentVariable = "DEVPOD_" + suffix
+			environmentVariable = config.EnvPrefix + suffix
 		}
 
 		if value, exists := os.LookupEnv(environmentVariable); exists {

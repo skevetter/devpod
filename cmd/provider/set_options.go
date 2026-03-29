@@ -80,7 +80,7 @@ func (cmd *SetOptionsCmd) Run(ctx context.Context, args []string, log log.Logger
 	}
 	log.Debugf("providerName=%+v", providerName)
 
-	if os.Getenv("DEVPOD_UI") == "" && len(cmd.Options) == 0 {
+	if os.Getenv(config.EnvUI) == "" && len(cmd.Options) == 0 {
 		return fmt.Errorf("please specify option")
 	}
 	log.Debugf("Options=%+v", cmd.Options)

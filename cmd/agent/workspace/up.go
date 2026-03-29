@@ -17,6 +17,7 @@ import (
 	"github.com/skevetter/devpod/pkg/agent/tunnelserver"
 	"github.com/skevetter/devpod/pkg/client/clientimplementation"
 	"github.com/skevetter/devpod/pkg/command"
+	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/credentials"
 	agentdaemon "github.com/skevetter/devpod/pkg/daemon/agent"
 	"github.com/skevetter/devpod/pkg/devcontainer"
@@ -645,8 +646,8 @@ type credentialsConfig struct {
 }
 
 func configureCredentials(cfg credentialsConfig) (string, string, error) {
-	if cfg.workspaceInfo.Agent.InjectDockerCredentials != "true" &&
-		cfg.workspaceInfo.Agent.InjectGitCredentials != "true" {
+	if cfg.workspaceInfo.Agent.InjectDockerCredentials != config.BoolTrue &&
+		cfg.workspaceInfo.Agent.InjectGitCredentials != config.BoolTrue {
 		return "", "", nil
 	}
 
@@ -665,7 +666,7 @@ func configureCredentials(cfg credentialsConfig) (string, string, error) {
 	}
 
 	dockerCredentials := ""
-	if cfg.workspaceInfo.Agent.InjectDockerCredentials == "true" {
+	if cfg.workspaceInfo.Agent.InjectDockerCredentials == config.BoolTrue {
 		dockerCredentials, err = dockercredentials.ConfigureCredentialsMachine(
 			cfg.workspaceInfo.Origin,
 			serverPort,
@@ -677,13 +678,13 @@ func configureCredentials(cfg credentialsConfig) (string, string, error) {
 	}
 
 	gitCredentials := ""
-	if cfg.workspaceInfo.Agent.InjectGitCredentials == "true" {
+	if cfg.workspaceInfo.Agent.InjectGitCredentials == config.BoolTrue {
 		gitCredentials = fmt.Sprintf(
 			"!'%s' agent git-credentials --port %d",
 			binaryPath,
 			serverPort,
 		)
-		_ = os.Setenv("DEVPOD_GIT_HELPER_PORT", strconv.Itoa(serverPort))
+		_ = os.Setenv(config.EnvGitHelperPort, strconv.Itoa(serverPort))
 	}
 
 	return dockerCredentials, gitCredentials, nil

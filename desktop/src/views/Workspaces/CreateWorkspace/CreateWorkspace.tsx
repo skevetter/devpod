@@ -48,6 +48,7 @@ import { WorkspaceSourceInput } from "./WorkspaceSourceInput"
 import { COMMUNITY_WORKSPACE_EXAMPLES, WORKSPACE_EXAMPLES } from "./constants"
 import { FieldName, TCreateWorkspaceArgs, TFormValues, TSelectProviderOptions } from "./types"
 import { useCreateWorkspaceForm } from "./useCreateWorkspaceForm"
+import { SHARED_MACHINE_PREFIX } from "@/client/repo"
 
 export function CreateWorkspace() {
   const { ides } = useIDEs()
@@ -458,7 +459,7 @@ function ProviderInput({ options, field, onAddProviderClicked }: TProviderInputP
       return (
         provider?.state?.singleMachine &&
         workspace.provider?.name === provider.config?.name &&
-        workspace.machine?.machineId?.startsWith("devpod-shared-")
+        workspace.machine?.machineId?.startsWith(SHARED_MACHINE_PREFIX)
       )
     })?.id
   }, [provider, workspaces])

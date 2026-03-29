@@ -16,8 +16,10 @@ import (
 
 	"github.com/loft-sh/api/v4/pkg/devpod"
 	"github.com/sirupsen/logrus"
+	"github.com/skevetter/devpod/pkg/agent"
 	"github.com/skevetter/devpod/pkg/agent/tunnel"
 	"github.com/skevetter/devpod/pkg/command"
+	pkgconfig "github.com/skevetter/devpod/pkg/config"
 	copy2 "github.com/skevetter/devpod/pkg/copy"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	"github.com/skevetter/devpod/pkg/envfile"
@@ -25,10 +27,6 @@ import (
 	"github.com/skevetter/log"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
-)
-
-const (
-	ResultLocation = "/var/run/devpod/result.json"
 )
 
 type ContainerSetupConfig struct {
@@ -90,17 +88,20 @@ func writeResultFile(cfg *ContainerSetupConfig) {
 		return
 	}
 
-	existing, _ := os.ReadFile(ResultLocation)
+	existing, _ := os.ReadFile(pkgconfig.DevContainerResultPath)
 	if string(rawBytes) == string(existing) {
 		return
 	}
 
-	if err := os.MkdirAll(filepath.Dir(ResultLocation), 0o755); err != nil { // #nosec G301
-		cfg.Log.Warnf("error create %s: %v", filepath.Dir(ResultLocation), err)
+	if err := os.MkdirAll( // #nosec G301
+		filepath.Dir(pkgconfig.DevContainerResultPath),
+		0o755,
+	); err != nil {
+		cfg.Log.Warnf("error create %s: %v", filepath.Dir(pkgconfig.DevContainerResultPath), err)
 	}
 
-	if err := os.WriteFile(ResultLocation, rawBytes, 0o600); err != nil {
-		cfg.Log.Warnf("error write result to %s: %v", ResultLocation, err)
+	if err := os.WriteFile(pkgconfig.DevContainerResultPath, rawBytes, 0o600); err != nil {
+		cfg.Log.Warnf("error write result to %s: %v", pkgconfig.DevContainerResultPath, err)
 	}
 }
 
@@ -336,7 +337,7 @@ func shouldSkipKubeConfig(tunnelClient tunnel.TunnelClient, log log.Logger) bool
 		return true
 	}
 
-	markerPath := filepath.Join("/var/devpod", "setupKubeConfig.marker")
+	markerPath := filepath.Join(agent.ContainerDataDir, "setupKubeConfig.marker")
 	info, err := os.Stat(markerPath)
 	if err == nil {
 		if info.Mode().Perm()&0o022 != 0 {
@@ -418,7 +419,7 @@ func ensureKubeConfigMaps(config *clientcmdapi.Config) *clientcmdapi.Config {
 }
 
 func markerFileExists(markerName string, markerContent string) (bool, error) {
-	markerName = filepath.Join("/var/devpod", markerName+".marker")
+	markerName = filepath.Join(agent.ContainerDataDir, markerName+".marker")
 	t, err := os.ReadFile(markerName)
 	if err != nil && !os.IsNotExist(err) {
 		return false, err

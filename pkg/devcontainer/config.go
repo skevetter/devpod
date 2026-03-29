@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"slices"
 
+	pkgconfig "github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	"github.com/skevetter/devpod/pkg/devcontainer/crane"
 	"github.com/skevetter/devpod/pkg/language"
@@ -28,7 +29,7 @@ func (r *runner) getRawConfig(options provider2.CLIOptions) (*config.DevContaine
 		} else {
 			rawParsedConfig.Origin = path.Join(
 				filepath.ToSlash(r.LocalWorkspaceFolder),
-				".devcontainer.devpod.json",
+				".devcontainer."+pkgconfig.BinaryName+".json",
 			)
 		}
 		return rawParsedConfig, nil

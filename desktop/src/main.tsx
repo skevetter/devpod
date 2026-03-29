@@ -11,6 +11,7 @@ import { ThemeProvider } from "./Theme/ThemeProvider"
 import { SettingsProvider } from "./contexts"
 import { router } from "./routes"
 import { client } from "./client/client"
+import { BINARY_NAME } from "./client/repo"
 import { ColorModeScript } from "@chakra-ui/react"
 
 dayjs.extend(relativeTime)
@@ -31,7 +32,7 @@ const logger: Logger | undefined = import.meta.env.PROD
 const queryClient = new QueryClient({ logger })
 
 let render = true
-const l = localStorage.getItem("devpod-location-current") // check usePreserveLocation before changing this
+const l = localStorage.getItem(`${BINARY_NAME}-location-current`) // check usePreserveLocation before changing this
 if (l) {
   const loc = JSON.parse(l) as Location
   if (window.location.pathname !== loc.pathname) {

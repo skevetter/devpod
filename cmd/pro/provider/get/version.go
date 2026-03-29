@@ -63,13 +63,13 @@ func (cmd *VersionCmd) Run(
 		return err
 	}
 
-	providerContext := os.Getenv(provider.PROVIDER_CONTEXT)
+	providerContext := os.Getenv(config.EnvProviderContext)
 	if providerContext == "" {
 		providerContext = config.DefaultContext
 	}
-	providerID := os.Getenv(provider.PROVIDER_ID)
+	providerID := os.Getenv(config.EnvProviderID)
 	if providerID == "" {
-		return fmt.Errorf("provider ID %s not defined", providerID)
+		return fmt.Errorf("provider ID env var %s not defined", config.EnvProviderID)
 	}
 
 	// get our own version

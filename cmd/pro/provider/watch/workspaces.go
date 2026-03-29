@@ -78,7 +78,7 @@ func (cmd *WorkspacesCmd) Run(
 		cmd.Context = config.DefaultContext
 	}
 
-	projectName := os.Getenv(provider.LOFT_PROJECT)
+	projectName := os.Getenv(config.EnvLoftProject)
 	if projectName == "" {
 		return fmt.Errorf("project name not found")
 	}
@@ -104,7 +104,7 @@ func (cmd *WorkspacesCmd) Run(
 	workspaceInformer := factory.Management().V1().DevPodWorkspaceInstances()
 
 	self := baseClient.Self()
-	filterByOwner := os.Getenv(provider.LOFT_FILTER_BY_OWNER) == "true"
+	filterByOwner := os.Getenv(config.EnvLoftFilterByOwner) == config.BoolTrue
 	instanceStore := newStore(workspaceInformer, self, cmd.Context, filterByOwner, cmd.Log)
 
 	_, err = workspaceInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{

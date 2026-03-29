@@ -10,6 +10,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/compose"
+	pkgconfig "github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/devcontainer/build"
 	"github.com/skevetter/devpod/pkg/devcontainer/buildkit"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
@@ -391,7 +392,7 @@ func (r *runner) buildImage(
 	// This should only be OSS kubernetes as of March 06, 2025.
 	dockerDriver, ok := r.Driver.(driver.DockerDriver)
 	if options.ForceDockerless || !ok {
-		if r.WorkspaceConfig.Agent.Dockerless.Disabled == "true" {
+		if r.WorkspaceConfig.Agent.Dockerless.Disabled == pkgconfig.BoolTrue {
 			return nil, fmt.Errorf(
 				"cannot build devcontainer because driver is non-docker and dockerless fallback is disabled",
 			)

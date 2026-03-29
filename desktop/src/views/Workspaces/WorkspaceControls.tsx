@@ -22,6 +22,7 @@ import {
 import { useMemo, useCallback, useState } from "react"
 import { HiOutlineCode, HiShare } from "react-icons/hi"
 import { client } from "@/client/client"
+import { BINARY_NAME, WEBSITE_BASE_URL } from "@/client/repo"
 import { IDEGroup, IDEIcon } from "@/components"
 import { TActionID, useProInstances } from "@/contexts"
 import {
@@ -286,9 +287,9 @@ function useShareWorkspace(
     const searchParams = new URLSearchParams()
     searchParams.set("workspace-uid", workspace_uid)
     searchParams.set("workspace-id", workspace_id)
-    searchParams.set("devpod-pro-host", devpodProHost)
+    searchParams.set(`${BINARY_NAME}-pro-host`, devpodProHost)
 
-    const link = `https://devpod.sh/import#${searchParams.toString()}`
+    const link = `${WEBSITE_BASE_URL}/import#${searchParams.toString()}`
     const res = await client.writeToClipboard(link)
     if (!res.ok) {
       toast({

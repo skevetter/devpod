@@ -182,7 +182,7 @@ func (k *KubernetesDriver) CommandDevContainer(
 	return k.client.Exec(ctx, &ExecStreamOptions{
 		Pod:       workspaceId,
 		Namespace: k.namespace,
-		Container: "devpod",
+		Container: DevContainerName,
 		Command:   args,
 		Stdin:     stdin,
 		Stdout:    stdout,
@@ -198,7 +198,7 @@ func (k *KubernetesDriver) GetDevContainerLogs(
 ) error {
 	workspaceID = getID(workspaceID)
 
-	logs, err := k.client.Logs(ctx, k.namespace, workspaceID, "devpod", true)
+	logs, err := k.client.Logs(ctx, k.namespace, workspaceID, DevContainerName, true)
 	if err != nil {
 		return fmt.Errorf("get logs: %w", err)
 	}

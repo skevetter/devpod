@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/skevetter/devpod/pkg/config"
 	devpodhttp "github.com/skevetter/devpod/pkg/http"
 	"github.com/skevetter/log"
 )
@@ -26,7 +27,7 @@ type BinaryManager struct {
 }
 
 func NewBinaryManager(logger log.Logger, downloadURL string) *BinaryManager {
-	cachePath := filepath.Join(os.TempDir(), "devpod-cache")
+	cachePath := filepath.Join(os.TempDir(), config.BinaryName+"-cache")
 	cache := &BinaryCache{BaseDir: cachePath}
 
 	return &BinaryManager{
@@ -64,7 +65,7 @@ func (c *BinaryCache) Set(arch string, data io.Reader) error {
 }
 
 func (c *BinaryCache) pathFor(arch string) string {
-	return filepath.Join(c.BaseDir, "devpod-"+osLinux+"-"+arch)
+	return filepath.Join(c.BaseDir, config.BinaryName+"-"+osLinux+"-"+arch)
 }
 
 func (c *BinaryCache) atomicWrite(path string, data io.Reader) error {
@@ -72,7 +73,7 @@ func (c *BinaryCache) atomicWrite(path string, data io.Reader) error {
 		return err
 	}
 
-	file, err := os.CreateTemp(filepath.Dir(path), "devpod-*.tmp")
+	file, err := os.CreateTemp(filepath.Dir(path), config.BinaryName+"-*.tmp")
 	if err != nil {
 		return err
 	}
@@ -167,7 +168,7 @@ func (s *HTTPDownloadSource) SourceName() string {
 }
 
 func (s *HTTPDownloadSource) buildDownloadURL(arch string) (string, error) {
-	binaryName := "devpod-" + osLinux + "-" + arch
+	binaryName := config.BinaryName + "-" + osLinux + "-" + arch
 	downloadURL, err := url.JoinPath(s.BaseURL, binaryName)
 	if err != nil {
 		return "", fmt.Errorf("failed to construct download URL: %w", err)
@@ -297,7 +298,7 @@ func (s *HTTPDownloadSource) createTempFile(
 	pw *io.PipeWriter,
 	streamErr *error,
 ) (*os.File, string, error) {
-	file, err := os.CreateTemp(filepath.Dir(cachePath), "devpod-agent-*.tmp")
+	file, err := os.CreateTemp(filepath.Dir(cachePath), config.BinaryName+"-agent-*.tmp")
 	if err != nil {
 		if _, copyErr := io.Copy(pw, body); copyErr != nil {
 			*streamErr = copyErr

@@ -30,15 +30,6 @@ import (
 	"tailscale.com/tailcfg"
 )
 
-var (
-	DevPodDebug = "DEVPOD_DEBUG"
-
-	DevPodFlagsUp     = "DEVPOD_FLAGS_UP"
-	DevPodFlagsSsh    = "DEVPOD_FLAGS_SSH"
-	DevPodFlagsDelete = "DEVPOD_FLAGS_DELETE"
-	DevPodFlagsStatus = "DEVPOD_FLAGS_STATUS"
-)
-
 func New(
 	devPodConfig *config.Config,
 	prov *provider.ProviderConfig,

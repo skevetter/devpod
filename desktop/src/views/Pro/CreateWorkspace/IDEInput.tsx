@@ -1,4 +1,5 @@
 import { IDEIcon } from "@/components"
+import { SSH_HOST_SUFFIX } from "@/client/repo"
 import { TIDE } from "@/types"
 import { InfoIcon } from "@chakra-ui/icons"
 import { Box, Card, HStack, Text, Tooltip, useColorModeValue } from "@chakra-ui/react"
@@ -47,7 +48,8 @@ function IDECard({ name, isSelected, icon, onClick }: TIDECardProps) {
         <Text fontWeight="medium" variant="contrast">
           SSH
         </Text>
-        <Tooltip label="Selecting SSH only adds an entry in the form of `$workspace.devpod` to your SSH configuration. You can connect to it using your terminal or IDEs that aren't supported by DevPod but support SSH connections.">
+        <Tooltip
+          label={`Selecting SSH only adds an entry in the form of \`$workspace${SSH_HOST_SUFFIX}\` to your SSH configuration. You can connect to it using your terminal or IDEs that aren't supported by DevPod but support SSH connections.`}>
           <InfoIcon ml="-0.5" color={iconColor} />
         </Tooltip>
       </HStack>

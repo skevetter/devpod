@@ -1,4 +1,6 @@
-export const DEVPOD_GIT_REPOSITORY = "https://github.com/skevetter/devpod"
+import { BINARY_NAME, GITHUB_REPO_URL } from "./repo"
+
+export const DEVPOD_GIT_REPOSITORY = GITHUB_REPO_URL
 
 export const DEFAULT_STATIC_COMMAND_CONFIG = {
   streamResponse: false,
@@ -7,7 +9,7 @@ export const DEFAULT_STATIC_COMMAND_CONFIG = {
 /** placeholder for arbitrary additional flags */
 export const WORKSPACE_COMMAND_ADDITIONAL_FLAGS_KEY = "additionalFlags"
 
-export const DEVPOD_BINARY = "bin/devpod"
+export const DEVPOD_BINARY = `bin/${BINARY_NAME}`
 export const DEVPOD_COMMAND_LIST = "list"
 export const DEVPOD_COMMAND_STATUS = "status"
 export const DEVPOD_COMMAND_UP = "up"

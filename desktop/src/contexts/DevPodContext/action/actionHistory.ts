@@ -1,6 +1,7 @@
 import { Action, TActionObj, TActions } from "./action"
+import { BINARY_NAME } from "@/client/repo"
 
-const HISTORY_KEY = "devpod-workspace-action-history"
+const HISTORY_KEY = `${BINARY_NAME}-workspace-action-history`
 const MAX_HISTORY_ENTRIES = 50
 
 export class ActionHistory {

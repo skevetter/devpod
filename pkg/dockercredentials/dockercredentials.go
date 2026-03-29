@@ -12,6 +12,7 @@ import (
 	"github.com/docker/cli/cli/config/types"
 	"github.com/kballard/go-shellquote"
 	"github.com/skevetter/devpod/pkg/command"
+	pkgconfig "github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/docker"
 	"github.com/skevetter/devpod/pkg/file"
 	"github.com/skevetter/devpod/pkg/random"
@@ -91,7 +92,7 @@ func configureCredentials(
 	}
 
 	// write credentials helper
-	helperName := "docker-credential-devpod"
+	helperName := pkgconfig.DockerCredentialHelperName
 	if runtime.GOOS == windowsOS {
 		helperName += ".cmd"
 	}
@@ -124,7 +125,7 @@ func configureCredentials(
 		return fmt.Errorf("write credential helper: %w", err)
 	}
 
-	dockerConfig.CredentialsStore = "devpod"
+	dockerConfig.CredentialsStore = pkgconfig.BinaryName
 	err = dockerConfig.Save()
 	if err != nil {
 		return err

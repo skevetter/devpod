@@ -27,6 +27,7 @@ import (
 	"github.com/mgutz/ansi"
 	"github.com/sirupsen/logrus"
 	proflags "github.com/skevetter/devpod/cmd/pro/flags"
+	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/platform"
 	"github.com/skevetter/devpod/pkg/platform/client"
 	"github.com/skevetter/devpod/pkg/util"
@@ -54,7 +55,7 @@ const (
 	defaultUser            = "admin"
 )
 
-const defaultReleaseName = "devpod-pro"
+var defaultReleaseName = config.ProReleaseName
 
 var defaultDeploymentName = "loft" // Need to update helm chart if we change this!
 
@@ -93,8 +94,8 @@ type StartCmd struct {
 func NewStartCmd(flags *proflags.GlobalFlags) *cobra.Command {
 	cmd := &StartCmd{
 		GlobalFlags: *flags,
-		Product:     "devpod-pro",
-		ChartName:   "devpod-pro",
+		Product:     config.ProReleaseName,
+		ChartName:   config.ProReleaseName,
 		Log:         log.Default,
 	}
 	startCmd := &cobra.Command{
@@ -112,7 +113,7 @@ func NewStartCmd(flags *proflags.GlobalFlags) *cobra.Command {
 	startCmd.Flags().
 		StringVar(&cmd.Context, "context", "", "The kube context to use for installation")
 	startCmd.Flags().
-		StringVar(&cmd.Namespace, "namespace", "devpod-pro", "The namespace to install into")
+		StringVar(&cmd.Namespace, "namespace", config.ProReleaseName, "The namespace to install into")
 	startCmd.Flags().
 		StringVar(&cmd.Host, "host", "", "Provide a hostname to enable ingress and configure its hostname")
 	startCmd.Flags().
@@ -271,7 +272,7 @@ func (cmd *StartCmd) appendReleaseArgs(extraArgs []string) []string {
 }
 
 func writePasswordValuesFile(password string) (string, error) {
-	f, err := os.CreateTemp("", "devpod-values-*.yaml")
+	f, err := os.CreateTemp("", config.BinaryName+"-values-*.yaml")
 	if err != nil {
 		return "", fmt.Errorf("create temp values file: %w", err)
 	}
@@ -570,7 +571,7 @@ Thanks for using DevPod Pro!
 
 func (cmd *StartCmd) startDocker(ctx context.Context) error {
 	cmd.Log.Infof("Starting DevPod Pro in Docker...")
-	name := "devpod-pro"
+	name := config.ProReleaseName
 
 	// prepare installation
 	err := cmd.prepareDocker()
@@ -1388,7 +1389,7 @@ func uninstall(
 	kubeContext, namespace string,
 	log log.Logger,
 ) error {
-	releaseName := "devpod-pro"
+	releaseName := config.ProReleaseName
 	deploy, err := kubeClient.AppsV1().
 		Deployments(namespace).
 		Get(ctx, defaultDeploymentName, metav1.GetOptions{})
@@ -1555,7 +1556,7 @@ func enterHostNameQuestion(log log.Logger) (string, error) {
 	return log.Question(&survey.QuestionOptions{
 		Question: fmt.Sprintf(
 			"Enter a hostname for your %s instance (e.g. loft.my-domain.tld): \n ",
-			"DevPod Pro",
+			config.ProductNamePro,
 		),
 		ValidationFunc: func(answer string) error {
 			u, err := netUrl.Parse("https://" + answer)

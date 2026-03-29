@@ -16,6 +16,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/command"
 	"github.com/skevetter/devpod/pkg/compress"
+	"github.com/skevetter/devpod/pkg/config"
 	provider2 "github.com/skevetter/devpod/pkg/provider"
 	"github.com/skevetter/devpod/pkg/version"
 	"github.com/skevetter/log"
@@ -23,28 +24,27 @@ import (
 
 const DefaultInactivityTimeout = time.Minute * 20
 
-const ContainerDevPodHelperLocation = "/usr/local/bin/devpod"
+// ContainerDataDir is the base directory for DevPod data inside containers.
+const ContainerDataDir = "/var/" + config.BinaryName
 
-const RemoteDevPodHelperLocation = "/tmp/devpod"
+const ContainerDevPodHelperLocation = "/usr/local/bin/" + config.BinaryName
 
-const ContainerActivityFile = "/tmp/devpod.activity"
+const RemoteDevPodHelperLocation = "/tmp/" + config.BinaryName
 
-const defaultAgentDownloadURL = "https://github.com/skevetter/devpod/releases/download/"
+const ContainerActivityFile = "/tmp/" + config.BinaryName + ".activity"
 
-const EnvDevPodAgentURL = "DEVPOD_AGENT_URL"
-
-const EnvDevPodAgentPreferDownload = "DEVPOD_AGENT_PREFER_DOWNLOAD"
+var defaultAgentDownloadURL = config.GitHubReleasesURL + "/download/"
 
 const WorkspaceBusyFile = "workspace.lock"
 
 func DefaultAgentDownloadURL() string {
-	devPodAgentURL := os.Getenv(EnvDevPodAgentURL)
+	devPodAgentURL := os.Getenv(config.EnvAgentURL)
 	if devPodAgentURL != "" {
 		return strings.TrimRight(devPodAgentURL, "/")
 	}
 
 	if version.GetVersion() == version.DevVersion {
-		return "https://github.com/skevetter/devpod/releases/latest/download"
+		return config.GitHubReleasesURL + "/latest/download"
 	}
 
 	return defaultAgentDownloadURL + version.GetVersion()
@@ -411,7 +411,7 @@ func writeWorkspaceInfo(file string, workspaceInfo *provider2.AgentWorkspaceInfo
 func rerunAsRoot(workspaceInfo *provider2.AgentWorkspaceInfo, log log.Logger) (bool, error) {
 	// check if root is required
 	if runtime.GOOS != "linux" || os.Getuid() == 0 ||
-		(workspaceInfo != nil && workspaceInfo.Agent.Local == "true") {
+		(workspaceInfo != nil && workspaceInfo.Agent.Local == config.BoolTrue) {
 		return false, nil
 	}
 

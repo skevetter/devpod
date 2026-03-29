@@ -73,13 +73,13 @@ func getCredentialConfig(
 	cfg := credentialConfig{
 		docker: devPodConfig.ContextOption(
 			config.ContextOptionSSHInjectDockerCredentials,
-		) == "true",
+		) == config.BoolTrue,
 		git: devPodConfig.ContextOption(
 			config.ContextOptionSSHInjectGitCredentials,
-		) == "true",
+		) == config.BoolTrue,
 		gitSSHSignature: devPodConfig.ContextOption(
 			config.ContextOptionGitSSHSignatureForwarding,
-		) == "true",
+		) == config.BoolTrue,
 	}
 
 	if workspace == nil || workspace.Status.Instance == nil {

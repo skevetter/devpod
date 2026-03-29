@@ -380,7 +380,7 @@ func resolveAgentCredentials(
 
 // resolveAgentDownloadURL resolves the agent download URL (env -> context -> default).
 func resolveAgentDownloadURL(devConfig *config.Config) string {
-	devPodAgentURL := os.Getenv(agent.EnvDevPodAgentURL)
+	devPodAgentURL := os.Getenv(config.EnvAgentURL)
 	if devPodAgentURL != "" {
 		return strings.TrimSuffix(devPodAgentURL, "/") + "/"
 	}

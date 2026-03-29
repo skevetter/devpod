@@ -171,8 +171,8 @@ func (cmd *SSHCmd) Run(
 	log log.Logger,
 ) error {
 	// add ssh keys to agent
-	if devPodConfig.ContextOption(config.ContextOptionSSHAgentForwarding) == "true" &&
-		devPodConfig.ContextOption(config.ContextOptionSSHAddPrivateKeys) == "true" {
+	if devPodConfig.ContextOption(config.ContextOptionSSHAgentForwarding) == config.BoolTrue &&
+		devPodConfig.ContextOption(config.ContextOptionSSHAddPrivateKeys) == config.BoolTrue {
 		log.Debug(
 			"adding ssh keys to agent, disable via 'devpod context set-options -o SSH_ADD_PRIVATE_KEYS=false'",
 		)
@@ -268,7 +268,7 @@ func (cmd *SSHCmd) jumpContainerTailscale(
 
 	// Handle GPG agent forwarding
 	if cmd.GPGAgentForwarding ||
-		devPodConfig.ContextOption(config.ContextOptionGPGAgentForwarding) == "true" {
+		devPodConfig.ContextOption(config.ContextOptionGPGAgentForwarding) == config.BoolTrue {
 		if gpg.IsGpgTunnelRunning(ctx, cmd.User, toolSSHClient, log) {
 			log.Debugf("[GPG] exporting already running, skipping")
 		} else if err := cmd.setupGPGAgent(ctx, toolSSHClient, log); err != nil {
@@ -501,13 +501,13 @@ func (cmd *SSHCmd) startTunnel(
 	if cmd.StartServices {
 		configureDockerCredentials := devPodConfig.ContextOption(
 			config.ContextOptionSSHInjectDockerCredentials,
-		) == "true"
+		) == config.BoolTrue
 		configureGitCredentials := devPodConfig.ContextOption(
 			config.ContextOptionSSHInjectGitCredentials,
-		) == "true"
+		) == config.BoolTrue
 		configureGitSSHSignatureHelper := devPodConfig.ContextOption(
 			config.ContextOptionGitSSHSignatureForwarding,
-		) == "true"
+		) == config.BoolTrue
 
 		go cmd.startServices(
 			ctx,
@@ -526,7 +526,7 @@ func (cmd *SSHCmd) startTunnel(
 
 	// check if we should do gpg agent forwarding
 	if cmd.GPGAgentForwarding ||
-		devPodConfig.ContextOption(config.ContextOptionGPGAgentForwarding) == "true" {
+		devPodConfig.ContextOption(config.ContextOptionGPGAgentForwarding) == config.BoolTrue {
 		// Check if a forwarding is already enabled and running, in that case
 		// we skip the forwarding and keep using the original one
 		if gpg.IsGpgTunnelRunning(ctx, cmd.User, containerClient, log) {
@@ -584,7 +584,7 @@ func (cmd *SSHCmd) startTunnel(
 		User:    cmd.User,
 		Command: cmd.Command,
 		AgentForwarding: cmd.AgentForwarding &&
-			devPodConfig.ContextOption(config.ContextOptionSSHAgentForwarding) == "true",
+			devPodConfig.ContextOption(config.ContextOptionSSHAgentForwarding) == config.BoolTrue,
 		SessionOptions: machine.SSHSessionOptions{
 			TermMode:        cmd.TermMode,
 			InstallTerminfo: cmd.InstallTerminfo,

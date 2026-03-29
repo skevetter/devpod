@@ -11,9 +11,9 @@ import (
 	"github.com/skevetter/devpod/cmd/agent/workspace"
 	"github.com/skevetter/devpod/cmd/flags"
 	"github.com/skevetter/devpod/pkg/agent"
+	pkgconfig "github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/devcontainer"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
-	"github.com/skevetter/devpod/pkg/devcontainer/setup"
 	"github.com/skevetter/devpod/pkg/encoding"
 	provider2 "github.com/skevetter/devpod/pkg/provider"
 	"github.com/skevetter/log"
@@ -127,7 +127,7 @@ func startDevContainer(
 	} else if encoding.IsLegacyUID(workspaceConfig.Workspace.UID) {
 		// make sure workspace result is in devcontainer
 		buf := &bytes.Buffer{}
-		err = runner.Command(ctx, "root", "cat "+setup.ResultLocation, nil, buf, buf)
+		err = runner.Command(ctx, "root", "cat "+pkgconfig.DevContainerResultPath, nil, buf, buf)
 		if err != nil {
 			// start container
 			_, err = StartContainer(ctx, runner, log, workspaceConfig)

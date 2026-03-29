@@ -11,7 +11,7 @@ import (
 	storagev1 "github.com/loft-sh/api/v4/pkg/apis/storage/v1"
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/cmd/pro/flags"
-	"github.com/skevetter/devpod/pkg/client/clientimplementation"
+	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/platform"
 	"github.com/skevetter/devpod/pkg/platform/client"
 	"github.com/skevetter/devpod/pkg/platform/remotecommand"
@@ -37,7 +37,7 @@ type streams struct {
 // NewUpCmd creates a new command.
 func NewUpCmd(globalFlags *flags.GlobalFlags) *cobra.Command {
 	logLevel := logrus.InfoLevel
-	if os.Getenv(clientimplementation.DevPodDebug) == "true" || globalFlags.Debug {
+	if os.Getenv(config.EnvDebug) == config.BoolTrue || globalFlags.Debug {
 		logLevel = logrus.DebugLevel
 	}
 
@@ -112,8 +112,8 @@ func (cmd *UpCmd) up(
 	client client.Client,
 ) error {
 	options := platform.OptionsFromEnv(storagev1.DevPodFlagsUp)
-	if options != nil && os.Getenv("DEBUG") == "true" {
-		options.Add("debug", "true")
+	if options != nil && os.Getenv(config.EnvDebug) == config.BoolTrue {
+		options.Add("debug", config.BoolTrue)
 	}
 
 	conn, err := platform.DialInstance(client, workspace, "up", options, cmd.Log)

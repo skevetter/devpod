@@ -14,6 +14,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/skevetter/devpod/pkg/agent"
 	"github.com/skevetter/devpod/pkg/command"
 	"github.com/skevetter/devpod/pkg/config"
 	copypkg "github.com/skevetter/devpod/pkg/copy"
@@ -47,7 +48,7 @@ var Options = ide.Options{
 const (
 	DefaultServerPort = 8787
 
-	downloadFolder = "/var/devpod/rstudio-server"
+	downloadFolder = agent.ContainerDataDir + "/rstudio-server"
 	dataFolder     = "/usr/local/share/devpod/rstudio-server/data"
 	// rstudioConfigFolder is where RStudio expects configuration.
 	rstudioConfigFolder = "/etc/rstudio"

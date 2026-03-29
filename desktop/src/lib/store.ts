@@ -1,4 +1,5 @@
 import { LazyStore } from "@tauri-apps/plugin-store"
+import { BINARY_NAME } from "@/client/repo"
 import { TUnsubscribeFn } from "@/types"
 import { EventManager } from "./eventManager"
 import { exists } from "./helpers"
@@ -49,7 +50,7 @@ export class LocalStorageBackend<T extends TBaseStore> implements TStorageBacken
   constructor(private storageKey: string) {}
 
   private getKey(key: keyof TBaseStore): string {
-    return `devpod-${this.storageKey}-${key.toString()}`
+    return `${BINARY_NAME}-${this.storageKey}-${key.toString()}`
   }
 
   public async set<TKey extends keyof T>(key: TKey, value: T[TKey]): Promise<void> {

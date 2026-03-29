@@ -48,6 +48,7 @@ import { useCommunityContributions } from "@/useCommunityContributions"
 import { LoadingProviderIndicator } from "./LoadingProviderIndicator"
 import { FieldName, TFormValues, TSetupProviderResult } from "./types"
 import { useAddProvider } from "./useAddProvider"
+import { PROVIDER_PREFIX, REPO_OWNER } from "@/client/repo"
 import { PROVIDER_NAME_REGEX } from "../../../lib/validation"
 const DEFAULT_VAL_OPTS: SetValueConfig = {
   shouldDirty: true,
@@ -490,7 +491,7 @@ function CustomProviderInput({ field, isInvalid, onAccept }: TCustomProviderInpu
     <InputGroup>
       <Input
         spellCheck={false}
-        placeholder="skevetter/devpod-provider-terraform"
+        placeholder={`${REPO_OWNER}/${PROVIDER_PREFIX}terraform`}
         type="text"
         value={field.value}
         onBlur={field.onBlur}
@@ -558,7 +559,9 @@ function mapCommunityProviderInfo(
 }
 
 function stripDevpodPrefix(rawCommunityProvider: string): string {
-  return rawCommunityProvider.replace("devpod-provider-", "")
+  return rawCommunityProvider.startsWith(PROVIDER_PREFIX)
+    ? rawCommunityProvider.slice(PROVIDER_PREFIX.length)
+    : rawCommunityProvider
 }
 
 function sortCommunityProviderInfo(a: TCommunityProviderInfo, b: TCommunityProviderInfo): number {

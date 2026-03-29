@@ -1073,24 +1073,24 @@ func (d *dockerDriver) createTempFiles() (*tempFiles, error) {
 	files := &tempFiles{}
 	var err error
 
-	files.passwdIn, err = os.CreateTemp("", "devpod_container_passwd_in")
+	files.passwdIn, err = os.CreateTemp("", config2.BinaryName+"_container_passwd_in")
 	if err != nil {
 		return nil, err
 	}
 
-	files.groupIn, err = os.CreateTemp("", "devpod_container_group_in")
-	if err != nil {
-		files.cleanup()
-		return nil, err
-	}
-
-	files.passwdOut, err = os.CreateTemp("", "devpod_container_passwd_out")
+	files.groupIn, err = os.CreateTemp("", config2.BinaryName+"_container_group_in")
 	if err != nil {
 		files.cleanup()
 		return nil, err
 	}
 
-	files.groupOut, err = os.CreateTemp("", "devpod_container_group_out")
+	files.passwdOut, err = os.CreateTemp("", config2.BinaryName+"_container_passwd_out")
+	if err != nil {
+		files.cleanup()
+		return nil, err
+	}
+
+	files.groupOut, err = os.CreateTemp("", config2.BinaryName+"_container_group_out")
 	if err != nil {
 		files.cleanup()
 		return nil, err

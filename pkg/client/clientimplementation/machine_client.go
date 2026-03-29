@@ -176,7 +176,12 @@ func (s *machineClient) AgentPath() string {
 }
 
 func (s *machineClient) AgentLocal() bool {
-	return options.ResolveAgentConfig(s.devPodConfig, s.config, nil, s.machine).Local == "true"
+	return options.ResolveAgentConfig(
+		s.devPodConfig,
+		s.config,
+		nil,
+		s.machine,
+	).Local == config.BoolTrue
 }
 
 func (s *machineClient) AgentURL() string {

@@ -9,6 +9,7 @@ import (
 
 	managementv1 "github.com/loft-sh/api/v4/pkg/apis/management/v1"
 	"github.com/skevetter/devpod/cmd/pro/flags"
+	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/platform"
 	"github.com/skevetter/devpod/pkg/platform/client"
 	"github.com/skevetter/devpod/pkg/platform/form"
@@ -81,10 +82,10 @@ func (cmd *WorkspaceCmd) Run(
 	}
 
 	// Info through env, right now only used by CLI
-	workspaceID := os.Getenv(provider.WORKSPACE_ID)
-	workspaceUID := os.Getenv(provider.WORKSPACE_UID)
-	workspaceFolder := os.Getenv(provider.WORKSPACE_FOLDER)
-	workspaceContext := os.Getenv(provider.WORKSPACE_CONTEXT)
+	workspaceID := os.Getenv(config.EnvProviderWorkspaceID)
+	workspaceUID := os.Getenv(config.EnvProviderWorkspaceUID)
+	workspaceFolder := os.Getenv(config.EnvProviderWorkspaceFolder)
+	workspaceContext := os.Getenv(config.EnvProviderWorkspaceContext)
 	workspacePicture := os.Getenv(platform.WorkspacePictureEnv)
 	workspaceSource := os.Getenv(platform.WorkspaceSourceEnv)
 	if workspaceUID == "" || workspaceID == "" || workspaceFolder == "" {
