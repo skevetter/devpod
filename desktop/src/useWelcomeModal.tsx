@@ -99,9 +99,7 @@ export function useWelcomeModal() {
                     cloud. It&apos;s also possible to extend DevPod and write your own custom
                     providers. <br />
                     For more information, head over to our{" "}
-                    <Link onClick={() => client.open(WEBSITE_DOCS_URL)}>
-                      documentation.
-                    </Link>
+                    <Link onClick={() => client.open(WEBSITE_DOCS_URL)}>documentation.</Link>
                   </Text>
 
                   <Text fontWeight="bold">Let&apos;s set you up!</Text>
@@ -118,8 +116,7 @@ export function useWelcomeModal() {
                   <Text>
                     DevPod ships with a powerful CLI that allows you to create, manage and connect
                     to your workspaces and providers. You can either{" "}
-                    <Link
-                      onClick={() => client.open(GITHUB_RELEASES_URL)}>
+                    <Link onClick={() => client.open(GITHUB_RELEASES_URL)}>
                       download the standalone binary
                     </Link>{" "}
                     or directly add it to your <Code>$PATH</Code>.
