@@ -158,7 +158,7 @@ func (cmd *UpCmd) registerDotfilesFlags(upCmd *cobra.Command) {
 			"The path in dotfiles directory to use to install the dotfiles, if empty will try to guess")
 	upCmd.Flags().
 		StringSliceVar(&cmd.DotfilesScriptEnv, "dotfiles-script-env", []string{},
-			"Extra environment variables to put into the dotfiles install script. E.g. MY_ENV_VAR=MY_VALUE")
+			"Extra environment variables to put into the dotfiles install script, e.g. MY_ENV_VAR=MY_VALUE")
 	upCmd.Flags().
 		StringSliceVar(&cmd.DotfilesScriptEnvFile, "dotfiles-script-env-file", []string{},
 			"The path to files containing environment variables to set for the dotfiles install script")
@@ -230,7 +230,7 @@ func (cmd *UpCmd) registerWorkspaceFlags(upCmd *cobra.Command) {
 			"The machine to use for this workspace. The machine needs to exist beforehand or the "+
 				"command will fail. If the workspace already exists, this option has no effect")
 	upCmd.Flags().
-		StringVar(&cmd.Source, "source", "", "Optional source for the workspace. E.g. git:https://github.com/my-org/my-repo")
+		StringVar(&cmd.Source, "source", "", "Optional source for the workspace, e.g. git:https://github.com/my-org/my-repo")
 	upCmd.Flags().
 		StringArrayVar(&cmd.ProviderOptions, "provider-option", []string{}, "Provider option in the form KEY=VALUE")
 	upCmd.Flags().
@@ -246,14 +246,14 @@ func (cmd *UpCmd) registerWorkspaceFlags(upCmd *cobra.Command) {
 			"Docker repository that hosts devpod prebuilds for this workspace")
 	upCmd.Flags().
 		StringArrayVar(&cmd.WorkspaceEnv, "workspace-env", []string{},
-			"Extra env variables to put into the workspace. E.g. MY_ENV_VAR=MY_VALUE")
+			"Extra env variables to put into the workspace, e.g. MY_ENV_VAR=MY_VALUE")
 	upCmd.Flags().
 		StringSliceVar(&cmd.WorkspaceEnvFile, "workspace-env-file", []string{},
-			"The path to files containing a list of extra env variables to put into the workspace. "+
-				"E.g. MY_ENV_VAR=MY_VALUE")
+			"The path to files containing a list of extra env variables to put into the workspace, "+
+				"e.g. MY_ENV_VAR=MY_VALUE")
 	upCmd.Flags().
 		StringArrayVar(&cmd.InitEnv, "init-env", []string{},
-			"Extra env variables to inject during the initialization of the workspace. E.g. MY_ENV_VAR=MY_VALUE")
+			"Extra env variables to inject during the initialization of the workspace, e.g. MY_ENV_VAR=MY_VALUE")
 	upCmd.Flags().
 		BoolVar(&cmd.DisableDaemon, "disable-daemon", false,
 			"If enabled, will not install a daemon into the target machine to track activity")

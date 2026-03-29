@@ -147,22 +147,28 @@ func BuildRoot() *cobra.Command {
 	rootCmd.AddCommand(NewTroubleshootCmd(globalFlags))
 	rootCmd.AddCommand(NewPingCmd(globalFlags))
 
-	inheritCommandFlagsFromEnvironment(rootCmd)
+	inheritCommandFlagsFromEnvironment(rootCmd, "")
 
 	return rootCmd
 }
 
-func inheritCommandFlagsFromEnvironment(cmd *cobra.Command) {
-	inheritFlagsFromEnvironment(cmd.Flags())
-	inheritFlagsFromEnvironment(cmd.PersistentFlags())
+func inheritCommandFlagsFromEnvironment(cmd *cobra.Command, commandPrefix string) {
+	inheritFlagsFromEnvironment(cmd.Flags(), commandPrefix)
+	inheritFlagsFromEnvironment(cmd.PersistentFlags(), commandPrefix)
 
 	for _, sub := range cmd.Commands() {
-		inheritCommandFlagsFromEnvironment(sub)
+		var subCommandPrefix string
+		if commandPrefix == "" {
+			subCommandPrefix = strings.ToUpper(strings.Fields(sub.Use)[0]) + "_"
+		} else {
+			subCommandPrefix = commandPrefix
+		}
+		inheritCommandFlagsFromEnvironment(sub, subCommandPrefix)
 	}
 }
 
 // Inherits default values for all flags that have a corresponding environment variable set.
-func inheritFlagsFromEnvironment(flags *flag.FlagSet) {
+func inheritFlagsFromEnvironment(flags *flag.FlagSet, commandPrefix string) {
 	flags.VisitAll(func(flag *flag.Flag) {
 		// calculate environment variable name from flag name
 		suffix := strings.ToUpper(strings.ReplaceAll(flag.Name, "-", "_"))
@@ -173,7 +179,7 @@ func inheritFlagsFromEnvironment(flags *flag.FlagSet) {
 		if strings.HasPrefix(suffix, "DEVPOD_") {
 			environmentVariable = suffix
 		} else {
-			environmentVariable = "DEVPOD_" + suffix
+			environmentVariable = "DEVPOD_" + commandPrefix + suffix
 		}
 
 		if value, exists := os.LookupEnv(environmentVariable); exists {

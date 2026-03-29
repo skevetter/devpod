@@ -64,6 +64,7 @@ func ToEnvironment(
 	machine *Machine,
 	options map[string]config.OptionValue,
 	extraEnv map[string]string,
+	providerName string,
 ) []string {
 	env := ToOptions(workspace, machine, options)
 
@@ -74,6 +75,9 @@ func ToEnvironment(
 	}
 	for k, v := range extraEnv {
 		osEnviron = append(osEnviron, k+"="+v)
+	}
+	if providerName != "" {
+		osEnviron = append(osEnviron, "DEVPOD_PROVIDER="+providerName)
 	}
 
 	return osEnviron

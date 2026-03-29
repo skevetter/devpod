@@ -57,10 +57,6 @@ func NewDeleteCmd(flags *flags.GlobalFlags) *cobra.Command {
 }
 
 func (cmd *DeleteCmd) Run(ctx context.Context, args []string) error {
-	if len(args) > 1 {
-		return fmt.Errorf("please specify a provider to delete")
-	}
-
 	devPodConfig, err := config.LoadConfig(cmd.Context, cmd.Provider)
 	if err != nil {
 		return err

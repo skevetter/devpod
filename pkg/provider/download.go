@@ -51,7 +51,13 @@ type EnvironmentOptions struct {
 }
 
 func ToEnvironmentWithBinaries(opts EnvironmentOptions) ([]string, error) {
-	environ := ToEnvironment(opts.Workspace, opts.Machine, opts.Options, opts.ExtraEnv)
+	environ := ToEnvironment(
+		opts.Workspace,
+		opts.Machine,
+		opts.Options,
+		opts.ExtraEnv,
+		opts.Config.Name,
+	)
 	binariesMap, err := GetBinaries(opts.Context, opts.Config)
 	if err != nil {
 		return nil, err
