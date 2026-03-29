@@ -71,15 +71,22 @@ fn main() -> anyhow::Result<()> {
     // this case is handled by macos itself + tauri::RunEvent::Reopen
     #[cfg(not(target_os = "macos"))]
     {
-        app_builder = app_builder.plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
-            let app_state = app.state::<AppState>();
+        // Single-instance plugin with deep-link feature: when a second instance is
+        // launched with a deep link URL, the plugin automatically forwards it to the
+        // deep-link plugin's on_open_url handler via handle_cli_arguments().
+        app_builder = app_builder.plugin(tauri_plugin_single_instance::init(
+            |app, _args, _cwd| {
+                let app_state = app.state::<AppState>();
 
-            tauri::async_runtime::block_on(async move {
-                if let Err(err) = app_state.ui_messages.send(UiMessage::ShowDashboard).await {
-                    error!("Failed to broadcast show dashboard message: {}", err);
-                };
-            });
-        }));
+                tauri::async_runtime::block_on(async move {
+                    if let Err(err) =
+                        app_state.ui_messages.send(UiMessage::ShowDashboard).await
+                    {
+                        error!("Failed to broadcast show dashboard message: {}", err);
+                    };
+                });
+            },
+        ));
     }
     app_builder = app_builder
         .manage(AppState {
@@ -102,6 +109,7 @@ fn main() -> anyhow::Result<()> {
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(move |app| {
             info!("Setup application");
@@ -117,7 +125,7 @@ fn main() -> anyhow::Result<()> {
 
             action_logs::setup(&app.handle())?;
 
-            let custom_protocol = CustomProtocol::init();
+            let custom_protocol = CustomProtocol::new();
             custom_protocol.setup(app.handle().clone());
 
             let app_handle = app.handle().clone();
