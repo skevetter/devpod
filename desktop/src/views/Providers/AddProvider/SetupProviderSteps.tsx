@@ -94,6 +94,7 @@ export function SetupProviderSteps({
                 isModal={isModal}
                 addProvider={true}
                 providerID={state.providerID}
+                name={state.providerID}
                 suggestedOptions={state.suggestedOptions}
                 isDefault={true}
                 reuseMachine={true}
