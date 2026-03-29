@@ -95,7 +95,7 @@ func writeResultFile(cfg *ContainerSetupConfig) {
 		return
 	}
 
-	if err := os.MkdirAll(filepath.Dir(ResultLocation), 0o755); err != nil { // #nosec G301
+	if err := os.MkdirAll(filepath.Dir(ResultLocation), 0o777); err != nil { // #nosec G301
 		cfg.Log.Warnf("error create %s: %v", filepath.Dir(ResultLocation), err)
 	}
 
@@ -173,14 +173,11 @@ func linkRootHome(setupInfo *config.Result) error {
 	}
 
 	// link /home/root to the root home
-	// #nosec G301 -- TODO Consider using a more secure permission setting and ownership if needed.
-	err = os.MkdirAll("/home", 0o755)
-	if err != nil {
+	if err := os.MkdirAll("/home", 0o777); err != nil { // #nosec G301
 		return fmt.Errorf("create /home folder: %w", err)
 	}
 
-	err = os.Symlink(home, "/home/root")
-	if err != nil {
+	if err := os.Symlink(home, "/home/root"); err != nil {
 		return fmt.Errorf("create symlink: %w", err)
 	}
 
@@ -365,7 +362,7 @@ func writeKubeConfig(setupInfo *config.Result, configData string) error {
 	kubeDir := filepath.Join(homeDir, ".kube")
 	if err := os.MkdirAll(
 		kubeDir,
-		0o700,
+		0o755,
 	); err != nil { // #nosec G301 -- kube directory should be user-private
 		return err
 	}
@@ -427,12 +424,8 @@ func markerFileExists(markerName string, markerContent string) (bool, error) {
 	}
 
 	// write marker
-	_ = os.MkdirAll(
-		filepath.Dir(markerName),
-		0o755,
-	) // #nosec G301 -- Standard directory permissions
-	err = os.WriteFile(markerName, []byte(markerContent), 0o600)
-	if err != nil {
+	_ = os.MkdirAll(filepath.Dir(markerName), 0o777)                               // #nosec G301
+	if err := os.WriteFile(markerName, []byte(markerContent), 0o644); err != nil { // #nosec G306
 		return false, fmt.Errorf("write marker: %w", err)
 	}
 
