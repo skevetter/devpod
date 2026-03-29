@@ -93,7 +93,9 @@ export class ProvidersClient implements TDebuggable {
   }
 
   public setDangling(id: TProviderID): void {
-    this.danglingProviderIDs.push(id)
+    if (!this.danglingProviderIDs.includes(id)) {
+      this.danglingProviderIDs.push(id)
+    }
     const ids = this.danglingProviderIDs.slice()
     this.storeOperationQueue = this.storeOperationQueue.then(() =>
       this.store.set("danglingProviders", ids)

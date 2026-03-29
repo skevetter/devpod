@@ -14,7 +14,7 @@ import { useProviders } from "@/contexts"
 import { exists, isError, useFormErrors } from "@/lib"
 import { LoadingProviderIndicator } from "./LoadingProviderIndicator"
 import { CustomNameInput } from "./SetupProviderSourceForm"
-import { ALLOWED_NAMES_REGEX } from "./helpers"
+import { PROVIDER_NAME_REGEX } from "@/lib/validation"
 import { FieldName, TCloneProviderInfo, TFormValues, TSetupProviderResult } from "./types"
 import { useAddProvider } from "./useAddProvider"
 
@@ -75,8 +75,8 @@ export function SetupClonedProvider({ cloneProviderInfo, onFinish, reset }: TClo
               control={control}
               rules={{
                 pattern: {
-                  value: ALLOWED_NAMES_REGEX,
-                  message: "Name can only contain lowercase letters, numbers and -",
+                  value: PROVIDER_NAME_REGEX,
+                  message: "Name can only contain lowercase letters, numbers and hyphens",
                 },
                 validate: {
                   unique: (value) => {
@@ -86,7 +86,7 @@ export function SetupClonedProvider({ cloneProviderInfo, onFinish, reset }: TClo
                     return providers?.[value] === undefined ? true : "Name must be unique"
                   },
                 },
-                maxLength: { value: 48, message: "Name cannot be longer than 48 characters" },
+                maxLength: { value: 32, message: "Name cannot be longer than 32 characters" },
               }}
               render={({ field }) => (
                 <CustomNameInput

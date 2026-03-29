@@ -51,15 +51,13 @@ export function useSetupProviderModal() {
     [isOpen, onOpen]
   )
 
-  const handleCloseClicked = useCallback(() => {
+  const handleClose = useCallback(() => {
+    onClose()
+    setWasDismissed(true)
     if (isStrict) {
       navigate(Routes.WORKSPACES)
-
-      return
     }
-
-    setWasDismissed(true)
-  }, [isStrict, navigate])
+  }, [isStrict, navigate, onClose])
 
   const title = useMemo(() => {
     if (currentProviderID !== null) {
@@ -76,7 +74,7 @@ export function useSetupProviderModal() {
   const modal = useMemo(
     () => (
       <Modal
-        onClose={onClose}
+        onClose={handleClose}
         isOpen={isOpen}
         isCentered
         size="6xl"
@@ -85,7 +83,7 @@ export function useSetupProviderModal() {
         <ModalOverlay />
         <ModalContent position="relative" overflow="hidden">
           <ModalHeader>{title}</ModalHeader>
-          <ModalCloseButton onClick={handleCloseClicked} />
+          <ModalCloseButton />
           <ModalBody overflowX="hidden" overflowY="auto" paddingBottom="0" ref={containerRef}>
             <VStack align="start" spacing="8">
               <SetupProviderSteps
@@ -101,7 +99,7 @@ export function useSetupProviderModal() {
         </ModalContent>
       </Modal>
     ),
-    [onClose, isOpen, title, handleCloseClicked, suggestedProvider, cloneProviderInfo]
+    [handleClose, isOpen, title, suggestedProvider, cloneProviderInfo]
   )
 
   return { modal, show, isOpen, wasDismissed }
