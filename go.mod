@@ -80,7 +80,7 @@ require (
 	k8s.io/utils v0.0.0-20260319190234-28399d86e0b5
 	mvdan.cc/sh/v3 v3.12.0
 	sigs.k8s.io/controller-runtime v0.23.3
-	tailscale.com v1.96.0
+	tailscale.com v1.96.5
 )
 
 require (
