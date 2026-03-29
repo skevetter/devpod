@@ -383,13 +383,7 @@ func (cmd *UpCmd) configureWorkspace(
 		log.Info("SSH configuration completed in workspace")
 	}
 
-	if cmd.GitSSHSigningKey != "" {
-		if err := setupGitSSHSignature(cmd.GitSSHSigningKey, client); err != nil {
-			return err
-		}
-	}
-
-	return setupDotfiles(
+	if err := setupDotfiles(
 		cmd.DotfilesSource,
 		cmd.DotfilesScript,
 		cmd.DotfilesScriptEnvFile,
@@ -397,7 +391,19 @@ func (cmd *UpCmd) configureWorkspace(
 		client,
 		devPodConfig,
 		log,
-	)
+	); err != nil {
+		return err
+	}
+
+	// Run after dotfiles so the signing config isn't overwritten by a
+	// dotfiles installer that replaces .gitconfig.
+	if cmd.GitSSHSigningKey != "" {
+		if err := setupGitSSHSignature(cmd.GitSSHSigningKey, client); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // openIDE opens the configured IDE.

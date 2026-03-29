@@ -19,29 +19,40 @@ func TestGitSSHSignatureSuite(t *testing.T) {
 func (s *GitSSHSignatureTestSuite) TestAcceptsUnknownFlags() {
 	cmd := NewGitSSHSignatureCmd(&flags.GlobalFlags{})
 
-	// Git may pass: -Y sign -n git -f /path/to/key -U /tmp/buffer
-	// With FParseErrWhitelist, -U is treated as an unknown flag consuming
-	// /tmp/buffer as its value. This is fine because git always puts the
-	// buffer file as the last argument. We test with the buffer as a
-	// separate positional arg (no unknown flag consuming it).
+	// Git passes: -Y sign -n git -f /path/to/key -U /dev/stdin /tmp/buffer
+	// -U is an unknown flag that consumes /dev/stdin as its value.
+	// /tmp/buffer remains as a positional argument.
 	err := cmd.ParseFlags(
-		[]string{"-Y", "sign", "-n", "git", "-f", "/path/to/key", "-U", "/tmp/buffer"},
+		[]string{
+			"-Y",
+			"sign",
+			"-n",
+			"git",
+			"-f",
+			"/path/to/key",
+			"-U",
+			"/dev/stdin",
+			"/tmp/buffer",
+		},
 	)
 	assert.NoError(s.T(), err, "flag parsing should succeed with unknown flag -U")
+
+	args := cmd.Flags().Args()
+	s.Require().NotEmpty(args, "should have positional args")
+	assert.Equal(s.T(), "/tmp/buffer", args[len(args)-1],
+		"buffer file should be preserved as last positional arg")
 }
 
 func (s *GitSSHSignatureTestSuite) TestBufferFileAsPositionalArg() {
 	cmd := NewGitSSHSignatureCmd(&flags.GlobalFlags{})
 
-	// Standard git invocation: -Y sign -n git -f /path/to/key /tmp/buffer
-	// The buffer file is the last positional argument.
 	err := cmd.ParseFlags(
 		[]string{"-Y", "sign", "-n", "git", "-f", "/path/to/key", "/tmp/buffer"},
 	)
 	assert.NoError(s.T(), err)
 
 	args := cmd.Flags().Args()
-	assert.NotEmpty(s.T(), args, "should have positional args")
+	s.Require().NotEmpty(args, "should have positional args")
 	assert.Equal(s.T(), "/tmp/buffer", args[len(args)-1],
 		"last positional arg should be the buffer file")
 }
@@ -52,15 +63,14 @@ func (s *GitSSHSignatureTestSuite) TestKnownFlagsParsed() {
 	err := cmd.ParseFlags(
 		[]string{"-Y", "sign", "-n", "git", "-f", "/path/to/key", "/tmp/buffer"},
 	)
-	assert.NoError(s.T(), err, "flag parsing should succeed")
+	assert.NoError(s.T(), err)
 
 	val, err := cmd.Flags().GetString("command")
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), "sign", val, "command flag should be 'sign'")
 
-	// The buffer file should be the last positional argument
 	args := cmd.Flags().Args()
-	assert.NotEmpty(s.T(), args, "should have positional args")
+	s.Require().NotEmpty(args, "should have positional args")
 	assert.Equal(s.T(), "/tmp/buffer", args[len(args)-1],
 		"last positional arg should be the buffer file")
 }

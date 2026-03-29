@@ -196,8 +196,7 @@ func isDevpodManagedGpgKey(inGpgSection bool, trimmed string) bool {
 	if !inGpgSection || len(trimmed) == 0 || trimmed[0] == '[' {
 		return false
 	}
-	return strings.HasPrefix(trimmed, "format = ssh") ||
-		strings.HasPrefix(trimmed, "program = devpod-ssh-signature")
+	return strings.HasPrefix(trimmed, "format = ssh")
 }
 
 // filterGpgSSHSection removes devpod-managed keys from a buffered [gpg "ssh"]
