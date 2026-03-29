@@ -1,6 +1,3 @@
-// Centralized repository and product configuration.
-// To rename the fork, change REPO_OWNER and REPO_NAME below.
-
 export const REPO_OWNER = "skevetter"
 export const REPO_NAME = "devpod"
 export const REPO_SLUG = `${REPO_OWNER}/${REPO_NAME}`
