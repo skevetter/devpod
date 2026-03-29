@@ -499,6 +499,9 @@ function useOptions(
         await client.providers.setOptionsDry(providerID, { options: {}, reconfigure: false })
       ).unwrap()
     },
+    // Only fetch options once the provider is confirmed in the cache.
+    // Prevents transient "provider not found" errors when adding a new provider.
+    enabled: !!provider,
   })
 
   const {
