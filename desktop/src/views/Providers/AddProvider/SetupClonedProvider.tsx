@@ -14,7 +14,7 @@ import { useProviders } from "@/contexts"
 import { exists, isError, useFormErrors } from "@/lib"
 import { LoadingProviderIndicator } from "./LoadingProviderIndicator"
 import { CustomNameInput } from "./SetupProviderSourceForm"
-import { PROVIDER_NAME_REGEX } from "@/lib/validation"
+import { MAX_PROVIDER_NAME_LENGTH, PROVIDER_NAME_REGEX } from "@/lib/validation"
 import { FieldName, TCloneProviderInfo, TFormValues, TSetupProviderResult } from "./types"
 import { useAddProvider } from "./useAddProvider"
 
@@ -86,7 +86,10 @@ export function SetupClonedProvider({ cloneProviderInfo, onFinish, reset }: TClo
                     return providers?.[value] === undefined ? true : "Name must be unique"
                   },
                 },
-                maxLength: { value: 32, message: "Name cannot be longer than 32 characters" },
+                maxLength: {
+                  value: MAX_PROVIDER_NAME_LENGTH,
+                  message: `Name cannot be longer than ${MAX_PROVIDER_NAME_LENGTH} characters`,
+                },
               }}
               render={({ field }) => (
                 <CustomNameInput

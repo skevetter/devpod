@@ -99,7 +99,7 @@ export function useSetupProviderModal() {
         </ModalContent>
       </Modal>
     ),
-    [handleClose, isOpen, title, suggestedProvider, cloneProviderInfo]
+    [handleClose, isOpen, onClose, title, suggestedProvider, cloneProviderInfo]
   )
 
   return { modal, show, isOpen, wasDismissed }
