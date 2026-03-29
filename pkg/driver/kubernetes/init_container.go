@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	pkgconfig "github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/driver"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -70,7 +71,7 @@ func (k *KubernetesDriver) getInitContainers(
 		RunAsGroup:   &[]int64{0}[0],
 		RunAsNonRoot: &[]bool{false}[0],
 	}
-	if k.options.StrictSecurity == "true" {
+	if k.options.StrictSecurity == pkgconfig.BoolTrue {
 		securityContext = nil
 	}
 

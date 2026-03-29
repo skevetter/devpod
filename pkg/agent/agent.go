@@ -411,7 +411,7 @@ func writeWorkspaceInfo(file string, workspaceInfo *provider2.AgentWorkspaceInfo
 func rerunAsRoot(workspaceInfo *provider2.AgentWorkspaceInfo, log log.Logger) (bool, error) {
 	// check if root is required
 	if runtime.GOOS != "linux" || os.Getuid() == 0 ||
-		(workspaceInfo != nil && workspaceInfo.Agent.Local == "true") {
+		(workspaceInfo != nil && workspaceInfo.Agent.Local == config.BoolTrue) {
 		return false, nil
 	}
 

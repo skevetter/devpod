@@ -51,7 +51,7 @@ func NewRootCmd() *cobra.Command {
 				log2.Default.SetLevel(logrus.FatalLevel)
 			} else if globalFlags.Debug {
 				log2.Default.SetLevel(logrus.DebugLevel)
-			} else if os.Getenv(config.EnvDebug) == "true" {
+			} else if os.Getenv(config.EnvDebug) == config.BoolTrue {
 				log2.Default.SetLevel(logrus.DebugLevel)
 			}
 
@@ -101,10 +101,10 @@ func Execute() {
 			log2.Default.Fatalf("%+v", err)
 		} else {
 			if rootCmd.Annotations == nil ||
-				rootCmd.Annotations[agent.AgentExecutedAnnotation] != "true" {
+				rootCmd.Annotations[agent.AgentExecutedAnnotation] != config.BoolTrue {
 				if terminal.IsTerminalIn {
 					log2.Default.Error("Try using the --debug flag to see a more verbose output")
-				} else if os.Getenv(config.EnvUI) == "true" {
+				} else if os.Getenv(config.EnvUI) == config.BoolTrue {
 					log2.Default.Error(
 						"Try enabling Debug mode under Settings to see a more verbose output",
 					)

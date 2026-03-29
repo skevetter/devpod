@@ -56,7 +56,7 @@ type RunServicesOptions struct {
 
 // getExitAfterTimeout calculates the timeout value based on configuration.
 func getExitAfterTimeout(devPodConfig *config.Config) time.Duration {
-	if devPodConfig.ContextOption(config.ContextOptionExitAfterTimeout) != "true" {
+	if devPodConfig.ContextOption(config.ContextOptionExitAfterTimeout) != config.BoolTrue {
 		return 0
 	}
 	return defaultExitTimeout

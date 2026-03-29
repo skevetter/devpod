@@ -13,6 +13,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/command"
+	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/log"
 )
 
@@ -240,7 +241,7 @@ func isInjectingOfBinaryNeeded(lineStr string) bool {
 }
 
 func getFileReader(localFile LocalFile, lineStr string) (io.ReadCloser, error) {
-	isArm := strings.TrimPrefix(lineStr, "ARM-") == "true"
+	isArm := strings.TrimPrefix(lineStr, "ARM-") == config.BoolTrue
 	return localFile(isArm)
 }
 

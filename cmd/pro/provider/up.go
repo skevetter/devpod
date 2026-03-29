@@ -37,7 +37,7 @@ type streams struct {
 // NewUpCmd creates a new command.
 func NewUpCmd(globalFlags *flags.GlobalFlags) *cobra.Command {
 	logLevel := logrus.InfoLevel
-	if os.Getenv(config.EnvDebug) == envTrueValue || globalFlags.Debug {
+	if os.Getenv(config.EnvDebug) == config.BoolTrue || globalFlags.Debug {
 		logLevel = logrus.DebugLevel
 	}
 
@@ -112,8 +112,8 @@ func (cmd *UpCmd) up(
 	client client.Client,
 ) error {
 	options := platform.OptionsFromEnv(storagev1.DevPodFlagsUp)
-	if options != nil && os.Getenv("DEBUG") == envTrueValue {
-		options.Add("debug", envTrueValue)
+	if options != nil && os.Getenv("DEBUG") == config.BoolTrue {
+		options.Add("debug", config.BoolTrue)
 	}
 
 	conn, err := platform.DialInstance(client, workspace, "up", options, cmd.Log)

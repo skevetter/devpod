@@ -62,7 +62,7 @@ func AgentPersistentPreRunE(
 		log.Default.SetLevel(logrus.FatalLevel)
 	} else if globalFlags.Debug {
 		log.Default.SetLevel(logrus.DebugLevel)
-	} else if os.Getenv(config.EnvDebug) == "true" {
+	} else if os.Getenv(config.EnvDebug) == config.BoolTrue {
 		log.Default.SetLevel(logrus.DebugLevel)
 	}
 

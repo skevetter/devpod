@@ -71,7 +71,9 @@ func NewBuildCmd(flags *flags.GlobalFlags) *cobra.Command {
 				}
 			}
 
-			if devPodConfig.ContextOption(config.ContextOptionSSHStrictHostKeyChecking) == "true" {
+			if devPodConfig.ContextOption(
+				config.ContextOptionSSHStrictHostKeyChecking,
+			) == config.BoolTrue {
 				cmd.StrictHostKeyChecking = true
 			}
 

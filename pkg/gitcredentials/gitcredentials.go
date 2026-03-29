@@ -260,7 +260,7 @@ func GetHTTPPath(ctx context.Context, params GetHttpPathParameters) (string, err
 	configKey := fmt.Sprintf("credential.%s://%s.useHttpPath", params.Protocol, params.Host)
 	out, _ := git.CommandContext(ctx, git.GetDefaultExtraEnv(false), "config", "--get", configKey).
 		Output()
-	if strings.TrimSpace(string(out)) != "true" {
+	if strings.TrimSpace(string(out)) != config.BoolTrue {
 		return "", nil
 	}
 	// We can assume the GitRepository is always HTTP(S) based as otherwise we wouldn't

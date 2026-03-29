@@ -74,7 +74,7 @@ func (cmd *GetWorkspaceConfigCommand) Run(
 		level = logrus.DebugLevel
 	}
 	var logger log.Logger = log.NewStdoutLogger(os.Stdin, os.Stdout, os.Stderr, level)
-	if os.Getenv(config.EnvUI) == "true" {
+	if os.Getenv(config.EnvUI) == config.BoolTrue {
 		logger = log.Discard
 	}
 	logger.Debugf("Resolving devcontainer config for source: %s", rawSource)
@@ -98,7 +98,9 @@ func (cmd *GetWorkspaceConfigCommand) Run(
 			rawSource,
 			tmpDir,
 			cmd.maxDepth,
-			devPodConfig.ContextOption(config.ContextOptionSSHStrictHostKeyChecking) == "true",
+			devPodConfig.ContextOption(
+				config.ContextOptionSSHStrictHostKeyChecking,
+			) == config.BoolTrue,
 			logger,
 		)
 		if err != nil {

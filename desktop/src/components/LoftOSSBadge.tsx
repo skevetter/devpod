@@ -8,7 +8,7 @@ export function LoftOSSBadge() {
       display="flex"
       alignItems="center"
       justifyContent="start"
-      onClick={() => client.open(GITHUB_REPO_URL)}>
+      onClick={() => client.openUrl(GITHUB_REPO_URL)}>
       <Text fontSize="sm" variant="muted" marginRight="2">
         community maintained
       </Text>

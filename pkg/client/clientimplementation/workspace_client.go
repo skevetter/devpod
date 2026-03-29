@@ -93,7 +93,7 @@ func (s *workspaceClient) AgentLocal() bool {
 		s.config,
 		s.workspace,
 		s.machine,
-	).Local == "true"
+	).Local == config.BoolTrue
 }
 
 func (s *workspaceClient) AgentPath() string {
@@ -178,14 +178,14 @@ func (s *workspaceClient) AgentInjectGitCredentials(cliOptions provider.CLIOptio
 	s.m.Lock()
 	defer s.m.Unlock()
 
-	return s.agentInfo(cliOptions).Agent.InjectGitCredentials == "true"
+	return s.agentInfo(cliOptions).Agent.InjectGitCredentials == config.BoolTrue
 }
 
 func (s *workspaceClient) AgentInjectDockerCredentials(cliOptions provider.CLIOptions) bool {
 	s.m.Lock()
 	defer s.m.Unlock()
 
-	return s.agentInfo(cliOptions).Agent.InjectDockerCredentials == "true"
+	return s.agentInfo(cliOptions).Agent.InjectDockerCredentials == config.BoolTrue
 }
 
 func (s *workspaceClient) AgentInfo(

@@ -52,7 +52,7 @@ func (k *KubernetesDriver) RunDevContainer(
 	workspaceId = getID(workspaceId)
 
 	// namespace
-	if k.namespace != "" && k.options.CreateNamespace == "true" {
+	if k.namespace != "" && k.options.CreateNamespace == pkgconfig.BoolTrue {
 		err := k.createNamespace(ctx)
 		if err != nil {
 			return err
@@ -229,8 +229,8 @@ func (k *KubernetesDriver) runContainer(
 
 	// ensure pull secrets
 	pullSecretsCreated := false
-	if k.options.KubernetesPullSecretsEnabled == "true" &&
-		k.agentConfig.InjectDockerCredentials == "true" {
+	if k.options.KubernetesPullSecretsEnabled == pkgconfig.BoolTrue &&
+		k.agentConfig.InjectDockerCredentials == pkgconfig.BoolTrue {
 		pullSecretsCreated, err = k.EnsurePullSecret(ctx, getPullSecretsName(id), options.Image)
 		if err != nil {
 			return err
@@ -265,7 +265,7 @@ func (k *KubernetesDriver) runContainer(
 			FSGroupChangePolicy: ptr.To(corev1.FSGroupChangeOnRootMismatch),
 		}
 	}
-	if k.options.KubernetesPullSecretsEnabled == "true" && pullSecretsCreated {
+	if k.options.KubernetesPullSecretsEnabled == pkgconfig.BoolTrue && pullSecretsCreated {
 		pod.Spec.ImagePullSecrets = []corev1.LocalObjectReference{{Name: getPullSecretsName(id)}}
 	}
 	pod.Spec.RestartPolicy = corev1.RestartPolicyNever
@@ -386,7 +386,7 @@ func getContainers(
 		},
 	}
 
-	if strictSecurity == "true" {
+	if strictSecurity == pkgconfig.BoolTrue {
 		devPodContainer.SecurityContext = nil
 	}
 

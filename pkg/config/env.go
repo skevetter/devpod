@@ -1,5 +1,12 @@
 package config
 
+// BoolTrue and BoolFalse are the string representations used for boolean
+// configuration values throughout the application (env vars, options, agent config).
+const (
+	BoolTrue  = "true"
+	BoolFalse = "false"
+)
+
 // Environment variable constants used throughout the application.
 // All constants follow the EnvXxx naming convention.
 const (

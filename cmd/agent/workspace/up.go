@@ -646,8 +646,8 @@ type credentialsConfig struct {
 }
 
 func configureCredentials(cfg credentialsConfig) (string, string, error) {
-	if cfg.workspaceInfo.Agent.InjectDockerCredentials != "true" &&
-		cfg.workspaceInfo.Agent.InjectGitCredentials != "true" {
+	if cfg.workspaceInfo.Agent.InjectDockerCredentials != config.BoolTrue &&
+		cfg.workspaceInfo.Agent.InjectGitCredentials != config.BoolTrue {
 		return "", "", nil
 	}
 
@@ -666,7 +666,7 @@ func configureCredentials(cfg credentialsConfig) (string, string, error) {
 	}
 
 	dockerCredentials := ""
-	if cfg.workspaceInfo.Agent.InjectDockerCredentials == "true" {
+	if cfg.workspaceInfo.Agent.InjectDockerCredentials == config.BoolTrue {
 		dockerCredentials, err = dockercredentials.ConfigureCredentialsMachine(
 			cfg.workspaceInfo.Origin,
 			serverPort,
@@ -678,7 +678,7 @@ func configureCredentials(cfg credentialsConfig) (string, string, error) {
 	}
 
 	gitCredentials := ""
-	if cfg.workspaceInfo.Agent.InjectGitCredentials == "true" {
+	if cfg.workspaceInfo.Agent.InjectGitCredentials == config.BoolTrue {
 		gitCredentials = fmt.Sprintf(
 			"!'%s' agent git-credentials --port %d",
 			binaryPath,

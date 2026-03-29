@@ -104,7 +104,7 @@ func (cmd *WorkspacesCmd) Run(
 	workspaceInformer := factory.Management().V1().DevPodWorkspaceInstances()
 
 	self := baseClient.Self()
-	filterByOwner := os.Getenv(config.EnvLoftFilterByOwner) == "true"
+	filterByOwner := os.Getenv(config.EnvLoftFilterByOwner) == config.BoolTrue
 	instanceStore := newStore(workspaceInformer, self, cmd.Context, filterByOwner, cmd.Log)
 
 	_, err = workspaceInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{

@@ -287,7 +287,7 @@ func (c *customDriver) GetDevContainerLogs(
 var _ driver.ReprovisioningDriver = (*customDriver)(nil)
 
 func (c *customDriver) CanReprovision() bool {
-	return c.workspaceInfo.Agent.Custom.CanReprovision == "true"
+	return c.workspaceInfo.Agent.Custom.CanReprovision == pkgconfig.BoolTrue
 }
 
 func (c *customDriver) runCommand(

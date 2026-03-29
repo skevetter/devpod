@@ -17,8 +17,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const envTrueValue = "true"
-
 // NewProProviderCmd creates a new cobra command.
 func NewProProviderCmd(globalFlags *flags.GlobalFlags) *cobra.Command {
 	c := &cobra.Command{
@@ -34,20 +32,20 @@ func NewProProviderCmd(globalFlags *flags.GlobalFlags) *cobra.Command {
 
 			log.Default.SetFormat(log.JSONFormat)
 
-			if os.Getenv(config.EnvDebug) == envTrueValue {
+			if os.Getenv(config.EnvDebug) == config.BoolTrue {
 				globalFlags.Debug = true
 			}
 
 			// Disable debug hints if we execute pro commands from DevPod Desktop
 			// We're reusing the agent.AgentExecutedAnnotation for simplicity, could rename in the future
-			if os.Getenv(config.EnvUI) == envTrueValue {
+			if os.Getenv(config.EnvUI) == config.BoolTrue {
 				cmd.VisitParents(func(c *cobra.Command) {
 					// find the root command
 					if c.Name() == config.BinaryName {
 						if c.Annotations == nil {
 							c.Annotations = map[string]string{}
 						}
-						c.Annotations[agent.AgentExecutedAnnotation] = envTrueValue
+						c.Annotations[agent.AgentExecutedAnnotation] = config.BoolTrue
 					}
 				})
 			}

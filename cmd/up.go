@@ -94,7 +94,7 @@ func (cmd *UpCmd) execute(cobraCmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	if devPodConfig.ContextOption(config.ContextOptionSSHStrictHostKeyChecking) == "true" {
+	if devPodConfig.ContextOption(config.ContextOptionSSHStrictHostKeyChecking) == config.BoolTrue {
 		cmd.StrictHostKeyChecking = true
 	}
 
@@ -366,7 +366,7 @@ func (cmd *UpCmd) configureWorkspace(
 			devPodHome = envDevPodHome
 		}
 		setupGPGAgentForwarding := cmd.GPGAgentForwarding ||
-			devPodConfig.ContextOption(config.ContextOptionGPGAgentForwarding) == "true"
+			devPodConfig.ContextOption(config.ContextOptionGPGAgentForwarding) == config.BoolTrue
 		sshConfigIncludePath := devPodConfig.ContextOption(config.ContextOptionSSHConfigIncludePath)
 
 		if err := configureSSH(client, configureSSHParams{
@@ -533,7 +533,7 @@ func (o *ideOpener) openVSCodeFlavor(
 	params := vscode.OpenParams{
 		Workspace: o.client.Workspace(),
 		Folder:    folder,
-		NewWindow: vscode.Options.GetValue(ideOptions, vscode.OpenNewWindow) == "true",
+		NewWindow: vscode.Options.GetValue(ideOptions, vscode.OpenNewWindow) == config.BoolTrue,
 		Flavor:    flavorMap[ideName],
 		Log:       o.log,
 	}
@@ -819,12 +819,14 @@ func (cmd *UpCmd) devPodUpMachine(
 	}
 
 	return sshtunnel.ExecuteCommand(ctx, sshtunnel.ExecuteCommandOptions{
-		Client:         client,
-		AddPrivateKeys: devPodConfig.ContextOption(config.ContextOptionSSHAddPrivateKeys) == "true",
-		AgentInject:    agentInjectFunc,
-		SSHCommand:     sshTunnelCmd,
-		Command:        agentCommand,
-		Log:            log,
+		Client: client,
+		AddPrivateKeys: devPodConfig.ContextOption(
+			config.ContextOptionSSHAddPrivateKeys,
+		) == config.BoolTrue,
+		AgentInject: agentInjectFunc,
+		SSHCommand:  sshTunnelCmd,
+		Command:     agentCommand,
+		Log:         log,
 		TunnelServerFunc: func(ctx context.Context, stdin io.WriteCloser, stdout io.Reader) (*config2.Result, error) {
 			return tunnelserver.RunUpServer(
 				ctx,
@@ -867,7 +869,7 @@ func startJupyterNotebookInBrowser(
 
 	// wait until reachable then open browser
 	targetURL := fmt.Sprintf("http://localhost:%d/lab", jupyterPort)
-	if jupyter.Options.GetValue(ideOptions, jupyter.OpenOption) == "true" {
+	if jupyter.Options.GetValue(ideOptions, jupyter.OpenOption) == config.BoolTrue {
 		go func() {
 			err = open2.Open(ctx, targetURL, logger)
 			if err != nil {
@@ -925,7 +927,7 @@ func startRStudioInBrowser(
 
 	// wait until reachable then open browser
 	targetURL := fmt.Sprintf("http://localhost:%d", port)
-	if rstudio.Options.GetValue(ideOptions, rstudio.OpenOption) == "true" {
+	if rstudio.Options.GetValue(ideOptions, rstudio.OpenOption) == config.BoolTrue {
 		go func() {
 			err = open2.Open(ctx, targetURL, logger)
 			if err != nil {
@@ -1018,7 +1020,7 @@ func startVSCodeInBrowser(
 
 	// wait until reachable then open browser
 	targetURL := fmt.Sprintf("http://localhost:%d/?folder=%s", vscodePort, workspaceFolder)
-	if openvscode.Options.GetValue(ideOptions, openvscode.OpenOption) == "true" {
+	if openvscode.Options.GetValue(ideOptions, openvscode.OpenOption) == config.BoolTrue {
 		go func() {
 			err = open2.Open(ctx, targetURL, logger)
 			if err != nil {
@@ -1033,7 +1035,10 @@ func startVSCodeInBrowser(
 
 	// start in browser
 	logger.Infof("Starting vscode in browser mode at %s", targetURL)
-	forwardPorts := openvscode.Options.GetValue(ideOptions, openvscode.ForwardPortsOption) == "true"
+	forwardPorts := openvscode.Options.GetValue(
+		ideOptions,
+		openvscode.ForwardPortsOption,
+	) == config.BoolTrue
 	extraPorts := []string{fmt.Sprintf("%s:%d", vscodeAddress, openvscode.DefaultVSCodePort)}
 	return startBrowserTunnel(
 		ctx,
@@ -1213,13 +1218,13 @@ func startBrowserTunnel(
 
 			configureDockerCredentials := devPodConfig.ContextOption(
 				config.ContextOptionSSHInjectDockerCredentials,
-			) == "true"
+			) == config.BoolTrue
 			configureGitCredentials := devPodConfig.ContextOption(
 				config.ContextOptionSSHInjectGitCredentials,
-			) == "true"
+			) == config.BoolTrue
 			configureGitSSHSignatureHelper := devPodConfig.ContextOption(
 				config.ContextOptionGitSSHSignatureForwarding,
-			) == "true"
+			) == config.BoolTrue
 
 			// run in container
 			err := tunnel.RunServices(
@@ -1444,7 +1449,7 @@ func buildDotCmdAgentArguments(
 		dotfilesRepo,
 	}
 
-	if devPodConfig.ContextOption(config.ContextOptionSSHStrictHostKeyChecking) == "true" {
+	if devPodConfig.ContextOption(config.ContextOptionSSHStrictHostKeyChecking) == config.BoolTrue {
 		agentArguments = append(agentArguments, "--strict-host-key-checking")
 	}
 

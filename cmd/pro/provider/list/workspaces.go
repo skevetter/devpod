@@ -66,7 +66,7 @@ func (cmd *WorkspacesCmd) Run(ctx context.Context) error {
 		)
 	}
 
-	filterByOwner := os.Getenv(config.EnvLoftFilterByOwner) == "true"
+	filterByOwner := os.Getenv(config.EnvLoftFilterByOwner) == config.BoolTrue
 	workspaces := []*managementv1.DevPodWorkspaceInstance{}
 	for _, p := range projectList.Items {
 		ns := project.ProjectNamespace(p.GetName())
