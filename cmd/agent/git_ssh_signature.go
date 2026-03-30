@@ -2,6 +2,8 @@ package agent
 
 import (
 	"errors"
+	"fmt"
+	"os"
 
 	"github.com/skevetter/devpod/cmd/flags"
 	"github.com/skevetter/devpod/pkg/gitsshsigning"
@@ -39,11 +41,14 @@ func NewGitSSHSignatureCmd(flags *flags.GlobalFlags) *cobra.Command {
 		FParseErrWhitelist: cobra.FParseErrWhitelist{
 			UnknownFlags: true,
 		},
-		RunE: func(_ *cobra.Command, args []string) error {
+		RunE: func(cobraCmd *cobra.Command, args []string) error {
 			logger := log.GetInstance()
 
 			if len(args) < 1 {
-				logger.Fatalf("Buffer file is required")
+				return fmt.Errorf(
+					"buffer file is required (received %d positional args: %v, flags: %v)",
+					len(args), args, os.Args[1:],
+				)
 			}
 
 			// Check if the required -Y sign flags are present

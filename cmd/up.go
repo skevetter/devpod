@@ -1565,8 +1565,6 @@ func setupGitSSHSignature(
 	out, err := exec.Command(
 		execPath,
 		"ssh",
-		"--agent-forwarding=true",
-		"--start-services=true",
 		"--user",
 		remoteUser,
 		"--context",
