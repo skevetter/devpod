@@ -204,6 +204,7 @@ export const SUPPORTED_IDES = [
   "fleet",
   "windsurf",
   "antigravity",
+  "bob",
 ] as const
 export type TSupportedIDE = (typeof SUPPORTED_IDES)[number]
 export type TImportWorkspaceConfig = Readonly<{
