@@ -152,6 +152,7 @@ fn main() -> anyhow::Result<()> {
                 if let Ok(menu) = system_tray.init(&app_handle).await {
                     let _tray = TrayIconBuilder::with_id("main")
                         .icon(Image::from_bytes(SYSTEM_TRAY_ICON_BYTES).unwrap(),)
+                        .temp_dir_path(app.path().app_cache_dir().unwrap())
                         .icon_as_template(true)
                         .menu(&menu)
                         .show_menu_on_left_click(true)
