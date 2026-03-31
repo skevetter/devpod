@@ -6,11 +6,79 @@ import (
 
 	composetypes "github.com/compose-spec/compose-go/v2/types"
 	"github.com/sirupsen/logrus"
+	"github.com/skevetter/devpod/pkg/compose"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	"github.com/skevetter/devpod/pkg/devcontainer/feature"
 	logLib "github.com/skevetter/log"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
+
+type composeBuildImageNameTestCase struct {
+	name          string
+	composeHelper *compose.ComposeHelper
+	projectName   string
+	service       *composetypes.ServiceConfig
+	hasFeatures   bool
+	want          string
+}
+
+var composeBuildImageNameTests = []composeBuildImageNameTestCase{
+	{
+		name:          "keeps original image without features",
+		composeHelper: &compose.ComposeHelper{Version: "2.30.0"},
+		projectName:   "workspace",
+		service: &composetypes.ServiceConfig{
+			Name:  "app",
+			Image: "ghcr.io/example/shared-base:latest",
+		},
+		want: "ghcr.io/example/shared-base:latest",
+	},
+	{
+		name:          "uses workspace image for image backed features",
+		composeHelper: &compose.ComposeHelper{Version: "2.30.0"},
+		projectName:   "workspace",
+		service: &composetypes.ServiceConfig{
+			Name:  "app",
+			Image: "ghcr.io/example/shared-base:latest",
+		},
+		hasFeatures: true,
+		want:        "workspace-app",
+	},
+	{
+		name:          "uses compose version separator for image backed features",
+		composeHelper: &compose.ComposeHelper{Version: "2.7.0"},
+		projectName:   "workspace",
+		service: &composetypes.ServiceConfig{
+			Name:  "app",
+			Image: "ghcr.io/example/shared-base:latest",
+		},
+		hasFeatures: true,
+		want:        "workspace_app",
+	},
+	{
+		name:          "preserves build backed services",
+		composeHelper: &compose.ComposeHelper{Version: "2.30.0"},
+		projectName:   "workspace",
+		service: &composetypes.ServiceConfig{
+			Name:  "app",
+			Image: "ghcr.io/example/shared-base:latest",
+			Build: &composetypes.BuildConfig{Context: "."},
+		},
+		hasFeatures: true,
+		want:        "ghcr.io/example/shared-base:latest",
+	},
+	{
+		name:          "uses default image when compose image is empty",
+		composeHelper: &compose.ComposeHelper{Version: "2.30.0"},
+		projectName:   "workspace",
+		service: &composetypes.ServiceConfig{
+			Name: "app",
+		},
+		hasFeatures: true,
+		want:        "workspace-app",
+	},
+}
 
 func TestStripDigestFromImageRef(t *testing.T) {
 	t.Parallel()
@@ -47,6 +115,72 @@ func TestStripDigestFromImageRef(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestComposeBuildImageName(t *testing.T) {
+	t.Parallel()
+
+	for _, tt := range composeBuildImageNameTests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			got, err := composeBuildImageName(
+				tt.composeHelper,
+				tt.projectName,
+				tt.service,
+				tt.hasFeatures,
+			)
+			if err != nil {
+				t.Fatalf("composeBuildImageName() error = %v", err)
+			}
+			if got != tt.want {
+				t.Fatalf("composeBuildImageName() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestCreateComposeServiceUsesBuildImageName(t *testing.T) {
+	t.Parallel()
+
+	r := &runner{}
+	service := r.createComposeService(
+		&composetypes.ServiceConfig{
+			Name:  "app",
+			Image: "ghcr.io/example/shared-base:latest",
+			Build: &composetypes.BuildConfig{Target: "original-target"},
+		},
+		"workspace-app:latest",
+		"Dockerfile-with-features",
+		"/tmp/context",
+		&feature.BuildInfo{
+			OverrideTarget: "dev_containers_target_stage",
+			BuildArgs: map[string]string{
+				"FEATURE_FLAG": "true",
+			},
+		},
+	)
+
+	require.Equal(t, "workspace-app:latest", service.Image)
+	require.NotNil(t, service.Build)
+	require.Equal(t, "dev_containers_target_stage", service.Build.Target)
+	require.Equal(t, "Dockerfile-with-features", service.Build.Dockerfile)
+	require.Equal(t, "/tmp/context", service.Build.Context)
+	require.NotNil(t, service.Build.Args)
+	requireBuildArgValue(t, service.Build.Args, "FEATURE_FLAG", "true")
+	requireBuildArgValue(t, service.Build.Args, "BUILDKIT_INLINE_CACHE", "1")
+}
+
+func requireBuildArgValue(
+	t *testing.T,
+	args composetypes.MappingWithEquals,
+	key, want string,
+) {
+	t.Helper()
+
+	require.NotNil(t, args[key])
+	require.Equal(t, want, *args[key])
 }
 
 type PrepareBuildContextSuite struct {

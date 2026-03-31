@@ -399,7 +399,11 @@ func (r *runner) startContainer(
 	}
 
 	if container == nil || !didRestoreFromPersistedShare {
-		overrideBuildImageName, overrideComposeBuildFilePath, imageMetadata, metadataLabel, err := r.buildAndExtendDockerCompose(
+		overrideBuildImageName,
+			overrideComposeBuildFilePath,
+			imageMetadata,
+			metadataLabel,
+			err := r.buildAndExtendDockerCompose(
 			ctx,
 			parsedConfig,
 			substitutionContext,
@@ -502,8 +506,9 @@ func (r *runner) startContainer(
 	return containerDetails, nil
 }
 
-// prepareComposeBuildInfo modifies a compose project's devcontainer Dockerfile to ensure it can be extended with features
-// If an Image is specified instead of a Build, the metadata from the Image is used to populate the build info.
+// prepareComposeBuildInfo modifies a compose project's devcontainer Dockerfile
+// to ensure it can be extended with features. If an Image is specified instead
+// of a Build, the metadata from the Image is used to populate the build info.
 func (r *runner) prepareComposeBuildInfo(
 	ctx context.Context,
 	subCtx *config.SubstitutionContext,
@@ -529,7 +534,8 @@ func (r *runner) prepareComposeBuildInfo(
 			return nil, "", "", err
 		}
 
-		// Determine build target, if a multi stage build ensure it is valid and modify the Dockerfile if necessary
+		// Determine build target. If a multi stage build is used, ensure it is
+		// valid and modify the Dockerfile if necessary.
 		originalTarget := composeService.Build.Target
 		if originalTarget != "" {
 			buildTarget = originalTarget
@@ -582,10 +588,14 @@ func (r *runner) buildAndExtendDockerCompose(
 	var imageBuildInfo *config.ImageBuildInfo
 	var err error
 
-	buildImageName := composeService.Image
-	// If Image is empty then we are building the dev container and use the default name docker-compose uses
-	if buildImageName == "" {
-		buildImageName = fmt.Sprintf("%s-%s", project.Name, composeService.Name)
+	buildImageName, err := composeBuildImageName(
+		composeHelper,
+		project.Name,
+		composeService,
+		false,
+	)
+	if err != nil {
+		return "", "", nil, "", err
 	}
 	buildTarget := "dev_container_auto_added_stage_label"
 
@@ -613,7 +623,18 @@ func (r *runner) buildAndExtendDockerCompose(
 	}
 
 	if extendImageBuildInfo != nil && extendImageBuildInfo.FeaturesBuildInfo != nil {
-		// If the dockerfile is empty (because an Image was used) reference that image as the build target after the features / modified contents
+		buildImageName, err = composeBuildImageName(
+			composeHelper,
+			project.Name,
+			composeService,
+			true,
+		)
+		if err != nil {
+			return "", "", nil, "", err
+		}
+
+		// If the dockerfile is empty (because an Image was used), reference that
+		// image as the build target after the features / modified contents.
 		if dockerfileContents == "" {
 			dockerfileContents = fmt.Sprintf("FROM %s AS %s\n", composeService.Image, buildTarget)
 		}
@@ -636,6 +657,7 @@ func (r *runner) buildAndExtendDockerCompose(
 		// Write the final docker-compose referencing the modified Dockerfile or Image
 		dockerComposeFilePath, err = r.extendedDockerComposeBuild(
 			composeService,
+			buildImageName,
 			extendedDockerfilePath,
 			extendedDockerfileContent,
 			extendImageBuildInfo.FeaturesBuildInfo,
@@ -765,6 +787,7 @@ type buildContextResult struct {
 
 func (r *runner) extendedDockerComposeBuild(
 	composeService *composetypes.ServiceConfig,
+	buildImageName string,
 	dockerFilePath string,
 	dockerfileContent string,
 	featuresBuildInfo *feature.BuildInfo,
@@ -782,6 +805,7 @@ func (r *runner) extendedDockerComposeBuild(
 
 	service := r.createComposeService(
 		composeService,
+		buildImageName,
 		result.dockerfilePathInContext,
 		result.context,
 		featuresBuildInfo,
@@ -831,6 +855,7 @@ func (r *runner) prepareBuildContext(
 
 func (r *runner) createComposeService(
 	composeService *composetypes.ServiceConfig,
+	buildImageName string,
 	dockerfilePathInContext, buildContext string,
 	featuresBuildInfo *feature.BuildInfo,
 ) *composetypes.ServiceConfig {
@@ -841,8 +866,8 @@ func (r *runner) createComposeService(
 			Context:    buildContext,
 		},
 	}
-	if composeService.Image != "" {
-		service.Image = stripDigestFromImageRef(composeService.Image)
+	if buildImageName != "" {
+		service.Image = stripDigestFromImageRef(buildImageName)
 	}
 
 	if composeService.Build != nil && composeService.Build.Target != "" {
@@ -855,6 +880,23 @@ func (r *runner) createComposeService(
 	}
 
 	return service
+}
+
+func composeBuildImageName(
+	composeHelper *compose.ComposeHelper,
+	projectName string,
+	composeService *composetypes.ServiceConfig,
+	hasFeatures bool,
+) (string, error) {
+	if hasFeatures && composeService.Image != "" && composeService.Build == nil {
+		return composeHelper.GetDefaultImage(projectName, composeService.Name)
+	}
+
+	if composeService.Image != "" {
+		return composeService.Image, nil
+	}
+
+	return composeHelper.GetDefaultImage(projectName, composeService.Name)
 }
 
 func (r *runner) writeComposeFile(service *composetypes.ServiceConfig) (string, error) {
