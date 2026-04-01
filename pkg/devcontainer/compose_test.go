@@ -121,7 +121,6 @@ func TestComposeBuildImageName(t *testing.T) {
 	t.Parallel()
 
 	for _, tt := range composeBuildImageNameTests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 

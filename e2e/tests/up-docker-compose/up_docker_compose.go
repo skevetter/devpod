@@ -3,6 +3,7 @@
 package up
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -236,19 +237,23 @@ var _ = ginkgo.Describe(
 				gomega.Expect(imageIDAfterA).
 					To(gomega.Equal(initialImageID), "shared image tag should stay unchanged after project A")
 
-				hostGhCmd := exec.CommandContext(
+				var hostGhOut bytes.Buffer
+				err = tc.dockerHelper.Run(
 					ctx,
-					"docker",
-					"run",
-					"--rm",
-					sharedImage,
-					"sh",
-					"-lc",
-					commandPresenceCheck("gh"),
+					[]string{
+						"run",
+						"--rm",
+						sharedImage,
+						"sh",
+						"-lc",
+						commandPresenceCheck("gh"),
+					},
+					nil,
+					&hostGhOut,
+					io.Discard,
 				)
-				hostGhOut, err := hostGhCmd.CombinedOutput()
 				framework.ExpectNoError(err)
-				gomega.Expect(strings.TrimSpace(string(hostGhOut))).
+				gomega.Expect(strings.TrimSpace(hostGhOut.String())).
 					To(gomega.Equal("missing"), "shared image should not gain gh")
 
 				ginkgo.By("starting project B")
