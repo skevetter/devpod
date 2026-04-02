@@ -32,6 +32,7 @@ const initialSettings: TSettings = {
   experimental_rstudio: true,
   experimental_windsurf: true,
   experimental_antigravity: true,
+  experimental_bob: true,
   experimental_devPodPro: false,
 }
 function getSettingKeys(): readonly TSetting[] {

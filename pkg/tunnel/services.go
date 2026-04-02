@@ -19,7 +19,6 @@ import (
 	"github.com/skevetter/devpod/pkg/agent/tunnelserver"
 	"github.com/skevetter/devpod/pkg/config"
 	config2 "github.com/skevetter/devpod/pkg/devcontainer/config"
-	"github.com/skevetter/devpod/pkg/devcontainer/setup"
 	"github.com/skevetter/devpod/pkg/gitsshsigning"
 	"github.com/skevetter/devpod/pkg/ide/openvscode"
 	"github.com/skevetter/devpod/pkg/netstat"
@@ -57,7 +56,7 @@ type RunServicesOptions struct {
 
 // getExitAfterTimeout calculates the timeout value based on configuration.
 func getExitAfterTimeout(devPodConfig *config.Config) time.Duration {
-	if devPodConfig.ContextOption(config.ContextOptionExitAfterTimeout) != "true" {
+	if devPodConfig.ContextOption(config.ContextOptionExitAfterTimeout) != config.BoolTrue {
 		return 0
 	}
 	return defaultExitTimeout
@@ -260,7 +259,7 @@ func getContainerResult(ctx context.Context, p portForwardParams) (*config2.Resu
 	stderr := &bytes.Buffer{}
 	err := devssh.Run(ctx, devssh.RunOptions{
 		Client:  p.containerClient,
-		Command: "cat " + setup.ResultLocation,
+		Command: "cat " + config.DevContainerResultPath,
 		Stdout:  stdout,
 		Stderr:  stderr,
 	})
@@ -278,7 +277,7 @@ func getContainerResult(ctx context.Context, p portForwardParams) (*config2.Resu
 	if err != nil {
 		return nil, fmt.Errorf("error parsing container result %s: %w", stdout.String(), err)
 	}
-	p.log.Debugf("parsed container result from %s", setup.ResultLocation)
+	p.log.Debugf("parsed container result from %s", config.DevContainerResultPath)
 
 	return result, nil
 }

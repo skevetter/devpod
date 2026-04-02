@@ -8,11 +8,11 @@ import (
 
 	managementv1 "github.com/loft-sh/api/v4/pkg/apis/management/v1"
 	"github.com/skevetter/devpod/cmd/pro/flags"
+	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/platform"
 	"github.com/skevetter/devpod/pkg/platform/client"
 	"github.com/skevetter/devpod/pkg/platform/labels"
 	"github.com/skevetter/devpod/pkg/platform/project"
-	"github.com/skevetter/devpod/pkg/provider"
 	"github.com/skevetter/log"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -66,7 +66,7 @@ func (cmd *WorkspacesCmd) Run(ctx context.Context) error {
 		)
 	}
 
-	filterByOwner := os.Getenv(provider.LOFT_FILTER_BY_OWNER) == "true"
+	filterByOwner := os.Getenv(config.EnvLoftFilterByOwner) == config.BoolTrue
 	workspaces := []*managementv1.DevPodWorkspaceInstance{}
 	for _, p := range projectList.Items {
 		ns := project.ProjectNamespace(p.GetName())

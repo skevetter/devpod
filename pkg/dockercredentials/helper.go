@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/docker/docker-credential-helpers/credentials"
+	"github.com/skevetter/devpod/pkg/config"
 )
 
 const (
@@ -124,7 +125,7 @@ func (h *Helper) getFromCredentialsServer(serverURL string) (string, string, err
 }
 
 func (h *Helper) getFromWorkspaceServer(serverURL string) (string, string, error) {
-	workspacePort := os.Getenv("DEVPOD_WORKSPACE_CREDENTIALS_PORT")
+	workspacePort := os.Getenv(config.EnvWorkspaceCredentialsPort)
 	if workspacePort == "" {
 		return "", "", fmt.Errorf("no workspace port")
 	}

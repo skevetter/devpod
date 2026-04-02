@@ -4,6 +4,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/skevetter/devpod/pkg/config"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -13,31 +14,31 @@ type AgentTestSuite struct {
 }
 
 func (s *AgentTestSuite) SetupTest() {
-	s.originalEnv = os.Getenv(EnvDevPodAgentURL)
+	s.originalEnv = os.Getenv(config.EnvAgentURL)
 }
 
 func (s *AgentTestSuite) TearDownTest() {
 	if s.originalEnv != "" {
-		_ = os.Setenv(EnvDevPodAgentURL, s.originalEnv)
+		_ = os.Setenv(config.EnvAgentURL, s.originalEnv)
 	} else {
-		_ = os.Unsetenv(EnvDevPodAgentURL)
+		_ = os.Unsetenv(config.EnvAgentURL)
 	}
 }
 
 func (s *AgentTestSuite) TestDefaultAgentDownloadURL_NoTrailingSlash() {
-	_ = os.Setenv(EnvDevPodAgentURL, "https://example.com/releases/latest/download")
+	_ = os.Setenv(config.EnvAgentURL, "https://example.com/releases/latest/download")
 	result := DefaultAgentDownloadURL()
 	s.Equal("https://example.com/releases/latest/download", result)
 }
 
 func (s *AgentTestSuite) TestDefaultAgentDownloadURL_SingleTrailingSlash() {
-	_ = os.Setenv(EnvDevPodAgentURL, "https://example.com/releases/latest/download/")
+	_ = os.Setenv(config.EnvAgentURL, "https://example.com/releases/latest/download/")
 	result := DefaultAgentDownloadURL()
 	s.Equal("https://example.com/releases/latest/download", result)
 }
 
 func (s *AgentTestSuite) TestDefaultAgentDownloadURL_MultipleTrailingSlashes() {
-	_ = os.Setenv(EnvDevPodAgentURL, "https://example.com/releases/latest/download///")
+	_ = os.Setenv(config.EnvAgentURL, "https://example.com/releases/latest/download///")
 	result := DefaultAgentDownloadURL()
 	s.Equal("https://example.com/releases/latest/download", result)
 }

@@ -34,6 +34,7 @@ import {
   WebstormSvg,
   WindsurfSvg,
   AntigravitySvg,
+  BobSvg,
   ZedDarkSvg,
   ZedSvg,
 } from "@/images"
@@ -77,6 +78,7 @@ const IDE_ICONS: Record<string, string> = {
   rstudio: RStudioSvg,
   windsurf: WindsurfSvg,
   antigravity: AntigravitySvg,
+  bob: BobSvg,
 }
 
 type TIDEIconProps = Readonly<{ ide: TIDE; size?: "sm" | "md" }> & BoxProps

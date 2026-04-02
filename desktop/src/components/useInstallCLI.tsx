@@ -15,6 +15,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useMemo, useRef } from "react"
 import { client } from "@/client/client"
+import { FLATPAK_ID } from "@/client/repo"
 import { CheckCircle, ExclamationCircle } from "@/icons"
 import { Err, Failed, isError, isMacOS, isWindows } from "@/lib"
 import { QueryKeys } from "@/queryKeys"
@@ -115,7 +116,7 @@ export function useInstallCLI() {
         Adds the DevPod CLI to your <Code>$PATH</Code>.{" "}
         {isWindows ? (
           <>
-            It will be placed in <Code>%APP_DATA%\sh.loft.devpod\bin</Code>
+            It will be placed in <Code>{`%APPDATA%\\${FLATPAK_ID}\\bin`}</Code>
           </>
         ) : (
           <>

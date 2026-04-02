@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/skevetter/devpod/pkg/command"
+	pkgconfig "github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/log"
 	"github.com/skratchdot/open-golang/open"
 )
@@ -74,6 +75,12 @@ var openConfigs = map[Flavor]openConfig{
 		macAppPath:   "/Applications/Antigravity.app/Contents/Resources/app/bin/agy",
 		sshExtension: "ms-vscode-remote.remote-ssh",
 	},
+	FlavorBob: {
+		scheme:       "bob",
+		cliName:      "bobide",
+		macAppPath:   "/Applications/Bobide.app/Contents/Resources/app/bin/bobide",
+		sshExtension: "jeanp413.open-remote-ssh",
+	},
 }
 
 func Open(ctx context.Context, params OpenParams) error {
@@ -103,7 +110,7 @@ func openViaBrowser(params OpenParams) error {
 	}
 
 	folder := strings.TrimPrefix(params.Folder, "/")
-	pathStr := fmt.Sprintf("/ssh-remote+%s.devpod/%s", params.Workspace, folder)
+	pathStr := fmt.Sprintf("/ssh-remote+%s"+pkgconfig.SSHHostSuffix+"/%s", params.Workspace, folder)
 	u := &url.URL{
 		Scheme: config.scheme,
 		Host:   "vscode-remote",
@@ -222,7 +229,7 @@ func buildOpenArgs(workspace, folder string, newWindow, hasContainersExtension b
 
 	u := &url.URL{
 		Scheme: "vscode-remote",
-		Host:   "ssh-remote+" + workspace + ".devpod",
+		Host:   "ssh-remote+" + workspace + pkgconfig.SSHHostSuffix,
 		Path:   strings.TrimPrefix(folder, "/"),
 	}
 	folderURI := u.String()

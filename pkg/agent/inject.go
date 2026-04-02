@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/inject"
 	"github.com/skevetter/devpod/pkg/shell"
 	"github.com/skevetter/devpod/pkg/version"
@@ -139,9 +140,9 @@ func (o *InjectOptions) applyPreferDownloadDefaults() {
 	}
 
 	isDefaultURL := o.DownloadURL == DefaultAgentDownloadURL()
-	hasCustomAgentURL := os.Getenv(EnvDevPodAgentURL) != "" || !isDefaultURL
+	hasCustomAgentURL := os.Getenv(config.EnvAgentURL) != "" || !isDefaultURL
 
-	preferDownloadEnv := os.Getenv(EnvDevPodAgentPreferDownload)
+	preferDownloadEnv := os.Getenv(config.EnvAgentPreferDownload)
 	switch {
 	case preferDownloadEnv != "":
 		o.applyEnvPreference(preferDownloadEnv)
@@ -159,7 +160,7 @@ func (o *InjectOptions) applyPreferDownloadDefaults() {
 func (o *InjectOptions) applyEnvPreference(preferDownloadEnv string) {
 	pref, err := strconv.ParseBool(preferDownloadEnv)
 	if err != nil {
-		o.Log.Warnf("failed to parse %s, using default", EnvDevPodAgentPreferDownload)
+		o.Log.Warnf("failed to parse %s, using default", config.EnvAgentPreferDownload)
 		pref = true
 	}
 	o.PreferDownloadFromRemoteUrl = Bool(pref)

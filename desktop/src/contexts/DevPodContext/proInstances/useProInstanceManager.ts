@@ -1,4 +1,5 @@
 import { DaemonClient } from "@/client/pro/client"
+import { PRO_RELEASE_NAME } from "@/client/repo"
 import { Err, Failed } from "@/lib"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useMemo } from "react"
@@ -6,7 +7,7 @@ import { client } from "@/client"
 import { QueryKeys } from "@/queryKeys"
 import { TProInstanceLoginConfig, TProInstanceManager, TProvider, TWithProID } from "@/types"
 
-const FALLBACK_PROVIDER_NAME = "devpod-pro"
+const FALLBACK_PROVIDER_NAME = PRO_RELEASE_NAME
 
 export function useProInstanceManager(): TProInstanceManager {
   const queryClient = useQueryClient()

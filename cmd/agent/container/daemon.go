@@ -15,8 +15,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/agent"
+	config2 "github.com/skevetter/devpod/pkg/config"
 	agentd "github.com/skevetter/devpod/pkg/daemon/agent"
-	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	"github.com/skevetter/devpod/pkg/platform/client"
 	"github.com/skevetter/devpod/pkg/ts"
 	"github.com/skevetter/log"
@@ -25,8 +25,8 @@ import (
 )
 
 const (
-	RootDir          = "/var/devpod"
-	DaemonConfigPath = "/var/run/secrets/devpod/daemon_config"
+	RootDir          = agent.ContainerDataDir
+	DaemonConfigPath = "/var/run/secrets/" + config2.BinaryName + "/daemon_config"
 )
 
 type DaemonCmd struct {
@@ -142,7 +142,7 @@ func (cmd *DaemonCmd) loadConfig() error {
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			// check environment variable
-			encodedCfg = os.Getenv(config.WorkspaceDaemonConfigExtraEnvVar)
+			encodedCfg = os.Getenv(config2.EnvWorkspaceDaemonConfig)
 		} else {
 			return fmt.Errorf("get daemon config file %s: %w", DaemonConfigPath, err)
 		}

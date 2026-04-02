@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/skevetter/devpod/pkg/command"
+	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/file"
 	"github.com/skevetter/devpod/pkg/git"
 	"github.com/skevetter/log/scanner"
@@ -210,7 +211,7 @@ func GetUser(userName string) (*GitUser, error) {
 
 func GetCredentials(requestObj *GitCredentials) (*GitCredentials, error) {
 	// run in git helper mode if we have a port
-	gitHelperPort := os.Getenv("DEVPOD_GIT_HELPER_PORT")
+	gitHelperPort := os.Getenv(config.EnvGitHelperPort)
 	if gitHelperPort != "" {
 		binaryPath, err := os.Executable()
 		if err != nil {
@@ -259,7 +260,7 @@ func GetHTTPPath(ctx context.Context, params GetHttpPathParameters) (string, err
 	configKey := fmt.Sprintf("credential.%s://%s.useHttpPath", params.Protocol, params.Host)
 	out, _ := git.CommandContext(ctx, git.GetDefaultExtraEnv(false), "config", "--get", configKey).
 		Output()
-	if strings.TrimSpace(string(out)) != "true" {
+	if strings.TrimSpace(string(out)) != config.BoolTrue {
 		return "", nil
 	}
 	// We can assume the GitRepository is always HTTP(S) based as otherwise we wouldn't

@@ -9,10 +9,12 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/skevetter/devpod/pkg/config"
 )
 
 func GetSocketAddr(providerName string) string {
-	return filepath.Join("/tmp", fmt.Sprintf("devpod-%s.sock", providerName))
+	return filepath.Join("/tmp", fmt.Sprintf(config.BinaryName+"-%s.sock", providerName))
 }
 
 func Dial(addr string) (net.Conn, error) {

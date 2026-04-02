@@ -7,14 +7,11 @@ import (
 	"github.com/skevetter/devpod/pkg/util"
 )
 
-// Override devpod home.
-const DEVPOD_HOME = "DEVPOD_HOME"
-
-// Override config path.
-const DEVPOD_CONFIG = "DEVPOD_CONFIG"
+// ConfigDirName is the hidden directory name used for DevPod configuration.
+const ConfigDirName = "." + RepoName
 
 func GetConfigDir() (string, error) {
-	homeDir := os.Getenv(DEVPOD_HOME)
+	homeDir := os.Getenv(EnvHome)
 	if homeDir != "" {
 		return homeDir, nil
 	}
@@ -24,12 +21,12 @@ func GetConfigDir() (string, error) {
 		return "", err
 	}
 
-	configDir := filepath.Join(homeDir, ".devpod")
+	configDir := filepath.Join(homeDir, ConfigDirName)
 	return configDir, nil
 }
 
 func GetConfigPath() (string, error) {
-	configOrigin := os.Getenv(DEVPOD_CONFIG)
+	configOrigin := os.Getenv(EnvConfig)
 	if configOrigin == "" {
 		configDir, err := GetConfigDir()
 		if err != nil {

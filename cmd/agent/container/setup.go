@@ -347,9 +347,10 @@ func (cmd *SetupContainerCmd) startContainerDaemon(
 		return nil
 	}
 
-	return command.StartBackgroundOnce("devpod.daemon", func() (*exec.Cmd, error) {
+	return command.StartBackgroundOnce(config2.BinaryName+".daemon", func() (*exec.Cmd, error) {
 		logger.Debugf(
-			"start devpod container daemon with inactivity timeout %s",
+			"start %s container daemon with inactivity timeout %s",
+			config2.BinaryName,
 			workspaceInfo.ContainerTimeout,
 		)
 		binaryPath, err := os.Executable()
@@ -432,6 +433,8 @@ func (cmd *SetupContainerCmd) installIDE(
 		return cmd.setupVSCode(setupInfo, ide.Options, vscode.FlavorWindsurf, log)
 	case string(config2.IDEAntigravity):
 		return cmd.setupVSCode(setupInfo, ide.Options, vscode.FlavorAntigravity, log)
+	case string(config2.IDEBob):
+		return cmd.setupVSCode(setupInfo, ide.Options, vscode.FlavorBob, log)
 	case string(config2.IDEOpenVSCode):
 		return cmd.setupOpenVSCode(setupInfo, ide.Options, log)
 	case string(config2.IDEGoland):
@@ -630,7 +633,7 @@ func configureSystemGitCredentials(
 	}
 
 	gitCredentials := fmt.Sprintf("!'%s' agent git-credentials --port %d", binaryPath, serverPort)
-	_ = os.Setenv("DEVPOD_GIT_HELPER_PORT", strconv.Itoa(serverPort))
+	_ = os.Setenv(config2.EnvGitHelperPort, strconv.Itoa(serverPort))
 
 	err = git.CommandContext(ctx, git.GetDefaultExtraEnv(false), "config", "--system", "--add",
 		"credential.helper", gitCredentials).

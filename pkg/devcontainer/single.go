@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/skevetter/devpod/pkg/command"
+	pkgconfig "github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/daemon/agent"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	"github.com/skevetter/devpod/pkg/devcontainer/metadata"
@@ -21,8 +22,6 @@ var dockerlessImage = "ghcr.io/loft-sh/dockerless:0.2.0"
 const (
 	DevPodExtraEnvVar           = "DEVPOD"
 	RemoteContainersExtraEnvVar = "REMOTE_CONTAINERS"
-	WorkspaceIDExtraEnvVar      = "DEVPOD_WORKSPACE_ID"
-	WorkspaceUIDExtraEnvVar     = "DEVPOD_WORKSPACE_UID"
 
 	DefaultEntrypoint = `
 while ! command -v /usr/local/bin/devpod >/dev/null 2>&1; do
@@ -177,7 +176,7 @@ func (r *runner) runSingleContainer(
 			if err != nil {
 				r.Log.Errorf("Failed to marshal daemon config: %v", err)
 			} else {
-				mergedConfig.ContainerEnv[config.WorkspaceDaemonConfigExtraEnvVar] = data
+				mergedConfig.ContainerEnv[pkgconfig.EnvWorkspaceDaemonConfig] = data
 			}
 		}
 
@@ -398,11 +397,11 @@ func (r *runner) addExtraEnvVars(env map[string]string) map[string]string {
 	env[RemoteContainersExtraEnvVar] = "true"
 	if r.WorkspaceConfig != nil && r.WorkspaceConfig.Workspace != nil &&
 		r.WorkspaceConfig.Workspace.ID != "" {
-		env[WorkspaceIDExtraEnvVar] = r.WorkspaceConfig.Workspace.ID
+		env[pkgconfig.EnvWorkspaceID] = r.WorkspaceConfig.Workspace.ID
 	}
 	if r.WorkspaceConfig != nil && r.WorkspaceConfig.Workspace != nil &&
 		r.WorkspaceConfig.Workspace.UID != "" {
-		env[WorkspaceUIDExtraEnvVar] = r.WorkspaceConfig.Workspace.UID
+		env[pkgconfig.EnvWorkspaceUID] = r.WorkspaceConfig.Workspace.UID
 	}
 
 	return env

@@ -12,6 +12,7 @@ import * as process from "@tauri-apps/plugin-process"
 import { Command } from "@tauri-apps/plugin-shell"
 import * as updater from "@tauri-apps/plugin-updater"
 import { TSettings } from "@/contexts"
+import { BINARY_NAME } from "./repo"
 import { Release } from "@/gen"
 import { Result, Return, hasCapability, isError, noop } from "@/lib"
 import { TCommunityContributions, TProInstance, TUnsubscribeFn } from "@/types"
@@ -315,13 +316,13 @@ class Client {
         const home_dir = await this.getEnv("HOME")
         // this will throw if doesn't exist
         const exists = await invoke<boolean>("file_exists", {
-          filepath: home_dir + "/.local/bin/devpod",
+          filepath: home_dir + `/.local/bin/${BINARY_NAME}`,
         })
 
         return Return.Value(exists)
       }
 
-      const result = await Command.create("run-path-devpod", ["version"]).execute()
+      const result = await Command.create(`run-path-${BINARY_NAME}`, ["version"]).execute()
       if (result.code !== 0) {
         return Return.Value(false)
       }

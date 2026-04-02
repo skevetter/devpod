@@ -12,15 +12,16 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/provider"
 	"github.com/skevetter/devpod/pkg/util"
 	"golang.org/x/crypto/ssh"
 )
 
 var (
-	DevPodSSHHostKeyFile    = "id_devpod_rsa_host"
-	DevPodSSHPrivateKeyFile = "id_devpod_rsa"
-	DevPodSSHPublicKeyFile  = "id_devpod_rsa.pub"
+	DevPodSSHHostKeyFile    = "id_" + config.BinaryName + "_rsa_host"
+	DevPodSSHPrivateKeyFile = "id_" + config.BinaryName + "_rsa"
+	DevPodSSHPublicKeyFile  = "id_" + config.BinaryName + "_rsa.pub"
 )
 
 var keyLock sync.Mutex
@@ -84,7 +85,7 @@ func GetPrivateKeyRaw(context, workspaceID string) ([]byte, error) {
 func GetDevPodKeysDir() string {
 	dir, err := util.UserHomeDir()
 	if err == nil {
-		tempDir := filepath.Join(dir, ".devpod", "keys")
+		tempDir := filepath.Join(dir, config.ConfigDirName, "keys")
 		// #nosec G301 -- TODO Consider using a more secure permission setting and ownership if needed.
 		err = os.MkdirAll(tempDir, 0o755)
 		if err == nil {
@@ -93,7 +94,7 @@ func GetDevPodKeysDir() string {
 	}
 
 	tempDir := os.TempDir()
-	return filepath.Join(tempDir, "devpod-ssh")
+	return filepath.Join(tempDir, config.BinaryName+"-ssh")
 }
 
 func GetDevPodHostKey() (string, error) {

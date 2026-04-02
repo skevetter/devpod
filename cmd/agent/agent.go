@@ -7,7 +7,6 @@ import (
 	"github.com/skevetter/devpod/cmd/agent/container"
 	"github.com/skevetter/devpod/cmd/agent/workspace"
 	"github.com/skevetter/devpod/cmd/flags"
-	"github.com/skevetter/devpod/pkg/client/clientimplementation"
 	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/envfile"
 	"github.com/skevetter/log"
@@ -63,12 +62,12 @@ func AgentPersistentPreRunE(
 		log.Default.SetLevel(logrus.FatalLevel)
 	} else if globalFlags.Debug {
 		log.Default.SetLevel(logrus.DebugLevel)
-	} else if os.Getenv(clientimplementation.DevPodDebug) == "true" {
+	} else if os.Getenv(config.EnvDebug) == config.BoolTrue {
 		log.Default.SetLevel(logrus.DebugLevel)
 	}
 
 	if globalFlags.DevPodHome != "" {
-		_ = os.Setenv(config.DEVPOD_HOME, globalFlags.DevPodHome)
+		_ = os.Setenv(config.EnvHome, globalFlags.DevPodHome)
 	}
 
 	// apply environment

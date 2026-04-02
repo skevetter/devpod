@@ -1,6 +1,7 @@
 package config
 
 import (
+	pkgconfig "github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/dockerfile"
 )
 
@@ -8,10 +9,8 @@ const (
 	DockerIDLabel           = "dev.containers.id"
 	DockerfileDefaultTarget = "dev_container_auto_added_stage_label"
 
-	DevPodContextFeatureFolder      = ".devpod-internal"
+	DevPodContextFeatureFolder      = pkgconfig.ConfigDirName + "-internal"
 	DevPodDockerlessBuildInfoFolder = "/workspaces/.dockerless"
-
-	WorkspaceDaemonConfigExtraEnvVar = "DEVPOD_WORKSPACE_DAEMON_CONFIG"
 )
 
 func GetDockerLabelForID(id string) []string {

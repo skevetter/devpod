@@ -35,7 +35,7 @@ func NewStatusCmd(flags *flags.GlobalFlags) *cobra.Command {
 		Short: "Shows the status of a workspace",
 		RunE: func(cobraCmd *cobra.Command, args []string) error {
 			_, err := clientimplementation.DecodeOptionsFromEnv(
-				clientimplementation.DevPodFlagsStatus,
+				config.EnvFlagsStatus,
 				&cmd.StatusOptions,
 			)
 			if err != nil {

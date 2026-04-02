@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/skevetter/devpod/cmd/pro/flags"
+	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/platform"
 	"github.com/skevetter/devpod/pkg/platform/client"
 	"github.com/skevetter/devpod/pkg/platform/remotecommand"
@@ -67,7 +68,7 @@ func (cmd *SshCmd) Run(
 		baseClient,
 		workspace,
 		"ssh",
-		platform.OptionsFromEnv("DEVPOD_FLAGS_SSH"),
+		platform.OptionsFromEnv(config.EnvFlagsSSH),
 		cmd.Log,
 	)
 	if err != nil {

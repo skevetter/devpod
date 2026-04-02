@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+	"github.com/skevetter/devpod/pkg/config"
 	devpodlog "github.com/skevetter/devpod/pkg/log"
 	"github.com/skevetter/devpod/pkg/platform/client"
 	"github.com/skevetter/devpod/pkg/ts"
@@ -193,7 +194,7 @@ func initLogging(rootDir string, debug bool) log.Logger {
 
 	logPath := filepath.Join(rootDir, "daemon.log")
 	logger := log.NewFileLogger(logPath, logLevel)
-	if os.Getenv("DEVPOD_UI") != "true" {
+	if os.Getenv(config.EnvUI) != config.BoolTrue {
 		logger = devpodlog.NewCombinedLogger(
 			logLevel,
 			logger,
@@ -221,7 +222,7 @@ func dialLocal(l *localServer) dialFunc {
 type clientType string
 
 var (
-	devPodClientType    clientType = "devpod"
+	devPodClientType    clientType = clientType(config.BinaryName)
 	tailscaleClientType clientType = "tailscale"
 )
 

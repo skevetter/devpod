@@ -12,6 +12,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/agent"
 	"github.com/skevetter/devpod/pkg/client/clientimplementation"
+	pkgconfig "github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	"github.com/skevetter/devpod/pkg/driver"
 	"github.com/skevetter/devpod/pkg/provider"
@@ -286,7 +287,7 @@ func (c *customDriver) GetDevContainerLogs(
 var _ driver.ReprovisioningDriver = (*customDriver)(nil)
 
 func (c *customDriver) CanReprovision() bool {
-	return c.workspaceInfo.Agent.Custom.CanReprovision == "true"
+	return c.workspaceInfo.Agent.Custom.CanReprovision == pkgconfig.BoolTrue
 }
 
 func (c *customDriver) runCommand(
@@ -312,12 +313,12 @@ func (c *customDriver) runCommand(
 	if err != nil {
 		return err
 	}
-	environ = append(environ, provider.DEVCONTAINER_ID+"="+workspaceId)
+	environ = append(environ, pkgconfig.EnvDevcontainerID+"="+workspaceId)
 	environ = append(environ, extraEnv...)
 
 	// set debug level
 	if log.GetLevel() == logrus.DebugLevel {
-		environ = append(environ, clientimplementation.DevPodDebug+"=true")
+		environ = append(environ, pkgconfig.EnvDebug+"="+pkgconfig.BoolTrue)
 	}
 
 	// run the command

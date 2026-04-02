@@ -363,7 +363,7 @@ func listInstancesProxyProvider(
 	log log.Logger,
 ) ([]managementv1.DevPodWorkspaceInstance, error) {
 	opts := devPodConfig.ProviderOptions(provider)
-	opts[providerpkg.LOFT_FILTER_BY_OWNER] = config.OptionValue{Value: "true"}
+	opts[config.EnvLoftFilterByOwner] = config.OptionValue{Value: "true"}
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 

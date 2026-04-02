@@ -21,16 +21,6 @@ import (
 	"github.com/skevetter/log"
 )
 
-const (
-	httpPrefix     = "http://"
-	httpsPrefix    = "https://"
-	githubPrefix   = "github.com/"
-	yamlExt        = ".yaml"
-	ymlExt         = ".yml"
-	dsStorePrefix  = ".DS_Store"
-	providerPrefix = "skevetter/devpod-provider-"
-)
-
 var ErrNoWorkspaceFound = errors.New("no workspace found")
 
 type ProviderWithOptions struct {
@@ -305,7 +295,7 @@ func downloadProviderGithub(
 	originalPath string,
 	log log.Logger,
 ) ([]byte, *provider.ProviderSource, error) {
-	path := strings.TrimPrefix(originalPath, githubPrefix)
+	path := strings.TrimPrefix(originalPath, "github.com/")
 
 	release := ""
 	index := strings.LastIndex(path, "@")
@@ -316,7 +306,7 @@ func downloadProviderGithub(
 
 	splitted := strings.Split(strings.TrimSuffix(path, "/"), "/")
 	if len(splitted) == 1 {
-		path = providerPrefix + path
+		path = config.RepoOwner + "/" + config.ProviderPrefix + path
 	} else if len(splitted) != 2 {
 		return nil, nil, fmt.Errorf(
 			"invalid github path format: expected 'owner/repo' or 'provider-name', got %q",
@@ -400,7 +390,7 @@ func loadUnconfiguredProviders(
 
 func shouldSkipEntry(entry os.DirEntry, retProviders map[string]*ProviderWithOptions) bool {
 	return retProviders[entry.Name()] != nil || !entry.IsDir() ||
-		strings.HasPrefix(entry.Name(), dsStorePrefix)
+		strings.HasPrefix(entry.Name(), ".DS_Store")
 }
 
 func loadProviderEntry(
@@ -587,8 +577,8 @@ func resolveURLProvider(
 	retSource *provider.ProviderSource,
 	log log.Logger,
 ) ([]byte, bool, error) {
-	if !strings.HasPrefix(providerSource, httpPrefix) &&
-		!strings.HasPrefix(providerSource, httpsPrefix) {
+	if !strings.HasPrefix(providerSource, "http://") &&
+		!strings.HasPrefix(providerSource, "https://") {
 		return nil, false, nil
 	}
 
@@ -605,7 +595,7 @@ func resolveFileProvider(
 	providerSource string,
 	retSource *provider.ProviderSource,
 ) ([]byte, bool, error) {
-	if !strings.HasSuffix(providerSource, yamlExt) && !strings.HasSuffix(providerSource, ymlExt) {
+	if !strings.HasSuffix(providerSource, ".yaml") && !strings.HasSuffix(providerSource, ".yml") {
 		return nil, false, nil
 	}
 

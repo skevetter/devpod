@@ -11,6 +11,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/util"
 	"github.com/skevetter/log"
 	"github.com/skevetter/log/scanner"
@@ -48,7 +49,7 @@ func ConfigureSSHConfig(params SSHConfigParams) error {
 
 	newFile, err := addHost(addHostParams{
 		path:       targetPath,
-		host:       params.Workspace + "." + "devpod",
+		host:       params.Workspace + config.SSHHostSuffix,
 		user:       params.User,
 		context:    params.Context,
 		workspace:  params.Workspace,
@@ -299,14 +300,18 @@ func GetUser(
 	}
 
 	user := "root"
-	_, err = transformHostSection(targetPath, workspaceID+"."+"devpod", func(line string) string {
-		splitted := strings.Split(strings.ToLower(strings.TrimSpace(line)), " ")
-		if len(splitted) == 2 && splitted[0] == "user" {
-			user = strings.Trim(splitted[1], "\"")
-		}
+	_, err = transformHostSection(
+		targetPath,
+		workspaceID+config.SSHHostSuffix,
+		func(line string) string {
+			splitted := strings.Split(strings.ToLower(strings.TrimSpace(line)), " ")
+			if len(splitted) == 2 && splitted[0] == "user" {
+				user = strings.Trim(splitted[1], "\"")
+			}
 
-		return line
-	})
+			return line
+		},
+	)
 	if err != nil {
 		return "", err
 	}
@@ -328,7 +333,7 @@ func RemoveFromConfig(
 		targetPath = sshConfigIncludePath
 	}
 
-	newFile, err := removeFromConfig(targetPath, workspaceID+"."+"devpod")
+	newFile, err := removeFromConfig(targetPath, workspaceID+config.SSHHostSuffix)
 	if err != nil {
 		return fmt.Errorf("parse ssh config: %w", err)
 	}

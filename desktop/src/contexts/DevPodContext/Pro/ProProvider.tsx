@@ -1,4 +1,5 @@
 import { client as globalClient } from "@/client/client"
+import { BINARY_NAME } from "@/client/repo"
 import { DaemonClient } from "@/client/pro/client"
 import { TWorkspaceOwnerFilterState } from "@/components"
 import { ToolbarActions, ToolbarTitle } from "@/components/Layout/Toolbar"
@@ -203,7 +204,7 @@ export function ProProvider({ host, children }: { host: string; children: ReactN
   )
 }
 
-const PROJECT_STORAGE_KEY = "devpod_current_project"
+const PROJECT_STORAGE_KEY = `${BINARY_NAME}_current_project`
 
 function getProjectStorageKey(host: string) {
   return `${PROJECT_STORAGE_KEY}_${host}`

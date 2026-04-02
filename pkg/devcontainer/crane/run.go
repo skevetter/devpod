@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"github.com/skevetter/devpod/pkg/config"
 	provider2 "github.com/skevetter/devpod/pkg/provider"
 	"github.com/skevetter/log"
 )
@@ -20,9 +21,9 @@ const (
 
 	EnvironmentCrane = "environment"
 
-	defaultBinName     = "devpod-crane"
-	envDevPodCraneName = "DEVPOD_CRANE_NAME"
-	tmpDirTemplate     = "devpod-crane-*"
+	defaultBinName     = config.BinaryName + "-crane"
+	envDevPodCraneName = config.EnvCraneName
+	tmpDirTemplate     = config.BinaryName + "-crane-*"
 )
 
 type Content struct {

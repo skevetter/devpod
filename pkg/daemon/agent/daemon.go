@@ -12,6 +12,7 @@ import (
 
 	"github.com/loft-sh/api/v4/pkg/devpod"
 	"github.com/skevetter/devpod/pkg/command"
+	pkgconfig "github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	provider2 "github.com/skevetter/devpod/pkg/provider"
 	"github.com/skevetter/log"
@@ -100,7 +101,11 @@ func InstallDaemon(agentDir string, interval string, log log.Logger) error {
 	}
 
 	// check if admin
-	service, err := daemon.New("devpod", "DevPod Agent Service", daemon.SystemDaemon)
+	service, err := daemon.New(
+		pkgconfig.BinaryName,
+		pkgconfig.DaemonServiceDescription,
+		daemon.SystemDaemon,
+	)
 	if err != nil {
 		return err
 	}
@@ -148,7 +153,11 @@ func RemoveDaemon() error {
 	}
 
 	// check if admin
-	service, err := daemon.New("devpod", "DevPod Agent Service", daemon.SystemDaemon)
+	service, err := daemon.New(
+		pkgconfig.BinaryName,
+		pkgconfig.DaemonServiceDescription,
+		daemon.SystemDaemon,
+	)
 	if err != nil {
 		return err
 	}

@@ -60,8 +60,8 @@ func (cmd *VersionCmd) Run(
 	providerConfig *provider.ProviderConfig,
 ) error {
 	opts := devPodConfig.ProviderOptions(providerConfig.Name)
-	opts[provider.PROVIDER_ID] = config.OptionValue{Value: providerConfig.Name}
-	opts[provider.PROVIDER_CONTEXT] = config.OptionValue{Value: cmd.Context}
+	opts[config.EnvProviderID] = config.OptionValue{Value: providerConfig.Name}
+	opts[config.EnvProviderContext] = config.OptionValue{Value: cmd.Context}
 
 	var buf bytes.Buffer
 	// ignore --debug because we tunnel json through stdio

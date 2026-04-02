@@ -1,4 +1,5 @@
 import { ProWorkspaceInstance } from "@/contexts"
+import { CONTAINER_NAME } from "@/client/repo"
 import {
   CPU,
   Clock,
@@ -65,7 +66,7 @@ export function WorkspaceDetails({
   const mainContainerImage = useMemo(
     () =>
       instance.status?.kubernetes?.podStatus?.containerStatuses?.find(
-        ({ name }) => name === "devpod"
+        ({ name }) => name === CONTAINER_NAME
       )?.image,
     [instance.status?.kubernetes]
   )
@@ -347,14 +348,14 @@ function KubernetesDetails({ status }: TKubernetesDetailsProps) {
   const storageCapacity = status.persistentVolumeClaimStatus?.capacity?.["storage"]
   const resources = useMemo(() => {
     const mainContainerResources = status.podStatus?.containerResources?.find(
-      ({ name }) => name === "devpod"
+      ({ name }) => name === CONTAINER_NAME
     )
     if (!mainContainerResources) {
       return []
     }
 
     const mainContainerMetrics = status.podStatus?.containerMetrics?.find(
-      ({ name }) => name === "devpod"
+      ({ name }) => name === CONTAINER_NAME
     )
     const indexedMetrics: Record<string, string> = {}
     if (mainContainerMetrics?.usage) {
@@ -438,7 +439,7 @@ function PodStatus({ podStatus }: { podStatus: StorageV1DevPodWorkspaceInstanceP
     // check container status first
     const containerStatus = podStatus.containerStatuses?.find(
       (container) =>
-        container.name === "devpod" &&
+        container.name === CONTAINER_NAME &&
         (container.state?.waiting?.reason || container.state?.terminated?.reason)
     )
     if (containerStatus) {

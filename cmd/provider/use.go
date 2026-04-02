@@ -181,7 +181,7 @@ func configureProviderOptions(
 	cfg.UserOptions = options2.InheritOptionsFromEnvironment(
 		cfg.UserOptions,
 		cfg.Provider.Options,
-		"DEVPOD_PROVIDER_"+cfg.Provider.Name+"_",
+		config.EnvProviderPrefix+cfg.Provider.Name+"_",
 	)
 
 	// parse options

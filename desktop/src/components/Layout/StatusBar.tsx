@@ -26,6 +26,7 @@ import { useMemo, useRef } from "react"
 import { FaBug } from "react-icons/fa"
 import { HiDocumentMagnifyingGlass, HiMagnifyingGlassPlus } from "react-icons/hi2"
 import { client } from "@/client/client"
+import { BINARY_NAME, GITHUB_REPO_URL, GITHUB_ISSUES_URL, WEBSITE_DOCS_URL } from "@/client/repo"
 import { useChangeSettings } from "@/contexts"
 import { Debug, useDebug } from "@/lib"
 import { useArch, usePlatform } from "@/lib/systemInfo"
@@ -107,7 +108,7 @@ function GitHubStar() {
         rounded="full"
         icon={<StarIcon color={iconColor} />}
         aria-label="Loving DevPod? Give us a star on GitHub"
-        onClick={() => client.openUrl("https://github.com/skevetter/devpod")}
+        onClick={() => client.openUrl(GITHUB_REPO_URL)}
       />
     </Tooltip>
   )
@@ -123,7 +124,7 @@ function OSSDocs() {
         rounded="full"
         icon={<Icon as={HiDocumentMagnifyingGlass} color={iconColor} />}
         aria-label="How to DevPod - Docs"
-        onClick={() => client.openUrl("https://devpod.sh/docs")}
+        onClick={() => client.openUrl(WEBSITE_DOCS_URL)}
       />
     </Tooltip>
   )
@@ -139,7 +140,7 @@ function OSSReportIssue() {
         rounded="full"
         icon={<Icon as={FaBug} color={iconColor} />}
         aria-label="Report an Issue"
-        onClick={() => client.openUrl("https://github.com/skevetter/devpod/issues/new/choose")}
+        onClick={() => client.openUrl(GITHUB_ISSUES_URL)}
       />
     </Tooltip>
   )
@@ -168,7 +169,7 @@ function DebugMenu() {
     const url = new URL(rawLink.replace(/#/g, "?"))
     const workspaceUID = url.searchParams.get("workspace-uid")
     const workspaceID = url.searchParams.get("workspace-id")
-    const host = url.searchParams.get("devpod-pro-host")
+    const host = url.searchParams.get(`${BINARY_NAME}-pro-host`)
     const project = url.searchParams.get("project")
     if (!workspaceUID || !workspaceID || !host || !project) {
       console.error(

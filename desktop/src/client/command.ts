@@ -11,6 +11,7 @@ import {
   DEVPOD_UI_ENV_VAR,
   DEVPOD_ADDITIONAL_ENV_VARS,
 } from "./constants"
+import { FLATPAK_ID } from "./repo"
 import { TStreamEvent } from "./types"
 import { TAURI_SERVER_URL } from "./tauriClient"
 import { invoke } from "@tauri-apps/api/core"
@@ -91,7 +92,7 @@ export class Command implements TCommand<ChildProcess<string>> {
       if (this.isFlatpak === undefined) {
         this.isFlatpak = await this.getEnv("FLATPAK_ID")
         if (this.isFlatpak) {
-          this.extraEnvVars["FLATPAK_ID"] = "sh.loft.devpod"
+          this.extraEnvVars["FLATPAK_ID"] = FLATPAK_ID
           this.extraEnvVars[DEVPOD_ADDITIONAL_ENV_VARS] = recordToCSV(this.extraEnvVars)
           this.sidecarCommand = ShellCommand.sidecar(DEVPOD_BINARY, this.args, {
             env: this.extraEnvVars,
