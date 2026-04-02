@@ -29,7 +29,7 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/go-cmp v0.7.0
 	github.com/google/go-containerregistry v0.21.3
-	github.com/google/go-containerregistry/pkg/authn/kubernetes v0.0.0-20260327163901-0794660d7203
+	github.com/google/go-containerregistry/pkg/authn/kubernetes v0.0.0-20260401175751-e90447d31923
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/handlers v1.5.2
 	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674
