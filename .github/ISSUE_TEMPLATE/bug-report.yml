@@ -3,7 +3,7 @@ description: Report a bug to help fix your issue
 title: "[Bug]: "
 labels:
   - kind/bug
-type: Bug
+type: bug
 body:
   - type: checkboxes
     id: preflight
