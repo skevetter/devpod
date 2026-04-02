@@ -1,0 +1,163 @@
+name: Bug Report
+description: Report a bug to help fix your issue
+title: "[Bug]: "
+labels:
+  - kind/bug
+type: Bug
+body:
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Before submitting
+      options:
+        - label: I have searched existing issues to confirm this is not a duplicate
+          required: true
+        - label: I am running the latest version of DevPod
+          required: false
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Minimal steps to reproduce. The more precise, the faster the issue can be investigated.
+      placeholder: |
+        1. Run `devpod up ...`
+        2. Click on ...
+        3. See error ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: devcontainer
+    attributes:
+      label: devcontainer.json
+      description: Paste your devcontainer.json if applicable.
+      render: json
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Error output / logs
+      description: Paste relevant error messages, CLI output, or logs. Use `devpod provider logs` for provider logs.
+      render: shell
+    validations:
+      required: false
+
+  - type: dropdown
+    id: reproducibility
+    attributes:
+      label: How often does this happen?
+      options:
+        - Every time
+        - Sometimes
+        - Only once
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - macOS
+        - Linux
+        - Windows
+    validations:
+      required: true
+
+  - type: input
+    id: distro
+    attributes:
+      label: Linux distribution (if applicable)
+      description: e.g. Ubuntu 24.04, Fedora 41, Arch, Debian 13, NixOS
+      placeholder: Ubuntu 24.04
+    validations:
+      required: false
+
+  - type: dropdown
+    id: arch
+    attributes:
+      label: Architecture
+      options:
+        - ARM64
+        - AMD64
+    validations:
+      required: true
+
+  - type: dropdown
+    id: interface
+    attributes:
+      label: Desktop app or CLI?
+      options:
+        - Desktop app
+        - CLI only
+        - Both
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: DevPod version
+      description: Output of `devpod version`
+      placeholder: v0.6.0
+    validations:
+      required: true
+
+  - type: dropdown
+    id: provider
+    attributes:
+      label: DevPod provider
+      options:
+        - Docker
+        - SSH
+        - Kubernetes
+        - AWS
+        - Google Cloud
+        - Azure
+        - DigitalOcean
+        - Other / Custom
+    validations:
+      required: true
+
+  - type: input
+    id: provider-version
+    attributes:
+      label: Provider version
+      description: Output of `devpod provider list` for the relevant provider
+      placeholder: v0.1.0
+    validations:
+      required: false
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots
+      description: If this is a UI bug, please include screenshots or a screen recording.
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Anything else?
+      description: Additional context, workarounds you have tried, links to related issues.
+    validations:
+      required: false
