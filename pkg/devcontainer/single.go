@@ -74,6 +74,13 @@ func (r *runner) runSingleContainer(
 			if err != nil {
 				return nil, err
 			}
+
+			// Re-fetch container details after starting so that state
+			// fields (e.g. StartedAt) are current for lifecycle hooks.
+			containerDetails, err = r.Driver.FindDevContainer(ctx, r.ID)
+			if err != nil {
+				return nil, fmt.Errorf("find dev container: %w", err)
+			}
 		}
 
 		// if we are working with a non-managed container, and it has set workingDir, set it as the workspaceFolder

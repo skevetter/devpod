@@ -271,6 +271,39 @@ var _ = ginkgo.Describe(
 			framework.ExpectNoError(err)
 		}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
+		ginkgo.It("postStartCommand runs after restart", func(ctx context.Context) {
+			tempDir, err := setupWorkspace(
+				"tests/up/testdata/docker-post-start-restart",
+				dtc.initialDir,
+				dtc.f,
+			)
+			framework.ExpectNoError(err)
+
+			// First up: postStartCommand should run
+			err = dtc.f.DevPodUp(ctx, tempDir)
+			framework.ExpectNoError(err)
+
+			out, err := dtc.execSSH(ctx, tempDir, "cat $HOME/post-start-count.log")
+			framework.ExpectNoError(err)
+			lines := strings.Count(strings.TrimSpace(out), "\n") + 1
+			gomega.Expect(lines).To(gomega.Equal(1),
+				"postStartCommand should have run once after initial up")
+
+			// Stop the workspace
+			err = dtc.f.DevPodWorkspaceStop(ctx, tempDir)
+			framework.ExpectNoError(err)
+
+			// Second up (restart): postStartCommand should run again
+			err = dtc.f.DevPodUp(ctx, tempDir)
+			framework.ExpectNoError(err)
+
+			out, err = dtc.execSSH(ctx, tempDir, "cat $HOME/post-start-count.log")
+			framework.ExpectNoError(err)
+			lines = strings.Count(strings.TrimSpace(out), "\n") + 1
+			gomega.Expect(lines).To(gomega.Equal(2),
+				"postStartCommand should have run again after restart")
+		}, ginkgo.SpecTimeout(framework.GetTimeout()))
+
 		ginkgo.It("multi devcontainer selection", func(ctx context.Context) {
 			tempDir, err := setupWorkspace(
 				"tests/up/testdata/docker-multi-devcontainer",

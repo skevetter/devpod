@@ -1,0 +1,4 @@
+{
+  "image": "mcr.microsoft.com/devcontainers/go:1",
+  "postStartCommand": "echo postStartRan >> $HOME/post-start-count.log"
+}

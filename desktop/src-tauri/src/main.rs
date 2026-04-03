@@ -158,8 +158,20 @@ fn main() -> anyhow::Result<()> {
             let app_handle = app.handle().clone();
             tauri::async_runtime::block_on(async move {
                 if let Ok(menu) = system_tray.init(&app_handle).await {
+                    let tray_temp_dir = app
+                        .path()
+                        .app_cache_dir()
+                        .unwrap_or_else(|err| {
+                            error!(
+                                "Failed to resolve app cache dir for tray temp path: {}. Falling back to system temp dir.",
+                                err
+                            );
+                            std::env::temp_dir().join("devpod")
+                        });
+
                     let _tray = TrayIconBuilder::with_id("main")
                         .icon(Image::from_bytes(SYSTEM_TRAY_ICON_BYTES).unwrap(),)
+                        .temp_dir_path(tray_temp_dir)
                         .icon_as_template(true)
                         .menu(&menu)
                         .show_menu_on_left_click(true)
