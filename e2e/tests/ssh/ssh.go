@@ -191,6 +191,65 @@ var _ = ginkgo.Describe("devpod ssh test suite", ginkgo.Label("ssh"), ginkgo.Ord
 				gomega.ContainSubstring("signed test commit"),
 				"git commit should succeed with the signed test commit message",
 			)
+
+			// Step 4: Verify the commit is actually signed with a valid SSH signature.
+			// Read the public key that was used for signing so we can build
+			// an allowed-signers file inside the workspace for verification.
+			pubKeyBytes, err := os.ReadFile(
+				keyPath + ".pub",
+			) // #nosec G304 -- test file with controlled path
+			framework.ExpectNoError(err)
+			pubKey := strings.TrimSpace(string(pubKeyBytes))
+
+			verifyCmd := strings.Join([]string{
+				"cd /tmp/test-sign-repo",
+				// Create allowed signers file mapping the test email to our public key
+				"echo 'test@example.com " + pubKey + "' > /tmp/allowed_signers",
+				"git config gpg.ssh.allowedSignersFile /tmp/allowed_signers",
+				// Verify the commit signature is valid
+				"git verify-commit HEAD 2>&1",
+			}, " && ")
+
+			stdout, stderr, err = f.ExecCommandCapture(ctx, []string{
+				"ssh",
+				"--agent-forwarding",
+				"--start-services",
+				tempDir,
+				"--command", verifyCmd,
+			})
+			ginkgo.GinkgoWriter.Printf("verify stdout: %s\n", stdout)
+			ginkgo.GinkgoWriter.Printf("verify stderr: %s\n", stderr)
+			framework.ExpectNoError(err)
+
+			// git verify-commit writes signature details to stderr
+			combined := stdout + stderr
+			gomega.Expect(combined).To(
+				gomega.ContainSubstring("Good"),
+				"git verify-commit should report a good SSH signature",
+			)
+
+			// And confirm the signature log shows the correct principal
+			logCmd := "cd /tmp/test-sign-repo && git log --show-signature -1 2>&1"
+			stdout, stderr, err = f.ExecCommandCapture(ctx, []string{
+				"ssh",
+				"--agent-forwarding",
+				"--start-services",
+				tempDir,
+				"--command", logCmd,
+			})
+			ginkgo.GinkgoWriter.Printf("log stdout: %s\n", stdout)
+			ginkgo.GinkgoWriter.Printf("log stderr: %s\n", stderr)
+			framework.ExpectNoError(err)
+
+			combined = stdout + stderr
+			gomega.Expect(combined).To(
+				gomega.ContainSubstring("Good"),
+				"git log --show-signature should report a good signature",
+			)
+			gomega.Expect(combined).To(
+				gomega.ContainSubstring("test@example.com"),
+				"signature should be associated with the test email principal",
+			)
 		},
 	)
 
