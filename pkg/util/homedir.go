@@ -92,3 +92,16 @@ func UserHomeDir() (string, error) {
 
 	return "", errors.New("can't determine the home directory")
 }
+
+// ExpandTilde replaces a leading ~ or ~/ in a path with the user's home directory.
+// If the home directory cannot be determined, the original path is returned unchanged.
+func ExpandTilde(path string) string {
+	if path == "~" || strings.HasPrefix(path, "~/") {
+		home, err := UserHomeDir()
+		if err != nil {
+			return path
+		}
+		return home + path[1:]
+	}
+	return path
+}
