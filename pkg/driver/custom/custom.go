@@ -361,7 +361,7 @@ func ToEnvironWithBinaries(
 		workspace.Machine,
 		workspace.Options,
 		nil,
-		"",
+		workspace.Workspace.Provider.Name,
 	)
 	for k, v := range agentBinaries {
 		environ = append(environ, k+"="+v)
