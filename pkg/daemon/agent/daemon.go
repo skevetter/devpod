@@ -159,12 +159,13 @@ func InstallDaemon(agentDir string, interval string, log log.Logger) error {
 		if out, err := exec.Command("systemctl", "daemon-reload").CombinedOutput(); err != nil {
 			return fmt.Errorf("systemctl daemon-reload: %s: %w", string(out), err)
 		}
+	}
 
-		//nolint:gosec // BinaryName is a compile-time constant, not tainted input
-		if out, err := exec.Command("systemctl", "enable", pkgconfig.BinaryName).
-			CombinedOutput(); err != nil {
-			return fmt.Errorf("systemctl enable: %s: %w", string(out), err)
-		}
+	// Always enable so the service starts on boot, even if it was previously disabled.
+	//nolint:gosec // BinaryName is a compile-time constant, not tainted input
+	if out, err := exec.Command("systemctl", "enable", pkgconfig.BinaryName).
+		CombinedOutput(); err != nil {
+		return fmt.Errorf("systemctl enable: %s: %w", string(out), err)
 	}
 
 	// make sure daemon is started
