@@ -108,7 +108,7 @@ func newServicePrincipalToken(
 			return nil, fmt.Errorf("failed to initialise OAuthConfig: %w", oauthErr)
 		}
 		return adal.NewServicePrincipalToken(
-			*oAuthConfig, cc.ClientID, cc.ClientSecret, cc.Resource,
+			*oAuthConfig, cc.ClientID, cc.ClientSecret, resource,
 		)
 	}
 
