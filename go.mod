@@ -42,7 +42,6 @@ require (
 	github.com/loft-sh/apiserver v0.0.0-20260113122925-594495a02e96
 	github.com/loft-sh/programming-language-detection v0.0.5
 	github.com/mattn/go-isatty v0.0.20
-	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d
 	github.com/moby/buildkit v0.28.1
 	github.com/moby/patternmatcher v0.6.1
 	github.com/moby/term v0.5.2
@@ -228,6 +227,7 @@ require (
 	github.com/mattn/go-shellwords v1.0.12 // indirect
 	github.com/mdlayher/netlink v1.7.3-0.20250113171957-fbb4dce95f42 // indirect
 	github.com/mdlayher/socket v0.5.1 // indirect
+	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/go-ps v1.0.0 // indirect
 	github.com/mitchellh/go-wordwrap v1.0.1 // indirect
