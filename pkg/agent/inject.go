@@ -199,7 +199,9 @@ func InjectAgent(opts *InjectOptions) error {
 			return false
 		}
 		if strings.Contains(err.Error(), "container state improper") {
-			opts.Log.Warn("container may have stopped, it should be restarted before next exec attempt")
+			opts.Log.Warn(
+				"container may have stopped, it should be restarted before next exec attempt",
+			)
 		}
 		opts.Log.Debugf("retrying injection: %v", err)
 		return true

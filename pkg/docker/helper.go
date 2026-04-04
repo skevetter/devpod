@@ -220,7 +220,8 @@ const (
 // status "running" or the context/timeout expires. It does not start
 // the container — the caller is responsible for that.
 func (r *DockerHelper) WaitContainerRunning(ctx context.Context, containerID string) error {
-	return wait.PollUntilContextTimeout(ctx, containerRunningPollInterval, containerRunningTimeout, true,
+	return wait.PollUntilContextTimeout(
+		ctx, containerRunningPollInterval, containerRunningTimeout, true,
 		func(ctx context.Context) (bool, error) {
 			details, err := r.InspectContainers(ctx, []string{containerID})
 			if err != nil {

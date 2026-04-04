@@ -92,7 +92,10 @@ func (d *dockerDriver) CommandDevContainer(
 	}
 
 	if container.State.Status != "running" {
-		d.Log.Infof("container %s is not running (status=%s), restarting", container.ID, container.State.Status)
+		d.Log.Infof(
+			"container %s is not running (status=%s), restarting",
+			container.ID, container.State.Status,
+		)
 		if err := d.Docker.StartContainer(ctx, container.ID); err != nil {
 			return fmt.Errorf("restart container: %w", err)
 		}
