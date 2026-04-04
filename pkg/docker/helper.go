@@ -230,18 +230,27 @@ func (r *DockerHelper) WaitContainerRunning(ctx context.Context, containerID str
 			}
 			if len(details) == 0 {
 				return false, fmt.Errorf(
-				"container %s disappeared while waiting for it to start",
-				containerID,
-			)
+					"container %s disappeared while waiting for it to start",
+					containerID,
+				)
 			}
 			status := strings.ToLower(details[0].State.Status)
 			if status == "running" {
 				return true, nil
 			}
 			if status == "removing" || status == "dead" {
-				return false, fmt.Errorf("%w: container %s is %q", ErrContainerTerminal, containerID, status)
+				return false, fmt.Errorf(
+					"%w: container %s is %q",
+					ErrContainerTerminal,
+					containerID,
+					status,
+				)
 			}
-			r.Log.Debugf("WaitContainerRunning: container %s status=%s, waiting...", containerID, status)
+			r.Log.Debugf(
+				"WaitContainerRunning: container %s status=%s, waiting...",
+				containerID,
+				status,
+			)
 			return false, nil
 		},
 	)
