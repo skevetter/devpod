@@ -68,33 +68,41 @@ func parseSSHKeygenArgs(args []string) sshKeygenArgs {
 	result := sshKeygenArgs{
 		command: "sign",
 	} // git only ever calls with sign, but default defensively
+	consumed := make(map[int]bool)
 	for i := 0; i < len(args); i++ {
-		consumeFlag(&result, args, &i)
+		if next := consumeFlag(&result, args, i); next > i {
+			consumed[i] = true
+			consumed[next] = true
+			i = next
+		}
 	}
 	// The buffer file is always the last argument and is never a flag.
-	if len(args) > 0 && !strings.HasPrefix(args[len(args)-1], "-") {
-		result.bufferFile = args[len(args)-1]
+	lastIdx := len(args) - 1
+	if lastIdx >= 0 && !consumed[lastIdx] && !strings.HasPrefix(args[lastIdx], "-") {
+		result.bufferFile = args[lastIdx]
 	}
 	return result
 }
 
-// consumeFlag processes a single known flag from args at position i, advancing
-// i past the flag's value when present.
-func consumeFlag(result *sshKeygenArgs, args []string, i *int) {
-	if *i+1 >= len(args) {
-		return
+// consumeFlag processes a single known flag from args at position i.
+// Returns the index of the consumed value if a known flag-value pair is found,
+// or i if no value was consumed.
+func consumeFlag(result *sshKeygenArgs, args []string, i int) int {
+	if i+1 >= len(args) {
+		return i
 	}
-	switch args[*i] {
+	switch args[i] {
 	case "-Y":
-		result.command = args[*i+1]
-		*i++
+		result.command = args[i+1]
+		return i + 1
 	case "-f":
-		result.certPath = args[*i+1]
-		*i++
+		result.certPath = args[i+1]
+		return i + 1
 	case "-n":
-		result.namespace = args[*i+1]
-		*i++
+		result.namespace = args[i+1]
+		return i + 1
 	}
+	return i
 }
 
 // delegateToSSHKeygen forwards args to the system ssh-keygen binary.
