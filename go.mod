@@ -41,7 +41,6 @@ require (
 	github.com/loft-sh/api/v4 v4.4.0
 	github.com/loft-sh/apiserver v0.0.0-20260113122925-594495a02e96
 	github.com/loft-sh/programming-language-detection v0.0.5
-	github.com/mattn/go-isatty v0.0.20
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d
 	github.com/moby/buildkit v0.28.1
 	github.com/moby/patternmatcher v0.6.1
@@ -223,6 +222,7 @@ require (
 	github.com/loft-sh/admin-apis v0.0.0-20260311181619-506013b79ba0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
+	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-localereader v0.0.1 // indirect
 	github.com/mattn/go-runewidth v0.0.19 // indirect
 	github.com/mattn/go-shellwords v1.0.12 // indirect
