@@ -3,7 +3,6 @@ package agent
 import (
 	"testing"
 
-	"github.com/skevetter/devpod/cmd/flags"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
@@ -16,61 +15,43 @@ func TestGitSSHSignatureSuite(t *testing.T) {
 	suite.Run(t, new(GitSSHSignatureTestSuite))
 }
 
-func (s *GitSSHSignatureTestSuite) TestAcceptsUnknownFlags() {
-	cmd := NewGitSSHSignatureCmd(&flags.GlobalFlags{})
-
-	// Git passes: -Y sign -n git -f /path/to/key -U /dev/stdin /tmp/buffer
-	// -U is an unknown flag that consumes /dev/stdin as its value.
-	// /tmp/buffer remains as a positional argument.
-	err := cmd.ParseFlags(
-		[]string{
-			"-Y",
-			"sign",
-			"-n",
-			"git",
-			"-f",
-			"/path/to/key",
-			"-U",
-			"/dev/stdin",
-			"/tmp/buffer",
-		},
-	)
-	assert.NoError(s.T(), err, "flag parsing should succeed with unknown flag -U")
-
-	args := cmd.Flags().Args()
-	s.Require().NotEmpty(args, "should have positional args")
-	assert.Equal(s.T(), "/tmp/buffer", args[len(args)-1],
-		"buffer file should be preserved as last positional arg")
+func (s *GitSSHSignatureTestSuite) TestParseBasicSignArgs() {
+	args := []string{"-Y", "sign", "-n", "git", "-f", "/path/to/key.pub", "/tmp/buffer"}
+	result := parseSSHKeygenArgs(args)
+	assert.Equal(s.T(), "sign", result.command)
+	assert.Equal(s.T(), "git", result.namespace)
+	assert.Equal(s.T(), "/path/to/key.pub", result.certPath)
+	assert.Equal(s.T(), "/tmp/buffer", result.bufferFile)
 }
 
-func (s *GitSSHSignatureTestSuite) TestBufferFileAsPositionalArg() {
-	cmd := NewGitSSHSignatureCmd(&flags.GlobalFlags{})
-
-	err := cmd.ParseFlags(
-		[]string{"-Y", "sign", "-n", "git", "-f", "/path/to/key", "/tmp/buffer"},
-	)
-	assert.NoError(s.T(), err)
-
-	args := cmd.Flags().Args()
-	s.Require().NotEmpty(args, "should have positional args")
-	assert.Equal(s.T(), "/tmp/buffer", args[len(args)-1],
-		"last positional arg should be the buffer file")
+func (s *GitSSHSignatureTestSuite) TestParseWithAgentFlag() {
+	// When the signing key is loaded in the ssh-agent, git passes -U (a boolean
+	// "use agent" flag) immediately before the buffer file. The buffer file must
+	// still be recognised as the last non-flag argument.
+	args := []string{"-Y", "sign", "-n", "git", "-f", "/path/to/key.pub", "-U", "/tmp/buffer"}
+	result := parseSSHKeygenArgs(args)
+	assert.Equal(s.T(), "sign", result.command)
+	assert.Equal(s.T(), "/path/to/key.pub", result.certPath)
+	assert.Equal(s.T(), "/tmp/buffer", result.bufferFile)
 }
 
-func (s *GitSSHSignatureTestSuite) TestKnownFlagsParsed() {
-	cmd := NewGitSSHSignatureCmd(&flags.GlobalFlags{})
+func (s *GitSSHSignatureTestSuite) TestParseNonSignCommand() {
+	args := []string{"-Y", "verify", "-n", "git", "-f", "/path/to/key.pub", "/tmp/buffer"}
+	result := parseSSHKeygenArgs(args)
+	assert.Equal(s.T(), "verify", result.command)
+}
 
-	err := cmd.ParseFlags(
-		[]string{"-Y", "sign", "-n", "git", "-f", "/path/to/key", "/tmp/buffer"},
-	)
-	assert.NoError(s.T(), err)
+func (s *GitSSHSignatureTestSuite) TestParseMissingBufferFile() {
+	// All args end in a flag — no buffer file present.
+	args := []string{"-Y", "sign", "-n", "git", "-f", "/path/to/key.pub", "-U"}
+	result := parseSSHKeygenArgs(args)
+	assert.Equal(s.T(), "", result.bufferFile)
+}
 
-	val, err := cmd.Flags().GetString("command")
-	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), "sign", val, "command flag should be 'sign'")
-
-	args := cmd.Flags().Args()
-	s.Require().NotEmpty(args, "should have positional args")
-	assert.Equal(s.T(), "/tmp/buffer", args[len(args)-1],
-		"last positional arg should be the buffer file")
+func (s *GitSSHSignatureTestSuite) TestParseDefaultsToSign() {
+	// If -Y is absent the command defaults to "sign".
+	args := []string{"-n", "git", "-f", "/path/to/key.pub", "/tmp/buffer"}
+	result := parseSSHKeygenArgs(args)
+	assert.Equal(s.T(), "sign", result.command)
+	assert.Equal(s.T(), "/tmp/buffer", result.bufferFile)
 }

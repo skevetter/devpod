@@ -31,73 +31,91 @@ type GitSSHSignatureCmd struct {
 //
 //	custom-ssh-signature-handler -Y sign -n git -f /Users/johndoe/.ssh/my-key.pub /tmp/.git_signing_buffer_tmp4Euk6d
 func NewGitSSHSignatureCmd(flags *flags.GlobalFlags) *cobra.Command {
-	cmd := &GitSSHSignatureCmd{
-		GlobalFlags: flags,
-	}
-
-	gitSSHSignatureCmd := &cobra.Command{
+	return &cobra.Command{
 		Use: "git-ssh-signature",
-		// Allow unknown flags so that git can pass any ssh-keygen flags
-		// (e.g. -U for stdin input) without cobra rejecting them.
-		FParseErrWhitelist: cobra.FParseErrWhitelist{
-			UnknownFlags: true,
-		},
+		// This command implements the ssh-keygen protocol used by git for commit
+		// signing. Disable cobra's flag parsing so we can handle the ssh-keygen
+		// argument format directly, including boolean flags like -U (ssh-agent
+		// mode) that cobra cannot distinguish from flags that take a value.
+		DisableFlagParsing: true,
 		RunE: func(_ *cobra.Command, args []string) error {
 			logger := log.GetInstance()
 
+			parsed := parseSSHKeygenArgs(args)
+
 			// For non-sign operations (verify, find-principals, check-novalidate),
 			// delegate command to system ssh-keygen since op does not require the tunnel.
-			if cmd.Command != "sign" {
-				return delegateToSSHKeygen(logger)
+			if parsed.command != "sign" {
+				return delegateToSSHKeygen(args, logger)
 			}
 
-			// Sign operation requires a buffer file
-			if len(args) < 1 {
-				return fmt.Errorf(
-					"buffer file is required (received %d positional args: %v)",
-					len(args), args,
-				)
+			if parsed.bufferFile == "" {
+				return fmt.Errorf("buffer file is required")
 			}
-
-			// The last argument is the buffer file
-			cmd.BufferFile = args[len(args)-1]
 
 			return gitsshsigning.HandleGitSSHProgramCall(
-				cmd.CertPath, cmd.Namespace, cmd.BufferFile, logger)
+				parsed.certPath, parsed.namespace, parsed.bufferFile, logger)
 		},
 	}
-
-	gitSSHSignatureCmd.Flags().StringVarP(&cmd.CertPath, "file", "f", "", "Path to the private key")
-	gitSSHSignatureCmd.Flags().StringVarP(&cmd.Namespace, "namespace", "n", "", "Namespace")
-	gitSSHSignatureCmd.Flags().
-		StringVarP(&cmd.Command, "command", "Y", "sign", "Command - should be 'sign'")
-
-	return gitSSHSignatureCmd
 }
 
-// delegateToSSHKeygen forwards the original arguments to the system ssh-keygen binary.
-func delegateToSSHKeygen(logger log.Logger) error {
+// sshKeygenArgs holds the parsed result of a git ssh-keygen invocation.
+type sshKeygenArgs struct {
+	command    string // -Y value (sign, verify, find-principals, etc.)
+	certPath   string // -f value (path to public key)
+	namespace  string // -n value (always "git" for commit signing)
+	bufferFile string // last non-flag argument
+}
+
+// parseSSHKeygenArgs parses the ssh-keygen argument format used by git:
+//
+//	-Y <command> -n <namespace> -f <key> [flags...] <buffer-file>
+//
+// The buffer file is always the last argument and is never a flag.
+// Unknown flags (e.g. -U for ssh-agent mode) are ignored.
+func parseSSHKeygenArgs(args []string) sshKeygenArgs {
+	result := sshKeygenArgs{
+		command: "sign",
+	} // git only ever calls with sign, but default defensively
+	for i := 0; i < len(args); i++ {
+		consumeFlag(&result, args, &i)
+	}
+	// The buffer file is always the last argument and is never a flag.
+	if len(args) > 0 && !strings.HasPrefix(args[len(args)-1], "-") {
+		result.bufferFile = args[len(args)-1]
+	}
+	return result
+}
+
+// consumeFlag processes a single known flag from args at position i, advancing
+// i past the flag's value when present.
+func consumeFlag(result *sshKeygenArgs, args []string, i *int) {
+	if *i+1 >= len(args) {
+		return
+	}
+	switch args[*i] {
+	case "-Y":
+		result.command = args[*i+1]
+		*i++
+	case "-f":
+		result.certPath = args[*i+1]
+		*i++
+	case "-n":
+		result.namespace = args[*i+1]
+		*i++
+	}
+}
+
+// delegateToSSHKeygen forwards args to the system ssh-keygen binary.
+func delegateToSSHKeygen(args []string, logger log.Logger) error {
 	sshKeygen, err := exec.LookPath("ssh-keygen")
 	if err != nil {
 		return fmt.Errorf("find ssh-keygen: %w", err)
 	}
 
-	// Extract the arguments that were originally passed to this command.
-	// Find "git-ssh-signature" in os.Args and take everything after it.
-	var sshArgs []string
-	for i, arg := range os.Args {
-		if strings.HasSuffix(arg, "git-ssh-signature") {
-			sshArgs = os.Args[i+1:]
-			break
-		}
-	}
-	if sshArgs == nil {
-		return fmt.Errorf("git-ssh-signature not found in process arguments")
-	}
+	logger.Debugf("delegating to ssh-keygen: %s %v", sshKeygen, args)
 
-	logger.Debugf("delegating to ssh-keygen: %s %v", sshKeygen, sshArgs)
-
-	c := exec.Command(sshKeygen, sshArgs...) // #nosec G204,G304,G702
+	c := exec.Command(sshKeygen, args...) // #nosec G204,G304,G702
 	c.Stdin = os.Stdin
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr
