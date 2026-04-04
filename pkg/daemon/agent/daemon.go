@@ -163,9 +163,8 @@ func InstallDaemon(agentDir string, interval string, log log.Logger) error {
 		daemonArgs := args[1:] // strip executable path
 		err = command.StartBackgroundOnce("devpod.daemon", func() (*exec.Cmd, error) {
 			log.Infof("started DevPod daemon into server")
-			return exec.Command(
-				executable,
-				daemonArgs...), nil //nolint:gosec // executable is from os.Executable()
+			//nolint:gosec // executable is from os.Executable(), not tainted input
+			return exec.Command(executable, daemonArgs...), nil
 		})
 		if err != nil {
 			return fmt.Errorf("start daemon: %w", err)
@@ -177,6 +176,7 @@ func InstallDaemon(agentDir string, interval string, log log.Logger) error {
 		unitContent := systemdUnitContents(strings.Join(args, " "))
 		//nolint:gosec // systemd unit files must be world-readable (0644)
 		serviceFile := serviceFilePath()
+		//nolint:gosec // systemd directory must be world-readable (0755)
 		if err := os.MkdirAll(filepath.Dir(serviceFile), 0o755); err != nil {
 			return fmt.Errorf("create systemd directory: %w", err)
 		}
