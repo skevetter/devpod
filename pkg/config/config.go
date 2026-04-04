@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/ghodss/yaml"
+	"sigs.k8s.io/yaml"
 	"github.com/skevetter/devpod/pkg/types"
 )
 
