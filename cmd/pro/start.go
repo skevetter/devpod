@@ -19,7 +19,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/denisbrodbeck/machineid"
+	"github.com/skevetter/devpod/pkg/machineid"
 	jsonpatch "github.com/evanphx/json-patch"
 	storagev1 "github.com/loft-sh/api/v4/pkg/apis/storage/v1"
 	"github.com/loft-sh/api/v4/pkg/auth"
