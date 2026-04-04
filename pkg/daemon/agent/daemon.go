@@ -124,6 +124,14 @@ func isServiceInstalled() bool {
 	return err == nil
 }
 
+func isSystemdAvailable() bool {
+	if _, err := os.Stat(systemdDir); err != nil {
+		return false
+	}
+	_, err := exec.LookPath("systemctl")
+	return err == nil
+}
+
 func isServiceRunning() bool {
 	//nolint:gosec // BinaryName is a compile-time constant, not tainted input
 	out, err := exec.Command("systemctl", "is-active", pkgconfig.BinaryName).CombinedOutput()
@@ -149,10 +157,30 @@ func InstallDaemon(agentDir string, interval string, log log.Logger) error {
 		args = append(args, "--interval", interval)
 	}
 
+	// When systemd is not available, fall back to a background process.
+	if !isSystemdAvailable() {
+		log.Infof("systemd not available, falling back to background process")
+		daemonArgs := args[1:] // strip executable path
+		err = command.StartBackgroundOnce("devpod.daemon", func() (*exec.Cmd, error) {
+			log.Infof("started DevPod daemon into server")
+			return exec.Command(
+				executable,
+				daemonArgs...), nil //nolint:gosec // executable is from os.Executable()
+		})
+		if err != nil {
+			return fmt.Errorf("start daemon: %w", err)
+		}
+		return nil
+	}
+
 	if !isServiceInstalled() {
 		unitContent := systemdUnitContents(strings.Join(args, " "))
 		//nolint:gosec // systemd unit files must be world-readable (0644)
-		if err := os.WriteFile(serviceFilePath(), []byte(unitContent), 0o644); err != nil {
+		serviceFile := serviceFilePath()
+		if err := os.MkdirAll(filepath.Dir(serviceFile), 0o755); err != nil {
+			return fmt.Errorf("create systemd directory: %w", err)
+		}
+		if err := os.WriteFile(serviceFile, []byte(unitContent), 0o644); err != nil {
 			return fmt.Errorf("write service file: %w", err)
 		}
 
@@ -198,7 +226,7 @@ func RemoveDaemon() error {
 		return fmt.Errorf("unsupported daemon os")
 	}
 
-	if !isServiceInstalled() {
+	if !isSystemdAvailable() || !isServiceInstalled() {
 		return nil
 	}
 
