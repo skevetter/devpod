@@ -10,7 +10,6 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-
 	"time"
 
 	"github.com/skevetter/devpod/pkg/command"
