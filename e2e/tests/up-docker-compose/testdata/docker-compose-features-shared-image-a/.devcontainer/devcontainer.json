@@ -4,6 +4,6 @@
   "service": "app",
   "workspaceFolder": "/workspaces/project-a",
   "features": {
-    "ghcr.io/devcontainers/features/github-cli:1": {}
+    "ghcr.io/devcontainers/features/github-cli:1.1": {}
   }
 }
