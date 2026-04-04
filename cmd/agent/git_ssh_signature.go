@@ -12,15 +12,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type GitSSHSignatureCmd struct {
-	*flags.GlobalFlags
-
-	CertPath   string
-	Namespace  string
-	BufferFile string
-	Command    string
-}
-
 // NewGitSSHSignatureCmd creates new git-ssh-signature command
 // This agent command can be used as git ssh program by setting
 //
