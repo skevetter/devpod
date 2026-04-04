@@ -9,7 +9,11 @@ import (
 )
 
 func ID() (string, error) {
-	k, err := registry.OpenKey(registry.LOCAL_MACHINE, `SOFTWARE\Microsoft\Cryptography`, registry.QUERY_VALUE|registry.WOW64_64KEY)
+	k, err := registry.OpenKey(
+		registry.LOCAL_MACHINE,
+		`SOFTWARE\Microsoft\Cryptography`,
+		registry.QUERY_VALUE|registry.WOW64_64KEY,
+	)
 	if err != nil {
 		return "", fmt.Errorf("open registry: %w", err)
 	}
