@@ -76,7 +76,7 @@ func TestExpandTildeSuite(t *testing.T) {
 }
 
 func (s *ExpandTildeSuite) SetupSuite() {
-	home, err := os.UserHomeDir()
+	home, err := UserHomeDir()
 	require.NoError(s.T(), err)
 	s.home = home
 }
