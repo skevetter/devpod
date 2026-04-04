@@ -23,7 +23,6 @@ import (
 	storagev1 "github.com/loft-sh/api/v4/pkg/apis/storage/v1"
 	"github.com/loft-sh/api/v4/pkg/auth"
 	loftclientset "github.com/loft-sh/api/v4/pkg/clientset/versioned"
-	"github.com/mgutz/ansi"
 	"github.com/sirupsen/logrus"
 	proflags "github.com/skevetter/devpod/cmd/pro/flags"
 	"github.com/skevetter/devpod/pkg/config"
@@ -325,9 +324,9 @@ func (cmd *StartCmd) retryUpgradeAfterPurge(
 			err.Error() + fmt.Sprintf(
 				"\n\nExisting installation failed. Reach out to get help:\n- via Slack: %s (fastest option)\n"+
 					"- via Online Chat: %s\n- via Email: %s\n",
-				ansi.Color("https://slack.loft.sh/", "green+b"),
-				ansi.Color("https://loft.sh/", "green+b"),
-				ansi.Color("support@loft.sh", "green+b"),
+				greenBold("https://slack.loft.sh/"),
+				greenBold("https://loft.sh/"),
+				greenBold("support@loft.sh"),
 			),
 		)
 	}
@@ -355,7 +354,7 @@ func (cmd *StartCmd) upgrade(ctx context.Context) error {
 			return errors.New(
 				err.Error() + fmt.Sprintf(
 					"\n\nIf want to purge and reinstall DevPod Pro, run: %s\n",
-					ansi.Color("devpod pro start --reset", "green+b"),
+					greenBold("devpod pro start --reset"),
 				),
 			)
 		}
@@ -458,8 +457,8 @@ func (cmd *StartCmd) successRemote(ctx context.Context, host string) error {
 
 ##########################   LOGIN   ############################
 
-Username: `+ansi.Color("admin", "green+b")+`
-Password: `+ansi.Color(password, "green+b")+`  # Change via UI or via: `+ansi.Color("devpod pro reset password", "green+b")+`
+Username: `+greenBold("admin")+`
+Password: `+greenBold(password)+`  # Change via UI or via: `+greenBold("devpod pro reset password")+`
 
 Login via UI:  %s
 Login via CLI: %s
@@ -474,8 +473,8 @@ DevPod Pro was successfully installed and can now be reached at: %s
 
 Thanks for using DevPod Pro!
 `,
-			ansi.Color(url, "green+b"),
-			ansi.Color("devpod pro login "+url, "green+b"),
+			greenBold(url),
+			greenBold("devpod pro login "+url),
 			"https://loft.sh/docs/administration/ssl",
 			url))
 	}
@@ -550,8 +549,8 @@ func (cmd *StartCmd) successLocal() error {
 
 ##########################   LOGIN   ############################
 
-Username: `+ansi.Color("admin", "green+b")+`
-Password: `+ansi.Color(password, "green+b")+`  # Change via UI or via: `+ansi.Color("devpod pro reset password", "green+b")+`
+Username: `+greenBold("admin")+`
+Password: `+greenBold(password)+`  # Change via UI or via: `+greenBold("devpod pro reset password")+`
 
 Login via UI:  %s
 Login via CLI: %s
@@ -563,7 +562,7 @@ Login via CLI: %s
 DevPod Pro was successfully installed.
 
 Thanks for using DevPod Pro!
-`, ansi.Color(url, "green+b"), ansi.Color("devpod pro login"+" --insecure "+url, "green+b")))
+`, greenBold(url), greenBold("devpod pro login"+" --insecure "+url)))
 	blockChan := make(chan bool)
 	<-blockChan
 	return nil
@@ -677,8 +676,8 @@ func PrintSuccessMessageDockerInstall(host, password string, log log.Logger) {
 
 ##########################   LOGIN   ############################
 
-Username: `+ansi.Color("admin", "green+b")+`
-Password: `+ansi.Color(password, "green+b")+`
+Username: `+greenBold("admin")+`
+Password: `+greenBold(password)+`
 
 Login via UI:  %s
 Login via CLI: %s
@@ -689,8 +688,8 @@ DevPod Pro was successfully installed and can now be reached at: %s
 
 Thanks for using DevPod Pro!
 `,
-		ansi.Color(url, "green+b"),
-		ansi.Color("devpod pro login"+" "+url, "green+b"),
+		greenBold(url),
+		greenBold("devpod pro login"+" "+url),
 		url,
 	))
 }
@@ -1246,8 +1245,8 @@ func (cmd *StartCmd) successLoftRouter(url string) error {
 
 ##########################   LOGIN   ############################
 
-Username: `+ansi.Color("admin", "green+b")+`
-Password: `+ansi.Color(password, "green+b")+`  # Change via UI or via: `+ansi.Color("devpod pro reset password", "green+b")+`
+Username: `+greenBold("admin")+`
+Password: `+greenBold(password)+`  # Change via UI or via: `+greenBold("devpod pro reset password")+`
 
 Login via UI:  %s
 Login via CLI: %s
@@ -1258,8 +1257,8 @@ DevPod Pro was successfully installed and can now be reached at: %s
 
 Thanks for using DevPod Pro!
 `,
-		ansi.Color(url, "green+b"),
-		ansi.Color("devpod pro login"+" "+url, "green+b"),
+		greenBold(url),
+		greenBold("devpod pro login"+" "+url),
 		url,
 	))
 	return nil
@@ -2059,4 +2058,9 @@ func getMachineUID(log log.Logger) string {
 	mac := hmac.New(sha256.New, []byte(id))
 	mac.Write([]byte(home))
 	return fmt.Sprintf("%x", mac.Sum(nil))
+}
+
+// greenBold wraps s in ANSI escape codes for green bold text.
+func greenBold(s string) string {
+	return "\033[32;1m" + s + "\033[0m"
 }
