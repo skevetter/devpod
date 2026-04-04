@@ -16,6 +16,7 @@ import (
 	"github.com/skevetter/devpod/pkg/gitcredentials"
 	"github.com/skevetter/devpod/pkg/platform"
 	platformclient "github.com/skevetter/devpod/pkg/platform/client"
+	"github.com/skevetter/devpod/pkg/platform/kube"
 	"github.com/skevetter/devpod/pkg/platform/labels"
 	"github.com/skevetter/devpod/pkg/platform/project"
 	"github.com/skevetter/log"
@@ -215,7 +216,17 @@ func (l *localServer) health(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-//nolint:cyclop // pre-existing complexity, not introduced by this change
+func daemonStateFromBackend(backendState string) DaemonState {
+	switch backendState {
+	case ipn.Starting.String():
+		return DaemonStatePending
+	case ipn.Running.String():
+		return DaemonStateRunning
+	default:
+		return DaemonStateStopped
+	}
+}
+
 func (l *localServer) status(w http.ResponseWriter, r *http.Request) {
 	st, err := l.lc.Status(r.Context())
 	if err != nil {
@@ -223,23 +234,13 @@ func (l *localServer) status(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// overall state
-	status := &Status{}
-	switch st.BackendState {
-	case ipn.Starting.String():
-		status.State = DaemonStatePending
-	case ipn.Running.String():
-		status.State = DaemonStateRunning
-	default:
-		// we consider all other states as `stopped`
-		status.State = DaemonStateStopped
+	status := &Status{
+		State: daemonStateFromBackend(st.BackendState),
 	}
 
 	// authentication info
 	l.platformStatus.mu.RLock()
-	if !l.platformStatus.authenticated {
-		status.LoginRequired = true
-	}
+	status.LoginRequired = !l.platformStatus.authenticated
 	l.platformStatus.mu.RUnlock()
 
 	// set online status
@@ -443,15 +444,51 @@ func (l *localServer) projectClusters(
 	tryJSON(w, clusterList)
 }
 
-//nolint:cyclop,funlen // pre-existing complexity, not introduced by this change
+type workspaceOwnerFilter struct {
+	filter platform.OwnerFilter
+	self   *managementv1.Self
+}
+
+func collectProjectWorkspaces(
+	ctx context.Context,
+	managementClient kube.Interface,
+	p managementv1.Project,
+	ownerFilter workspaceOwnerFilter,
+) ([]managementv1.DevPodWorkspaceInstance, error) {
+	ns := project.ProjectNamespace(p.GetName())
+	workspaceList, err := managementClient.Loft().
+		ManagementV1().
+		DevPodWorkspaceInstances(ns).
+		List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("list workspaces in project %s: %w", p.GetName(), err)
+	}
+
+	var instances []managementv1.DevPodWorkspaceInstance
+	for _, instance := range workspaceList.Items {
+		if ownerFilter.filter == platform.SelfOwnerFilter &&
+			!platform.IsOwner(ownerFilter.self, instance.GetOwner()) {
+			continue
+		}
+		if instance.GetLabels() == nil {
+			instance.Labels = map[string]string{}
+		}
+		instance.Labels[labels.ProjectLabel] = p.GetName()
+		instances = append(instances, instance)
+	}
+	return instances, nil
+}
+
 func (l *localServer) listWorkspace(
 	w http.ResponseWriter,
 	r *http.Request,
 ) {
-	ownerParam := r.URL.Query().Get("owner")
-	ownerFilter := platform.SelfOwnerFilter
-	if ownerParam != "" {
-		ownerFilter = platform.OwnerFilter(ownerParam)
+	ownerFilter := workspaceOwnerFilter{
+		filter: platform.SelfOwnerFilter,
+		self:   l.pc.Self(),
+	}
+	if ownerParam := r.URL.Query().Get("owner"); ownerParam != "" {
+		ownerFilter.filter = platform.OwnerFilter(ownerParam)
 	}
 
 	managementClient, err := l.pc.Management()
@@ -475,34 +512,16 @@ func (l *localServer) listWorkspace(
 		return
 	}
 
-	instances := []managementv1.DevPodWorkspaceInstance{}
+	var instances []managementv1.DevPodWorkspaceInstance
 	for _, p := range projectList.Items {
-		ns := project.ProjectNamespace(p.GetName())
-		workspaceList, err := managementClient.Loft().
-			ManagementV1().
-			DevPodWorkspaceInstances(ns).
-			List(r.Context(), metav1.ListOptions{})
+		projectInstances, err := collectProjectWorkspaces(
+			r.Context(), managementClient, p, ownerFilter,
+		)
 		if err != nil {
-			http.Error(
-				w,
-				fmt.Errorf("list workspaces in project %s: %w", p.GetName(), err).Error(),
-				http.StatusNoContent,
-			)
+			http.Error(w, err.Error(), http.StatusNoContent)
 			return
 		}
-
-		for _, instance := range workspaceList.Items {
-			if ownerFilter == platform.SelfOwnerFilter &&
-				!platform.IsOwner(l.pc.Self(), instance.GetOwner()) {
-				continue
-			}
-			if instance.GetLabels() == nil {
-				instance.Labels = map[string]string{}
-			}
-			instance.Labels[labels.ProjectLabel] = p.GetName()
-
-			instances = append(instances, instance)
-		}
+		instances = append(instances, projectInstances...)
 	}
 
 	tryJSON(w, instances)
