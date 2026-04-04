@@ -2,16 +2,17 @@ package json
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
+	"regexp"
 	"strings"
 
-	"github.com/PaesslerAG/jsonpath"
 	"github.com/spf13/cobra"
+	"github.com/tidwall/gjson"
 )
 
+// GetCmd retrieves a JSON value by path.
 type GetCmd struct {
 	File string
 	Fail bool
@@ -30,26 +31,51 @@ func NewGetCmd() *cobra.Command {
 
 	getCmd.Flags().StringVarP(&cmd.File, "file", "f", "", "Parse this json file instead of STDIN")
 	getCmd.Flags().BoolVar(&cmd.Fail, "fail", false, "Fail if value is not found")
+
 	return getCmd
 }
 
+// jsonPathToGjson converts a JSONPath expression to a gjson path.
+// It handles expressions like $.foo.bar, $.foo[0].bar, $[0], .foo, [0].foo.
+var bracketIndex = regexp.MustCompile(`\[(\d+)\]`)
+
+func jsonPathToGjson(path string) string {
+	path = strings.TrimPrefix(path, "$.")
+	path = strings.TrimPrefix(path, "$")
+	path = strings.TrimPrefix(path, ".")
+	path = bracketIndex.ReplaceAllString(path, ".$1")
+	path = strings.TrimPrefix(path, ".")
+
+	for strings.Contains(path, "..") {
+		path = strings.ReplaceAll(path, "..", ".")
+	}
+
+	return path
+}
+
+func writeResult(result gjson.Result) {
+	switch result.Type {
+	case gjson.String:
+		_, _ = os.Stdout.WriteString(strings.TrimSpace(result.String()))
+	case gjson.True:
+		_, _ = os.Stdout.WriteString("true")
+	case gjson.False:
+		_, _ = os.Stdout.WriteString("false")
+	default:
+		_, _ = os.Stdout.WriteString(result.Raw)
+	}
+}
+
+// Run executes the get command.
 func (cmd *GetCmd) Run(ctx context.Context, args []string) error {
 	if len(args) == 0 {
 		return fmt.Errorf("jsonpath expected")
 	}
 
-	if !strings.HasPrefix(args[0], "$") {
-		if !strings.HasPrefix(args[0], "[") && !strings.HasPrefix(args[0], ".") {
-			args[0] = "." + args[0]
-		}
-
-		args[0] = "$" + args[0]
-	}
-
 	var jsonBytes []byte
 	if cmd.File != "" {
 		var err error
-		jsonBytes, err = os.ReadFile(cmd.File)
+		jsonBytes, err = os.ReadFile(cmd.File) //nolint:gosec // file path comes from CLI flag
 		if err != nil {
 			return err
 		}
@@ -61,34 +87,22 @@ func (cmd *GetCmd) Run(ctx context.Context, args []string) error {
 		}
 	}
 
-	v := any(nil)
-	err := json.Unmarshal(jsonBytes, &v)
-	if err != nil {
+	if !gjson.ValidBytes(jsonBytes) {
 		return fmt.Errorf("parse json")
 	}
 
-	val, err := jsonpath.Get(args[0], v)
-	if err != nil {
+	gjsonPath := jsonPathToGjson(args[0])
+	result := gjson.GetBytes(jsonBytes, gjsonPath)
+
+	if !result.Exists() {
 		if cmd.Fail {
-			return err
+			return fmt.Errorf("unknown key %s", args[0])
 		}
+
 		return nil
 	}
 
-	switch t := val.(type) {
-	case string:
-		fmt.Print(strings.TrimSpace(t))
-		return nil
-	case bool, int, int64, rune:
-		fmt.Print(t)
-		return nil
-	}
+	writeResult(result)
 
-	out, err := json.MarshalIndent(val, "", "  ")
-	if err != nil {
-		return err
-	}
-
-	fmt.Print(string(out))
 	return nil
 }
