@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	ecr "github.com/awslabs/amazon-ecr-credential-helper/ecr-login"
-	"github.com/chrismellard/docker-credential-acr-env/pkg/credhelper"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/go-containerregistry/pkg/authn"
 	kubernetesauth "github.com/google/go-containerregistry/pkg/authn/kubernetes"
@@ -21,7 +20,7 @@ var (
 		ecr.NewECRHelper(ecr.WithLogger(io.Discard)),
 	)
 	azureKeychain authn.Keychain = authn.NewKeychainFromHelper(
-		credhelper.NewACRCredentialsHelper(),
+		newACRCredentialsHelper(),
 	)
 )
 
