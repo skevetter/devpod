@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -103,7 +104,7 @@ func ExpandTilde(path string) string {
 		if err != nil {
 			return path
 		}
-		return home + path[1:]
+		return filepath.Join(home, path[1:])
 	}
 	return path
 }

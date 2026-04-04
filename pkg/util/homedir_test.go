@@ -2,6 +2,7 @@ package util
 
 import (
 	"os"
+	"path/filepath"
 	"runtime"
 	"testing"
 
@@ -82,7 +83,7 @@ func (s *ExpandTildeSuite) SetupSuite() {
 
 func (s *ExpandTildeSuite) TestExpandsTildeSlash() {
 	got := ExpandTilde("~/foo.sock")
-	assert.Equal(s.T(), s.home+"/foo.sock", got)
+	assert.Equal(s.T(), filepath.Join(s.home, "foo.sock"), got)
 }
 
 func (s *ExpandTildeSuite) TestExpandsBareTilde() {
@@ -100,6 +101,11 @@ func (s *ExpandTildeSuite) TestEmptyReturnsEmpty() {
 	assert.Empty(s.T(), got)
 }
 
+func (s *ExpandTildeSuite) TestNoExpansionForRelativePath() {
+	got := ExpandTilde("./local.sock")
+	assert.Equal(s.T(), "./local.sock", got)
+}
+
 func (s *ExpandTildeSuite) TestNoExpansionForTildeUser() {
 	got := ExpandTilde("~otheruser/foo")
 	assert.Equal(s.T(), "~otheruser/foo", got)
@@ -108,11 +114,11 @@ func (s *ExpandTildeSuite) TestNoExpansionForTildeUser() {
 func (s *ExpandTildeSuite) TestExpandsHomeEnvVar() {
 	s.T().Setenv("HOME", s.home)
 	got := ExpandTilde("$HOME/foo.sock")
-	assert.Equal(s.T(), s.home+"/foo.sock", got)
+	assert.Equal(s.T(), filepath.Join(s.home, "foo.sock"), got)
 }
 
 func (s *ExpandTildeSuite) TestExpandsBracedHomeEnvVar() {
 	s.T().Setenv("HOME", s.home)
 	got := ExpandTilde("${HOME}/foo.sock")
-	assert.Equal(s.T(), s.home+"/foo.sock", got)
+	assert.Equal(s.T(), filepath.Join(s.home, "foo.sock"), got)
 }
