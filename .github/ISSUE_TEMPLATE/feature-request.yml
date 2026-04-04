@@ -3,7 +3,6 @@ description: Suggest an idea or improvement
 title: "[Feature]: "
 labels:
   - kind/feature
-type: Feature
 body:
   - type: checkboxes
     id: preflight
@@ -18,7 +17,7 @@ body:
     attributes:
       label: Problem or motivation
       description: What problem does this solve? Who benefits from it?
-      placeholder: "As a [type of user], I want [goal] because [reason]..."
+      placeholder: "I want [goal] because [reason]..."
     validations:
       required: true
 
@@ -59,7 +58,7 @@ body:
     id: acceptance
     attributes:
       label: Acceptance criteria
-      description: How would we know this feature is complete? What should it do?
+      description: When is this feature complete? What should it do?
       placeholder: |
         - [ ] User can ...
         - [ ] CLI command `devpod ...` supports ...
