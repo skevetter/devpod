@@ -10,7 +10,7 @@ import (
 
 func ID() (string, error) {
 	for _, p := range []string{"/var/lib/dbus/machine-id", "/etc/machine-id"} {
-		b, err := os.ReadFile(p)
+		b, err := os.ReadFile(p) //nolint:gosec
 		if err == nil {
 			if id := strings.TrimSpace(string(b)); id != "" {
 				return id, nil
