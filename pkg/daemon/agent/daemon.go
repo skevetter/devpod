@@ -174,12 +174,12 @@ func InstallDaemon(agentDir string, interval string, log log.Logger) error {
 
 	if !isServiceInstalled() {
 		unitContent := systemdUnitContents(strings.Join(args, " "))
-		//nolint:gosec // systemd unit files must be world-readable (0644)
 		serviceFile := serviceFilePath()
 		//nolint:gosec // systemd directory must be world-readable (0755)
 		if err := os.MkdirAll(filepath.Dir(serviceFile), 0o755); err != nil {
 			return fmt.Errorf("create systemd directory: %w", err)
 		}
+		//nolint:gosec // systemd unit files must be world-readable (0644)
 		if err := os.WriteFile(serviceFile, []byte(unitContent), 0o644); err != nil {
 			return fmt.Errorf("write service file: %w", err)
 		}
