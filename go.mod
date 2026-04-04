@@ -34,7 +34,6 @@ require (
 	github.com/gorilla/handlers v1.5.2
 	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674
 	github.com/joho/godotenv v1.5.1
-	github.com/julienschmidt/httprouter v1.3.0
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 	github.com/loft-sh/agentapi/v4 v4.8.1
 	github.com/loft-sh/analytics-client v0.0.0-20240219162240-2f4c64b2494e

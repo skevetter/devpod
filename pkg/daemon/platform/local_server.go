@@ -6,12 +6,10 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"runtime/debug"
 	"sync"
 	"time"
 
 	"github.com/gorilla/handlers"
-	"github.com/julienschmidt/httprouter"
 	managementv1 "github.com/loft-sh/api/v4/pkg/apis/management/v1"
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/dockercredentials"
@@ -74,8 +72,8 @@ var (
 	routeShutdown          = "/shutdown"
 	routeSelf              = "/self"
 	routeProjects          = "/projects"
-	routeProjectTemplates  = "/projects/:project/templates"
-	routeProjectClusters   = "/projects/:project/clusters"
+	routeProjectTemplates  = "/projects/{project}/templates"
+	routeProjectClusters   = "/projects/{project}/clusters"
 	routeGetWorkspace      = "/workspace"
 	routeWatchWorkspaces   = "/watch-workspaces"
 	routeListWorkspaces    = "/list-workspaces"
@@ -103,30 +101,26 @@ func newLocalServer(
 		stopChan:       make(chan struct{}, 1),
 	}
 
-	router := httprouter.New()
-	router.PanicHandler = func(w http.ResponseWriter, r *http.Request, i any) {
-		http.Error(w, fmt.Errorf("panic: %v", i).Error(), http.StatusInternalServerError)
-		l.log.Error(fmt.Errorf("panic: %v", i), string(debug.Stack()))
-	}
-	router.GET(routeHealth, l.health)
-	router.GET(routeStatus, l.status)
-	router.GET(routeVersion, l.version)
-	router.GET(routeShutdown, l.shutdown)
-	router.GET(routeSelf, l.self)
-	router.GET(routeProjects, l.projects)
-	router.GET(routeProjectTemplates, l.projectTemplates)
-	router.GET(routeProjectClusters, l.projectClusters)
-	router.GET(routeGetWorkspace, l.getWorkspace)
-	router.GET(routeWatchWorkspaces, l.watchWorkspaces)
-	router.GET(routeListWorkspaces, l.listWorkspace)
-	router.POST(routeCreateWorkspace, l.createWorkspace)
-	router.POST(routeUpdateWorkspace, l.updateWorkspace)
-	router.GET(routeGetUserProfile, l.userProfile)
-	router.POST(routeUpdateUserProfile, l.updateUserProfile)
-	router.GET(routeGitCredentials, l.getGitCredentials)
-	router.GET(routeDockerCredentials, l.getDockerCredentials)
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET "+routeHealth, l.health)
+	mux.HandleFunc("GET "+routeStatus, l.status)
+	mux.HandleFunc("GET "+routeVersion, l.version)
+	mux.HandleFunc("GET "+routeShutdown, l.shutdown)
+	mux.HandleFunc("GET "+routeSelf, l.self)
+	mux.HandleFunc("GET "+routeProjects, l.projects)
+	mux.HandleFunc("GET "+routeProjectTemplates, l.projectTemplates)
+	mux.HandleFunc("GET "+routeProjectClusters, l.projectClusters)
+	mux.HandleFunc("GET "+routeGetWorkspace, l.getWorkspace)
+	mux.HandleFunc("GET "+routeWatchWorkspaces, l.watchWorkspaces)
+	mux.HandleFunc("GET "+routeListWorkspaces, l.listWorkspace)
+	mux.HandleFunc("POST "+routeCreateWorkspace, l.createWorkspace)
+	mux.HandleFunc("POST "+routeUpdateWorkspace, l.updateWorkspace)
+	mux.HandleFunc("GET "+routeGetUserProfile, l.userProfile)
+	mux.HandleFunc("POST "+routeUpdateUserProfile, l.updateUserProfile)
+	mux.HandleFunc("GET "+routeGitCredentials, l.getGitCredentials)
+	mux.HandleFunc("GET "+routeDockerCredentials, l.getDockerCredentials)
 
-	handler := handlers.LoggingHandler(log.Writer(logrus.DebugLevel, true), router)
+	handler := handlers.LoggingHandler(log.Writer(logrus.DebugLevel, true), mux)
 	handler = handlers.RecoveryHandler(
 		handlers.RecoveryLogger(panicLogger{log: l.log}),
 		handlers.PrintRecoveryStack(true),
@@ -217,11 +211,12 @@ func (l *localServer) watchPlatform(stopChan <-chan struct{}) error {
 	}
 }
 
-func (l *localServer) health(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+func (l *localServer) health(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (l *localServer) status(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+//nolint:cyclop // pre-existing complexity, not introduced by this change
+func (l *localServer) status(w http.ResponseWriter, r *http.Request) {
 	st, err := l.lc.Status(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -263,7 +258,7 @@ func (l *localServer) status(w http.ResponseWriter, r *http.Request, params http
 	tryJSON(w, status)
 }
 
-func (l *localServer) shutdown(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+func (l *localServer) shutdown(w http.ResponseWriter, r *http.Request) {
 	err := l.Close()
 	if err != nil {
 		http.Error(
@@ -281,7 +276,7 @@ type VersionInfo struct {
 	ServerVersion string `json:"serverVersion,omitempty"`
 }
 
-func (l *localServer) version(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+func (l *localServer) version(w http.ResponseWriter, r *http.Request) {
 	platformVersion, err := platform.GetPlatformVersion(l.pc.Config().Host)
 	if err != nil {
 		http.Error(
@@ -297,14 +292,13 @@ func (l *localServer) version(w http.ResponseWriter, r *http.Request, params htt
 	})
 }
 
-func (l *localServer) self(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+func (l *localServer) self(w http.ResponseWriter, r *http.Request) {
 	tryJSON(w, l.pc.Self())
 }
 
 func (l *localServer) userProfile(
 	w http.ResponseWriter,
 	r *http.Request,
-	params httprouter.Params,
 ) {
 	managementClient, err := l.pc.Management()
 	if err != nil {
@@ -332,7 +326,6 @@ func (l *localServer) userProfile(
 func (l *localServer) updateUserProfile(
 	w http.ResponseWriter,
 	r *http.Request,
-	params httprouter.Params,
 ) {
 	profile := &managementv1.UserProfile{}
 	err := json.NewDecoder(r.Body).Decode(profile)
@@ -364,7 +357,7 @@ func (l *localServer) updateUserProfile(
 	tryJSON(w, updatedProfile)
 }
 
-func (l *localServer) projects(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+func (l *localServer) projects(w http.ResponseWriter, r *http.Request) {
 	managementClient, err := l.pc.Management()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -392,9 +385,8 @@ func (l *localServer) projects(w http.ResponseWriter, r *http.Request, params ht
 func (l *localServer) projectTemplates(
 	w http.ResponseWriter,
 	r *http.Request,
-	params httprouter.Params,
 ) {
-	projectName := params.ByName("project")
+	projectName := r.PathValue("project")
 	managementClient, err := l.pc.Management()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -424,9 +416,8 @@ func (l *localServer) projectTemplates(
 func (l *localServer) projectClusters(
 	w http.ResponseWriter,
 	r *http.Request,
-	params httprouter.Params,
 ) {
-	projectName := params.ByName("project")
+	projectName := r.PathValue("project")
 	managementClient, err := l.pc.Management()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -452,10 +443,10 @@ func (l *localServer) projectClusters(
 	tryJSON(w, clusterList)
 }
 
+//nolint:cyclop,funlen // pre-existing complexity, not introduced by this change
 func (l *localServer) listWorkspace(
 	w http.ResponseWriter,
 	r *http.Request,
-	params httprouter.Params,
 ) {
 	ownerParam := r.URL.Query().Get("owner")
 	ownerFilter := platform.SelfOwnerFilter
@@ -520,7 +511,6 @@ func (l *localServer) listWorkspace(
 func (l *localServer) getWorkspace(
 	w http.ResponseWriter,
 	r *http.Request,
-	params httprouter.Params,
 ) {
 	uid := r.URL.Query().Get("uid")
 	if uid == "" {
@@ -553,7 +543,6 @@ func (l *localServer) getWorkspace(
 func (l *localServer) watchWorkspaces(
 	w http.ResponseWriter,
 	r *http.Request,
-	params httprouter.Params,
 ) {
 	f, ok := w.(http.Flusher)
 	if !ok {
@@ -661,7 +650,6 @@ func throttle(
 func (l *localServer) createWorkspace(
 	w http.ResponseWriter,
 	r *http.Request,
-	params httprouter.Params,
 ) {
 	instance := &managementv1.DevPodWorkspaceInstance{}
 	err := json.NewDecoder(r.Body).Decode(instance)
@@ -683,7 +671,6 @@ func (l *localServer) createWorkspace(
 func (l *localServer) updateWorkspace(
 	w http.ResponseWriter,
 	r *http.Request,
-	params httprouter.Params,
 ) {
 	newInstance := &managementv1.DevPodWorkspaceInstance{}
 	err := json.NewDecoder(r.Body).Decode(newInstance)
@@ -713,7 +700,6 @@ func (l *localServer) updateWorkspace(
 func (l *localServer) getGitCredentials(
 	w http.ResponseWriter,
 	r *http.Request,
-	params httprouter.Params,
 ) {
 	host := r.URL.Query().Get("host")
 	if host == "" {
@@ -744,7 +730,6 @@ func (l *localServer) getGitCredentials(
 func (l *localServer) getDockerCredentials(
 	w http.ResponseWriter,
 	r *http.Request,
-	params httprouter.Params,
 ) {
 	host := r.URL.Query().Get("server")
 	if host == "" {
