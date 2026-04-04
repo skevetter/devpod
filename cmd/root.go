@@ -179,7 +179,8 @@ func inheritFlagsFromEnvironment(flags *flag.FlagSet, commandPrefix string) {
 		// do not prepend the env prefix if the flag name already starts with it
 		// (applies to one flag - "devpod-home").
 		var environmentVariable string
-		if strings.HasPrefix(suffix, config.EnvPrefix) {
+		isCanonical := strings.HasPrefix(suffix, config.EnvPrefix)
+		if isCanonical {
 			environmentVariable = suffix
 		} else {
 			environmentVariable = config.EnvPrefix + commandPrefix + suffix
@@ -187,8 +188,10 @@ func inheritFlagsFromEnvironment(flags *flag.FlagSet, commandPrefix string) {
 
 		// Fall back to the legacy unprefixed variable (e.g. DEVPOD_IDE)
 		// if the subcommand-scoped one (e.g. DEVPOD_UP_IDE) is not set.
+		// Skip fallback for canonical vars (e.g. devpod-home) where the
+		// primary lookup already uses the correct env var name.
 		value, exists := os.LookupEnv(environmentVariable)
-		if !exists && commandPrefix != "" {
+		if !exists && commandPrefix != "" && !isCanonical {
 			legacyVar := config.EnvPrefix + suffix
 			value, exists = os.LookupEnv(legacyVar)
 		}
