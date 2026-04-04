@@ -104,3 +104,15 @@ func (s *ExpandTildeSuite) TestNoExpansionForTildeUser() {
 	got := ExpandTilde("~otheruser/foo")
 	assert.Equal(s.T(), "~otheruser/foo", got)
 }
+
+func (s *ExpandTildeSuite) TestExpandsHomeEnvVar() {
+	s.T().Setenv("HOME", s.home)
+	got := ExpandTilde("$HOME/foo.sock")
+	assert.Equal(s.T(), s.home+"/foo.sock", got)
+}
+
+func (s *ExpandTildeSuite) TestExpandsBracedHomeEnvVar() {
+	s.T().Setenv("HOME", s.home)
+	got := ExpandTilde("${HOME}/foo.sock")
+	assert.Equal(s.T(), s.home+"/foo.sock", got)
+}

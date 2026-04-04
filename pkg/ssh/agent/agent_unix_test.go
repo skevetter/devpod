@@ -33,6 +33,13 @@ func (s *SSHAuthSocketSuite) TestExpandsTildeFromEnv() {
 	assert.Equal(s.T(), s.home+"/foo.sock", got)
 }
 
+func (s *SSHAuthSocketSuite) TestExpandsBareTilde() {
+	s.T().Setenv("SSH_AUTH_SOCK", "~")
+
+	got := GetSSHAuthSocket()
+	assert.Equal(s.T(), s.home, got)
+}
+
 func (s *SSHAuthSocketSuite) TestAbsolutePathPassthrough() {
 	s.T().Setenv("SSH_AUTH_SOCK", "/tmp/ssh-agent.sock")
 
