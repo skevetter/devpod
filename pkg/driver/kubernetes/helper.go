@@ -6,10 +6,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"sigs.k8s.io/yaml"
 	"github.com/skevetter/log"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	"sigs.k8s.io/yaml"
 )
 
 const (
