@@ -10,7 +10,6 @@ import (
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	"github.com/skevetter/devpod/pkg/devcontainer/feature"
 	logLib "github.com/skevetter/log"
-	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -80,9 +79,11 @@ var composeBuildImageNameTests = []composeBuildImageNameTestCase{
 	},
 }
 
-func TestStripDigestFromImageRef(t *testing.T) {
-	t.Parallel()
+type ComposeSuite struct {
+	suite.Suite
+}
 
+func (s *ComposeSuite) TestStripDigestFromImageRef() {
 	tests := []struct {
 		name  string
 		input string
@@ -106,43 +107,29 @@ func TestStripDigestFromImageRef(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
+		s.Run(tt.name, func() {
 			got := stripDigestFromImageRef(tt.input)
-			if got != tt.want {
-				t.Fatalf("stripDigestFromImageRef(%q) = %q, want %q", tt.input, got, tt.want)
-			}
+			s.Equal(tt.want, got)
 		})
 	}
 }
 
-func TestComposeBuildImageName(t *testing.T) {
-	t.Parallel()
-
+func (s *ComposeSuite) TestComposeBuildImageName() {
 	for _, tt := range composeBuildImageNameTests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
+		s.Run(tt.name, func() {
 			got, err := composeBuildImageName(
 				tt.composeHelper,
 				tt.projectName,
 				tt.service,
 				tt.hasFeatures,
 			)
-			if err != nil {
-				t.Fatalf("composeBuildImageName() error = %v", err)
-			}
-			if got != tt.want {
-				t.Fatalf("composeBuildImageName() = %q, want %q", got, tt.want)
-			}
+			s.Require().NoError(err)
+			s.Equal(tt.want, got)
 		})
 	}
 }
 
-func TestCreateComposeServiceUsesBuildImageName(t *testing.T) {
-	t.Parallel()
-
+func (s *ComposeSuite) TestCreateComposeServiceUsesBuildImageName() {
 	r := &runner{}
 	service := r.createComposeService(
 		&composetypes.ServiceConfig{
@@ -161,25 +148,28 @@ func TestCreateComposeServiceUsesBuildImageName(t *testing.T) {
 		},
 	)
 
-	require.Equal(t, "workspace-app:latest", service.Image)
-	require.NotNil(t, service.Build)
-	require.Equal(t, "dev_containers_target_stage", service.Build.Target)
-	require.Equal(t, "Dockerfile-with-features", service.Build.Dockerfile)
-	require.Equal(t, "/tmp/context", service.Build.Context)
-	require.NotNil(t, service.Build.Args)
-	requireBuildArgValue(t, service.Build.Args, "FEATURE_FLAG", "true")
-	requireBuildArgValue(t, service.Build.Args, "BUILDKIT_INLINE_CACHE", "1")
+	s.Equal("workspace-app:latest", service.Image)
+	s.Require().NotNil(service.Build)
+	s.Equal("dev_containers_target_stage", service.Build.Target)
+	s.Equal("Dockerfile-with-features", service.Build.Dockerfile)
+	s.Equal("/tmp/context", service.Build.Context)
+	s.Require().NotNil(service.Build.Args)
+	s.requireBuildArgValue(service.Build.Args, "FEATURE_FLAG", "true")
+	s.requireBuildArgValue(service.Build.Args, "BUILDKIT_INLINE_CACHE", "1")
 }
 
-func requireBuildArgValue(
-	t *testing.T,
+func (s *ComposeSuite) requireBuildArgValue(
 	args composetypes.MappingWithEquals,
 	key, want string,
 ) {
-	t.Helper()
+	s.T().Helper()
 
-	require.NotNil(t, args[key])
-	require.Equal(t, want, *args[key])
+	s.Require().NotNil(args[key])
+	s.Equal(want, *args[key])
+}
+
+func TestComposeSuite(t *testing.T) {
+	suite.Run(t, new(ComposeSuite))
 }
 
 type PrepareBuildContextSuite struct {
