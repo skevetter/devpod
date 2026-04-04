@@ -56,7 +56,10 @@ var composeBuildImageNameTests = []composeBuildImageNameTestCase{
 		want:        "workspace_app",
 	},
 	{
-		name:          "preserves build backed services",
+		// Documents current behavior: when both image and build are set, the
+		// declared image tag is used even with features, which could collide
+		// with the upstream registry tag. Changing this would be intentional.
+		name:          "preserves build backed services with features",
 		composeHelper: &compose.ComposeHelper{Version: "2.30.0"},
 		projectName:   "workspace",
 		service: &composetypes.ServiceConfig{
@@ -65,6 +68,18 @@ var composeBuildImageNameTests = []composeBuildImageNameTestCase{
 			Build: &composetypes.BuildConfig{Context: "."},
 		},
 		hasFeatures: true,
+		want:        "ghcr.io/example/shared-base:latest",
+	},
+	{
+		name:          "preserves build backed services without features",
+		composeHelper: &compose.ComposeHelper{Version: "2.30.0"},
+		projectName:   "workspace",
+		service: &composetypes.ServiceConfig{
+			Name:  "app",
+			Image: "ghcr.io/example/shared-base:latest",
+			Build: &composetypes.BuildConfig{Context: "."},
+		},
+		hasFeatures: false,
 		want:        "ghcr.io/example/shared-base:latest",
 	},
 	{

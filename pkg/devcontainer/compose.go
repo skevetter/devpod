@@ -588,15 +588,6 @@ func (r *runner) buildAndExtendDockerCompose(
 	var imageBuildInfo *config.ImageBuildInfo
 	var err error
 
-	buildImageName, err := composeBuildImageName(
-		composeHelper,
-		project.Name,
-		composeService,
-		false,
-	)
-	if err != nil {
-		return "", "", nil, "", err
-	}
 	buildTarget := "dev_container_auto_added_stage_label"
 
 	// Determine base imageName for generated features build
@@ -622,21 +613,33 @@ func (r *runner) buildAndExtendDockerCompose(
 		return "", "", nil, "", err
 	}
 
-	if extendImageBuildInfo != nil && extendImageBuildInfo.FeaturesBuildInfo != nil {
-		buildImageName, err = composeBuildImageName(
-			composeHelper,
-			project.Name,
-			composeService,
-			true,
-		)
-		if err != nil {
-			return "", "", nil, "", err
-		}
+	hasFeatures := extendImageBuildInfo != nil && extendImageBuildInfo.FeaturesBuildInfo != nil
+	buildImageName, err := composeBuildImageName(
+		composeHelper,
+		project.Name,
+		composeService,
+		hasFeatures,
+	)
+	if err != nil {
+		return "", "", nil, "", err
+	}
 
+	if hasFeatures {
 		// If the dockerfile is empty (because an Image was used), reference that
 		// image as the build target after the features / modified contents.
 		if dockerfileContents == "" {
-			dockerfileContents = fmt.Sprintf("FROM %s AS %s\n", composeService.Image, buildTarget)
+			if composeService.Image == "" && composeService.Build == nil {
+				return "", "", nil, "", fmt.Errorf(
+					"compose service %q has no image or build configuration",
+					composeService.Name,
+				)
+			}
+			sanitizedImage := strings.ReplaceAll(
+				strings.ReplaceAll(composeService.Image, "\n", ""),
+				"\r",
+				"",
+			)
+			dockerfileContents = fmt.Sprintf("FROM %s AS %s\n", sanitizedImage, buildTarget)
 		}
 
 		// Write the final Dockerfile with features
