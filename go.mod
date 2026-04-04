@@ -4,13 +4,14 @@ go 1.25.7
 
 require (
 	al.essio.dev/pkg/shellescape v1.6.0
+	github.com/Azure/go-autorest/autorest/adal v0.9.23
+	github.com/Azure/go-autorest/autorest/azure/auth v0.5.12
 	github.com/Microsoft/go-winio v0.6.2
 	github.com/PaesslerAG/jsonpath v0.1.1
 	github.com/awslabs/amazon-ecr-credential-helper/ecr-login v0.12.0
 	github.com/blang/semver/v4 v4.0.0
 	github.com/bmatcuk/doublestar/v4 v4.10.0
 	github.com/charmbracelet/huh v0.8.0
-	github.com/chrismellard/docker-credential-acr-env v0.0.0-20230304212654-82a0ddb27589
 	github.com/compose-spec/compose-go/v2 v2.10.2
 	github.com/containers/image/v5 v5.36.2
 	github.com/creack/pty v1.1.24
@@ -88,12 +89,9 @@ require (
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/42wim/httpsig v1.2.3 // indirect
 	github.com/AlecAivazis/survey/v2 v2.3.7 // indirect
-	github.com/Azure/azure-sdk-for-go v68.0.0+incompatible // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20250102033503-faa5f7b0171c // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
 	github.com/Azure/go-autorest/autorest v0.11.29 // indirect
-	github.com/Azure/go-autorest/autorest/adal v0.9.23 // indirect
-	github.com/Azure/go-autorest/autorest/azure/auth v0.5.12 // indirect
 	github.com/Azure/go-autorest/autorest/azure/cli v0.4.6 // indirect
 	github.com/Azure/go-autorest/autorest/date v0.3.0 // indirect
 	github.com/Azure/go-autorest/logger v0.2.1 // indirect
