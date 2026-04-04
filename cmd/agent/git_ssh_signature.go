@@ -42,7 +42,7 @@ func NewGitSSHSignatureCmd(flags *flags.GlobalFlags) *cobra.Command {
 		FParseErrWhitelist: cobra.FParseErrWhitelist{
 			UnknownFlags: true,
 		},
-		RunE: func(cobraCmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, args []string) error {
 			logger := log.GetInstance()
 
 			// For non-sign operations (verify, find-principals, check-novalidate),
@@ -54,8 +54,8 @@ func NewGitSSHSignatureCmd(flags *flags.GlobalFlags) *cobra.Command {
 			// Sign operation requires a buffer file
 			if len(args) < 1 {
 				return fmt.Errorf(
-					"buffer file is required (received %d positional args: %v, flags: %v)",
-					len(args), args, os.Args[1:],
+					"buffer file is required (received %d positional args: %v)",
+					len(args), args,
 				)
 			}
 
@@ -90,6 +90,9 @@ func delegateToSSHKeygen(logger log.Logger) error {
 			sshArgs = os.Args[i+1:]
 			break
 		}
+	}
+	if sshArgs == nil {
+		return fmt.Errorf("git-ssh-signature not found in process arguments")
 	}
 
 	logger.Debugf("delegating to ssh-keygen: %s %v", sshKeygen, sshArgs)
