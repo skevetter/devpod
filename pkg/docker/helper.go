@@ -11,11 +11,14 @@ import (
 	"os/exec"
 	"strings"
 
+	"time"
+
 	"github.com/skevetter/devpod/pkg/command"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	"github.com/skevetter/devpod/pkg/image"
 	"github.com/skevetter/log"
 	"github.com/skevetter/log/scanner"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 // DockerBuilder represents the Docker builder types.
@@ -202,6 +205,42 @@ func (r *DockerHelper) StartContainer(ctx context.Context, containerId string) e
 	}
 
 	return nil
+}
+
+// ErrContainerTerminal indicates a container entered an unrecoverable state
+// (e.g. "dead" or "removing") and cannot be restarted.
+var ErrContainerTerminal = errors.New("container in terminal state")
+
+const (
+	containerRunningPollInterval = 500 * time.Millisecond
+	containerRunningTimeout      = 30 * time.Second
+)
+
+// WaitContainerRunning polls docker inspect until the container reports
+// status "running" or the context/timeout expires. It does not start
+// the container — the caller is responsible for that.
+func (r *DockerHelper) WaitContainerRunning(ctx context.Context, containerID string) error {
+	return wait.PollUntilContextTimeout(ctx, containerRunningPollInterval, containerRunningTimeout, true,
+		func(ctx context.Context) (bool, error) {
+			details, err := r.InspectContainers(ctx, []string{containerID})
+			if err != nil {
+				r.Log.Debugf("WaitContainerRunning: inspect error (will retry): %v", err)
+				return false, nil
+			}
+			if len(details) == 0 {
+				return false, fmt.Errorf("container %s disappeared while waiting for it to start", containerID)
+			}
+			status := strings.ToLower(details[0].State.Status)
+			if status == "running" {
+				return true, nil
+			}
+			if status == "removing" || status == "dead" {
+				return false, fmt.Errorf("%w: container %s is %q", ErrContainerTerminal, containerID, status)
+			}
+			r.Log.Debugf("WaitContainerRunning: container %s status=%s, waiting...", containerID, status)
+			return false, nil
+		},
+	)
 }
 
 func (r *DockerHelper) GetImageTag(ctx context.Context, imageID string) (string, error) {
