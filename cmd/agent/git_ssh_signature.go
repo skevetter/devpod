@@ -40,6 +40,12 @@ func NewGitSSHSignatureCmd(flags *flags.GlobalFlags) *cobra.Command {
 				return delegateToSSHKeygen(args, logger)
 			}
 
+			if parsed.certPath == "" {
+				return fmt.Errorf("key file (-f) is required")
+			}
+			if parsed.namespace == "" {
+				return fmt.Errorf("namespace (-n) is required")
+			}
 			if parsed.bufferFile == "" {
 				return fmt.Errorf("buffer file is required")
 			}
