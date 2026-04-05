@@ -22,6 +22,23 @@ func combineOptions(
 	return options
 }
 
+// ToEnvironment builds the full environment for provider subprocess execution.
+// It combines the current process environment (os.Environ) with provider-specific
+// variables from three sources:
+//
+//   - ToOptions: merged provider config options (uppercased key=value pairs),
+//     plus workspace identity vars (WORKSPACE_ID, WORKSPACE_PROVIDER, etc.),
+//     machine identity vars (MACHINE_ID, MACHINE_PROVIDER, etc.),
+//     and base vars (PROVIDER_ID, PROVIDER_CONTEXT, PROVIDER_FOLDER, DEVPOD, DEVPOD_OS, DEVPOD_ARCH).
+//   - extraEnv: caller-supplied additional variables.
+//
+// The provider name is available to subprocesses as PROVIDER_ID (set by GetBaseEnvironment),
+// WORKSPACE_PROVIDER (set by ToOptionsWorkspace), and MACHINE_PROVIDER (set by ToOptionsMachine).
+//
+// Note: DEVPOD_PROVIDER is reserved by the --provider CLI flag via inheritFlagsFromEnvironment
+// in cmd/root.go. It is inherited from the parent process via os.Environ() but must not be
+// explicitly set here, as doing so would override the global provider selection for child
+// devpod processes.
 func ToEnvironment(
 	workspace *Workspace,
 	machine *Machine,
@@ -143,6 +160,11 @@ func Merge(m1 map[string]string, m2 map[string]string) map[string]string {
 	return retMap
 }
 
+// GetBaseEnvironment returns system-level env vars set for every provider subprocess:
+// DEVPOD (binary path), DEVPOD_OS, DEVPOD_ARCH, PROVIDER_ID (provider name),
+// PROVIDER_CONTEXT, PROVIDER_FOLDER, and DEVPOD_LOG_LEVEL.
+//
+// PROVIDER_ID is the canonical way for provider scripts to discover their own name.
 func GetBaseEnvironment(context, provider string) map[string]string {
 	retVars := map[string]string{}
 
