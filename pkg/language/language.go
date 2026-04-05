@@ -117,17 +117,17 @@ var extensionToLanguage = map[string]ProgrammingLanguage{
 
 // skipDirs contains directory names that should be skipped during language detection.
 var skipDirs = map[string]bool{
-	"node_modules": true,
-	"vendor":       true,
-	"Vendor":       true,
-	".git":         true,
-	".github":      true,
-	".vscode":      true,
-	"dist":         true,
-	"deps":         true,
-	"cache":        true,
-	"testdata":     true,
-	"Godeps":       true,
+	"node_modules":     true,
+	"vendor":           true,
+	"Vendor":           true,
+	".git":             true,
+	".github":          true,
+	".vscode":          true,
+	"dist":             true,
+	"deps":             true,
+	"cache":            true,
+	"testdata":         true,
+	"Godeps":           true,
 	"bower_components": true,
 }
 
