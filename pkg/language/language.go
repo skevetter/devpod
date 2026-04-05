@@ -1,10 +1,11 @@
 package language
 
 import (
+	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 
-	detector "github.com/loft-sh/programming-language-detection/pkg/detector"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	"github.com/skevetter/log"
 )
@@ -99,6 +100,37 @@ var MapConfig = map[ProgrammingLanguage]*config.DevContainerConfig{
 	},
 }
 
+// extensionToLanguage maps file extensions to programming languages.
+var extensionToLanguage = map[string]ProgrammingLanguage{
+	".js":   JavaScript,
+	".ts":   TypeScript,
+	".py":   Python,
+	".c":    C,
+	".cpp":  Cpp,
+	".cs":   DotNet,
+	".go":   Go,
+	".php":  PHP,
+	".java": Java,
+	".rs":   Rust,
+	".rb":   Ruby,
+}
+
+// skipDirs contains directory names that should be skipped during language detection.
+var skipDirs = map[string]bool{
+	"node_modules": true,
+	"vendor":       true,
+	"Vendor":       true,
+	".git":         true,
+	".github":      true,
+	".vscode":      true,
+	"dist":         true,
+	"deps":         true,
+	"cache":        true,
+	"testdata":     true,
+	"Godeps":       true,
+	"bower_components": true,
+}
+
 func DefaultConfig(startPath string, log log.Logger) *config.DevContainerConfig {
 	language, err := DetectLanguage(startPath)
 	if err != nil {
@@ -128,18 +160,63 @@ func DetectLanguage(startPath string) (ProgrammingLanguage, error) {
 	}
 
 	if fileInfo.Mode().IsRegular() {
-		return None, err
-	}
-
-	language := detector.GetLanguage(root, maxFiles)
-	if !SupportedLanguages[ProgrammingLanguage(language)] {
 		return None, nil
 	}
 
-	// try to map language
-	if MapLanguages[ProgrammingLanguage(language)] != "" {
-		language = string(MapLanguages[ProgrammingLanguage(language)])
+	language := detectLanguageByExtension(root, maxFiles)
+	if !SupportedLanguages[language] {
+		return None, nil
 	}
 
-	return ProgrammingLanguage(language), nil
+	if MapLanguages[language] != "" {
+		language = MapLanguages[language]
+	}
+
+	return language, nil
+}
+
+// detectLanguageByExtension walks the directory tree counting files by extension
+// and returns the language with the most files.
+func detectLanguageByExtension(root string, maxFiles int) ProgrammingLanguage {
+	counts := make(map[ProgrammingLanguage]int)
+	fileCount := 0
+
+	_ = filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return nil
+		}
+
+		if fileCount >= maxFiles {
+			return filepath.SkipAll
+		}
+
+		name := d.Name()
+
+		if d.IsDir() {
+			if name != "." && strings.HasPrefix(name, ".") {
+				return filepath.SkipDir
+			}
+			if skipDirs[name] {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+
+		ext := filepath.Ext(name)
+		if lang, ok := extensionToLanguage[ext]; ok {
+			counts[lang]++
+		}
+		fileCount++
+		return nil
+	})
+
+	best := None
+	max := 0
+	for lang, count := range counts {
+		if count > max {
+			best = lang
+			max = count
+		}
+	}
+	return best
 }
