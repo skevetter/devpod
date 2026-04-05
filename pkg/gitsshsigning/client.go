@@ -73,15 +73,33 @@ func createSignatureRequestBody(content []byte, certPath string) ([]byte, error)
 	return json.Marshal(request)
 }
 
-func sendSignatureRequest(requestBody []byte, log log.Logger) ([]byte, error) {
+// signatureServerURL overrides the server URL for testing. Empty means use credentials.GetPort().
+var signatureServerURL string
+
+// SetSignatureServerURL sets the server URL override for testing.
+func SetSignatureServerURL(url string) {
+	signatureServerURL = url
+}
+
+func getSignatureURL() (string, error) {
+	if signatureServerURL != "" {
+		return signatureServerURL, nil
+	}
 	port, err := credentials.GetPort()
+	if err != nil {
+		return "", err
+	}
+	return "http://localhost:" + strconv.Itoa(port) + "/git-ssh-signature", nil
+}
+
+func sendSignatureRequest(requestBody []byte, log log.Logger) ([]byte, error) {
+	url, err := getSignatureURL()
 	if err != nil {
 		return nil, err
 	}
 
 	response, err := devpodhttp.GetHTTPClient().Post(
-		"http://localhost:"+strconv.Itoa(port)+
-			"/git-ssh-signature", // TODO: build the url, don't hardcode localhost
+		url,
 		"application/json",
 		bytes.NewReader(requestBody),
 	)
