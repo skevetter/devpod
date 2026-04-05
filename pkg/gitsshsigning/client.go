@@ -10,10 +10,24 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/skevetter/devpod/pkg/credentials"
+	"github.com/skevetter/devpod/pkg/config"
 	devpodhttp "github.com/skevetter/devpod/pkg/http"
 	"github.com/skevetter/log"
 )
+
+const defaultCredentialsServerPort = "12049"
+
+func getCredentialsPort() (int, error) {
+	strPort := os.Getenv(config.EnvCredentialsServerPort)
+	if strPort == "" {
+		strPort = defaultCredentialsServerPort
+	}
+	port, err := strconv.Atoi(strPort)
+	if err != nil {
+		return 0, fmt.Errorf("convert port %s: %w", strPort, err)
+	}
+	return port, nil
+}
 
 // HandleGitSSHProgramCall implements logic handling call from git when signing a commit.
 func HandleGitSSHProgramCall(certPath, namespace, bufferFile string, log log.Logger) error {
@@ -85,7 +99,7 @@ func getSignatureURL() (string, error) {
 	if signatureServerURL != "" {
 		return signatureServerURL, nil
 	}
-	port, err := credentials.GetPort()
+	port, err := getCredentialsPort()
 	if err != nil {
 		return "", err
 	}
