@@ -175,13 +175,20 @@ func DetectLanguage(startPath string) (ProgrammingLanguage, error) {
 	return language, nil
 }
 
+func shouldSkipDir(name string) bool {
+	if skipDirs[name] {
+		return true
+	}
+	return name != "." && strings.HasPrefix(name, ".")
+}
+
 // detectLanguageByExtension walks the directory tree counting files by extension
 // and returns the language with the most files.
 func detectLanguageByExtension(root string, maxFiles int) ProgrammingLanguage {
 	counts := make(map[ProgrammingLanguage]int)
 	fileCount := 0
 
-	_ = filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+	_ = filepath.WalkDir(root, func(_ string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return nil
 		}
@@ -190,20 +197,14 @@ func detectLanguageByExtension(root string, maxFiles int) ProgrammingLanguage {
 			return filepath.SkipAll
 		}
 
-		name := d.Name()
-
 		if d.IsDir() {
-			if name != "." && strings.HasPrefix(name, ".") {
-				return filepath.SkipDir
-			}
-			if skipDirs[name] {
+			if shouldSkipDir(d.Name()) {
 				return filepath.SkipDir
 			}
 			return nil
 		}
 
-		ext := filepath.Ext(name)
-		if lang, ok := extensionToLanguage[ext]; ok {
+		if lang, ok := extensionToLanguage[filepath.Ext(d.Name())]; ok {
 			counts[lang]++
 		}
 		fileCount++
