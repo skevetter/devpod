@@ -475,7 +475,7 @@ func (r *runner) buildDevImageCompose(
 		}
 	}
 
-	overrideBuildImageName, _, imageMetadata, _, err := r.buildAndExtendDockerCompose(
+	extendResult, err := r.buildAndExtendDockerCompose(
 		ctx,
 		parsedConfig,
 		substitutionContext,
@@ -488,7 +488,7 @@ func (r *runner) buildDevImageCompose(
 		return nil, fmt.Errorf("build and extend docker-compose: %w", err)
 	}
 
-	currentImageName := overrideBuildImageName
+	currentImageName := extendResult.buildImageName
 	if currentImageName == "" {
 		currentImageName = originalImageName
 	}
@@ -508,8 +508,8 @@ func (r *runner) buildDevImageCompose(
 
 	return &config.BuildInfo{
 		ImageDetails:  imageDetails,
-		ImageMetadata: imageMetadata,
-		ImageName:     overrideBuildImageName,
+		ImageMetadata: extendResult.imageMetadata,
+		ImageName:     extendResult.buildImageName,
 		PrebuildHash:  imageTag,
 		RegistryCache: options.RegistryCache,
 		Tags:          options.Tag,

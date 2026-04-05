@@ -5,7 +5,9 @@ package up
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"syscall"
@@ -44,6 +46,37 @@ func (btc *baseTestContext) inspectContainer(
 		return nil, fmt.Errorf("no container details returned")
 	}
 	return &details[0], nil
+}
+
+func (btc *baseTestContext) inspectImageID(ctx context.Context, imageName string) (string, error) {
+	details, err := btc.dockerHelper.InspectImage(ctx, imageName, false)
+	if err != nil {
+		return "", err
+	}
+	return details.ID, nil
+}
+
+func (btc *baseTestContext) resetTaggedImage(
+	ctx context.Context,
+	sourceImage, targetImage string,
+) error {
+	if err := btc.dockerHelper.Pull(ctx, sourceImage, nil, io.Discard, io.Discard); err != nil {
+		return err
+	}
+	_ = btc.dockerHelper.Run(
+		ctx,
+		[]string{"image", "rm", "-f", targetImage},
+		nil,
+		io.Discard,
+		io.Discard,
+	)
+	return btc.dockerHelper.Run(
+		ctx,
+		[]string{"tag", sourceImage, targetImage},
+		nil,
+		io.Discard,
+		io.Discard,
+	)
 }
 
 type testContext struct {
@@ -94,6 +127,9 @@ func (tc *testContext) verifyWorkspaceMount(
 }
 
 func setupWorkspace(testdataPath, initialDir string, f *framework.Framework) (string, error) {
+	if !filepath.IsAbs(testdataPath) {
+		testdataPath = filepath.Join(initialDir, testdataPath)
+	}
 	tempDir, err := framework.CopyToTempDir(testdataPath)
 	if err != nil {
 		return "", err

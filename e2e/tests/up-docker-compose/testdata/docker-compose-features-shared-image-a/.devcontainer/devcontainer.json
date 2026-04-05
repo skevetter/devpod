@@ -1,0 +1,9 @@
+{
+  "name": "compose-features-shared-image-a",
+  "dockerComposeFile": ["compose.yaml", "compose.override.yaml"],
+  "service": "app",
+  "workspaceFolder": "/workspaces/project-a",
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli:1.1": {}
+  }
+}
