@@ -18,6 +18,29 @@ var ProviderNameRegEx = regexp.MustCompile(`[^a-z0-9\-]+`)
 
 var optionNameRegEx = regexp.MustCompile(`[^A-Z0-9_]+`)
 
+// reservedOptionNames are env var names set by the DevPod runtime
+// (via GetBaseEnvironment, ToOptionsWorkspace, ToOptionsMachine).
+// Provider options must not use these names as they would silently
+// overwrite system-set values in the subprocess environment.
+var reservedOptionNames = map[string]bool{
+	"PROVIDER_ID":        true,
+	"PROVIDER_CONTEXT":   true,
+	"PROVIDER_FOLDER":    true,
+	"WORKSPACE_ID":       true,
+	"WORKSPACE_UID":      true,
+	"WORKSPACE_PROVIDER": true,
+	"WORKSPACE_CONTEXT":  true,
+	"WORKSPACE_FOLDER":   true,
+	"WORKSPACE_SOURCE":   true,
+	"WORKSPACE_ORIGIN":   true,
+	"WORKSPACE_PICTURE":  true,
+	"MACHINE_ID":         true,
+	"MACHINE_CONTEXT":    true,
+	"MACHINE_FOLDER":     true,
+	"MACHINE_PROVIDER":   true,
+	"LOFT_PROJECT":       true,
+}
+
 var allowedTypes = []string{
 	"string",
 	"multiline",
@@ -71,6 +94,14 @@ func validate(config *ProviderConfig) error {
 			return fmt.Errorf(
 				"provider option '%s' can only consist of upper case letters, numbers or underscores. "+
 					"E.g. MY_OPTION, MY_OTHER_OPTION",
+				optionName,
+			)
+		}
+
+		if reservedOptionNames[optionName] {
+			return fmt.Errorf(
+				"provider option '%s' uses a reserved environment variable name; "+
+					"choose a different name to avoid overwriting system-set values",
 				optionName,
 			)
 		}
