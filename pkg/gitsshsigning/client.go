@@ -3,9 +3,12 @@ package gitsshsigning
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/skevetter/devpod/pkg/credentials"
 	devpodhttp "github.com/skevetter/devpod/pkg/http"
@@ -56,7 +59,7 @@ func writeSignatureToFile(signature []byte, bufferFile string, log log.Logger) e
 	sigFile := bufferFile + ".sig"
 	// #nosec G306 -- TODO Consider using a more secure permission setting and ownership if needed.
 	if err := os.WriteFile(sigFile, signature, 0o644); err != nil {
-		log.Errorf("Failed to write signature to file: %w", err)
+		log.Errorf("Failed to write signature to file: %v", err)
 		return err
 	}
 	return nil
@@ -83,19 +86,36 @@ func sendSignatureRequest(requestBody []byte, log log.Logger) ([]byte, error) {
 		bytes.NewReader(requestBody),
 	)
 	if err != nil {
-		log.Errorf("Error retrieving git ssh signature: %w", err)
+		log.Errorf("Error retrieving git ssh signature: %v", err)
 		return nil, err
 	}
 	defer func() { _ = response.Body.Close() }()
 
-	return io.ReadAll(response.Body)
+	body, err := io.ReadAll(response.Body)
+	if err != nil {
+		return nil, fmt.Errorf("reading signature response: %w", err)
+	}
+
+	if response.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf(
+			"signature server returned %d: %s",
+			response.StatusCode,
+			strings.TrimSpace(string(body)),
+		)
+	}
+
+	return body, nil
 }
 
 func parseSignatureResponse(responseBody []byte, log log.Logger) ([]byte, error) {
 	signatureResponse := &GitSSHSignatureResponse{}
 	if err := json.Unmarshal(responseBody, signatureResponse); err != nil {
-		log.Errorf("Error decoding git ssh signature: %w", err)
-		return nil, err
+		log.Errorf("Error decoding git ssh signature: %v", err)
+		return nil, fmt.Errorf(
+			"error decoding signature response (body: %s): %w",
+			string(responseBody),
+			err,
+		)
 	}
 
 	return signatureResponse.Signature, nil
