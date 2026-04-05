@@ -297,7 +297,7 @@ func (r *runner) injectDaemonEntrypoint(
 		r.Log.Errorf("Failed to marshal daemon config: %v", err)
 		return
 	}
-	mergedConfig.ContainerEnv[config.WorkspaceDaemonConfigExtraEnvVar] = data
+	mergedConfig.ContainerEnv[pkgconfig.EnvWorkspaceDaemonConfig] = data
 }
 
 // findRunningContainerOrFail re-fetches container details from the driver and
