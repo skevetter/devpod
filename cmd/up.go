@@ -397,7 +397,10 @@ func (cmd *UpCmd) configureWorkspace(
 
 	// Run after dotfiles so the signing config isn't overwritten by a
 	// dotfiles installer that replaces .gitconfig.
-	if cmd.GitSSHSigningKey != "" {
+	gitSSHSignatureEnabled := devPodConfig.ContextOption(
+		config.ContextOptionGitSSHSignatureForwarding,
+	) == "true"
+	if cmd.GitSSHSigningKey != "" && gitSSHSignatureEnabled {
 		if err := setupGitSSHSignature(cmd.GitSSHSigningKey, client); err != nil {
 			return err
 		}
