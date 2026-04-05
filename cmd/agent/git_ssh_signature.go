@@ -97,15 +97,26 @@ func consumeFlag(result *sshKeygenArgs, args []string, i int) int {
 	if i+1 >= len(args) {
 		return i
 	}
+	next := args[i+1]
+
 	switch args[i] {
 	case "-Y":
-		result.command = args[i+1]
+		if strings.HasPrefix(next, "-") {
+			return i
+		}
+		result.command = next
 		return i + 1
 	case "-f":
-		result.certPath = args[i+1]
+		if strings.HasPrefix(next, "-") {
+			return i
+		}
+		result.certPath = next
 		return i + 1
 	case "-n":
-		result.namespace = args[i+1]
+		if strings.HasPrefix(next, "-") {
+			return i
+		}
+		result.namespace = next
 		return i + 1
 	}
 	return i
