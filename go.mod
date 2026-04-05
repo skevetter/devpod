@@ -49,7 +49,6 @@ require (
 	github.com/onsi/ginkgo/v2 v2.28.1
 	github.com/onsi/gomega v1.39.1
 	github.com/pkg/sftp v1.13.10
-	github.com/ramr/go-reaper v0.3.1
 	github.com/sirupsen/logrus v1.9.4
 	github.com/skevetter/log v0.0.0-20260106023547-bfd26ab1367c
 	github.com/skevetter/ssh v0.1.0
