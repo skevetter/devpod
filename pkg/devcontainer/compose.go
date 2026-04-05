@@ -1179,7 +1179,7 @@ func checkForPersistedFile(
 	prefix string,
 ) persistedFileResult {
 	for _, file := range files {
-		if !strings.HasPrefix(file, prefix) {
+		if !strings.HasPrefix(filepath.Base(file), prefix) {
 			continue
 		}
 
