@@ -45,16 +45,16 @@ func (k *KubernetesDriver) waitPodRunning(ctx context.Context, id string) (*core
 			}
 
 			// Let's print all conditions that are false to help people troubleshoot infra issues
-			condMsg := ""
+			var condMsg strings.Builder
 			if time.Since(started) > 45*time.Second { // start printing conditions after a delay
 				for _, cond := range pod.Status.Conditions {
 					if cond.Status == corev1.ConditionFalse {
-						condMsg += fmt.Sprintf("Condition \"%s\" is %s\n", cond.Type, cond.Status)
+						fmt.Fprintf(&condMsg, "Condition \"%s\" is %s\n", cond.Type, cond.Status)
 						if cond.Reason != "" {
-							condMsg += fmt.Sprintf("%s Reason: %s\n", cond.Type, cond.Reason)
+							fmt.Fprintf(&condMsg, "%s Reason: %s\n", cond.Type, cond.Reason)
 						}
 						if cond.Message != "" {
-							condMsg += fmt.Sprintf("%s Message: %s\n", cond.Type, cond.Message)
+							fmt.Fprintf(&condMsg, "%s Message: %s\n", cond.Type, cond.Message)
 						}
 					}
 				}
@@ -63,8 +63,8 @@ func (k *KubernetesDriver) waitPodRunning(ctx context.Context, id string) (*core
 			// check pod status
 			if len(pod.Status.ContainerStatuses) < len(pod.Spec.Containers) {
 				msg := fmt.Sprintf("Waiting, since pod '%s' is starting", id)
-				if condMsg != "" {
-					msg += fmt.Sprintf("\n%s", strings.TrimSpace(condMsg))
+				if condMsg.String() != "" {
+					msg += fmt.Sprintf("\n%s", strings.TrimSpace(condMsg.String()))
 				}
 				throttledLogger.Infof("%s", msg)
 				return false, nil
