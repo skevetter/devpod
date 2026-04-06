@@ -16,6 +16,7 @@ import (
 	devagent "github.com/skevetter/devpod/pkg/agent"
 	"github.com/skevetter/devpod/pkg/client"
 	"github.com/skevetter/devpod/pkg/config"
+	"github.com/skevetter/devpod/pkg/pty"
 	devssh "github.com/skevetter/devpod/pkg/ssh"
 	devsshagent "github.com/skevetter/devpod/pkg/ssh/agent"
 	"github.com/skevetter/devpod/pkg/workspace"
@@ -280,7 +281,7 @@ func setupInteractivePTY(
 		return noopRestore, nil
 	}
 
-	restoreTerm, err := makeRawTerm(stdout)
+	restoreTerm, err := makeRawTerm()
 	if err != nil {
 		return noopRestore, err
 	}
@@ -298,15 +299,21 @@ func setupInteractivePTY(
 	return restoreTerm, nil
 }
 
-func makeRawTerm(stdout *os.File) (func(), error) {
-	fd := int(stdout.Fd()) // #nosec G115 -- fd is always a valid file descriptor
-	state, err := term.MakeRaw(fd)
+func makeRawTerm() (func(), error) {
+	stdinState, err := pty.MakeInputRaw(os.Stdin.Fd())
 	if err != nil {
 		return noopRestore, err
 	}
 
+	stdoutState, err := pty.MakeOutputRaw(os.Stdout.Fd())
+	if err != nil {
+		_ = pty.RestoreTerminal(os.Stdin.Fd(), stdinState)
+		return noopRestore, err
+	}
+
 	return func() {
-		_ = term.Restore(int(stdout.Fd()), state)
+		_ = pty.RestoreTerminal(os.Stdin.Fd(), stdinState)
+		_ = pty.RestoreTerminal(os.Stdout.Fd(), stdoutState)
 	}, nil
 }
 
