@@ -11,7 +11,7 @@ import (
 	"unicode/utf8"
 
 	doublestar "github.com/bmatcuk/doublestar/v4"
-	"github.com/tidwall/jsonc"
+	"github.com/tailscale/hujson"
 )
 
 const DEVCONTAINER_FEATURE_FILE_NAME = "devcontainer-feature.json"
@@ -34,7 +34,11 @@ func ParseDevContainerFeature(folder string) (*FeatureConfig, error) {
 	}
 
 	featureConfig := &FeatureConfig{}
-	err = json.Unmarshal(jsonc.ToJSON(data), featureConfig)
+	normalized, err := hujson.Standardize(data)
+	if err != nil {
+		return nil, fmt.Errorf("parse jsonc: %w", err)
+	}
+	err = json.Unmarshal(normalized, featureConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +86,11 @@ func ParseDevContainerJSONFile(jsonFilePath string) (*DevContainerConfig, error)
 	}
 
 	devContainer := &DevContainerConfig{}
-	err = json.Unmarshal(jsonc.ToJSON(bytes), devContainer)
+	normalized, err := hujson.Standardize(bytes)
+	if err != nil {
+		return nil, fmt.Errorf("parse jsonc: %w", err)
+	}
+	err = json.Unmarshal(normalized, devContainer)
 	if err != nil {
 		return nil, err
 	}

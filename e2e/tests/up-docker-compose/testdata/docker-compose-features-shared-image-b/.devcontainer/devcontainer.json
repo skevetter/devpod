@@ -1,0 +1,11 @@
+{
+  "name": "compose-features-shared-image-b",
+  "dockerComposeFile": ["compose.yaml", "compose.override.yaml"],
+  "service": "app",
+  "workspaceFolder": "/workspaces/project-b",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1.7": {
+      "version": "lts"
+    }
+  }
+}

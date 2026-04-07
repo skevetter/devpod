@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/ghodss/yaml"
 	"github.com/skevetter/devpod/pkg/types"
+	"sigs.k8s.io/yaml"
 )
 
 type Config struct {

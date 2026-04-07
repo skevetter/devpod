@@ -17,6 +17,8 @@ import (
 	"github.com/skevetter/devpod/e2e/framework"
 )
 
+const osWindows = "windows"
+
 var _ = ginkgo.Describe("devpod ssh test suite", ginkgo.Label("ssh"), ginkgo.Ordered, func() {
 	var initialDir string
 
@@ -59,7 +61,7 @@ var _ = ginkgo.Describe("devpod ssh test suite", ginkgo.Label("ssh"), ginkgo.Ord
 
 	// ginkgo.It("should start a new workspace with a docker provider (default) and forward gpg agent into it", func() {
 	// 	// skip windows for now
-	// 	if runtime.GOOS == "windows" {
+	// 	if runtime.GOOS == osWindows {
 	// 		return
 	// 	}
 	//
@@ -106,9 +108,10 @@ var _ = ginkgo.Describe("devpod ssh test suite", ginkgo.Label("ssh"), ginkgo.Ord
 	// })
 
 	ginkgo.It(
-		"should set up git SSH signature helper in workspace",
-		func(ctx context.Context) {
-			if runtime.GOOS == "windows" {
+		"should set up git SSH signature helper and sign a commit",
+		ginkgo.SpecTimeout(7*time.Minute),
+		func(ctx ginkgo.SpecContext) {
+			if runtime.GOOS == osWindows {
 				ginkgo.Skip("skipping on windows")
 			}
 
@@ -138,18 +141,11 @@ var _ = ginkgo.Describe("devpod ssh test suite", ginkgo.Label("ssh"), ginkgo.Ord
 			framework.ExpectNoError(err)
 
 			// Start workspace with git-ssh-signing-key flag
-			devpodUpCtx, cancel := context.WithTimeout(ctx, 5*time.Minute)
-			defer cancel()
-			err = f.DevPodUp(devpodUpCtx, tempDir,
-				"--git-ssh-signing-key", keyPath+".pub",
-			)
+			err = f.DevPodUp(ctx, tempDir, "--git-ssh-signing-key", keyPath+".pub")
 			framework.ExpectNoError(err)
 
-			sshCtx, cancelSSH := context.WithTimeout(ctx, 20*time.Second)
-			defer cancelSSH()
-
-			// Verify the helper script was installed
-			out, err := f.DevPodSSH(sshCtx, tempDir,
+			// Step 1: Verify the helper script was installed and executable
+			out, err := f.DevPodSSH(ctx, tempDir,
 				"test -x /usr/local/bin/devpod-ssh-signature && echo EXISTS",
 			)
 			framework.ExpectNoError(err)
@@ -158,24 +154,225 @@ var _ = ginkgo.Describe("devpod ssh test suite", ginkgo.Label("ssh"), ginkgo.Ord
 				"devpod-ssh-signature helper script should be installed and executable",
 			)
 
-			// Verify git config has the SSH signing program set
-			out, err = f.DevPodSSH(sshCtx, tempDir,
-				"git config --global gpg.ssh.program",
-			)
+			// Step 2: Verify git config was written correctly
+			out, err = f.DevPodSSH(ctx, tempDir, "git config --global gpg.ssh.program")
 			framework.ExpectNoError(err)
-			gomega.Expect(strings.TrimSpace(out)).To(
-				gomega.Equal("devpod-ssh-signature"),
-				"git gpg.ssh.program should be set to devpod-ssh-signature",
+			gomega.Expect(strings.TrimSpace(out)).To(gomega.Equal("devpod-ssh-signature"))
+
+			out, err = f.DevPodSSH(ctx, tempDir, "git config --global gpg.format")
+			framework.ExpectNoError(err)
+			gomega.Expect(strings.TrimSpace(out)).To(gomega.Equal("ssh"))
+
+			// Step 3: Attempt a signed commit with the credentials server
+			// tunnel active. The signing request is forwarded over the tunnel
+			// to the host where ssh-keygen performs the actual signing.
+			commitCmd := strings.Join([]string{
+				"cd /tmp",
+				"git init test-sign-repo",
+				"cd test-sign-repo",
+				"git config user.name 'Test User'",
+				"git config user.email 'test@example.com'",
+				"git config commit.gpgsign true",
+				"echo test > testfile",
+				"git add testfile",
+				"git commit -m 'signed test commit' 2>&1",
+			}, " && ")
+
+			stdout, stderr, err := f.ExecCommandCapture(ctx, []string{
+				"ssh",
+				"--agent-forwarding",
+				"--start-services",
+				tempDir,
+				"--command", commitCmd,
+			})
+			ginkgo.GinkgoWriter.Printf("commit stdout: %s\n", stdout)
+			ginkgo.GinkgoWriter.Printf("commit stderr: %s\n", stderr)
+			framework.ExpectNoError(err)
+
+			gomega.Expect(stdout).To(
+				gomega.ContainSubstring("signed test commit"),
+				"git commit should succeed with the signed test commit message",
 			)
 
-			// Verify git config has gpg format set to ssh
-			out, err = f.DevPodSSH(sshCtx, tempDir,
-				"git config --global gpg.format",
+			// Step 4: Verify the commit is actually signed with a valid SSH signature.
+			// Read the public key that was used for signing so we can build
+			// an allowed-signers file inside the workspace for verification.
+			pubKeyBytes, err := os.ReadFile(
+				keyPath + ".pub",
+			) // #nosec G304 -- test file with controlled path
+			framework.ExpectNoError(err)
+			pubKey := strings.TrimSpace(string(pubKeyBytes))
+
+			verifyCmd := strings.Join([]string{
+				"cd /tmp/test-sign-repo",
+				// Create allowed signers file mapping the test email to our public key
+				"echo 'test@example.com " + pubKey + "' > /tmp/allowed_signers",
+				"git config gpg.ssh.allowedSignersFile /tmp/allowed_signers",
+				// Verify the commit signature is valid
+				"git verify-commit HEAD 2>&1",
+			}, " && ")
+
+			stdout, stderr, err = f.ExecCommandCapture(ctx, []string{
+				"ssh",
+				"--agent-forwarding",
+				"--start-services",
+				tempDir,
+				"--command", verifyCmd,
+			})
+			ginkgo.GinkgoWriter.Printf("verify stdout: %s\n", stdout)
+			ginkgo.GinkgoWriter.Printf("verify stderr: %s\n", stderr)
+			framework.ExpectNoError(err)
+
+			// git verify-commit writes signature details to stderr
+			combined := stdout + stderr
+			gomega.Expect(combined).To(
+				gomega.ContainSubstring("Good"),
+				"git verify-commit should report a good SSH signature",
+			)
+
+			// And confirm the signature log shows the correct principal
+			logCmd := "cd /tmp/test-sign-repo && git log --show-signature -1 2>&1"
+			stdout, stderr, err = f.ExecCommandCapture(ctx, []string{
+				"ssh",
+				"--agent-forwarding",
+				"--start-services",
+				tempDir,
+				"--command", logCmd,
+			})
+			ginkgo.GinkgoWriter.Printf("log stdout: %s\n", stdout)
+			ginkgo.GinkgoWriter.Printf("log stderr: %s\n", stderr)
+			framework.ExpectNoError(err)
+
+			combined = stdout + stderr
+			gomega.Expect(combined).To(
+				gomega.ContainSubstring("Good"),
+				"git log --show-signature should report a good signature",
+			)
+			gomega.Expect(combined).To(
+				gomega.ContainSubstring("test@example.com"),
+				"signature should be associated with the test email principal",
+			)
+		},
+	)
+
+	ginkgo.It(
+		"should not install git SSH signature helper when signing key is not provided",
+		ginkgo.SpecTimeout(5*time.Minute),
+		func(ctx ginkgo.SpecContext) {
+			if runtime.GOOS == osWindows {
+				ginkgo.Skip("skipping on windows")
+			}
+
+			tempDir, err := framework.CopyToTempDir("tests/ssh/testdata/ssh-signing")
+			framework.ExpectNoError(err)
+
+			f := framework.NewDefaultFramework(initialDir + "/bin")
+			_ = f.DevPodProviderAdd(ctx, "docker")
+			err = f.DevPodProviderUse(ctx, "docker")
+			framework.ExpectNoError(err)
+
+			ginkgo.DeferCleanup(func(cleanupCtx context.Context) {
+				_ = f.DevPodWorkspaceDelete(cleanupCtx, tempDir)
+				framework.CleanupTempDir(initialDir, tempDir)
+			})
+
+			// Start workspace WITHOUT --git-ssh-signing-key
+			err = f.DevPodUp(ctx, tempDir)
+			framework.ExpectNoError(err)
+
+			// Verify the helper script was NOT installed
+			out, err := f.DevPodSSH(ctx, tempDir,
+				"test -x /usr/local/bin/devpod-ssh-signature && echo EXISTS || echo MISSING",
 			)
 			framework.ExpectNoError(err)
 			gomega.Expect(strings.TrimSpace(out)).To(
-				gomega.Equal("ssh"),
-				"git gpg.format should be set to ssh",
+				gomega.Equal("MISSING"),
+				"devpod-ssh-signature helper should not be installed without --git-ssh-signing-key",
+			)
+
+			// Verify git config was NOT set for SSH signing
+			out, err = f.DevPodSSH(ctx, tempDir,
+				"git config --global gpg.ssh.program || echo UNSET",
+			)
+			framework.ExpectNoError(err)
+			gomega.Expect(strings.TrimSpace(out)).To(
+				gomega.Equal("UNSET"),
+				"gpg.ssh.program should not be configured without --git-ssh-signing-key",
+			)
+		},
+	)
+
+	ginkgo.It(
+		"should surface clear error when SSH signing fails",
+		ginkgo.SpecTimeout(7*time.Minute),
+		func(ctx ginkgo.SpecContext) {
+			if runtime.GOOS == osWindows {
+				ginkgo.Skip("skipping on windows")
+			}
+
+			tempDir, err := framework.CopyToTempDir("tests/ssh/testdata/ssh-signing")
+			framework.ExpectNoError(err)
+
+			f := framework.NewDefaultFramework(initialDir + "/bin")
+			_ = f.DevPodProviderAdd(ctx, "docker")
+			err = f.DevPodProviderUse(ctx, "docker")
+			framework.ExpectNoError(err)
+
+			ginkgo.DeferCleanup(func(cleanupCtx context.Context) {
+				_ = f.DevPodWorkspaceDelete(cleanupCtx, tempDir)
+				framework.CleanupTempDir(initialDir, tempDir)
+			})
+
+			// Generate a key but do NOT add it to the ssh-agent so signing will fail
+			sshKeyDir, err := os.MkdirTemp("", "devpod-ssh-signing-err-test")
+			framework.ExpectNoError(err)
+			defer func() { _ = os.RemoveAll(sshKeyDir) }()
+
+			keyPath := filepath.Join(sshKeyDir, "id_ed25519")
+			// #nosec G204 -- test command with controlled arguments
+			err = exec.Command(
+				"ssh-keygen", "-t", "ed25519", "-f", keyPath, "-N", "", "-q",
+			).Run()
+			framework.ExpectNoError(err)
+
+			// Start workspace with signing key
+			err = f.DevPodUp(ctx, tempDir, "--git-ssh-signing-key", keyPath+".pub")
+			framework.ExpectNoError(err)
+
+			// Attempt a signed commit — this should fail because the key
+			// is not in the agent, but the error must be human-readable.
+			commitCmd := strings.Join([]string{
+				"cd /tmp",
+				"git init test-sign-err-repo",
+				"cd test-sign-err-repo",
+				"git config user.name 'Test User'",
+				"git config user.email 'test@example.com'",
+				"git config commit.gpgsign true",
+				"echo test > testfile",
+				"git add testfile",
+				"git commit -m 'signed test commit' 2>&1",
+			}, " && ")
+
+			stdout, stderr, err := f.ExecCommandCapture(ctx, []string{
+				"ssh",
+				"--agent-forwarding",
+				"--start-services",
+				tempDir,
+				"--command", commitCmd,
+			})
+			ginkgo.GinkgoWriter.Printf("error commit stdout: %s\n", stdout)
+			ginkgo.GinkgoWriter.Printf("error commit stderr: %s\n", stderr)
+
+			// The commit should fail
+			combined := stdout + stderr
+			if err != nil {
+				combined += err.Error()
+			}
+
+			// The error must NOT contain JSON decode artifacts
+			gomega.Expect(combined).NotTo(
+				gomega.ContainSubstring("invalid character"),
+				"error should not contain JSON parse errors — error messages must be human-readable",
 			)
 		},
 	)
@@ -183,7 +380,7 @@ var _ = ginkgo.Describe("devpod ssh test suite", ginkgo.Label("ssh"), ginkgo.Ord
 	ginkgo.It(
 		"should start a new workspace with a docker provider (default) and forward a port into it",
 		func(ctx context.Context) {
-			if runtime.GOOS == "windows" {
+			if runtime.GOOS == osWindows {
 				ginkgo.Skip("skipping on windows")
 			}
 

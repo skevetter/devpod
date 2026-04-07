@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/huh"
-	"github.com/ghodss/yaml"
 	managementv1 "github.com/loft-sh/api/v4/pkg/apis/management/v1"
 	storagev1 "github.com/loft-sh/api/v4/pkg/apis/storage/v1"
 	"github.com/skevetter/devpod/cmd/pro/provider/list"
@@ -19,6 +18,7 @@ import (
 	"github.com/skevetter/devpod/pkg/platform/project"
 	"github.com/skevetter/log"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/yaml"
 )
 
 func CreateInstance(

@@ -67,7 +67,7 @@ configuring or adding the provider:
 - `command`: A command to retrieve the option value automatically. Can also reference other variables in the command, e.g. `echo ${MY_OTHER_VAR}-suffix`. For compatibility reasons, this command will be executed in an emulated shell on Windows.
 - `local`: If true, the option will be filled individually for each machine / workspace
 - `global`: If true, the option will be reused for each machine / workspace
-- `cache`: If non-empty, DevPod will re-execute the command after the given timeout. E.g. if this is 5m, DevPod will re-execute the command after 5 minutes to re-fill this value. This is useful if you want to store a token or something that expires locally in a variable.
+- `cache`: If non-empty, DevPod will re-execute the command after the given timeout, e.g. if this is 5m, DevPod will re-execute the command after 5 minutes to re-fill this value. This is useful if you want to store a token or something that expires locally in a variable.
 - `hidden`: If true, DevPod will not show this option in the Desktop application or through `devpod provider options`. Can be used to calculate variables internally or save tokens or other things internally.
 
 ### Default values

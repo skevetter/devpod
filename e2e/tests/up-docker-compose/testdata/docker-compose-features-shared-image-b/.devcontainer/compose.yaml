@@ -1,0 +1,6 @@
+services:
+  app:
+    image: devpod-e2e-compose-shared-base:latest
+    command: sleep infinity
+    volumes:
+      - ..:/workspaces/project-b

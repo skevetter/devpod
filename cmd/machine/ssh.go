@@ -10,7 +10,6 @@ import (
 	"os/exec"
 
 	"al.essio.dev/pkg/shellescape"
-	"github.com/mattn/go-isatty"
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/cmd/flags"
 	devagent "github.com/skevetter/devpod/pkg/agent"
@@ -276,7 +275,8 @@ func setupInteractivePTY(
 	options RunSSHSessionOptions,
 ) (func(), error) {
 	stdout := os.Stdout
-	if !isatty.IsTerminal(stdout.Fd()) {
+	fd := int(stdout.Fd()) // #nosec G115 -- fd is always a valid file descriptor
+	if !term.IsTerminal(fd) {
 		return noopRestore, nil
 	}
 
@@ -285,7 +285,6 @@ func setupInteractivePTY(
 		return noopRestore, err
 	}
 
-	fd := int(stdout.Fd()) // #nosec G115 -- fd is always a valid file descriptor
 	startWindowResizeForwarder(ctx, session, fd)
 
 	t := resolvePTYTermWithFallback(ctx, sshClient, options.SessionOptions, options.Stderr)

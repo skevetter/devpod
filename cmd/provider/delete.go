@@ -32,6 +32,7 @@ func NewDeleteCmd(flags *flags.GlobalFlags) *cobra.Command {
 	deleteCmd := &cobra.Command{
 		Use:   "delete [name]",
 		Short: "Delete a provider",
+		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cobraCmd *cobra.Command, args []string) error {
 			return cmd.Run(cobraCmd.Context(), args)
 		},
@@ -57,10 +58,6 @@ func NewDeleteCmd(flags *flags.GlobalFlags) *cobra.Command {
 }
 
 func (cmd *DeleteCmd) Run(ctx context.Context, args []string) error {
-	if len(args) > 1 {
-		return fmt.Errorf("please specify a provider to delete")
-	}
-
 	devPodConfig, err := config.LoadConfig(cmd.Context, cmd.Provider)
 	if err != nil {
 		return err

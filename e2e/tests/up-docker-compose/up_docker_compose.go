@@ -3,6 +3,7 @@
 package up
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -183,6 +184,116 @@ var _ = ginkgo.Describe(
 			gomega.Expect(vclusterVersionOutput).
 				To(gomega.ContainSubstring("vcluster version 0.24.1"))
 		}, ginkgo.SpecTimeout(framework.GetTimeout()))
+
+		ginkgo.It(
+			"does not retag shared image when applying features to image backed services",
+			func(ctx context.Context) {
+				const (
+					sourceImage = "mcr.microsoft.com/devcontainers/base" +
+						"@sha256:d94c97dd9cacf183d0a6fd12a8e87b526e9e928307674ae9c94139139c0c6eae"
+					sharedImage = "devpod-e2e-compose-shared-base:latest"
+				)
+				const (
+					projectAPath = "tests/up-docker-compose/testdata/docker-compose-features-shared-image-a"
+					projectBPath = "tests/up-docker-compose/testdata/docker-compose-features-shared-image-b"
+				)
+				commandPresenceCheck := func(command string) string {
+					return fmt.Sprintf(
+						"if command -v %s >/dev/null 2>&1; then echo present; else echo missing; fi",
+						command,
+					)
+				}
+
+				ginkgo.By("resetting the shared base image tag")
+				err := tc.resetTaggedImage(ctx, sourceImage, sharedImage)
+				framework.ExpectNoError(err)
+				ginkgo.DeferCleanup(func(cleanupCtx context.Context) {
+					_ = tc.dockerHelper.Run(
+						cleanupCtx,
+						[]string{"image", "rm", "-f", sharedImage},
+						nil,
+						io.Discard,
+						io.Discard,
+					)
+				})
+
+				initialImageID, err := tc.inspectImageID(ctx, sharedImage)
+				framework.ExpectNoError(err)
+
+				ginkgo.By("starting project A")
+				tempDirA, _, err := tc.setupAndStartWorkspace(
+					ctx,
+					projectAPath,
+					"--debug",
+				)
+				framework.ExpectNoError(err)
+
+				ghVersionOutput, err := tc.execSSH(ctx, tempDirA, "gh --version")
+				framework.ExpectNoError(err)
+				gomega.Expect(ghVersionOutput).To(gomega.ContainSubstring("gh version"))
+
+				imageIDAfterA, err := tc.inspectImageID(ctx, sharedImage)
+				framework.ExpectNoError(err)
+				gomega.Expect(imageIDAfterA).
+					To(gomega.Equal(initialImageID), "shared image tag should stay unchanged after project A")
+
+				var hostGhOut bytes.Buffer
+				err = tc.dockerHelper.Run(
+					ctx,
+					[]string{
+						"run",
+						"--rm",
+						sharedImage,
+						"sh",
+						"-lc",
+						commandPresenceCheck("gh"),
+					},
+					nil,
+					&hostGhOut,
+					io.Discard,
+				)
+				framework.ExpectNoError(err)
+				gomega.Expect(strings.TrimSpace(hostGhOut.String())).
+					To(gomega.Equal("missing"), "shared image should not gain gh")
+
+				ginkgo.By("starting project B")
+				tempDirB, _, err := tc.setupAndStartWorkspace(
+					ctx,
+					projectBPath,
+					"--debug",
+				)
+				framework.ExpectNoError(err)
+
+				nodeVersionOutput, err := tc.execSSH(ctx, tempDirB, "node --version")
+				framework.ExpectNoError(err)
+				gomega.Expect(strings.TrimSpace(nodeVersionOutput)).
+					To(gomega.MatchRegexp(`^v\d+\.`))
+
+				ghLookupOutput, err := tc.execSSH(
+					ctx,
+					tempDirB,
+					fmt.Sprintf("sh -lc '%s'", commandPresenceCheck("gh")),
+				)
+				framework.ExpectNoError(err)
+				gomega.Expect(strings.TrimSpace(ghLookupOutput)).
+					To(gomega.Equal("missing"), "project B should not inherit project A's github-cli feature")
+
+				imageIDAfterB, err := tc.inspectImageID(ctx, sharedImage)
+				framework.ExpectNoError(err)
+				gomega.Expect(imageIDAfterB).
+					To(gomega.Equal(initialImageID), "shared image tag should stay unchanged after project B")
+
+				nodeLookupOutput, err := tc.execSSH(
+					ctx,
+					tempDirA,
+					fmt.Sprintf("sh -lc '%s'", commandPresenceCheck("node")),
+				)
+				framework.ExpectNoError(err)
+				gomega.Expect(strings.TrimSpace(nodeLookupOutput)).
+					To(gomega.Equal("missing"), "project A should not inherit project B's node feature")
+			},
+			ginkgo.SpecTimeout(framework.GetTimeout()*4),
+		)
 
 		ginkgo.It("array based commands", func(ctx context.Context) {
 			tempDir, err := setupWorkspace(

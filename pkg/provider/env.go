@@ -22,6 +22,11 @@ func combineOptions(
 	return options
 }
 
+// ToEnvironment builds the full environment for provider subprocess execution.
+// The provider name is available to subprocesses as PROVIDER_ID (set by GetBaseEnvironment).
+// Do NOT add DEVPOD_PROVIDER to the subprocess env — it is reserved by the --provider
+// CLI flag via inheritFlagsFromEnvironment in cmd/root.go, and setting it would override
+// the global provider selection for any child devpod process.
 func ToEnvironment(
 	workspace *Workspace,
 	machine *Machine,

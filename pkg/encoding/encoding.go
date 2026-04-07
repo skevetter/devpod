@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/denisbrodbeck/machineid"
 	"github.com/google/uuid"
+	"github.com/skevetter/devpod/pkg/machineid"
 	"github.com/skevetter/devpod/pkg/util"
 	"github.com/skevetter/log"
 )

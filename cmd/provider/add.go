@@ -33,8 +33,9 @@ func NewAddCmd(f *flags.GlobalFlags) *cobra.Command {
 		GlobalFlags: f,
 	}
 	addCmd := &cobra.Command{
-		Use:   "add [URL or path]",
+		Use:   "add [name, GitHub link, URL or path]",
 		Short: "Adds a new provider to DevPod",
+		Args:  cobra.MaximumNArgs(1),
 		PreRunE: func(cobraCommand *cobra.Command, args []string) error {
 			if cmd.FromExisting != "" {
 				return cobraCommand.MarkFlagRequired("name")
@@ -56,7 +57,7 @@ func NewAddCmd(f *flags.GlobalFlags) *cobra.Command {
 		BoolVar(&cmd.SingleMachine, "single-machine", false, "If enabled will use a single machine for all workspaces")
 	addCmd.Flags().
 		StringVar(&cmd.Name, "name", "",
-			"The name for the new provider. If not specified, the name from the provider's configuration file will be used.")
+			"The name for the new provider. If not specified, the name from the provider's configuration file will be used")
 	addCmd.Flags().
 		StringVar(&cmd.FromExisting, "from-existing", "",
 			"The name of an existing provider to use as a template. Needs to be used in conjunction with the --name flag")
@@ -69,23 +70,29 @@ func NewAddCmd(f *flags.GlobalFlags) *cobra.Command {
 }
 
 func (cmd *AddCmd) Run(ctx context.Context, devPodConfig *config.Config, args []string) error {
-	if len(args) != 1 && cmd.FromExisting == "" {
-		return fmt.Errorf("please specify either a local file, URL or Git repository. " +
-			"E.g. devpod provider add https://path/to/my/provider.yaml")
-	} else if cmd.Name != "" && provider.ProviderNameRegEx.MatchString(cmd.Name) {
-		return fmt.Errorf("provider name can only include smaller case letters, numbers or dashes")
-	} else if cmd.Name != "" && len(cmd.Name) > 32 {
-		return fmt.Errorf("provider name cannot be longer than 32 characters")
-	} else if cmd.FromExisting != "" && devPodConfig.Current() != nil && devPodConfig.Current().Providers[cmd.FromExisting] == nil {
-		return fmt.Errorf("provider %s does not exist", cmd.FromExisting)
+	providerName := cmd.Name
+
+	if providerName != "" {
+		if provider.ProviderNameRegEx.MatchString(providerName) {
+			return fmt.Errorf(
+				"provider name can only include lowercase letters, numbers or dashes",
+			)
+		}
+		if len(providerName) > 32 {
+			return fmt.Errorf("provider name cannot be longer than 32 characters")
+		}
 	}
 
 	var providerConfig *provider.ProviderConfig
 	var options []string
 	if cmd.FromExisting != "" {
+		if devPodConfig.Current() == nil ||
+			devPodConfig.Current().Providers[cmd.FromExisting] == nil {
+			return fmt.Errorf("provider %s does not exist", cmd.FromExisting)
+		}
 		providerWithOptions, err := workspace.CloneProvider(
 			devPodConfig,
-			cmd.Name,
+			providerName,
 			cmd.FromExisting,
 			log.Default,
 		)
@@ -100,7 +107,11 @@ func (cmd *AddCmd) Run(ctx context.Context, devPodConfig *config.Config, args []
 			cmd.Options,
 		)
 	} else {
-		c, err := workspace.AddProvider(devPodConfig, cmd.Name, args[0], log.Default)
+		if len(args) != 1 {
+			return fmt.Errorf("please specify either a URL or path, " +
+				"e.g. devpod provider add https://path/to/my/provider.yaml")
+		}
+		c, err := workspace.AddProvider(devPodConfig, providerName, args[0], log.Default)
 		if err != nil {
 			return err
 		}
