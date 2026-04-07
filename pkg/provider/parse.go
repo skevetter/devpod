@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/blang/semver/v4"
-	"github.com/ghodss/yaml"
 	"github.com/skevetter/devpod/pkg/types"
+	"sigs.k8s.io/yaml"
 )
 
 var ProviderNameRegEx = regexp.MustCompile(`[^a-z0-9\-]+`)
