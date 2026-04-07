@@ -1,6 +1,7 @@
 package language
 
 import (
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -160,7 +161,7 @@ func DetectLanguage(startPath string) (ProgrammingLanguage, error) {
 	}
 
 	if fileInfo.Mode().IsRegular() {
-		return None, nil
+		return None, fmt.Errorf("path is a regular file, not a directory: %s", root)
 	}
 
 	language := detectLanguageByExtension(root, maxFiles)
