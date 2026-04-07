@@ -402,7 +402,11 @@ func (o *VsCodeServer) findInDir(root, binName string) string {
 	}
 
 	if len(candidates) > 1 {
-		o.log.Debugf("multiple server binaries found (count=%d), chose newest: %s", len(candidates), best.path)
+		o.log.Debugf(
+			"multiple server binaries found (count=%d), chose newest: %s",
+			len(candidates),
+			best.path,
+		)
 	}
 
 	return best.path
