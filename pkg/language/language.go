@@ -204,7 +204,7 @@ func detectLanguageByExtension(root string, maxFiles int) ProgrammingLanguage {
 			return nil
 		}
 
-		if lang, ok := extensionToLanguage[filepath.Ext(d.Name())]; ok {
+		if lang, ok := extensionToLanguage[strings.ToLower(filepath.Ext(d.Name()))]; ok {
 			counts[lang]++
 		}
 		fileCount++
@@ -214,7 +214,7 @@ func detectLanguageByExtension(root string, maxFiles int) ProgrammingLanguage {
 	best := None
 	max := 0
 	for lang, count := range counts {
-		if count > max {
+		if count > max || (count == max && lang < best) {
 			best = lang
 			max = count
 		}
