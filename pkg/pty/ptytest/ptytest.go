@@ -15,10 +15,15 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/acarl005/stripansi"
 	"github.com/skevetter/devpod/pkg/pty"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/atomic"
+)
+
+// ansiEscape matches ANSI/VT100 escape sequences for stripping from log output.
+var ansiEscape = regexp.MustCompile(
+	"[\u001B\u009B][[\\]()#;?]*(?:(?:(?:[a-zA-Z\\d]*(?:;[a-zA-Z\\d]*)*)?\u0007)|" +
+		"(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PRZcf-ntqry=><~]))",
 )
 
 // Timeout constants inlined from coder/testutil.
@@ -136,7 +141,7 @@ func drainLog(ex *outExpecter, logr io.Reader, done chan struct{}) {
 	for {
 		line, err := r.ReadString('\n')
 		if line != "" {
-			ex.logf("%q", stripansi.Strip(strings.TrimRight(line, "\n")))
+			ex.logf("%q", ansiEscape.ReplaceAllString(strings.TrimRight(line, "\n"), ""))
 		}
 		if err != nil {
 			return
@@ -220,7 +225,7 @@ func (e *outExpecter) ExpectNoMatchBefore(ctx context.Context, match, before str
 		)
 		return ""
 	}
-	e.logf("matched %q = %q", before, stripansi.Strip(buffer.String()))
+	e.logf("matched %q = %q", before, ansiEscape.ReplaceAllString(buffer.String(), ""))
 	return buffer.String()
 }
 

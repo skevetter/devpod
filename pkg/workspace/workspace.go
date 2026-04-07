@@ -28,7 +28,7 @@ import (
 )
 
 var errProvideWorkspaceArg = errors.New(
-	"please provide a workspace name. E.g. 'devpod up ./my-folder', " +
+	"please provide a workspace name, e.g. 'devpod up ./my-folder', " +
 		"'devpod up github.com/my-org/my-repo' or 'devpod up ubuntu'")
 
 // RemoteCreator defines the interface for clients that support remote workspace creation.
@@ -67,7 +67,7 @@ func Resolve(
 	if params.DesiredID != "" {
 		if providerpkg.ProviderNameRegEx.MatchString(params.DesiredID) {
 			return nil, fmt.Errorf(
-				"workspace name can only include smaller case letters, numbers or dashes",
+				"workspace name can only include lower case letters, numbers or dashes",
 			)
 		} else if len(params.DesiredID) > 48 {
 			return nil, fmt.Errorf("workspace name cannot be longer than 48 characters")

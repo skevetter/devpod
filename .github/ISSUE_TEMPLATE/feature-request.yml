@@ -1,0 +1,75 @@
+name: Feature Request
+description: Suggest an idea or improvement
+title: "[Feature]: "
+labels:
+  - kind/feature
+body:
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Before submitting
+      options:
+        - label: I have searched existing issues and discussions to confirm this hasn't been requested
+          required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or motivation
+      description: What problem does this solve? Who benefits from it?
+      placeholder: "I want [goal] because [reason]..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: Describe the solution you'd like. Be as specific as possible.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What other approaches have you considered? How do other tools handle this?
+    validations:
+      required: false
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      description: Which part of DevPod does this affect?
+      multiple: true
+      options:
+        - CLI
+        - Desktop app
+        - Providers
+        - Dev containers
+        - SSH / tunneling
+        - Documentation
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: When is this feature complete? What should it do?
+      placeholder: |
+        - [ ] User can ...
+        - [ ] CLI command `devpod ...` supports ...
+        - [ ] Desktop UI shows ...
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Screenshots, mockups, links to related issues or discussions.
+    validations:
+      required: false

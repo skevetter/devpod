@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -91,4 +92,19 @@ func UserHomeDir() (string, error) {
 	}
 
 	return "", errors.New("can't determine the home directory")
+}
+
+// ExpandTilde expands environment variables and a leading ~ or ~/ to the
+// user's home directory. If the home directory cannot be determined, the
+// original path is returned unchanged.
+func ExpandTilde(path string) string {
+	path = os.ExpandEnv(path)
+	if path == "~" || strings.HasPrefix(path, "~/") {
+		home, err := UserHomeDir()
+		if err != nil {
+			return path
+		}
+		return filepath.Join(home, path[1:])
+	}
+	return path
 }

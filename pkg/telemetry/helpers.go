@@ -5,7 +5,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 
-	"github.com/denisbrodbeck/machineid"
+	"github.com/skevetter/devpod/pkg/machineid"
 	"github.com/skevetter/devpod/pkg/util"
 )
 

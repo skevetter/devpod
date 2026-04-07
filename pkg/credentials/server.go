@@ -3,6 +3,7 @@ package credentials
 import (
 	"cmp"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net"
@@ -162,7 +163,11 @@ func handleGitSSHSignatureRequest(
 	response, err := client.GitSSHSignature(ctx, &tunnel.Message{Message: string(out)})
 	if err != nil {
 		log.WithFields(logrus.Fields{"error": err}).Error("error receiving git SSH signature")
-		return fmt.Errorf("get git ssh signature: %w", err)
+		writer.Header().Set("Content-Type", "application/json")
+		writer.WriteHeader(http.StatusInternalServerError)
+		errJSON, _ := json.Marshal(map[string]string{"error": err.Error()})
+		_, _ = writer.Write(errJSON)
+		return nil // error already written to response
 	}
 
 	writer.Header().Set("Content-Type", "application/json")

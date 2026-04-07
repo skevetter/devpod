@@ -2,10 +2,14 @@ package util
 
 import (
 	"os"
+	"path/filepath"
 	"runtime"
 	"testing"
 
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
+	gotoolsassert "gotest.tools/assert"
 )
 
 func TestUserHomeDir(t *testing.T) {
@@ -56,8 +60,65 @@ func TestUserHomeDir(t *testing.T) {
 			_ = os.Setenv("USERPROFILE", test.Input.userProfile)
 
 			got, err := UserHomeDir()
-			assert.NilError(t, err, test.Name)
-			assert.Equal(t, test.Expect, got)
+			gotoolsassert.NilError(t, err, test.Name)
+			gotoolsassert.Equal(t, test.Expect, got)
 		})
 	}
+}
+
+type ExpandTildeSuite struct {
+	suite.Suite
+	home string
+}
+
+func TestExpandTildeSuite(t *testing.T) {
+	suite.Run(t, new(ExpandTildeSuite))
+}
+
+func (s *ExpandTildeSuite) SetupSuite() {
+	home, err := UserHomeDir()
+	require.NoError(s.T(), err)
+	s.home = home
+}
+
+func (s *ExpandTildeSuite) TestExpandsTildeSlash() {
+	got := ExpandTilde("~/foo.sock")
+	assert.Equal(s.T(), filepath.Join(s.home, "foo.sock"), got)
+}
+
+func (s *ExpandTildeSuite) TestExpandsBareTilde() {
+	got := ExpandTilde("~")
+	assert.Equal(s.T(), s.home, got)
+}
+
+func (s *ExpandTildeSuite) TestNoExpansionForAbsolutePath() {
+	got := ExpandTilde("/tmp/ssh-agent.sock")
+	assert.Equal(s.T(), "/tmp/ssh-agent.sock", got)
+}
+
+func (s *ExpandTildeSuite) TestEmptyReturnsEmpty() {
+	got := ExpandTilde("")
+	assert.Empty(s.T(), got)
+}
+
+func (s *ExpandTildeSuite) TestNoExpansionForRelativePath() {
+	got := ExpandTilde("./local.sock")
+	assert.Equal(s.T(), "./local.sock", got)
+}
+
+func (s *ExpandTildeSuite) TestNoExpansionForTildeUser() {
+	got := ExpandTilde("~otheruser/foo")
+	assert.Equal(s.T(), "~otheruser/foo", got)
+}
+
+func (s *ExpandTildeSuite) TestExpandsHomeEnvVar() {
+	s.T().Setenv("HOME", s.home)
+	got := ExpandTilde("$HOME/foo.sock")
+	assert.Equal(s.T(), filepath.Join(s.home, "foo.sock"), got)
+}
+
+func (s *ExpandTildeSuite) TestExpandsBracedHomeEnvVar() {
+	s.T().Setenv("HOME", s.home)
+	got := ExpandTilde("${HOME}/foo.sock")
+	assert.Equal(s.T(), filepath.Join(s.home, "foo.sock"), got)
 }

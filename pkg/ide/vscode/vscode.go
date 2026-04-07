@@ -1,6 +1,7 @@
 package vscode
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -227,8 +228,9 @@ func (o *VsCodeServer) findServerBinaryPath(location string) string {
 		name string
 		fn   func() string
 	}{
-		{"system PATH", func() string { return o.findInSystemPath(cfg.binName) }},
+		{"running process", func() string { return o.findRunningServer(cfg.binName) }},
 		{"install dir", func() string { return o.findInDir(location, cfg.binName) }},
+		{"system PATH", func() string { return o.findInSystemPath(cfg.binName) }},
 	}
 
 	for _, s := range searches {
@@ -277,10 +279,88 @@ func (o *VsCodeServer) findInSystemPath(binName string) string {
 	return path
 }
 
+// findRunningServer looks for a running process whose command line contains
+// the server binary name, then extracts the executable path. It reads
+// /proc/*/cmdline directly to avoid a dependency on pgrep/procps.
+func (o *VsCodeServer) findRunningServer(binName string) string {
+	entries, err := os.ReadDir("/proc")
+	if err != nil {
+		o.log.Debugf("cannot read /proc, skipping process discovery: %v", err)
+		return ""
+	}
+
+	for _, entry := range entries {
+		if !entry.IsDir() || !isNumeric(entry.Name()) {
+			continue
+		}
+
+		cmdline, err := os.ReadFile(filepath.Join("/proc", entry.Name(), "cmdline"))
+		if err != nil {
+			continue
+		}
+
+		path := matchServerProcess(cmdline, binName)
+		if path != "" {
+			o.log.Debugf("found running server process (pid=%s, path=%s)", entry.Name(), path)
+			return path
+		}
+	}
+
+	return ""
+}
+
+// matchServerProcess checks whether a /proc cmdline (NUL-delimited) belongs
+// to a VS Code server process and returns the binary path if it does.
+func matchServerProcess(cmdline []byte, binName string) string {
+	if len(cmdline) == 0 {
+		return ""
+	}
+
+	args := bytes.Split(cmdline, []byte{0})
+	if len(args) == 0 {
+		return ""
+	}
+
+	// The server binary is a shell wrapper that starts node, so the cmdline
+	// typically looks like: /path/to/.../bin/code-server --host ...
+	// But it could also be invoked by sh: /bin/sh /path/to/code-server ...
+	for _, arg := range args {
+		s := string(arg)
+		if filepath.Base(s) == binName {
+			// Resolve to absolute path if possible
+			if abs, err := filepath.Abs(s); err == nil {
+				s = abs
+			}
+			return s
+		}
+	}
+
+	return ""
+}
+
+func isNumeric(s string) bool {
+	for _, c := range s {
+		if c < '0' || c > '9' {
+			return false
+		}
+	}
+	return len(s) > 0
+}
+
+// findInDir walks root looking for files named binName, collecting all
+// candidates. When multiple matches exist (e.g. several VS Code server
+// versions), it returns the one whose parent directory has the most recent
+// modification time, so that an auto-updated server is preferred over a
+// stale one.
 func (o *VsCodeServer) findInDir(root, binName string) string {
-	var found string
+	type candidate struct {
+		path    string
+		modTime time.Time
+	}
+	var candidates []candidate
+
 	_ = filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
-		if err != nil || found != "" {
+		if err != nil {
 			return filepath.SkipDir
 		}
 
@@ -299,13 +379,37 @@ func (o *VsCodeServer) findInDir(root, binName string) string {
 		}
 
 		if !d.IsDir() && d.Name() == binName {
-			found = path
-			return filepath.SkipAll
+			dirInfo, err := os.Stat(filepath.Dir(path))
+			if err != nil {
+				return nil
+			}
+			candidates = append(candidates, candidate{path: path, modTime: dirInfo.ModTime()})
 		}
 
 		return nil
 	})
-	return found
+
+	if len(candidates) == 0 {
+		return ""
+	}
+
+	// Return the candidate with the newest parent directory mtime.
+	best := candidates[0]
+	for _, c := range candidates[1:] {
+		if c.modTime.After(best.modTime) {
+			best = c
+		}
+	}
+
+	if len(candidates) > 1 {
+		o.log.Debugf(
+			"multiple server binaries found (count=%d), chose newest: %s",
+			len(candidates),
+			best.path,
+		)
+	}
+
+	return best.path
 }
 
 func (o *VsCodeServer) validateBinary(binPath string) bool {

@@ -53,7 +53,7 @@ func (cmd *CreateCmd) Run(ctx context.Context, context string) error {
 
 	// verify name
 	if provider2.ProviderNameRegEx.MatchString(context) {
-		return fmt.Errorf("context name can only include smaller case letters, numbers or dashes")
+		return fmt.Errorf("context name can only include lower case letters, numbers or dashes")
 	} else if len(context) > 48 {
 		return fmt.Errorf("context name cannot be longer than 48 characters")
 	}

@@ -19,7 +19,7 @@ const (
 var Options = ide.Options{
 	BindAddressOption: {
 		Name:        BindAddressOption,
-		Description: "The address to bind the server to locally. E.g. 0.0.0.0:12345",
+		Description: "The address to bind the server to locally, e.g. 0.0.0.0:12345",
 		Default:     "",
 	},
 	OpenOption: {

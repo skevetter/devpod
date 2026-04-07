@@ -1,8 +1,6 @@
 package provider
 
 import (
-	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -11,6 +9,7 @@ import (
 	devcontainerconfig "github.com/skevetter/devpod/pkg/devcontainer/config"
 	"github.com/skevetter/devpod/pkg/git"
 	"github.com/skevetter/devpod/pkg/types"
+	"github.com/skevetter/devpod/pkg/util"
 )
 
 var (
@@ -339,11 +338,7 @@ func ParseWorkspaceSource(source string) *WorkspaceSource {
 			GitSubPath:     gitSubdir,
 		}
 	} else if after, ok := strings.CutPrefix(source, WorkspaceSourceLocal); ok {
-		// Expand home directory references (~) in the path.
-		if strings.HasPrefix(after, "~/") {
-			home, _ := os.UserHomeDir()
-			after = filepath.Join(home, after[2:])
-		}
+		after = util.ExpandTilde(after)
 		return &WorkspaceSource{
 			LocalFolder: after,
 		}

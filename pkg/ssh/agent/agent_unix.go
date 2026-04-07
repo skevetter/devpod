@@ -5,6 +5,7 @@ package agent
 import (
 	"os"
 
+	"github.com/skevetter/devpod/pkg/util"
 	"golang.org/x/crypto/ssh"
 	gosshagent "golang.org/x/crypto/ssh/agent"
 )
@@ -12,7 +13,7 @@ import (
 func GetSSHAuthSocket() string {
 	sshAuthSocket := os.Getenv("SSH_AUTH_SOCK")
 	if sshAuthSocket != "" {
-		return sshAuthSocket
+		return util.ExpandTilde(sshAuthSocket)
 	}
 
 	return ""
