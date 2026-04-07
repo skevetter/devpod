@@ -3,24 +3,31 @@
 package agent
 
 import (
+	"context"
 	"os"
 	"os/signal"
 	"syscall"
 )
 
-// RunProcessReaper starts a goroutine that reaps zombie child processes.
+// RunProcessReaper reaps zombie child processes until ctx is cancelled.
 // This is needed when running as PID 1 (e.g. in a container).
-func RunProcessReaper() {
+func RunProcessReaper(ctx context.Context) {
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, syscall.SIGCHLD)
 	go func() {
-		c := make(chan os.Signal, 1)
-		signal.Notify(c, syscall.SIGCHLD)
-		for range c {
-			for {
-				pid, _ := syscall.Wait4(-1, nil, syscall.WNOHANG, nil)
-				if pid <= 0 {
-					break
-				}
+		<-ctx.Done()
+		signal.Stop(c)
+		close(c)
+	}()
+	for range c {
+		for {
+			pid, err := syscall.Wait4(-1, nil, syscall.WNOHANG, nil)
+			if err == syscall.EINTR {
+				continue
+			}
+			if pid <= 0 {
+				break
 			}
 		}
-	}()
+	}
 }

@@ -86,8 +86,7 @@ func (cmd *DaemonCmd) Run(c *cobra.Command, args []string) error {
 	// Start process reaper.
 	if os.Getpid() == 1 {
 		g.Go(func() error {
-			agentd.RunProcessReaper()
-			<-ctx.Done()
+			agentd.RunProcessReaper(ctx)
 			return nil
 		})
 	}
