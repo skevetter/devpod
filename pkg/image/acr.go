@@ -5,19 +5,19 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
-	"os"
 	"regexp"
 	"strings"
 	"time"
 
-	"github.com/Azure/go-autorest/autorest/adal"
-	"github.com/Azure/go-autorest/autorest/azure/auth"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/docker/docker-credential-helpers/credentials"
 )
 
-var acrRE = regexp.MustCompile(`.*\.azurecr\.io|.*\.azurecr\.cn|.*\.azurecr\.de|.*\.azurecr\.us`)
+var acrRE = regexp.MustCompile(`^.+\.azurecr\.(io|cn|de|us)$`)
 
 const (
 	mcrHostname   = "mcr.microsoft.com"
@@ -48,14 +48,22 @@ func (a *acrCredHelper) Get(serverURL string) (string, string, error) {
 		return "", "", errors.New("serverURL does not refer to Azure Container Registry")
 	}
 
-	spToken, settings, err := getServicePrincipalToken()
+	ctx, cancel := context.WithTimeout(context.Background(), acrTimeout)
+	defer cancel()
+
+	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to acquire sp token: %w", err)
+		return "", "", fmt.Errorf("failed to create azure credential: %w", err)
 	}
 
-	refreshToken, err := exchangeForACRRefreshToken(
-		serverURL, spToken, settings.Values[auth.TenantID],
-	)
+	token, err := cred.GetToken(ctx, policy.TokenRequestOptions{
+		Scopes: []string{"https://management.azure.com/.default"},
+	})
+	if err != nil {
+		return "", "", fmt.Errorf("failed to acquire access token: %w", err)
+	}
+
+	refreshToken, err := exchangeForACRRefreshToken(ctx, serverURL, token.Token)
 	if err != nil {
 		return "", "", fmt.Errorf("failed to acquire refresh token: %w", err)
 	}
@@ -74,110 +82,18 @@ func isACRRegistry(input string) bool {
 	return acrRE.MatchString(serverURL.Hostname())
 }
 
-func getServicePrincipalToken() (
-	*adal.ServicePrincipalToken, auth.EnvironmentSettings, error,
-) {
-	settings, err := auth.GetSettingsFromEnvironment()
-	if err != nil {
-		return nil, auth.EnvironmentSettings{}, fmt.Errorf(
-			"failed to get auth settings from environment: %w", err,
-		)
-	}
-
-	spToken, err := newServicePrincipalToken(
-		settings, settings.Environment.ResourceManagerEndpoint,
-	)
-	if err != nil {
-		return nil, auth.EnvironmentSettings{}, fmt.Errorf(
-			"failed to initialise sp token config: %w", err,
-		)
-	}
-
-	return spToken, settings, nil
-}
-
-func newServicePrincipalToken(
-	settings auth.EnvironmentSettings, resource string,
-) (*adal.ServicePrincipalToken, error) {
-	// 1. Client Credentials
-	if cc, err := settings.GetClientCredentials(); err == nil {
-		oAuthConfig, oauthErr := adal.NewOAuthConfig(
-			settings.Environment.ActiveDirectoryEndpoint, cc.TenantID,
-		)
-		if oauthErr != nil {
-			return nil, fmt.Errorf("failed to initialise OAuthConfig: %w", oauthErr)
-		}
-		return adal.NewServicePrincipalToken(
-			*oAuthConfig, cc.ClientID, cc.ClientSecret, resource,
-		)
-	}
-
-	// 2. Federated OIDC JWT assertion
-	if jwt, jwtErr := lookupFederatedJWT(); jwtErr == nil {
-		clientID := os.Getenv("AZURE_CLIENT_ID")
-		if clientID == "" {
-			return nil, fmt.Errorf("AZURE_CLIENT_ID not set")
-		}
-		tenantID := os.Getenv("AZURE_TENANT_ID")
-		if tenantID == "" {
-			return nil, fmt.Errorf("AZURE_TENANT_ID not set")
-		}
-		oAuthConfig, oauthErr := adal.NewOAuthConfig(
-			settings.Environment.ActiveDirectoryEndpoint, tenantID,
-		)
-		if oauthErr != nil {
-			return nil, fmt.Errorf("failed to initialise OAuthConfig: %w", oauthErr)
-		}
-		return adal.NewServicePrincipalTokenFromFederatedTokenCallback(
-			*oAuthConfig, clientID,
-			func() (string, error) { return jwt, nil },
-			resource,
-		)
-	}
-
-	// 3. MSI
-	return adal.NewServicePrincipalTokenFromManagedIdentity(
-		resource, &adal.ManagedIdentityOptions{
-			ClientID: os.Getenv("AZURE_CLIENT_ID"),
-		},
-	)
-}
-
-func lookupFederatedJWT() (string, error) {
-	if jwt, ok := os.LookupEnv("AZURE_FEDERATED_TOKEN"); ok {
-		return jwt, nil
-	}
-	if jwtFile, ok := os.LookupEnv("AZURE_FEDERATED_TOKEN_FILE"); ok {
-		b, err := os.ReadFile(jwtFile) //nolint:gosec // path from trusted env var
-		if err != nil {
-			return "", err
-		}
-		return string(b), nil
-	}
-	return "", fmt.Errorf("no federated JWT found")
-}
-
 func exchangeForACRRefreshToken(
+	ctx context.Context,
 	serverURL string,
-	principalToken *adal.ServicePrincipalToken,
-	tenantID string,
+	accessToken string,
 ) (string, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), acrTimeout)
-	defer cancel()
-
-	principalToken.MaxMSIRefreshAttempts = 1
-	if err := principalToken.EnsureFreshWithContext(ctx); err != nil {
-		return "", fmt.Errorf("error refreshing sp token: %w", err)
-	}
-
 	registryURL := "https://" + serverURL
 	exchangeURL := registryURL + "/oauth2/exchange"
 
 	form := url.Values{
 		"grant_type":   {"access_token"},
 		"service":      {serverURL},
-		"tenant":       {tenantID},
-		"access_token": {principalToken.Token().AccessToken},
+		"access_token": {accessToken},
 	}
 
 	req, err := http.NewRequestWithContext(
@@ -195,7 +111,12 @@ func exchangeForACRRefreshToken(
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("token exchange returned status %d", resp.StatusCode)
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
+		return "", fmt.Errorf(
+			"token exchange returned status %d: %s",
+			resp.StatusCode,
+			string(body),
+		)
 	}
 
 	var result struct {
