@@ -285,8 +285,7 @@ func (o *VsCodeServer) findInSystemPath(binName string) string {
 func (o *VsCodeServer) findRunningServer(binName string) string {
 	entries, err := os.ReadDir("/proc")
 	if err != nil {
-		o.log.WithFields(logrus.Fields{"error": err}).
-			Debug("cannot read /proc, skipping process discovery")
+		o.log.Debugf("cannot read /proc, skipping process discovery: %v", err)
 		return ""
 	}
 
@@ -302,10 +301,7 @@ func (o *VsCodeServer) findRunningServer(binName string) string {
 
 		path := matchServerProcess(cmdline, binName)
 		if path != "" {
-			o.log.WithFields(logrus.Fields{
-				"pid":  entry.Name(),
-				"path": path,
-			}).Debug("found running server process")
+			o.log.Debugf("found running server process (pid=%s, path=%s)", entry.Name(), path)
 			return path
 		}
 	}
@@ -406,10 +402,7 @@ func (o *VsCodeServer) findInDir(root, binName string) string {
 	}
 
 	if len(candidates) > 1 {
-		o.log.WithFields(logrus.Fields{
-			"count":  len(candidates),
-			"chosen": best.path,
-		}).Debug("multiple server binaries found, chose newest")
+		o.log.Debugf("multiple server binaries found (count=%d), chose newest: %s", len(candidates), best.path)
 	}
 
 	return best.path
