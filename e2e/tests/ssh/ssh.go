@@ -146,8 +146,10 @@ var _ = ginkgo.Describe("devpod ssh test suite", ginkgo.Label("ssh"), ginkgo.Ord
 
 			// Verify helper installation, git config, and a signed commit
 			// in a single SSH session with --start-services so the
-			// credentials server tunnel is active.
+			// credentials server tunnel is active. The helper is installed
+			// asynchronously by the credentials server, so retry briefly.
 			commitCmd := strings.Join([]string{
+				"for i in $(seq 1 30); do test -x /usr/local/bin/devpod-ssh-signature && break; sleep 1; done",
 				"test -x /usr/local/bin/devpod-ssh-signature",
 				"test \"$(git config --global gpg.ssh.program)\" = devpod-ssh-signature",
 				"test \"$(git config --global gpg.format)\" = ssh",
