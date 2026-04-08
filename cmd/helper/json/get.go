@@ -43,7 +43,9 @@ func jsonPathToGjson(path string) (string, error) {
 	if path == "" || path == "$" || path == "$." {
 		return "@this", nil
 	}
-	if strings.Contains(path, "..") || strings.Contains(path, "[?(") || strings.Contains(path, "*") {
+	if strings.Contains(path, "..") ||
+		strings.Contains(path, "[?(") ||
+		strings.Contains(path, "*") {
 		return "", fmt.Errorf("unsupported jsonpath expression: %s", path)
 	}
 
@@ -69,25 +71,22 @@ func writeResult(result gjson.Result) {
 	}
 }
 
+func (cmd *GetCmd) readInput() ([]byte, error) {
+	if cmd.File != "" {
+		return os.ReadFile(cmd.File) //nolint:gosec // file path comes from CLI flag
+	}
+	return io.ReadAll(os.Stdin)
+}
+
 // Run executes the get command.
 func (cmd *GetCmd) Run(ctx context.Context, args []string) error {
 	if len(args) == 0 {
 		return fmt.Errorf("jsonpath expected")
 	}
 
-	var jsonBytes []byte
-	if cmd.File != "" {
-		var err error
-		jsonBytes, err = os.ReadFile(cmd.File) //nolint:gosec // file path comes from CLI flag
-		if err != nil {
-			return err
-		}
-	} else {
-		var err error
-		jsonBytes, err = io.ReadAll(os.Stdin)
-		if err != nil {
-			return err
-		}
+	jsonBytes, err := cmd.readInput()
+	if err != nil {
+		return err
 	}
 
 	if !gjson.ValidBytes(jsonBytes) {
