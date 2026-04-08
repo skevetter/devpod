@@ -518,7 +518,7 @@ func (l *localServer) listWorkspace(
 			r.Context(), managementClient, p, ownerFilter,
 		)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusNoContent)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		instances = append(instances, projectInstances...)
