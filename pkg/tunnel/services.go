@@ -51,6 +51,7 @@ type RunServicesOptions struct {
 	ConfigureDockerCredentials     bool
 	ConfigureGitCredentials        bool
 	ConfigureGitSSHSignatureHelper bool
+	GitSSHSigningKey               string
 	Log                            log.Logger
 }
 
@@ -104,16 +105,24 @@ func runTunnelServer(ctx context.Context, cancel context.CancelFunc, p tunnelSer
 }
 
 // addGitSSHSigningKey adds SSH signing key to command if configured.
-func addGitSSHSigningKey(command string, log log.Logger) string {
-	format, userSigningKey, err := gitsshsigning.ExtractGitConfiguration()
-	if err != nil {
-		log.Debugf("failed to extract git configuration: %v", err)
-		return command
+// When explicitKey is set (from --git-ssh-signing-key flag), it takes
+// precedence over the host's .gitconfig. This ensures signing works
+// even when user.signingkey is not in the host git configuration.
+func addGitSSHSigningKey(command string, explicitKey string, log log.Logger) string {
+	userSigningKey := explicitKey
+	if userSigningKey == "" {
+		format, extracted, err := gitsshsigning.ExtractGitConfiguration()
+		if err != nil {
+			log.Debugf("failed to extract git configuration: %v", err)
+			return command
+		}
+		if format != gitsshsigning.GPGFormatSSH || extracted == "" {
+			return command
+		}
+		userSigningKey = extracted
 	}
-	if format == gitsshsigning.GPGFormatSSH && userSigningKey != "" {
-		encodedKey := base64.StdEncoding.EncodeToString([]byte(userSigningKey))
-		command += fmt.Sprintf(" --git-user-signing-key %s", encodedKey)
-	}
+	encodedKey := base64.StdEncoding.EncodeToString([]byte(userSigningKey))
+	command += fmt.Sprintf(" --git-user-signing-key %s", encodedKey)
 	return command
 }
 
@@ -128,7 +137,7 @@ func buildCredentialsCommand(opts RunServicesOptions) string {
 		command += " --configure-git-helper"
 	}
 	if opts.ConfigureGitSSHSignatureHelper {
-		command = addGitSSHSigningKey(command, opts.Log)
+		command = addGitSSHSigningKey(command, opts.GitSSHSigningKey, opts.Log)
 	}
 	if opts.ConfigureDockerCredentials {
 		command += " --configure-docker-helper"

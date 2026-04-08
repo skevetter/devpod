@@ -469,6 +469,7 @@ func (o *ideOpener) open(
 			user,
 			ideOptions,
 			o.cmd.SSHAuthSockID,
+			o.cmd.GitSSHSigningKey,
 			o.log,
 		)
 
@@ -487,6 +488,7 @@ func (o *ideOpener) open(
 			user,
 			ideOptions,
 			o.cmd.SSHAuthSockID,
+			o.cmd.GitSSHSigningKey,
 			o.log,
 		)
 
@@ -499,6 +501,7 @@ func (o *ideOpener) open(
 			user,
 			ideOptions,
 			o.cmd.SSHAuthSockID,
+			o.cmd.GitSSHSigningKey,
 			o.log,
 		)
 
@@ -842,6 +845,7 @@ func startJupyterNotebookInBrowser(
 	user string,
 	ideOptions map[string]config.OptionValue,
 	authSockID string,
+	gitSSHSigningKey string,
 	logger log.Logger,
 ) error {
 	if forwardGpg {
@@ -888,6 +892,7 @@ func startJupyterNotebookInBrowser(
 		false,
 		extraPorts,
 		authSockID,
+		gitSSHSigningKey,
 		logger,
 	)
 }
@@ -900,6 +905,7 @@ func startRStudioInBrowser(
 	user string,
 	ideOptions map[string]config.OptionValue,
 	authSockID string,
+	gitSSHSigningKey string,
 	logger log.Logger,
 ) error {
 	if forwardGpg {
@@ -945,6 +951,7 @@ func startRStudioInBrowser(
 		false,
 		extraPorts,
 		authSockID,
+		gitSSHSigningKey,
 		logger,
 	)
 }
@@ -993,6 +1000,7 @@ func startVSCodeInBrowser(
 	workspaceFolder, user string,
 	ideOptions map[string]config.OptionValue,
 	authSockID string,
+	gitSSHSigningKey string,
 	logger log.Logger,
 ) error {
 	if forwardGpg {
@@ -1042,6 +1050,7 @@ func startVSCodeInBrowser(
 		forwardPorts,
 		extraPorts,
 		authSockID,
+		gitSSHSigningKey,
 		logger,
 	)
 }
@@ -1138,6 +1147,7 @@ func startBrowserTunnel(
 	forwardPorts bool,
 	extraPorts []string,
 	authSockID string,
+	gitSSHSigningKey string,
 	logger log.Logger,
 ) error {
 	// Setup a backhaul SSH connection using the remote user so there is an AUTH SOCK to use
@@ -1233,6 +1243,7 @@ func startBrowserTunnel(
 					ConfigureDockerCredentials:     configureDockerCredentials,
 					ConfigureGitCredentials:        configureGitCredentials,
 					ConfigureGitSSHSignatureHelper: configureGitSSHSignatureHelper,
+					GitSSHSigningKey:               gitSSHSigningKey,
 					Log:                            logger,
 				},
 			)
