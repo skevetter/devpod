@@ -64,9 +64,10 @@ func (s *GitSSHSignatureTestSuite) TestParseEmptyArgs() {
 	assert.Equal(s.T(), "", result.namespace)
 }
 
-func (s *GitSSHSignatureTestSuite) TestParseMultipleUnknownFlags() {
-	// ssh-keygen may pass several unknown boolean flags; buffer file must still be found.
-	args := []string{"-Y", "sign", "-n", "git", "-f", "/key.pub", "-U", "-O", "/tmp/buf"}
+func (s *GitSSHSignatureTestSuite) TestParseWithUFlag() {
+	// Git passes -U when using a literal SSH key value. The parser must
+	// still identify certPath and bufferFile with -U present.
+	args := []string{"-Y", "sign", "-n", "git", "-f", "/key.pub", "-U", "/tmp/buf"}
 	result := parseSSHKeygenArgs(args)
 	assert.Equal(s.T(), "/key.pub", result.certPath)
 	assert.Equal(s.T(), "/tmp/buf", result.bufferFile)

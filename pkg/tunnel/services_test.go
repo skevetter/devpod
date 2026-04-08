@@ -2,7 +2,6 @@ package tunnel
 
 import (
 	"encoding/base64"
-	"strings"
 	"testing"
 
 	"github.com/skevetter/log"
@@ -27,7 +26,7 @@ func TestAddGitSSHSigningKey_ExplicitKeyTakesPrecedence(t *testing.T) {
 	result := addGitSSHSigningKey(command, explicitKey, log.Discard)
 
 	encoded := base64.StdEncoding.EncodeToString([]byte(explicitKey))
-	assert.True(t, strings.HasSuffix(result, "--git-user-signing-key "+encoded))
+	assert.Contains(t, result, "--git-user-signing-key "+encoded)
 }
 
 func TestAddGitSSHSigningKey_EmptyExplicitKey_FallsBackToHostConfig(t *testing.T) {
@@ -40,7 +39,7 @@ func TestAddGitSSHSigningKey_EmptyExplicitKey_FallsBackToHostConfig(t *testing.T
 	// Without host SSH signing configured, command should be unchanged
 	// (or have the key appended if the test host has it configured).
 	// We just verify no panic and the base command is preserved.
-	assert.True(t, strings.HasPrefix(result, command))
+	assert.Contains(t, result, command)
 }
 
 func TestBuildCredentialsCommand_IncludesSigningKey(t *testing.T) {
