@@ -1,4 +1,5 @@
 {
   "name": "SSH Signing Test",
-  "image": "mcr.microsoft.com/devcontainers/go:1"
+  "image": "mcr.microsoft.com/devcontainers/go:1",
+  "forwardPorts": [8300, 7080]
 }
