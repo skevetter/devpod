@@ -121,13 +121,11 @@ func newLocalServer(
 	mux.HandleFunc("GET "+routeGitCredentials, l.getGitCredentials)
 	mux.HandleFunc("GET "+routeDockerCredentials, l.getDockerCredentials)
 
-	handler := handlers.LoggingHandler(log.Writer(logrus.DebugLevel, true), mux)
-	handler = handlers.RecoveryHandler(
+	handler := handlers.RecoveryHandler(
 		handlers.RecoveryLogger(panicLogger{log: l.log}),
 		handlers.PrintRecoveryStack(true),
-	)(
-		handler,
-	)
+	)(mux)
+	handler = handlers.LoggingHandler(log.Writer(logrus.DebugLevel, true), handler)
 	l.httpServer = &http.Server{Handler: handler}
 
 	return l, nil
