@@ -153,40 +153,70 @@ func removeGitConfigHelper(gitConfigPath, userName string) error {
 }
 
 func removeSignatureHelper(content string) string {
-	inGpgSSHSection := false
-	inGpgSection := false
-	var gpgSSHBuffer []string
+	type sectionKind int
+	const (
+		sectionNone sectionKind = iota
+		sectionGpgSSH
+		sectionGpg
+		sectionUser
+	)
+
+	current := sectionNone
+	var buf []string
 	var out []string
+
+	flush := func() {
+		switch current {
+		case sectionGpgSSH:
+			out = append(out, filterSection(buf, func(trimmed string) bool {
+				return strings.HasPrefix(trimmed, "program = "+pkgconfig.SSHSignatureHelperName)
+			})...)
+		case sectionGpg:
+			out = append(out, filterSection(buf, func(trimmed string) bool {
+				return strings.HasPrefix(trimmed, "format = ssh")
+			})...)
+		case sectionUser:
+			out = append(out, filterSection(buf, func(trimmed string) bool {
+				return strings.HasPrefix(trimmed, "signingkey = ")
+			})...)
+		}
+		buf = nil
+	}
 
 	for line := range strings.Lines(content) {
 		line = strings.TrimRight(line, "\n")
 		trimmed := strings.TrimSpace(line)
 
 		if isSectionHeader(trimmed) {
-			if inGpgSSHSection {
-				out = append(out, filterGpgSSHSection(gpgSSHBuffer)...)
-				gpgSSHBuffer = nil
+			if current != sectionNone {
+				flush()
 			}
-			inGpgSSHSection = trimmed == `[gpg "ssh"]`
-			inGpgSection = trimmed == "[gpg]"
-			if inGpgSSHSection {
-				gpgSSHBuffer = append(gpgSSHBuffer, line)
+			switch trimmed {
+			case `[gpg "ssh"]`:
+				current = sectionGpgSSH
+			case "[gpg]":
+				current = sectionGpg
+			case "[user]":
+				current = sectionUser
+			default:
+				current = sectionNone
+			}
+			if current != sectionNone {
+				buf = append(buf, line)
 				continue
 			}
 		}
 
-		if inGpgSSHSection {
-			gpgSSHBuffer = append(gpgSSHBuffer, line)
+		if current != sectionNone {
+			buf = append(buf, line)
 			continue
 		}
 
-		if !isDevpodManagedGpgKey(inGpgSection, trimmed) {
-			out = append(out, line)
-		}
+		out = append(out, line)
 	}
 
-	if inGpgSSHSection {
-		out = append(out, filterGpgSSHSection(gpgSSHBuffer)...)
+	if current != sectionNone {
+		flush()
 	}
 
 	return strings.Join(out, "\n")
@@ -196,23 +226,16 @@ func isSectionHeader(trimmed string) bool {
 	return len(trimmed) > 0 && trimmed[0] == '['
 }
 
-func isDevpodManagedGpgKey(inGpgSection bool, trimmed string) bool {
-	if !inGpgSection || len(trimmed) == 0 || trimmed[0] == '[' {
-		return false
-	}
-	return strings.HasPrefix(trimmed, "format = ssh")
-}
-
-// filterGpgSSHSection removes devpod-managed keys from a buffered [gpg "ssh"]
-// section. Returns the header + remaining user keys, or nil if no user keys remain.
-func filterGpgSSHSection(lines []string) []string {
+// filterSection removes lines matching the predicate from a buffered section.
+// Returns the header + remaining lines, or nil if no lines remain after filtering.
+func filterSection(lines []string, isManaged func(string) bool) []string {
 	if len(lines) == 0 {
 		return nil
 	}
 	var kept []string
 	for _, line := range lines[1:] {
 		trimmed := strings.TrimSpace(line)
-		if !strings.HasPrefix(trimmed, "program = "+pkgconfig.SSHSignatureHelperName) {
+		if !isManaged(trimmed) {
 			kept = append(kept, line)
 		}
 	}

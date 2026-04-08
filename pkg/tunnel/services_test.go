@@ -9,8 +9,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const testBaseCommand = "devpod agent container credentials-server --user root"
+
 func TestAddGitSSHSigningKey_ExplicitKey(t *testing.T) {
-	command := "devpod agent container credentials-server --user root"
+	command := testBaseCommand
 	result := addGitSSHSigningKey(command, "/path/to/key.pub", log.Discard)
 
 	encoded := base64.StdEncoding.EncodeToString([]byte("/path/to/key.pub"))
@@ -20,7 +22,7 @@ func TestAddGitSSHSigningKey_ExplicitKey(t *testing.T) {
 func TestAddGitSSHSigningKey_ExplicitKeyTakesPrecedence(t *testing.T) {
 	// When an explicit key is provided, it should be used regardless
 	// of what ExtractGitConfiguration might return from host .gitconfig.
-	command := "devpod agent container credentials-server --user root"
+	command := testBaseCommand
 	explicitKey := "/explicit/key.pub"
 	result := addGitSSHSigningKey(command, explicitKey, log.Discard)
 
@@ -32,7 +34,7 @@ func TestAddGitSSHSigningKey_EmptyExplicitKey_FallsBackToHostConfig(t *testing.T
 	// When explicit key is empty, the function attempts to read host .gitconfig.
 	// In a test environment without git SSH signing configured, it should
 	// return the command unchanged.
-	command := "devpod agent container credentials-server --user root"
+	command := testBaseCommand
 	result := addGitSSHSigningKey(command, "", log.Discard)
 
 	// Without host SSH signing configured, command should be unchanged
