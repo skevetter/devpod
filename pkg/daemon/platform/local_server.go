@@ -510,7 +510,7 @@ func (l *localServer) listWorkspace(
 		return
 	}
 
-	var instances []managementv1.DevPodWorkspaceInstance
+	instances := []managementv1.DevPodWorkspaceInstance{}
 	for _, p := range projectList.Items {
 		projectInstances, err := collectProjectWorkspaces(
 			r.Context(), managementClient, p, ownerFilter,
