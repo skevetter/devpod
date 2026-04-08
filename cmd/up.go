@@ -1552,7 +1552,6 @@ func collectDotfilesScriptEnvKeyvaluePairs(envFiles []string) ([]string, error) 
 	return keyValues, nil
 }
 
-
 func performGpgForwarding(
 	client client2.BaseWorkspaceClient,
 	log log.Logger,
