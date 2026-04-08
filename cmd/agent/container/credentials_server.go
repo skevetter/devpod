@@ -135,21 +135,26 @@ func (cmd *CredentialsServerCmd) Run(ctx context.Context, port int) error {
 		}(cmd.User)
 	}
 
-	// configure git ssh signature helper
+	// configure git ssh signature helper — non-fatal so that a signing
+	// setup failure does not take down the entire credentials server
+	// (git/docker credential forwarding, port forwarding, etc.)
 	if cmd.GitUserSigningKey != "" {
 		decodedKey, err := base64.StdEncoding.DecodeString(cmd.GitUserSigningKey)
 		if err != nil {
-			return fmt.Errorf("decode git ssh signature key: %w", err)
+			log.Errorf("Failed to decode git SSH signing key, signing will be unavailable: %v", err)
+		} else {
+			err = gitsshsigning.ConfigureHelper(cmd.User, string(decodedKey), log)
+			if err != nil {
+				log.Errorf(
+					"Failed to configure git SSH signature helper, signing will be unavailable: %v",
+					err,
+				)
+			} else {
+				defer func(userName string) {
+					_ = gitsshsigning.RemoveHelper(userName)
+				}(cmd.User)
+			}
 		}
-		err = gitsshsigning.ConfigureHelper(cmd.User, string(decodedKey), log)
-		if err != nil {
-			return fmt.Errorf("configure git ssh signature helper: %w", err)
-		}
-
-		// cleanup when we are done
-		defer func(userName string) {
-			_ = gitsshsigning.RemoveHelper(userName)
-		}(cmd.User)
 	}
 
 	return credentials.RunCredentialsServer(ctx, port, tunnelClient, log)

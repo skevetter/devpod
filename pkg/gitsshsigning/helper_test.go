@@ -108,15 +108,17 @@ func TestUpdateGitConfig_DifferentKey(t *testing.T) {
 	err := updateGitConfig(gitConfigPath, "", "/path/to/keyA.pub")
 	require.NoError(t, err)
 
-	// Second call with key B: since the program line already exists, it won't rewrite
+	// Second call with key B: should update to the new key
 	err = updateGitConfig(gitConfigPath, "", "/path/to/keyB.pub")
 	require.NoError(t, err)
 
 	content, err := os.ReadFile(gitConfigPath) // #nosec G304 -- test path from t.TempDir
 	require.NoError(t, err)
-	// The idempotency check looks for program = devpod-ssh-signature, so it won't
-	// overwrite when the program is already configured (even with a different key)
 	assert.Contains(t, string(content), "program = devpod-ssh-signature")
+	assert.Contains(t, string(content), "signingkey = /path/to/keyB.pub",
+		"key should be updated to the new value")
+	assert.NotContains(t, string(content), "keyA",
+		"old key should be replaced")
 }
 
 func (s *HelperTestSuite) TestRemoveSignatureHelper_DropsEmptyGpgSSHSection() {

@@ -52,6 +52,7 @@ type SSHCmd struct {
 	AgentForwarding           bool
 	GPGAgentForwarding        bool
 	GitSSHSignatureForwarding bool
+	GitSSHSigningKey          string
 
 	// ssh keepalive options
 	SSHKeepAliveInterval time.Duration `json:"sshKeepAliveInterval,omitempty"`
@@ -147,6 +148,9 @@ func NewSSHCmd(f *flags.GlobalFlags) *cobra.Command {
 	sshCmd.Flags().
 		DurationVar(&cmd.SSHKeepAliveInterval, "ssh-keepalive-interval", 55*time.Second,
 			"How often should keepalive request be made (55s)")
+	sshCmd.Flags().
+		StringVar(&cmd.GitSSHSigningKey, "git-ssh-signing-key", "",
+			"The SSH signing key to use for git commit signing inside the workspace")
 	sshCmd.Flags().StringVar(
 		&cmd.TermMode,
 		"term-mode",
@@ -517,6 +521,7 @@ func (cmd *SSHCmd) startTunnel(
 			configureDockerCredentials,
 			configureGitCredentials,
 			configureGitSSHSignatureHelper,
+			cmd.GitSSHSigningKey,
 			log,
 		)
 	}
@@ -652,6 +657,7 @@ func (cmd *SSHCmd) startServices(
 	containerClient *ssh.Client,
 	workspace *provider.Workspace,
 	configureDockerCredentials, configureGitCredentials, configureGitSSHSignatureHelper bool,
+	gitSSHSigningKey string,
 	log log.Logger,
 ) {
 	if cmd.User != "" {
@@ -668,6 +674,7 @@ func (cmd *SSHCmd) startServices(
 				ConfigureDockerCredentials:     configureDockerCredentials,
 				ConfigureGitCredentials:        configureGitCredentials,
 				ConfigureGitSSHSignatureHelper: configureGitSSHSignatureHelper,
+				GitSSHSigningKey:               gitSSHSigningKey,
 				Log:                            log,
 			},
 		)

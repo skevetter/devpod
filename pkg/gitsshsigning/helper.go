@@ -110,12 +110,14 @@ func updateGitConfig(gitConfigPath, userName, gitSigningKey string) error {
 		return err
 	}
 
-	if !strings.Contains(configContent, "program = "+pkgconfig.SSHSignatureHelperName) {
-		newConfig := fmt.Sprintf(GitConfigTemplate, gitSigningKey)
-		newContent := removeSignatureHelper(configContent) + newConfig
-		if err := writeGitConfig(gitConfigPath, newContent, userName); err != nil {
-			return err
-		}
+	// Always remove any existing devpod-managed signing config and rewrite
+	// with the current key. The previous guard (checking whether the program
+	// line already existed) would silently skip key updates after unclean
+	// shutdowns or key rotations.
+	newConfig := fmt.Sprintf(GitConfigTemplate, gitSigningKey)
+	newContent := removeSignatureHelper(configContent) + newConfig
+	if err := writeGitConfig(gitConfigPath, newContent, userName); err != nil {
+		return err
 	}
 
 	return nil
