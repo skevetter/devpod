@@ -39,24 +39,27 @@ func NewGetCmd() *cobra.Command {
 // It handles expressions like $.foo.bar, $.foo[0].bar, $[0], .foo, [0].foo.
 var bracketIndex = regexp.MustCompile(`\[(\d+)\]`)
 
-func jsonPathToGjson(path string) string {
+func jsonPathToGjson(path string) (string, error) {
+	if path == "" || path == "$" || path == "$." {
+		return "@this", nil
+	}
+	if strings.Contains(path, "..") || strings.Contains(path, "[?(") || strings.Contains(path, "*") {
+		return "", fmt.Errorf("unsupported jsonpath expression: %s", path)
+	}
+
 	path = strings.TrimPrefix(path, "$.")
 	path = strings.TrimPrefix(path, "$")
 	path = strings.TrimPrefix(path, ".")
 	path = bracketIndex.ReplaceAllString(path, ".$1")
 	path = strings.TrimPrefix(path, ".")
 
-	for strings.Contains(path, "..") {
-		path = strings.ReplaceAll(path, "..", ".")
-	}
-
-	return path
+	return path, nil
 }
 
 func writeResult(result gjson.Result) {
 	switch result.Type {
 	case gjson.String:
-		_, _ = os.Stdout.WriteString(strings.TrimSpace(result.String()))
+		_, _ = os.Stdout.WriteString(result.String())
 	case gjson.True:
 		_, _ = os.Stdout.WriteString("true")
 	case gjson.False:
@@ -91,7 +94,10 @@ func (cmd *GetCmd) Run(ctx context.Context, args []string) error {
 		return fmt.Errorf("parse json")
 	}
 
-	gjsonPath := jsonPathToGjson(args[0])
+	gjsonPath, err := jsonPathToGjson(args[0])
+	if err != nil {
+		return err
+	}
 	result := gjson.GetBytes(jsonBytes, gjsonPath)
 
 	if !result.Exists() {
