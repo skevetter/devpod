@@ -156,7 +156,12 @@ func handleGitSSHSignatureRequest(
 ) error {
 	out, err := io.ReadAll(request.Body)
 	if err != nil {
-		return fmt.Errorf("read request body: %w", err)
+		log.WithFields(logrus.Fields{"error": err}).Error("error reading git SSH signature request body")
+		writer.Header().Set("Content-Type", "application/json")
+		writer.WriteHeader(http.StatusInternalServerError)
+		errJSON, _ := json.Marshal(map[string]string{"error": fmt.Sprintf("read request body: %v", err)})
+		_, _ = writer.Write(errJSON)
+		return nil
 	}
 
 	log.WithFields(logrus.Fields{"data": string(out)}).Debug("received git SSH signature post data")

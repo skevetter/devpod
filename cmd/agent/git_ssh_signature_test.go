@@ -55,3 +55,25 @@ func (s *GitSSHSignatureTestSuite) TestParseDefaultsToSign() {
 	assert.Equal(s.T(), "sign", result.command)
 	assert.Equal(s.T(), "/tmp/buffer", result.bufferFile)
 }
+
+func (s *GitSSHSignatureTestSuite) TestParseEmptyArgs() {
+	result := parseSSHKeygenArgs([]string{})
+	assert.Equal(s.T(), "sign", result.command)
+	assert.Equal(s.T(), "", result.bufferFile)
+	assert.Equal(s.T(), "", result.certPath)
+	assert.Equal(s.T(), "", result.namespace)
+}
+
+func (s *GitSSHSignatureTestSuite) TestParseMultipleUnknownFlags() {
+	// ssh-keygen may pass several unknown boolean flags; buffer file must still be found.
+	args := []string{"-Y", "sign", "-n", "git", "-f", "/key.pub", "-U", "-O", "/tmp/buf"}
+	result := parseSSHKeygenArgs(args)
+	assert.Equal(s.T(), "/key.pub", result.certPath)
+	assert.Equal(s.T(), "/tmp/buf", result.bufferFile)
+}
+
+func (s *GitSSHSignatureTestSuite) TestParseBufferFileWithSpaces() {
+	args := []string{"-Y", "sign", "-n", "git", "-f", "/key.pub", "/tmp/my buffer file"}
+	result := parseSSHKeygenArgs(args)
+	assert.Equal(s.T(), "/tmp/my buffer file", result.bufferFile)
+}
