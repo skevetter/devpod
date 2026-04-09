@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 
 	"github.com/loft-sh/api/v4/pkg/devpod"
@@ -119,6 +120,17 @@ WantedBy=multi-user.target
 `, pkgconfig.DaemonServiceDescription, execStart)
 }
 
+// isSystemdAvailable returns true if systemd is the running init system.
+// Checking /run/systemd/system is the systemd-recommended approach and
+// correctly returns false inside containers or WSL where systemd is not PID 1.
+func isSystemdAvailable() bool {
+	fi, err := os.Stat("/run/systemd/system")
+	if err != nil {
+		return false
+	}
+	return fi.IsDir()
+}
+
 func isServiceInstalled() bool {
 	_, err := os.Stat(serviceFilePath())
 	return err == nil
@@ -128,6 +140,19 @@ func isServiceRunning() bool {
 	//nolint:gosec // BinaryName is a compile-time constant, not tainted input
 	out, err := exec.Command("systemctl", "is-active", pkgconfig.BinaryName).CombinedOutput()
 	return err == nil && strings.TrimSpace(string(out)) == "active"
+}
+
+// quoteSystemdArg wraps an argument in double quotes if it contains characters
+// that require quoting in systemd unit files. Literal percent signs are escaped
+// as %% to prevent systemd specifier expansion.
+func quoteSystemdArg(arg string) string {
+	arg = strings.ReplaceAll(arg, "%", "%%")
+	if strings.ContainsAny(arg, " \t\"\\") {
+		arg = strings.ReplaceAll(arg, "\\", "\\\\")
+		arg = strings.ReplaceAll(arg, "\"", "\\\"")
+		return "\"" + arg + "\""
+	}
+	return arg
 }
 
 func InstallDaemon(agentDir string, interval string, log log.Logger) error {
@@ -149,8 +174,17 @@ func InstallDaemon(agentDir string, interval string, log log.Logger) error {
 		args = append(args, "--interval", interval)
 	}
 
+	if !isSystemdAvailable() {
+		log.Warnf("systemd not available, falling back to background process")
+		return startFallbackDaemon(executable, args, log)
+	}
+
 	if !isServiceInstalled() {
-		unitContent := systemdUnitContents(strings.Join(args, " "))
+		quoted := make([]string, len(args))
+		for i, a := range args {
+			quoted[i] = quoteSystemdArg(a)
+		}
+		unitContent := systemdUnitContents(strings.Join(quoted, " "))
 		//nolint:gosec // systemd unit files must be world-readable (0644)
 		if err := os.WriteFile(serviceFilePath(), []byte(unitContent), 0o644); err != nil {
 			return fmt.Errorf("write service file: %w", err)
@@ -174,22 +208,25 @@ func InstallDaemon(agentDir string, interval string, log log.Logger) error {
 		if out, err := exec.Command("systemctl", "start", pkgconfig.BinaryName).
 			CombinedOutput(); err != nil {
 			log.Warnf("Error starting service via systemctl: %s: %v", string(out), err)
-
-			daemonArgs := args[1:] // strip executable path
-			err = command.StartBackgroundOnce("devpod.daemon", func() (*exec.Cmd, error) {
-				log.Infof("started DevPod daemon into server")
-				return exec.Command(
-					executable,
-					daemonArgs...), nil //nolint:gosec // executable is from os.Executable()
-			})
-			if err != nil {
-				return fmt.Errorf("start daemon: %w", err)
-			}
-		} else {
-			log.Infof("installed DevPod daemon into server")
+			return startFallbackDaemon(executable, args, log)
 		}
+		log.Infof("installed DevPod daemon into server")
 	}
 
+	return nil
+}
+
+func startFallbackDaemon(executable string, args []string, log log.Logger) error {
+	daemonArgs := args[1:] // strip executable path
+	err := command.StartBackgroundOnce("devpod.daemon", func() (*exec.Cmd, error) {
+		log.Infof("started DevPod daemon into server")
+		return exec.Command(
+			executable,
+			daemonArgs...), nil //nolint:gosec // executable is from os.Executable()
+	})
+	if err != nil {
+		return fmt.Errorf("start daemon: %w", err)
+	}
 	return nil
 }
 
@@ -198,15 +235,30 @@ func RemoveDaemon() error {
 		return fmt.Errorf("unsupported daemon os")
 	}
 
+	// Always attempt to stop the fallback background process, regardless of
+	// systemd availability. InstallDaemon may have used the fallback path.
+	if err := stopFallbackDaemon(); err != nil {
+		return fmt.Errorf("stop fallback daemon: %w", err)
+	}
+
 	if !isServiceInstalled() {
 		return nil
 	}
 
-	// stop and disable the service
+	// stop and disable the service, propagating real errors
 	//nolint:gosec // BinaryName is a compile-time constant
-	_ = exec.Command("systemctl", "stop", pkgconfig.BinaryName).Run()
+	if out, err := exec.Command("systemctl", "stop", pkgconfig.BinaryName).CombinedOutput(); err != nil {
+		// "not loaded" means the unit doesn't exist — treat as no-op
+		if !strings.Contains(string(out), "not loaded") {
+			return fmt.Errorf("systemctl stop: %s: %w", string(out), err)
+		}
+	}
 	//nolint:gosec // BinaryName is a compile-time constant
-	_ = exec.Command("systemctl", "disable", pkgconfig.BinaryName).Run()
+	if out, err := exec.Command("systemctl", "disable", pkgconfig.BinaryName).CombinedOutput(); err != nil {
+		if !strings.Contains(string(out), "not loaded") {
+			return fmt.Errorf("systemctl disable: %s: %w", string(out), err)
+		}
+	}
 
 	if err := os.Remove(serviceFilePath()); err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("remove service file: %w", err)
@@ -216,5 +268,41 @@ func RemoveDaemon() error {
 		return fmt.Errorf("systemctl daemon-reload: %s: %w", string(out), err)
 	}
 
+	return nil
+}
+
+const fallbackDaemonName = "devpod.daemon"
+
+// stopFallbackDaemon kills the PID-file-based background process started by
+// command.StartBackgroundOnce and removes its PID file.
+func stopFallbackDaemon() error {
+	pidFile := filepath.Join(os.TempDir(), fallbackDaemonName+".pid")
+	pidData, err := os.ReadFile(pidFile) // #nosec G304: not user input
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return fmt.Errorf("read pid file: %w", err)
+	}
+
+	pid := strings.TrimSpace(string(pidData))
+	if _, err := strconv.Atoi(pid); err != nil {
+		// Corrupt PID file — clean up and move on
+		_ = os.Remove(pidFile)
+		return nil
+	}
+
+	running, err := command.IsRunning(pid)
+	if err != nil {
+		_ = os.Remove(pidFile)
+		return nil
+	}
+	if running {
+		if err := command.Kill(pid); err != nil {
+			return fmt.Errorf("kill fallback daemon (pid %s): %w", pid, err)
+		}
+	}
+
+	_ = os.Remove(pidFile)
 	return nil
 }
