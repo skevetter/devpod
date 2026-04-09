@@ -220,9 +220,9 @@ func startFallbackDaemon(executable string, args []string, log log.Logger) error
 	daemonArgs := args[1:] // strip executable path
 	err := command.StartBackgroundOnce("devpod.daemon", func() (*exec.Cmd, error) {
 		log.Infof("started DevPod daemon into server")
-		return exec.Command(
-			executable,
-			daemonArgs...), nil //nolint:gosec // executable is from os.Executable()
+		//nolint:gosec // executable is from os.Executable()
+		cmd := exec.Command(executable, daemonArgs...)
+		return cmd, nil
 	})
 	if err != nil {
 		return fmt.Errorf("start daemon: %w", err)
@@ -247,14 +247,18 @@ func RemoveDaemon() error {
 
 	// stop and disable the service, propagating real errors
 	//nolint:gosec // BinaryName is a compile-time constant
-	if out, err := exec.Command("systemctl", "stop", pkgconfig.BinaryName).CombinedOutput(); err != nil {
+	out, err := exec.Command("systemctl", "stop", pkgconfig.BinaryName).
+		CombinedOutput()
+	if err != nil {
 		// "not loaded" means the unit doesn't exist — treat as no-op
 		if !strings.Contains(string(out), "not loaded") {
 			return fmt.Errorf("systemctl stop: %s: %w", string(out), err)
 		}
 	}
 	//nolint:gosec // BinaryName is a compile-time constant
-	if out, err := exec.Command("systemctl", "disable", pkgconfig.BinaryName).CombinedOutput(); err != nil {
+	out, err = exec.Command("systemctl", "disable", pkgconfig.BinaryName).
+		CombinedOutput()
+	if err != nil {
 		if !strings.Contains(string(out), "not loaded") {
 			return fmt.Errorf("systemctl disable: %s: %w", string(out), err)
 		}
