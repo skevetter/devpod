@@ -71,13 +71,6 @@ func writeResult(result gjson.Result) {
 	}
 }
 
-func (cmd *GetCmd) readInput() ([]byte, error) {
-	if cmd.File != "" {
-		return os.ReadFile(cmd.File) //nolint:gosec // file path comes from CLI flag
-	}
-	return io.ReadAll(os.Stdin)
-}
-
 // Run executes the get command.
 func (cmd *GetCmd) Run(ctx context.Context, args []string) error {
 	if len(args) == 0 {
@@ -110,4 +103,11 @@ func (cmd *GetCmd) Run(ctx context.Context, args []string) error {
 	writeResult(result)
 
 	return nil
+}
+
+func (cmd *GetCmd) readInput() ([]byte, error) {
+	if cmd.File != "" {
+		return os.ReadFile(cmd.File) //nolint:gosec // file path comes from CLI flag
+	}
+	return io.ReadAll(os.Stdin)
 }
