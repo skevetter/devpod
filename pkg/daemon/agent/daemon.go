@@ -244,7 +244,6 @@ func InstallDaemon(agentDir string, interval string, log log.Logger) error {
 func startFallbackDaemon(executable string, args []string, log log.Logger) error {
 	daemonArgs := args[1:] // strip executable path
 	err := command.StartBackgroundOnce("devpod.daemon", func() (*exec.Cmd, error) {
-		log.Infof("started DevPod daemon into server")
 		//nolint:gosec // executable is from os.Executable()
 		cmd := exec.Command(executable, daemonArgs...)
 		return cmd, nil
@@ -252,6 +251,7 @@ func startFallbackDaemon(executable string, args []string, log log.Logger) error
 	if err != nil {
 		return fmt.Errorf("start daemon: %w", err)
 	}
+	log.Infof("started DevPod daemon into server")
 	return nil
 }
 
@@ -353,5 +353,8 @@ func isDaemonProcess(pid string) bool {
 		// Can't verify — assume it's not ours to be safe
 		return false
 	}
-	return filepath.Base(exePath) == pkgconfig.BinaryName
+	baseName := filepath.Base(exePath)
+	// Handle " (deleted)" suffix when binary was replaced during upgrade
+	baseName = strings.TrimSuffix(baseName, " (deleted)")
+	return baseName == pkgconfig.BinaryName
 }
