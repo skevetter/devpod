@@ -176,9 +176,15 @@ func removeSignatureHelper(content string) string {
 				return strings.HasPrefix(trimmed, "format = ssh")
 			})...)
 		case sectionUser:
-			out = append(out, filterSection(buf, func(trimmed string) bool {
-				return strings.HasPrefix(trimmed, "signingkey = ")
-			})...)
+			// Only strip [user] sections that contain nothing but signingkey
+			// entries — these are the ones appended by GitConfigTemplate.
+			// Sections with other entries (name, email, etc.) are user-owned
+			// and must be preserved intact to avoid data loss.
+			if isDevpodOnlyUserSection(buf) {
+				// Drop the entire section — it was appended by devpod.
+			} else {
+				out = append(out, buf...)
+			}
 		}
 		buf = nil
 	}
@@ -224,6 +230,23 @@ func removeSignatureHelper(content string) string {
 
 func isSectionHeader(trimmed string) bool {
 	return len(trimmed) > 0 && trimmed[0] == '['
+}
+
+// isDevpodOnlyUserSection returns true when a buffered [user] section contains
+// nothing but signingkey entries. Such sections are appended by GitConfigTemplate
+// and are safe to remove. Sections with other entries (name, email, etc.) belong
+// to the user and must be preserved.
+func isDevpodOnlyUserSection(lines []string) bool {
+	for _, line := range lines[1:] {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" {
+			continue
+		}
+		if !strings.HasPrefix(trimmed, "signingkey = ") {
+			return false
+		}
+	}
+	return true
 }
 
 // filterSection removes lines matching the predicate from a buffered section.

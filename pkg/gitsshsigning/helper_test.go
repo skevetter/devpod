@@ -78,6 +78,25 @@ func (s *HelperTestSuite) TestRemoveSignatureHelper_PreservesUserOwnedGpgSSHKeys
 	assert.Contains(s.T(), result, "[commit]")
 }
 
+func (s *HelperTestSuite) TestRemoveSignatureHelper_PreservesUserOwnedSigningKey() {
+	// A [user] section with name + signingkey is user-owned; only the
+	// devpod-appended [user] section (signingkey-only) should be dropped.
+	input := strings.Join([]string{
+		"[user]", "\tname = Test User", "\tsigningkey = /my/gpg-key",
+		`[gpg "ssh"]`, "\tprogram = devpod-ssh-signature",
+		"[gpg]", "\tformat = ssh",
+		"[user]", "\tsigningkey = /devpod/injected-key",
+	}, "\n")
+
+	result := removeSignatureHelper(input)
+
+	assert.Contains(s.T(), result, "signingkey = /my/gpg-key",
+		"user-owned signingkey must be preserved")
+	assert.NotContains(s.T(), result, "/devpod/injected-key",
+		"devpod-only [user] section should be removed")
+	assert.Contains(s.T(), result, "Test User")
+}
+
 func TestUpdateGitConfig_Idempotent(t *testing.T) {
 	dir := t.TempDir()
 	gitConfigPath := filepath.Join(dir, ".gitconfig")
