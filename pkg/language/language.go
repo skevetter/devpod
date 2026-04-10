@@ -183,8 +183,7 @@ func shouldSkipDir(name string) bool {
 	return name != "." && strings.HasPrefix(name, ".")
 }
 
-// detectLanguageByExtension walks the directory tree counting files by extension
-// and returns the language with the most files.
+// countLanguageFiles walks the directory tree and counts files by extension.
 func countLanguageFiles(root string, maxFiles int) map[ProgrammingLanguage]int {
 	counts := make(map[ProgrammingLanguage]int)
 	fileCount := 0
