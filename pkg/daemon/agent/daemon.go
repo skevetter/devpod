@@ -243,7 +243,7 @@ func InstallDaemon(agentDir string, interval string, log log.Logger) error {
 
 func startFallbackDaemon(executable string, args []string, log log.Logger) error {
 	daemonArgs := args[1:] // strip executable path
-	err := command.StartBackgroundOnce("devpod.daemon", func() (*exec.Cmd, error) {
+	err := command.StartBackgroundOnce(pkgconfig.DaemonProcessName, func() (*exec.Cmd, error) {
 		//nolint:gosec // executable is from os.Executable()
 		cmd := exec.Command(executable, daemonArgs...)
 		return cmd, nil
@@ -300,14 +300,12 @@ func RemoveDaemon() error {
 	return nil
 }
 
-const fallbackDaemonName = "devpod.daemon"
-
 // stopFallbackDaemon kills the PID-file-based background process started by
 // command.StartBackgroundOnce and removes its PID file. It verifies process
 // identity via /proc/{pid}/exe to avoid killing an unrelated process that
 // reused the PID after a reboot.
 func stopFallbackDaemon() error {
-	pidFile := filepath.Join(os.TempDir(), fallbackDaemonName+".pid")
+	pidFile := filepath.Join(os.TempDir(), pkgconfig.DaemonProcessName+".pid")
 	pidData, err := os.ReadFile(pidFile) // #nosec G304: not user input
 	if err != nil {
 		if os.IsNotExist(err) {

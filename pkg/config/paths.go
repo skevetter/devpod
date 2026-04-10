@@ -15,4 +15,8 @@ const (
 
 	// DevContainerResultPath is where devcontainer results are written.
 	DevContainerResultPath = "/var/run/" + BinaryName + "/result.json"
+
+	// DaemonProcessName is the name used for the fallback background daemon process
+	// PID file and lock file in os.TempDir().
+	DaemonProcessName = BinaryName + ".daemon"
 )
