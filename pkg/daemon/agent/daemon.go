@@ -179,18 +179,33 @@ func InstallDaemon(agentDir string, interval string, log log.Logger) error {
 		return startFallbackDaemon(executable, args, log)
 	}
 
+	quoted := make([]string, len(args))
+	for i, a := range args {
+		quoted[i] = quoteSystemdArg(a)
+	}
+	unitContent := systemdUnitContents(strings.Join(quoted, " "))
+
+	needsReload := false
 	if !isServiceInstalled() {
-		quoted := make([]string, len(args))
-		for i, a := range args {
-			quoted[i] = quoteSystemdArg(a)
+		needsReload = true
+	} else {
+		existing, err := os.ReadFile(serviceFilePath())
+		if err != nil || string(existing) != unitContent {
+			needsReload = true
 		}
-		unitContent := systemdUnitContents(strings.Join(quoted, " "))
+	}
+
+	if needsReload {
 		//nolint:gosec // systemd unit files must be world-readable (0644)
-		if err := os.WriteFile(serviceFilePath(), []byte(unitContent), 0o644); err != nil {
+		if err := os.WriteFile(
+			serviceFilePath(), []byte(unitContent), 0o644,
+		); err != nil {
 			return fmt.Errorf("write service file: %w", err)
 		}
 
-		if out, err := exec.Command("systemctl", "daemon-reload").CombinedOutput(); err != nil {
+		if out, err := exec.Command(
+			"systemctl", "daemon-reload",
+		).CombinedOutput(); err != nil {
 			return fmt.Errorf("systemctl daemon-reload: %s: %w", string(out), err)
 		}
 	}
@@ -202,12 +217,22 @@ func InstallDaemon(agentDir string, interval string, log log.Logger) error {
 		return fmt.Errorf("systemctl enable: %s: %w", string(out), err)
 	}
 
-	// make sure daemon is started
-	if !isServiceRunning() {
+	// Restart if the unit file changed, otherwise just ensure it's running.
+	if needsReload && isServiceRunning() {
+		//nolint:gosec // BinaryName is a compile-time constant
+		if out, err := exec.Command(
+			"systemctl", "restart", pkgconfig.BinaryName,
+		).CombinedOutput(); err != nil {
+			log.Warnf("Error restarting service: %s: %v", string(out), err)
+			return startFallbackDaemon(executable, args, log)
+		}
+		log.Infof("restarted DevPod daemon with updated config")
+	} else if !isServiceRunning() {
 		//nolint:gosec // BinaryName is a compile-time constant, not tainted input
-		if out, err := exec.Command("systemctl", "start", pkgconfig.BinaryName).
-			CombinedOutput(); err != nil {
-			log.Warnf("Error starting service via systemctl: %s: %v", string(out), err)
+		if out, err := exec.Command(
+			"systemctl", "start", pkgconfig.BinaryName,
+		).CombinedOutput(); err != nil {
+			log.Warnf("Error starting service: %s: %v", string(out), err)
 			return startFallbackDaemon(executable, args, log)
 		}
 		log.Infof("installed DevPod daemon into server")
@@ -278,7 +303,9 @@ func RemoveDaemon() error {
 const fallbackDaemonName = "devpod.daemon"
 
 // stopFallbackDaemon kills the PID-file-based background process started by
-// command.StartBackgroundOnce and removes its PID file.
+// command.StartBackgroundOnce and removes its PID file. It verifies process
+// identity via /proc/{pid}/exe to avoid killing an unrelated process that
+// reused the PID after a reboot.
 func stopFallbackDaemon() error {
 	pidFile := filepath.Join(os.TempDir(), fallbackDaemonName+".pid")
 	pidData, err := os.ReadFile(pidFile) // #nosec G304: not user input
@@ -297,16 +324,34 @@ func stopFallbackDaemon() error {
 	}
 
 	running, err := command.IsRunning(pid)
-	if err != nil {
+	if err != nil || !running {
+		// Process gone or check failed — stale PID file
 		_ = os.Remove(pidFile)
 		return nil
 	}
-	if running {
-		if err := command.Kill(pid); err != nil {
-			return fmt.Errorf("kill fallback daemon (pid %s): %w", pid, err)
-		}
+
+	// Verify this is actually our daemon by checking the executable path.
+	// After a reboot the PID may belong to an unrelated process.
+	if !isDaemonProcess(pid) {
+		_ = os.Remove(pidFile)
+		return nil
+	}
+
+	if err := command.Kill(pid); err != nil {
+		return fmt.Errorf("kill fallback daemon (pid %s): %w", pid, err)
 	}
 
 	_ = os.Remove(pidFile)
 	return nil
+}
+
+// isDaemonProcess checks whether the process with the given PID is a DevPod
+// daemon by reading /proc/{pid}/exe and verifying it matches our binary name.
+func isDaemonProcess(pid string) bool {
+	exePath, err := os.Readlink("/proc/" + pid + "/exe")
+	if err != nil {
+		// Can't verify — assume it's not ours to be safe
+		return false
+	}
+	return filepath.Base(exePath) == pkgconfig.BinaryName
 }
