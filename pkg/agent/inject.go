@@ -198,11 +198,6 @@ func InjectAgent(opts *InjectOptions) error {
 			opts.Log.Errorf("container entered a terminal state, not retrying: %v", err)
 			return false
 		}
-		if strings.Contains(err.Error(), "container state improper") {
-			opts.Log.Warn(
-				"container may have stopped, it should be restarted before next exec attempt",
-			)
-		}
 		opts.Log.Debugf("retrying injection: %v", err)
 		return true
 	}, func() error {

@@ -219,11 +219,13 @@ const (
 // status "running" or the context/timeout expires. It does not start
 // the container — the caller is responsible for that.
 func (r *DockerHelper) WaitContainerRunning(ctx context.Context, containerID string) error {
-	return wait.PollUntilContextTimeout(
+	var lastErr error
+	pollErr := wait.PollUntilContextTimeout(
 		ctx, containerRunningPollInterval, containerRunningTimeout, true,
 		func(ctx context.Context) (bool, error) {
 			details, err := r.InspectContainers(ctx, []string{containerID})
 			if err != nil {
+				lastErr = err
 				r.Log.Debugf("WaitContainerRunning: inspect error (will retry): %v", err)
 				return false, nil
 			}
@@ -233,6 +235,7 @@ func (r *DockerHelper) WaitContainerRunning(ctx context.Context, containerID str
 					containerID,
 				)
 			}
+			lastErr = nil
 			status := strings.ToLower(details[0].State.Status)
 			if status == "running" {
 				return true, nil
@@ -253,6 +256,10 @@ func (r *DockerHelper) WaitContainerRunning(ctx context.Context, containerID str
 			return false, nil
 		},
 	)
+	if pollErr != nil && lastErr != nil {
+		return fmt.Errorf("%w (last inspect error: %v)", pollErr, lastErr)
+	}
+	return pollErr
 }
 
 func (r *DockerHelper) GetImageTag(ctx context.Context, imageID string) (string, error) {
