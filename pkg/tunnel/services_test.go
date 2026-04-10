@@ -15,7 +15,7 @@ func TestAddGitSSHSigningKey_ExplicitKey(t *testing.T) {
 	result := addGitSSHSigningKey(command, "/path/to/key.pub", log.Discard)
 
 	encoded := base64.StdEncoding.EncodeToString([]byte("/path/to/key.pub"))
-	assert.Contains(t, result, "--git-user-signing-key "+encoded)
+	assert.Equal(t, command+" --git-user-signing-key "+encoded, result)
 }
 
 func TestAddGitSSHSigningKey_ExplicitKeyTakesPrecedence(t *testing.T) {
@@ -26,20 +26,20 @@ func TestAddGitSSHSigningKey_ExplicitKeyTakesPrecedence(t *testing.T) {
 	result := addGitSSHSigningKey(command, explicitKey, log.Discard)
 
 	encoded := base64.StdEncoding.EncodeToString([]byte(explicitKey))
-	assert.Contains(t, result, "--git-user-signing-key "+encoded)
+	assert.Equal(t, command+" --git-user-signing-key "+encoded, result)
 }
 
 func TestAddGitSSHSigningKey_EmptyExplicitKey_FallsBackToHostConfig(t *testing.T) {
-	// When explicit key is empty, the function attempts to read host .gitconfig.
-	// In a test environment without git SSH signing configured, it should
-	// return the command unchanged.
+	// Ensure deterministic environment with no host git signing config.
 	command := testBaseCommand
+	tmpHome := t.TempDir()
+	t.Setenv("HOME", tmpHome)
+	t.Setenv("XDG_CONFIG_HOME", tmpHome)
+
 	result := addGitSSHSigningKey(command, "", log.Discard)
 
-	// Without host SSH signing configured, command should be unchanged
-	// (or have the key appended if the test host has it configured).
-	// We just verify no panic and the base command is preserved.
-	assert.Contains(t, result, command)
+	assert.Equal(t, command, result)
+	assert.NotContains(t, result, "--git-user-signing-key")
 }
 
 func TestBuildCredentialsCommand_IncludesSigningKey(t *testing.T) {

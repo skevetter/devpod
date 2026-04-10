@@ -52,7 +52,7 @@ func ConfigureHelper(userName, gitSigningKey string, log log.Logger) error {
 	}
 	log.Debugf("Got config path: %v", gitConfigPath)
 	if err := updateGitConfig(gitConfigPath, userName, gitSigningKey); err != nil {
-		log.Errorf("Failed updating git configuration: %w", err)
+		log.Errorf("Failed updating git configuration: %v", err)
 		return err
 	}
 
