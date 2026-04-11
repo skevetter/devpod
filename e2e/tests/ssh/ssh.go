@@ -144,7 +144,11 @@ var _ = ginkgo.Describe("devpod ssh test suite", ginkgo.Label("ssh"), ginkgo.Ord
 			// via the forwarded agent. CI runners may not have an agent running.
 			agentOut, err := exec.Command("ssh-agent", "-s").Output()
 			framework.ExpectNoError(err)
-			// Parse SSH_AUTH_SOCK and SSH_AGENT_PID from agent output
+			// Parse SSH_AUTH_SOCK and SSH_AGENT_PID from agent output.
+			// Use GinkgoT().Setenv so values are automatically restored when the
+			// spec finishes, preventing stale socket paths from leaking into
+			// subsequent ordered tests.
+			t := ginkgo.GinkgoT()
 			for line := range strings.SplitSeq(string(agentOut), "\n") {
 				for _, prefix := range []string{"SSH_AUTH_SOCK=", "SSH_AGENT_PID="} {
 					if _, after, ok := strings.Cut(line, prefix); ok {
@@ -153,7 +157,7 @@ var _ = ginkgo.Describe("devpod ssh test suite", ginkgo.Label("ssh"), ginkgo.Ord
 							val = val[:semi]
 						}
 						key := prefix[:len(prefix)-1]
-						_ = os.Setenv(key, val)
+						t.Setenv(key, val)
 					}
 				}
 			}
@@ -162,9 +166,6 @@ var _ = ginkgo.Describe("devpod ssh test suite", ginkgo.Label("ssh"), ginkgo.Ord
 					// #nosec G204 -- controlled pid from ssh-agent we started
 					_ = exec.Command("kill", pid).Run()
 				}
-				// Unset env vars so subsequent tests don't inherit a stale socket
-				_ = os.Unsetenv("SSH_AUTH_SOCK")
-				_ = os.Unsetenv("SSH_AGENT_PID")
 			})
 
 			// #nosec G204 -- test command with controlled arguments
