@@ -70,26 +70,24 @@ func (req *GitSSHSignatureRequest) resolveKeyFile() (string, func(), error) {
 		return req.KeyPath, noop, nil
 	}
 
-	// ssh-keygen -Y sign -f <key> looks for <key>.pub to identify the agent key.
-	// We write the public key to a temp file with a .pub suffix and pass the
-	// path without the .pub suffix to -f.
-	tmpFile, err := os.CreateTemp("", ".git_signing_key_*.pub")
+	// ssh-keygen -Y sign -f <path> reads the public key directly from <path>
+	// to identify which SSH agent key to use for signing. We write the public
+	// key content to a temp file and pass that path to -f.
+	tmpFile, err := os.CreateTemp("", ".git_signing_key_*")
 	if err != nil {
 		return "", noop, fmt.Errorf("create temp key file: %w", err)
 	}
-	pubPath := tmpFile.Name()
-	// keyPath is the path without .pub, passed to ssh-keygen -f
-	keyPath := pubPath[:len(pubPath)-len(".pub")]
+	keyPath := tmpFile.Name()
 
 	if _, err := tmpFile.WriteString(req.PublicKey); err != nil {
 		_ = tmpFile.Close()
-		_ = os.Remove(pubPath)
+		_ = os.Remove(keyPath)
 		return "", noop, fmt.Errorf("write public key: %w", err)
 	}
 	_ = tmpFile.Close()
 
 	cleanup := func() {
-		_ = os.Remove(pubPath)
+		_ = os.Remove(keyPath)
 	}
 
 	return keyPath, cleanup, nil
