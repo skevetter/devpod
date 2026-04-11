@@ -62,10 +62,6 @@ func startCommand(cmd *exec.Cmd, pidFile, streamsFile string) error {
 		return err
 	}
 
-	// Create a new session so the child is not killed by SIGHUP when the
-	// parent shell (e.g. from docker exec) exits.
-	setSetsid(cmd)
-
 	if err := cmd.Start(); err != nil {
 		closeFile(streamsF)
 		return fmt.Errorf("start process: %w", err)

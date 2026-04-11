@@ -4,7 +4,6 @@ package command
 
 import (
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -49,10 +48,6 @@ func isExpectedProcess(pid, commandName string) bool {
 	exe := filepath.Base(strings.Split(string(cmdline), "\x00")[0])
 	exe = strings.TrimSuffix(exe, " (deleted)")
 	return strings.Contains(args, commandName) || strings.Contains(exe, commandName)
-}
-
-func setSetsid(cmd *exec.Cmd) {
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
 }
 
 func kill(pid string) error {
