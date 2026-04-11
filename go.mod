@@ -36,8 +36,6 @@ require (
 	github.com/loft-sh/analytics-client v0.0.0-20240219162240-2f4c64b2494e
 	github.com/loft-sh/api/v4 v4.4.0
 	github.com/loft-sh/apiserver v0.0.0-20260113122925-594495a02e96
-	github.com/mattn/go-isatty v0.0.20
-	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d
 	github.com/moby/buildkit v0.29.0
 	github.com/moby/patternmatcher v0.6.1
 	github.com/moby/term v0.5.2
@@ -53,7 +51,6 @@ require (
 	github.com/stretchr/testify v1.11.1
 	github.com/tailscale/hujson v0.0.0-20260302212456-ecc657c15afd
 	github.com/tidwall/gjson v1.18.0
-	github.com/tidwall/jsonc v0.3.3
 	github.com/tonistiigi/fsutil v0.0.0-20251211185533-a2aa163d723f
 	github.com/u-root/u-root v0.16.0
 	go.uber.org/atomic v1.11.0
@@ -73,7 +70,7 @@ require (
 	k8s.io/kube-aggregator v0.35.3
 	k8s.io/kubectl v0.35.3
 	k8s.io/utils v0.0.0-20260319190234-28399d86e0b5
-	mvdan.cc/sh/v3 v3.12.0
+	mvdan.cc/sh/v3 v3.13.1
 	sigs.k8s.io/controller-runtime v0.23.3
 	sigs.k8s.io/yaml v1.6.0
 	tailscale.com v1.96.5
