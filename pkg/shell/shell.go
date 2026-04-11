@@ -58,6 +58,17 @@ func RunEmulatedShell(
 				return defaultExecHandler(ctx, args)
 			}
 		}),
+		// CallHandler intercepts builtin calls. mvdan.cc/sh/v3 v3.13.1 marks
+		// "kill" as a builtin but does not implement it, causing `kill` to
+		// silently fail instead of executing the system binary. Rewrite the
+		// command to an absolute path so IsBuiltin returns false and the
+		// real binary is executed via the exec handler.
+		interp.CallHandler(func(ctx context.Context, args []string) ([]string, error) {
+			if args[0] == "kill" {
+				args[0] = "/bin/kill"
+			}
+			return args, nil
+		}),
 		interp.OpenHandler(
 			func(ctx context.Context, path string, flag int, perm os.FileMode) (io.ReadWriteCloser, error) {
 				if path == "/dev/null" {
