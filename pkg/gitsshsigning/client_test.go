@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/skevetter/log"
@@ -95,4 +97,30 @@ func TestRequestContentSignature_InvalidJSON(t *testing.T) {
 	_, err := requestContentSignature([]byte("commit content"), "/tmp/key.pub", log.Discard)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "not json at all")
+}
+
+func TestCreateSignatureRequestBody_IncludesPublicKeyContent(t *testing.T) {
+	certPath := filepath.Join(t.TempDir(), "test_key.pub")
+	pubKeyContent := "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAITest test@example.com"
+	require.NoError(t, os.WriteFile(certPath, []byte(pubKeyContent), 0o600))
+
+	body, err := createSignatureRequestBody([]byte("commit content"), certPath)
+	require.NoError(t, err)
+
+	var req GitSSHSignatureRequest
+	require.NoError(t, json.Unmarshal(body, &req))
+	assert.Equal(t, "commit content", req.Content)
+	assert.Equal(t, certPath, req.KeyPath)
+	assert.Equal(t, pubKeyContent, req.PublicKey,
+		"request should include the public key file content so the host can create a temp file")
+}
+
+func TestCreateSignatureRequestBody_MissingCertFile_OmitsPublicKey(t *testing.T) {
+	body, err := createSignatureRequestBody([]byte("commit content"), "/nonexistent/key.pub")
+	require.NoError(t, err)
+
+	var req GitSSHSignatureRequest
+	require.NoError(t, json.Unmarshal(body, &req))
+	assert.Empty(t, req.PublicKey,
+		"when cert file is unreadable, PublicKey should be empty for backward compat")
 }

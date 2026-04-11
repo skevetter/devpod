@@ -80,9 +80,21 @@ func writeSignatureToFile(signature []byte, bufferFile string, log log.Logger) e
 }
 
 func createSignatureRequestBody(content []byte, certPath string) ([]byte, error) {
+	// Read the public key content so the host can write it to a temp file.
+	// If the file is unreadable (e.g. non-existent), we omit PublicKey and
+	// fall back to KeyPath for backward compatibility.
+	var publicKey string
+	pubKeyData, readErr := os.ReadFile(
+		certPath,
+	) // #nosec G304 -- certPath comes from git config, not user input
+	if readErr == nil {
+		publicKey = strings.TrimSpace(string(pubKeyData))
+	}
+
 	request := &GitSSHSignatureRequest{
-		Content: string(content),
-		KeyPath: certPath,
+		Content:   string(content),
+		KeyPath:   certPath,
+		PublicKey: publicKey,
 	}
 	return json.Marshal(request)
 }
