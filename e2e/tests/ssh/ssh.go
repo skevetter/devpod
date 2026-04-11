@@ -162,8 +162,10 @@ var _ = ginkgo.Describe("devpod ssh test suite", ginkgo.Label("ssh"), ginkgo.Ord
 				"echo test > testfile",
 				"git add testfile",
 				"git commit -m 'signed test commit' 2>&1",
-				// Now test with a file-path-based signingkey (the scenario from issue #645)
-				"echo \"$(git config --global user.signingkey)\" > /tmp/test_signing_key.pub",
+				// Now test with a file-path-based signingkey (the scenario from issue #645).
+				// Get the actual public key from the forwarded SSH agent since user.signingkey
+				// is a host path that doesn't exist inside the container.
+				"ssh-add -L | head -1 > /tmp/test_signing_key.pub",
 				"git config --global user.signingkey /tmp/test_signing_key.pub",
 				"echo world >> file.txt",
 				"git add file.txt",
