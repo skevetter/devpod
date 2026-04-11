@@ -5,9 +5,9 @@ package zed
 import (
 	"context"
 	"fmt"
-	"os/exec"
 
 	"github.com/skevetter/devpod/pkg/config"
+	devpodopen "github.com/skevetter/devpod/pkg/open"
 	"github.com/skevetter/log"
 )
 
@@ -26,10 +26,9 @@ func Open(
 
 	sshHost := workspaceID + config.SSHHostSuffix + workspaceFolder
 	openURL := fmt.Sprintf("zed://ssh/%s", sshHost)
-	out, err := exec.Command("xdg-open", openURL).CombinedOutput()
+	err := devpodopen.Run(openURL)
 	if err != nil {
 		log.Debugf("Starting Zed caused error: %v", err)
-		log.Debugf("xdg-open %s output: %s", err, openURL, string(out))
 		log.Errorf("Seems like you don't have Zed installed on your computer locally")
 		return err
 	}

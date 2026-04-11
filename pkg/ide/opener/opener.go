@@ -26,7 +26,6 @@ import (
 	"github.com/skevetter/devpod/pkg/port"
 	"github.com/skevetter/devpod/pkg/tunnel"
 	"github.com/skevetter/log"
-	"github.com/skratchdot/open-golang/open"
 )
 
 // Params holds the parameters needed to open an IDE.
@@ -435,5 +434,5 @@ func startFleet(ctx context.Context, client client2.BaseWorkspaceClient, logger 
 	)
 	logger.Infof("Starting Fleet at %s ...", url)
 
-	return open.Run(url)
+	return open2.Run(url)
 }

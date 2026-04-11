@@ -11,8 +11,8 @@ import (
 
 	"github.com/skevetter/devpod/pkg/command"
 	pkgconfig "github.com/skevetter/devpod/pkg/config"
+	devpodopen "github.com/skevetter/devpod/pkg/open"
 	"github.com/skevetter/log"
-	"github.com/skratchdot/open-golang/open"
 )
 
 const containersExtension = "ms-vscode-remote.remote-containers"
@@ -124,7 +124,7 @@ func openViaBrowser(params OpenParams) error {
 	openURL := u.String()
 
 	params.Log.Debugf("opening URL %s", openURL)
-	err := open.Run(openURL)
+	err := devpodopen.Run(openURL)
 	if err != nil {
 		params.Log.Errorf(
 			"flavor %s is not installed on host device: %v",

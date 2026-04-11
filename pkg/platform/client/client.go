@@ -20,12 +20,12 @@ import (
 	storagev1 "github.com/loft-sh/api/v4/pkg/apis/storage/v1"
 	"github.com/loft-sh/api/v4/pkg/auth"
 	pkgconfig "github.com/skevetter/devpod/pkg/config"
+	devpodopen "github.com/skevetter/devpod/pkg/open"
 	"github.com/skevetter/devpod/pkg/platform/kube"
 	"github.com/skevetter/devpod/pkg/platform/project"
 	"github.com/skevetter/devpod/pkg/util"
 	"github.com/skevetter/devpod/pkg/version"
 	"github.com/skevetter/log"
-	"github.com/skratchdot/open-golang/open"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -314,7 +314,7 @@ func (c *client) Login(host string, insecure bool, log log.Logger) error {
 	}
 
 	server := startServer(fmt.Sprintf(RedirectPath, host), keyChannel, log)
-	err = open.Run(fmt.Sprintf(LoginPath, host))
+	err = devpodopen.Run(fmt.Sprintf(LoginPath, host))
 	if err != nil {
 		return fmt.Errorf(
 			"couldn't open the login page in a browser: %w. Please use the --access-key flag for the login command. "+

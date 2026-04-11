@@ -20,9 +20,9 @@ import (
 	"github.com/skevetter/devpod/pkg/extract"
 	devpodhttp "github.com/skevetter/devpod/pkg/http"
 	"github.com/skevetter/devpod/pkg/ide"
+	devpodopen "github.com/skevetter/devpod/pkg/open"
 	"github.com/skevetter/devpod/pkg/util"
 	"github.com/skevetter/log"
-	"github.com/skratchdot/open-golang/open"
 )
 
 const (
@@ -89,7 +89,7 @@ type GenericJetBrainsServer struct {
 
 func (o *GenericJetBrainsServer) OpenGateway(workspaceFolder, workspaceID string) error {
 	o.log.Infof("Starting %s through JetBrains Gateway...", o.options.DisplayName)
-	err := open.Run(
+	err := devpodopen.Run(
 		`jetbrains-gateway://connect#idePath=` + url.QueryEscape(
 			o.getDirectory(path.Join("/", "home", o.userName)),
 		) + `&projectPath=` + url.QueryEscape(

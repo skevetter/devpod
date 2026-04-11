@@ -13,6 +13,16 @@ import (
 	"github.com/skratchdot/open-golang/open"
 )
 
+// Run opens the given URL in the default application.
+// When running inside a Linux AppImage, it sanitizes the environment
+// to avoid library conflicts before spawning xdg-open.
+func Run(url string) error {
+	if isAppImage() {
+		return openURLSanitized(url)
+	}
+	return open.Run(url)
+}
+
 // Open opens the given url in the default application, retrying every second until the context is done.
 func Open(ctx context.Context, url string, log log.Logger) error {
 	for {
@@ -20,7 +30,7 @@ func Open(ctx context.Context, url string, log log.Logger) error {
 		case <-ctx.Done():
 			return nil
 		case <-time.After(time.Second):
-			err := tryOpen(ctx, url, open.Start, log)
+			err := tryOpen(ctx, url, Run, log)
 			if err == nil {
 				return nil
 			}

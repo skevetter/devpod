@@ -27,6 +27,7 @@ import (
 	proflags "github.com/skevetter/devpod/cmd/pro/flags"
 	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/machineid"
+	devpodopen "github.com/skevetter/devpod/pkg/open"
 	"github.com/skevetter/devpod/pkg/platform"
 	"github.com/skevetter/devpod/pkg/platform/client"
 	"github.com/skevetter/devpod/pkg/util"
@@ -34,7 +35,6 @@ import (
 	"github.com/skevetter/log/hash"
 	"github.com/skevetter/log/scanner"
 	"github.com/skevetter/log/survey"
-	"github.com/skratchdot/open-golang/open"
 	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
@@ -1272,7 +1272,7 @@ func (cmd *StartCmd) login(url string) error {
 	// check if we are already logged in
 	if cmd.isLoggedIn(url) {
 		// still open the UI
-		err := open.Run(url)
+		err := devpodopen.Run(url)
 		if err != nil {
 			return fmt.Errorf("couldn't open the login page in a browser: %w", err)
 		}
@@ -1357,7 +1357,7 @@ func (cmd *StartCmd) loginUI(url string) error {
 	)
 	loginURL := fmt.Sprintf("%s/login#%s", url, queryString)
 
-	err := open.Run(loginURL)
+	err := devpodopen.Run(loginURL)
 	if err != nil {
 		return fmt.Errorf("couldn't open the login page in a browser: %w", err)
 	}

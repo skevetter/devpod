@@ -16,6 +16,7 @@ import (
 	clientpkg "github.com/skevetter/devpod/pkg/client"
 	"github.com/skevetter/devpod/pkg/config"
 	daemon "github.com/skevetter/devpod/pkg/daemon/platform"
+	devpodopen "github.com/skevetter/devpod/pkg/open"
 	"github.com/skevetter/devpod/pkg/options"
 	"github.com/skevetter/devpod/pkg/options/resolver"
 	"github.com/skevetter/devpod/pkg/platform"
@@ -24,7 +25,6 @@ import (
 	sshServer "github.com/skevetter/devpod/pkg/ssh/server"
 	"github.com/skevetter/devpod/pkg/ts"
 	"github.com/skevetter/log"
-	"github.com/skratchdot/open-golang/open"
 	"golang.org/x/crypto/ssh"
 	"tailscale.com/client/local"
 	"tailscale.com/tailcfg"
@@ -147,7 +147,7 @@ func (c *client) CheckWorkspaceReachable(ctx context.Context) error {
 				c.workspace.Source.String(),
 				c.workspace.IDE.Name,
 			)
-			openErr := open.Run(deeplink)
+			openErr := devpodopen.Run(deeplink)
 			if openErr != nil {
 				return getWorkspaceErr // inform user about daemon state
 			}
