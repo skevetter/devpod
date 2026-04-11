@@ -40,7 +40,7 @@ func StartBackgroundOnce(commandName string, createCommand CreateCommand) error 
 		}
 	}()
 
-	running, err := isProcessRunning(pidFile)
+	running, err := isProcessRunning(pidFile, commandName)
 	if err != nil {
 		return err
 	}
@@ -84,7 +84,7 @@ func startCommand(cmd *exec.Cmd, pidFile, streamsFile string) error {
 	return nil
 }
 
-func isProcessRunning(pidFile string) (bool, error) {
+func isProcessRunning(pidFile, commandName string) (bool, error) {
 	pid, err := os.ReadFile(pidFile) // #nosec G304: not user input
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
@@ -100,8 +100,18 @@ func isProcessRunning(pidFile string) (bool, error) {
 		_ = os.Remove(pidFile)
 		return false, nil
 	}
+	if !isRunning {
+		return false, nil
+	}
 
-	return isRunning, nil
+	// Verify the running process is actually ours. After a container restart,
+	// the PID may be reused by an unrelated process.
+	if !isExpectedProcess(string(pid), commandName) {
+		_ = os.Remove(pidFile)
+		return false, nil
+	}
+
+	return true, nil
 }
 
 func openStreamsFile(cmd *exec.Cmd, streamsFile string) (*os.File, error) {
