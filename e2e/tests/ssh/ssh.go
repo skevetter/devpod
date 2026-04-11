@@ -140,7 +140,30 @@ var _ = ginkgo.Describe("devpod ssh test suite", ginkgo.Label("ssh"), ginkgo.Ord
 			).Run()
 			framework.ExpectNoError(err)
 
-			// Add key to SSH agent so it's available for signing via the forwarded agent
+			// Start an SSH agent and add the key so it's available for signing
+			// via the forwarded agent. CI runners may not have an agent running.
+			agentOut, err := exec.Command("ssh-agent", "-s").Output()
+			framework.ExpectNoError(err)
+			// Parse SSH_AUTH_SOCK and SSH_AGENT_PID from agent output
+			for line := range strings.SplitSeq(string(agentOut), "\n") {
+				for _, prefix := range []string{"SSH_AUTH_SOCK=", "SSH_AGENT_PID="} {
+					if _, after, ok := strings.Cut(line, prefix); ok {
+						val := after
+						if semi := strings.Index(val, ";"); semi >= 0 {
+							val = val[:semi]
+						}
+						key := prefix[:len(prefix)-1]
+						_ = os.Setenv(key, val)
+					}
+				}
+			}
+			ginkgo.DeferCleanup(func(_ context.Context) {
+				if pid := os.Getenv("SSH_AGENT_PID"); pid != "" {
+					// #nosec G204 -- controlled pid from ssh-agent we started
+					_ = exec.Command("kill", pid).Run()
+				}
+			})
+
 			// #nosec G204 -- test command with controlled arguments
 			err = exec.Command("ssh-add", keyPath).Run()
 			framework.ExpectNoError(err)
