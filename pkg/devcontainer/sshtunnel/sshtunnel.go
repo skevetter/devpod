@@ -349,7 +349,8 @@ func establishSSHSession(
 }
 
 // setupSSHAgentForwarding configures SSH agent forwarding on the session.
-// Errors are returned to the caller rather than sent to a channel directly.
+// Failures are logged but not fatal — agent forwarding is optional and
+// SSH_AUTH_SOCK commonly points to stale sockets (tmux, screen, etc.).
 func setupSSHAgentForwarding(
 	ts *sshSessionTunnel,
 	sshClient *ssh.Client,
@@ -368,9 +369,9 @@ func setupSSHAgentForwarding(
 	}
 
 	if err != nil {
-		ts.opts.Log.Warnf("SSH agent forwarding failed: %v", err)
+		ts.opts.Log.Warnf("SSH agent forwarding failed (continuing without agent): %v", err)
 	}
-	return err
+	return nil
 }
 
 // runCommandInSSHTunnel runs the agent command over the SSH tunnel and returns
