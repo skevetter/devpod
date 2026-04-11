@@ -162,6 +162,12 @@ var _ = ginkgo.Describe("devpod ssh test suite", ginkgo.Label("ssh"), ginkgo.Ord
 				"echo test > testfile",
 				"git add testfile",
 				"git commit -m 'signed test commit' 2>&1",
+				// Now test with a file-path-based signingkey (the scenario from issue #645)
+				"echo \"$(git config --global user.signingkey)\" > /tmp/test_signing_key.pub",
+				"git config --global user.signingkey /tmp/test_signing_key.pub",
+				"echo world >> file.txt",
+				"git add file.txt",
+				"git commit -m 'signed commit with file path key' 2>&1",
 			}, " && ")
 
 			// The signing key must be passed on each SSH invocation so the
