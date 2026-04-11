@@ -27,6 +27,13 @@ func TestHasInteractiveTerminalRequiresStdinAndStdout(t *testing.T) {
 	}
 
 	isTerminalFunc = func(fd uintptr) bool {
+		return fd == stdout.writer.Fd()
+	}
+	if hasInteractiveTerminal(stdin.reader, stdout.writer) {
+		t.Fatal("expected missing stdin terminal to disable PTY")
+	}
+
+	isTerminalFunc = func(fd uintptr) bool {
 		return fd == stdin.reader.Fd() || fd == stdout.writer.Fd()
 	}
 	if !hasInteractiveTerminal(stdin.reader, stdout.writer) {

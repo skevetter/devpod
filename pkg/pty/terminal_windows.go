@@ -60,5 +60,8 @@ func makeOutputRaw(handle uintptr) (*TerminalState, error) {
 
 //nolint:revive
 func restoreTerminal(handle uintptr, state *TerminalState) error {
+	if state == nil {
+		return nil
+	}
 	return windows.SetConsoleMode(windows.Handle(handle), uint32(state.state))
 }

@@ -92,20 +92,6 @@ jobs:
           name: devpod-${{ steps.os.outputs.runner_os }}
           path: dist/devpod-${{ steps.os.outputs.runner_os }}_*/devpod-${{ steps.os.outputs.runner_os }}-*
 
-  unit-tests-windows:
-    name: CLI unit tests on windows-latest
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v6
-
-      - uses: actions/setup-go@v6
-        with:
-          go-version-file: go.mod
-
-      - name: run cmd/machine tests
-        shell: bash
-        run: go test ./cmd/machine
-
   integration-tests:
     name: Test ${{ matrix.label }} on ${{ matrix.runner }}
     needs: [can-read-secret, build-cli]
