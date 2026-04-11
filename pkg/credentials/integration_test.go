@@ -92,3 +92,49 @@ func TestIntegration_SigningSuccess_WritesSigFile(t *testing.T) {
 	require.NoError(t, readErr)
 	assert.Equal(t, expectedSig, sigContent)
 }
+
+func TestIntegration_SignatureRequest_IncludesPublicKeyContent(t *testing.T) {
+	var receivedMessage string
+	mock := &mockTunnelClient{
+		gitSSHSignatureFunc: func(ctx context.Context, msg *tunnel.Message) (*tunnel.Message, error) {
+			receivedMessage = msg.Message
+			sig := gitsshsigning.GitSSHSignatureResponse{
+				Signature: []byte(
+					"-----BEGIN SSH SIGNATURE-----\ntest\n-----END SSH SIGNATURE-----\n",
+				),
+			}
+			jsonBytes, _ := json.Marshal(sig)
+			return &tunnel.Message{Message: string(jsonBytes)}, nil
+		},
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		err := handleGitSSHSignatureRequest(context.Background(), w, r, mock, log.Discard)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+	}))
+	defer server.Close()
+
+	gitsshsigning.SetSignatureServerURL(server.URL + "/git-ssh-signature")
+	t.Cleanup(func() { gitsshsigning.SetSignatureServerURL("") })
+
+	// Create a cert file with known content
+	tmpDir := t.TempDir()
+	certFile := filepath.Join(tmpDir, "test_key.pub")
+	pubKeyContent := "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAITest test@example.com"
+	require.NoError(t, os.WriteFile(certFile, []byte(pubKeyContent), 0o600))
+
+	bufferFile := filepath.Join(tmpDir, "buffer")
+	require.NoError(t, os.WriteFile(bufferFile, []byte("commit content"), 0o600))
+
+	err := gitsshsigning.HandleGitSSHProgramCall(certFile, "git", bufferFile, log.Discard)
+	require.NoError(t, err)
+
+	// Verify the request forwarded to the tunnel contains the public key content
+	var req gitsshsigning.GitSSHSignatureRequest
+	require.NoError(t, json.Unmarshal([]byte(receivedMessage), &req))
+	assert.Equal(t, pubKeyContent, req.PublicKey,
+		"the tunnel message should include the public key content")
+	assert.Equal(t, "commit content", req.Content)
+}
