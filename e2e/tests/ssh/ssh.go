@@ -162,6 +162,9 @@ var _ = ginkgo.Describe("devpod ssh test suite", ginkgo.Label("ssh"), ginkgo.Ord
 					// #nosec G204 -- controlled pid from ssh-agent we started
 					_ = exec.Command("kill", pid).Run()
 				}
+				// Unset env vars so subsequent tests don't inherit a stale socket
+				_ = os.Unsetenv("SSH_AUTH_SOCK")
+				_ = os.Unsetenv("SSH_AGENT_PID")
 			})
 
 			// #nosec G204 -- test command with controlled arguments
