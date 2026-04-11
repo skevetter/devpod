@@ -288,6 +288,13 @@ func (r *runner) runDockerCompose(
 		return nil, fmt.Errorf("merge config: %w", err)
 	}
 
+	// expose the compose project name inside the container
+	if mergedConfig.RemoteEnv == nil {
+		mergedConfig.RemoteEnv = map[string]string{}
+	}
+	mergedConfig.RemoteEnv["DEVPOD_COMPOSE_PROJECT_NAME"] = project.Name
+	mergedConfig.RemoteEnv["COMPOSE_PROJECT_NAME"] = project.Name
+
 	// setup container
 	return r.setupContainer(ctx, &setupContainerParams{
 		rawConfig:           parsedConfig.Raw,
