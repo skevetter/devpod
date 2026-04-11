@@ -140,6 +140,11 @@ var _ = ginkgo.Describe("devpod ssh test suite", ginkgo.Label("ssh"), ginkgo.Ord
 			).Run()
 			framework.ExpectNoError(err)
 
+			// Add key to SSH agent so it's available for signing via the forwarded agent
+			// #nosec G204 -- test command with controlled arguments
+			err = exec.Command("ssh-add", keyPath).Run()
+			framework.ExpectNoError(err)
+
 			// Start workspace with git-ssh-signing-key flag
 			err = f.DevPodUp(ctx, tempDir, "--git-ssh-signing-key", keyPath+".pub")
 			framework.ExpectNoError(err)
