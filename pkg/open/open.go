@@ -81,7 +81,9 @@ func tryOpen(ctx context.Context, url string, fn func(string) error, log log.Log
 				return nil
 			case <-time.After(time.Second):
 			}
-			_ = fn(url)
+			if err := fn(url); err != nil {
+				return fmt.Errorf("open url: %w", err)
+			}
 			log.WithFields(logrus.Fields{
 				"url": url,
 			}).Done("opened url")
