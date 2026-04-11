@@ -349,8 +349,15 @@ func establishSSHSession(
 }
 
 // setupSSHAgentForwarding configures SSH agent forwarding on the session.
-// Failures are logged but not fatal — agent forwarding is optional and
-// SSH_AUTH_SOCK commonly points to stale sockets (tmux, screen, etc.).
+//
+// Failures are logged but never fatal. This matches OpenSSH's behavior:
+//   - clientloop.c: client_request_agent() returns NULL on failure,
+//     sending SSH2_MSG_CHANNEL_OPEN_FAILURE without terminating the session.
+//   - ssh_config(5) ExitOnForwardFailure only covers "dynamic, tunnel,
+//     local, and remote port forwardings" — agent forwarding is excluded.
+//
+// Stale SSH_AUTH_SOCK is common in practice (tmux, screen, reconnected
+// terminals), so a fatal error here would break devpod up for many users.
 func setupSSHAgentForwarding(
 	ts *sshSessionTunnel,
 	sshClient *ssh.Client,
