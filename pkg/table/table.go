@@ -36,7 +36,5 @@ func Render(headers []string, rows [][]string) string {
 
 // Print renders a table to stdout.
 func Print(headers []string, rows [][]string) {
-	os.Stdout.WriteString( //nolint:errcheck,gosec // G104: stdout write error is non-actionable
-		Render(headers, rows) + "\n",
-	)
+	_, _ = os.Stdout.WriteString(Render(headers, rows) + "\n") //nolint:gosec // G104
 }
