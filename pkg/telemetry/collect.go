@@ -8,10 +8,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/loft-sh/analytics-client/client"
 	"github.com/moby/term"
 	devpodclient "github.com/skevetter/devpod/pkg/client"
 	"github.com/skevetter/devpod/pkg/config"
+	"github.com/skevetter/devpod/pkg/telemetry/analytics"
 	"github.com/skevetter/devpod/pkg/version"
 	"github.com/skevetter/log"
 	"github.com/spf13/cobra"
@@ -71,7 +71,7 @@ func StartCLI(devPodConfig *config.Config, cmd *cobra.Command) {
 
 func newCLICollector(cmd *cobra.Command) (*cliCollector, error) {
 	defaultCollector := &cliCollector{
-		analyticsClient: client.NewClient(),
+		analyticsClient: analytics.NewClient(),
 		log:             log.Default.WithPrefix("telemetry"),
 		cmd:             cmd,
 	}
@@ -80,7 +80,7 @@ func newCLICollector(cmd *cobra.Command) (*cliCollector, error) {
 }
 
 type cliCollector struct {
-	analyticsClient client.Client
+	analyticsClient analytics.Client
 	cmd             *cobra.Command
 	client          devpodclient.BaseWorkspaceClient
 
@@ -160,7 +160,7 @@ func (d *cliCollector) RecordCLI(err error) {
 	// build the event and record
 	eventPropertiesRaw, _ := json.Marshal(eventProperties)
 	userPropertiesRaw, _ := json.Marshal(userProperties)
-	d.analyticsClient.RecordEvent(client.Event{
+	d.analyticsClient.RecordEvent(analytics.Event{
 		"event": {
 			"type":       eventType,
 			"machine_id": GetMachineID(),

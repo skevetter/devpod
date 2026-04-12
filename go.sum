@@ -458,8 +458,6 @@ github.com/loft-sh/admin-apis v0.0.0-20260311181619-506013b79ba0 h1:12fy1LhhyuQ4
 github.com/loft-sh/admin-apis v0.0.0-20260311181619-506013b79ba0/go.mod h1:pp+2PgOsRCTb1DXnEev/HCc0gvj5t0nHuTIMU8C8b90=
 github.com/loft-sh/agentapi/v4 v4.8.1 h1:o50ZvSS9R62gaWYcZl6uhVYnhYb6KbBvuOCiIpqUX1E=
 github.com/loft-sh/agentapi/v4 v4.8.1/go.mod h1:imoDDofcfZKLEy8Mpt0gWUKQWAXQ3oUVEyfWFil9Vdc=
-github.com/loft-sh/analytics-client v0.0.0-20240219162240-2f4c64b2494e h1:JcPnMaoczikvpasi8OJ47dCkWZjfgFubWa4V2SZo7h0=
-github.com/loft-sh/analytics-client v0.0.0-20240219162240-2f4c64b2494e/go.mod h1:FFWcGASyM2QlWTDTCG/WBVM/XYr8btqYt335TFNRCFg=
 github.com/loft-sh/api/v4 v4.4.0 h1:RP4YsNay7xqay0oxb8g4n7NECVxE/ogQApFov8Z4nZ8=
 github.com/loft-sh/api/v4 v4.4.0/go.mod h1:LqPbhgISsMvxIucmEUe42ifwuAG6kyqSBy1WTcrtGPQ=
 github.com/loft-sh/apiserver v0.0.0-20260113122925-594495a02e96 h1:MnvrgRnVm7X8zQPyVS2U2veIxacmVUYSFTHsoi6sJrw=

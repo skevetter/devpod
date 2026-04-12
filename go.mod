@@ -33,7 +33,6 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 	github.com/loft-sh/agentapi/v4 v4.8.1
-	github.com/loft-sh/analytics-client v0.0.0-20240219162240-2f4c64b2494e
 	github.com/loft-sh/api/v4 v4.4.0
 	github.com/loft-sh/apiserver v0.0.0-20260113122925-594495a02e96
 	github.com/moby/buildkit v0.29.0
