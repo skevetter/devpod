@@ -136,7 +136,7 @@ func SetupBackhaul(client client2.BaseWorkspaceClient, authSockID string, logger
 	}
 
 	//nolint:gosec // execPath is the current binary, arguments are controlled
-	dotCmd := exec.Command(
+	backhaulCmd := exec.Command(
 		execPath,
 		"ssh",
 		"--agent-forwarding=true",
@@ -153,17 +153,17 @@ func SetupBackhaul(client client2.BaseWorkspaceClient, authSockID string, logger
 	)
 
 	if logger.GetLevel() == logrus.DebugLevel {
-		dotCmd.Args = append(dotCmd.Args, "--debug")
+		backhaulCmd.Args = append(backhaulCmd.Args, "--debug")
 	}
 
 	logger.Info("Setting up backhaul SSH connection")
 
 	writer := logger.Writer(logrus.InfoLevel, false)
 
-	dotCmd.Stdout = writer
-	dotCmd.Stderr = writer
+	backhaulCmd.Stdout = writer
+	backhaulCmd.Stderr = writer
 
-	err = dotCmd.Run()
+	err = backhaulCmd.Run()
 	if err != nil {
 		return err
 	}

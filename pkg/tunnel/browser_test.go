@@ -6,6 +6,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func baseSSHArgs(ctx, ws string) []string {
+	return []string{
+		"ssh", "--user=root", "--agent-forwarding=false",
+		"--start-services=false", "--context", ctx, ws,
+	}
+}
+
 func TestBuildSSHCommandArgs(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -16,51 +23,23 @@ func TestBuildSSHCommandArgs(t *testing.T) {
 		expected  []string
 	}{
 		{
-			name:      "basic",
-			context:   "default",
-			workspace: "my-workspace",
-			expected: []string{
-				"ssh",
-				"--user=root",
-				"--agent-forwarding=false",
-				"--start-services=false",
-				"--context",
-				"default",
-				"my-workspace",
-			},
+			name: "basic", context: "default", workspace: "my-workspace",
+			expected: baseSSHArgs("default", "my-workspace"),
 		},
 		{
-			name:      "with debug",
-			context:   "default",
-			workspace: "my-workspace",
-			debug:     true,
-			expected: []string{
-				"ssh",
-				"--user=root",
-				"--agent-forwarding=false",
-				"--start-services=false",
-				"--context",
-				"default",
-				"my-workspace",
-				"--debug",
-			},
+			name: "with debug", context: "default", workspace: "my-workspace",
+			debug:    true,
+			expected: append(baseSSHArgs("default", "my-workspace"), "--debug"),
 		},
 		{
-			name:      "with extra args",
-			context:   "prod",
-			workspace: "ws",
+			name: "with extra args", context: "prod", workspace: "ws",
 			extraArgs: []string{"--stdio", "--log-output=raw"},
-			expected: []string{
-				"ssh",
-				"--user=root",
-				"--agent-forwarding=false",
-				"--start-services=false",
-				"--context",
-				"prod",
-				"ws",
-				"--stdio",
-				"--log-output=raw",
-			},
+			expected:  append(baseSSHArgs("prod", "ws"), "--stdio", "--log-output=raw"),
+		},
+		{
+			name: "with debug and extra args", context: "default", workspace: "my-workspace",
+			debug: true, extraArgs: []string{"--stdio"},
+			expected: append(baseSSHArgs("default", "my-workspace"), "--debug", "--stdio"),
 		},
 	}
 

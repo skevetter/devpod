@@ -47,11 +47,29 @@ func TestShouldSkipProviderUpdate(t *testing.T) {
 	}
 }
 
-func TestGetProInstance_EmptyProviderName(t *testing.T) {
-	// GetProInstance returns nil when provider name doesn't match any pro instance.
-	// We can't easily test with a real config without disk I/O, but we can verify
-	// that shouldSkipProviderUpdate is the composable unit for logic testing.
-	// This is a placeholder for integration-level testing.
-	result := shouldSkipProviderUpdate(false, false)
-	assert.False(t, result, "regular provider should not be skipped")
+func TestProviderVersionNeedsUpdate(t *testing.T) {
+	tests := []struct {
+		name, newVer, curVer string
+		expected, expectErr  bool
+	}{
+		{"same version", "v0.5.0", "v0.5.0", false, false},
+		{"newer version", "v0.6.0", "v0.5.0", true, false},
+		{"older version (downgrade)", "v0.4.0", "v0.5.0", true, false},
+		{"mixed v prefix", "v0.6.0", "0.5.0", true, false},
+		{"patch difference", "v1.2.4", "v1.2.3", true, false},
+		{"invalid new version", "not-a-version", "v0.5.0", false, true},
+		{"invalid current version", "v0.5.0", "not-a-version", false, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := providerVersionNeedsUpdate(tt.newVer, tt.curVer)
+			if tt.expectErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expected, result)
+			}
+		})
+	}
 }
