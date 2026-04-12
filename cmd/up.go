@@ -11,7 +11,6 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/blang/semver/v4"
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/cmd/flags"
 	"github.com/skevetter/devpod/pkg/agent"
@@ -25,12 +24,10 @@ import (
 	"github.com/skevetter/devpod/pkg/ide"
 	"github.com/skevetter/devpod/pkg/ide/opener"
 	options2 "github.com/skevetter/devpod/pkg/options"
-	"github.com/skevetter/devpod/pkg/platform"
 	provider2 "github.com/skevetter/devpod/pkg/provider"
 	devssh "github.com/skevetter/devpod/pkg/ssh"
 	"github.com/skevetter/devpod/pkg/telemetry"
 	"github.com/skevetter/devpod/pkg/util"
-	"github.com/skevetter/devpod/pkg/version"
 	workspace2 "github.com/skevetter/devpod/pkg/workspace"
 	"github.com/skevetter/log"
 	"github.com/spf13/cobra"
@@ -754,99 +751,6 @@ var inheritedEnvironmentVariables = []string{
 	"GIT_COMMITTER_DATE",
 }
 
-// checkProviderUpdate currently only ensures the local provider is in sync with the remote for DevPod Pro instances
-// Potentially auto-upgrade other providers in the future.
-func checkProviderUpdate(
-	devPodConfig *config.Config,
-	proInstance *provider2.ProInstance,
-	log log.Logger,
-) error {
-	if version.GetVersion() == version.DevVersion {
-		log.Debugf("skipping provider upgrade check during development")
-		return nil
-	}
-	if proInstance == nil {
-		log.Debug("no pro instance available, skipping provider upgrade check")
-		return nil
-	}
-
-	// compare versions
-	newVersion, err := platform.GetProInstanceDevPodVersion(proInstance)
-	if err != nil {
-		return fmt.Errorf("version for pro instance %s: %w", proInstance.Host, err)
-	}
-
-	p, err := workspace2.FindProvider(devPodConfig, proInstance.Provider, log)
-	if err != nil {
-		return fmt.Errorf("get provider config for pro provider %s: %w", proInstance.Provider, err)
-	}
-	if p.Config.Version == version.DevVersion {
-		return nil
-	}
-	if p.Config.Source.Internal {
-		return nil
-	}
-
-	v1, err := semver.Parse(strings.TrimPrefix(newVersion, "v"))
-	if err != nil {
-		return fmt.Errorf("parse version %s: %w", newVersion, err)
-	}
-	v2, err := semver.Parse(strings.TrimPrefix(p.Config.Version, "v"))
-	if err != nil {
-		return fmt.Errorf("parse version %s: %w", p.Config.Version, err)
-	}
-	if v1.Compare(v2) == 0 {
-		return nil
-	}
-	log.Infof(
-		"New provider version available, attempting to update %s from %s to %s",
-		proInstance.Provider,
-		p.Config.Version,
-		newVersion,
-	)
-
-	providerSource, err := workspace2.ResolveProviderSource(devPodConfig, proInstance.Provider, log)
-	if err != nil {
-		return fmt.Errorf("resolve provider source %s: %w", proInstance.Provider, err)
-	}
-
-	splitted := strings.Split(providerSource, "@")
-	if len(splitted) == 0 {
-		return fmt.Errorf("no provider source found %s", providerSource)
-	}
-	providerSource = splitted[0] + "@" + newVersion
-
-	_, err = workspace2.UpdateProvider(devPodConfig, proInstance.Provider, providerSource, log)
-	if err != nil {
-		return fmt.Errorf("update provider %s: %w", proInstance.Provider, err)
-	}
-
-	log.WithFields(logrus.Fields{
-		"provider": proInstance.Provider,
-	}).Done("updated provider")
-	return nil
-}
-
-func getProInstance(
-	devPodConfig *config.Config,
-	providerName string,
-	log log.Logger,
-) *provider2.ProInstance {
-	proInstances, err := workspace2.ListProInstances(devPodConfig, log)
-	if err != nil {
-		return nil
-	} else if len(proInstances) == 0 {
-		return nil
-	}
-
-	proInstance, ok := workspace2.FindProviderProInstance(proInstances, providerName)
-	if !ok {
-		return nil
-	}
-
-	return proInstance
-}
-
 func (cmd *UpCmd) prepareClient(
 	ctx context.Context,
 	devPodConfig *config.Config,
@@ -920,8 +824,8 @@ func (cmd *UpCmd) prepareClient(
 	}
 
 	if !cmd.Platform.Enabled {
-		proInstance := getProInstance(devPodConfig, client.Provider(), logger)
-		err = checkProviderUpdate(devPodConfig, proInstance, logger)
+		proInstance := workspace2.GetProInstance(devPodConfig, client.Provider(), logger)
+		err = workspace2.CheckProviderUpdate(devPodConfig, proInstance, logger)
 		if err != nil {
 			return nil, logger, err
 		}
