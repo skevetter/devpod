@@ -4,7 +4,7 @@ go 1.25.7
 
 require (
 	al.essio.dev/pkg/shellescape v1.6.0
-	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.20.0
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.21.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.13.1
 	github.com/Microsoft/go-winio v0.6.2
 	github.com/awslabs/amazon-ecr-credential-helper/ecr-login v0.12.0
