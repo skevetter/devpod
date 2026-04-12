@@ -10,9 +10,9 @@ import (
 	proflags "github.com/skevetter/devpod/cmd/pro/flags"
 	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/provider"
+	"github.com/skevetter/devpod/pkg/table"
 	"github.com/skevetter/devpod/pkg/workspace"
 	"github.com/skevetter/log"
-	"github.com/skevetter/log/table"
 	"github.com/spf13/cobra"
 )
 
@@ -87,7 +87,7 @@ func (cmd *ListCmd) Run(ctx context.Context) error {
 			tableHeaders = append(tableHeaders, "Authenticated")
 		}
 
-		table.PrintTable(log.Default, tableHeaders, tableEntries)
+		table.Print(tableHeaders, tableEntries)
 	case "json":
 		tableEntries := []*proTableEntry{}
 		for _, proInstance := range proInstances {

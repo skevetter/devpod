@@ -11,10 +11,10 @@ import (
 	"github.com/skevetter/devpod/cmd/completion"
 	"github.com/skevetter/devpod/cmd/flags"
 	"github.com/skevetter/devpod/pkg/config"
+	"github.com/skevetter/devpod/pkg/table"
 	"github.com/skevetter/devpod/pkg/types"
 	"github.com/skevetter/devpod/pkg/workspace"
 	"github.com/skevetter/log"
-	"github.com/skevetter/log/table"
 	"github.com/spf13/cobra"
 )
 
@@ -131,7 +131,7 @@ func printOptions(
 			return tableEntries[i][0] < tableEntries[j][0]
 		})
 
-		table.PrintTable(log.Default, []string{
+		table.Print([]string{
 			"Name",
 			"Required",
 			"Description",

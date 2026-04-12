@@ -11,8 +11,7 @@ import (
 	"github.com/skevetter/devpod/cmd/flags"
 	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/provider"
-	"github.com/skevetter/log"
-	"github.com/skevetter/log/table"
+	"github.com/skevetter/devpod/pkg/table"
 	"github.com/spf13/cobra"
 )
 
@@ -81,7 +80,7 @@ func (cmd *ListCmd) Run(ctx context.Context) error {
 			return tableEntries[i][0] < tableEntries[j][0]
 		})
 
-		table.PrintTable(log.Default, []string{
+		table.Print([]string{
 			"Name",
 			"Provider",
 			"Age",
