@@ -191,7 +191,7 @@ jobs:
           CI: ${{ matrix.tauri_ci }}
 
       - name: upload cli assets
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         if: runner.os == 'Linux'
         with:
           tag_name: ${{ inputs.tag || github.ref_name }}
@@ -255,7 +255,7 @@ jobs:
           sed -i "s/\${META_SHA256}/${META_SHA256}/g" ./desktop/flatpak/sh.loft.devpod.yml
 
       - name: upload flatpak assets
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ inputs.tag || github.ref_name }}
           draft: true
@@ -292,7 +292,7 @@ jobs:
           upload-artifact: true
 
       - name: upload flatpak bundle
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ inputs.tag || github.ref_name }}
           draft: true
@@ -306,7 +306,7 @@ jobs:
     if: github.event.release.prerelease
     runs-on: ubuntu-latest
     steps:
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ inputs.tag || github.ref_name }}
           prerelease: true
