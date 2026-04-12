@@ -80,8 +80,6 @@ func writeSignatureToFile(signature []byte, bufferFile string, log log.Logger) e
 }
 
 func createSignatureRequestBody(content []byte, certPath string) ([]byte, error) {
-	// Include the public key content so the host can create a temp file;
-	// the container-local certPath doesn't exist on the host.
 	var publicKey string
 	pubKeyData, readErr := os.ReadFile(
 		certPath,

@@ -14,8 +14,6 @@ func TestSign_WithPublicKeyContent_WritesToTempFile(t *testing.T) {
 		PublicKey: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFakeKeyForTesting test@example.com",
 	}
 
-	// Signing fails (fake key not in agent), but the error should reference
-	// a host temp file, not the original container KeyPath.
 	_, err := req.Sign()
 	require.Error(t, err)
 	assert.NotContains(t, err.Error(), "/tmp/.git_signing_key_does_not_exist")

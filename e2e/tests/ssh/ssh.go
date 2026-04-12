@@ -140,9 +140,6 @@ var _ = ginkgo.Describe("devpod ssh test suite", ginkgo.Label("ssh"), ginkgo.Ord
 			).Run()
 			framework.ExpectNoError(err)
 
-			// Start an SSH agent (CI runners may not have one) and add the
-			// signing key so it's available via the forwarded agent.
-			// GinkgoT().Setenv restores the original env when the spec ends.
 			agentOut, err := exec.Command("ssh-agent", "-s").Output()
 			framework.ExpectNoError(err)
 			t := ginkgo.GinkgoT()
@@ -191,8 +188,6 @@ var _ = ginkgo.Describe("devpod ssh test suite", ginkgo.Label("ssh"), ginkgo.Ord
 				"echo test > testfile",
 				"git add testfile",
 				"git commit -m 'signed test commit' 2>&1",
-				// Test file-path signingkey (issue #645): write the agent's public
-				// key to a file and point user.signingkey at it.
 				"ssh-add -L | head -1 > /tmp/test_signing_key.pub",
 				"git config --global user.signingkey /tmp/test_signing_key.pub",
 				"echo world >> file.txt",

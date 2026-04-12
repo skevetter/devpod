@@ -23,8 +23,6 @@ func TestGitSSHSignature_DeserializesPublicKey(t *testing.T) {
 
 	ts := New(log.Discard)
 
-	// Signing fails (no real key in agent), but the error should come from
-	// ssh-keygen execution — not from deserialization or key resolution.
 	_, err = ts.GitSSHSignature(context.Background(), &tunnel.Message{
 		Message: string(reqJSON),
 	})
