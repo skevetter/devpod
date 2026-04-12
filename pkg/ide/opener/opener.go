@@ -17,6 +17,7 @@ import (
 	"github.com/skevetter/devpod/pkg/command"
 	"github.com/skevetter/devpod/pkg/config"
 	config2 "github.com/skevetter/devpod/pkg/devcontainer/config"
+	"github.com/skevetter/devpod/pkg/gpg"
 	"github.com/skevetter/devpod/pkg/ide/fleet"
 	"github.com/skevetter/devpod/pkg/ide/jetbrains"
 	"github.com/skevetter/devpod/pkg/ide/jupyter"
@@ -240,7 +241,7 @@ func openJupyterBrowser(
 	params Params,
 ) error {
 	if params.GPGAgentForwarding {
-		if err := performGpgForwarding(params.Client, params.Log); err != nil {
+		if err := gpg.ForwardAgent(params.Client, params.Log); err != nil {
 			return err
 		}
 	}
@@ -288,7 +289,7 @@ func openRStudioBrowser(
 	params Params,
 ) error {
 	if params.GPGAgentForwarding {
-		if err := performGpgForwarding(params.Client, params.Log); err != nil {
+		if err := gpg.ForwardAgent(params.Client, params.Log); err != nil {
 			return err
 		}
 	}
@@ -334,7 +335,7 @@ func openVSCodeBrowser(
 	params Params,
 ) error {
 	if params.GPGAgentForwarding {
-		if err := performGpgForwarding(params.Client, params.Log); err != nil {
+		if err := gpg.ForwardAgent(params.Client, params.Log); err != nil {
 			return err
 		}
 	}
@@ -410,54 +411,6 @@ func startFleet(ctx context.Context, client client2.BaseWorkspaceClient, logger 
 	logger.Infof("Starting Fleet at %s ...", url)
 
 	return open.Run(url)
-}
-
-// Duplicated helpers below — these will be moved to pkg/gpg/ and pkg/tunnel/ in Tasks 3-4.
-
-func performGpgForwarding(
-	client client2.BaseWorkspaceClient,
-	logger log.Logger,
-) error {
-	logger.Debug("gpg forwarding enabled, performing immediately")
-
-	execPath, err := os.Executable()
-	if err != nil {
-		return err
-	}
-
-	remoteUser, err := devssh.GetUser(
-		client.WorkspaceConfig().ID,
-		client.WorkspaceConfig().SSHConfigPath,
-		client.WorkspaceConfig().SSHConfigIncludePath,
-	)
-	if err != nil {
-		remoteUser = "root"
-	}
-
-	logger.Info("forwarding gpg-agent")
-
-	go func() {
-		//nolint:gosec // execPath is the current binary, arguments are controlled
-		err = exec.Command(
-			execPath,
-			"ssh",
-			"--gpg-agent-forwarding=true",
-			"--agent-forwarding=true",
-			"--start-services=true",
-			"--user",
-			remoteUser,
-			"--context",
-			client.Context(),
-			client.Workspace(),
-			"--log-output=raw",
-			"--command", "sleep infinity",
-		).Run()
-		if err != nil {
-			logger.Error("failure in forwarding gpg-agent")
-		}
-	}()
-
-	return nil
 }
 
 func setupBackhaul(client client2.BaseWorkspaceClient, authSockID string, logger log.Logger) error {
