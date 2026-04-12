@@ -10,7 +10,6 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
-	"slices"
 	"strconv"
 	"strings"
 	"syscall"
@@ -26,6 +25,7 @@ import (
 	"github.com/skevetter/devpod/pkg/config"
 	config2 "github.com/skevetter/devpod/pkg/devcontainer/config"
 	"github.com/skevetter/devpod/pkg/devcontainer/sshtunnel"
+	"github.com/skevetter/devpod/pkg/dotfiles"
 	"github.com/skevetter/devpod/pkg/ide"
 	"github.com/skevetter/devpod/pkg/ide/fleet"
 	"github.com/skevetter/devpod/pkg/ide/jetbrains"
@@ -382,15 +382,15 @@ func (cmd *UpCmd) configureWorkspace(
 		log.Info("SSH configuration completed in workspace")
 	}
 
-	if err := setupDotfiles(
-		cmd.DotfilesSource,
-		cmd.DotfilesScript,
-		cmd.DotfilesScriptEnvFile,
-		cmd.DotfilesScriptEnv,
-		client,
-		devPodConfig,
-		log,
-	); err != nil {
+	if err := dotfiles.Setup(dotfiles.SetupParams{
+		Source:       cmd.DotfilesSource,
+		Script:       cmd.DotfilesScript,
+		EnvFiles:     cmd.DotfilesScriptEnvFile,
+		EnvKeyValues: cmd.DotfilesScriptEnv,
+		Client:       client,
+		DevPodConfig: devPodConfig,
+		Log:          log,
+	}); err != nil {
 		return err
 	}
 
@@ -1380,176 +1380,6 @@ func createSSHCommand(
 	args = append(args, extraArgs...)
 
 	return exec.CommandContext(ctx, execPath, args...), nil
-}
-
-func setupDotfiles(
-	dotfiles, script string,
-	envFiles, envKeyValuePairs []string,
-	client client2.BaseWorkspaceClient,
-	devPodConfig *config.Config,
-	log log.Logger,
-) error {
-	dotfilesRepo := devPodConfig.ContextOption(config.ContextOptionDotfilesURL)
-	if dotfiles != "" {
-		dotfilesRepo = dotfiles
-	}
-
-	dotfilesScript := devPodConfig.ContextOption(config.ContextOptionDotfilesScript)
-	if script != "" {
-		dotfilesScript = script
-	}
-
-	if dotfilesRepo == "" {
-		log.Debug("No dotfiles repo specified, skipping")
-		return nil
-	}
-
-	log.Infof("Dotfiles Git repository %s specified", dotfilesRepo)
-	log.Debug("Cloning dotfiles into the devcontainer...")
-
-	dotCmd, err := buildDotCmd(
-		devPodConfig,
-		dotfilesRepo,
-		dotfilesScript,
-		envFiles,
-		envKeyValuePairs,
-		client,
-		log,
-	)
-	if err != nil {
-		return err
-	}
-	if log.GetLevel() == logrus.DebugLevel {
-		dotCmd.Args = append(dotCmd.Args, "--debug")
-	}
-
-	log.Debugf("Running dotfiles setup command: %v", dotCmd.Args)
-
-	writer := log.Writer(logrus.InfoLevel, false)
-
-	dotCmd.Stdout = writer
-	dotCmd.Stderr = writer
-
-	err = dotCmd.Run()
-	if err != nil {
-		return err
-	}
-
-	log.Infof("Done setting up dotfiles into the devcontainer")
-
-	return nil
-}
-
-func buildDotCmdAgentArguments(
-	devPodConfig *config.Config,
-	dotfilesRepo, dotfilesScript string,
-	log log.Logger,
-) []string {
-	agentArguments := []string{
-		"agent",
-		"workspace",
-		"install-dotfiles",
-		"--repository",
-		dotfilesRepo,
-	}
-
-	if devPodConfig.ContextOption(config.ContextOptionSSHStrictHostKeyChecking) == config.BoolTrue {
-		agentArguments = append(agentArguments, "--strict-host-key-checking")
-	}
-
-	if log.GetLevel() == logrus.DebugLevel {
-		agentArguments = append(agentArguments, "--debug")
-	}
-
-	if dotfilesScript != "" {
-		log.Infof("Dotfiles script %s specified", dotfilesScript)
-		agentArguments = append(agentArguments, "--install-script", dotfilesScript)
-	}
-
-	return agentArguments
-}
-
-func buildDotCmd(
-	devPodConfig *config.Config,
-	dotfilesRepo, dotfilesScript string,
-	envFiles, envKeyValuePairs []string,
-	client client2.BaseWorkspaceClient,
-	log log.Logger,
-) (*exec.Cmd, error) {
-	sshCmd := []string{
-		"ssh",
-		"--agent-forwarding=true",
-		"--start-services=true",
-	}
-
-	envFilesKeyValuePairs, err := collectDotfilesScriptEnvKeyvaluePairs(envFiles)
-	if err != nil {
-		return nil, err
-	}
-
-	// Collect file-based and CLI options env variables names (aka keys) and
-	// configure ssh env var passthrough with send-env
-	allEnvKeyValuesPairs := slices.Concat(envFilesKeyValuePairs, envKeyValuePairs)
-	allEnvKeys := extractKeysFromEnvKeyValuePairs(allEnvKeyValuesPairs)
-	for _, envKey := range allEnvKeys {
-		sshCmd = append(sshCmd, "--send-env", envKey)
-	}
-
-	remoteUser, err := devssh.GetUser(
-		client.WorkspaceConfig().ID,
-		client.WorkspaceConfig().SSHConfigPath,
-		client.WorkspaceConfig().SSHConfigIncludePath,
-	)
-	if err != nil {
-		remoteUser = "root"
-	}
-
-	agentArguments := buildDotCmdAgentArguments(devPodConfig, dotfilesRepo, dotfilesScript, log)
-	sshCmd = append(sshCmd,
-		"--user",
-		remoteUser,
-		"--context",
-		client.Context(),
-		client.Workspace(),
-		"--log-output=raw",
-		"--command",
-		agent.ContainerDevPodHelperLocation+" "+strings.Join(agentArguments, " "),
-	)
-	execPath, err := os.Executable()
-	if err != nil {
-		return nil, err
-	}
-
-	dotCmd := exec.Command(
-		execPath,
-		sshCmd...,
-	)
-
-	dotCmd.Env = append(dotCmd.Environ(), allEnvKeyValuesPairs...)
-	return dotCmd, nil
-}
-
-func extractKeysFromEnvKeyValuePairs(envKeyValuePairs []string) []string {
-	keys := []string{}
-	for _, env := range envKeyValuePairs {
-		keyValue := strings.SplitN(env, "=", 2)
-		if len(keyValue) == 2 {
-			keys = append(keys, keyValue[0])
-		}
-	}
-	return keys
-}
-
-func collectDotfilesScriptEnvKeyvaluePairs(envFiles []string) ([]string, error) {
-	keyValues := []string{}
-	for _, file := range envFiles {
-		envFromFile, err := config2.ParseKeyValueFile(file)
-		if err != nil {
-			return nil, err
-		}
-		keyValues = append(keyValues, envFromFile...)
-	}
-	return keyValues, nil
 }
 
 func performGpgForwarding(
