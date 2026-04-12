@@ -24,7 +24,9 @@ func Render(headers []string, rows [][]string) string {
 			return cellStyle
 		})
 
-	width, _, err := term.GetSize(int(os.Stdout.Fd())) //nolint:gosec
+	width, _, err := term.GetSize(
+		int(os.Stdout.Fd()), //nolint:gosec // G115: safe int conversion of stdout fd
+	)
 	if err == nil && width > 0 {
 		t = t.Width(width)
 	}
@@ -34,5 +36,7 @@ func Render(headers []string, rows [][]string) string {
 
 // Print renders a table to stdout.
 func Print(headers []string, rows [][]string) {
-	os.Stdout.WriteString(Render(headers, rows) + "\n") //nolint:errcheck,gosec
+	os.Stdout.WriteString( //nolint:errcheck,gosec // G104: stdout write error is non-actionable
+		Render(headers, rows) + "\n",
+	)
 }
