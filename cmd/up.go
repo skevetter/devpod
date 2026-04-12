@@ -1,11 +1,9 @@
 package cmd
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io"
-	"net"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -21,23 +19,14 @@ import (
 	"github.com/skevetter/devpod/pkg/agent/tunnelserver"
 	client2 "github.com/skevetter/devpod/pkg/client"
 	"github.com/skevetter/devpod/pkg/client/clientimplementation"
-	"github.com/skevetter/devpod/pkg/command"
 	"github.com/skevetter/devpod/pkg/config"
 	config2 "github.com/skevetter/devpod/pkg/devcontainer/config"
 	"github.com/skevetter/devpod/pkg/devcontainer/sshtunnel"
 	"github.com/skevetter/devpod/pkg/dotfiles"
 	"github.com/skevetter/devpod/pkg/ide"
-	"github.com/skevetter/devpod/pkg/ide/fleet"
-	"github.com/skevetter/devpod/pkg/ide/jetbrains"
-	"github.com/skevetter/devpod/pkg/ide/jupyter"
-	"github.com/skevetter/devpod/pkg/ide/openvscode"
-	"github.com/skevetter/devpod/pkg/ide/rstudio"
-	"github.com/skevetter/devpod/pkg/ide/vscode"
-	"github.com/skevetter/devpod/pkg/ide/zed"
-	open2 "github.com/skevetter/devpod/pkg/open"
+	"github.com/skevetter/devpod/pkg/ide/opener"
 	options2 "github.com/skevetter/devpod/pkg/options"
 	"github.com/skevetter/devpod/pkg/platform"
-	"github.com/skevetter/devpod/pkg/port"
 	provider2 "github.com/skevetter/devpod/pkg/provider"
 	devssh "github.com/skevetter/devpod/pkg/ssh"
 	"github.com/skevetter/devpod/pkg/telemetry"
@@ -46,7 +35,6 @@ import (
 	"github.com/skevetter/devpod/pkg/version"
 	workspace2 "github.com/skevetter/devpod/pkg/workspace"
 	"github.com/skevetter/log"
-	"github.com/skratchdot/open-golang/open"
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh"
 )
@@ -410,176 +398,16 @@ func (cmd *UpCmd) openIDE(
 	}
 
 	ideConfig := client.WorkspaceConfig().IDE
-	opener := newIDEOpener(cmd, devPodConfig, client, wctx, log)
-	return opener.open(ctx, ideConfig.Name, ideConfig.Options)
-}
-
-// ideOpener handles opening different IDE types.
-type ideOpener struct {
-	cmd          *UpCmd
-	devPodConfig *config.Config
-	client       client2.BaseWorkspaceClient
-	wctx         *workspaceContext
-	log          log.Logger
-}
-
-func newIDEOpener(
-	cmd *UpCmd,
-	devPodConfig *config.Config,
-	client client2.BaseWorkspaceClient,
-	wctx *workspaceContext,
-	log log.Logger,
-) *ideOpener {
-	return &ideOpener{
-		cmd:          cmd,
-		devPodConfig: devPodConfig,
-		client:       client,
-		wctx:         wctx,
-		log:          log,
-	}
-}
-
-func (o *ideOpener) open(
-	ctx context.Context,
-	ideName string,
-	ideOptions map[string]config.OptionValue,
-) error {
-	folder := o.wctx.result.SubstitutionContext.ContainerWorkspaceFolder
-	workspace := o.client.Workspace()
-	user := o.wctx.user
-
-	switch ideName {
-	case string(config.IDEVSCode), string(config.IDEVSCodeInsiders), string(config.IDECursor),
-		string(config.IDECodium), string(config.IDEPositron), string(config.IDEWindsurf),
-		string(config.IDEAntigravity), string(config.IDEBob):
-		return o.openVSCodeFlavor(ctx, ideName, folder, ideOptions)
-
-	case string(config.IDERustRover), string(config.IDEGoland), string(config.IDEPyCharm),
-		string(config.IDEPhpStorm), string(config.IDEIntellij), string(config.IDECLion),
-		string(config.IDERider), string(config.IDERubyMine), string(config.IDEWebStorm), string(config.IDEDataSpell):
-		return o.openJetBrains(ideName, folder, workspace, user, ideOptions)
-
-	case string(config.IDEOpenVSCode):
-		return startVSCodeInBrowser(
-			o.cmd.GPGAgentForwarding,
-			ctx,
-			o.devPodConfig,
-			o.client,
-			folder,
-			user,
-			ideOptions,
-			o.cmd.SSHAuthSockID,
-			o.cmd.GitSSHSigningKey,
-			o.log,
-		)
-
-	case string(config.IDEFleet):
-		return startFleet(ctx, o.client, o.log)
-
-	case string(config.IDEZed):
-		return zed.Open(ctx, ideOptions, user, folder, workspace, o.log)
-
-	case string(config.IDEJupyterNotebook):
-		return startJupyterNotebookInBrowser(
-			o.cmd.GPGAgentForwarding,
-			ctx,
-			o.devPodConfig,
-			o.client,
-			user,
-			ideOptions,
-			o.cmd.SSHAuthSockID,
-			o.cmd.GitSSHSigningKey,
-			o.log,
-		)
-
-	case string(config.IDERStudio):
-		return startRStudioInBrowser(
-			o.cmd.GPGAgentForwarding,
-			ctx,
-			o.devPodConfig,
-			o.client,
-			user,
-			ideOptions,
-			o.cmd.SSHAuthSockID,
-			o.cmd.GitSSHSigningKey,
-			o.log,
-		)
-
-	default:
-		return nil
-	}
-}
-
-func (o *ideOpener) openVSCodeFlavor(
-	ctx context.Context,
-	ideName, folder string,
-	ideOptions map[string]config.OptionValue,
-) error {
-	flavorMap := map[string]vscode.Flavor{
-		string(config.IDEVSCode):         vscode.FlavorStable,
-		string(config.IDEVSCodeInsiders): vscode.FlavorInsiders,
-		string(config.IDECursor):         vscode.FlavorCursor,
-		string(config.IDECodium):         vscode.FlavorCodium,
-		string(config.IDEPositron):       vscode.FlavorPositron,
-		string(config.IDEWindsurf):       vscode.FlavorWindsurf,
-		string(config.IDEAntigravity):    vscode.FlavorAntigravity,
-		string(config.IDEBob):            vscode.FlavorBob,
-	}
-
-	params := vscode.OpenParams{
-		Workspace: o.client.Workspace(),
-		Folder:    folder,
-		NewWindow: vscode.Options.GetValue(ideOptions, vscode.OpenNewWindow) == config.BoolTrue,
-		Flavor:    flavorMap[ideName],
-		Log:       o.log,
-	}
-
-	return vscode.Open(ctx, params)
-}
-
-func (o *ideOpener) openJetBrains(
-	ideName, folder, workspace, user string,
-	ideOptions map[string]config.OptionValue,
-) error {
-	type jetbrainsFactory func() interface{ OpenGateway(string, string) error }
-
-	jetbrainsMap := map[string]jetbrainsFactory{
-		string(config.IDERustRover): func() interface{ OpenGateway(string, string) error } {
-			return jetbrains.NewRustRoverServer(user, ideOptions, o.log)
-		},
-		string(config.IDEGoland): func() interface{ OpenGateway(string, string) error } {
-			return jetbrains.NewGolandServer(user, ideOptions, o.log)
-		},
-		string(config.IDEPyCharm): func() interface{ OpenGateway(string, string) error } {
-			return jetbrains.NewPyCharmServer(user, ideOptions, o.log)
-		},
-		string(config.IDEPhpStorm): func() interface{ OpenGateway(string, string) error } {
-			return jetbrains.NewPhpStorm(user, ideOptions, o.log)
-		},
-		string(config.IDEIntellij): func() interface{ OpenGateway(string, string) error } {
-			return jetbrains.NewIntellij(user, ideOptions, o.log)
-		},
-		string(config.IDECLion): func() interface{ OpenGateway(string, string) error } {
-			return jetbrains.NewCLionServer(user, ideOptions, o.log)
-		},
-		string(config.IDERider): func() interface{ OpenGateway(string, string) error } {
-			return jetbrains.NewRiderServer(user, ideOptions, o.log)
-		},
-		string(config.IDERubyMine): func() interface{ OpenGateway(string, string) error } {
-			return jetbrains.NewRubyMineServer(user, ideOptions, o.log)
-		},
-		string(config.IDEWebStorm): func() interface{ OpenGateway(string, string) error } {
-			return jetbrains.NewWebStormServer(user, ideOptions, o.log)
-		},
-		string(config.IDEDataSpell): func() interface{ OpenGateway(string, string) error } {
-			return jetbrains.NewDataSpellServer(user, ideOptions, o.log)
-		},
-	}
-
-	if factory, ok := jetbrainsMap[ideName]; ok {
-		return factory().OpenGateway(folder, workspace)
-	}
-	return fmt.Errorf("unknown JetBrains IDE: %s", ideName)
+	return opener.Open(ctx, ideConfig.Name, ideConfig.Options, opener.Params{
+		GPGAgentForwarding: cmd.GPGAgentForwarding,
+		SSHAuthSockID:      cmd.SSHAuthSockID,
+		GitSSHSigningKey:   cmd.GitSSHSigningKey,
+		DevPodConfig:       devPodConfig,
+		Client:             client,
+		User:               wctx.user,
+		Result:             wctx.result,
+		Log:                log,
+	})
 }
 
 func (cmd *UpCmd) devPodUp(
@@ -835,255 +663,6 @@ func (cmd *UpCmd) devPodUpMachine(
 			)
 		},
 	})
-}
-
-func startJupyterNotebookInBrowser(
-	forwardGpg bool,
-	ctx context.Context,
-	devPodConfig *config.Config,
-	client client2.BaseWorkspaceClient,
-	user string,
-	ideOptions map[string]config.OptionValue,
-	authSockID string,
-	gitSSHSigningKey string,
-	logger log.Logger,
-) error {
-	if forwardGpg {
-		err := performGpgForwarding(client, logger)
-		if err != nil {
-			return err
-		}
-	}
-
-	// determine port
-	jupyterAddress, jupyterPort, err := parseAddressAndPort(
-		jupyter.Options.GetValue(ideOptions, jupyter.BindAddressOption),
-		jupyter.DefaultServerPort,
-	)
-	if err != nil {
-		return err
-	}
-
-	// wait until reachable then open browser
-	targetURL := fmt.Sprintf("http://localhost:%d/lab", jupyterPort)
-	if jupyter.Options.GetValue(ideOptions, jupyter.OpenOption) == config.BoolTrue {
-		go func() {
-			err = open2.Open(ctx, targetURL, logger)
-			if err != nil {
-				logger.WithFields(logrus.Fields{"error": err}).
-					Error("error opening jupyter notebook")
-			}
-
-			logger.Info(
-				"started jupyter notebook in browser mode. Please keep this terminal open as long as you use Jupyter Notebook",
-			)
-		}()
-	}
-
-	// start in browser
-	logger.Infof("Starting jupyter notebook in browser mode at %s", targetURL)
-	extraPorts := []string{fmt.Sprintf("%s:%d", jupyterAddress, jupyter.DefaultServerPort)}
-	return startBrowserTunnel(
-		ctx,
-		devPodConfig,
-		client,
-		user,
-		targetURL,
-		false,
-		extraPorts,
-		authSockID,
-		gitSSHSigningKey,
-		logger,
-	)
-}
-
-func startRStudioInBrowser(
-	forwardGpg bool,
-	ctx context.Context,
-	devPodConfig *config.Config,
-	client client2.BaseWorkspaceClient,
-	user string,
-	ideOptions map[string]config.OptionValue,
-	authSockID string,
-	gitSSHSigningKey string,
-	logger log.Logger,
-) error {
-	if forwardGpg {
-		err := performGpgForwarding(client, logger)
-		if err != nil {
-			return err
-		}
-	}
-
-	// determine port
-	addr, port, err := parseAddressAndPort(
-		rstudio.Options.GetValue(ideOptions, rstudio.BindAddressOption),
-		rstudio.DefaultServerPort,
-	)
-	if err != nil {
-		return err
-	}
-
-	// wait until reachable then open browser
-	targetURL := fmt.Sprintf("http://localhost:%d", port)
-	if rstudio.Options.GetValue(ideOptions, rstudio.OpenOption) == config.BoolTrue {
-		go func() {
-			err = open2.Open(ctx, targetURL, logger)
-			if err != nil {
-				logger.Errorf("error opening rstudio: %v", err)
-			}
-
-			logger.Infof(
-				"started RStudio Server in browser mode. Please keep this terminal open as long as you use it",
-			)
-		}()
-	}
-
-	// start in browser
-	logger.Infof("Starting RStudio server in browser mode at %s", targetURL)
-	extraPorts := []string{fmt.Sprintf("%s:%d", addr, rstudio.DefaultServerPort)}
-	return startBrowserTunnel(
-		ctx,
-		devPodConfig,
-		client,
-		user,
-		targetURL,
-		false,
-		extraPorts,
-		authSockID,
-		gitSSHSigningKey,
-		logger,
-	)
-}
-
-func startFleet(ctx context.Context, client client2.BaseWorkspaceClient, logger log.Logger) error {
-	// create ssh command
-	stdout := &bytes.Buffer{}
-	cmd, err := createSSHCommand(
-		ctx,
-		client,
-		logger,
-		[]string{"--command", "cat " + fleet.FleetURLFileName},
-	)
-	if err != nil {
-		return err
-	}
-	cmd.Stdout = stdout
-	err = cmd.Run()
-	if err != nil {
-		return command.WrapCommandError(stdout.Bytes(), err)
-	}
-
-	url := strings.TrimSpace(stdout.String())
-	if len(url) == 0 {
-		return fmt.Errorf("seems like fleet is not running within the container")
-	}
-
-	logger.Warnf(
-		"Fleet is exposed at a publicly reachable URL, please make sure to not disclose this URL " +
-			"to anyone as they will be able to reach your workspace from that",
-	)
-	logger.Infof("Starting Fleet at %s ...", url)
-	err = open.Run(url)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func startVSCodeInBrowser(
-	forwardGpg bool,
-	ctx context.Context,
-	devPodConfig *config.Config,
-	client client2.BaseWorkspaceClient,
-	workspaceFolder, user string,
-	ideOptions map[string]config.OptionValue,
-	authSockID string,
-	gitSSHSigningKey string,
-	logger log.Logger,
-) error {
-	if forwardGpg {
-		err := performGpgForwarding(client, logger)
-		if err != nil {
-			return err
-		}
-	}
-
-	// determine port
-	vscodeAddress, vscodePort, err := parseAddressAndPort(
-		openvscode.Options.GetValue(ideOptions, openvscode.BindAddressOption),
-		openvscode.DefaultVSCodePort,
-	)
-	if err != nil {
-		return err
-	}
-
-	// wait until reachable then open browser
-	targetURL := fmt.Sprintf("http://localhost:%d/?folder=%s", vscodePort, workspaceFolder)
-	if openvscode.Options.GetValue(ideOptions, openvscode.OpenOption) == config.BoolTrue {
-		go func() {
-			err = open2.Open(ctx, targetURL, logger)
-			if err != nil {
-				logger.Errorf("error opening vscode: %v", err)
-			}
-
-			logger.Infof(
-				"started vscode in browser mode. Please keep this terminal open as long as you use VSCode browser version",
-			)
-		}()
-	}
-
-	// start in browser
-	logger.Infof("Starting vscode in browser mode at %s", targetURL)
-	forwardPorts := openvscode.Options.GetValue(
-		ideOptions,
-		openvscode.ForwardPortsOption,
-	) == config.BoolTrue
-	extraPorts := []string{fmt.Sprintf("%s:%d", vscodeAddress, openvscode.DefaultVSCodePort)}
-	return startBrowserTunnel(
-		ctx,
-		devPodConfig,
-		client,
-		user,
-		targetURL,
-		forwardPorts,
-		extraPorts,
-		authSockID,
-		gitSSHSigningKey,
-		logger,
-	)
-}
-
-func parseAddressAndPort(bindAddressOption string, defaultPort int) (string, int, error) {
-	var (
-		err      error
-		address  string
-		portName int
-	)
-	if bindAddressOption == "" {
-		portName, err = port.FindAvailablePort(defaultPort)
-		if err != nil {
-			return "", 0, err
-		}
-
-		address = fmt.Sprintf("%d", portName)
-	} else {
-		address = bindAddressOption
-		_, port, err := net.SplitHostPort(address)
-		if err != nil {
-			return "", 0, fmt.Errorf("parse host:port: %w", err)
-		} else if port == "" {
-			return "", 0, fmt.Errorf("parse ADDRESS: expected host:port, got %s", address)
-		}
-
-		portName, err = strconv.Atoi(port)
-		if err != nil {
-			return "", 0, fmt.Errorf("parse host:port: %w", err)
-		}
-	}
-
-	return address, portName, nil
 }
 
 // setupBackhaul sets up a long running command in the container to ensure an SSH connection is kept alive.
