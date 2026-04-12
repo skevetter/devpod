@@ -4,10 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io"
 	"net"
-	"os"
-	"os/exec"
 	"strconv"
 	"strings"
 
@@ -27,11 +24,9 @@ import (
 	"github.com/skevetter/devpod/pkg/ide/zed"
 	open2 "github.com/skevetter/devpod/pkg/open"
 	"github.com/skevetter/devpod/pkg/port"
-	devssh "github.com/skevetter/devpod/pkg/ssh"
 	"github.com/skevetter/devpod/pkg/tunnel"
 	"github.com/skevetter/log"
 	"github.com/skratchdot/open-golang/open"
-	"golang.org/x/crypto/ssh"
 )
 
 // Params holds the parameters needed to open an IDE.
@@ -221,18 +216,42 @@ func openJetBrains(
 	return fmt.Errorf("unknown JetBrains IDE: %s", ideName)
 }
 
-// browserTunnelParams bundles the arguments for browser-based IDE tunnels.
-type browserTunnelParams struct {
-	ctx              context.Context
-	devPodConfig     *config.Config
-	client           client2.BaseWorkspaceClient
-	user             string
-	targetURL        string
-	forwardPorts     bool
-	extraPorts       []string
-	authSockID       string
-	gitSSHSigningKey string
-	logger           log.Logger
+func makeDaemonStartFunc(
+	params Params,
+	forwardPorts bool,
+	extraPorts []string,
+) func(ctx context.Context) error {
+	daemonClient, ok := params.Client.(client2.DaemonClient)
+	if !ok {
+		return nil
+	}
+
+	return func(ctx context.Context) error {
+		toolClient, _, err := daemonClient.SSHClients(ctx, params.User)
+		if err != nil {
+			return err
+		}
+		defer func() { _ = toolClient.Close() }()
+
+		err = clientimplementation.StartServicesDaemon(
+			ctx,
+			clientimplementation.StartServicesDaemonOptions{
+				DevPodConfig: params.DevPodConfig,
+				Client:       daemonClient,
+				SSHClient:    toolClient,
+				User:         params.User,
+				Log:          params.Log,
+				ForwardPorts: forwardPorts,
+				ExtraPorts:   extraPorts,
+			},
+		)
+		if err != nil {
+			return err
+		}
+		<-ctx.Done()
+
+		return nil
+	}
 }
 
 func openJupyterBrowser(
@@ -270,16 +289,18 @@ func openJupyterBrowser(
 	}
 
 	params.Log.Infof("Starting jupyter notebook in browser mode at %s", targetURL)
-	return startBrowserTunnel(browserTunnelParams{
-		ctx:              ctx,
-		devPodConfig:     params.DevPodConfig,
-		client:           params.Client,
-		user:             params.User,
-		targetURL:        targetURL,
-		extraPorts:       []string{fmt.Sprintf("%s:%d", addr, jupyter.DefaultServerPort)},
-		authSockID:       params.SSHAuthSockID,
-		gitSSHSigningKey: params.GitSSHSigningKey,
-		logger:           params.Log,
+	extraPorts := []string{fmt.Sprintf("%s:%d", addr, jupyter.DefaultServerPort)}
+	return tunnel.StartBrowserTunnel(tunnel.BrowserTunnelParams{
+		Ctx:              ctx,
+		DevPodConfig:     params.DevPodConfig,
+		Client:           params.Client,
+		User:             params.User,
+		TargetURL:        targetURL,
+		ExtraPorts:       extraPorts,
+		AuthSockID:       params.SSHAuthSockID,
+		GitSSHSigningKey: params.GitSSHSigningKey,
+		Logger:           params.Log,
+		DaemonStartFunc:  makeDaemonStartFunc(params, false, extraPorts),
 	})
 }
 
@@ -316,16 +337,18 @@ func openRStudioBrowser(
 	}
 
 	params.Log.Infof("Starting RStudio server in browser mode at %s", targetURL)
-	return startBrowserTunnel(browserTunnelParams{
-		ctx:              ctx,
-		devPodConfig:     params.DevPodConfig,
-		client:           params.Client,
-		user:             params.User,
-		targetURL:        targetURL,
-		extraPorts:       []string{fmt.Sprintf("%s:%d", addr, rstudio.DefaultServerPort)},
-		authSockID:       params.SSHAuthSockID,
-		gitSSHSigningKey: params.GitSSHSigningKey,
-		logger:           params.Log,
+	extraPorts := []string{fmt.Sprintf("%s:%d", addr, rstudio.DefaultServerPort)}
+	return tunnel.StartBrowserTunnel(tunnel.BrowserTunnelParams{
+		Ctx:              ctx,
+		DevPodConfig:     params.DevPodConfig,
+		Client:           params.Client,
+		User:             params.User,
+		TargetURL:        targetURL,
+		ExtraPorts:       extraPorts,
+		AuthSockID:       params.SSHAuthSockID,
+		GitSSHSigningKey: params.GitSSHSigningKey,
+		Logger:           params.Log,
+		DaemonStartFunc:  makeDaemonStartFunc(params, false, extraPorts),
 	})
 }
 
@@ -368,23 +391,25 @@ func openVSCodeBrowser(
 		ideOptions,
 		openvscode.ForwardPortsOption,
 	) == config.BoolTrue
-	return startBrowserTunnel(browserTunnelParams{
-		ctx:              ctx,
-		devPodConfig:     params.DevPodConfig,
-		client:           params.Client,
-		user:             params.User,
-		targetURL:        targetURL,
-		forwardPorts:     forwardPorts,
-		extraPorts:       []string{fmt.Sprintf("%s:%d", addr, openvscode.DefaultVSCodePort)},
-		authSockID:       params.SSHAuthSockID,
-		gitSSHSigningKey: params.GitSSHSigningKey,
-		logger:           params.Log,
+	extraPorts := []string{fmt.Sprintf("%s:%d", addr, openvscode.DefaultVSCodePort)}
+	return tunnel.StartBrowserTunnel(tunnel.BrowserTunnelParams{
+		Ctx:              ctx,
+		DevPodConfig:     params.DevPodConfig,
+		Client:           params.Client,
+		User:             params.User,
+		TargetURL:        targetURL,
+		ForwardPorts:     forwardPorts,
+		ExtraPorts:       extraPorts,
+		AuthSockID:       params.SSHAuthSockID,
+		GitSSHSigningKey: params.GitSSHSigningKey,
+		Logger:           params.Log,
+		DaemonStartFunc:  makeDaemonStartFunc(params, forwardPorts, extraPorts),
 	})
 }
 
 func startFleet(ctx context.Context, client client2.BaseWorkspaceClient, logger log.Logger) error {
 	stdout := &bytes.Buffer{}
-	sshCmd, err := createSSHCommand(
+	sshCmd, err := tunnel.CreateSSHCommand(
 		ctx,
 		client,
 		logger,
@@ -411,199 +436,4 @@ func startFleet(ctx context.Context, client client2.BaseWorkspaceClient, logger 
 	logger.Infof("Starting Fleet at %s ...", url)
 
 	return open.Run(url)
-}
-
-func setupBackhaul(client client2.BaseWorkspaceClient, authSockID string, logger log.Logger) error {
-	execPath, err := os.Executable()
-	if err != nil {
-		return err
-	}
-
-	remoteUser, err := devssh.GetUser(
-		client.WorkspaceConfig().ID,
-		client.WorkspaceConfig().SSHConfigPath,
-		client.WorkspaceConfig().SSHConfigIncludePath,
-	)
-	if err != nil {
-		remoteUser = "root"
-	}
-
-	//nolint:gosec // execPath is the current binary, arguments are controlled
-	dotCmd := exec.Command(
-		execPath,
-		"ssh",
-		"--agent-forwarding=true",
-		fmt.Sprintf("--reuse-ssh-auth-sock=%s", authSockID),
-		"--start-services=false",
-		"--user",
-		remoteUser,
-		"--context",
-		client.Context(),
-		client.Workspace(),
-		"--log-output=raw",
-		"--command",
-		"while true; do sleep 6000000; done",
-	)
-
-	if logger.GetLevel() == logrus.DebugLevel {
-		dotCmd.Args = append(dotCmd.Args, "--debug")
-	}
-
-	logger.Info("Setting up backhaul SSH connection")
-
-	writer := logger.Writer(logrus.InfoLevel, false)
-
-	dotCmd.Stdout = writer
-	dotCmd.Stderr = writer
-
-	err = dotCmd.Run()
-	if err != nil {
-		return err
-	}
-
-	logger.Infof("Done setting up backhaul")
-
-	return nil
-}
-
-func createSSHCommand(
-	ctx context.Context,
-	client client2.BaseWorkspaceClient,
-	logger log.Logger,
-	extraArgs []string,
-) (*exec.Cmd, error) {
-	execPath, err := os.Executable()
-	if err != nil {
-		return nil, err
-	}
-
-	args := []string{
-		"ssh",
-		"--user=root",
-		"--agent-forwarding=false",
-		"--start-services=false",
-		"--context",
-		client.Context(),
-		client.Workspace(),
-	}
-	if logger.GetLevel() == logrus.DebugLevel {
-		args = append(args, "--debug")
-	}
-	args = append(args, extraArgs...)
-
-	//nolint:gosec // execPath is the current binary, arguments are controlled
-	return exec.CommandContext(ctx, execPath, args...), nil
-}
-
-func startBrowserTunnel(p browserTunnelParams) error {
-	if p.authSockID != "" {
-		go func() {
-			if err := setupBackhaul(p.client, p.authSockID, p.logger); err != nil {
-				p.logger.Error("Failed to setup backhaul SSH connection: ", err)
-			}
-		}()
-	}
-
-	daemonClient, ok := p.client.(client2.DaemonClient)
-	if ok {
-		return startBrowserTunnelDaemon(p, daemonClient)
-	}
-
-	return startBrowserTunnelSSH(p)
-}
-
-func startBrowserTunnelDaemon(p browserTunnelParams, daemonClient client2.DaemonClient) error {
-	toolClient, _, err := daemonClient.SSHClients(p.ctx, p.user)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = toolClient.Close() }()
-
-	err = clientimplementation.StartServicesDaemon(
-		p.ctx,
-		clientimplementation.StartServicesDaemonOptions{
-			DevPodConfig: p.devPodConfig,
-			Client:       daemonClient,
-			SSHClient:    toolClient,
-			User:         p.user,
-			Log:          p.logger,
-			ForwardPorts: p.forwardPorts,
-			ExtraPorts:   p.extraPorts,
-		},
-	)
-	if err != nil {
-		return err
-	}
-	<-p.ctx.Done()
-
-	return nil
-}
-
-func startBrowserTunnelSSH(p browserTunnelParams) error {
-	return tunnel.NewTunnel(
-		p.ctx,
-		func(ctx context.Context, stdin io.Reader, stdout io.Writer) error {
-			writer := p.logger.Writer(logrus.DebugLevel, false)
-			defer func() { _ = writer.Close() }()
-
-			sshCmd, err := createSSHCommand(ctx, p.client, p.logger, []string{
-				"--log-output=raw",
-				fmt.Sprintf("--reuse-ssh-auth-sock=%s", p.authSockID),
-				"--stdio",
-			})
-			if err != nil {
-				return err
-			}
-			sshCmd.Stdout = stdout
-			sshCmd.Stdin = stdin
-			sshCmd.Stderr = writer
-			return sshCmd.Run()
-		},
-		func(ctx context.Context, containerClient *ssh.Client) error {
-			return runBrowserTunnelServices(ctx, p, containerClient)
-		},
-	)
-}
-
-func runBrowserTunnelServices(
-	ctx context.Context,
-	p browserTunnelParams,
-	containerClient *ssh.Client,
-) error {
-	streamLogger, ok := p.logger.(*log.StreamLogger)
-	if ok {
-		streamLogger.JSON(logrus.InfoLevel, map[string]string{
-			"url":  p.targetURL,
-			"done": "true",
-		})
-	}
-
-	err := tunnel.RunServices(
-		ctx,
-		tunnel.RunServicesOptions{
-			DevPodConfig:    p.devPodConfig,
-			ContainerClient: containerClient,
-			User:            p.user,
-			ForwardPorts:    p.forwardPorts,
-			ExtraPorts:      p.extraPorts,
-			Workspace:       p.client.WorkspaceConfig(),
-			ConfigureDockerCredentials: p.devPodConfig.ContextOption(
-				config.ContextOptionSSHInjectDockerCredentials,
-			) == config.BoolTrue,
-			ConfigureGitCredentials: p.devPodConfig.ContextOption(
-				config.ContextOptionSSHInjectGitCredentials,
-			) == config.BoolTrue,
-			ConfigureGitSSHSignatureHelper: p.devPodConfig.ContextOption(
-				config.ContextOptionGitSSHSignatureForwarding,
-			) == config.BoolTrue,
-			GitSSHSigningKey: p.gitSSHSigningKey,
-			Log:              p.logger,
-		},
-	)
-	if err != nil {
-		return fmt.Errorf("run credentials server in browser tunnel: %w", err)
-	}
-
-	<-ctx.Done()
-	return nil
 }

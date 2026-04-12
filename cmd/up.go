@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"os/signal"
 	"path/filepath"
 	"strconv"
@@ -30,13 +29,11 @@ import (
 	provider2 "github.com/skevetter/devpod/pkg/provider"
 	devssh "github.com/skevetter/devpod/pkg/ssh"
 	"github.com/skevetter/devpod/pkg/telemetry"
-	"github.com/skevetter/devpod/pkg/tunnel"
 	"github.com/skevetter/devpod/pkg/util"
 	"github.com/skevetter/devpod/pkg/version"
 	workspace2 "github.com/skevetter/devpod/pkg/workspace"
 	"github.com/skevetter/log"
 	"github.com/spf13/cobra"
-	"golang.org/x/crypto/ssh"
 )
 
 // UpCmd holds the up cmd flags.
@@ -665,182 +662,6 @@ func (cmd *UpCmd) devPodUpMachine(
 	})
 }
 
-// setupBackhaul sets up a long running command in the container to ensure an SSH connection is kept alive.
-func setupBackhaul(client client2.BaseWorkspaceClient, authSockId string, log log.Logger) error {
-	execPath, err := os.Executable()
-	if err != nil {
-		return err
-	}
-
-	remoteUser, err := devssh.GetUser(
-		client.WorkspaceConfig().ID,
-		client.WorkspaceConfig().SSHConfigPath,
-		client.WorkspaceConfig().SSHConfigIncludePath,
-	)
-	if err != nil {
-		remoteUser = "root"
-	}
-
-	dotCmd := exec.Command(
-		execPath,
-		"ssh",
-		"--agent-forwarding=true",
-		fmt.Sprintf("--reuse-ssh-auth-sock=%s", authSockId),
-		"--start-services=false",
-		"--user",
-		remoteUser,
-		"--context",
-		client.Context(),
-		client.Workspace(),
-		"--log-output=raw",
-		"--command",
-		"while true; do sleep 6000000; done", // sleep infinity is not available on all systems
-	)
-
-	if log.GetLevel() == logrus.DebugLevel {
-		dotCmd.Args = append(dotCmd.Args, "--debug")
-	}
-
-	log.Info("Setting up backhaul SSH connection")
-
-	writer := log.Writer(logrus.InfoLevel, false)
-
-	dotCmd.Stdout = writer
-	dotCmd.Stderr = writer
-
-	err = dotCmd.Run()
-	if err != nil {
-		return err
-	}
-
-	log.Infof("Done setting up backhaul")
-
-	return nil
-}
-
-func startBrowserTunnel(
-	ctx context.Context,
-	devPodConfig *config.Config,
-	client client2.BaseWorkspaceClient,
-	user, targetURL string,
-	forwardPorts bool,
-	extraPorts []string,
-	authSockID string,
-	gitSSHSigningKey string,
-	logger log.Logger,
-) error {
-	// Setup a backhaul SSH connection using the remote user so there is an AUTH SOCK to use
-	// With normal IDEs this would be the SSH connection made by the IDE
-	// authSockID is not set when in proxy mode since we cannot use the proxies ssh-agent
-	if authSockID != "" {
-		go func() {
-			if err := setupBackhaul(client, authSockID, logger); err != nil {
-				logger.Error("Failed to setup backhaul SSH connection: ", err)
-			}
-		}()
-	}
-
-	// handle this directly with the daemon client
-	daemonClient, ok := client.(client2.DaemonClient)
-	if ok {
-		toolClient, _, err := daemonClient.SSHClients(ctx, user)
-		if err != nil {
-			return err
-		}
-		defer func() { _ = toolClient.Close() }()
-
-		err = clientimplementation.StartServicesDaemon(
-			ctx,
-			clientimplementation.StartServicesDaemonOptions{
-				DevPodConfig: devPodConfig,
-				Client:       daemonClient,
-				SSHClient:    toolClient,
-				User:         user,
-				Log:          logger,
-				ForwardPorts: forwardPorts,
-				ExtraPorts:   extraPorts,
-			},
-		)
-		if err != nil {
-			return err
-		}
-		<-ctx.Done()
-
-		return nil
-	}
-
-	err := tunnel.NewTunnel(
-		ctx,
-		func(ctx context.Context, stdin io.Reader, stdout io.Writer) error {
-			writer := logger.Writer(logrus.DebugLevel, false)
-			defer func() { _ = writer.Close() }()
-
-			cmd, err := createSSHCommand(ctx, client, logger, []string{
-				"--log-output=raw",
-				fmt.Sprintf("--reuse-ssh-auth-sock=%s", authSockID),
-				"--stdio",
-			})
-			if err != nil {
-				return err
-			}
-			cmd.Stdout = stdout
-			cmd.Stdin = stdin
-			cmd.Stderr = writer
-			return cmd.Run()
-		},
-		func(ctx context.Context, containerClient *ssh.Client) error {
-			// print port to console
-			streamLogger, ok := logger.(*log.StreamLogger)
-			if ok {
-				streamLogger.JSON(logrus.InfoLevel, map[string]string{
-					"url":  targetURL,
-					"done": "true",
-				})
-			}
-
-			configureDockerCredentials := devPodConfig.ContextOption(
-				config.ContextOptionSSHInjectDockerCredentials,
-			) == config.BoolTrue
-			configureGitCredentials := devPodConfig.ContextOption(
-				config.ContextOptionSSHInjectGitCredentials,
-			) == config.BoolTrue
-			configureGitSSHSignatureHelper := devPodConfig.ContextOption(
-				config.ContextOptionGitSSHSignatureForwarding,
-			) == config.BoolTrue
-
-			// run in container
-			err := tunnel.RunServices(
-				ctx,
-				tunnel.RunServicesOptions{
-					DevPodConfig:                   devPodConfig,
-					ContainerClient:                containerClient,
-					User:                           user,
-					ForwardPorts:                   forwardPorts,
-					ExtraPorts:                     extraPorts,
-					PlatformOptions:                nil,
-					Workspace:                      client.WorkspaceConfig(),
-					ConfigureDockerCredentials:     configureDockerCredentials,
-					ConfigureGitCredentials:        configureGitCredentials,
-					ConfigureGitSSHSignatureHelper: configureGitSSHSignatureHelper,
-					GitSSHSigningKey:               gitSSHSigningKey,
-					Log:                            logger,
-				},
-			)
-			if err != nil {
-				return fmt.Errorf("run credentials server in browser tunnel: %w", err)
-			}
-
-			<-ctx.Done()
-			return nil
-		},
-	)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 type configureSSHParams struct {
 	sshConfigPath        string
 	sshConfigIncludePath string
@@ -931,34 +752,6 @@ var inheritedEnvironmentVariables = []string{
 	"GIT_COMMITTER_NAME",
 	"GIT_COMMITTER_EMAIL",
 	"GIT_COMMITTER_DATE",
-}
-
-func createSSHCommand(
-	ctx context.Context,
-	client client2.BaseWorkspaceClient,
-	logger log.Logger,
-	extraArgs []string,
-) (*exec.Cmd, error) {
-	execPath, err := os.Executable()
-	if err != nil {
-		return nil, err
-	}
-
-	args := []string{
-		"ssh",
-		"--user=root",
-		"--agent-forwarding=false",
-		"--start-services=false",
-		"--context",
-		client.Context(),
-		client.Workspace(),
-	}
-	if logger.GetLevel() == logrus.DebugLevel {
-		args = append(args, "--debug")
-	}
-	args = append(args, extraArgs...)
-
-	return exec.CommandContext(ctx, execPath, args...), nil
 }
 
 // checkProviderUpdate currently only ensures the local provider is in sync with the remote for DevPod Pro instances
