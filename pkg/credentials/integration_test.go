@@ -119,7 +119,6 @@ func TestIntegration_SignatureRequest_IncludesPublicKeyContent(t *testing.T) {
 	gitsshsigning.SetSignatureServerURL(server.URL + "/git-ssh-signature")
 	t.Cleanup(func() { gitsshsigning.SetSignatureServerURL("") })
 
-	// Create a cert file with known content
 	tmpDir := t.TempDir()
 	certFile := filepath.Join(tmpDir, "test_key.pub")
 	pubKeyContent := "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAITest test@example.com"
@@ -131,10 +130,8 @@ func TestIntegration_SignatureRequest_IncludesPublicKeyContent(t *testing.T) {
 	err := gitsshsigning.HandleGitSSHProgramCall(certFile, "git", bufferFile, log.Discard)
 	require.NoError(t, err)
 
-	// Verify the request forwarded to the tunnel contains the public key content
 	var req gitsshsigning.GitSSHSignatureRequest
 	require.NoError(t, json.Unmarshal([]byte(receivedMessage), &req))
-	assert.Equal(t, pubKeyContent, req.PublicKey,
-		"the tunnel message should include the public key content")
+	assert.Equal(t, pubKeyContent, req.PublicKey)
 	assert.Equal(t, "commit content", req.Content)
 }

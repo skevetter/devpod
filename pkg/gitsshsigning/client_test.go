@@ -111,8 +111,7 @@ func TestCreateSignatureRequestBody_IncludesPublicKeyContent(t *testing.T) {
 	require.NoError(t, json.Unmarshal(body, &req))
 	assert.Equal(t, "commit content", req.Content)
 	assert.Equal(t, certPath, req.KeyPath)
-	assert.Equal(t, pubKeyContent, req.PublicKey,
-		"request should include the public key file content so the host can create a temp file")
+	assert.Equal(t, pubKeyContent, req.PublicKey)
 }
 
 func TestCreateSignatureRequestBody_MissingCertFile_OmitsPublicKey(t *testing.T) {
@@ -121,6 +120,5 @@ func TestCreateSignatureRequestBody_MissingCertFile_OmitsPublicKey(t *testing.T)
 
 	var req GitSSHSignatureRequest
 	require.NoError(t, json.Unmarshal(body, &req))
-	assert.Empty(t, req.PublicKey,
-		"when cert file is unreadable, PublicKey should be empty for backward compat")
+	assert.Empty(t, req.PublicKey)
 }

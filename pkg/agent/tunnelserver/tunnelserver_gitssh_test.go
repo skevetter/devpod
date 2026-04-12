@@ -23,19 +23,13 @@ func TestGitSSHSignature_DeserializesPublicKey(t *testing.T) {
 
 	ts := New(log.Discard)
 
-	// This will fail at ssh-keygen (no real key in agent), but we can verify
-	// the error is from ssh-keygen execution (not JSON parsing or key resolution),
-	// proving the PublicKey was resolved and signing was attempted.
+	// Signing fails (no real key in agent), but the error should come from
+	// ssh-keygen execution — not from deserialization or key resolution.
 	_, err = ts.GitSSHSignature(context.Background(), &tunnel.Message{
 		Message: string(reqJSON),
 	})
 	require.Error(t, err)
-	// The error should be about signing failure (ssh-keygen ran), not about
-	// JSON deserialization or key file resolution.
-	assert.NotContains(t, err.Error(), "git ssh sign request",
-		"request should deserialize without error")
-	assert.NotContains(t, err.Error(), "resolve signing key",
-		"PublicKey should be resolved to a temp file without error")
-	assert.Contains(t, err.Error(), "failed to sign commit",
-		"error should be from ssh-keygen execution, proving signing was attempted")
+	assert.NotContains(t, err.Error(), "git ssh sign request")
+	assert.NotContains(t, err.Error(), "resolve signing key")
+	assert.Contains(t, err.Error(), "failed to sign commit")
 }
