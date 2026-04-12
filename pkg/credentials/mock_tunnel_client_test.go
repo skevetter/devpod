@@ -108,14 +108,6 @@ func (m *mockTunnelClient) StopForwardPort(
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (m *mockTunnelClient) StreamGitClone(
-	ctx context.Context,
-	in *tunnel.Empty,
-	opts ...grpc.CallOption,
-) (grpc.ServerStreamingClient[tunnel.Chunk], error) {
-	return nil, fmt.Errorf("not implemented")
-}
-
 func (m *mockTunnelClient) StreamWorkspace(
 	ctx context.Context,
 	in *tunnel.Empty,
