@@ -9,7 +9,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/charmbracelet/huh"
+	"charm.land/huh/v2"
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/client"
 	"github.com/skevetter/devpod/pkg/client/clientimplementation"
