@@ -3,7 +3,6 @@ package analytics
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"sync"
@@ -55,7 +54,10 @@ type client struct {
 }
 
 func (c *client) RecordEvent(event Event) {
-	c.events <- event
+	select {
+	case c.events <- event:
+	default:
+	}
 }
 
 func (c *client) Flush() {
@@ -144,10 +146,7 @@ func (c *client) executeUpload(buffer []Event) {
 			c.log.Debugf("error reading analytics response body: %v", err)
 			return
 		}
-		c.log.Debugf(
-			"analytics request returned non-200 status: %s",
-			fmt.Sprintf("%s%v", string(out), err),
-		)
+		c.log.Debugf("analytics request returned status %d: %s", resp.StatusCode, string(out))
 	}
 }
 
