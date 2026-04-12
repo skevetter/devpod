@@ -103,7 +103,10 @@ func TestIntegration_SignatureRequest_IncludesPublicKeyContent(t *testing.T) {
 					"-----BEGIN SSH SIGNATURE-----\ntest\n-----END SSH SIGNATURE-----\n",
 				),
 			}
-			jsonBytes, _ := json.Marshal(sig)
+			jsonBytes, err := json.Marshal(sig)
+			if err != nil {
+				return nil, fmt.Errorf("marshal sig: %w", err)
+			}
 			return &tunnel.Message{Message: string(jsonBytes)}, nil
 		},
 	}

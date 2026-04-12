@@ -143,6 +143,7 @@ var _ = ginkgo.Describe("devpod ssh test suite", ginkgo.Label("ssh"), ginkgo.Ord
 			agentOut, err := exec.Command("ssh-agent", "-s").Output()
 			framework.ExpectNoError(err)
 			t := ginkgo.GinkgoT()
+			var agentPID string
 			for line := range strings.SplitSeq(string(agentOut), "\n") {
 				for _, prefix := range []string{"SSH_AUTH_SOCK=", "SSH_AGENT_PID="} {
 					if _, after, ok := strings.Cut(line, prefix); ok {
@@ -151,14 +152,17 @@ var _ = ginkgo.Describe("devpod ssh test suite", ginkgo.Label("ssh"), ginkgo.Ord
 							val = val[:semi]
 						}
 						key := prefix[:len(prefix)-1]
+						if key == "SSH_AGENT_PID" {
+							agentPID = val
+						}
 						t.Setenv(key, val)
 					}
 				}
 			}
 			ginkgo.DeferCleanup(func(_ context.Context) {
-				if pid := os.Getenv("SSH_AGENT_PID"); pid != "" {
+				if agentPID != "" {
 					// #nosec G204 -- controlled pid from ssh-agent we started
-					_ = exec.Command("kill", pid).Run()
+					_ = exec.Command("kill", agentPID).Run()
 				}
 			})
 
