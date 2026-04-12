@@ -33,9 +33,8 @@ func ForwardAgent(client client2.BaseWorkspaceClient, logger log.Logger) error {
 
 	go func() {
 		//nolint:gosec // execPath comes from os.Executable()
-		err = exec.Command(execPath, args...).Run()
-		if err != nil {
-			logger.Error("failure in forwarding gpg-agent")
+		if runErr := exec.Command(execPath, args...).Run(); runErr != nil {
+			logger.Errorf("failure in forwarding gpg-agent: %v", runErr)
 		}
 	}()
 
