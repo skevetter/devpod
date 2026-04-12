@@ -11,6 +11,7 @@ require (
 	github.com/blang/semver/v4 v4.0.0
 	github.com/bmatcuk/doublestar/v4 v4.10.0
 	github.com/charmbracelet/huh v0.8.0
+	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/compose-spec/compose-go/v2 v2.10.2
 	github.com/containers/image/v5 v5.36.2
 	github.com/creack/pty v1.1.24
@@ -120,12 +121,10 @@ require (
 	github.com/charmbracelet/bubbles v0.21.1-0.20250623103423-23b8fd6302d7 // indirect
 	github.com/charmbracelet/bubbletea v1.3.6 // indirect
 	github.com/charmbracelet/colorprofile v0.2.3-0.20250311203215-f60798e515dc // indirect
-	github.com/charmbracelet/lipgloss v1.1.0 // indirect
 	github.com/charmbracelet/x/ansi v0.9.3 // indirect
 	github.com/charmbracelet/x/cellbuf v0.0.13 // indirect
 	github.com/charmbracelet/x/exp/strings v0.0.0-20240722160745-212f7b056ed0 // indirect
 	github.com/charmbracelet/x/term v0.2.1 // indirect
-	github.com/clipperhouse/displaywidth v0.6.2 // indirect
 	github.com/clipperhouse/stringish v0.1.1 // indirect
 	github.com/clipperhouse/uax29/v2 v2.3.0 // indirect
 	github.com/coder/websocket v1.8.12 // indirect
@@ -152,7 +151,6 @@ require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/emicklei/go-restful/v3 v3.13.0 // indirect
 	github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f // indirect
-	github.com/fatih/color v1.18.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.0 // indirect
@@ -232,10 +230,6 @@ require (
 	github.com/muesli/termenv v0.16.0 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f // indirect
-	github.com/olekukonko/cat v0.0.0-20250911104152-50322a0618f6 // indirect
-	github.com/olekukonko/errors v1.1.0 // indirect
-	github.com/olekukonko/ll v0.1.3 // indirect
-	github.com/olekukonko/tablewriter v1.1.2 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect
 	github.com/opencontainers/runtime-spec v1.3.0 // indirect
