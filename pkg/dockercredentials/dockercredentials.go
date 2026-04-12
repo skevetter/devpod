@@ -7,10 +7,10 @@ import (
 	"runtime"
 	"strings"
 
+	"al.essio.dev/pkg/shellescape"
 	dockerconfig "github.com/containers/image/v5/pkg/docker/config"
 	"github.com/docker/cli/cli/config"
 	"github.com/docker/cli/cli/config/types"
-	"github.com/kballard/go-shellquote"
 	"github.com/skevetter/devpod/pkg/command"
 	pkgconfig "github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/docker"
@@ -108,13 +108,13 @@ func configureCredentials(
 		)
 		helperContent = []byte(script)
 	} else {
-		cmd := shellquote.Join(
+		cmd := shellescape.QuoteCommand([]string{
 			binaryPath,
 			"agent",
 			"docker-credentials",
 			"--port",
 			fmt.Sprintf("%d", port),
-		)
+		})
 		helperContent = []byte(shebang + "\n" + cmd + ` "$@"` + "\n")
 	}
 

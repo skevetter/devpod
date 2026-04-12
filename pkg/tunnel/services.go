@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"al.essio.dev/pkg/shellescape"
 	"github.com/docker/go-connections/nat"
-	"github.com/kballard/go-shellquote"
 	"github.com/loft-sh/api/v4/pkg/devpod"
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/agent"
@@ -130,8 +130,8 @@ func addGitSSHSigningKey(command string, explicitKey string, log log.Logger) str
 func buildCredentialsCommand(opts RunServicesOptions) string {
 	command := fmt.Sprintf(
 		"%s agent container credentials-server --user %s",
-		shellquote.Join(agent.ContainerDevPodHelperLocation),
-		shellquote.Join(opts.User),
+		shellescape.Quote(agent.ContainerDevPodHelperLocation),
+		shellescape.Quote(opts.User),
 	)
 	if opts.ConfigureGitCredentials {
 		command += " --configure-git-helper"

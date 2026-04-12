@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kballard/go-shellquote"
+	"al.essio.dev/pkg/shellescape"
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/command"
 	"github.com/skevetter/devpod/pkg/config"
@@ -212,7 +212,7 @@ func (o *VsCodeServer) buildExtensionCommand(binPath, extension string) *exec.Cm
 	args := []string{"--install-extension", extension}
 
 	if o.userName != "" {
-		cmd := shellquote.Join(append([]string{binPath}, args...)...)
+		cmd := shellescape.QuoteCommand(append([]string{binPath}, args...))
 		return exec.Command("su", o.userName, "-c", cmd)
 	}
 	return exec.Command(binPath, args...)
