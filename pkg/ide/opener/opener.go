@@ -236,13 +236,14 @@ func makeDaemonStartFunc(
 		err = clientimplementation.StartServicesDaemon(
 			ctx,
 			clientimplementation.StartServicesDaemonOptions{
-				DevPodConfig: params.DevPodConfig,
-				Client:       daemonClient,
-				SSHClient:    toolClient,
-				User:         params.User,
-				Log:          params.Log,
-				ForwardPorts: forwardPorts,
-				ExtraPorts:   extraPorts,
+				DevPodConfig:     params.DevPodConfig,
+				Client:           daemonClient,
+				SSHClient:        toolClient,
+				User:             params.User,
+				Log:              params.Log,
+				ForwardPorts:     forwardPorts,
+				ExtraPorts:       extraPorts,
+				GitSSHSigningKey: params.GitSSHSigningKey,
 			},
 		)
 		if err != nil {

@@ -37,7 +37,7 @@ type BrowserTunnelParams struct {
 func StartBrowserTunnel(p BrowserTunnelParams) error {
 	if p.AuthSockID != "" {
 		go func() {
-			if err := SetupBackhaul(p.Client, p.AuthSockID, p.Logger); err != nil {
+			if err := SetupBackhaul(p.Ctx, p.Client, p.AuthSockID, p.Logger); err != nil {
 				p.Logger.Error("Failed to setup backhaul SSH connection: ", err)
 			}
 		}()
@@ -120,7 +120,12 @@ func runBrowserTunnelServices(
 }
 
 // SetupBackhaul sets up a long-running SSH connection for backhaul.
-func SetupBackhaul(client client2.BaseWorkspaceClient, authSockID string, logger log.Logger) error {
+func SetupBackhaul(
+	ctx context.Context,
+	client client2.BaseWorkspaceClient,
+	authSockID string,
+	logger log.Logger,
+) error {
 	execPath, err := os.Executable()
 	if err != nil {
 		return err
@@ -136,7 +141,7 @@ func SetupBackhaul(client client2.BaseWorkspaceClient, authSockID string, logger
 	}
 
 	//nolint:gosec // execPath is the current binary, arguments are controlled
-	backhaulCmd := exec.Command(
+	backhaulCmd := exec.CommandContext(ctx,
 		execPath,
 		"ssh",
 		"--agent-forwarding=true",
@@ -149,7 +154,7 @@ func SetupBackhaul(client client2.BaseWorkspaceClient, authSockID string, logger
 		client.Workspace(),
 		"--log-output=raw",
 		"--command",
-		"while true; do sleep 6000000; done",
+		"while true; do sleep 6000000; done", // sleep infinity is not available on all systems
 	)
 
 	if logger.GetLevel() == logrus.DebugLevel {
@@ -159,6 +164,7 @@ func SetupBackhaul(client client2.BaseWorkspaceClient, authSockID string, logger
 	logger.Info("Setting up backhaul SSH connection")
 
 	writer := logger.Writer(logrus.InfoLevel, false)
+	defer func() { _ = writer.Close() }()
 
 	backhaulCmd.Stdout = writer
 	backhaulCmd.Stderr = writer

@@ -13,13 +13,14 @@ import (
 )
 
 type StartServicesDaemonOptions struct {
-	DevPodConfig *config.Config
-	Client       client.DaemonClient
-	SSHClient    *ssh.Client
-	User         string
-	Log          log.Logger
-	ForwardPorts bool
-	ExtraPorts   []string
+	DevPodConfig     *config.Config
+	Client           client.DaemonClient
+	SSHClient        *ssh.Client
+	User             string
+	Log              log.Logger
+	ForwardPorts     bool
+	ExtraPorts       []string
+	GitSSHSigningKey string
 }
 
 type credentialConfig struct {
@@ -54,6 +55,7 @@ func StartServicesDaemon(ctx context.Context, opts StartServicesDaemonOptions) e
 			ConfigureDockerCredentials:     credConfig.docker,
 			ConfigureGitCredentials:        credConfig.git,
 			ConfigureGitSSHSignatureHelper: credConfig.gitSSHSignature,
+			GitSSHSigningKey:               opts.GitSSHSigningKey,
 			Log:                            opts.Log,
 		},
 	)
