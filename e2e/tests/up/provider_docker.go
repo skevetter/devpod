@@ -324,7 +324,7 @@ var _ = ginkgo.Describe(
 			gomega.Expect(strings.TrimSpace(out)).To(gomega.Equal("postStartDone"),
 				"postStartCommand should have completed before devpod up returned")
 
-			// postAttachCommand should NOT have completed yet (it sleeps 5s)
+			// postAttachCommand should NOT have completed yet (it sleeps 15s)
 			_, err = dtc.execSSH(ctx, tempDir, "cat $HOME/post-attach.out")
 			gomega.Expect(err).To(gomega.HaveOccurred(),
 				"postAttachCommand should still be running when devpod up returns")
