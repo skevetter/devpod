@@ -1,5 +1,5 @@
 {
   "image": "mcr.microsoft.com/devcontainers/go:1",
   "postStartCommand": "echo postStartDone > $HOME/post-start.out",
-  "postAttachCommand": "sleep 5 && echo postAttachDone > $HOME/post-attach.out"
+  "postAttachCommand": "sleep 15 && echo postAttachDone > $HOME/post-attach.out"
 }

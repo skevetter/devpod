@@ -21,9 +21,18 @@ import (
 	"github.com/skevetter/log"
 )
 
-// RunPreAttachHooks runs lifecycle hooks up to and including postStartCommand.
-// These must complete before the IDE can be opened.
-func RunPreAttachHooks(ctx context.Context, setupInfo *config.Result, log log.Logger) error {
+// lifecycleEnv holds the resolved environment for running lifecycle hooks.
+type lifecycleEnv struct {
+	remoteUser      string
+	workspaceFolder string
+	remoteEnv       map[string]string
+}
+
+func resolveLifecycleEnv(
+	ctx context.Context,
+	setupInfo *config.Result,
+	log log.Logger,
+) lifecycleEnv {
 	mergedConfig := setupInfo.MergedConfig
 	remoteUser := config.GetRemoteUser(setupInfo)
 	probedEnv, err := config.ProbeUserEnv(ctx, mergedConfig.UserEnvProbe, remoteUser, log)
@@ -31,36 +40,63 @@ func RunPreAttachHooks(ctx context.Context, setupInfo *config.Result, log log.Lo
 		log.WithFields(logrus.Fields{"error": err}).
 			Error("failed to probe environment, this might lead to an incomplete setup of your workspace")
 	}
-	remoteEnv := mergeRemoteEnv(mergedConfig.RemoteEnv, probedEnv, remoteUser)
 
-	workspaceFolder := setupInfo.SubstitutionContext.ContainerWorkspaceFolder
+	return lifecycleEnv{
+		remoteUser:      remoteUser,
+		workspaceFolder: setupInfo.SubstitutionContext.ContainerWorkspaceFolder,
+		remoteEnv:       mergeRemoteEnv(mergedConfig.RemoteEnv, probedEnv, remoteUser),
+	}
+}
+
+// RunPreAttachHooks runs lifecycle hooks up to and including postStartCommand.
+// These must complete before the IDE can be opened.
+func RunPreAttachHooks(ctx context.Context, setupInfo *config.Result, log log.Logger) error {
+	env := resolveLifecycleEnv(ctx, setupInfo, log)
 	containerDetails := setupInfo.ContainerDetails
+	mergedConfig := setupInfo.MergedConfig
 
 	// only run once per container run
-	err = run(mergedConfig.OnCreateCommands, remoteUser, workspaceFolder, remoteEnv,
-		"onCreateCommands", containerDetails.Created, log)
-	if err != nil {
+	if err := run(mergedConfig.OnCreateCommands, env.remoteUser, env.workspaceFolder, env.remoteEnv,
+		"onCreateCommands", containerDetails.Created, log); err != nil {
 		return err
 	}
 
 	// TODO: rerun when contents changed
-	err = run(mergedConfig.UpdateContentCommands, remoteUser, workspaceFolder, remoteEnv,
-		"updateContentCommands", containerDetails.Created, log)
-	if err != nil {
+	if err := run(
+		mergedConfig.UpdateContentCommands,
+		env.remoteUser,
+		env.workspaceFolder,
+		env.remoteEnv,
+		"updateContentCommands",
+		containerDetails.Created,
+		log,
+	); err != nil {
 		return err
 	}
 
 	// only run once per container run
-	err = run(mergedConfig.PostCreateCommands, remoteUser, workspaceFolder, remoteEnv,
-		"postCreateCommands", containerDetails.Created, log)
-	if err != nil {
+	if err := run(
+		mergedConfig.PostCreateCommands,
+		env.remoteUser,
+		env.workspaceFolder,
+		env.remoteEnv,
+		"postCreateCommands",
+		containerDetails.Created,
+		log,
+	); err != nil {
 		return err
 	}
 
 	// run when the container was restarted
-	err = run(mergedConfig.PostStartCommands, remoteUser, workspaceFolder, remoteEnv,
-		"postStartCommands", containerDetails.State.StartedAt, log)
-	if err != nil {
+	if err := run(
+		mergedConfig.PostStartCommands,
+		env.remoteUser,
+		env.workspaceFolder,
+		env.remoteEnv,
+		"postStartCommands",
+		containerDetails.State.StartedAt,
+		log,
+	); err != nil {
 		return err
 	}
 
@@ -70,25 +106,18 @@ func RunPreAttachHooks(ctx context.Context, setupInfo *config.Result, log log.Lo
 // RunPostAttachHooks runs postAttachCommand only.
 // These run after the IDE has been opened and can be long-running.
 func RunPostAttachHooks(ctx context.Context, setupInfo *config.Result, log log.Logger) error {
-	mergedConfig := setupInfo.MergedConfig
-	remoteUser := config.GetRemoteUser(setupInfo)
-	probedEnv, err := config.ProbeUserEnv(ctx, mergedConfig.UserEnvProbe, remoteUser, log)
-	if err != nil {
-		log.WithFields(logrus.Fields{"error": err}).
-			Error("failed to probe environment, this might lead to an incomplete setup of your workspace")
-	}
-	remoteEnv := mergeRemoteEnv(mergedConfig.RemoteEnv, probedEnv, remoteUser)
-
-	workspaceFolder := setupInfo.SubstitutionContext.ContainerWorkspaceFolder
+	env := resolveLifecycleEnv(ctx, setupInfo, log)
 
 	// run always when attaching to the container
-	err = run(mergedConfig.PostAttachCommands, remoteUser, workspaceFolder, remoteEnv,
-		"postAttachCommands", "", log)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return run(
+		setupInfo.MergedConfig.PostAttachCommands,
+		env.remoteUser,
+		env.workspaceFolder,
+		env.remoteEnv,
+		"postAttachCommands",
+		"",
+		log,
+	)
 }
 
 func run(
