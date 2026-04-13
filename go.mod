@@ -5,7 +5,7 @@ go 1.25.8
 require (
 	al.essio.dev/pkg/shellescape v1.6.0
 	charm.land/huh/v2 v2.0.3
-	charm.land/lipgloss/v2 v2.0.1
+	charm.land/lipgloss/v2 v2.0.2
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.21.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.13.1
 	github.com/Microsoft/go-winio v0.6.2
