@@ -21,7 +21,18 @@ import (
 	"github.com/skevetter/log"
 )
 
+// RunLifecycleHooks runs all lifecycle hooks synchronously.
+// This is the original behavior kept for backward compatibility.
 func RunLifecycleHooks(ctx context.Context, setupInfo *config.Result, log log.Logger) error {
+	if err := RunPreAttachHooks(ctx, setupInfo, log); err != nil {
+		return err
+	}
+	return RunPostAttachHooks(ctx, setupInfo, log)
+}
+
+// RunPreAttachHooks runs lifecycle hooks up to and including postStartCommand.
+// These must complete before the IDE can be opened.
+func RunPreAttachHooks(ctx context.Context, setupInfo *config.Result, log log.Logger) error {
 	mergedConfig := setupInfo.MergedConfig
 	remoteUser := config.GetRemoteUser(setupInfo)
 	probedEnv, err := config.ProbeUserEnv(ctx, mergedConfig.UserEnvProbe, remoteUser, log)
@@ -61,6 +72,23 @@ func RunLifecycleHooks(ctx context.Context, setupInfo *config.Result, log log.Lo
 	if err != nil {
 		return err
 	}
+
+	return nil
+}
+
+// RunPostAttachHooks runs postAttachCommand only.
+// These run after the IDE has been opened and can be long-running.
+func RunPostAttachHooks(ctx context.Context, setupInfo *config.Result, log log.Logger) error {
+	mergedConfig := setupInfo.MergedConfig
+	remoteUser := config.GetRemoteUser(setupInfo)
+	probedEnv, err := config.ProbeUserEnv(ctx, mergedConfig.UserEnvProbe, remoteUser, log)
+	if err != nil {
+		log.WithFields(logrus.Fields{"error": err}).
+			Error("failed to probe environment, this might lead to an incomplete setup of your workspace")
+	}
+	remoteEnv := mergeRemoteEnv(mergedConfig.RemoteEnv, probedEnv, remoteUser)
+
+	workspaceFolder := setupInfo.SubstitutionContext.ContainerWorkspaceFolder
 
 	// run always when attaching to the container
 	err = run(mergedConfig.PostAttachCommands, remoteUser, workspaceFolder, remoteEnv,

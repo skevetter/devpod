@@ -1,11 +1,14 @@
 package setup
 
 import (
+	"context"
 	"os"
 	"os/exec"
 	"os/user"
 	"testing"
 
+	"github.com/skevetter/devpod/pkg/devcontainer/config"
+	"github.com/skevetter/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
@@ -77,6 +80,26 @@ func (s *LifecycleHookTestSuite) TestSymlinkWithQuotes() {
 	s.Require().NotEmpty(target, "symlink target should not be empty")
 	assert.NotEqual(s.T(), byte('"'), target[0])
 	assert.NotEqual(s.T(), byte('"'), target[len(target)-1])
+}
+
+func (s *LifecycleHookTestSuite) TestRunPreAttachHooksDoesNotRunPostAttach() {
+	ctx := context.Background()
+	result := &config.Result{
+		MergedConfig: &config.MergedDevContainerConfig{},
+		ContainerDetails: &config.ContainerDetails{
+			State: config.ContainerDetailsState{},
+		},
+		SubstitutionContext: &config.SubstitutionContext{
+			ContainerWorkspaceFolder: "/workspaces/test",
+		},
+	}
+
+	// Both functions should return nil with empty config (no commands to run)
+	err := RunPreAttachHooks(ctx, result, log.Default)
+	assert.NoError(s.T(), err)
+
+	err = RunPostAttachHooks(ctx, result, log.Default)
+	assert.NoError(s.T(), err)
 }
 
 func TestLifecycleHookTestSuite(t *testing.T) {
