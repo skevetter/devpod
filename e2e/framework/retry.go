@@ -2,6 +2,7 @@ package framework
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -11,9 +12,9 @@ import (
 )
 
 // dockerPullBackoff defines retry timing for transient Docker registry errors.
-// 3 retries: ~30s, ~60s, ~120s — aligns with Docker Hub rate limit windows.
+// 4 total attempts (1 initial + 3 retries) with waits of ~30s, ~60s, ~120s.
 var dockerPullBackoff = wait.Backoff{
-	Steps:    3,
+	Steps:    4,
 	Duration: 30 * time.Second,
 	Factor:   2.0,
 	Jitter:   0.1,
@@ -33,8 +34,9 @@ var retryableDockerPatterns = []string{
 // isRetryableDockerError returns true if stderr contains a transient Docker
 // registry error (rate limits, timeouts, connection resets).
 func isRetryableDockerError(stderr string) bool {
+	lower := strings.ToLower(stderr)
 	for _, pattern := range retryableDockerPatterns {
-		if strings.Contains(stderr, pattern) {
+		if strings.Contains(lower, strings.ToLower(pattern)) {
 			return true
 		}
 	}
@@ -68,6 +70,9 @@ func execWithDockerRetry(
 			return false, lastErr // non-retryable, stop immediately
 		},
 	)
+	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		return lastStdout, lastStderr, err
+	}
 	if err != nil && lastErr != nil {
 		return lastStdout, lastStderr, fmt.Errorf("after %d attempts: %w", attempt, lastErr)
 	}
