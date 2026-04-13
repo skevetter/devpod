@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/onsi/ginkgo/v2"
@@ -76,7 +77,7 @@ var _ = ginkgo.Describe(
 				var containerDetails []container.InspectResponse
 				err = dtc.dockerHelper.Inspect(ctx, ids, "container", &containerDetails)
 				return err == nil && containerDetails[0].State.Running
-			}).Should(gomega.BeTrue())
+			}).WithTimeout(30 * time.Second).WithPolling(1 * time.Second).Should(gomega.BeTrue())
 
 			ginkgo.DeferCleanup(dtc.dockerHelper.Remove, ids[0])
 			ginkgo.DeferCleanup(dtc.dockerHelper.Stop, ids[0])

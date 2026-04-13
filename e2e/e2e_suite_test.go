@@ -33,8 +33,14 @@ func TestRunE2ETests(t *testing.T) {
 	if runtime.GOOS != "linux" {
 		go framework.ServeAgent()
 
-		// wait for http server to be up and running
+		// wait for http server to be up and running (max 30s)
+		deadline := time.After(30 * time.Second)
 		for {
+			select {
+			case <-deadline:
+				t.Fatal("timeout waiting for DEVPOD_AGENT_URL to be set after 30s")
+			default:
+			}
 			time.Sleep(time.Second)
 			if os.Getenv("DEVPOD_AGENT_URL") != "" {
 				break

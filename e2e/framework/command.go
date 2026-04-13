@@ -291,7 +291,7 @@ func (f *Framework) DevPodMachineCreate(args []string) error {
 	baseArgs = append(baseArgs, args...)
 	err := f.ExecCommand(context.Background(), false, false, "", baseArgs)
 	if err != nil {
-		return fmt.Errorf("devpod nachine create failed: %s", err.Error())
+		return fmt.Errorf("devpod machine create failed: %s", err.Error())
 	}
 	return nil
 }
@@ -301,7 +301,7 @@ func (f *Framework) DevPodMachineDelete(args []string) error {
 	baseArgs = append(baseArgs, args...)
 	err := f.ExecCommand(context.Background(), false, false, "", baseArgs)
 	if err != nil {
-		return fmt.Errorf("devpod nachine delete failed: %s", err.Error())
+		return fmt.Errorf("devpod machine delete failed: %s", err.Error())
 	}
 	return nil
 }
@@ -325,31 +325,31 @@ func (f *Framework) DevPodWorkspaceDelete(
 
 func (f *Framework) SetupGPG(tmpDir string) error {
 	if _, err := exec.LookPath("gpg"); err != nil {
-		err := exec.Command("sudo", "apt-get", " install", "gnupg2", "-y").Run()
-		if err != nil {
-			return nil
+		if installErr := exec.Command("sudo", "apt-get", "install", "gnupg2", "-y").
+			Run(); installErr != nil {
+			return fmt.Errorf("gpg not found and failed to install gnupg2: %w", installErr)
 		}
 	}
 
-	err := exec.Command("gpg", "--import", filepath.Join(tmpDir, "gpg-public.key")).Run()
-	if err != nil {
-		return nil
+	// #nosec G204 -- gpg with fixed arguments for test GPG key setup
+	if err := exec.Command("gpg", "--import", filepath.Join(tmpDir, "gpg-public.key")).
+		Run(); err != nil {
+		return fmt.Errorf("failed to import gpg public key: %w", err)
 	}
 
-	err = exec.Command("gpg", "--import", filepath.Join(tmpDir, "gpg-private.key")).Run()
-	if err != nil {
-		return nil
+	// #nosec G204 -- gpg with fixed arguments for test GPG key setup
+	if err := exec.Command("gpg", "--import", filepath.Join(tmpDir, "gpg-private.key")).
+		Run(); err != nil {
+		return fmt.Errorf("failed to import gpg private key: %w", err)
 	}
 
-	err = exec.Command("gpgconf", "--kill", "gpg-agent").Run()
-	if err != nil {
-		return nil
+	if err := exec.Command("gpgconf", "--kill", "gpg-agent").Run(); err != nil {
+		return fmt.Errorf("failed to kill gpg-agent: %w", err)
 	}
 
-	err = exec.Command("gpg-agent", "--homedir", "$HOME/.gnupg", "--use-standard-socket", "--daemon").
-		Run()
-	if err != nil {
-		return nil
+	if err := exec.Command("gpg-agent", "--homedir", "$HOME/.gnupg", "--use-standard-socket", "--daemon").
+		Run(); err != nil {
+		return fmt.Errorf("failed to start gpg-agent: %w", err)
 	}
 
 	return exec.Command("gpg", "-k").Run()
@@ -455,4 +455,13 @@ func (f *Framework) DevPodIDEUse(ctx context.Context, ide string, extraArgs ...s
 func (f *Framework) DevPodIDEList(ctx context.Context, extraArgs ...string) (string, error) {
 	baseArgs := []string{"ide", "list"}
 	return f.ExecCommandOutput(ctx, append(baseArgs, extraArgs...))
+}
+
+// SetupDockerProvider creates a new framework, removes any existing docker provider,
+// adds a fresh one with the given docker path, and sets it as the active provider.
+func SetupDockerProvider(binDir, dockerPath string) (*Framework, error) {
+	f := NewDefaultFramework(binDir)
+	_ = f.DevPodProviderDelete(context.Background(), "docker")
+	_ = f.DevPodProviderAdd(context.Background(), "docker", "-o", "DOCKER_PATH="+dockerPath)
+	return f, f.DevPodProviderUse(context.Background(), "docker")
 }

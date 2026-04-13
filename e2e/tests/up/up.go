@@ -75,7 +75,7 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-workspaces"), fun
 		// set env vars with file
 		tmpDir, err := framework.CreateTempDir()
 		framework.ExpectNoError(err)
-		defer func() { _ = os.RemoveAll(tmpDir) }()
+		ginkgo.DeferCleanup(func() { _ = os.RemoveAll(tmpDir) })
 
 		// create invalid env file
 		invalidData := []byte("TEST VAR=" + value)

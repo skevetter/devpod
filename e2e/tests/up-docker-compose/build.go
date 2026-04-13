@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
@@ -82,7 +83,10 @@ var _ = ginkgo.Describe(
 					return 0
 				}
 				return len(ids)
-			}).Should(gomega.Equal(1), "1 compose container to be created")
+			}).
+				WithTimeout(60*time.Second).
+				WithPolling(1*time.Second).
+				Should(gomega.Equal(1), "1 compose container to be created")
 
 			ginkgo.By("Modifying .devcontainer.json with failing changes")
 			origPath := filepath.Join(tempDir, ".devcontainer.json")
@@ -152,7 +156,10 @@ var _ = ginkgo.Describe(
 					return 0
 				}
 				return len(ids)
-			}).Should(gomega.Equal(1), "1 compose container to be created")
+			}).
+				WithTimeout(60*time.Second).
+				WithPolling(1*time.Second).
+				Should(gomega.Equal(1), "1 compose container to be created")
 
 			ginkgo.By("Starting DevPod again with --recreate")
 			err = f.DevPodUp(ctx, tempDir, "--debug", "--recreate")

@@ -39,7 +39,9 @@ var _ = ginkgo.Describe(
 				filepath.Join(os.Getenv("HOME"), ".git-credentials"),
 				gitCredentialString, 0o600)
 			framework.ExpectNoError(err)
-			defer func() { _ = os.Remove(filepath.Join(os.Getenv("HOME"), ".git-credentials")) }()
+			ginkgo.DeferCleanup(
+				func() { _ = os.Remove(filepath.Join(os.Getenv("HOME"), ".git-credentials")) },
+			)
 
 			name := "testprivaterepo"
 			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), name)

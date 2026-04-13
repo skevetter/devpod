@@ -101,10 +101,7 @@ func setupWorkspace(testdataPath, initialDir string, f *framework.Framework) (st
 }
 
 func setupDockerProvider(binDir, dockerPath string) (*framework.Framework, error) {
-	f := framework.NewDefaultFramework(binDir)
-	_ = f.DevPodProviderDelete(context.Background(), "docker")
-	_ = f.DevPodProviderAdd(context.Background(), "docker", "-o", "DOCKER_PATH="+dockerPath)
-	return f, f.DevPodProviderUse(context.Background(), "docker")
+	return framework.SetupDockerProvider(binDir, dockerPath)
 }
 
 func setupWorkspaceAndUp(

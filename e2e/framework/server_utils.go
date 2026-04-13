@@ -24,8 +24,9 @@ func ServeAgent() {
 	// Create a file server handler for the specified directory
 	fileServer := http.FileServer(http.Dir(dir))
 
-	// Register the file server handler to serve files under the /files route
-	http.Handle("/files/", http.StripPrefix("/files", fileServer))
+	// Use a dedicated ServeMux to avoid conflicts with http.DefaultServeMux
+	mux := http.NewServeMux()
+	mux.Handle("/files/", http.StripPrefix("/files", fileServer))
 
 	ip := getIP()
 
@@ -40,10 +41,10 @@ func ServeAgent() {
 		log.Fatal(err)
 	}
 
-	// Start the HTTP server on port 8080
 	log.Printf("Server started on %s", addr)
 
-	err = http.Serve(listener, nil)
+	// #nosec G114 -- test-only agent file server, no timeout needed
+	err = http.Serve(listener, mux)
 	if err != nil {
 		log.Fatal(err)
 	}
