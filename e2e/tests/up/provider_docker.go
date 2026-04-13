@@ -79,8 +79,8 @@ var _ = ginkgo.Describe(
 				return err == nil && containerDetails[0].State.Running
 			}).WithTimeout(30 * time.Second).WithPolling(1 * time.Second).Should(gomega.BeTrue())
 
-			ginkgo.DeferCleanup(dtc.dockerHelper.Remove, ids[0])
 			ginkgo.DeferCleanup(dtc.dockerHelper.Stop, ids[0])
+			ginkgo.DeferCleanup(dtc.dockerHelper.Remove, ids[0])
 
 			var containerDetails []container.InspectResponse
 			err = dtc.dockerHelper.Inspect(ctx, ids, "container", &containerDetails)

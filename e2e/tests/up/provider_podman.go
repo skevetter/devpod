@@ -50,10 +50,11 @@ var _ = ginkgo.Describe(
 				wrapper, err := os.Create(initialDir + "/bin/podman-rootful")
 				framework.ExpectNoError(err)
 
-				defer func() { _ = wrapper.Close() }()
-
 				_, err = wrapper.WriteString("#!/bin/sh\nsudo podman \"$@\"\n")
-				framework.ExpectNoError(err)
+				if err != nil {
+					_ = wrapper.Close()
+					framework.ExpectNoError(err)
+				}
 
 				err = wrapper.Close()
 				framework.ExpectNoError(err)
