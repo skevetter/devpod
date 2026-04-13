@@ -121,11 +121,7 @@ func (cmd *SetupContainerCmd) Run(ctx context.Context) error {
 		return err
 	}
 
-	if err := cmd.finalizeSetup(sctx); err != nil {
-		return err
-	}
-
-	return cmd.sendSetupResult(ctx, setupInfo, tunnelClient)
+	return cmd.finalizeSetup(sctx)
 }
 
 func (cmd *SetupContainerCmd) prepareWorkspace(sctx *setupContext) error {
@@ -186,15 +182,16 @@ func (cmd *SetupContainerCmd) prepareWorkspace(sctx *setupContext) error {
 }
 
 func (cmd *SetupContainerCmd) finalizeSetup(sctx *setupContext) error {
-	err := setup.SetupContainer(sctx.ctx, &setup.ContainerSetupConfig{
+	cfg := &setup.ContainerSetupConfig{
 		SetupInfo:         sctx.setupInfo,
 		ExtraWorkspaceEnv: sctx.workspaceInfo.CLIOptions.WorkspaceEnv,
 		ChownProjects:     cmd.ChownWorkspace,
 		PlatformOptions:   &sctx.workspaceInfo.CLIOptions.Platform,
 		TunnelClient:      sctx.tunnelClient,
 		Log:               sctx.logger,
-	})
-	if err != nil {
+	}
+
+	if err := setup.SetupContainerPreAttach(sctx.ctx, cfg); err != nil {
 		return err
 	}
 
@@ -202,7 +199,22 @@ func (cmd *SetupContainerCmd) finalizeSetup(sctx *setupContext) error {
 		return err
 	}
 
-	return cmd.startContainerDaemon(sctx.workspaceInfo, sctx.logger)
+	if err := cmd.startContainerDaemon(sctx.workspaceInfo, sctx.logger); err != nil {
+		return err
+	}
+
+	// Send result to client so IDE can open while postAttachCommand runs
+	if err := cmd.sendSetupResult(sctx.ctx, sctx.setupInfo, sctx.tunnelClient); err != nil {
+		return err
+	}
+
+	// Run postAttachCommand after result is sent — errors are logged, not propagated,
+	// because the IDE is already opening and the user can see output in the terminal.
+	if err := setup.SetupContainerPostAttach(sctx.ctx, cfg); err != nil {
+		sctx.logger.Errorf("postAttachCommand failed: %v", err)
+	}
+
+	return nil
 }
 
 func (cmd *SetupContainerCmd) initializeTunnelClient(
