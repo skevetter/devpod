@@ -462,6 +462,13 @@ func (f *Framework) DevPodIDEList(ctx context.Context, extraArgs ...string) (str
 func SetupDockerProvider(binDir, dockerPath string) (*Framework, error) {
 	f := NewDefaultFramework(binDir)
 	_ = f.DevPodProviderDelete(context.Background(), "docker")
-	_ = f.DevPodProviderAdd(context.Background(), "docker", "-o", "DOCKER_PATH="+dockerPath)
+	if err := f.DevPodProviderAdd(
+		context.Background(),
+		"docker",
+		"-o",
+		"DOCKER_PATH="+dockerPath,
+	); err != nil {
+		return nil, fmt.Errorf("failed to add docker provider: %w", err)
+	}
 	return f, f.DevPodProviderUse(context.Background(), "docker")
 }
