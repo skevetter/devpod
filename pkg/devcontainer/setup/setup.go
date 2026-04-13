@@ -38,15 +38,6 @@ type ContainerSetupConfig struct {
 	Log               log.Logger
 }
 
-// SetupContainer runs the full container setup including all lifecycle hooks.
-// This is the original behavior kept for backward compatibility.
-func SetupContainer(ctx context.Context, cfg *ContainerSetupConfig) error {
-	if err := SetupContainerPreAttach(ctx, cfg); err != nil {
-		return err
-	}
-	return SetupContainerPostAttach(ctx, cfg)
-}
-
 // SetupContainerPreAttach runs container setup up to and including postStartCommand.
 // After this returns, the workspace is ready for IDE access.
 func SetupContainerPreAttach(ctx context.Context, cfg *ContainerSetupConfig) error {

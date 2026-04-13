@@ -21,15 +21,6 @@ import (
 	"github.com/skevetter/log"
 )
 
-// RunLifecycleHooks runs all lifecycle hooks synchronously.
-// This is the original behavior kept for backward compatibility.
-func RunLifecycleHooks(ctx context.Context, setupInfo *config.Result, log log.Logger) error {
-	if err := RunPreAttachHooks(ctx, setupInfo, log); err != nil {
-		return err
-	}
-	return RunPostAttachHooks(ctx, setupInfo, log)
-}
-
 // RunPreAttachHooks runs lifecycle hooks up to and including postStartCommand.
 // These must complete before the IDE can be opened.
 func RunPreAttachHooks(ctx context.Context, setupInfo *config.Result, log log.Logger) error {
