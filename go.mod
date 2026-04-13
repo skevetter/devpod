@@ -39,9 +39,9 @@ require (
 	github.com/onsi/gomega v1.39.1
 	github.com/pkg/sftp v1.13.10
 	github.com/sirupsen/logrus v1.9.4
-	github.com/skevetter/agentapi v1.0.1
-	github.com/skevetter/api v1.1.0
-	github.com/skevetter/apiserver v1.0.1
+	github.com/skevetter/agentapi v1.0.0
+	github.com/skevetter/api v1.0.1
+	github.com/skevetter/apiserver v1.0.2
 	github.com/skevetter/log v0.0.0-20260106023547-bfd26ab1367c
 	github.com/skevetter/ssh v0.1.0
 	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
@@ -200,7 +200,6 @@ require (
 	github.com/kr/fs v0.1.0 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de // indirect
-	github.com/loft-sh/admin-apis v0.0.0-20260311181619-506013b79ba0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.4.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
