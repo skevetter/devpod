@@ -14,6 +14,7 @@ import (
 var _ = ginkgo.Describe("testing upgrade command", ginkgo.Label("upgrade"), ginkgo.Ordered, func() {
 	ginkgo.It(
 		"should detect correct binary for current OS and architecture using dry-run",
+		ginkgo.SpecTimeout(framework.GetTimeout()),
 		func(ctx context.Context) {
 			initialDir, err := os.Getwd()
 			framework.ExpectNoError(err, "getting current working directory should not error")

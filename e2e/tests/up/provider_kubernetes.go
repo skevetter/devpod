@@ -65,8 +65,8 @@ var _ = ginkgo.Describe(
 			_ = f.DevPodProviderDelete(ctx, "kubernetes")
 			err = f.DevPodProviderAdd(ctx, "kubernetes", "-o", "KUBERNETES_NAMESPACE=devpod")
 			framework.ExpectNoError(err)
-			ginkgo.DeferCleanup(func() {
-				err = f.DevPodProviderDelete(context.Background(), "kubernetes")
+			ginkgo.DeferCleanup(func(cleanupCtx context.Context) {
+				err := f.DevPodProviderDelete(cleanupCtx, "kubernetes")
 				framework.ExpectNoError(err)
 			})
 

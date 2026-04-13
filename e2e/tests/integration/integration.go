@@ -24,6 +24,7 @@ var _ = ginkgo.Describe(
 
 		ginkgo.It(
 			"should setup ssh, add provider, run workspace, test ssh, and cleanup",
+			ginkgo.SpecTimeout(framework.GetTimeout()),
 			func(ctx context.Context) {
 				sshDir := os.Getenv("HOME") + "/.ssh"
 				if _, err := os.Stat(sshDir); os.IsNotExist(err) {

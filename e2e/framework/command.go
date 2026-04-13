@@ -286,20 +286,20 @@ func (f *Framework) DevPodProviderUpdate(ctx context.Context, args ...string) er
 	return nil
 }
 
-func (f *Framework) DevPodMachineCreate(args []string) error {
+func (f *Framework) DevPodMachineCreate(ctx context.Context, args []string) error {
 	baseArgs := []string{"machine", "create"}
 	baseArgs = append(baseArgs, args...)
-	err := f.ExecCommand(context.Background(), false, false, "", baseArgs)
+	err := f.ExecCommand(ctx, false, false, "", baseArgs)
 	if err != nil {
 		return fmt.Errorf("devpod machine create failed: %s", err.Error())
 	}
 	return nil
 }
 
-func (f *Framework) DevPodMachineDelete(args []string) error {
+func (f *Framework) DevPodMachineDelete(ctx context.Context, args []string) error {
 	baseArgs := []string{"machine", "delete"}
 	baseArgs = append(baseArgs, args...)
-	err := f.ExecCommand(context.Background(), false, false, "", baseArgs)
+	err := f.ExecCommand(ctx, false, false, "", baseArgs)
 	if err != nil {
 		return fmt.Errorf("devpod machine delete failed: %s", err.Error())
 	}

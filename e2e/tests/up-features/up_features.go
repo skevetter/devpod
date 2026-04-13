@@ -34,7 +34,7 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-features", "suite
 		ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
 
 		wsName := filepath.Base(tempDir)
-		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), wsName)
+		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, wsName)
 
 		err = f.DevPodUp(ctx, tempDir)
 		framework.ExpectNoError(err)
@@ -101,7 +101,7 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-features", "suite
 		framework.ExpectNoError(err)
 
 		wsName := filepath.Base(tempDir)
-		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), wsName)
+		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, wsName)
 
 		err = f.DevPodUp(ctx, tempDir)
 		framework.ExpectNoError(err)
@@ -118,7 +118,7 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-features", "suite
 		ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
 
 		wsName := filepath.Base(tempDir)
-		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), wsName)
+		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, wsName)
 
 		err = f.DevPodUp(ctx, tempDir)
 		framework.ExpectNoError(err)
@@ -138,7 +138,7 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-features", "suite
 			ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
 
 			wsName := filepath.Base(tempDir)
-			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), wsName)
+			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, wsName)
 
 			err = f.DevPodUp(ctx, tempDir)
 			framework.ExpectNoError(err)
@@ -165,7 +165,7 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-features", "suite
 			ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
 
 			wsName := filepath.Base(tempDir)
-			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), wsName)
+			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, wsName)
 
 			err = f.DevPodUp(ctx, tempDir)
 			framework.ExpectNoError(err)
@@ -192,7 +192,7 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-features", "suite
 			ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
 
 			wsName := filepath.Base(tempDir)
-			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), wsName)
+			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, wsName)
 
 			err = f.DevPodUp(ctx, tempDir)
 			framework.ExpectNoError(err)
@@ -219,7 +219,7 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-features", "suite
 			ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
 
 			wsName := filepath.Base(tempDir)
-			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), wsName)
+			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, wsName)
 
 			// This should fail with circular dependency error
 			err = f.DevPodUp(ctx, tempDir)
@@ -243,7 +243,7 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-features", "suite
 			ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
 
 			wsName := filepath.Base(tempDir)
-			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), wsName)
+			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, wsName)
 
 			err = f.DevPodUp(ctx, tempDir)
 			framework.ExpectNoError(err)
@@ -270,7 +270,7 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-features", "suite
 			ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
 
 			wsName := filepath.Base(tempDir)
-			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), wsName)
+			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, wsName)
 
 			err = f.DevPodUp(ctx, tempDir)
 			framework.ExpectNoError(err)
@@ -297,7 +297,7 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-features", "suite
 			ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
 
 			wsName := filepath.Base(tempDir)
-			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), wsName)
+			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, wsName)
 
 			// Should fail with circular dependency error
 			err = f.DevPodUp(ctx, tempDir)
@@ -320,7 +320,7 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-features", "suite
 			ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
 
 			wsName := filepath.Base(tempDir)
-			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), wsName)
+			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, wsName)
 
 			// Should fail when dependency cannot be resolved
 			err = f.DevPodUp(ctx, tempDir)
@@ -343,7 +343,7 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-features", "suite
 			ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
 
 			wsName := filepath.Base(tempDir)
-			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), wsName)
+			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, wsName)
 
 			err = f.DevPodUp(ctx, tempDir)
 			framework.ExpectNoError(err)
@@ -371,7 +371,7 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-features", "suite
 			ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
 
 			wsName := filepath.Base(tempDir)
-			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), wsName)
+			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, wsName)
 
 			// This should not fail with "Parent does not exist" error
 			err = f.DevPodUp(ctx, tempDir)
@@ -399,7 +399,7 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-features", "suite
 			ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
 
 			wsName := filepath.Base(tempDir)
-			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), wsName)
+			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, wsName)
 
 			err = f.DevPodUp(ctx, tempDir)
 			framework.ExpectNoError(err)
@@ -426,7 +426,7 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-features", "suite
 		ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
 
 		wsName := filepath.Base(tempDir)
-		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), wsName)
+		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, wsName)
 
 		err = f.DevPodUp(ctx, tempDir)
 		framework.ExpectNoError(err)
@@ -447,7 +447,7 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-features", "suite
 		ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
 
 		wsName := filepath.Base(tempDir)
-		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), wsName)
+		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, wsName)
 
 		err = f.DevPodUp(ctx, tempDir)
 		framework.ExpectNoError(err)

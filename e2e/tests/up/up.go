@@ -33,7 +33,7 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-workspaces"), fun
 		framework.ExpectNoError(err)
 
 		name := "vscode-remote-try-python"
-		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), name)
+		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, name)
 
 		// Wait for devpod workspace to come online (deadline: 30s)
 		err = f.DevPodUp(ctx, "https://github.com/microsoft/vscode-remote-try-python.git")
@@ -156,8 +156,8 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-workspaces"), fun
 		framework.ExpectNoError(err)
 		err = f.DevPodProviderUse(ctx, providerName)
 		framework.ExpectNoError(err)
-		ginkgo.DeferCleanup(func() {
-			err = f.DevPodProviderDelete(context.Background(), providerName)
+		ginkgo.DeferCleanup(func(cleanupCtx context.Context) {
+			err := f.DevPodProviderDelete(cleanupCtx, providerName)
 			framework.ExpectNoError(err)
 		})
 
@@ -203,8 +203,8 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-workspaces"), fun
 		framework.ExpectNoError(err)
 		err = f.DevPodProviderUse(ctx, providerName)
 		framework.ExpectNoError(err)
-		ginkgo.DeferCleanup(func() {
-			err = f.DevPodProviderDelete(context.Background(), providerName)
+		ginkgo.DeferCleanup(func(cleanupCtx context.Context) {
+			err := f.DevPodProviderDelete(cleanupCtx, providerName)
 			framework.ExpectNoError(err)
 		})
 
@@ -229,8 +229,8 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-workspaces"), fun
 		framework.ExpectNoError(err)
 		err = f.DevPodProviderUse(ctx, providerName)
 		framework.ExpectNoError(err)
-		ginkgo.DeferCleanup(func() {
-			err = f.DevPodProviderDelete(context.Background(), providerName)
+		ginkgo.DeferCleanup(func(cleanupCtx context.Context) {
+			err := f.DevPodProviderDelete(cleanupCtx, providerName)
 			framework.ExpectNoError(err)
 		})
 
@@ -268,8 +268,8 @@ var _ = ginkgo.Describe("testing up command", ginkgo.Label("up-workspaces"), fun
 		framework.ExpectNoError(err)
 		err = f.DevPodProviderUse(ctx, providerName)
 		framework.ExpectNoError(err)
-		ginkgo.DeferCleanup(func() {
-			err = f.DevPodProviderDelete(context.Background(), providerName)
+		ginkgo.DeferCleanup(func(cleanupCtx context.Context) {
+			err := f.DevPodProviderDelete(cleanupCtx, providerName)
 			framework.ExpectNoError(err)
 		})
 

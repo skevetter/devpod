@@ -28,7 +28,7 @@ var _ = ginkgo.Describe(
 				framework.ExpectNoError(err)
 
 				name := "sha256-0c1547c"
-				ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), name)
+				ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, name)
 
 				// Wait for devpod workspace to come online (deadline: 30s)
 				err = f.DevPodUp(
@@ -47,7 +47,7 @@ var _ = ginkgo.Describe(
 				framework.ExpectNoError(err)
 
 				name := "devpod"
-				ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), name)
+				ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, name)
 
 				err = f.DevPodUp(ctx, "github.com/skevetter/devpod@pull/1/head")
 				framework.ExpectNoError(err)
@@ -65,8 +65,8 @@ var _ = ginkgo.Describe(
 			framework.ExpectNoError(err)
 			err = f.DevPodProviderUse(ctx, providerName)
 			framework.ExpectNoError(err)
-			ginkgo.DeferCleanup(func() {
-				err = f.DevPodProviderDelete(context.Background(), providerName)
+			ginkgo.DeferCleanup(func(cleanupCtx context.Context) {
+				err := f.DevPodProviderDelete(cleanupCtx, providerName)
 				framework.ExpectNoError(err)
 			})
 

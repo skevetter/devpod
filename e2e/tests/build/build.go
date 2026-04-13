@@ -156,7 +156,7 @@ var _ = ginkgo.Describe("devpod build test suite", ginkgo.Label("build"), ginkgo
 			framework.ExpectNoError(err)
 			err = f.DevPodProviderUse(ctx, "docker")
 			framework.ExpectNoError(err)
-			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), tempDir)
+			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, tempDir)
 
 			cfg := getDevcontainerConfig(tempDir)
 
@@ -208,7 +208,7 @@ var _ = ginkgo.Describe("devpod build test suite", ginkgo.Label("build"), ginkgo
 			err = f.DevPodProviderUse(ctx, "docker")
 			framework.ExpectNoError(err)
 
-			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), tempDir)
+			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, tempDir)
 
 			prebuildRepo := prebuildRepoName
 
@@ -234,7 +234,7 @@ var _ = ginkgo.Describe("devpod build test suite", ginkgo.Label("build"), ginkgo
 			err = f.DevPodProviderUse(ctx, "docker")
 			framework.ExpectNoError(err)
 
-			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), tempDir)
+			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, tempDir)
 
 			err = f.DevPodBuild(ctx, tempDir, "--skip-push")
 			framework.ExpectNoError(err)
@@ -253,7 +253,7 @@ var _ = ginkgo.Describe("devpod build test suite", ginkgo.Label("build"), ginkgo
 		err = f.DevPodProviderUse(ctx, "docker")
 		framework.ExpectNoError(err)
 
-		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), tempDir)
+		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, tempDir)
 
 		cfg := getDevcontainerConfig(tempDir)
 
@@ -318,7 +318,7 @@ var _ = ginkgo.Describe("devpod build test suite", ginkgo.Label("build"), ginkgo
 		)
 		framework.ExpectNoError(err)
 
-		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), tempDir)
+		ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, tempDir)
 
 		// do the up
 		err = f.DevPodUp(ctx, tempDir)
@@ -376,7 +376,7 @@ func validateKubernetesDeploymentWithoutDocker(
 	)
 	framework.ExpectNoError(err)
 
-	ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), tempDir)
+	ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, tempDir)
 
 	err = f.DevPodUp(ctx, tempDir)
 	framework.ExpectNoError(err)

@@ -32,8 +32,8 @@ var _ = ginkgo.Describe(
 
 				err = f.DevPodProviderAdd(ctx, "docker", "--name", "test-docker")
 				framework.ExpectNoError(err)
-				ginkgo.DeferCleanup(func() {
-					err = f.DevPodProviderDelete(context.Background(), "test-docker")
+				ginkgo.DeferCleanup(func(cleanupCtx context.Context) {
+					err := f.DevPodProviderDelete(cleanupCtx, "test-docker")
 					framework.ExpectNoError(err)
 				})
 
@@ -68,8 +68,8 @@ var _ = ginkgo.Describe(
 			func(ctx context.Context) {
 				f, err := setupDockerProvider(initialDir+"/bin", "docker")
 				framework.ExpectNoError(err)
-				ginkgo.DeferCleanup(func() {
-					_ = f.DevPodProviderDelete(context.Background(), "docker")
+				ginkgo.DeferCleanup(func(cleanupCtx context.Context) {
+					_ = f.DevPodProviderDelete(cleanupCtx, "docker")
 				})
 
 				initialList, err := f.DevPodList(ctx)
@@ -90,8 +90,8 @@ var _ = ginkgo.Describe(
 			func(ctx context.Context) {
 				f, err := setupDockerProvider(initialDir+"/bin", "docker")
 				framework.ExpectNoError(err)
-				ginkgo.DeferCleanup(func() {
-					_ = f.DevPodProviderDelete(context.Background(), "docker")
+				ginkgo.DeferCleanup(func(cleanupCtx context.Context) {
+					_ = f.DevPodProviderDelete(cleanupCtx, "docker")
 				})
 
 				tempDir, err := framework.CopyToTempDir(

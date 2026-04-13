@@ -44,7 +44,7 @@ var _ = ginkgo.Describe(
 			)
 
 			name := "testprivaterepo"
-			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, context.Background(), name)
+			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, name)
 
 			err = f.DevPodUp(ctx, "https://github.com/"+username+"/test_private_repo.git")
 			framework.ExpectNoError(err)
