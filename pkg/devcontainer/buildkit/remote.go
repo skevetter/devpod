@@ -18,12 +18,12 @@ import (
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
-	"github.com/loft-sh/api/v4/pkg/devpod"
 	"github.com/moby/buildkit/client"
 	"github.com/moby/buildkit/exporter/containerimage/exptypes"
 	"github.com/moby/buildkit/session"
 	"github.com/moby/buildkit/session/auth/authprovider"
 	"github.com/sirupsen/logrus"
+	"github.com/skevetter/api/pkg/devsy"
 	"github.com/skevetter/devpod/pkg/devcontainer/build"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	"github.com/skevetter/devpod/pkg/devcontainer/feature"
@@ -476,7 +476,7 @@ type certPaths struct {
 	CertPath  string
 }
 
-func ensureCertPaths(buildOpts *devpod.PlatformBuildOptions) (*certPaths, error) {
+func ensureCertPaths(buildOpts *devsy.PlatformBuildOptions) (*certPaths, error) {
 	parentDir, err := os.MkdirTemp("", "build-certs-*")
 	if err != nil {
 		return nil, fmt.Errorf("create temp dir: %w", err)

@@ -6,7 +6,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/loft-sh/api/v4/pkg/devpod"
+	"github.com/skevetter/api/pkg/devsy"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	"github.com/skevetter/devpod/pkg/provider"
 	"golang.org/x/crypto/ssh"
@@ -136,11 +136,11 @@ type WorkspaceClient interface {
 }
 
 type StopOptions struct {
-	Platform devpod.PlatformOptions `json:"platform"`
+	Platform devsy.PlatformOptions `json:"platform"`
 }
 
 type DeleteOptions struct {
-	Platform devpod.PlatformOptions `json:"platform"`
+	Platform devsy.PlatformOptions `json:"platform"`
 
 	IgnoreNotFound bool   `json:"ignoreNotFound,omitempty"`
 	Force          bool   `json:"force,omitempty"`

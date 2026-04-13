@@ -14,7 +14,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/loft-sh/api/v4/pkg/devpod"
+	"github.com/skevetter/api/pkg/devsy"
 	"github.com/skevetter/devpod/pkg/agent"
 	"github.com/skevetter/devpod/pkg/agent/tunnel"
 	"github.com/skevetter/devpod/pkg/command"
@@ -32,7 +32,7 @@ type ContainerSetupConfig struct {
 	SetupInfo         *config.Result
 	ExtraWorkspaceEnv []string
 	ChownProjects     bool
-	PlatformOptions   *devpod.PlatformOptions
+	PlatformOptions   *devsy.PlatformOptions
 	TunnelClient      tunnel.TunnelClient
 	Log               log.Logger
 }
@@ -453,7 +453,7 @@ func markerFileExists(markerName string, markerContent string) (bool, error) {
 
 func setupPlatformGitCredentials(
 	userName string,
-	platformOptions *devpod.PlatformOptions,
+	platformOptions *devsy.PlatformOptions,
 	log log.Logger,
 ) error {
 	// platform is not enabled, skip
@@ -494,7 +494,7 @@ func setupPlatformGitCredentials(
 
 func setupPlatformGitHTTPCredentials(
 	userName string,
-	platformOptions *devpod.PlatformOptions,
+	platformOptions *devsy.PlatformOptions,
 	log log.Logger,
 ) error {
 	if !platformOptions.Enabled || len(platformOptions.UserCredentials.GitHttp) == 0 {
@@ -516,7 +516,7 @@ func setupPlatformGitHTTPCredentials(
 
 func setupPlatformGitSSHKeys(
 	userName string,
-	platformOptions *devpod.PlatformOptions,
+	platformOptions *devsy.PlatformOptions,
 	log log.Logger,
 ) error {
 	if !platformOptions.Enabled || len(platformOptions.UserCredentials.GitSsh) == 0 {

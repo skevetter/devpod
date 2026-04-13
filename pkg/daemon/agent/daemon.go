@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/loft-sh/api/v4/pkg/devpod"
+	"github.com/skevetter/api/pkg/devsy"
 	"github.com/skevetter/devpod/pkg/command"
 	pkgconfig "github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
@@ -25,13 +25,13 @@ type SshConfig struct {
 }
 
 type DaemonConfig struct {
-	Platform devpod.PlatformOptions `json:"platform"`
-	Ssh      SshConfig              `json:"ssh"`
-	Timeout  string                 `json:"timeout"`
+	Platform devsy.PlatformOptions `json:"platform"`
+	Ssh      SshConfig             `json:"ssh"`
+	Timeout  string                `json:"timeout"`
 }
 
 func BuildWorkspaceDaemonConfig(
-	platformOptions devpod.PlatformOptions,
+	platformOptions devsy.PlatformOptions,
 	workspaceConfig *provider2.Workspace,
 	substitutionContext *config.SubstitutionContext,
 	mergedConfig *config.MergedDevContainerConfig,
@@ -72,7 +72,7 @@ func BuildWorkspaceDaemonConfig(
 }
 
 func GetEncodedWorkspaceDaemonConfig(
-	platformOptions devpod.PlatformOptions,
+	platformOptions devsy.PlatformOptions,
 	workspaceConfig *provider2.Workspace,
 	substitutionContext *config.SubstitutionContext,
 	mergedConfig *config.MergedDevContainerConfig,

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	storagev1 "github.com/loft-sh/api/v4/pkg/apis/storage/v1"
+	storagev1 "github.com/skevetter/api/pkg/apis/storage/v1"
 	"github.com/skevetter/devpod/cmd/pro/flags"
 	"github.com/skevetter/devpod/pkg/platform/kube"
 	"github.com/skevetter/devpod/pkg/random"

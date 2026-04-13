@@ -9,9 +9,9 @@ import (
 	"os/exec"
 	"time"
 
-	managementv1 "github.com/loft-sh/api/v4/pkg/apis/management/v1"
-	storagev1 "github.com/loft-sh/api/v4/pkg/apis/storage/v1"
 	"github.com/sirupsen/logrus"
+	managementv1 "github.com/skevetter/api/pkg/apis/management/v1"
+	storagev1 "github.com/skevetter/api/pkg/apis/storage/v1"
 	proflags "github.com/skevetter/devpod/cmd/pro/flags"
 	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/platform"

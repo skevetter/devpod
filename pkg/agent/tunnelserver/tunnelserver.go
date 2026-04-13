@@ -11,8 +11,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/loft-sh/api/v4/pkg/devpod"
 	"github.com/moby/patternmatcher/ignorefile"
+	"github.com/skevetter/api/pkg/devsy"
 	"github.com/skevetter/devpod/pkg/agent/tunnel"
 	pkgconfig "github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
@@ -118,7 +118,7 @@ type tunnelServer struct {
 	workspace              *provider2.Workspace
 	log                    log.Logger
 
-	platformOptions *devpod.PlatformOptions
+	platformOptions *devsy.PlatformOptions
 }
 
 func (t *tunnelServer) RunWithResult(

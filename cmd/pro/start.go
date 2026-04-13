@@ -20,10 +20,10 @@ import (
 	"time"
 
 	jsonpatch "github.com/evanphx/json-patch/v5"
-	storagev1 "github.com/loft-sh/api/v4/pkg/apis/storage/v1"
-	"github.com/loft-sh/api/v4/pkg/auth"
-	loftclientset "github.com/loft-sh/api/v4/pkg/clientset/versioned"
 	"github.com/sirupsen/logrus"
+	storagev1 "github.com/skevetter/api/pkg/apis/storage/v1"
+	"github.com/skevetter/api/pkg/auth"
+	loftclientset "github.com/skevetter/api/pkg/clientset/versioned"
 	proflags "github.com/skevetter/devpod/cmd/pro/flags"
 	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/machineid"

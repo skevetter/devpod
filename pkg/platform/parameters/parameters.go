@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	storagev1 "github.com/loft-sh/api/v4/pkg/apis/storage/v1"
+	storagev1 "github.com/skevetter/api/pkg/apis/storage/v1"
 )
 
 func VerifyValue(value string, parameter storagev1.AppParameter) (any, error) {

@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/gorilla/handlers"
-	managementv1 "github.com/loft-sh/api/v4/pkg/apis/management/v1"
 	"github.com/sirupsen/logrus"
+	managementv1 "github.com/skevetter/api/pkg/apis/management/v1"
 	"github.com/skevetter/devpod/pkg/dockercredentials"
 	"github.com/skevetter/devpod/pkg/gitcredentials"
 	"github.com/skevetter/devpod/pkg/platform"

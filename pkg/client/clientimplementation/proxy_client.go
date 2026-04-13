@@ -14,7 +14,7 @@ import (
 
 	"github.com/blang/semver/v4"
 	"github.com/gofrs/flock"
-	"github.com/loft-sh/api/v4/pkg/devpod"
+	"github.com/skevetter/api/pkg/devsy"
 	"github.com/skevetter/devpod/pkg/client"
 	"github.com/skevetter/devpod/pkg/config"
 	devpodlog "github.com/skevetter/devpod/pkg/log"
@@ -447,7 +447,7 @@ func DecodeOptionsFromEnv(name string, into any) (bool, error) {
 	return true, json.Unmarshal([]byte(raw), into)
 }
 
-func DecodePlatformOptionsFromEnv(into *devpod.PlatformOptions) error {
+func DecodePlatformOptionsFromEnv(into *devsy.PlatformOptions) error {
 	raw := os.Getenv(config.EnvPlatformOptions)
 	if raw == "" {
 		return nil

@@ -14,8 +14,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/loft-sh/api/v4/pkg/devpod"
 	"github.com/moby/patternmatcher/ignorefile"
+	"github.com/skevetter/api/pkg/devsy"
 	"github.com/skevetter/devpod/pkg/command"
 	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/git"
@@ -360,7 +360,7 @@ func CloneRepositoryForWorkspace(
 		}
 
 		// marshal options
-		jsonOptions, err := json.Marshal(&devpod.CloneOptions{
+		jsonOptions, err := json.Marshal(&devsy.CloneOptions{
 			Repository:        source.GitRepository,
 			Branch:            source.GitBranch,
 			Commit:            source.GitCommit,
@@ -377,7 +377,7 @@ func CloneRepositoryForWorkspace(
 
 		// create client
 		log.Infof("Cloning repository %s in platform", source.GitRepository)
-		_, err = devpod.NewRunnerClient(grpcClient).Clone(ctx, &devpod.CloneRequest{
+		_, err = devsy.NewRunnerClient(grpcClient).Clone(ctx, &devsy.CloneRequest{
 			TargetPath: workspaceDir,
 			Options:    string(jsonOptions),
 		})

@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	managementv1 "github.com/loft-sh/api/v4/pkg/apis/management/v1"
-	storagev1 "github.com/loft-sh/api/v4/pkg/apis/storage/v1"
-	"github.com/loft-sh/api/v4/pkg/devpod"
+	managementv1 "github.com/skevetter/api/pkg/apis/management/v1"
+	storagev1 "github.com/skevetter/api/pkg/apis/storage/v1"
+	"github.com/skevetter/api/pkg/devsy"
 	"github.com/skevetter/devpod/pkg/platform/annotations"
 	"github.com/skevetter/devpod/pkg/platform/client"
 	"github.com/skevetter/devpod/pkg/platform/project"
@@ -23,7 +23,7 @@ var configTTL time.Duration = time.Hour * 24 * 90 // 90 days
 // We return the config as byte slice to ensure correct handling and formatting through the `clientcmd` methods.
 func NewInstanceKubeConfig(
 	ctx context.Context,
-	platformOptions *devpod.PlatformOptions,
+	platformOptions *devsy.PlatformOptions,
 ) ([]byte, error) {
 	if platformOptions == nil {
 		return nil, nil

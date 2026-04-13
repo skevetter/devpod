@@ -11,9 +11,9 @@ import (
 	"strings"
 	"sync"
 
-	managementv1 "github.com/loft-sh/api/v4/pkg/apis/management/v1"
-	storagev1 "github.com/loft-sh/api/v4/pkg/apis/storage/v1"
 	"github.com/sirupsen/logrus"
+	managementv1 "github.com/skevetter/api/pkg/apis/management/v1"
+	storagev1 "github.com/skevetter/api/pkg/apis/storage/v1"
 	"github.com/skevetter/devpod/pkg/client/clientimplementation"
 	"github.com/skevetter/devpod/pkg/config"
 	daemon "github.com/skevetter/devpod/pkg/daemon/platform"

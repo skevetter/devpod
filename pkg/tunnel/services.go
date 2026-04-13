@@ -13,8 +13,8 @@ import (
 
 	"al.essio.dev/pkg/shellescape"
 	"github.com/docker/go-connections/nat"
-	"github.com/loft-sh/api/v4/pkg/devpod"
 	"github.com/sirupsen/logrus"
+	"github.com/skevetter/api/pkg/devsy"
 	"github.com/skevetter/devpod/pkg/agent"
 	"github.com/skevetter/devpod/pkg/agent/tunnelserver"
 	"github.com/skevetter/devpod/pkg/config"
@@ -46,7 +46,7 @@ type RunServicesOptions struct {
 	User                           string
 	ForwardPorts                   bool
 	ExtraPorts                     []string
-	PlatformOptions                *devpod.PlatformOptions
+	PlatformOptions                *devsy.PlatformOptions
 	Workspace                      *provider.Workspace
 	ConfigureDockerCredentials     bool
 	ConfigureGitCredentials        bool

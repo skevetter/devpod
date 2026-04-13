@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"time"
 
-	clusterv1 "github.com/loft-sh/agentapi/v4/pkg/apis/loft/cluster/v1"
-	storagev1 "github.com/loft-sh/api/v4/pkg/apis/storage/v1"
+	clusterv1 "github.com/skevetter/agentapi/pkg/apis/devsy/cluster/v1"
+	storagev1 "github.com/skevetter/api/pkg/apis/storage/v1"
 	"github.com/skevetter/devpod/cmd/pro/flags"
 	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/platform"

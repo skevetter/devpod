@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	managementv1 "github.com/loft-sh/api/v4/pkg/apis/management/v1"
+	managementv1 "github.com/skevetter/api/pkg/apis/management/v1"
 	"github.com/skevetter/devpod/cmd/pro/flags"
 	"github.com/skevetter/devpod/pkg/platform"
 	"github.com/skevetter/devpod/pkg/platform/client"

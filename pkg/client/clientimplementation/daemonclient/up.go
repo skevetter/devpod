@@ -9,10 +9,10 @@ import (
 	"os"
 	"time"
 
-	_ "github.com/loft-sh/api/v4/pkg/apis/management/install" // Install the management group to ensure the option types are registered
-	managementv1 "github.com/loft-sh/api/v4/pkg/apis/management/v1"
-	storagev1 "github.com/loft-sh/api/v4/pkg/apis/storage/v1"
-	"github.com/loft-sh/apiserver/pkg/builders"
+	_ "github.com/skevetter/api/pkg/apis/management/install" // Install the management group to ensure the option types are registered
+	managementv1 "github.com/skevetter/api/pkg/apis/management/v1"
+	storagev1 "github.com/skevetter/api/pkg/apis/storage/v1"
+	"github.com/skevetter/apiserver/pkg/builders"
 	clientpkg "github.com/skevetter/devpod/pkg/client"
 	devpodconfig "github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"

@@ -1,7 +1,7 @@
 package tunnelserver
 
 import (
-	"github.com/loft-sh/api/v4/pkg/devpod"
+	"github.com/skevetter/api/pkg/devsy"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	"github.com/skevetter/devpod/pkg/netstat"
 	provider2 "github.com/skevetter/devpod/pkg/provider"
@@ -51,7 +51,7 @@ func WithMounts(mounts []*config.Mount) Option {
 	}
 }
 
-func WithPlatformOptions(options *devpod.PlatformOptions) Option {
+func WithPlatformOptions(options *devsy.PlatformOptions) Option {
 	return func(s *tunnelServer) *tunnelServer {
 		s.platformOptions = options
 		return s

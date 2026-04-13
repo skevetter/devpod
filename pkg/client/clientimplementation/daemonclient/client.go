@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	storagev1 "github.com/loft-sh/api/v4/pkg/apis/storage/v1"
+	storagev1 "github.com/skevetter/api/pkg/apis/storage/v1"
 	clientpkg "github.com/skevetter/devpod/pkg/client"
 	"github.com/skevetter/devpod/pkg/config"
 	daemon "github.com/skevetter/devpod/pkg/daemon/platform"
