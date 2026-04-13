@@ -63,7 +63,12 @@ func (f *Framework) DevPodUpStreams(
 	upArgs := []string{"up", "--ide", "none", workspace}
 	upArgs = append(upArgs, additionalArgs...)
 
-	stdout, stderr, err := f.ExecCommandCapture(ctx, upArgs)
+	stdout, stderr, err := execWithDockerRetry(
+		ctx,
+		func(ctx context.Context) (string, string, error) {
+			return f.ExecCommandCapture(ctx, upArgs)
+		},
+	)
 	if err != nil {
 		return stdout, stderr, fmt.Errorf("devpod up failed: %s", err.Error())
 	}
@@ -76,7 +81,9 @@ func (f *Framework) DevPodUpWithIDE(ctx context.Context, additionalArgs ...strin
 	upArgs := []string{"up", "--debug"}
 	upArgs = append(upArgs, additionalArgs...)
 
-	_, _, err := f.ExecCommandCapture(ctx, upArgs)
+	_, _, err := execWithDockerRetry(ctx, func(ctx context.Context) (string, string, error) {
+		return f.ExecCommandCapture(ctx, upArgs)
+	})
 	if err != nil {
 		return fmt.Errorf("devpod up failed: %s", err.Error())
 	}
@@ -98,7 +105,9 @@ func (f *Framework) DevPodUp(ctx context.Context, additionalArgs ...string) erro
 	upArgs := []string{"up", "--debug", "--ide", "none"}
 	upArgs = append(upArgs, additionalArgs...)
 
-	_, _, err := f.ExecCommandCapture(ctx, upArgs)
+	_, _, err := execWithDockerRetry(ctx, func(ctx context.Context) (string, string, error) {
+		return f.ExecCommandCapture(ctx, upArgs)
+	})
 	if err != nil {
 		return fmt.Errorf("devpod up failed: %s", err.Error())
 	}
@@ -109,7 +118,9 @@ func (f *Framework) DevPodUpRecreate(ctx context.Context, additionalArgs ...stri
 	upArgs := []string{"up", "--recreate", "--debug", "--ide", "none"}
 	upArgs = append(upArgs, additionalArgs...)
 
-	_, _, err := f.ExecCommandCapture(ctx, upArgs)
+	_, _, err := execWithDockerRetry(ctx, func(ctx context.Context) (string, string, error) {
+		return f.ExecCommandCapture(ctx, upArgs)
+	})
 	if err != nil {
 		return fmt.Errorf("devpod up --recreate failed: %s", err.Error())
 	}
@@ -120,7 +131,9 @@ func (f *Framework) DevPodUpReset(ctx context.Context, additionalArgs ...string)
 	upArgs := []string{"up", "--reset", "--debug", "--ide", "none"}
 	upArgs = append(upArgs, additionalArgs...)
 
-	_, _, err := f.ExecCommandCapture(ctx, upArgs)
+	_, _, err := execWithDockerRetry(ctx, func(ctx context.Context) (string, string, error) {
+		return f.ExecCommandCapture(ctx, upArgs)
+	})
 	if err != nil {
 		return fmt.Errorf("devpod up --reset failed: %s", err.Error())
 	}
