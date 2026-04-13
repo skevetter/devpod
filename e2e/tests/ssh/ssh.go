@@ -87,7 +87,7 @@ var _ = ginkgo.Describe("devpod ssh test suite", ginkgo.Label("ssh"), ginkgo.Ord
 			// simulating the reporter's setup from issue #731.
 			sshKeyDir, err := os.MkdirTemp("", "devpod-gpg-ssh-test")
 			framework.ExpectNoError(err)
-			defer func() { _ = os.RemoveAll(sshKeyDir) }()
+			ginkgo.DeferCleanup(func() { _ = os.RemoveAll(sshKeyDir) })
 
 			keyPath := filepath.Join(sshKeyDir, "id_ed25519")
 			// #nosec G204 -- test command with controlled arguments
