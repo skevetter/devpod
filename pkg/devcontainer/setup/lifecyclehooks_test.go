@@ -82,7 +82,7 @@ func (s *LifecycleHookTestSuite) TestSymlinkWithQuotes() {
 	assert.NotEqual(s.T(), byte('"'), target[len(target)-1])
 }
 
-func (s *LifecycleHookTestSuite) TestRunPreAttachHooksDoesNotRunPostAttach() {
+func (s *LifecycleHookTestSuite) TestLifecycleHooksNoOpWithEmptyConfig() {
 	ctx := context.Background()
 	result := &config.Result{
 		MergedConfig: &config.MergedDevContainerConfig{},
