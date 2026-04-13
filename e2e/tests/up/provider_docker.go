@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/onsi/ginkgo/v2"
@@ -302,6 +303,43 @@ var _ = ginkgo.Describe(
 			lines = strings.Count(strings.TrimSpace(out), "\n") + 1
 			gomega.Expect(lines).To(gomega.Equal(2),
 				"postStartCommand should have run again after restart")
+		}, ginkgo.SpecTimeout(framework.GetTimeout()))
+
+		ginkgo.It("IDE accessible before postAttachCommand completes", func(ctx context.Context) {
+			tempDir, err := setupWorkspace(
+				"tests/up/testdata/docker-post-attach-nonblocking",
+				dtc.initialDir,
+				dtc.f,
+			)
+			framework.ExpectNoError(err)
+
+			// devpod up with --ide none returns when IDE would open,
+			// which should now be BEFORE postAttachCommand finishes
+			err = dtc.f.DevPodUp(ctx, tempDir)
+			framework.ExpectNoError(err)
+
+			// postStartCommand should have completed (runs before result is sent)
+			out, err := dtc.execSSH(ctx, tempDir, "cat $HOME/post-start.out")
+			framework.ExpectNoError(err)
+			gomega.Expect(strings.TrimSpace(out)).To(gomega.Equal("postStartDone"),
+				"postStartCommand should have completed before devpod up returned")
+
+			// postAttachCommand should NOT have completed yet (it sleeps 5s)
+			_, err = dtc.execSSH(ctx, tempDir, "cat $HOME/post-attach.out")
+			gomega.Expect(err).To(gomega.HaveOccurred(),
+				"postAttachCommand should still be running when devpod up returns")
+
+			// Wait for postAttachCommand to finish and verify it does complete
+			gomega.Eventually(func() string {
+				out, err := dtc.execSSH(ctx, tempDir, "cat $HOME/post-attach.out 2>/dev/null")
+				if err != nil {
+					return ""
+				}
+				return strings.TrimSpace(out)
+			}).WithTimeout(30*time.Second).WithPolling(2*time.Second).Should(
+				gomega.Equal("postAttachDone"),
+				"postAttachCommand should eventually complete in the background",
+			)
 		}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
 		ginkgo.It("multi devcontainer selection", func(ctx context.Context) {
