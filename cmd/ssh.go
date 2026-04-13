@@ -710,12 +710,7 @@ func (cmd *SSHCmd) setupGPGAgent(
 	gpgExtraSocketPath := strings.TrimSpace(string(gpgExtraSocketBytes))
 	log.Debugf("[GPG] detected gpg-agent socket path %s", gpgExtraSocketPath)
 
-	gitGpgKey, err := exec.Command("git", []string{"config", "user.signingKey"}...).Output()
-	if err != nil {
-		log.Debugf("[GPG] no git signkey detected, skipping")
-	} else {
-		log.Debugf("[GPG] detected git sign key %s", gitGpgKey)
-	}
+	gitKey := gpgSigningKey(log)
 
 	cmd.ReverseForwardPorts = append(cmd.ReverseForwardPorts, gpgExtraSocketPath)
 
@@ -735,8 +730,7 @@ func (cmd *SSHCmd) setupGPGAgent(
 		forwardAgent = append(forwardAgent, "--debug")
 	}
 
-	if len(gitGpgKey) > 0 {
-		gitKey := strings.TrimSpace(string(gitGpgKey))
+	if gitKey != "" {
 		forwardAgent = append(forwardAgent, "--gitkey")
 		forwardAgent = append(forwardAgent, gitKey)
 	}
@@ -768,6 +762,29 @@ func (cmd *SSHCmd) setupGPGAgent(
 	}
 
 	return nil
+}
+
+// gpgSigningKey returns the user's GPG signing key from git config,
+// or empty string if no key is configured or the signing format is SSH
+// (SSH signing keys are handled by the separate SSH signature helper).
+func gpgSigningKey(log log.Logger) string {
+	format, err := exec.Command("git", "config", "--get", "gpg.format").Output()
+	if err == nil && strings.TrimSpace(string(format)) == "ssh" {
+		log.Debugf(
+			"[GPG] gpg.format is ssh, skipping GPG signing key (handled by SSH signing helper)",
+		)
+		return ""
+	}
+
+	key, err := exec.Command("git", "config", "--get", "user.signingKey").Output()
+	if err != nil {
+		log.Debugf("[GPG] no git signkey detected, skipping")
+		return ""
+	}
+
+	result := strings.TrimSpace(string(key))
+	log.Debugf("[GPG] detected git sign key %s", result)
+	return result
 }
 
 func startSSHKeepAlive(
