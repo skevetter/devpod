@@ -10,6 +10,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/onsi/ginkgo/v2"
@@ -30,6 +31,7 @@ var _ = ginkgo.Describe("devpod ssh test suite", ginkgo.Label("ssh"), ginkgo.Ord
 
 	ginkgo.It(
 		"should start a new workspace with a docker provider (default) and SSH into it",
+		ginkgo.SpecTimeout(framework.GetTimeout()),
 		func(ctx context.Context) {
 			tempDir, err := framework.CopyToTempDir("tests/ssh/testdata/local-test")
 			framework.ExpectNoError(err)
@@ -346,6 +348,7 @@ var _ = ginkgo.Describe("devpod ssh test suite", ginkgo.Label("ssh"), ginkgo.Ord
 
 	ginkgo.It(
 		"should start a new workspace with a docker provider (default) and forward a port into it",
+		ginkgo.SpecTimeout(framework.GetTimeout()),
 		func(ctx context.Context) {
 			if runtime.GOOS == osWindows {
 				ginkgo.Skip("skipping on windows")
@@ -385,9 +388,10 @@ var _ = ginkgo.Describe("devpod ssh test suite", ginkgo.Label("ssh"), ginkgo.Ord
 			)
 			err = serverCmd.Start()
 			framework.ExpectNoError(err)
-			go func() {
+			var wg sync.WaitGroup
+			wg.Go(func() {
 				_ = serverCmd.Wait()
-			}()
+			})
 
 			portForwardCtx, cancelPort := context.WithTimeout(
 				ctx,
@@ -396,9 +400,14 @@ var _ = ginkgo.Describe("devpod ssh test suite", ginkgo.Label("ssh"), ginkgo.Ord
 			defer cancelPort()
 
 			ginkgo.GinkgoWriter.Println("Starting port forwarding for port", port)
-			go func() {
+			wg.Go(func() {
 				_ = f.DevpodPortTest(portForwardCtx, strconv.Itoa(port), tempDir)
-			}()
+			})
+			ginkgo.DeferCleanup(func() {
+				serverCancel()
+				cancelPort()
+				wg.Wait()
+			})
 
 			ginkgo.GinkgoWriter.Println("Polling for port", port, "to be accessible")
 			address := net.JoinHostPort("localhost", strconv.Itoa(port))

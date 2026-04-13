@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/onsi/ginkgo/v2"
+	"github.com/onsi/gomega"
 	"github.com/skevetter/devpod/e2e/framework"
 )
 
@@ -79,6 +80,7 @@ var _ = ginkgo.Describe(
 				var ides []map[string]any
 				err = json.Unmarshal([]byte(output), &ides)
 				framework.ExpectNoError(err)
+				gomega.Expect(ides).NotTo(gomega.BeEmpty(), "IDE list should not be empty")
 
 				for _, ide := range ides {
 					if ide["name"] == ideIntelliJ {
@@ -93,6 +95,8 @@ var _ = ginkgo.Describe(
 
 				err = json.Unmarshal([]byte(output), &ides)
 				framework.ExpectNoError(err)
+				gomega.Expect(ides).
+					NotTo(gomega.BeEmpty(), "IDE list for context-b should not be empty")
 
 				intellijFound := false
 				for _, ide := range ides {
@@ -103,9 +107,9 @@ var _ = ginkgo.Describe(
 						}
 					}
 				}
-				if !intellijFound {
-					ginkgo.Fail("IDE was not set in context-b as expected")
-				}
+				gomega.Expect(intellijFound).To(
+					gomega.BeTrue(), "IDE should be set as default in context-b",
+				)
 
 				ginkgo.GinkgoT().Setenv("DEVPOD_CONTEXT", contextB)
 
@@ -114,6 +118,10 @@ var _ = ginkgo.Describe(
 
 				err = json.Unmarshal([]byte(output), &ides)
 				framework.ExpectNoError(err)
+				gomega.Expect(ides).NotTo(
+					gomega.BeEmpty(),
+					"IDE list via DEVPOD_CONTEXT should not be empty",
+				)
 
 				intellijFound = false
 				for _, ide := range ides {
@@ -124,11 +132,10 @@ var _ = ginkgo.Describe(
 						}
 					}
 				}
-				if !intellijFound {
-					ginkgo.Fail(
-						"Selecting context-b using environment variable DEVPOD_CONTEXT does not work as expected",
-					)
-				}
+				gomega.Expect(intellijFound).To(
+					gomega.BeTrue(),
+					"DEVPOD_CONTEXT env var should select context-b with intellij as default IDE",
+				)
 			},
 		)
 	},

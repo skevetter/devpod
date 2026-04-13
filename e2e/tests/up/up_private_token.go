@@ -25,9 +25,16 @@ var _ = ginkgo.Describe(
 		ginkgo.It("should allow checkout of a private GitRepo", func(ctx context.Context) {
 			username := os.Getenv("GH_USERNAME")
 			token := os.Getenv("GH_ACCESS_TOKEN")
+			if username == "" || token == "" {
+				ginkgo.Skip("GH_USERNAME and GH_ACCESS_TOKEN must be set")
+			}
 
 			f, err := setupDockerProvider(initialDir+"/bin", "docker")
 			framework.ExpectNoError(err)
+
+			// Register credential cleanup before writing to ensure cleanup on any failure
+			credentialPath := filepath.Join(os.Getenv("HOME"), ".git-credentials")
+			ginkgo.DeferCleanup(func() { _ = os.Remove(credentialPath) })
 
 			// setup git credentials
 			err = exec.Command("git", []string{"config", "--global", "credential.helper", "store"}...).
@@ -35,13 +42,8 @@ var _ = ginkgo.Describe(
 			framework.ExpectNoError(err)
 
 			gitCredentialString := []byte("https://" + username + ":" + token + "@github.com")
-			err = os.WriteFile(
-				filepath.Join(os.Getenv("HOME"), ".git-credentials"),
-				gitCredentialString, 0o600)
+			err = os.WriteFile(credentialPath, gitCredentialString, 0o600)
 			framework.ExpectNoError(err)
-			ginkgo.DeferCleanup(
-				func() { _ = os.Remove(filepath.Join(os.Getenv("HOME"), ".git-credentials")) },
-			)
 
 			name := "testprivaterepo"
 			ginkgo.DeferCleanup(f.DevPodWorkspaceDelete, name)
