@@ -251,7 +251,6 @@ func extractProcInfo(sktab []SockTabEntry) {
 // ipv6.disable=1 or built without CONFIG_IPV6), this returns (nil, nil) so
 // callers degrade gracefully instead of aborting the entire port scan. All
 // other errors, including permission and parse failures, still propagate.
-// See issue #705.
 func doNetstat(path string, fn AcceptFn) ([]SockTabEntry, error) {
 	f, err := os.Open(path)
 	if err != nil {
