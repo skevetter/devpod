@@ -37,8 +37,10 @@ func resolveLifecycleEnv(
 	remoteUser := config.GetRemoteUser(setupInfo)
 	probedEnv, err := config.ProbeUserEnv(ctx, mergedConfig.UserEnvProbe, remoteUser, log)
 	if err != nil {
-		log.WithFields(logrus.Fields{"error": err}).
-			Error("failed to probe environment, this might lead to an incomplete setup of your workspace")
+		log.Errorf(
+			"failed to probe environment, this might lead to an incomplete setup of your workspace: error=%v",
+			err,
+		)
 	}
 
 	return lifecycleEnv{
@@ -203,13 +205,15 @@ func run(
 			wg.Wait()
 			err = cmd.Wait()
 			if err != nil {
-				log.WithFields(logrus.Fields{"command": cmd.Args, "error": err}).
-					Debug("failed running postCreateCommand lifecycle script")
+				log.Debugf(
+					"failed running postCreateCommand lifecycle script: command=%v, error=%v",
+					cmd.Args,
+					err,
+				)
 				return fmt.Errorf("failed to run: %s, error: %w", strings.Join(c, " "), err)
 			}
 
-			log.WithFields(logrus.Fields{"command": k, "args": strings.Join(c, " ")}).
-				Done("ran command")
+			log.Donef("ran command: command=%s, args=%s", k, strings.Join(c, " "))
 		}
 	}
 
@@ -232,7 +236,7 @@ func logPipeOutput(log log.Logger, pipe io.ReadCloser, level logrus.Level) {
 		}
 	}
 	if err := scanner.Err(); err != nil {
-		log.WithFields(logrus.Fields{"error": err}).Error("error reading pipe")
+		log.Errorf("error reading pipe: error=%v", err)
 	}
 }
 

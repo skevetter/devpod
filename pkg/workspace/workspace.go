@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"charm.land/huh/v2"
-	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/client"
 	"github.com/skevetter/devpod/pkg/client/clientimplementation"
 	"github.com/skevetter/devpod/pkg/client/clientimplementation/daemonclient"
@@ -266,18 +265,14 @@ func resolveWorkspace(
 	// check if desired id already exists
 	if params.DesiredID != "" {
 		if Exists(ctx, devPodConfig, nil, params.DesiredID, params.Owner, log) != "" {
-			log.WithFields(logrus.Fields{
-				"desiredID": params.DesiredID,
-			}).Debug("workspace ID already exists")
+			log.Debugf("workspace ID already exists: desiredID=%s", params.DesiredID)
 			return loadExistingWorkspace(devPodConfig, params.DesiredID, params.ChangeLastUsed, log)
 		}
 
 		// set desired id
 		workspaceID = params.DesiredID
 	} else if Exists(ctx, devPodConfig, nil, workspaceID, params.Owner, log) != "" {
-		log.WithFields(logrus.Fields{
-			"workspaceID": workspaceID,
-		}).Debug("workspace already exists")
+		log.Debugf("workspace already exists: workspaceID=%s", workspaceID)
 		return loadExistingWorkspace(devPodConfig, workspaceID, params.ChangeLastUsed, log)
 	}
 

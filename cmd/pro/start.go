@@ -1342,9 +1342,7 @@ func (cmd *StartCmd) loginViaCLI(url string) error {
 	}
 
 	cmd.Log.WriteString(logrus.InfoLevel, "\n")
-	cmd.Log.WithFields(logrus.Fields{
-		"url": url,
-	}).Donef("logged in via CLI")
+	cmd.Log.Donef("logged in via CLI: url=%s", url)
 
 	return nil
 }

@@ -139,10 +139,9 @@ func (o *VsCodeServer) InstallExtensions() error {
 
 	for _, ext := range o.extensions {
 		if err := o.installExtension(binPath, ext, writer, errWriter); err != nil {
-			o.log.WithFields(logrus.Fields{"extension": ext, "error": err}).
-				Warn("failed installing extension")
+			o.log.Warnf("failed installing extension: extension=%s, error=%v", ext, err)
 		} else {
-			o.log.WithFields(logrus.Fields{"extension": ext}).Info("installed extension")
+			o.log.Infof("installed extension: extension=%s", ext)
 		}
 	}
 
@@ -200,7 +199,7 @@ func (o *VsCodeServer) changeOwnership(location string) error {
 }
 
 func (o *VsCodeServer) installExtension(binPath, extension string, stdout, stderr io.Writer) error {
-	o.log.WithFields(logrus.Fields{"extension": extension}).Info("installing extension")
+	o.log.Infof("installing extension: extension=%s", extension)
 
 	cmd := o.buildExtensionCommand(binPath, extension)
 	cmd.Stdout = stdout
@@ -235,11 +234,12 @@ func (o *VsCodeServer) findServerBinaryPath(location string) string {
 
 	for _, s := range searches {
 		if path := s.fn(); path != "" && o.validateBinary(path) {
-			o.log.WithFields(logrus.Fields{
-				"server":   cfg.serverDir,
-				"path":     path,
-				"location": s.name,
-			}).Info("found server binary")
+			o.log.Infof(
+				"found server binary: server=%s, path=%s, location=%s",
+				cfg.serverDir,
+				path,
+				s.name,
+			)
 			return path
 		}
 	}
@@ -258,8 +258,7 @@ func (o *VsCodeServer) waitForServerBinary(location string) string {
 		}
 
 		if attempts == 0 || attempts%10 == 0 {
-			o.log.WithFields(logrus.Fields{"attempts": attempts}).
-				Debug("waiting for server installation")
+			o.log.Debugf("waiting for server installation: attempts=%d", attempts)
 		}
 
 		time.Sleep(backoff)
@@ -267,7 +266,7 @@ func (o *VsCodeServer) waitForServerBinary(location string) string {
 		attempts++
 	}
 
-	o.log.WithFields(logrus.Fields{"attempts": attempts}).Warn("timed out waiting for server")
+	o.log.Warnf("timed out waiting for server: attempts=%d", attempts)
 	return ""
 }
 
@@ -414,7 +413,7 @@ func (o *VsCodeServer) findInDir(root, binName string) string {
 
 func (o *VsCodeServer) validateBinary(binPath string) bool {
 	if !o.isSafeBinary(binPath) {
-		o.log.WithFields(logrus.Fields{"path": binPath}).Warn("binary failed safety checks")
+		o.log.Warnf("binary failed safety checks: path=%s", binPath)
 		return false
 	}
 

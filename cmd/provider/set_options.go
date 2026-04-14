@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/cmd/completion"
 	"github.com/skevetter/devpod/cmd/flags"
 	"github.com/skevetter/devpod/pkg/config"
@@ -120,8 +119,6 @@ func (cmd *SetOptionsCmd) Run(ctx context.Context, args []string, log log.Logger
 	}
 
 	// print success message
-	log.WithFields(logrus.Fields{
-		"providerName": providerWithOptions.Config.Name,
-	}).Done("set options for provider")
+	log.Donef("set options for provider: providerName=%s", providerWithOptions.Config.Name)
 	return nil
 }

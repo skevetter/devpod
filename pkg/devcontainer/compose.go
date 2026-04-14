@@ -266,8 +266,7 @@ func (r *runner) runDockerCompose(
 			r.Log.Writer(logrus.InfoLevel, false),
 		)
 		if err != nil {
-			r.Log.WithFields(logrus.Fields{"error": err}).
-				Error("failed to update container user UID/GID")
+			r.Log.Errorf("failed to update container user UID/GID: error=%v", err)
 			return nil, err
 		}
 	}

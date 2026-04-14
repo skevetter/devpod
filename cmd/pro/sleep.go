@@ -8,7 +8,6 @@ import (
 
 	clusterv1 "github.com/loft-sh/agentapi/v4/pkg/apis/loft/cluster/v1"
 	storagev1 "github.com/loft-sh/api/v4/pkg/apis/storage/v1"
-	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/cmd/pro/flags"
 	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/platform"
@@ -140,8 +139,6 @@ func (cmd *SleepCmd) Run(ctx context.Context, args []string) error {
 		return fmt.Errorf("error waiting for workspace to start sleeping: %w", err)
 	}
 
-	cmd.Log.WithFields(logrus.Fields{
-		"workspace": workspaceInstance.Name,
-	}).Donef("workspace is now sleeping")
+	cmd.Log.Donef("workspace is now sleeping: workspace=%s", workspaceInstance.Name)
 	return nil
 }

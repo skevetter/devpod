@@ -312,9 +312,7 @@ func (cmd *ClusterCmd) Run(ctx context.Context, args []string) error {
 		}
 	}
 
-	cmd.Log.WithFields(logrus.Fields{
-		"cluster": clusterName,
-	}).Done("added cluster")
+	cmd.Log.Donef("added cluster: cluster=%s", clusterName)
 
 	return nil
 }

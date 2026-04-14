@@ -129,19 +129,18 @@ func setupDotfiles(ctx context.Context, logger log.Logger) error {
 		writer := logger.Writer(logrus.InfoLevel, false)
 		err := ensureExecutable(ctx, installScriptPath)
 		if err != nil {
-			logger.WithFields(logrus.Fields{
-				"scriptPath": installScriptPath,
-				"error":      err,
-			}).Debug("install script not found")
+			logger.Debugf(
+				"install script not found: scriptPath=%s, error=%v",
+				installScriptPath,
+				err,
+			)
 			if ctx.Err() != nil {
 				return ctx.Err()
 			}
 			continue
 		}
 
-		logger.WithFields(logrus.Fields{
-			"scriptPath": installScriptPath,
-		}).Debug("executing dotfile install script")
+		logger.Debugf("executing dotfile install script: scriptPath=%s", installScriptPath)
 		scriptCmd := exec.CommandContext(
 			ctx,
 			installScriptPath,
@@ -149,9 +148,7 @@ func setupDotfiles(ctx context.Context, logger log.Logger) error {
 		scriptCmd.Stdout = writer
 		scriptCmd.Stderr = writer
 		if err := scriptCmd.Run(); err != nil {
-			logger.WithFields(logrus.Fields{
-				"error": err,
-			}).Debug("script execution failed")
+			logger.Debugf("script execution failed: error=%v", err)
 			if ctx.Err() != nil {
 				return ctx.Err()
 			}

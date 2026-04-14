@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/compose"
 	pkgconfig "github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/devcontainer/build"
@@ -189,24 +188,22 @@ func (r *runner) getDockerfilePath(parsedConfig *config.DevContainerConfig) (str
 	dockerfilePathFromConfig := parsedConfig.GetDockerfile()
 	var dockerfilePath string
 	if filepath.IsAbs(dockerfilePathFromConfig) {
-		r.Log.WithFields(logrus.Fields{
-			"dockerfilePath": dockerfilePathFromConfig,
-			"pathType":       "absolute",
-		}).Debug("using absolute dockerfile path")
+		r.Log.Debugf(
+			"using absolute dockerfile path: dockerfilePath=%s, pathType=absolute",
+			dockerfilePathFromConfig,
+		)
 		dockerfilePath = dockerfilePathFromConfig
 	} else {
 		configFileDir := filepath.Dir(parsedConfig.Origin)
 		dockerfilePath = filepath.Join(configFileDir, dockerfilePathFromConfig)
-		r.Log.WithFields(logrus.Fields{
-			"dockerfilePath": dockerfilePathFromConfig,
-			"configDir":      configFileDir,
-			"pathType":       "relative",
-		}).Debug("using relative dockerfile path")
+		r.Log.Debugf(
+			"using relative dockerfile path: dockerfilePath=%s, configDir=%s, pathType=relative",
+			dockerfilePathFromConfig,
+			configFileDir,
+		)
 	}
 
-	r.Log.WithFields(logrus.Fields{
-		"finalPath": dockerfilePath,
-	}).Debug("resolved dockerfile path")
+	r.Log.Debugf("resolved dockerfile path: finalPath=%s", dockerfilePath)
 
 	_, err := os.Stat(dockerfilePath)
 	if err != nil {

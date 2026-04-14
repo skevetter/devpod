@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/cmd/flags"
 	"github.com/skevetter/devpod/pkg/agent"
 	agentdaemon "github.com/skevetter/devpod/pkg/daemon/agent"
@@ -85,9 +84,7 @@ func removeContainer(
 	workspaceInfo *provider2.AgentWorkspaceInfo,
 	log log.Logger,
 ) error {
-	log.WithFields(logrus.Fields{
-		"workspaceId": workspaceInfo.Workspace.ID,
-	}).Debug("removing DevPod container from server")
+	log.Debugf("removing DevPod container from server: workspaceId=%s", workspaceInfo.Workspace.ID)
 	runner, err := CreateRunner(workspaceInfo, log)
 	if err != nil {
 		return err

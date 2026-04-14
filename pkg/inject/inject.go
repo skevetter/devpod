@@ -11,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/command"
 	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/log"
@@ -60,7 +59,7 @@ func Inject(opts InjectOptions) (bool, error) {
 		if opts.ScriptParams.DownloadURLs != nil {
 			url = opts.ScriptParams.DownloadURLs.Base
 		}
-		opts.Log.WithFields(logrus.Fields{"url": url}).Debug("prefer downloading agent from URL")
+		opts.Log.Debugf("prefer downloading agent from URL: url=%s", url)
 	}
 
 	scriptRawCode, err := GenerateScript(Script, opts.ScriptParams)
@@ -198,7 +197,7 @@ func inject(
 	if err != nil {
 		return false, err
 	}
-	log.WithFields(logrus.Fields{"line": line}).Debug("received line after pong")
+	log.Debugf("received line after pong: line=%s", line)
 
 	lineStr := strings.TrimSpace(line)
 	if isInjectingOfBinaryNeeded(lineStr) {

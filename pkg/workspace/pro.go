@@ -3,7 +3,6 @@ package workspace
 import (
 	"os"
 
-	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/config"
 	provider2 "github.com/skevetter/devpod/pkg/provider"
 	"github.com/skevetter/log"
@@ -30,8 +29,7 @@ func ListProInstances(
 			entry.Name(),
 		)
 		if err != nil {
-			log.WithFields(logrus.Fields{"instance": entry.Name(), "error": err}).
-				Warn("could not load pro instance")
+			log.Warnf("could not load pro instance: instance=%s, error=%v", entry.Name(), err)
 			continue
 		}
 

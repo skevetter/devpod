@@ -294,8 +294,7 @@ func (s *machineClient) Delete(ctx context.Context, options client.DeleteOptions
 		return err
 	}
 	if err != nil {
-		s.log.WithFields(logrus.Fields{"machineId": s.machine.ID, "err": err}).
-			Errorf("failed to delete machine")
+		s.log.Errorf("failed to delete machine: machineId=%s, err=%v", s.machine.ID, err)
 	}
 
 	return DeleteMachineFolder(s.machine.Context, s.machine.ID)

@@ -11,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/docker"
 	"github.com/skevetter/devpod/pkg/inject"
@@ -378,13 +377,10 @@ func (vc *versionChecker) detectRemoteAgentVersion(
 	}
 
 	if actualVersion != vc.remoteVersion {
-		log.WithFields(logrus.Fields{
-			"expectedVersion": vc.remoteVersion,
-			"actualVersion":   actualVersion,
-			"agentPath":       agentPath,
-		}).Warn("the remote agent version does not match the expected version. " +
-			"If your workspace fails to deploy, you may need to manually remove " +
-			"the existing agent and redeploy.")
+		log.Warnf("the remote agent version does not match the expected version. "+
+			"If your workspace fails to deploy, you may need to manually remove "+
+			"the existing agent and redeploy: expectedVersion=%s, actualVersion=%s, agentPath=%s",
+			vc.remoteVersion, actualVersion, agentPath)
 	} else {
 		log.Debug("remote agent version matches expected version")
 	}

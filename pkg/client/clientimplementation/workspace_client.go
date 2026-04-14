@@ -157,17 +157,13 @@ func (s *workspaceClient) RefreshOptions(
 		s.log,
 	)
 	if err != nil {
-		s.log.WithFields(logrus.Fields{
-			"error": err,
-		}).Error("failed to resolve and save options workspace")
+		s.log.Errorf("failed to resolve and save options workspace: error=%v", err)
 		return err
 	}
 
 	if workspace != nil {
 		s.workspace = workspace
-		s.log.WithFields(logrus.Fields{
-			"workspaceId": s.workspace.ID,
-		}).Debug("refreshed workspace options")
+		s.log.Debugf("refreshed workspace options: workspaceId=%s", s.workspace.ID)
 	} else {
 		s.log.Debug("workspace is nil; not updating workspace options")
 	}
@@ -223,7 +219,7 @@ func (s *workspaceClient) agentInfo(cliOptions provider.CLIOptions) *provider.Ag
 	if s.workspace != nil {
 		result, err := provider.LoadWorkspaceResult(s.workspace.Context, s.workspace.ID)
 		if err != nil {
-			s.log.WithFields(logrus.Fields{"error": err}).Debug("error loading workspace result")
+			s.log.Debugf("error loading workspace result: error=%v", err)
 		} else if result != nil {
 			lastDevContainerConfig = result.DevContainerConfigWithPath
 		}
@@ -420,7 +416,7 @@ func (s *workspaceClient) Delete(ctx context.Context, opt client.DeleteOptions) 
 				}
 
 				if !errors.Is(err, context.DeadlineExceeded) {
-					s.log.WithFields(logrus.Fields{"error": err}).Error("error deleting container")
+					s.log.Errorf("error deleting container: error=%v", err)
 				}
 			}
 		}
@@ -707,11 +703,12 @@ func (s *workspaceClient) getContainerStatus(ctx context.Context) (client.Status
 		)
 	}
 
-	s.log.WithFields(logrus.Fields{
-		"stdout": buf.String(),
-		"stderr": stdout.String(),
-		"parsed": parsed,
-	}).Debug("container status command output")
+	s.log.Debugf(
+		"container status command output: stdout=%s, stderr=%s, parsed=%v",
+		buf.String(),
+		stdout.String(),
+		parsed,
+	)
 	return parsed, nil
 }
 

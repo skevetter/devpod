@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/agent/tunnel"
 	devpodhttp "github.com/skevetter/devpod/pkg/http"
 	portpkg "github.com/skevetter/devpod/pkg/port"
@@ -28,8 +27,7 @@ func StartCredentialsServer(
 	go func() {
 		err := RunCredentialsServer(ctx, port, client, log)
 		if err != nil {
-			log.WithFields(logrus.Fields{"error": err}).
-				Error("error running git credentials server")
+			log.Errorf("error running git credentials server: error=%v", err)
 		}
 	}()
 

@@ -237,7 +237,7 @@ func InitContentFolder(workspaceInfo *provider.AgentWorkspaceInfo, log log.Logge
 func contentFolderExists(path string, log log.Logger) (bool, error) {
 	_, err := os.Stat(path)
 	if err == nil {
-		log.WithFields(logrus.Fields{"path": path}).Debug("workspace folder already exists")
+		log.Debugf("workspace folder already exists: path=%s", path)
 		return true, nil
 	}
 	if os.IsNotExist(err) {
@@ -247,7 +247,7 @@ func contentFolderExists(path string, log log.Logger) (bool, error) {
 }
 
 func createContentFolder(path string, log log.Logger) error {
-	log.WithFields(logrus.Fields{"path": path}).Debug("create content folder")
+	log.Debugf("create content folder: path=%s", path)
 	if err := os.MkdirAll(path, 0o750); err != nil {
 		return fmt.Errorf("make workspace folder: %w", err)
 	}

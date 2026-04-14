@@ -7,7 +7,6 @@ import (
 
 	managementv1 "github.com/loft-sh/api/v4/pkg/apis/management/v1"
 	storagev1 "github.com/loft-sh/api/v4/pkg/apis/storage/v1"
-	"github.com/sirupsen/logrus"
 	proflags "github.com/skevetter/devpod/cmd/pro/flags"
 	"github.com/skevetter/devpod/cmd/pro/provider/list"
 	"github.com/skevetter/devpod/pkg/config"
@@ -96,12 +95,13 @@ func (cmd *ImportCmd) Run(ctx context.Context, args []string) error {
 			return fmt.Errorf("workspace %s already exists", cmd.WorkspaceId)
 		}
 
-		cmd.log.WithFields(logrus.Fields{
-			"existingWorkspaceId":  cmd.WorkspaceId,
-			"existingWorkspaceUid": workspaceConfig.UID,
-			"newWorkspaceId":       newWorkspaceId,
-		}).
-			Infof("workspace ID conflict, will import workspace with new ID")
+		cmd.log.Infof(
+			"workspace ID conflict, will import workspace with new ID: "+
+				"existingWorkspaceId=%s, existingWorkspaceUid=%s, newWorkspaceId=%s",
+			cmd.WorkspaceId,
+			workspaceConfig.UID,
+			newWorkspaceId,
+		)
 		cmd.WorkspaceId = newWorkspaceId
 	}
 
@@ -134,9 +134,7 @@ func (cmd *ImportCmd) Run(ctx context.Context, args []string) error {
 		if err != nil {
 			return fmt.Errorf("prepare workspace to import definition: %w", err)
 		}
-		cmd.log.WithFields(logrus.Fields{
-			"workspaceId": cmd.WorkspaceId,
-		}).Infof("imported workspace")
+		cmd.log.Infof("imported workspace: workspaceId=%s", cmd.WorkspaceId)
 		return nil
 	}
 
@@ -146,9 +144,7 @@ func (cmd *ImportCmd) Run(ctx context.Context, args []string) error {
 		return fmt.Errorf("prepare workspace to import definition: %w", err)
 	}
 
-	cmd.log.WithFields(logrus.Fields{
-		"workspaceId": cmd.WorkspaceId,
-	}).Infof("imported workspace")
+	cmd.log.Infof("imported workspace: workspaceId=%s", cmd.WorkspaceId)
 
 	return nil
 }

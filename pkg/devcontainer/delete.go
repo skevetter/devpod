@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 )
 
@@ -17,9 +16,7 @@ func (r *runner) Delete(ctx context.Context) error {
 		return nil
 	}
 
-	r.Log.WithFields(logrus.Fields{
-		"devcontainerID": containerDetails.ID,
-	}).Info("deleting devcontainer")
+	r.Log.Infof("deleting devcontainer: devcontainerID=%s", containerDetails.ID)
 	if isDockerCompose, projectName := getDockerComposeProject(containerDetails); isDockerCompose {
 		err = r.deleteDockerCompose(ctx, projectName)
 		if err != nil {

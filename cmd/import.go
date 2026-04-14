@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/cmd/flags"
 	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/extract"
@@ -160,9 +159,7 @@ func (cmd *ImportCmd) importWorkspace(
 		return fmt.Errorf("save workspace config: %w", err)
 	}
 
-	log.WithFields(logrus.Fields{
-		"workspaceId": cmd.WorkspaceID,
-	}).Done("imported workspace")
+	log.Donef("imported workspace: workspaceId=%s", cmd.WorkspaceID)
 	return nil
 }
 
@@ -217,9 +214,7 @@ func (cmd *ImportCmd) importMachine(
 		return fmt.Errorf("save machine config: %w", err)
 	}
 
-	log.WithFields(logrus.Fields{
-		"machineId": cmd.MachineID,
-	}).Done("imported machine")
+	log.Donef("imported machine: machineId=%s", cmd.MachineID)
 	return nil
 }
 
@@ -281,9 +276,7 @@ func (cmd *ImportCmd) importProvider(
 		}
 	}
 
-	log.WithFields(logrus.Fields{
-		"providerId": cmd.ProviderID,
-	}).Done("imported provider")
+	log.Donef("imported provider: providerId=%s", cmd.ProviderID)
 	return nil
 }
 

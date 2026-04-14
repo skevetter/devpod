@@ -207,14 +207,9 @@ func (o *OpenVSCodeServer) installExtensions() error {
 		cmd.Stderr = out
 		err = cmd.Run()
 		if err != nil {
-			o.log.WithFields(logrus.Fields{
-				"extension": extension,
-				"error":     err,
-			}).Error("failed installing extension")
+			o.log.Errorf("failed installing extension: extension=%s, error=%v", extension, err)
 		} else {
-			o.log.WithFields(logrus.Fields{
-				"extension": extension,
-			}).Info("installed extension")
+			o.log.Infof("installed extension: extension=%s", extension)
 		}
 	}
 

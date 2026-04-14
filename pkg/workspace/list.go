@@ -134,8 +134,7 @@ func ListLocalWorkspaces(
 
 		workspaceConfig, err := providerpkg.LoadWorkspaceConfig(contextName, entry.Name())
 		if err != nil {
-			log.WithFields(logrus.Fields{"workspace": entry.Name(), "error": err}).
-				Warn("could not load workspace")
+			log.Warnf("could not load workspace: workspace=%s, error=%v", entry.Name(), err)
 			continue
 		}
 
@@ -173,8 +172,7 @@ func listProWorkspaces(
 
 		providerConfig, err := providerpkg.LoadProviderConfig(devPodConfig.DefaultContext, provider)
 		if err != nil {
-			log.WithFields(logrus.Fields{"provider": provider, "error": err}).
-				Warn("load provider config for provider")
+			log.Warnf("load provider config for provider: provider=%s, error=%v", provider, err)
 			continue
 		}
 
@@ -269,8 +267,7 @@ func listProWorkspacesForProvider(
 			rawSource := instance.Annotations[storagev1.DevPodWorkspaceSourceAnnotation]
 			s := providerpkg.ParseWorkspaceSource(rawSource)
 			if s == nil {
-				log.WithFields(logrus.Fields{"source": rawSource}).
-					Warn("unable to parse workspace source")
+				log.Warnf("unable to parse workspace source: source=%s", rawSource)
 			} else {
 				source = *s
 			}

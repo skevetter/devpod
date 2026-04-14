@@ -7,7 +7,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	proflags "github.com/skevetter/devpod/cmd/pro/flags"
 	providercmd "github.com/skevetter/devpod/cmd/provider"
 	"github.com/skevetter/devpod/pkg/client/clientimplementation"
@@ -131,10 +130,7 @@ func (cmd *DeleteCmd) Run(ctx context.Context, args []string) error {
 		return fmt.Errorf("delete pro instance dir: %w", err)
 	}
 
-	log.WithFields(logrus.Fields{
-		"proInstanceName": proInstanceName,
-	})
-	log.Default.Done("deleted pro instance")
+	log.Default.Donef("deleted pro instance: proInstanceName=%s", proInstanceName)
 	return nil
 }
 
@@ -169,11 +165,7 @@ func cleanupLocalWorkspaces(
 					Log:          log,
 				})
 				if err != nil {
-					log.WithFields(logrus.Fields{
-						"workspaceId": w.ID,
-						"err":         err,
-					})
-					log.Error("failed to get workspace")
+					log.Errorf("failed to get workspace: workspaceId=%s, err=%v", w.ID, err)
 					return
 				}
 				// delete workspace folder
@@ -187,24 +179,14 @@ func cleanupLocalWorkspaces(
 					log,
 				)
 				if err != nil {
-					log.WithFields(logrus.Fields{
-						"workspaceId": w.ID,
-						"err":         err,
-					})
-					log.Error("failed to remove workspace")
+					log.Errorf("failed to remove workspace: workspaceId=%s, err=%v", w.ID, err)
 					return
 				}
-				log.WithFields(logrus.Fields{
-					"workspaceId": w.ID,
-				})
-				log.Done("removed workspace")
+				log.Donef("removed workspace: workspaceId=%s", w.ID)
 			}(*w)
 		}
 
-		log.WithFields(logrus.Fields{
-			"count": len(usedWorkspaces),
-		})
-		log.Info("cleaning up local workspaces")
+		log.Infof("cleaning up local workspaces: count=%v", len(usedWorkspaces))
 		wg.Wait()
 	}
 }

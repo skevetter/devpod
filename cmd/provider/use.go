@@ -120,9 +120,7 @@ func (cmd *UseCmd) Run(ctx context.Context, providerName string) error {
 	}
 
 	// print success message
-	log.WithFields(logrus.Fields{
-		"providerName": providerWithOptions.Config.Name,
-	}).Done("switched default provider")
+	log.Default.Donef("switched default provider: providerName=%s", providerWithOptions.Config.Name)
 	return nil
 }
 

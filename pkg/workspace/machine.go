@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/client"
 	"github.com/skevetter/devpod/pkg/client/clientimplementation"
 	"github.com/skevetter/devpod/pkg/config"
@@ -42,8 +41,7 @@ func listMachines(devPodConfig *config.Config, log log.Logger) ([]*providerpkg.M
 			entry.Name(),
 		)
 		if err != nil {
-			log.WithFields(logrus.Fields{"machine": entry.Name(), "error": err}).
-				Warn("could not load machine")
+			log.Warnf("could not load machine: machine=%s, error=%v", entry.Name(), err)
 			continue
 		}
 

@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/blang/semver/v4"
-	"github.com/sirupsen/logrus"
 	proflags "github.com/skevetter/devpod/cmd/pro/flags"
 	providercmd "github.com/skevetter/devpod/cmd/provider"
 	"github.com/skevetter/devpod/pkg/config"
@@ -214,9 +213,7 @@ func (cmd *LoginCmd) Run(ctx context.Context, fullURL string, log log.Logger) er
 		if err != nil {
 			return err
 		}
-		log.WithFields(logrus.Fields{
-			"url": fullURL,
-		}).Done("logged into DevPod Pro instance")
+		log.Donef("logged into DevPod Pro instance: url=%s", fullURL)
 	}
 
 	// 3. Configure provider

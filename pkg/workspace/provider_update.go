@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/blang/semver/v4"
-	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/platform"
 	provider2 "github.com/skevetter/devpod/pkg/provider"
@@ -102,9 +101,7 @@ func applyProviderUpdate(
 		return fmt.Errorf("update provider %s: %w", providerName, err)
 	}
 
-	log.WithFields(logrus.Fields{
-		"provider": providerName,
-	}).Done("updated provider")
+	log.Donef("updated provider: provider=%s", providerName)
 	return nil
 }
 

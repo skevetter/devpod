@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/sirupsen/logrus"
 	client2 "github.com/skevetter/devpod/pkg/client"
 	"github.com/skevetter/devpod/pkg/client/clientimplementation"
 	"github.com/skevetter/devpod/pkg/command"
@@ -277,8 +276,7 @@ func openJupyterBrowser(
 	if jupyter.Options.GetValue(ideOptions, jupyter.OpenOption) == config.BoolTrue {
 		go func() {
 			if openErr := open2.Open(ctx, targetURL, params.Log); openErr != nil {
-				params.Log.WithFields(logrus.Fields{"error": openErr}).
-					Error("error opening jupyter notebook")
+				params.Log.Errorf("error opening jupyter notebook: error=%v", openErr)
 			}
 
 			params.Log.Info(

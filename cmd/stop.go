@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/cmd/completion"
 	"github.com/skevetter/devpod/cmd/flags"
 	client2 "github.com/skevetter/devpod/pkg/client"
@@ -158,8 +157,6 @@ func (cmd *StopCmd) stopSingleMachine(
 		return false, fmt.Errorf("delete machine: %w", err)
 	}
 
-	log.Default.WithFields(logrus.Fields{
-		"workspace": client.Workspace(),
-	}).Done("stopped workspace")
+	log.Default.Donef("stopped workspace: workspace=%s", client.Workspace())
 	return true, nil
 }

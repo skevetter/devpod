@@ -9,7 +9,6 @@ import (
 
 	"github.com/moby/patternmatcher"
 	"github.com/moby/patternmatcher/ignorefile"
-	"github.com/sirupsen/logrus"
 	pkgconfig "github.com/skevetter/devpod/pkg/config"
 	util "github.com/skevetter/devpod/pkg/util/hash"
 	"github.com/skevetter/log"
@@ -60,13 +59,14 @@ func CalculatePrebuildHash(params PrebuildHashParams) (string, error) {
 	combined := arch + string(configJSON) + params.DockerfileContent + contextHash
 	finalHash := pkgconfig.BinaryName + "-" + hash.String(combined)[:32]
 
-	params.Log.WithFields(logrus.Fields{
-		"architecture": arch,
-		"contextHash":  contextHash,
-		"finalHash":    finalHash,
-		"excludeCount": len(excludes),
-		"includeCount": len(includes),
-	}).Debug("prebuild hash calculated")
+	params.Log.Debugf(
+		"prebuild hash calculated: architecture=%s, contextHash=%s, finalHash=%s, excludeCount=%v, includeCount=%v",
+		arch,
+		contextHash,
+		finalHash,
+		len(excludes),
+		len(includes),
+	)
 
 	return finalHash, nil
 }

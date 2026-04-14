@@ -13,7 +13,6 @@ import (
 
 	"github.com/loft-sh/api/v4/pkg/devpod"
 	"github.com/moby/patternmatcher/ignorefile"
-	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/agent/tunnel"
 	pkgconfig "github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
@@ -244,10 +243,11 @@ func (t *tunnelServer) GitCredentials(
 	ctx context.Context,
 	message *tunnel.Message,
 ) (*tunnel.Message, error) {
-	t.log.WithFields(logrus.Fields{
-		"allowGitCredentials": t.allowGitCredentials,
-		"workspaceIsNil":      t.workspace == nil,
-	}).Debug("getting git credentials")
+	t.log.Debugf(
+		"getting git credentials: allowGitCredentials=%v, workspaceIsNil=%v",
+		t.allowGitCredentials,
+		t.workspace == nil,
+	)
 	if !t.allowGitCredentials {
 		return nil, fmt.Errorf("git credentials forbidden")
 	}
@@ -451,9 +451,7 @@ func (t *tunnelServer) StreamWorkspace(
 	if err == nil {
 		excludes, err = ignorefile.ReadAll(f)
 		if err != nil {
-			t.log.WithFields(logrus.Fields{
-				"error": err,
-			}).Warn("error reading " + pkgconfig.IgnoreFileName + " file")
+			t.log.Warnf("error reading %s file: error=%v", pkgconfig.IgnoreFileName, err)
 		}
 	}
 
@@ -496,9 +494,7 @@ func (t *tunnelServer) StreamMount(
 		if err == nil {
 			excludes, err = ignorefile.ReadAll(f)
 			if err != nil {
-				t.log.WithFields(logrus.Fields{
-					"error": err,
-				}).Warn("error reading " + pkgconfig.IgnoreFileName + " file")
+				t.log.Warnf("error reading %s file: error=%v", pkgconfig.IgnoreFileName, err)
 			}
 		}
 	}
