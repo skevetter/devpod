@@ -22,9 +22,8 @@ func TestNetstatUtilSuite(t *testing.T) {
 
 // TestDoNetstat_MissingFileReturnsEmpty verifies that a missing procfile (as
 // seen on Linux hosts booted with ipv6.disable=1, where /proc/net/tcp6 does
-// not exist) causes doNetstat to return an empty slice and nil error rather
-// than propagating the os.IsNotExist error. This is the core regression
-// guard for issue #705.
+// not exist) causes doNetstat to return (nil, nil) rather than propagating
+// the os.IsNotExist error. This is the core regression guard for issue #705.
 func (s *NetstatUtilTestSuite) TestDoNetstat_MissingFileReturnsEmpty() {
 	missing := filepath.Join(s.T().TempDir(), "does-not-exist")
 

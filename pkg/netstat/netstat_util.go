@@ -248,10 +248,10 @@ func extractProcInfo(sktab []SockTabEntry) {
 // doNetstat - collect information about network port status.
 //
 // If path does not exist (e.g. /proc/net/tcp6 on Linux hosts booted with
-// ipv6.disable=1 or built without CONFIG_IPV6), this returns an empty slice
-// and a nil error so callers can degrade gracefully instead of aborting the
-// entire port scan. All other errors, including permission and parse
-// failures, still propagate. See issue #705.
+// ipv6.disable=1 or built without CONFIG_IPV6), this returns (nil, nil) so
+// callers degrade gracefully instead of aborting the entire port scan. All
+// other errors, including permission and parse failures, still propagate.
+// See issue #705.
 func doNetstat(path string, fn AcceptFn) ([]SockTabEntry, error) {
 	f, err := os.Open(path)
 	if err != nil {
