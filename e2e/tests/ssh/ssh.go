@@ -83,8 +83,6 @@ var _ = ginkgo.Describe("devpod ssh test suite", ginkgo.Label("ssh"), ginkgo.Ord
 				framework.CleanupTempDir(initialDir, tempDir)
 			})
 
-			// Configure host git to use SSH signing format with an SSH key,
-			// simulating the reporter's setup from issue #731.
 			sshKeyDir, err := os.MkdirTemp("", "devpod-gpg-ssh-test")
 			framework.ExpectNoError(err)
 			ginkgo.DeferCleanup(func() { _ = os.RemoveAll(sshKeyDir) })
@@ -96,7 +94,6 @@ var _ = ginkgo.Describe("devpod ssh test suite", ginkgo.Label("ssh"), ginkgo.Ord
 			).Run()
 			framework.ExpectNoError(err)
 
-			// Create a temporary gitconfig with SSH signing format
 			gitConfigDir := ginkgo.GinkgoT().TempDir()
 			gitConfigPath := filepath.Join(gitConfigDir, ".gitconfig")
 			gitConfigContent := "[gpg]\n\tformat = ssh\n[user]\n\tsigningKey = " +
@@ -105,13 +102,9 @@ var _ = ginkgo.Describe("devpod ssh test suite", ginkgo.Label("ssh"), ginkgo.Ord
 			framework.ExpectNoError(err)
 			ginkgo.GinkgoT().Setenv("GIT_CONFIG_GLOBAL", gitConfigPath)
 
-			// Start workspace with GPG agent forwarding enabled.
-			// Before the fix, this would fail because setup-gpg would try
-			// to use the SSH key path as a GPG key and crash.
 			err = f.DevPodUp(ctx, tempDir, "--gpg-agent-forwarding")
 			framework.ExpectNoError(err)
 
-			// Verify SSH server is running and reachable
 			devpodSSHDeadline := time.Now().Add(20 * time.Second)
 			devpodSSHCtx, cancelSSH := context.WithDeadline(ctx, devpodSSHDeadline)
 			defer cancelSSH()
