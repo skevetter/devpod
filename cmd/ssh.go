@@ -769,7 +769,11 @@ func (cmd *SSHCmd) setupGPGAgent(
 // (SSH signing keys are handled by the separate SSH signature helper).
 func gpgSigningKey(log log.Logger) string {
 	format, err := exec.Command("git", "config", "--get", "gpg.format").Output()
-	if err == nil && strings.TrimSpace(string(format)) == "ssh" {
+	formatStr := ""
+	if err == nil {
+		formatStr = strings.TrimSpace(string(format))
+	}
+	if formatStr == "ssh" {
 		log.Debugf(
 			"[GPG] gpg.format is ssh, skipping GPG signing key (handled by SSH signing helper)",
 		)
@@ -783,6 +787,18 @@ func gpgSigningKey(log log.Logger) string {
 	}
 
 	result := strings.TrimSpace(string(key))
+
+	// GPG key IDs are hex fingerprints, not file paths. If the signing key
+	// looks like a file path and the format isn't x509 (which legitimately
+	// uses certificate file paths via gpgsm), it's an SSH key.
+	if (strings.HasPrefix(result, "/") || strings.HasPrefix(result, "~")) && formatStr != "x509" {
+		log.Debugf(
+			"[GPG] signing key %s looks like a file path, skipping (not a GPG key ID)",
+			result,
+		)
+		return ""
+	}
+
 	log.Debugf("[GPG] detected git sign key %s", result)
 	return result
 }

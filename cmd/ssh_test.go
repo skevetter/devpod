@@ -45,3 +45,15 @@ func TestGpgSigningKey_X509Format_Returned(t *testing.T) {
 	result := gpgSigningKey(log.Discard)
 	assert.Equal(t, "/path/to/cert", result)
 }
+
+func TestGpgSigningKey_SSHKeyPath_Skipped(t *testing.T) {
+	writeGitConfig(t, "[user]\n\tsigningKey = /home/user/.ssh/id_ed25519.pub\n")
+	result := gpgSigningKey(log.Discard)
+	assert.Empty(t, result)
+}
+
+func TestGpgSigningKey_TildeKeyPath_Skipped(t *testing.T) {
+	writeGitConfig(t, "[user]\n\tsigningKey = ~/.ssh/id_ed25519.pub\n")
+	result := gpgSigningKey(log.Discard)
+	assert.Empty(t, result)
+}
