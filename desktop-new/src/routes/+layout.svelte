@@ -7,6 +7,7 @@ import { initWorkspaces, destroyWorkspaces } from "$lib/stores/workspaces.js"
 import { initProviders, destroyProviders } from "$lib/stores/providers.js"
 import { initMachines, destroyMachines } from "$lib/stores/machines.js"
 import { initSettings } from "$lib/stores/settings.js"
+import { terminalCount } from "$lib/stores/terminals.js"
 
 let { children } = $props()
 
@@ -28,7 +29,7 @@ onDestroy(() => {
 </script>
 
 <div class="flex h-screen overflow-hidden">
-  <Sidebar />
+  <Sidebar terminalCount={$terminalCount} />
 
   <div class="flex flex-1 flex-col overflow-hidden">
     <header class="flex h-12 items-center justify-end border-b px-4">

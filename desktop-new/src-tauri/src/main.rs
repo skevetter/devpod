@@ -6,6 +6,8 @@
 mod commands;
 mod daemon;
 mod events;
+mod terminal;
+mod tray;
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -15,6 +17,7 @@ use daemon::state::DaemonState;
 use daemon::watcher::{start_fs_watcher, Watcher};
 use log::{error, info};
 use tauri::Manager;
+use terminal::pty::PtyManager;
 use tokio::sync::RwLock;
 
 pub type SharedState = Arc<RwLock<DaemonState>>;
@@ -51,10 +54,23 @@ fn main() {
             commands::machines::machine_start,
             commands::machines::machine_stop,
             commands::machines::machine_status,
+            commands::terminal::terminal_create,
+            commands::terminal::terminal_create_ssh,
+            commands::terminal::terminal_write,
+            commands::terminal::terminal_resize,
+            commands::terminal::terminal_close,
+            commands::terminal::terminal_list,
         ])
         .setup(move |app| {
             let window = app.get_webview_window("main").unwrap();
             window.show().unwrap();
+
+            let pty_manager = Arc::new(PtyManager::new(app.handle().clone()));
+            app.manage(pty_manager);
+
+            if let Err(e) = tray::setup_tray(app.handle()) {
+                error!("Failed to setup system tray: {e}");
+            }
 
             let binary_path = match resolve_binary_path(None) {
                 Ok(path) => {

@@ -4,6 +4,8 @@ import { Separator } from "$lib/components/ui/separator/index.js"
 import { workspaces } from "$lib/stores/workspaces.js"
 import { providers } from "$lib/stores/providers.js"
 import { machines } from "$lib/stores/machines.js"
+
+let { terminalCount = 0 }: { terminalCount?: number } = $props()
 </script>
 
 <aside class="flex h-full w-56 flex-col border-r bg-card">
@@ -17,7 +19,7 @@ import { machines } from "$lib/stores/machines.js"
     <SidebarItem href="/workspaces" label="Workspaces" badgeCount={$workspaces.length} />
     <SidebarItem href="/providers" label="Providers" badgeCount={$providers.length} />
     <SidebarItem href="/machines" label="Machines" badgeCount={$machines.length} />
-    <SidebarItem href="/terminals" label="Terminals" />
+    <SidebarItem href="/terminals" label="Terminals" badgeCount={terminalCount} />
 
     <div class="flex-1"></div>
 
