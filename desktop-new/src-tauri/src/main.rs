@@ -6,6 +6,7 @@
 mod commands;
 mod daemon;
 mod events;
+mod persistence;
 mod terminal;
 mod tray;
 
@@ -16,6 +17,8 @@ use daemon::cli::{resolve_binary_path, CliRunner};
 use daemon::state::DaemonState;
 use daemon::watcher::{start_fs_watcher, Watcher};
 use log::{error, info};
+use persistence::audit::AuditLog;
+use persistence::logs::LogStore;
 use tauri::Manager;
 use terminal::pty::PtyManager;
 use tokio::sync::RwLock;
@@ -60,6 +63,10 @@ fn main() {
             commands::terminal::terminal_resize,
             commands::terminal::terminal_close,
             commands::terminal::terminal_list,
+            commands::audit::audit_recent,
+            commands::audit::audit_by_resource,
+            commands::logs::workspace_logs_list,
+            commands::logs::workspace_log_read,
         ])
         .setup(move |app| {
             let window = app.get_webview_window("main").unwrap();
@@ -67,6 +74,42 @@ fn main() {
 
             let pty_manager = Arc::new(PtyManager::new(app.handle().clone()));
             app.manage(pty_manager);
+
+            // Initialize persistence
+            match LogStore::default_path() {
+                Ok(log_store) => {
+                    let log_store = Arc::new(log_store);
+                    app.manage(log_store.clone());
+
+                    // Prune old logs on startup (> 30 days)
+                    tokio::spawn(async move {
+                        if let Err(e) = log_store.prune(30).await {
+                            error!("Failed to prune old logs: {}", e);
+                        }
+                    });
+                }
+                Err(e) => {
+                    error!("Failed to initialize log store: {}", e);
+                }
+            }
+
+            match AuditLog::default_path() {
+                Ok(audit_log) => {
+                    let audit_log = Arc::new(audit_log);
+                    app.manage(audit_log.clone());
+
+                    // Prune old audit entries on startup (> 90 days)
+                    let audit_prune = audit_log.clone();
+                    tokio::spawn(async move {
+                        if let Err(e) = audit_prune.prune(90) {
+                            error!("Failed to prune old audit entries: {}", e);
+                        }
+                    });
+                }
+                Err(e) => {
+                    error!("Failed to initialize audit log: {}", e);
+                }
+            }
 
             if let Err(e) = tray::setup_tray(app.handle()) {
                 error!("Failed to setup system tray: {e}");

@@ -101,3 +101,20 @@ export interface CommandProgress {
   message: string
   done: boolean
 }
+
+export interface AuditEntry {
+  id: number
+  timestamp: string
+  action: string
+  resourceType: string
+  resourceId: string
+  details: string
+  success: boolean
+}
+
+export interface LogEntry {
+  workspaceId: string
+  filename: string
+  createdAt: string
+  sizeBytes: number
+}

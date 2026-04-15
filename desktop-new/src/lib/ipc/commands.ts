@@ -1,5 +1,7 @@
 import { invoke } from "@tauri-apps/api/core"
 import type {
+  AuditEntry,
+  LogEntry,
   Machine,
   OptionValue,
   Provider,
@@ -101,4 +103,35 @@ export async function machineStop(id: string): Promise<void> {
 
 export async function machineStatus(id: string): Promise<string> {
   return invoke<string>("machine_status", { id })
+}
+
+// Audit commands
+export async function auditRecent(limit?: number): Promise<AuditEntry[]> {
+  return invoke<AuditEntry[]>("audit_recent", { limit })
+}
+
+export async function auditByResource(
+  resourceType: string,
+  resourceId: string,
+  limit?: number,
+): Promise<AuditEntry[]> {
+  return invoke<AuditEntry[]>("audit_by_resource", {
+    resourceType,
+    resourceId,
+    limit,
+  })
+}
+
+// Log commands
+export async function workspaceLogsList(
+  workspaceId: string,
+): Promise<LogEntry[]> {
+  return invoke<LogEntry[]>("workspace_logs_list", { workspaceId })
+}
+
+export async function workspaceLogRead(
+  workspaceId: string,
+  filename: string,
+): Promise<string> {
+  return invoke<string>("workspace_log_read", { workspaceId, filename })
 }
