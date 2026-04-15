@@ -24,6 +24,8 @@ tauri-plugin-opener = "2.5.3"
 anyhow = "1.0"
 thiserror = "1.0"
 which = "7.0"
+notify = "7.0"
+dirs = "5.0"
 
 [features]
 default = ["custom-protocol"]
