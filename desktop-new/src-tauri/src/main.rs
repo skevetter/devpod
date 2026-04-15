@@ -3,6 +3,8 @@
     windows_subsystem = "windows"
 )]
 
+mod daemon;
+
 use tauri::Manager;
 
 fn main() {
