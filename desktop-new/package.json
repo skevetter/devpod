@@ -12,7 +12,11 @@
   "dependencies": {
     "@sveltejs/adapter-static": "^3.0.0",
     "@sveltejs/kit": "^2.0.0",
-    "svelte": "^5.0.0"
+    "bits-ui": "^2.17.3",
+    "clsx": "^2.1.1",
+    "svelte": "^5.0.0",
+    "tailwind-merge": "^3.5.0",
+    "tailwind-variants": "^3.2.2"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^5.0.0",
