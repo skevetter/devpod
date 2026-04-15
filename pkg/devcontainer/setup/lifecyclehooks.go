@@ -206,7 +206,8 @@ func run(
 			err = cmd.Wait()
 			if err != nil {
 				log.Debugf(
-					"failed running postCreateCommand lifecycle script: command=%v, error=%v",
+					"failed running %s lifecycle script: command=%v, error=%v",
+					k,
 					cmd.Args,
 					err,
 				)

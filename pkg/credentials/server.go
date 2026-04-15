@@ -104,7 +104,7 @@ func handleDockerCredentialsRequest(
 		return fmt.Errorf("read request body: %w", err)
 	}
 
-	log.Debugf("received docker credentials post data: data=%s", string(out))
+	log.Debugf("received docker credentials post data: bytes=%d", len(out))
 	response, err := client.DockerCredentials(ctx, &tunnel.Message{Message: string(out)})
 	if err != nil {
 		return fmt.Errorf("get docker credentials response: %w", err)
@@ -129,7 +129,7 @@ func handleGitCredentialsRequest(
 		return fmt.Errorf("read request body: %w", err)
 	}
 
-	log.Debugf("received git credentials post data: data=%s", string(out))
+	log.Debugf("received git credentials post data: bytes=%d", len(out))
 	response, err := client.GitCredentials(ctx, &tunnel.Message{Message: string(out)})
 	if err != nil {
 		log.Debugf("error receiving git credentials: error=%v", err)
@@ -162,7 +162,7 @@ func handleGitSSHSignatureRequest(
 		return nil
 	}
 
-	log.Debugf("received git SSH signature post data: data=%s", string(out))
+	log.Debugf("received git SSH signature post data: bytes=%d", len(out))
 	response, err := client.GitSSHSignature(ctx, &tunnel.Message{Message: string(out)})
 	if err != nil {
 		log.Errorf("error receiving git SSH signature: error=%v", err)
@@ -192,7 +192,7 @@ func handleLoftPlatformCredentialsRequest(
 		return fmt.Errorf("read request body: %w", err)
 	}
 
-	log.Debugf("received loft platform credentials post data: data=%s", string(out))
+	log.Debugf("received loft platform credentials post data: bytes=%d", len(out))
 	response, err := client.LoftConfig(ctx, &tunnel.Message{Message: string(out)})
 	if err != nil {
 		log.Errorf("error receiving platform credentials: error=%v", err)

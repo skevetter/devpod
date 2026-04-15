@@ -705,8 +705,8 @@ func (s *workspaceClient) getContainerStatus(ctx context.Context) (client.Status
 
 	s.log.Debugf(
 		"container status command output: stdout=%s, stderr=%s, parsed=%v",
-		buf.String(),
 		stdout.String(),
+		buf.String(),
 		parsed,
 	)
 	return parsed, nil
