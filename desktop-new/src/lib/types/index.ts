@@ -119,3 +119,13 @@ export interface LogEntry {
   createdAt: string
   sizeBytes: number
 }
+
+export interface SshKeyInfo {
+  name: string
+  keyType: string
+  fingerprint: string
+  comment: string
+  publicKey: string
+  path: string
+  hasPassphrase: boolean
+}

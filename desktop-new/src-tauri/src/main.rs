@@ -71,6 +71,8 @@ fn main() {
             commands::contexts::context_list,
             commands::contexts::context_use,
             commands::system::devpod_version,
+            commands::ssh_keys::ssh_key_list,
+            commands::ssh_keys::ssh_key_generate,
         ])
         .setup(move |app| {
             let window = app.get_webview_window("main").unwrap();

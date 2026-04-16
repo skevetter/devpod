@@ -13,6 +13,7 @@ import {
   Server,
   Layers,
   TerminalSquare,
+  KeyRound,
   Settings,
   Search,
 } from "lucide-svelte"
@@ -34,6 +35,7 @@ let { terminalCount = 0 }: { terminalCount?: number } = $props()
     <SidebarItem href="/machines" label="Machines" badgeCount={$machines.length} icon={Server} />
     <SidebarItem href="/contexts" label="Contexts" badgeCount={$contexts.length} icon={Layers} />
     <SidebarItem href="/terminals" label="Terminals" badgeCount={terminalCount} icon={TerminalSquare} />
+    <SidebarItem href="/ssh-keys" label="SSH Keys" icon={KeyRound} />
 
     <div class="flex-1"></div>
 

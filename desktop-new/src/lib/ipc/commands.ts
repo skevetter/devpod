@@ -7,6 +7,7 @@ import type {
   OptionValue,
   Provider,
   ProviderOption,
+  SshKeyInfo,
   Workspace,
 } from "$lib/types/index.js"
 
@@ -158,4 +159,17 @@ export async function workspaceLogRead(
   filename: string,
 ): Promise<string> {
   return invoke<string>("workspace_log_read", { workspaceId, filename })
+}
+
+// SSH key commands
+export async function sshKeyList(): Promise<SshKeyInfo[]> {
+  return invoke<SshKeyInfo[]>("ssh_key_list")
+}
+
+export async function sshKeyGenerate(params: {
+  name: string
+  keyType?: string
+  comment?: string
+}): Promise<SshKeyInfo> {
+  return invoke<SshKeyInfo>("ssh_key_generate", params)
 }
