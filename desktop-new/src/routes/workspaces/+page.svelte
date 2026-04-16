@@ -6,11 +6,29 @@ import WorkspaceCard from "$lib/components/workspace/WorkspaceCard.svelte"
 import { workspaces } from "$lib/stores/workspaces.js"
 
 let search = $state("")
-let filtered = $derived(
-  $workspaces.filter((ws) =>
-    ws.id.toLowerCase().includes(search.toLowerCase()),
-  ),
-)
+let sortBy = $state<"recent" | "name">("recent")
+
+let filtered = $derived.by(() => {
+  const q = search.toLowerCase()
+  let list = $workspaces.filter((ws) => {
+    if (!q) return true
+    return (
+      ws.id.toLowerCase().includes(q) ||
+      (ws.source?.gitRepository ?? "").toLowerCase().includes(q) ||
+      (ws.source?.localFolder ?? "").toLowerCase().includes(q) ||
+      (ws.source?.image ?? "").toLowerCase().includes(q) ||
+      (ws.provider?.name ?? "").toLowerCase().includes(q) ||
+      (ws.ide?.name ?? "").toLowerCase().includes(q)
+    )
+  })
+
+  if (sortBy === "name") {
+    list = [...list].sort((a, b) => a.id.localeCompare(b.id))
+  }
+  // "recent" is already the default sort from the store
+
+  return list
+})
 </script>
 
 <div class="space-y-6">
@@ -19,11 +37,22 @@ let filtered = $derived(
     <Button onclick={() => goto("/workspaces/new")}>Create Workspace</Button>
   </div>
 
-  <Input
-    placeholder="Search workspaces..."
-    value={search}
-    oninput={(e) => (search = e.currentTarget.value)}
-  />
+  <div class="flex gap-2">
+    <Input
+      placeholder="Search by name, source, provider, IDE..."
+      value={search}
+      oninput={(e) => (search = e.currentTarget.value)}
+      class="flex-1"
+    />
+    <select
+      class="h-10 rounded-md border border-input bg-background px-3 text-sm"
+      value={sortBy}
+      onchange={(e) => (sortBy = e.currentTarget.value as "recent" | "name")}
+    >
+      <option value="recent">Recent</option>
+      <option value="name">Name</option>
+    </select>
+  </div>
 
   {#if filtered.length === 0}
     <div class="flex flex-col items-center justify-center gap-4 py-16 text-center">
