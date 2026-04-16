@@ -1,5 +1,5 @@
 import { get } from "svelte/store"
-import { beforeEach, describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import {
   mockInvoke,
   mockListen,
@@ -15,9 +15,15 @@ import {
 
 describe("workspaces store", () => {
   beforeEach(() => {
+    vi.useFakeTimers()
     resetTauriMocks()
     workspaces.set([])
     workspacesLoading.set(true)
+  })
+
+  afterEach(() => {
+    destroyWorkspaces()
+    vi.useRealTimers()
   })
 
   it("loads workspaces on init", async () => {
@@ -99,8 +105,8 @@ describe("workspaces store", () => {
     })
 
     await initWorkspaces()
-    // Wait a tick for the rejected promise to settle
-    await new Promise((r) => setTimeout(r, 10))
+    // Flush pending promises
+    await vi.advanceTimersByTimeAsync(0)
 
     const current = get(workspaces)
     expect(current).toHaveLength(1)
@@ -120,5 +126,51 @@ describe("workspaces store", () => {
     destroyWorkspaces()
 
     expect(mockUnlisten).toHaveBeenCalled()
+  })
+
+  it("polls statuses every 10 seconds", async () => {
+    const mockWorkspaces = [{ id: "ws-1" }]
+    let statusCallCount = 0
+    mockInvoke.mockImplementation((cmd: string) => {
+      if (cmd === "workspace_list") return Promise.resolve(mockWorkspaces)
+      if (cmd === "workspace_status") {
+        statusCallCount++
+        return Promise.resolve('{"state":"Running"}')
+      }
+      return Promise.resolve(undefined)
+    })
+
+    await initWorkspaces()
+    // Initial fetch
+    const initialCalls = statusCallCount
+
+    // Advance past one poll interval
+    vi.advanceTimersByTime(10_000)
+    await vi.waitFor(() => {
+      expect(statusCallCount).toBeGreaterThan(initialCalls)
+    })
+  })
+
+  it("destroyWorkspaces stops polling", async () => {
+    mockInvoke.mockImplementation((cmd: string) => {
+      if (cmd === "workspace_list") return Promise.resolve([{ id: "ws-1" }])
+      if (cmd === "workspace_status")
+        return Promise.resolve('{"state":"Stopped"}')
+      return Promise.resolve(undefined)
+    })
+
+    await initWorkspaces()
+    destroyWorkspaces()
+
+    const callsBefore = mockInvoke.mock.calls.filter(
+      (c: string[]) => c[0] === "workspace_status",
+    ).length
+
+    vi.advanceTimersByTime(30_000)
+
+    const callsAfter = mockInvoke.mock.calls.filter(
+      (c: string[]) => c[0] === "workspace_status",
+    ).length
+    expect(callsAfter).toBe(callsBefore)
   })
 })

@@ -1,5 +1,6 @@
 <script lang="ts">
 import "../app.css"
+import { goto } from "$app/navigation"
 import { onMount, onDestroy } from "svelte"
 import Sidebar from "$lib/components/layout/Sidebar.svelte"
 import ThemeSwitcher from "$lib/components/layout/ThemeSwitcher.svelte"
@@ -18,10 +19,28 @@ let { children } = $props()
 
 let destroySettings: (() => void) | undefined
 
+const NAV_KEYS: Record<string, string> = {
+  "1": "/",
+  "2": "/workspaces",
+  "3": "/providers",
+  "4": "/machines",
+  "5": "/settings",
+}
+
 function handleKeydown(e: KeyboardEvent) {
   if ((e.metaKey || e.ctrlKey) && e.key === "k") {
     e.preventDefault()
     togglePalette()
+    return
+  }
+  if ((e.metaKey || e.ctrlKey) && e.key === "n") {
+    e.preventDefault()
+    goto("/workspaces/new")
+    return
+  }
+  if ((e.metaKey || e.ctrlKey) && NAV_KEYS[e.key]) {
+    e.preventDefault()
+    goto(NAV_KEYS[e.key])
   }
 }
 

@@ -1,5 +1,5 @@
 import type { UnlistenFn } from "@tauri-apps/api/event"
-import { writable } from "svelte/store"
+import { get, writable } from "svelte/store"
 import { workspaceList, workspaceStatus } from "$lib/ipc/commands.js"
 import { onWorkspacesChanged } from "$lib/ipc/events.js"
 import type { Workspace } from "$lib/types/index.js"
@@ -8,6 +8,9 @@ export const workspaces = writable<Workspace[]>([])
 export const workspacesLoading = writable(true)
 
 let unlisten: UnlistenFn | null = null
+let pollInterval: ReturnType<typeof setInterval> | null = null
+
+const STATUS_POLL_MS = 10_000
 
 export async function initWorkspaces() {
   workspacesLoading.set(true)
@@ -29,12 +32,24 @@ export async function initWorkspaces() {
   } catch {
     // Event listener setup failed
   }
+
+  // Poll statuses periodically to keep dashboard and badges fresh
+  pollInterval = setInterval(() => {
+    const current = get(workspaces)
+    if (current.length > 0) {
+      fetchStatuses(current)
+    }
+  }, STATUS_POLL_MS)
 }
 
 export function destroyWorkspaces() {
   if (unlisten) {
     unlisten()
     unlisten = null
+  }
+  if (pollInterval) {
+    clearInterval(pollInterval)
+    pollInterval = null
   }
 }
 

@@ -27,6 +27,12 @@ let cliVersion = $state<string | null>(null)
 
 const shortcuts = [
   { keys: "Cmd/Ctrl + K", action: "Open command palette" },
+  { keys: "Cmd/Ctrl + N", action: "New workspace" },
+  { keys: "Cmd/Ctrl + 1", action: "Go to Dashboard" },
+  { keys: "Cmd/Ctrl + 2", action: "Go to Workspaces" },
+  { keys: "Cmd/Ctrl + 3", action: "Go to Providers" },
+  { keys: "Cmd/Ctrl + 4", action: "Go to Machines" },
+  { keys: "Cmd/Ctrl + 5", action: "Go to Settings" },
   { keys: "Escape", action: "Close dialogs and palette" },
   { keys: "Arrow Up/Down", action: "Navigate palette items" },
   { keys: "Enter", action: "Select palette item" },
