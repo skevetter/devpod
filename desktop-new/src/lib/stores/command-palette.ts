@@ -4,6 +4,7 @@ export interface PaletteItem {
   id: string
   label: string
   description?: string
+  category?: string
   href?: string
   action?: () => void
 }

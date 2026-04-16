@@ -5,10 +5,19 @@ import { workspaces } from "$lib/stores/workspaces.js"
 import { providers } from "$lib/stores/providers.js"
 import { machines } from "$lib/stores/machines.js"
 import type { PaletteItem } from "$lib/stores/command-palette.js"
+import { LayoutDashboard, Box, Plug, Server } from "lucide-svelte"
+import type { Component } from "svelte"
 
 let query = $state("")
 let selectedIndex = $state(0)
 let inputEl = $state<HTMLInputElement | null>(null)
+
+const CATEGORY_ICONS: Record<string, Component<{ class?: string }>> = {
+  Navigation: LayoutDashboard,
+  Workspaces: Box,
+  Providers: Plug,
+  Machines: Server,
+}
 
 // Build items list from navigation + dynamic resources
 let allItems = $derived.by(() => {
@@ -17,54 +26,63 @@ let allItems = $derived.by(() => {
       id: "nav-dashboard",
       label: "Dashboard",
       description: "Go to dashboard",
+      category: "Navigation",
       href: "/",
     },
     {
       id: "nav-workspaces",
       label: "Workspaces",
       description: "View all workspaces",
+      category: "Navigation",
       href: "/workspaces",
     },
     {
       id: "nav-new-workspace",
       label: "New Workspace",
       description: "Create a workspace",
+      category: "Navigation",
       href: "/workspaces/new",
     },
     {
       id: "nav-providers",
       label: "Providers",
       description: "View all providers",
+      category: "Navigation",
       href: "/providers",
     },
     {
       id: "nav-add-provider",
       label: "Add Provider",
       description: "Add a new provider",
+      category: "Navigation",
       href: "/providers/add",
     },
     {
       id: "nav-machines",
       label: "Machines",
       description: "View all machines",
+      category: "Navigation",
       href: "/machines",
     },
     {
       id: "nav-contexts",
       label: "Contexts",
       description: "Manage contexts",
+      category: "Navigation",
       href: "/contexts",
     },
     {
       id: "nav-terminals",
       label: "Terminals",
       description: "Terminal sessions",
+      category: "Navigation",
       href: "/terminals",
     },
     {
       id: "nav-settings",
       label: "Settings",
       description: "App settings",
+      category: "Navigation",
       href: "/settings",
     },
   ]
@@ -73,7 +91,8 @@ let allItems = $derived.by(() => {
     items.push({
       id: `ws-${ws.id}`,
       label: ws.id,
-      description: `Workspace · ${ws.provider?.name ?? ""}`,
+      description: ws.provider?.name ?? "",
+      category: "Workspaces",
       href: `/workspaces/${ws.id}`,
     })
   }
@@ -82,7 +101,8 @@ let allItems = $derived.by(() => {
     items.push({
       id: `prov-${p.name}`,
       label: p.name,
-      description: `Provider · ${p.version ?? ""}`,
+      description: p.version ?? "",
+      category: "Providers",
       href: `/providers/${p.name}`,
     })
   }
@@ -91,7 +111,8 @@ let allItems = $derived.by(() => {
     items.push({
       id: `mach-${m.id}`,
       label: m.id,
-      description: `Machine · ${m.provider?.name ?? ""}`,
+      description: m.provider?.name ?? "",
+      category: "Machines",
       href: `/machines/${m.id}`,
     })
   }
@@ -100,15 +121,36 @@ let allItems = $derived.by(() => {
 })
 
 let filtered = $derived.by(() => {
-  if (!query) return allItems.slice(0, 12)
-  const q = query.toLowerCase()
-  return allItems
-    .filter(
-      (item) =>
-        item.label.toLowerCase().includes(q) ||
-        (item.description ?? "").toLowerCase().includes(q),
-    )
-    .slice(0, 12)
+  let list: PaletteItem[]
+  if (!query) {
+    list = allItems.slice(0, 15)
+  } else {
+    const q = query.toLowerCase()
+    list = allItems
+      .filter(
+        (item) =>
+          item.label.toLowerCase().includes(q) ||
+          (item.description ?? "").toLowerCase().includes(q) ||
+          (item.category ?? "").toLowerCase().includes(q),
+      )
+      .slice(0, 15)
+  }
+  return list
+})
+
+// Group filtered items by category for display
+let grouped = $derived.by(() => {
+  const groups: { category: string; items: PaletteItem[] }[] = []
+  const seen = new Set<string>()
+  for (const item of filtered) {
+    const cat = item.category ?? ""
+    if (!seen.has(cat)) {
+      seen.add(cat)
+      groups.push({ category: cat, items: [] })
+    }
+    groups.find((g) => g.category === cat)!.items.push(item)
+  }
+  return groups
 })
 
 function close() {
@@ -188,22 +230,34 @@ $effect(() => {
             No results found.
           </div>
         {:else}
-          {#each filtered as item, i (item.id)}
-            <button
-              type="button"
-              class="flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm transition-colors {i === selectedIndex ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/50'}"
-              onclick={() => select(item)}
-              onmouseenter={() => (selectedIndex = i)}
-            >
-              <div class="min-w-0 flex-1">
-                <div class="truncate font-medium">{item.label}</div>
-                {#if item.description}
-                  <div class="truncate text-xs text-muted-foreground">
-                    {item.description}
-                  </div>
-                {/if}
+          {#each grouped as group}
+            {#if group.category}
+              <div class="px-3 pb-1 pt-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                {group.category}
               </div>
-            </button>
+            {/if}
+            {#each group.items as item (item.id)}
+              {@const flatIdx = filtered.indexOf(item)}
+              {@const Icon = item.category ? CATEGORY_ICONS[item.category] : undefined}
+              <button
+                type="button"
+                class="flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm transition-colors {flatIdx === selectedIndex ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/50'}"
+                onclick={() => select(item)}
+                onmouseenter={() => (selectedIndex = flatIdx)}
+              >
+                {#if Icon}
+                  <Icon class="h-4 w-4 shrink-0 text-muted-foreground" />
+                {/if}
+                <div class="min-w-0 flex-1">
+                  <div class="truncate font-medium">{item.label}</div>
+                  {#if item.description}
+                    <div class="truncate text-xs text-muted-foreground">
+                      {item.description}
+                    </div>
+                  {/if}
+                </div>
+              </button>
+            {/each}
           {/each}
         {/if}
       </div>
