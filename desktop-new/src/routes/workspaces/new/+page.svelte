@@ -1,11 +1,16 @@
 <script lang="ts">
 import { goto } from "$app/navigation"
+import { onDestroy } from "svelte"
 import { Button } from "$lib/components/ui/button/index.js"
 import { Input } from "$lib/components/ui/input/index.js"
 import { Label } from "$lib/components/ui/label/index.js"
 import * as Select from "$lib/components/ui/select/index.js"
+import { ScrollArea } from "$lib/components/ui/scroll-area/index.js"
 import { workspaceUp } from "$lib/ipc/commands.js"
+import { onCommandProgress } from "$lib/ipc/events.js"
 import { providers } from "$lib/stores/providers.js"
+import { toasts } from "$lib/stores/toasts.js"
+import type { UnlistenFn } from "@tauri-apps/api/event"
 
 const IDE_OPTIONS = [
   { value: "vscode", label: "VS Code" },
@@ -25,6 +30,14 @@ let selectedIde = $state<string | undefined>(undefined)
 let error = $state("")
 let submitting = $state(false)
 
+let commandId = $state<string | null>(null)
+let outputLines = $state<string[]>([])
+let unlisten: UnlistenFn | null = null
+
+onDestroy(() => {
+  unlisten?.()
+})
+
 async function handleSubmit() {
   if (!source.trim()) {
     error = "Source is required"
@@ -33,6 +46,7 @@ async function handleSubmit() {
 
   error = ""
   submitting = true
+  outputLines = []
 
   try {
     const workspaceId =
@@ -44,16 +58,32 @@ async function handleSubmit() {
         ?.replace(/\.git$/, "") ||
       undefined
 
-    await workspaceUp({
+    // Subscribe to progress events before starting
+    unlisten = await onCommandProgress((progress) => {
+      if (commandId && progress.commandId === commandId) {
+        if (progress.message) {
+          outputLines = [...outputLines, progress.message]
+        }
+        if (progress.done) {
+          submitting = false
+          if (progress.message.includes("Exit code: 0")) {
+            toasts.success(`Workspace ${workspaceId ?? "created"} is ready`)
+            goto(`/workspaces/${workspaceId}`)
+          } else {
+            error = "Workspace creation failed. Check output for details."
+          }
+        }
+      }
+    })
+
+    commandId = await workspaceUp({
       source: source.trim(),
       workspaceId,
       provider: selectedProvider,
       ide: selectedIde,
     })
-    goto("/workspaces")
   } catch (err) {
     error = err instanceof Error ? err.message : String(err)
-  } finally {
     submitting = false
   }
 }
@@ -80,6 +110,7 @@ async function handleSubmit() {
         placeholder="github.com/org/repo, local path, or image"
         value={source}
         oninput={(e) => (source = e.currentTarget.value)}
+        disabled={submitting}
       />
     </div>
 
@@ -89,12 +120,13 @@ async function handleSubmit() {
         placeholder="Optional - derived from source if empty"
         value={name}
         oninput={(e) => (name = e.currentTarget.value)}
+        disabled={submitting}
       />
     </div>
 
     <div class="space-y-2">
       <Label>Provider</Label>
-      <Select.Root type="single" onValueChange={(v) => (selectedProvider = v)}>
+      <Select.Root type="single" onValueChange={(v) => (selectedProvider = v)} disabled={submitting}>
         <Select.Trigger>
           <Select.Value placeholder="Select a provider" />
         </Select.Trigger>
@@ -108,7 +140,7 @@ async function handleSubmit() {
 
     <div class="space-y-2">
       <Label>IDE</Label>
-      <Select.Root type="single" onValueChange={(v) => (selectedIde = v)}>
+      <Select.Root type="single" onValueChange={(v) => (selectedIde = v)} disabled={submitting}>
         <Select.Trigger>
           <Select.Value placeholder="Select an IDE" />
         </Select.Trigger>
@@ -124,4 +156,13 @@ async function handleSubmit() {
       {submitting ? "Creating..." : "Create Workspace"}
     </Button>
   </form>
+
+  {#if outputLines.length > 0}
+    <div class="space-y-2">
+      <h2 class="text-sm font-medium">Output</h2>
+      <ScrollArea class="h-64 rounded-md border bg-muted/50 p-4">
+        <pre class="text-xs font-mono whitespace-pre-wrap">{outputLines.join("\n")}</pre>
+      </ScrollArea>
+    </div>
+  {/if}
 </div>
