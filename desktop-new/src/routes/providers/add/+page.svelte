@@ -4,6 +4,7 @@ import { Button } from "$lib/components/ui/button/index.js"
 import { Input } from "$lib/components/ui/input/index.js"
 import { Label } from "$lib/components/ui/label/index.js"
 import { providerAdd } from "$lib/ipc/commands.js"
+import { toasts } from "$lib/stores/toasts.js"
 
 const POPULAR_PROVIDERS = [
   { name: "docker", description: "Local Docker containers" },
@@ -24,6 +25,7 @@ async function handleAdd(name: string, source?: string) {
   submitting = true
   try {
     await providerAdd(name, source)
+    toasts.success(`Added provider ${name}`)
     goto("/providers")
   } catch (err) {
     error = err instanceof Error ? err.message : String(err)
