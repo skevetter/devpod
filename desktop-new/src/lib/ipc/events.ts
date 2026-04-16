@@ -1,4 +1,4 @@
-import { listen, type UnlistenFn } from "@tauri-apps/api/event"
+import type { UnlistenFn } from "@tauri-apps/api/event"
 import type {
   CommandProgress,
   Context,
@@ -6,6 +6,7 @@ import type {
   Provider,
   Workspace,
 } from "$lib/types/index.js"
+import { listen } from "./bridge.js"
 
 export const EVENT_NAMES = {
   WORKSPACES_CHANGED: "workspaces-changed",

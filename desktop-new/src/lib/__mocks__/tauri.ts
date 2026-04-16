@@ -20,6 +20,12 @@ vi.mock("@tauri-apps/api/event", () => ({
   listen: mockListen,
 }))
 
+// Also mock the bridge module which commands.ts/terminal.ts/events.ts import from
+vi.mock("$lib/ipc/bridge", () => ({
+  invoke: mockInvoke,
+  listen: mockListen,
+}))
+
 export function resetTauriMocks() {
   mockInvoke.mockReset()
   mockListen.mockReset().mockResolvedValue(() => {})

@@ -1,4 +1,3 @@
-import { invoke } from "@tauri-apps/api/core"
 import type {
   AuditEntry,
   Context,
@@ -10,6 +9,7 @@ import type {
   SshKeyInfo,
   Workspace,
 } from "$lib/types/index.js"
+import { invoke } from "./bridge.js"
 
 // Workspace commands
 export async function workspaceList(): Promise<Workspace[]> {
