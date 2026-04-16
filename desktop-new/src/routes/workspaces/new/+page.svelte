@@ -128,7 +128,11 @@ async function handleSubmit() {
       <Label>Provider</Label>
       <Select.Root type="single" onValueChange={(v) => (selectedProvider = v)} disabled={submitting}>
         <Select.Trigger>
-          <Select.Value placeholder="Select a provider" />
+          {#if selectedProvider}
+            <span>{selectedProvider}</span>
+          {:else}
+            <span class="text-muted-foreground">Select a provider</span>
+          {/if}
         </Select.Trigger>
         <Select.Content>
           {#each $providers as p (p.name)}
@@ -142,7 +146,11 @@ async function handleSubmit() {
       <Label>IDE</Label>
       <Select.Root type="single" onValueChange={(v) => (selectedIde = v)} disabled={submitting}>
         <Select.Trigger>
-          <Select.Value placeholder="Select an IDE" />
+          {#if selectedIde}
+            <span>{IDE_OPTIONS.find((i) => i.value === selectedIde)?.label ?? selectedIde}</span>
+          {:else}
+            <span class="text-muted-foreground">Select an IDE</span>
+          {/if}
         </Select.Trigger>
         <Select.Content>
           {#each IDE_OPTIONS as ide (ide.value)}
