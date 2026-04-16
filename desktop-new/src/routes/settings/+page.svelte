@@ -8,6 +8,7 @@ import { theme, applyTheme } from "$lib/stores/settings.js"
 import type { Theme } from "$lib/stores/settings.js"
 import { auditRecent, devpodVersion } from "$lib/ipc/commands.js"
 import type { AuditEntry } from "$lib/types/index.js"
+import { formatTimestamp } from "$lib/utils/time.js"
 
 const THEMES: { value: Theme; label: string }[] = [
   { value: "light", label: "Light" },
@@ -52,15 +53,6 @@ async function loadActivity() {
     activity = []
   } finally {
     activityLoading = false
-  }
-}
-
-function formatTimestamp(ts: string): string {
-  try {
-    const d = new Date(ts)
-    return d.toLocaleString()
-  } catch {
-    return ts
   }
 }
 </script>

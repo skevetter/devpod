@@ -14,6 +14,7 @@ import { toasts } from "$lib/stores/toasts.js"
 import { Box, Plug, Server } from "lucide-svelte"
 import type { AuditEntry } from "$lib/types/index.js"
 import type { Component } from "svelte"
+import { formatTimestamp } from "$lib/utils/time.js"
 
 let activity = $state<AuditEntry[]>([])
 
@@ -24,14 +25,6 @@ onMount(async () => {
     activity = []
   }
 })
-
-function formatTimestamp(ts: string): string {
-  try {
-    return new Date(ts).toLocaleString()
-  } catch {
-    return ts
-  }
-}
 
 let runningWorkspaces = $derived(
   $workspaces.filter((ws) => ws.status?.toLowerCase() === "running"),

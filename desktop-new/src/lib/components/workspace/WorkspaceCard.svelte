@@ -10,6 +10,7 @@ import {
 } from "$lib/ipc/commands.js"
 import { toasts } from "$lib/stores/toasts.js"
 import type { Workspace } from "$lib/types/index.js"
+import { timeAgo } from "$lib/utils/time.js"
 
 let { workspace }: { workspace: Workspace } = $props()
 let confirmDeleteOpen = $state(false)
@@ -29,18 +30,6 @@ function sourceDisplay(ws: Workspace): string {
   if (ws.source?.localFolder) return ws.source.localFolder
   if (ws.source?.image) return ws.source.image
   return "Unknown source"
-}
-
-function timeAgo(timestamp?: string): string {
-  if (!timestamp) return "Never"
-  const diff = Date.now() - new Date(timestamp).getTime()
-  const minutes = Math.floor(diff / 60000)
-  if (minutes < 1) return "Just now"
-  if (minutes < 60) return `${minutes}m ago`
-  const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours}h ago`
-  const days = Math.floor(hours / 24)
-  return `${days}d ago`
 }
 
 async function handleStart(e: Event) {

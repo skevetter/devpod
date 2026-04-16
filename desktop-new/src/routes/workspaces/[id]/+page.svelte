@@ -25,6 +25,7 @@ import { onCommandProgress } from "$lib/ipc/events.js"
 import { toasts } from "$lib/stores/toasts.js"
 import type { AuditEntry, LogEntry } from "$lib/types/index.js"
 import type { UnlistenFn } from "@tauri-apps/api/event"
+import { formatTimestamp } from "$lib/utils/time.js"
 
 let id = $derived($page.params.id as string)
 let workspace = $derived($workspaces.find((ws) => ws.id === id))
@@ -126,14 +127,6 @@ async function loadAudit() {
     auditEntries = []
   } finally {
     auditLoading = false
-  }
-}
-
-function formatTimestamp(ts: string): string {
-  try {
-    return new Date(ts).toLocaleString()
-  } catch {
-    return ts
   }
 }
 

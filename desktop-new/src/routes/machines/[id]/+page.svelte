@@ -18,6 +18,7 @@ import {
 } from "$lib/ipc/commands.js"
 import { toasts } from "$lib/stores/toasts.js"
 import type { AuditEntry } from "$lib/types/index.js"
+import { formatTimestamp } from "$lib/utils/time.js"
 
 let id = $derived($page.params.id as string)
 let machine = $derived($machines.find((m) => m.id === id))
@@ -74,14 +75,6 @@ async function loadAudit() {
     auditEntries = []
   } finally {
     auditLoading = false
-  }
-}
-
-function formatTimestamp(ts: string): string {
-  try {
-    return new Date(ts).toLocaleString()
-  } catch {
-    return ts
   }
 }
 
