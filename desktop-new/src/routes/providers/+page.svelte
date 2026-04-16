@@ -4,6 +4,7 @@ import { Button } from "$lib/components/ui/button/index.js"
 import { Input } from "$lib/components/ui/input/index.js"
 import ProviderCard from "$lib/components/provider/ProviderCard.svelte"
 import { providers, providersLoading } from "$lib/stores/providers.js"
+import { Plug, SearchX } from "lucide-svelte"
 
 let search = $state("")
 let sortBy = $state<"name" | "version">("name")
@@ -60,10 +61,12 @@ let filtered = $derived.by(() => {
     </div>
   {:else if filtered.length === 0}
     <div class="flex flex-col items-center justify-center gap-4 py-16 text-center">
-      <p class="text-muted-foreground">
-        {search ? "No providers match your search." : "No providers configured yet."}
-      </p>
-      {#if !search}
+      {#if search}
+        <SearchX class="h-10 w-10 text-muted-foreground" />
+        <p class="text-muted-foreground">No providers match your search.</p>
+      {:else}
+        <Plug class="h-10 w-10 text-muted-foreground" />
+        <p class="text-muted-foreground">No providers configured yet.</p>
         <Button onclick={() => goto("/providers/add")}>Add your first provider</Button>
       {/if}
     </div>

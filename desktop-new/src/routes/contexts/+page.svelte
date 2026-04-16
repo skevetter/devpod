@@ -8,6 +8,7 @@ import {
 } from "$lib/stores/contexts.js"
 import { contextUse } from "$lib/ipc/commands.js"
 import { toasts } from "$lib/stores/toasts.js"
+import { Layers } from "lucide-svelte"
 
 async function handleUse(name: string) {
   try {
@@ -31,7 +32,10 @@ async function handleUse(name: string) {
       {/each}
     </div>
   {:else if $contexts.length === 0}
-    <p class="text-muted-foreground">No contexts found.</p>
+    <div class="flex flex-col items-center justify-center gap-4 py-16 text-center">
+      <Layers class="h-10 w-10 text-muted-foreground" />
+      <p class="text-muted-foreground">No contexts found.</p>
+    </div>
   {:else}
     <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {#each $contexts as ctx (ctx.name)}

@@ -2,6 +2,7 @@
 import { Input } from "$lib/components/ui/input/index.js"
 import MachineCard from "$lib/components/machine/MachineCard.svelte"
 import { machines, machinesLoading } from "$lib/stores/machines.js"
+import { Server, SearchX } from "lucide-svelte"
 
 let search = $state("")
 let sortBy = $state<"name" | "created">("name")
@@ -57,12 +58,16 @@ let filtered = $derived.by(() => {
     </div>
   {:else if filtered.length === 0}
     <div class="flex flex-col items-center justify-center gap-4 py-16 text-center">
-      <p class="text-muted-foreground">
-        {search ? "No machines match your search." : "No machines yet."}
-      </p>
-      <p class="text-sm text-muted-foreground">
-        Machines are created automatically when you start a workspace with a provider that supports them.
-      </p>
+      {#if search}
+        <SearchX class="h-10 w-10 text-muted-foreground" />
+        <p class="text-muted-foreground">No machines match your search.</p>
+      {:else}
+        <Server class="h-10 w-10 text-muted-foreground" />
+        <p class="text-muted-foreground">No machines yet.</p>
+        <p class="text-sm text-muted-foreground">
+          Machines are created automatically when you start a workspace with a provider that supports them.
+        </p>
+      {/if}
     </div>
   {:else}
     <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">

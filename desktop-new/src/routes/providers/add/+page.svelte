@@ -5,15 +5,33 @@ import { Input } from "$lib/components/ui/input/index.js"
 import { Label } from "$lib/components/ui/label/index.js"
 import { providerAdd } from "$lib/ipc/commands.js"
 import { toasts } from "$lib/stores/toasts.js"
+import {
+  Container,
+  Terminal,
+  Ship,
+  Cloud,
+  Globe,
+  Server,
+  Droplets,
+} from "lucide-svelte"
+import type { Component } from "svelte"
 
-const POPULAR_PROVIDERS = [
-  { name: "docker", description: "Local Docker containers" },
-  { name: "ssh", description: "Remote SSH machines" },
-  { name: "kubernetes", description: "Kubernetes clusters" },
-  { name: "aws", description: "Amazon Web Services" },
-  { name: "gcloud", description: "Google Cloud Platform" },
-  { name: "azure", description: "Microsoft Azure" },
-  { name: "digitalocean", description: "DigitalOcean Droplets" },
+const POPULAR_PROVIDERS: {
+  name: string
+  description: string
+  icon: Component<{ class?: string }>
+}[] = [
+  { name: "docker", description: "Local Docker containers", icon: Container },
+  { name: "ssh", description: "Remote SSH machines", icon: Terminal },
+  { name: "kubernetes", description: "Kubernetes clusters", icon: Ship },
+  { name: "aws", description: "Amazon Web Services", icon: Cloud },
+  { name: "gcloud", description: "Google Cloud Platform", icon: Globe },
+  { name: "azure", description: "Microsoft Azure", icon: Server },
+  {
+    name: "digitalocean",
+    description: "DigitalOcean Droplets",
+    icon: Droplets,
+  },
 ]
 
 let providerSource = $state("")
@@ -76,14 +94,18 @@ async function handleSubmit() {
     <h2 class="text-lg font-semibold">Popular Providers</h2>
     <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
       {#each POPULAR_PROVIDERS as p (p.name)}
+        {@const Icon = p.icon}
         <button
           type="button"
-          class="rounded-lg border bg-card p-4 text-left text-card-foreground shadow-sm transition-colors hover:bg-accent/50"
+          class="flex items-start gap-3 rounded-lg border bg-card p-4 text-left text-card-foreground shadow-sm transition-colors hover:bg-accent/50"
           disabled={submitting}
           onclick={() => handleAdd(p.name)}
         >
-          <div class="font-semibold">{p.name}</div>
-          <div class="text-sm text-muted-foreground">{p.description}</div>
+          <Icon class="h-5 w-5 mt-0.5 shrink-0 text-muted-foreground" />
+          <div>
+            <div class="font-semibold">{p.name}</div>
+            <div class="text-sm text-muted-foreground">{p.description}</div>
+          </div>
         </button>
       {/each}
     </div>
