@@ -29,6 +29,20 @@ import type { UnlistenFn } from "@tauri-apps/api/event"
 let id = $derived($page.params.id as string)
 let workspace = $derived($workspaces.find((ws) => ws.id === id))
 
+let isRunning = $derived(workspace?.status?.toLowerCase() === "running")
+let isStopped = $derived(
+  !workspace?.status ||
+    workspace.status.toLowerCase() === "stopped" ||
+    workspace.status.toLowerCase() === "notfound",
+)
+let isBusy = $derived(workspace?.status?.toLowerCase() === "busy")
+
+function statusBadgeVariant(): "default" | "secondary" | "outline" {
+  if (isRunning) return "default"
+  if (isBusy) return "secondary"
+  return "outline"
+}
+
 let activeTab = $state("overview")
 let outputLines = $state<string[]>([])
 let commandId = $state<string | null>(null)
@@ -47,6 +61,15 @@ let deleting = $state(false)
 
 let sshSessionId = $state<string | null>(null)
 let connecting = $state(false)
+
+async function copyToClipboard(text: string) {
+  try {
+    await navigator.clipboard.writeText(text)
+    toasts.success("Copied to clipboard")
+  } catch {
+    toasts.error("Failed to copy to clipboard")
+  }
+}
 
 onMount(async () => {
   try {
@@ -216,22 +239,26 @@ async function handleDelete() {
       <span class={badgeVariants({ variant: "secondary" })}>{workspace.provider.name}</span>
     {/if}
     {#if workspace?.status}
-      <span class={badgeVariants({ variant: "default" })}>{workspace.status}</span>
+      <span class={badgeVariants({ variant: statusBadgeVariant() })}>{workspace.status}</span>
     {/if}
   </div>
 
   <div class="flex items-center gap-2">
     {#if sshSessionId}
       <Button variant="outline" size="sm" onclick={handleDisconnect}>Disconnect</Button>
-    {:else}
-      <Button size="sm" onclick={handleConnect} disabled={connecting || starting}>
+    {:else if isRunning}
+      <Button size="sm" onclick={handleConnect} disabled={connecting}>
         {connecting ? "Connecting..." : "Connect"}
       </Button>
     {/if}
-    <Button variant="outline" size="sm" onclick={handleStart} disabled={starting || connecting}>
-      {starting ? "Starting..." : "Start"}
-    </Button>
-    <Button variant="outline" size="sm" onclick={handleStop} disabled={starting}>Stop</Button>
+    {#if isStopped}
+      <Button size="sm" onclick={handleStart} disabled={starting || connecting}>
+        {starting ? "Starting..." : "Start"}
+      </Button>
+    {/if}
+    {#if isRunning || isBusy}
+      <Button variant="outline" size="sm" onclick={handleStop} disabled={starting}>Stop</Button>
+    {/if}
     <Button variant="outline" size="sm" onclick={handleRebuild} disabled={starting}>Rebuild</Button>
     <Button variant="destructive" size="sm" onclick={() => (confirmDeleteOpen = true)} disabled={starting}>Delete</Button>
     {#if starting}
@@ -298,7 +325,17 @@ async function handleDelete() {
       </Tabs.Content>
 
       <Tabs.Content value="output">
-        <ScrollArea class="mt-4 h-96 rounded-md border bg-muted/50 p-4">
+        {#if outputLines.length > 0}
+          <div class="mt-4 flex justify-end gap-2">
+            <Button variant="outline" size="sm" onclick={() => copyToClipboard(outputLines.join("\n"))}>
+              Copy Output
+            </Button>
+            <Button variant="outline" size="sm" onclick={() => { outputLines = [] }}>
+              Clear
+            </Button>
+          </div>
+        {/if}
+        <ScrollArea class="mt-2 h-96 rounded-md border bg-muted/50 p-4">
           {#if outputLines.length === 0}
             <p class="text-sm text-muted-foreground">
               {starting ? "Waiting for output..." : "No output yet. Start the workspace to see live output."}
@@ -333,6 +370,16 @@ async function handleDelete() {
 
       <Tabs.Content value="logs">
         <div class="mt-4 space-y-4">
+          <div class="flex justify-end gap-2">
+            <Button variant="outline" size="sm" onclick={loadLogs} disabled={logsLoading}>
+              {logsLoading ? "Loading..." : "Refresh"}
+            </Button>
+            {#if selectedLog && logContent}
+              <Button variant="outline" size="sm" onclick={() => copyToClipboard(logContent)}>
+                Copy Log
+              </Button>
+            {/if}
+          </div>
           {#if logsLoading}
             <p class="text-sm text-muted-foreground">Loading logs...</p>
           {:else if logEntries.length === 0}
