@@ -3,6 +3,7 @@ import { Box, SearchX } from "@lucide/svelte"
 import { goto } from "$app/navigation"
 import { Button } from "$lib/components/ui/button/index.js"
 import { Input } from "$lib/components/ui/input/index.js"
+import * as Select from "$lib/components/ui/select/index.js"
 import CardSkeleton from "$lib/components/ui/skeleton/CardSkeleton.svelte"
 import WorkspaceCard from "$lib/components/workspace/WorkspaceCard.svelte"
 import { workspaces, workspacesLoading } from "$lib/stores/workspaces.js"
@@ -46,14 +47,15 @@ let filtered = $derived.by(() => {
       oninput={(e) => (search = e.currentTarget.value)}
       class="flex-1"
     />
-    <select
-      class="h-10 rounded-md border border-input bg-background px-3 text-sm"
-      value={sortBy}
-      onchange={(e) => (sortBy = e.currentTarget.value as "recent" | "name")}
-    >
-      <option value="recent">Recent</option>
-      <option value="name">Name</option>
-    </select>
+    <Select.Root type="single" bind:value={sortBy}>
+      <Select.Trigger class="w-32">
+        <span>{sortBy === "recent" ? "Recent" : "Name"}</span>
+      </Select.Trigger>
+      <Select.Content>
+        <Select.Item value="recent" label="Recent" />
+        <Select.Item value="name" label="Name" />
+      </Select.Content>
+    </Select.Root>
   </div>
 
   {#if $workspacesLoading}

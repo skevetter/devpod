@@ -4,6 +4,7 @@ import { goto } from "$app/navigation"
 import { page } from "$app/stores"
 import { Button } from "$lib/components/ui/button/index.js"
 import { Input } from "$lib/components/ui/input/index.js"
+import * as Select from "$lib/components/ui/select/index.js"
 import CardSkeleton from "$lib/components/ui/skeleton/CardSkeleton.svelte"
 import ProviderCard from "$lib/components/provider/ProviderCard.svelte"
 import ProviderSheet from "$lib/components/provider/ProviderSheet.svelte"
@@ -69,14 +70,15 @@ let filtered = $derived.by(() => {
       oninput={(e) => (search = e.currentTarget.value)}
       class="flex-1"
     />
-    <select
-      class="h-10 rounded-md border border-input bg-background px-3 text-sm"
-      value={sortBy}
-      onchange={(e) => (sortBy = e.currentTarget.value as "name" | "version")}
-    >
-      <option value="name">Name</option>
-      <option value="version">Version</option>
-    </select>
+    <Select.Root type="single" bind:value={sortBy}>
+      <Select.Trigger class="w-32">
+        <span>{sortBy === "name" ? "Name" : "Version"}</span>
+      </Select.Trigger>
+      <Select.Content>
+        <Select.Item value="name" label="Name" />
+        <Select.Item value="version" label="Version" />
+      </Select.Content>
+    </Select.Root>
   </div>
 
   {#if $providersLoading}

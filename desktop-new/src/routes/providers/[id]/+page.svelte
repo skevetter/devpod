@@ -6,6 +6,7 @@ import { Button } from "$lib/components/ui/button/index.js"
 import { Input } from "$lib/components/ui/input/index.js"
 import { Label } from "$lib/components/ui/label/index.js"
 import { Separator } from "$lib/components/ui/separator/index.js"
+import * as Select from "$lib/components/ui/select/index.js"
 import { badgeVariants } from "$lib/components/ui/badge/index.js"
 import ConfirmDialog from "$lib/components/layout/ConfirmDialog.svelte"
 import { providers } from "$lib/stores/providers.js"
@@ -223,16 +224,20 @@ async function handleSaveOptions() {
                   <p class="text-xs text-muted-foreground">{opt.description}</p>
                 {/if}
                 {#if opt.enum && opt.enum.length > 0}
-                  <select
-                    class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  <Select.Root
+                    type="single"
                     value={optionValues[key] ?? ""}
-                    onchange={(e) => (optionValues[key] = e.currentTarget.value)}
+                    onValueChange={(v) => (optionValues[key] = v)}
                   >
-                    <option value="">-- Select --</option>
-                    {#each opt.enum as enumVal}
-                      <option value={enumVal}>{enumVal}</option>
-                    {/each}
-                  </select>
+                    <Select.Trigger class="w-full">
+                      <span>{optionValues[key] || "-- Select --"}</span>
+                    </Select.Trigger>
+                    <Select.Content>
+                      {#each opt.enum as enumVal}
+                        <Select.Item value={enumVal} label={enumVal} />
+                      {/each}
+                    </Select.Content>
+                  </Select.Root>
                 {:else}
                   <Input
                     type={opt.password ? "password" : "text"}

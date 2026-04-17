@@ -1,6 +1,7 @@
 <script lang="ts">
 import { Server, SearchX } from "@lucide/svelte"
 import { Input } from "$lib/components/ui/input/index.js"
+import * as Select from "$lib/components/ui/select/index.js"
 import CardSkeleton from "$lib/components/ui/skeleton/CardSkeleton.svelte"
 import MachineCard from "$lib/components/machine/MachineCard.svelte"
 import { machines, machinesLoading } from "$lib/stores/machines.js"
@@ -41,14 +42,15 @@ let filtered = $derived.by(() => {
       oninput={(e) => (search = e.currentTarget.value)}
       class="flex-1"
     />
-    <select
-      class="h-10 rounded-md border border-input bg-background px-3 text-sm"
-      value={sortBy}
-      onchange={(e) => (sortBy = e.currentTarget.value as "name" | "created")}
-    >
-      <option value="name">Name</option>
-      <option value="created">Newest</option>
-    </select>
+    <Select.Root type="single" bind:value={sortBy}>
+      <Select.Trigger class="w-32">
+        <span>{sortBy === "name" ? "Name" : "Newest"}</span>
+      </Select.Trigger>
+      <Select.Content>
+        <Select.Item value="name" label="Name" />
+        <Select.Item value="created" label="Newest" />
+      </Select.Content>
+    </Select.Root>
   </div>
 
   {#if $machinesLoading}

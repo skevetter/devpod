@@ -5,6 +5,7 @@ import { Button } from "$lib/components/ui/button/index.js"
 import { Input } from "$lib/components/ui/input/index.js"
 import { Label } from "$lib/components/ui/label/index.js"
 import { Separator } from "$lib/components/ui/separator/index.js"
+import * as Select from "$lib/components/ui/select/index.js"
 import { badgeVariants } from "$lib/components/ui/badge/index.js"
 import { ScrollArea } from "$lib/components/ui/scroll-area/index.js"
 import CardSkeleton from "$lib/components/ui/skeleton/CardSkeleton.svelte"
@@ -114,15 +115,18 @@ async function copyPublicKey(key: SshKeyInfo) {
         </div>
         <div class="space-y-2">
           <Label>Key Type</Label>
-          <select
-            class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            value={newKeyType}
-            onchange={(e) => (newKeyType = e.currentTarget.value)}
-          >
-            <option value="ed25519">Ed25519 (recommended)</option>
-            <option value="rsa">RSA (4096-bit)</option>
-            <option value="ecdsa">ECDSA</option>
-          </select>
+          <Select.Root type="single" bind:value={newKeyType}>
+            <Select.Trigger class="w-full">
+              <span>
+                {newKeyType === "ed25519" ? "Ed25519 (recommended)" : newKeyType === "rsa" ? "RSA (4096-bit)" : "ECDSA"}
+              </span>
+            </Select.Trigger>
+            <Select.Content>
+              <Select.Item value="ed25519" label="Ed25519 (recommended)" />
+              <Select.Item value="rsa" label="RSA (4096-bit)" />
+              <Select.Item value="ecdsa" label="ECDSA" />
+            </Select.Content>
+          </Select.Root>
         </div>
       </div>
 

@@ -214,87 +214,15 @@ function toggleLocal(key: keyof LocalOptions) {
   <Tabs.Root bind:value={activeTab}>
     <Tabs.List class="flex-wrap">
       <Tabs.Trigger value="general">General</Tabs.Trigger>
-      <Tabs.Trigger value="customization">Customization</Tabs.Trigger>
       <Tabs.Trigger value="appearance">Appearance</Tabs.Trigger>
-      <Tabs.Trigger value="updates">Updates</Tabs.Trigger>
       <Tabs.Trigger value="experimental">Experimental</Tabs.Trigger>
     </Tabs.List>
 
     <!-- ═══ GENERAL ═══ -->
     <Tabs.Content value="general">
       <div class="mt-4 space-y-6">
-        <div class="flex items-center justify-between">
-          <div>
-            <Label>Debug Mode</Label>
-            <p class="text-xs text-muted-foreground">Run all commands with --debug flag</p>
-          </div>
-          <Switch checked={local.debugFlag} onCheckedChange={() => toggleLocal("debugFlag")} disabled={loading || saving} />
-        </div>
-
-        <Separator />
-
-        <div class="space-y-4">
-          <h2 class="text-lg font-semibold">Proxy Configuration</h2>
-          <div class="space-y-2">
-            <Label>HTTP Proxy</Label>
-            <Input
-              value={local.httpProxy}
-              placeholder="http://proxy:8080"
-              oninput={(e) => (local.httpProxy = e.currentTarget.value)}
-              onblur={() => saveLocal("httpProxy", local.httpProxy)}
-              disabled={loading || saving}
-            />
-          </div>
-          <div class="space-y-2">
-            <Label>HTTPS Proxy</Label>
-            <Input
-              value={local.httpsProxy}
-              placeholder="https://proxy:8443"
-              oninput={(e) => (local.httpsProxy = e.currentTarget.value)}
-              onblur={() => saveLocal("httpsProxy", local.httpsProxy)}
-              disabled={loading || saving}
-            />
-          </div>
-          <div class="space-y-2">
-            <Label>No Proxy</Label>
-            <Input
-              value={local.noProxy}
-              placeholder="localhost,127.0.0.1,.internal"
-              oninput={(e) => (local.noProxy = e.currentTarget.value)}
-              onblur={() => saveLocal("noProxy", local.noProxy)}
-              disabled={loading || saving}
-            />
-          </div>
-        </div>
-
-        <Separator />
-
         <div class="space-y-2">
-          <h2 class="text-lg font-semibold">Keyboard Shortcuts</h2>
-          <div class="rounded-md border divide-y">
-            {#each shortcuts as shortcut}
-              <div class="flex items-center justify-between px-4 py-2 text-sm">
-                <span class="text-muted-foreground">{shortcut.action}</span>
-                <kbd class="rounded border bg-muted px-2 py-0.5 text-xs font-mono">{shortcut.keys}</kbd>
-              </div>
-            {/each}
-          </div>
-        </div>
-
-        <Separator />
-
-        <div class="space-y-1 text-sm text-muted-foreground">
-          <p>DevPod Desktop</p>
-          <p>Built with Tauri v2 + SvelteKit + shadcn-svelte</p>
-        </div>
-      </div>
-    </Tabs.Content>
-
-    <!-- ═══ CUSTOMIZATION ═══ -->
-    <Tabs.Content value="customization">
-      <div class="mt-4 space-y-6">
-        <div class="space-y-2">
-          <Label>Default IDE</Label>
+          <h2 class="text-lg font-semibold">Default IDE</h2>
           <p class="text-xs text-muted-foreground">IDE used when creating new workspaces</p>
           <Popover.Root bind:open={ideComboOpen}>
             <Popover.Trigger>
@@ -337,6 +265,14 @@ function toggleLocal(key: keyof LocalOptions) {
 
         <Separator />
 
+        <div class="flex items-center justify-between">
+          <div>
+            <Label>Debug Mode</Label>
+            <p class="text-xs text-muted-foreground">Run all commands with --debug flag</p>
+          </div>
+          <Switch checked={local.debugFlag} onCheckedChange={() => toggleLocal("debugFlag")} disabled={loading || saving} />
+        </div>
+
         <div class="space-y-2">
           <Label>SSH Key for Git Commit Signing</Label>
           <p class="text-xs text-muted-foreground">Path to SSH key for signing Git commits</p>
@@ -347,6 +283,113 @@ function toggleLocal(key: keyof LocalOptions) {
             onblur={() => saveLocal("sshKeyPath", local.sshKeyPath)}
             disabled={loading || saving}
           />
+        </div>
+
+        <Separator />
+
+        <div class="space-y-4">
+          <h2 class="text-lg font-semibold">Proxy Configuration</h2>
+          <div class="space-y-2">
+            <Label>HTTP Proxy</Label>
+            <Input
+              value={local.httpProxy}
+              placeholder="http://proxy:8080"
+              oninput={(e) => (local.httpProxy = e.currentTarget.value)}
+              onblur={() => saveLocal("httpProxy", local.httpProxy)}
+              disabled={loading || saving}
+            />
+          </div>
+          <div class="space-y-2">
+            <Label>HTTPS Proxy</Label>
+            <Input
+              value={local.httpsProxy}
+              placeholder="https://proxy:8443"
+              oninput={(e) => (local.httpsProxy = e.currentTarget.value)}
+              onblur={() => saveLocal("httpsProxy", local.httpsProxy)}
+              disabled={loading || saving}
+            />
+          </div>
+          <div class="space-y-2">
+            <Label>No Proxy</Label>
+            <Input
+              value={local.noProxy}
+              placeholder="localhost,127.0.0.1,.internal"
+              oninput={(e) => (local.noProxy = e.currentTarget.value)}
+              onblur={() => saveLocal("noProxy", local.noProxy)}
+              disabled={loading || saving}
+            />
+          </div>
+        </div>
+
+        <Separator />
+
+        <h2 class="text-lg font-semibold">Updates</h2>
+
+        <div class="flex items-center justify-between">
+          <div>
+            <Label>Automatically Keep Up to Date</Label>
+            <p class="text-xs text-muted-foreground">Download and install new DevPod versions in background</p>
+          </div>
+          <Switch checked={$autoUpdate} onCheckedChange={(v) => setAutoUpdate(v)} />
+        </div>
+
+        <div class="space-y-2">
+          <Label>Current Version</Label>
+          {#if cliVersion}
+            <p class="text-sm">DevPod CLI: <span class="font-mono">{cliVersion}</span></p>
+          {:else}
+            <p class="text-sm text-muted-foreground">Version information not available</p>
+          {/if}
+        </div>
+
+        <div class="space-y-3">
+          <Label>Switch Version</Label>
+          <p class="text-xs text-muted-foreground">Install a specific DevPod CLI version. Useful for downgrading if a newer version introduced issues.</p>
+          <div class="flex gap-2">
+            <Input
+              value={targetVersion}
+              placeholder="e.g. v0.20.0"
+              oninput={(e) => (targetVersion = e.currentTarget.value)}
+              onkeydown={(e) => { if (e.key === "Enter") handleUpgrade() }}
+              disabled={upgrading}
+              class="max-w-48 font-mono"
+            />
+            <Button
+              onclick={handleUpgrade}
+              disabled={upgrading || !targetVersion}
+              variant="outline"
+            >
+              {upgrading ? "Installing..." : "Install"}
+            </Button>
+          </div>
+          {#if upgradeResult}
+            <div class="rounded-md border border-green-600/30 bg-green-600/10 p-3">
+              <p class="text-sm text-green-700 dark:text-green-400">
+                Switched to {upgradeResult}. Restart the application to use the new version.
+              </p>
+            </div>
+          {/if}
+        </div>
+
+        <Separator />
+
+        <div class="space-y-2">
+          <h2 class="text-lg font-semibold">Keyboard Shortcuts</h2>
+          <div class="rounded-md border divide-y">
+            {#each shortcuts as shortcut}
+              <div class="flex items-center justify-between px-4 py-2 text-sm">
+                <span class="text-muted-foreground">{shortcut.action}</span>
+                <kbd class="rounded border bg-muted px-2 py-0.5 text-xs font-mono">{shortcut.keys}</kbd>
+              </div>
+            {/each}
+          </div>
+        </div>
+
+        <Separator />
+
+        <div class="space-y-1 text-sm text-muted-foreground">
+          <p>DevPod Desktop</p>
+          <p>Built with Tauri v2 + SvelteKit + shadcn-svelte</p>
         </div>
       </div>
     </Tabs.Content>
@@ -403,61 +446,6 @@ function toggleLocal(key: keyof LocalOptions) {
           </div>
         </div>
 
-      </div>
-    </Tabs.Content>
-
-    <!-- ═══ UPDATES ═══ -->
-    <Tabs.Content value="updates">
-      <div class="mt-4 space-y-6">
-        <div class="flex items-center justify-between">
-          <div>
-            <Label>Automatically Keep Up to Date</Label>
-            <p class="text-xs text-muted-foreground">Download and install new DevPod versions in background</p>
-          </div>
-          <Switch checked={$autoUpdate} onCheckedChange={(v) => setAutoUpdate(v)} />
-        </div>
-
-        <Separator />
-
-        <div class="space-y-2">
-          <h2 class="text-lg font-semibold">Current Version</h2>
-          {#if cliVersion}
-            <p class="text-sm">DevPod CLI: <span class="font-mono">{cliVersion}</span></p>
-          {:else}
-            <p class="text-sm text-muted-foreground">Version information not available</p>
-          {/if}
-        </div>
-
-        <Separator />
-
-        <div class="space-y-3">
-          <h2 class="text-lg font-semibold">Switch Version</h2>
-          <p class="text-xs text-muted-foreground">Install a specific DevPod CLI version. Useful for downgrading if a newer version introduced issues.</p>
-          <div class="flex gap-2">
-            <Input
-              value={targetVersion}
-              placeholder="e.g. v0.20.0"
-              oninput={(e) => (targetVersion = e.currentTarget.value)}
-              onkeydown={(e) => { if (e.key === "Enter") handleUpgrade() }}
-              disabled={upgrading}
-              class="max-w-48 font-mono"
-            />
-            <Button
-              onclick={handleUpgrade}
-              disabled={upgrading || !targetVersion}
-              variant="outline"
-            >
-              {upgrading ? "Installing..." : "Install"}
-            </Button>
-          </div>
-          {#if upgradeResult}
-            <div class="rounded-md border border-green-600/30 bg-green-600/10 p-3">
-              <p class="text-sm text-green-700 dark:text-green-400">
-                Switched to {upgradeResult}. Restart the application to use the new version.
-              </p>
-            </div>
-          {/if}
-        </div>
       </div>
     </Tabs.Content>
 

@@ -90,7 +90,7 @@ function toggleOption(key: keyof ContextOptions) {
 </script>
 
 <Sheet.Root bind:open>
-  <Sheet.Content side="right" class="sm:max-w-lg w-full">
+  <Sheet.Content side="right" class="sm:max-w-xl w-full">
     <Sheet.Header>
       <Sheet.Title class="flex items-center gap-2">
         {context.name}

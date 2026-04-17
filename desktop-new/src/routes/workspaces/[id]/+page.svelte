@@ -5,6 +5,8 @@ import { onMount, onDestroy } from "svelte"
 import { Button } from "$lib/components/ui/button/index.js"
 import { badgeVariants } from "$lib/components/ui/badge/index.js"
 import { Separator } from "$lib/components/ui/separator/index.js"
+import * as Select from "$lib/components/ui/select/index.js"
+import * as Table from "$lib/components/ui/table/index.js"
 import * as Tabs from "$lib/components/ui/tabs/index.js"
 import { ScrollArea } from "$lib/components/ui/scroll-area/index.js"
 import ConfirmDialog from "$lib/components/layout/ConfirmDialog.svelte"
@@ -27,6 +29,7 @@ import { toasts } from "$lib/stores/toasts.js"
 import type { AuditEntry, LogEntry } from "$lib/types/index.js"
 import type { UnlistenFn } from "@tauri-apps/api/event"
 import { formatTimestamp } from "$lib/utils/time.js"
+import { parseLogLine, stripAnsi } from "$lib/utils/log-parser.js"
 
 const IDE_OPTIONS = [
   { value: "none", label: "None" },
@@ -74,11 +77,12 @@ function statusBadgeVariant(): "default" | "secondary" | "outline" {
 
 let activeTab = $state("overview")
 let outputLines = $state<string[]>([])
+let parsedLines = $derived(outputLines.map(parseLogLine))
 let commandId = $state<string | null>(null)
 let operationLabel = $state("")
 let operationRunning = $state(false)
 let unlisten: UnlistenFn | null = null
-let outputEl = $state<HTMLPreElement | null>(null)
+let tableEndEl = $state<HTMLDivElement | null>(null)
 
 let logEntries = $state<LogEntry[]>([])
 let selectedLog = $state<string | null>(null)
@@ -94,8 +98,8 @@ let sshSessionId = $state<string | null>(null)
 let connecting = $state(false)
 
 function scrollToBottom() {
-  if (outputEl) {
-    outputEl.scrollIntoView({ block: "end", behavior: "smooth" })
+  if (tableEndEl) {
+    tableEndEl.scrollIntoView({ block: "end", behavior: "smooth" })
   }
 }
 
@@ -118,7 +122,7 @@ onMount(async () => {
         }
         if (progress.done) {
           operationRunning = false
-          const success = progress.message.includes("Exit code: 0")
+          const success = stripAnsi(progress.message).includes("Exit code: 0")
           if (success) {
             toasts.success(`${operationLabel} ${id} succeeded`)
           } else {
@@ -238,6 +242,17 @@ async function handleStart() {
   }
 }
 
+async function handleOpenIde() {
+  const ide = workspace?.ide?.name || undefined
+  startStreamingOp("Open IDE")
+  try {
+    commandId = await workspaceUp({ source: id, ide })
+  } catch (err) {
+    operationRunning = false
+    toasts.error(`Failed to open IDE: ${err}`)
+  }
+}
+
 async function handleStop() {
   startStreamingOp("Stop")
   try {
@@ -297,11 +312,16 @@ async function handleDelete() {
   </div>
 
   <div class="flex items-center gap-2">
+    {#if isRunning}
+      <Button size="sm" onclick={handleOpenIde} disabled={operationRunning}>
+        Open IDE
+      </Button>
+    {/if}
     {#if sshSessionId}
       <Button variant="outline" size="sm" onclick={handleDisconnect}>Disconnect</Button>
     {:else if isRunning}
-      <Button size="sm" onclick={handleConnect} disabled={connecting}>
-        {connecting ? "Connecting..." : "Connect"}
+      <Button variant="outline" size="sm" onclick={handleConnect} disabled={connecting}>
+        {connecting ? "Connecting..." : "SSH Terminal"}
       </Button>
     {/if}
     {#if isStopped}
@@ -350,11 +370,10 @@ async function handleDelete() {
 
           <div class="text-muted-foreground">IDE</div>
           <div>
-            <select
-              class="h-8 rounded-md border border-input bg-background px-2 text-sm"
-              value={workspace.ide?.name ?? ""}
-              onchange={async (e) => {
-                const newIde = e.currentTarget.value
+            <Select.Root
+              type="single"
+              value={workspace.ide?.name ?? "none"}
+              onValueChange={async (newIde) => {
                 try {
                   startStreamingOp("Change IDE")
                   commandId = await workspaceUp({ source: id, ide: newIde })
@@ -364,10 +383,15 @@ async function handleDelete() {
                 }
               }}
             >
-              {#each IDE_OPTIONS as ide (ide.value)}
-                <option value={ide.value}>{ide.label}</option>
-              {/each}
-            </select>
+              <Select.Trigger class="h-8 w-48">
+                <span>{IDE_OPTIONS.find((i) => i.value === (workspace.ide?.name ?? "none"))?.label ?? "None"}</span>
+              </Select.Trigger>
+              <Select.Content class="max-h-80">
+                {#each IDE_OPTIONS as ide (ide.value)}
+                  <Select.Item value={ide.value} label={ide.label} />
+                {/each}
+              </Select.Content>
+            </Select.Root>
           </div>
 
           <div class="text-muted-foreground">Source</div>
@@ -398,25 +422,55 @@ async function handleDelete() {
       </Tabs.Content>
 
       <Tabs.Content value="output">
-        {#if outputLines.length > 0}
-          <div class="mt-4 flex justify-end gap-2">
-            <Button variant="outline" size="sm" onclick={() => copyToClipboard(outputLines.join("\n"))}>
-              Copy Output
-            </Button>
-            <Button variant="outline" size="sm" onclick={() => { outputLines = [] }}>
-              Clear
-            </Button>
-          </div>
-        {/if}
-        <ScrollArea class="mt-2 h-96 rounded-md border bg-muted/50 p-4">
-          {#if outputLines.length === 0}
-            <p class="text-sm text-muted-foreground">
-              {operationRunning ? "Waiting for output..." : "No output yet. Run an operation to see live output."}
-            </p>
-          {:else}
-            <pre bind:this={outputEl} class="text-xs font-mono whitespace-pre-wrap">{outputLines.join("\n")}</pre>
+        <div class="mt-4 flex flex-col" style="height: calc(100vh - 20rem);">
+          {#if outputLines.length > 0}
+            <div class="flex justify-end gap-2 shrink-0 mb-2">
+              <Button variant="outline" size="sm" onclick={() => copyToClipboard(outputLines.map(stripAnsi).join("\n"))}>
+                Copy Output
+              </Button>
+              <Button variant="outline" size="sm" onclick={() => { outputLines = [] }}>
+                Clear
+              </Button>
+            </div>
           {/if}
-        </ScrollArea>
+          <ScrollArea class="min-h-0 flex-1 rounded-md border">
+            {#if outputLines.length === 0}
+              <div class="flex items-center justify-center h-full p-4">
+                <p class="text-sm text-muted-foreground">
+                  {operationRunning ? "Waiting for output..." : "No output yet. Run an operation to see live output."}
+                </p>
+              </div>
+            {:else}
+              <Table.Root>
+                <Table.Header>
+                  <Table.Row>
+                    <Table.Head class="w-20">Time</Table.Head>
+                    <Table.Head class="w-16">Level</Table.Head>
+                    <Table.Head>Message</Table.Head>
+                    <Table.Head class="w-40 text-right">Source</Table.Head>
+                  </Table.Row>
+                </Table.Header>
+                <Table.Body>
+                  {#each parsedLines as line, i (i)}
+                    <Table.Row class={line.level === "fatal" || line.level === "error" ? "bg-destructive/5" : line.level === "warn" ? "bg-amber-500/5" : ""}>
+                      <Table.Cell class="font-mono text-xs text-muted-foreground">{line.time}</Table.Cell>
+                      <Table.Cell>
+                        {#if line.level}
+                          <span class={badgeVariants({ variant: line.level === "fatal" || line.level === "error" ? "destructive" : line.level === "warn" ? "outline" : "secondary" })}>
+                            {line.level}
+                          </span>
+                        {/if}
+                      </Table.Cell>
+                      <Table.Cell class="text-sm">{line.message}</Table.Cell>
+                      <Table.Cell class="font-mono text-xs text-muted-foreground text-right">{line.source}</Table.Cell>
+                    </Table.Row>
+                  {/each}
+                </Table.Body>
+              </Table.Root>
+              <div bind:this={tableEndEl}></div>
+            {/if}
+          </ScrollArea>
+        </div>
       </Tabs.Content>
 
       <Tabs.Content value="terminal">
