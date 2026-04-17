@@ -1,11 +1,20 @@
 <script lang="ts">
-import { Box, Ellipsis, Play, SearchX, Square, Trash2 } from "@lucide/svelte"
+import {
+  ArrowDownAZ,
+  Box,
+  Clock,
+  ChevronsUpDown,
+  Ellipsis,
+  Play,
+  SearchX,
+  Square,
+  Trash2,
+} from "@lucide/svelte"
 import { goto } from "$app/navigation"
 import { Button } from "$lib/components/ui/button/index.js"
 import { badgeVariants } from "$lib/components/ui/badge/index.js"
 import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js"
 import { Input } from "$lib/components/ui/input/index.js"
-import * as Select from "$lib/components/ui/select/index.js"
 import * as Table from "$lib/components/ui/table/index.js"
 import TableSkeleton from "$lib/components/ui/skeleton/TableSkeleton.svelte"
 import ConfirmDialog from "$lib/components/layout/ConfirmDialog.svelte"
@@ -127,15 +136,30 @@ async function handleDelete() {
       oninput={(e) => (search = e.currentTarget.value)}
       class="flex-1"
     />
-    <Select.Root type="single" bind:value={sortBy}>
-      <Select.Trigger class="w-32">
-        <span>{sortBy === "recent" ? "Recent" : "Name"}</span>
-      </Select.Trigger>
-      <Select.Content>
-        <Select.Item value="recent" label="Recent" />
-        <Select.Item value="name" label="Name" />
-      </Select.Content>
-    </Select.Root>
+    <DropdownMenu.Root>
+      <DropdownMenu.Trigger>
+        {#snippet child({ props })}
+          <Button variant="outline" class="w-36 justify-between" {...props}>
+            {#if sortBy === "recent"}
+              <Clock class="mr-2 h-4 w-4" /> Recent
+            {:else}
+              <ArrowDownAZ class="mr-2 h-4 w-4" /> Name
+            {/if}
+            <ChevronsUpDown class="ml-auto h-4 w-4 opacity-50" />
+          </Button>
+        {/snippet}
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Content align="end">
+        <DropdownMenu.RadioGroup bind:value={sortBy}>
+          <DropdownMenu.RadioItem value="recent">
+            <Clock class="mr-2 h-4 w-4" /> Recent
+          </DropdownMenu.RadioItem>
+          <DropdownMenu.RadioItem value="name">
+            <ArrowDownAZ class="mr-2 h-4 w-4" /> Name
+          </DropdownMenu.RadioItem>
+        </DropdownMenu.RadioGroup>
+      </DropdownMenu.Content>
+    </DropdownMenu.Root>
   </div>
 
   {#if $workspacesLoading}
