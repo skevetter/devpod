@@ -139,6 +139,13 @@ async function handleDelete() {
 }
 
 async function handleSaveOptions() {
+  const missing = requiredOptions
+    .filter(([key]) => !optionValues[key]?.trim())
+    .map(([, opt]) => opt.displayName ?? opt.name ?? "")
+  if (missing.length > 0) {
+    toasts.error(`Required: ${missing.join(", ")}`)
+    return
+  }
   saving = true
   try {
     const values: Record<string, string> = {}

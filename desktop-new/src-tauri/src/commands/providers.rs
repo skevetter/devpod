@@ -100,8 +100,10 @@ pub async fn provider_set_options(
     options: Vec<String>,
 ) -> Result<(), String> {
     let mut args: Vec<&str> = vec!["provider", "set-options", &name];
-    let option_refs: Vec<&str> = options.iter().map(|s| s.as_str()).collect();
-    args.extend(option_refs);
+    for opt in &options {
+        args.push("-o");
+        args.push(opt.as_str());
+    }
     let result = cli.run_raw(&args).await;
     let success = result.is_ok();
     if let Err(e) = audit.record("set-options", "provider", &name, "", success) {
