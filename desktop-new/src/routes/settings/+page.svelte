@@ -14,8 +14,6 @@ import {
   setColorScheme,
   uiScale,
   applyUIScale,
-  sidebarPosition,
-  setSidebarPosition,
   autoUpdate,
   setAutoUpdate,
   defaultIde,
@@ -374,25 +372,6 @@ function toggleLocal(key: keyof LocalOptions) {
           </div>
         </div>
 
-        <Separator />
-
-        <div class="space-y-2">
-          <h2 class="text-lg font-semibold">Sidebar Position</h2>
-          <div class="flex gap-2">
-            <Button
-              variant={$sidebarPosition === "left" ? "default" : "outline"}
-              onclick={() => setSidebarPosition("left")}
-            >
-              Left
-            </Button>
-            <Button
-              variant={$sidebarPosition === "right" ? "default" : "outline"}
-              onclick={() => setSidebarPosition("right")}
-            >
-              Right
-            </Button>
-          </div>
-        </div>
       </div>
     </Tabs.Content>
 
