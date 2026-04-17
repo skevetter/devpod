@@ -1,23 +1,17 @@
 <script lang="ts">
-import { Dialog } from "bits-ui"
+import { Dialog as DialogPrimitive } from "bits-ui"
 import { cn } from "$lib/utils.js"
-import type { Snippet } from "svelte"
 
 let {
   ref = $bindable(null),
   class: className,
-  children,
   ...restProps
-}: Dialog.DescriptionProps & {
-  ref?: HTMLElement | null
-  children?: Snippet
-} = $props()
+}: DialogPrimitive.DescriptionProps = $props()
 </script>
 
-<Dialog.Description
-  bind:ref
-  class={cn("text-sm text-muted-foreground", className)}
-  {...restProps}
->
-  {@render children?.()}
-</Dialog.Description>
+<DialogPrimitive.Description
+	bind:ref
+	data-slot="dialog-description"
+	class={cn("text-muted-foreground *:[a]:hover:text-foreground text-sm *:[a]:underline *:[a]:underline-offset-3", className)}
+	{...restProps}
+/>
