@@ -1,5 +1,5 @@
 <script lang="ts">
-import "../app.css"
+import "../../app.css"
 import { goto } from "$app/navigation"
 import { onMount, onDestroy } from "svelte"
 import Sidebar from "$lib/components/layout/Sidebar.svelte"
