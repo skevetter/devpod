@@ -1,10 +1,12 @@
 <script lang="ts">
 import { goto } from "$app/navigation"
 import { onDestroy } from "svelte"
+import { Check, ChevronsUpDown } from "@lucide/svelte"
 import { Button } from "$lib/components/ui/button/index.js"
+import * as Command from "$lib/components/ui/command/index.js"
 import { Input } from "$lib/components/ui/input/index.js"
 import { Label } from "$lib/components/ui/label/index.js"
-import * as Select from "$lib/components/ui/select/index.js"
+import * as Popover from "$lib/components/ui/popover/index.js"
 import { ScrollArea } from "$lib/components/ui/scroll-area/index.js"
 import { workspaceUp } from "$lib/ipc/commands.js"
 import { onCommandProgress } from "$lib/ipc/events.js"
@@ -110,9 +112,30 @@ let name = $state("")
 let selectedProvider = $state("")
 let selectedIde = $state("")
 
-const providerTriggerContent = $derived(selectedProvider || "Select a provider")
-const ideTriggerContent = $derived(
-  ALL_IDES.find((i) => i.value === selectedIde)?.label ?? "Select an IDE",
+let providerComboOpen = $state(false)
+let providerSearch = $state("")
+let ideComboOpen = $state(false)
+let ideSearch = $state("")
+
+const providerLabel = $derived(selectedProvider || "Select a provider...")
+const ideLabel = $derived(
+  ALL_IDES.find((i) => i.value === selectedIde)?.label ?? "Select an IDE...",
+)
+
+let filteredProviders = $derived(
+  providerSearch
+    ? $providers.filter((p) =>
+        p.name.toLowerCase().includes(providerSearch.toLowerCase()),
+      )
+    : $providers,
+)
+
+let filteredIdes = $derived(
+  ideSearch
+    ? ALL_IDES.filter((i) =>
+        i.label.toLowerCase().includes(ideSearch.toLowerCase()),
+      )
+    : ALL_IDES,
 )
 
 // Auto-select if only one provider is available
@@ -240,42 +263,68 @@ async function handleSubmit() {
 
     <div class="space-y-2">
       <Label>Provider</Label>
-      <Select.Root type="single" name="provider" bind:value={selectedProvider} disabled={submitting}>
-        <Select.Trigger class="w-full">
-          {providerTriggerContent}
-        </Select.Trigger>
-        <Select.Content>
-          <Select.Group>
-            <Select.Label>Providers</Select.Label>
-            {#each $providers as p (p.name)}
-              <Select.Item value={p.name} label={p.name}>
-                {p.name}
-              </Select.Item>
-            {/each}
-          </Select.Group>
-        </Select.Content>
-      </Select.Root>
+      <Popover.Root bind:open={providerComboOpen}>
+        <Popover.Trigger class="w-full">
+          {#snippet child({ props })}
+            <Button variant="outline" class="w-full justify-between text-left" {...props} disabled={submitting}>
+              <span class="truncate">{providerLabel}</span>
+              <ChevronsUpDown class="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          {/snippet}
+        </Popover.Trigger>
+        <Popover.Content class="w-[var(--bits-popover-anchor-width)] p-0" align="start">
+          <Command.Root shouldFilter={false}>
+            <Command.Input placeholder="Search providers..." bind:value={providerSearch} />
+            <Command.List class="max-h-60">
+              <Command.Empty>No provider found.</Command.Empty>
+              <Command.Group>
+                {#each filteredProviders as p (p.name)}
+                  <Command.Item
+                    value={p.name}
+                    onSelect={() => { selectedProvider = p.name; providerComboOpen = false; providerSearch = "" }}
+                  >
+                    <Check class="mr-2 h-4 w-4 {selectedProvider === p.name ? 'opacity-100' : 'opacity-0'}" />
+                    {p.name}
+                  </Command.Item>
+                {/each}
+              </Command.Group>
+            </Command.List>
+          </Command.Root>
+        </Popover.Content>
+      </Popover.Root>
     </div>
 
     <div class="space-y-2">
       <Label>IDE</Label>
-      <Select.Root type="single" name="ide" bind:value={selectedIde} disabled={submitting}>
-        <Select.Trigger class="w-full">
-          {ideTriggerContent}
-        </Select.Trigger>
-        <Select.Content class="max-h-80">
-          {#each IDE_GROUPS as group (group.label)}
-            <Select.Group>
-              <Select.Label>{group.label}</Select.Label>
-              {#each group.options as ide (ide.value)}
-                <Select.Item value={ide.value} label={ide.label}>
-                  {ide.label}
-                </Select.Item>
-              {/each}
-            </Select.Group>
-          {/each}
-        </Select.Content>
-      </Select.Root>
+      <Popover.Root bind:open={ideComboOpen}>
+        <Popover.Trigger class="w-full">
+          {#snippet child({ props })}
+            <Button variant="outline" class="w-full justify-between text-left" {...props} disabled={submitting}>
+              <span class="truncate">{ideLabel}</span>
+              <ChevronsUpDown class="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          {/snippet}
+        </Popover.Trigger>
+        <Popover.Content class="w-[var(--bits-popover-anchor-width)] p-0" align="start">
+          <Command.Root shouldFilter={false}>
+            <Command.Input placeholder="Search IDEs..." bind:value={ideSearch} />
+            <Command.List class="max-h-60">
+              <Command.Empty>No IDE found.</Command.Empty>
+              <Command.Group>
+                {#each filteredIdes as ide (ide.value)}
+                  <Command.Item
+                    value={ide.value}
+                    onSelect={() => { selectedIde = ide.value; ideComboOpen = false; ideSearch = "" }}
+                  >
+                    <Check class="mr-2 h-4 w-4 {selectedIde === ide.value ? 'opacity-100' : 'opacity-0'}" />
+                    {ide.label}
+                  </Command.Item>
+                {/each}
+              </Command.Group>
+            </Command.List>
+          </Command.Root>
+        </Popover.Content>
+      </Popover.Root>
     </div>
 
     <div class="pt-2">
