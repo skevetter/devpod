@@ -385,12 +385,6 @@ function toggleLocal(key: keyof LocalOptions) {
           </div>
         </div>
 
-        <Separator />
-
-        <div class="space-y-1 text-sm text-muted-foreground">
-          <p>DevPod Desktop</p>
-          <p>Built with Tauri v2 + SvelteKit + shadcn-svelte</p>
-        </div>
       </div>
     </Tabs.Content>
 
