@@ -2,7 +2,8 @@
 import { page } from "$app/stores"
 import { goto } from "$app/navigation"
 import { onMount, onDestroy } from "svelte"
-import { Check, ChevronsUpDown, ClipboardCopy, Trash2, X } from "@lucide/svelte"
+import { Check, ChevronsUpDown, ClipboardCopy, Trash2 } from "@lucide/svelte"
+import * as Tooltip from "$lib/components/ui/tooltip/index.js"
 import { Spinner } from "$lib/components/ui/spinner/index.js"
 import { Button } from "$lib/components/ui/button/index.js"
 import { badgeVariants } from "$lib/components/ui/badge/index.js"
@@ -492,13 +493,17 @@ async function handleDelete() {
               </Accordion.Trigger>
               <Accordion.Content>
                 {#if outputLines.length > 0}
-                  <div class="flex justify-end gap-1 mb-2">
-                    <Button variant="ghost" size="icon-sm" title="Copy output" onclick={() => copyToClipboard(outputLines.map(stripAnsi).join("\n"))}>
-                      <ClipboardCopy class="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon-sm" title="Clear output" onclick={() => { outputLines = [] }}>
-                      <X class="h-4 w-4" />
-                    </Button>
+                  <div class="flex justify-end mb-2">
+                    <Tooltip.Root>
+                      <Tooltip.Trigger>
+                        {#snippet child({ props })}
+                          <Button variant="ghost" size="icon-sm" {...props} onclick={() => copyToClipboard(outputLines.map(stripAnsi).join("\n"))}>
+                            <ClipboardCopy class="h-4 w-4" />
+                          </Button>
+                        {/snippet}
+                      </Tooltip.Trigger>
+                      <Tooltip.Content>Copy output</Tooltip.Content>
+                    </Tooltip.Root>
                   </div>
                 {/if}
                 <div class="max-h-96 overflow-auto rounded-md border">
@@ -539,23 +544,37 @@ async function handleDelete() {
                           </Accordion.Trigger>
                           <div class="flex items-center gap-1 shrink-0 pr-2">
                             {#if selectedLog === entry.filename && logContent}
-                              <button
-                                type="button"
-                                class="rounded p-1.5 opacity-0 transition-opacity hover:bg-muted group-hover/log:opacity-60 hover:!opacity-100"
-                                title="Copy log"
-                                onclick={() => copyToClipboard(logContent)}
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-                              </button>
+                              <Tooltip.Root>
+                                <Tooltip.Trigger>
+                                  {#snippet child({ props })}
+                                    <button
+                                      type="button"
+                                      class="rounded p-1.5 opacity-0 transition-opacity hover:bg-muted group-hover/log:opacity-60 hover:!opacity-100"
+                                      onclick={() => copyToClipboard(logContent)}
+                                      {...props}
+                                    >
+                                      <ClipboardCopy class="h-3.5 w-3.5" />
+                                    </button>
+                                  {/snippet}
+                                </Tooltip.Trigger>
+                                <Tooltip.Content>Copy log</Tooltip.Content>
+                              </Tooltip.Root>
                             {/if}
-                            <button
-                              type="button"
-                              class="rounded p-1.5 opacity-0 transition-opacity hover:bg-destructive/10 hover:text-destructive group-hover/log:opacity-60 hover:!opacity-100"
-                              title="Delete log"
-                              onclick={() => deleteLog(entry)}
-                            >
-                              <Trash2 class="h-3.5 w-3.5" />
-                            </button>
+                            <Tooltip.Root>
+                              <Tooltip.Trigger>
+                                {#snippet child({ props })}
+                                  <button
+                                    type="button"
+                                    class="rounded p-1.5 opacity-0 transition-opacity hover:bg-destructive/10 hover:text-destructive group-hover/log:opacity-60 hover:!opacity-100"
+                                    onclick={() => deleteLog(entry)}
+                                    {...props}
+                                  >
+                                    <Trash2 class="h-3.5 w-3.5" />
+                                  </button>
+                                {/snippet}
+                              </Tooltip.Trigger>
+                              <Tooltip.Content>Delete log</Tooltip.Content>
+                            </Tooltip.Root>
                           </div>
                         </div>
                         <Accordion.Content>
