@@ -6,6 +6,9 @@ declare const process: { env: Record<string, string | undefined> }
 
 export default defineConfig({
   plugins: [tailwindcss(), sveltekit()],
+  ssr: {
+    noExternal: ["@lucide/svelte"],
+  },
   clearScreen: false,
   server: {
     port: 1420,
