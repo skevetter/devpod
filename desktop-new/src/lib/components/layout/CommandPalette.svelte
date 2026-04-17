@@ -6,10 +6,10 @@ import { providers } from "$lib/stores/providers.js"
 import { machines } from "$lib/stores/machines.js"
 import type { PaletteItem } from "$lib/stores/command-palette.js"
 import * as Command from "$lib/components/ui/command/index.js"
-import type { Component } from "svelte"
 import { LayoutDashboard, Box, Plug, Server, KeyRound } from "lucide-svelte"
 
-const CATEGORY_ICONS: Record<string, Component<{ class?: string }>> = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- lucide-svelte types don't align with Svelte 5 Component
+const CATEGORY_ICONS: Record<string, typeof LayoutDashboard> = {
   Navigation: LayoutDashboard,
   Workspaces: Box,
   Providers: Plug,

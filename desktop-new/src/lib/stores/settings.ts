@@ -4,11 +4,13 @@ import { browser } from "$app/environment"
 // ── UI Settings (localStorage) ──────────────────────────────────────
 
 export type Theme = "light" | "dark" | "system"
+export type ColorScheme = "default" | "emerald" | "purple"
 export type FontSize = "small" | "medium" | "large"
 export type ZoomLevel = "sm" | "md" | "lg" | "xl"
 export type SidebarPosition = "left" | "right"
 
 const STORAGE_KEY = "devpod-theme"
+const COLOR_SCHEME_KEY = "devpod-color-scheme"
 const FONT_SIZE_KEY = "devpod-font-size"
 const ZOOM_KEY = "devpod-zoom"
 const SIDEBAR_KEY = "devpod-sidebar-position"
@@ -85,6 +87,34 @@ export function cycleTheme() {
     applyTheme(next)
     return next
   })
+}
+
+// Color scheme (accent)
+export const colorScheme = writable<ColorScheme>(
+  getStored(
+    COLOR_SCHEME_KEY,
+    ["default", "emerald", "purple"] as const,
+    "default",
+  ),
+)
+
+const COLOR_SCHEME_CLASSES: ColorScheme[] = ["emerald", "purple"]
+
+export function applyColorScheme(value: ColorScheme) {
+  if (!browser) return
+  localStorage.setItem(COLOR_SCHEME_KEY, value)
+  const root = document.documentElement
+  for (const cls of COLOR_SCHEME_CLASSES) {
+    root.classList.remove(`theme-${cls}`)
+  }
+  if (value !== "default") {
+    root.classList.add(`theme-${value}`)
+  }
+}
+
+export function setColorScheme(value: ColorScheme) {
+  colorScheme.set(value)
+  applyColorScheme(value)
 }
 
 // Font size
@@ -265,6 +295,9 @@ export function initSettings() {
   const unsubTheme = theme.subscribe((value) => {
     applyTheme(value)
   })
+  const unsubColor = colorScheme.subscribe((value) => {
+    applyColorScheme(value)
+  })
   const unsubFont = fontSize.subscribe((value) => {
     applyFontSize(value)
   })
@@ -273,6 +306,7 @@ export function initSettings() {
   })
   const unsubscribe = () => {
     unsubTheme()
+    unsubColor()
     unsubFont()
     unsubZoom()
   }

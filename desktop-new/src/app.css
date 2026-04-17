@@ -45,6 +45,38 @@
     --input: 240 3.7% 15.9%;
     --ring: 240 4.9% 83.9%;
   }
+
+  /* ── Emerald accent ── */
+  .theme-emerald {
+    --primary: 161.8 100% 23.9%;
+    --primary-foreground: 151.8 80.9% 95.8%;
+    --secondary: 240 3.5% 95.8%;
+    --secondary-foreground: 240 6% 10%;
+    --ring: 161.8 100% 23.9%;
+  }
+  .dark.theme-emerald {
+    --primary: 163 100% 18.9%;
+    --primary-foreground: 151.8 80.9% 95.8%;
+    --secondary: 240 4% 15.9%;
+    --secondary-foreground: 180 0% 98%;
+    --ring: 163 100% 18.9%;
+  }
+
+  /* ── Purple accent ── */
+  .theme-purple {
+    --primary: 275.7 100% 42.9%;
+    --primary-foreground: 270 98.8% 98%;
+    --secondary: 240 3.5% 95.8%;
+    --secondary-foreground: 240 6% 10%;
+    --ring: 275.7 100% 42.9%;
+  }
+  .dark.theme-purple {
+    --primary: 274.9 82.4% 37.9%;
+    --primary-foreground: 270 98.8% 98%;
+    --secondary: 240 4% 15.9%;
+    --secondary-foreground: 180 0% 98%;
+    --ring: 274.9 82.4% 37.9%;
+  }
 }
 
 @layer base {

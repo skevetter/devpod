@@ -10,6 +10,8 @@ import { Switch } from "$lib/components/ui/switch/index.js"
 import {
   theme,
   applyTheme,
+  colorScheme,
+  setColorScheme,
   fontSize,
   applyFontSize,
   zoomLevel,
@@ -28,6 +30,7 @@ import {
 } from "$lib/stores/settings.js"
 import type {
   Theme,
+  ColorScheme,
   FontSize,
   ZoomLevel,
   SidebarPosition,
@@ -52,6 +55,14 @@ function setTheme(value: Theme) {
   theme.set(value)
   applyTheme(value)
 }
+
+// ── Color Scheme ────────────────────────────────────────────────────
+
+const COLOR_SCHEMES: { value: ColorScheme; label: string; swatch: string }[] = [
+  { value: "default", label: "Default", swatch: "bg-foreground" },
+  { value: "emerald", label: "Emerald", swatch: "bg-emerald-600" },
+  { value: "purple", label: "Purple", swatch: "bg-purple-600" },
+]
 
 // ── Font Size ───────────────────────────────────────────────────────
 
@@ -445,6 +456,24 @@ function toggleContextOption(key: keyof ContextOptions) {
                 onclick={() => setTheme(t.value)}
               >
                 {t.label}
+              </Button>
+            {/each}
+          </div>
+        </div>
+
+        <Separator />
+
+        <div class="space-y-2">
+          <h2 class="text-lg font-semibold">Color Scheme</h2>
+          <div class="flex gap-2">
+            {#each COLOR_SCHEMES as c (c.value)}
+              <Button
+                variant={$colorScheme === c.value ? "default" : "outline"}
+                onclick={() => setColorScheme(c.value)}
+                class="gap-2"
+              >
+                <span class="h-3 w-3 rounded-full {c.swatch}"></span>
+                {c.label}
               </Button>
             {/each}
           </div>
