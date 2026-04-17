@@ -101,7 +101,7 @@ function toggleOption(key: keyof ContextOptions) {
       <Sheet.Description>Configure context options for {context.name}</Sheet.Description>
     </Sheet.Header>
 
-    <div class="flex-1 overflow-y-auto space-y-5 px-6">
+    <div class="flex-1 overflow-y-auto space-y-5 px-6 pb-6">
       {#if loading}
         <p class="text-sm text-muted-foreground">Loading options...</p>
       {:else}

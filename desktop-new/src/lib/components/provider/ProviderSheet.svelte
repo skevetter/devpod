@@ -37,6 +37,7 @@ let saving = $state(false)
 let loading = $state(true)
 let confirmDeleteOpen = $state(false)
 let deleting = $state(false)
+let setupCompleted = $state(false)
 
 let isDirty = $derived.by(() => {
   for (const key of Object.keys(optionValues)) {
@@ -148,6 +149,7 @@ async function handleSaveOptions() {
     initialValues = { ...optionValues }
     if (setup) {
       await providerUse(provider.name)
+      setupCompleted = true
       toasts.success(`Provider ${provider.name} configured successfully`)
       open = false
     } else {
@@ -161,7 +163,16 @@ async function handleSaveOptions() {
 }
 </script>
 
-<Sheet.Root bind:open>
+<Sheet.Root bind:open onOpenChange={async (isOpen) => {
+  if (!isOpen && setup && !setupCompleted) {
+    try {
+      await providerDelete(provider.name)
+      ondeleted?.()
+    } catch {
+      // Provider may already be gone
+    }
+  }
+}}>
   <Sheet.ResizableContent>
     <Sheet.Header class="p-6">
       <Sheet.Title class="flex items-center gap-2">
@@ -189,7 +200,7 @@ async function handleSaveOptions() {
 
     <Separator />
 
-    <div class="flex-1 overflow-y-auto space-y-4 px-6">
+    <div class="flex-1 overflow-y-auto space-y-4 px-6 pb-6">
       {#if setup && !loading && hasUnfilledRequired}
         <div class="rounded-md border border-amber-500/50 bg-amber-500/10 p-3">
           <h3 class="text-sm font-semibold text-amber-700 dark:text-amber-400">Configure required options</h3>

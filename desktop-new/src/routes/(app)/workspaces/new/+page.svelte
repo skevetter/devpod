@@ -266,8 +266,8 @@ async function handleSubmit() {
       <Popover.Root bind:open={providerComboOpen}>
         <Popover.Trigger class="w-full">
           {#snippet child({ props })}
-            <Button variant="outline" class="w-full justify-between text-left" {...props} disabled={submitting}>
-              <span class="truncate">{providerLabel}</span>
+            <Button variant="outline" class="w-full justify-between" {...props} disabled={submitting}>
+              <span class="truncate text-left">{providerLabel}</span>
               <ChevronsUpDown class="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
           {/snippet}
@@ -281,6 +281,7 @@ async function handleSubmit() {
                 {#each filteredProviders as p (p.name)}
                   <Command.Item
                     value={p.name}
+                    class="justify-start"
                     onSelect={() => { selectedProvider = p.name; providerComboOpen = false; providerSearch = "" }}
                   >
                     <Check class="mr-2 h-4 w-4 {selectedProvider === p.name ? 'opacity-100' : 'opacity-0'}" />
@@ -299,8 +300,8 @@ async function handleSubmit() {
       <Popover.Root bind:open={ideComboOpen}>
         <Popover.Trigger class="w-full">
           {#snippet child({ props })}
-            <Button variant="outline" class="w-full justify-between text-left" {...props} disabled={submitting}>
-              <span class="truncate">{ideLabel}</span>
+            <Button variant="outline" class="w-full justify-between" {...props} disabled={submitting}>
+              <span class="truncate text-left">{ideLabel}</span>
               <ChevronsUpDown class="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
           {/snippet}
@@ -314,6 +315,7 @@ async function handleSubmit() {
                 {#each filteredIdes as ide (ide.value)}
                   <Command.Item
                     value={ide.value}
+                    class="justify-start"
                     onSelect={() => { selectedIde = ide.value; ideComboOpen = false; ideSearch = "" }}
                   >
                     <Check class="mr-2 h-4 w-4 {selectedIde === ide.value ? 'opacity-100' : 'opacity-0'}" />

@@ -549,8 +549,8 @@ async function handleDelete() {
         </div>
       </Tabs.Content>
 
-      <Tabs.Content value="terminal" class="min-h-0 flex-1 flex flex-col overflow-hidden">
-        <div class="mt-4 flex min-h-0 flex-1 flex-col">
+      <Tabs.Content value="terminal" class="relative min-h-0 flex-1 overflow-hidden">
+        <div class="absolute inset-0 mt-4 flex flex-col">
           {#if sshSessionId}
             <div class="min-h-0 flex-1 rounded-md border overflow-hidden">
               <TerminalComponent sessionId={sshSessionId} onExit={handleSshExit} />
