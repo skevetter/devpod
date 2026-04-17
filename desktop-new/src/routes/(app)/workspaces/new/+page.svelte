@@ -211,7 +211,7 @@ async function handleSubmit() {
 </script>
 
 <div class="mx-auto max-w-xl space-y-6">
-  <div class="space-y-2">
+  <div class="flex items-center gap-4">
     <Button variant="ghost" size="sm" onclick={() => goto("/workspaces")}>
       &larr; Back
     </Button>

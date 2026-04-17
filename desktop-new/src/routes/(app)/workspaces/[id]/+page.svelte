@@ -326,19 +326,17 @@ async function handleDelete() {
 </script>
 
 <div class="flex min-h-0 flex-1 flex-col gap-6">
-  <div class="space-y-2">
+  <div class="flex items-center gap-4">
     <Button variant="ghost" size="sm" onclick={() => goto("/workspaces")}>
       &larr; Back
     </Button>
-    <div class="flex items-center gap-4">
-      <h1 class="text-2xl font-bold">{id}</h1>
-      {#if workspace?.provider?.name}
-        <span class={badgeVariants({ variant: "secondary" })}>{workspace.provider.name}</span>
-      {/if}
-      {#if workspace?.status}
-        <span class={badgeVariants({ variant: statusBadgeVariant() })}>{workspace.status}</span>
-      {/if}
-    </div>
+    <h1 class="text-2xl font-bold">{id}</h1>
+    {#if workspace?.provider?.name}
+      <span class={badgeVariants({ variant: "secondary" })}>{workspace.provider.name}</span>
+    {/if}
+    {#if workspace?.status}
+      <span class={badgeVariants({ variant: statusBadgeVariant() })}>{workspace.status}</span>
+    {/if}
   </div>
 
   <div class="flex items-center gap-2">
