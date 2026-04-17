@@ -256,7 +256,7 @@ async function handleSubmit() {
               onclick={() => { source = template.source; name = template.name.toLowerCase().replace(/[^a-z0-9]/g, '-') }}
               disabled={submitting}
             >
-              <LanguageIcon name={template.name} class="h-8 w-8" />
+              <LanguageIcon name={template.name} class="h-10 w-10" />
               <span class="truncate text-xs">{template.name}</span>
             </button>
           {/each}

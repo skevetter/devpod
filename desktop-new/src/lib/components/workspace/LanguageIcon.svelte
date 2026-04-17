@@ -1,6 +1,10 @@
 <script lang="ts">
-let { name, class: className = "size-8" }: { name: string; class?: string } =
+import { MediaQuery } from "svelte/reactivity"
+
+let { name, class: className = "size-10" }: { name: string; class?: string } =
   $props()
+
+const darkMode = new MediaQuery("(prefers-color-scheme: dark)")
 
 const ICON_MAP: Record<string, string> = {
   python: "/icons/languages/python.svg",
@@ -22,13 +26,29 @@ const ICON_MAP: Record<string, string> = {
   ruby: "/icons/languages/ruby.svg",
 }
 
+const DARK_VARIANTS: Record<string, string> = {
+  "/icons/languages/go.svg": "/icons/languages/go_dark.svg",
+  "/icons/languages/rust.svg": "/icons/languages/rust_dark.svg",
+  "/icons/languages/php.svg": "/icons/languages/php_dark.svg",
+}
+
 const src = $derived.by(() => {
   const lower = name.toLowerCase()
-  if (ICON_MAP[lower]) return ICON_MAP[lower]
-  for (const [key, value] of Object.entries(ICON_MAP)) {
-    if (lower.includes(key)) return value
+  let icon: string | null = null
+  if (ICON_MAP[lower]) {
+    icon = ICON_MAP[lower]
+  } else {
+    for (const [key, value] of Object.entries(ICON_MAP)) {
+      if (lower.includes(key)) {
+        icon = value
+        break
+      }
+    }
   }
-  return null
+  if (icon && darkMode.current && DARK_VARIANTS[icon]) {
+    return DARK_VARIANTS[icon]
+  }
+  return icon
 })
 </script>
 
