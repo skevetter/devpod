@@ -73,6 +73,7 @@ async function handleDelete() {
   {/if}
 
   <div class="mt-3 flex gap-2">
+    <Button variant="default" size="sm" onclick={(e) => { e.stopPropagation(); goto(`/providers/${provider.name}`) }}>Edit</Button>
     <Button variant="outline" size="sm" onclick={handleSetDefault}>Set Default</Button>
     <Button variant="destructive" size="sm" onclick={openDeleteConfirm}>Delete</Button>
   </div>

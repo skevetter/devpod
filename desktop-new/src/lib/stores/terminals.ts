@@ -19,6 +19,12 @@ export function removeTerminal(id: string) {
   terminals.update((list) => list.filter((s) => s.id !== id))
 }
 
+export function renameTerminal(id: string, label: string) {
+  terminals.update((list) =>
+    list.map((s) => (s.id === id ? { ...s, label } : s)),
+  )
+}
+
 export function clearTerminals() {
   terminals.set([])
 }

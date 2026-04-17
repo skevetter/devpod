@@ -14,12 +14,14 @@ use crate::events::{
     event_names, ContextsPayload, MachinesPayload, ProvidersPayload, WorkspacesPayload,
 };
 
+/// Individual context entry from `devpod context list --output json`.
+/// The CLI returns an array of these, with `default: true` for the active one.
 #[derive(Debug, serde::Deserialize)]
-struct ContextListOutput {
+struct ContextEntry {
     #[serde(default)]
-    contexts: Vec<Context>,
-    #[serde(default)]
-    active: String,
+    name: String,
+    #[serde(default, rename = "default")]
+    is_default: bool,
 }
 
 /// Intermediate type matching `devpod provider list --output json` format.
@@ -200,15 +202,34 @@ impl<R: Runtime> Watcher<R> {
     }
 
     async fn poll_contexts(&self) {
-        match self
-            .cli
-            .run::<ContextListOutput>(&["context", "list"])
-            .await
-        {
-            Ok(output) => {
+        // The CLI returns an array: [{ "name": "default", "default": true }, ...]
+        let result = self.cli.run::<Vec<ContextEntry>>(&["context", "list"]).await;
+        let parsed = match result {
+            Ok(entries) => {
+                let active = entries
+                    .iter()
+                    .find(|e| e.is_default)
+                    .map(|e| e.name.clone())
+                    .unwrap_or_default();
+                let contexts: Vec<Context> = entries
+                    .into_iter()
+                    .map(|e| Context {
+                        name: e.name,
+                        ..Default::default()
+                    })
+                    .collect();
+                Some((contexts, active))
+            }
+            Err(e) => {
+                warn!("Failed to poll contexts: {}", e);
+                None
+            }
+        };
+        match parsed {
+            Some((contexts, active)) => {
                 let changed = {
                     let mut state = self.state.write().await;
-                    state.update_contexts(output.contexts, output.active)
+                    state.update_contexts(contexts, active)
                 };
                 if changed {
                     let state = self.state.read().await;
@@ -221,9 +242,7 @@ impl<R: Runtime> Watcher<R> {
                     );
                 }
             }
-            Err(e) => {
-                warn!("Failed to poll contexts: {}", e);
-            }
+            None => {}
         }
     }
 }

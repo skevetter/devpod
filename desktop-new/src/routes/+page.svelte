@@ -126,28 +126,28 @@ async function quickStop(wsId: string) {
       <h2 class="text-lg font-semibold">Active Workspaces</h2>
       <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {#each runningWorkspaces as ws (ws.id)}
-          <div class="flex items-center justify-between rounded-lg border bg-card p-4 shadow-sm">
-            <div class="min-w-0 flex-1">
+          <div class="rounded-lg border bg-card p-4 shadow-sm">
+            <div class="flex items-start justify-between gap-2">
               <button
-                class="truncate font-medium hover:underline"
+                class="min-w-0 truncate font-medium hover:underline text-left"
                 onclick={() => goto(`/workspaces/${ws.id}`)}
               >
                 {ws.id}
               </button>
-              <div class="flex items-center gap-2 mt-1">
-                {#if ws.provider?.name}
-                  <span class="text-xs text-muted-foreground">{ws.provider.name}</span>
-                {/if}
-                <span class={badgeVariants({ variant: "default" })}>{ws.status}</span>
+              <div class="flex shrink-0 gap-1">
+                <Button variant="outline" size="sm" onclick={() => goto(`/workspaces/${ws.id}`)}>
+                  Open
+                </Button>
+                <Button variant="ghost" size="sm" onclick={() => quickStop(ws.id)}>
+                  Stop
+                </Button>
               </div>
             </div>
-            <div class="ml-3 flex gap-1">
-              <Button variant="outline" size="sm" onclick={() => goto(`/workspaces/${ws.id}`)}>
-                Open
-              </Button>
-              <Button variant="ghost" size="sm" onclick={() => quickStop(ws.id)}>
-                Stop
-              </Button>
+            <div class="flex items-center gap-2 mt-1">
+              {#if ws.provider?.name}
+                <span class="text-xs text-muted-foreground">{ws.provider.name}</span>
+              {/if}
+              <span class={badgeVariants({ variant: "default" })}>{ws.status}</span>
             </div>
           </div>
         {/each}

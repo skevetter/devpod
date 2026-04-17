@@ -8,14 +8,37 @@ import {
   terminals,
   addTerminal,
   removeTerminal,
+  renameTerminal,
 } from "$lib/stores/terminals.js"
 import { workspaces } from "$lib/stores/workspaces.js"
 import TerminalComponent from "$lib/components/terminal/Terminal.svelte"
 import { Button } from "$lib/components/ui/button/index.js"
 import { toasts } from "$lib/stores/toasts.js"
+import { onMount } from "svelte"
 
 let activeSessionId: string | undefined = $state()
 let showSshMenu = $state(false)
+let renamingId: string | undefined = $state()
+let renameValue = $state("")
+
+function startRename(id: string, currentLabel: string) {
+  renamingId = id
+  renameValue = currentLabel
+}
+
+function commitRename() {
+  if (renamingId && renameValue.trim()) {
+    renameTerminal(renamingId, renameValue.trim())
+  }
+  renamingId = undefined
+}
+
+// Auto-select first terminal when navigating to this page
+onMount(() => {
+  if (!activeSessionId && $terminals.length > 0) {
+    activeSessionId = $terminals[0].id
+  }
+})
 
 let runningWorkspaces = $derived(
   $workspaces.filter((ws) => ws.status?.toLowerCase() === "running"),
@@ -110,8 +133,24 @@ function handleExit() {
             ? 'bg-accent text-accent-foreground'
             : 'text-muted-foreground hover:bg-accent/50'}"
           onclick={() => (activeSessionId = session.id)}
+          ondblclick={() => startRename(session.id, session.label)}
         >
-          {session.label}
+          {#if renamingId === session.id}
+            <!-- svelte-ignore a11y_autofocus -->
+            <input
+              class="w-20 rounded border bg-background px-1 text-sm"
+              bind:value={renameValue}
+              autofocus
+              onblur={commitRename}
+              onkeydown={(e) => {
+                if (e.key === "Enter") commitRename()
+                if (e.key === "Escape") { renamingId = undefined }
+              }}
+              onclick={(e) => e.stopPropagation()}
+            />
+          {:else}
+            {session.label}
+          {/if}
           <span
             role="button"
             tabindex="0"
@@ -147,9 +186,23 @@ function handleExit() {
         <div class="flex gap-2 justify-center">
           <Button size="sm" onclick={createShell}>New Shell</Button>
           {#if runningWorkspaces.length > 0}
-            <Button variant="outline" size="sm" onclick={() => (showSshMenu = !showSshMenu)}>
-              SSH into Workspace
-            </Button>
+            <div class="relative" data-ssh-menu>
+              <Button variant="outline" size="sm" onclick={() => (showSshMenu = !showSshMenu)}>
+                SSH into Workspace
+              </Button>
+              {#if showSshMenu}
+                <div class="absolute left-1/2 -translate-x-1/2 top-full z-10 mt-1 w-56 rounded-md border bg-popover p-1 shadow-md">
+                  {#each runningWorkspaces as ws (ws.id)}
+                    <button
+                      class="w-full rounded-sm px-3 py-2 text-left text-sm hover:bg-accent"
+                      onclick={() => createSsh(ws.id)}
+                    >
+                      {ws.id}
+                    </button>
+                  {/each}
+                </div>
+              {/if}
+            </div>
           {/if}
         </div>
       </div>
