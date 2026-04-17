@@ -221,50 +221,6 @@ function toggleLocal(key: keyof LocalOptions) {
     <!-- ═══ GENERAL ═══ -->
     <Tabs.Content value="general" class="w-full">
       <div class="mt-4 space-y-6">
-        <div class="space-y-2">
-          <h2 class="text-lg font-semibold">Default IDE</h2>
-          <p class="text-xs text-muted-foreground">IDE used when creating new workspaces</p>
-          <Popover.Root bind:open={ideComboOpen}>
-            <Popover.Trigger class="w-full">
-              {#snippet child({ props })}
-                <Button variant="outline" class="w-full justify-between text-left" {...props}>
-                  <span class="truncate">{IDE_OPTIONS.find((i) => i.value === $defaultIde)?.label ?? "Select IDE..."}</span>
-                  <ChevronsUpDown class="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </Button>
-              {/snippet}
-            </Popover.Trigger>
-            <Popover.Content class="w-[var(--bits-popover-anchor-width)] p-0" align="start">
-              <Command.Root shouldFilter={false}>
-                <Command.Input placeholder="Search IDEs..." bind:value={ideSearch} />
-                <Command.List class="max-h-60">
-                  <Command.Empty>No IDE found.</Command.Empty>
-                  <Command.Group>
-                    {#each filteredIdes as ide (ide.value)}
-                      <Command.Item
-                        value={ide.value}
-                        onSelect={() => { setDefaultIde(ide.value); ideComboOpen = false; ideSearch = "" }}
-                      >
-                        <Check class="mr-2 h-4 w-4 {$defaultIde === ide.value ? 'opacity-100' : 'opacity-0'}" />
-                        {ide.label}
-                      </Command.Item>
-                    {/each}
-                  </Command.Group>
-                </Command.List>
-              </Command.Root>
-            </Popover.Content>
-          </Popover.Root>
-        </div>
-
-        <div class="flex items-center justify-between">
-          <div>
-            <Label>Always Use This IDE</Label>
-            <p class="text-xs text-muted-foreground">Prevent IDE override when creating workspaces</p>
-          </div>
-          <Switch checked={$fixedIde} onCheckedChange={(v) => setFixedIde(v)} />
-        </div>
-
-        <Separator />
-
         <div class="flex items-center justify-between">
           <div>
             <Label>Debug Mode</Label>
