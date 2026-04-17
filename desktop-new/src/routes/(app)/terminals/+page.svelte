@@ -181,9 +181,9 @@ function handleExit() {
 
   <!-- Terminal content -->
   {#if $terminals.length > 0}
-    <div class="flex-1 overflow-hidden">
+    <div class="relative min-h-0 flex-1">
       {#each $terminals as session (session.id)}
-        <div class="h-full" class:hidden={session.id !== activeSessionId}>
+        <div class="absolute inset-0" class:hidden={session.id !== activeSessionId}>
           <TerminalComponent sessionId={session.id} active={session.id === activeSessionId} onExit={handleExit} />
         </div>
       {/each}
