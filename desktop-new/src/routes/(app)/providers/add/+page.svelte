@@ -156,7 +156,7 @@ async function handleSubmit() {
           disabled={submitting}
           onclick={() => handlePresetClick(p.name)}
         >
-          <ProviderIcon name={p.name} class="size-5 mt-0.5 shrink-0 text-muted-foreground" />
+          <ProviderIcon name={p.name} class="size-8 shrink-0" />
           <div>
             <div class="font-semibold">{p.name}</div>
             <div class="text-sm text-muted-foreground">{p.description}</div>

@@ -21,8 +21,8 @@ function sourceDisplay(p: Provider): string {
   onclick={() => (sheetOpen = true)}
 >
   <div class="flex items-start justify-between gap-3">
-    <div class="flex items-center gap-2 min-w-0">
-      <ProviderIcon name={provider.name} class="size-5 shrink-0 text-muted-foreground" />
+    <div class="flex items-center gap-3 min-w-0">
+      <ProviderIcon name={provider.name} class="size-8 shrink-0" />
       <h3 class="text-lg font-semibold truncate">{provider.name}</h3>
       {#if provider.isDefault}
         <span class={badgeVariants({ variant: "default" })}>default</span>

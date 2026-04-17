@@ -157,7 +157,7 @@ async function handleSaveOptions() {
     <Button variant="ghost" size="sm" onclick={() => goto("/providers")}>
       &larr; Back
     </Button>
-    <ProviderIcon name={id} class="size-6 text-muted-foreground" />
+    <ProviderIcon name={id} class="size-8" />
     <h1 class="text-2xl font-bold">{id}</h1>
     {#if provider?.version}
       <span class={badgeVariants({ variant: "secondary" })}>{provider.version}</span>
