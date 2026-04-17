@@ -1,8 +1,7 @@
 <script lang="ts">
 import { onMount, onDestroy } from "svelte"
-import { Terminal } from "@xterm/xterm"
-import { FitAddon } from "@xterm/addon-fit"
-import "@xterm/xterm/css/xterm.css"
+import type { Terminal } from "@xterm/xterm"
+import type { FitAddon } from "@xterm/addon-fit"
 import {
   terminalWrite,
   terminalResize,
@@ -52,7 +51,14 @@ function isDark(): boolean {
 onMount(async () => {
   if (!containerEl) return
 
-  term = new Terminal({
+  // Dynamic imports — xterm requires DOM APIs not available during SSR
+  const [{ Terminal: XTerm }, { FitAddon: XFitAddon }] = await Promise.all([
+    import("@xterm/xterm"),
+    import("@xterm/addon-fit"),
+  ])
+  await import("@xterm/xterm/css/xterm.css")
+
+  term = new XTerm({
     cursorBlink: true,
     fontSize: 14,
     fontFamily: "monospace",
@@ -65,7 +71,7 @@ onMount(async () => {
     }
   })
 
-  fitAddon = new FitAddon()
+  fitAddon = new XFitAddon()
   term.loadAddon(fitAddon)
   term.open(containerEl)
   fitAddon.fit()
