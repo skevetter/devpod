@@ -1,56 +1,139 @@
 <script lang="ts">
 import {
-  LayoutDashboard,
   Box,
-  Plug,
-  Server,
   Layers,
-  SquareTerminal,
+  LayoutDashboard,
   KeyRound,
-  Settings,
+  Plug,
   Search,
+  Server,
+  Settings,
+  SquareTerminal,
 } from "@lucide/svelte"
-import SidebarItem from "./SidebarItem.svelte"
-import { Separator } from "$lib/components/ui/separator/index.js"
+import { page } from "$app/stores"
+import * as Sidebar from "$lib/components/ui/sidebar/index.js"
 import { workspaces } from "$lib/stores/workspaces.js"
 import { providers } from "$lib/stores/providers.js"
 import { machines } from "$lib/stores/machines.js"
 import { contexts } from "$lib/stores/contexts.js"
 import { togglePalette } from "$lib/stores/command-palette.js"
+import type { Component } from "svelte"
 
 let { terminalCount = 0 }: { terminalCount?: number } = $props()
+
+interface NavItem {
+  href: string
+  label: string
+  icon: Component
+  badge?: number
+}
+
+let mainNav: NavItem[] = $derived([
+  { href: "/", label: "Dashboard", icon: LayoutDashboard },
+  {
+    href: "/workspaces",
+    label: "Workspaces",
+    icon: Box,
+    badge: $workspaces.length,
+  },
+  {
+    href: "/providers",
+    label: "Providers",
+    icon: Plug,
+    badge: $providers.length,
+  },
+  {
+    href: "/machines",
+    label: "Machines",
+    icon: Server,
+    badge: $machines.length,
+  },
+  {
+    href: "/contexts",
+    label: "Contexts",
+    icon: Layers,
+    badge: $contexts.length,
+  },
+  {
+    href: "/terminals",
+    label: "Terminals",
+    icon: SquareTerminal,
+    badge: terminalCount,
+  },
+  { href: "/ssh-keys", label: "SSH Keys", icon: KeyRound },
+])
+
+function isActive(href: string): boolean {
+  return href === "/"
+    ? $page.url.pathname === "/"
+    : $page.url.pathname.startsWith(href)
+}
 </script>
 
-<aside class="flex h-full w-56 flex-col border-r bg-card">
-  <div class="flex items-center px-4 py-4">
-    <h1 class="text-lg font-bold tracking-tight text-foreground">DevPod</h1>
-  </div>
+<Sidebar.Root collapsible="icon">
+  <Sidebar.Header>
+    <Sidebar.Menu>
+      <Sidebar.MenuItem>
+        <Sidebar.MenuButton size="lg" class="pointer-events-none">
+          <div class="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+            <Box class="size-4" />
+          </div>
+          <div class="grid flex-1 text-left text-sm leading-tight">
+            <span class="truncate font-semibold">DevPod</span>
+            <span class="truncate text-xs text-muted-foreground">Desktop</span>
+          </div>
+        </Sidebar.MenuButton>
+      </Sidebar.MenuItem>
+    </Sidebar.Menu>
+  </Sidebar.Header>
 
-  <Separator />
+  <Sidebar.Content>
+    <Sidebar.Group>
+      <Sidebar.GroupLabel>Navigation</Sidebar.GroupLabel>
+      <Sidebar.GroupContent>
+        <Sidebar.Menu>
+          {#each mainNav as item (item.href)}
+            {@const Icon = item.icon}
+            <Sidebar.MenuItem>
+              <Sidebar.MenuButton isActive={isActive(item.href)} tooltipContent={item.label}>
+                {#snippet child({ props })}
+                  <a href={item.href} {...props}>
+                    <Icon />
+                    <span>{item.label}</span>
+                  </a>
+                {/snippet}
+              </Sidebar.MenuButton>
+              {#if item.badge != null && item.badge > 0}
+                <Sidebar.MenuBadge>{item.badge}</Sidebar.MenuBadge>
+              {/if}
+            </Sidebar.MenuItem>
+          {/each}
+        </Sidebar.Menu>
+      </Sidebar.GroupContent>
+    </Sidebar.Group>
+  </Sidebar.Content>
 
-  <nav class="flex flex-1 flex-col gap-1 p-3">
-    <SidebarItem href="/" label="Dashboard" icon={LayoutDashboard} />
-    <SidebarItem href="/workspaces" label="Workspaces" badgeCount={$workspaces.length} icon={Box} />
-    <SidebarItem href="/providers" label="Providers" badgeCount={$providers.length} icon={Plug} />
-    <SidebarItem href="/machines" label="Machines" badgeCount={$machines.length} icon={Server} />
-    <SidebarItem href="/contexts" label="Contexts" badgeCount={$contexts.length} icon={Layers} />
-    <SidebarItem href="/terminals" label="Terminals" badgeCount={terminalCount} icon={SquareTerminal} />
-    <SidebarItem href="/ssh-keys" label="SSH Keys" icon={KeyRound} />
+  <Sidebar.Footer>
+    <Sidebar.Menu>
+      <Sidebar.MenuItem>
+        <Sidebar.MenuButton isActive={isActive("/settings")} tooltipContent="Settings">
+          {#snippet child({ props })}
+            <a href="/settings" {...props}>
+              <Settings />
+              <span>Settings</span>
+            </a>
+          {/snippet}
+        </Sidebar.MenuButton>
+      </Sidebar.MenuItem>
+      <Sidebar.MenuItem>
+        <Sidebar.MenuButton tooltipContent="Search (⌘K)" onclick={togglePalette}>
+          <Search />
+          <span>Search</span>
+          <kbd class="ml-auto rounded border bg-muted px-1.5 py-0.5 text-xs font-mono group-data-[collapsible=icon]:hidden">⌘K</kbd>
+        </Sidebar.MenuButton>
+      </Sidebar.MenuItem>
+    </Sidebar.Menu>
+  </Sidebar.Footer>
 
-    <div class="flex-1"></div>
-
-    <Separator class="my-2" />
-    <SidebarItem href="/settings" label="Settings" icon={Settings} />
-
-    <button
-      class="mt-1 flex items-center justify-between rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent/50 hover:text-accent-foreground"
-      onclick={togglePalette}
-    >
-      <span class="flex items-center gap-2">
-        <Search class="h-4 w-4" />
-        Search
-      </span>
-      <kbd class="rounded border bg-muted px-1.5 py-0.5 text-xs font-mono">&#8984;K</kbd>
-    </button>
-  </nav>
-</aside>
+  <Sidebar.Rail />
+</Sidebar.Root>

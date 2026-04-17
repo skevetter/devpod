@@ -8,6 +8,7 @@ import NotificationHistory from "$lib/components/layout/NotificationHistory.svel
 import { Toaster } from "$lib/components/ui/sonner/index.js"
 import CommandPalette from "$lib/components/layout/CommandPalette.svelte"
 import Breadcrumbs from "$lib/components/layout/Breadcrumbs.svelte"
+import * as SidebarUI from "$lib/components/ui/sidebar/index.js"
 import { initWorkspaces, destroyWorkspaces } from "$lib/stores/workspaces.js"
 import { initProviders, destroyProviders } from "$lib/stores/providers.js"
 import { initMachines, destroyMachines } from "$lib/stores/machines.js"
@@ -66,12 +67,15 @@ onDestroy(() => {
 
 <svelte:window onkeydown={handleKeydown} />
 
-<div class="flex h-screen overflow-hidden">
+<SidebarUI.Provider>
   <Sidebar terminalCount={$terminalCount} />
 
-  <div class="flex flex-1 flex-col overflow-hidden">
+  <SidebarUI.Inset>
     <header class="flex h-12 items-center justify-between border-b px-4">
-      <Breadcrumbs />
+      <div class="flex items-center gap-2">
+        <SidebarUI.Trigger class="-ml-1" />
+        <Breadcrumbs />
+      </div>
       <div class="ml-auto flex items-center gap-1">
         <NotificationHistory />
         <ThemeSwitcher />
@@ -81,8 +85,8 @@ onDestroy(() => {
     <main class="flex-1 overflow-auto p-6">
       {@render children()}
     </main>
-  </div>
+  </SidebarUI.Inset>
 
   <Toaster richColors closeButton position="bottom-right" />
   <CommandPalette />
-</div>
+</SidebarUI.Provider>
