@@ -18,6 +18,7 @@
             "noUnusedImports": "off"
           },
           "style": {
+            "useConst": "off",
             "useImportType": "off"
           }
         }
