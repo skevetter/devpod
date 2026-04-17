@@ -22,7 +22,6 @@ import TerminalComponent from "$lib/components/terminal/Terminal.svelte"
 import { Button } from "$lib/components/ui/button/index.js"
 import { Input } from "$lib/components/ui/input/index.js"
 import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js"
-import * as Tooltip from "$lib/components/ui/tooltip/index.js"
 import { Separator } from "$lib/components/ui/separator/index.js"
 import { toasts } from "$lib/stores/toasts.js"
 import { onMount } from "svelte"
@@ -95,7 +94,7 @@ function handleExit() {
 }
 </script>
 
-<div class="flex h-full flex-col">
+<div class="flex min-h-0 flex-1 flex-col">
   <!-- Tab bar -->
   <div class="flex items-center gap-1 border-b bg-muted/30 px-2">
     <!-- Tabs -->
@@ -152,31 +151,17 @@ function handleExit() {
 
     <!-- Actions -->
     <div class="flex shrink-0 items-center gap-0.5">
-      <Tooltip.Root>
-        <Tooltip.Trigger>
-          {#snippet child({ props })}
-            <Button variant="ghost" size="icon-sm" onclick={createShell} {...props}>
-              <Plus class="h-4 w-4" />
-            </Button>
-          {/snippet}
-        </Tooltip.Trigger>
-        <Tooltip.Content>New shell</Tooltip.Content>
-      </Tooltip.Root>
+      <Button variant="ghost" size="icon-sm" onclick={createShell} title="New shell">
+        <Plus class="h-4 w-4" />
+      </Button>
 
       {#if runningWorkspaces.length > 0}
         <DropdownMenu.Root>
           <DropdownMenu.Trigger>
             {#snippet child({ props })}
-              <Tooltip.Root>
-                <Tooltip.Trigger>
-                  {#snippet child({ props: tipProps })}
-                    <Button variant="ghost" size="icon-sm" {...props} {...tipProps}>
-                      <Monitor class="h-4 w-4" />
-                    </Button>
-                  {/snippet}
-                </Tooltip.Trigger>
-                <Tooltip.Content>SSH into workspace</Tooltip.Content>
-              </Tooltip.Root>
+              <Button variant="ghost" size="icon-sm" {...props} title="SSH into workspace">
+                <Monitor class="h-4 w-4" />
+              </Button>
             {/snippet}
           </DropdownMenu.Trigger>
           <DropdownMenu.Content align="end" class="w-56">

@@ -26,12 +26,14 @@ pub struct MachinesPayload {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ContextsPayload {
     pub contexts: Vec<Context>,
     pub active_context: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CommandProgressPayload {
     pub command_id: String,
     pub message: String,

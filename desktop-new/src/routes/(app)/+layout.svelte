@@ -93,7 +93,7 @@ onDestroy(() => {
       </div>
     </header>
 
-    <main class="flex-1 overflow-auto p-6">
+    <main class="flex flex-1 flex-col overflow-hidden p-6">
       {@render children()}
     </main>
   </SidebarUI.Inset>
