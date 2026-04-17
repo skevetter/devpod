@@ -22,6 +22,62 @@ struct ContextListOutput {
     active: String,
 }
 
+/// Intermediate type matching `devpod provider list --output json` format.
+/// The CLI returns `{ "name": { "config": {...}, "state": {...}, "default": bool } }`.
+#[derive(Debug, serde::Deserialize)]
+struct ProviderEntry {
+    #[serde(default)]
+    config: ProviderConfig,
+    #[serde(default)]
+    state: ProviderState,
+    #[serde(default, rename = "default")]
+    is_default: bool,
+}
+
+#[derive(Debug, Default, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ProviderConfig {
+    #[serde(default)]
+    name: String,
+    #[serde(default)]
+    version: String,
+    #[serde(default)]
+    icon: String,
+    #[serde(default)]
+    description: String,
+    #[serde(default)]
+    source: super::types::ProviderSource,
+    #[serde(default)]
+    options: std::collections::HashMap<String, super::types::ProviderOption>,
+    #[serde(default)]
+    option_groups: Vec<super::types::ProviderOptionGroup>,
+}
+
+#[derive(Debug, Default, serde::Deserialize)]
+struct ProviderState {
+    #[serde(default)]
+    initialized: bool,
+}
+
+impl ProviderEntry {
+    fn into_provider(self) -> Provider {
+        Provider {
+            name: self.config.name,
+            version: self.config.version,
+            icon: self.config.icon,
+            description: self.config.description,
+            source: self.config.source,
+            options: self.config.options,
+            option_groups: self.config.option_groups,
+            is_default: self.is_default,
+            state: super::types::ProviderStateInfo {
+                initialized: self.state.initialized,
+                single_machine: false,
+            },
+        }
+    }
+}
+
 pub struct Watcher<R: Runtime> {
     cli: Arc<CliRunner>,
     state: Arc<RwLock<DaemonState>>,
@@ -88,10 +144,14 @@ impl<R: Runtime> Watcher<R> {
     async fn poll_providers(&self) {
         match self
             .cli
-            .run::<Vec<Provider>>(&["provider", "list"])
+            .run::<std::collections::HashMap<String, ProviderEntry>>(&["provider", "list"])
             .await
         {
-            Ok(providers) => {
+            Ok(provider_map) => {
+                let providers: Vec<Provider> = provider_map
+                    .into_values()
+                    .map(|entry| entry.into_provider())
+                    .collect();
                 let changed = {
                     let mut state = self.state.write().await;
                     state.update_providers(providers)

@@ -107,7 +107,16 @@ pub struct Provider {
     #[serde(default, rename = "isDefault")]
     pub is_default: bool,
     #[serde(default)]
-    pub state: String,
+    pub state: ProviderStateInfo,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct ProviderStateInfo {
+    #[serde(default)]
+    pub initialized: bool,
+    #[serde(default)]
+    pub single_machine: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]

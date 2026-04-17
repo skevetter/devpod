@@ -44,7 +44,13 @@ async function handleAdd(name: string, source?: string) {
     toasts.success(`Added provider ${name}`)
     goto(`/providers/${name}?setup=true`)
   } catch (err) {
-    error = err instanceof Error ? err.message : String(err)
+    const msg = err instanceof Error ? err.message : String(err)
+    if (msg.includes("already exists")) {
+      toasts.info(`Provider ${name} is already installed`)
+      goto("/providers")
+      return
+    }
+    error = msg
   } finally {
     submitting = false
   }
