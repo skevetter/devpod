@@ -1,10 +1,12 @@
 <script lang="ts">
 import { onMount } from "svelte"
+import { Check, ChevronsUpDown } from "@lucide/svelte"
 import { Button } from "$lib/components/ui/button/index.js"
 import { Input } from "$lib/components/ui/input/index.js"
 import { Label } from "$lib/components/ui/label/index.js"
 import { Separator } from "$lib/components/ui/separator/index.js"
-import * as Select from "$lib/components/ui/select/index.js"
+import * as Command from "$lib/components/ui/command/index.js"
+import * as Popover from "$lib/components/ui/popover/index.js"
 import * as Tabs from "$lib/components/ui/tabs/index.js"
 import { Switch } from "$lib/components/ui/switch/index.js"
 import {
@@ -108,6 +110,16 @@ let activeTab = $state("general")
 let cliVersion = $state<string | null>(null)
 let loading = $state(true)
 let saving = $state(false)
+let ideComboOpen = $state(false)
+let ideSearch = $state("")
+
+let filteredIdes = $derived(
+  ideSearch
+    ? IDE_OPTIONS.filter((i) =>
+        i.label.toLowerCase().includes(ideSearch.toLowerCase()),
+      )
+    : IDE_OPTIONS,
+)
 
 // Local-only options (not stored in DevPod CLI)
 let local = $state<LocalOptions>({
@@ -284,16 +296,35 @@ function toggleLocal(key: keyof LocalOptions) {
         <div class="space-y-2">
           <Label>Default IDE</Label>
           <p class="text-xs text-muted-foreground">IDE used when creating new workspaces</p>
-          <Select.Root type="single" value={$defaultIde} onValueChange={(v) => { if (v) setDefaultIde(v) }}>
-            <Select.Trigger class="w-full">
-              <span>{IDE_OPTIONS.find((i) => i.value === $defaultIde)?.label ?? $defaultIde}</span>
-            </Select.Trigger>
-            <Select.Content class="max-h-80 w-[var(--bits-select-trigger-width)]">
-              {#each IDE_OPTIONS as ide (ide.value)}
-                <Select.Item value={ide.value} label={ide.label} />
-              {/each}
-            </Select.Content>
-          </Select.Root>
+          <Popover.Root bind:open={ideComboOpen}>
+            <Popover.Trigger>
+              {#snippet child({ props })}
+                <Button variant="outline" class="w-full justify-between" {...props}>
+                  {IDE_OPTIONS.find((i) => i.value === $defaultIde)?.label ?? "Select IDE..."}
+                  <ChevronsUpDown class="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              {/snippet}
+            </Popover.Trigger>
+            <Popover.Content class="w-[var(--bits-popover-anchor-width)] p-0" align="start">
+              <Command.Root shouldFilter={false}>
+                <Command.Input placeholder="Search IDEs..." bind:value={ideSearch} />
+                <Command.List>
+                  <Command.Empty>No IDE found.</Command.Empty>
+                  <Command.Group>
+                    {#each filteredIdes as ide (ide.value)}
+                      <Command.Item
+                        value={ide.value}
+                        onSelect={() => { setDefaultIde(ide.value); ideComboOpen = false; ideSearch = "" }}
+                      >
+                        <Check class="mr-2 h-4 w-4 {$defaultIde === ide.value ? 'opacity-100' : 'opacity-0'}" />
+                        {ide.label}
+                      </Command.Item>
+                    {/each}
+                  </Command.Group>
+                </Command.List>
+              </Command.Root>
+            </Popover.Content>
+          </Popover.Root>
         </div>
 
         <div class="flex items-center justify-between">
