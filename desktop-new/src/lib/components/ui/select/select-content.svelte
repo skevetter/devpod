@@ -19,7 +19,7 @@ let {
   <Select.Content
     bind:ref
     class={cn(
-      "relative z-50 max-h-96 min-w-[var(--bits-select-trigger-width,8rem)] overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md animate-in fade-in-0 zoom-in-95",
+      "relative z-50 max-h-96 min-w-[var(--bits-select-trigger-width,8rem)] overflow-hidden rounded-md border text-popover-foreground shadow-md animate-in fade-in-0 zoom-in-95 [background-color:hsl(var(--popover)/1)]",
       className,
     )}
     {sideOffset}

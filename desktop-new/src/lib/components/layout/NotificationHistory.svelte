@@ -39,7 +39,7 @@ function formatTime(ts: number): string {
   </Button>
 
   {#if open}
-    <div class="absolute right-0 top-full mt-2 w-80 rounded-md border bg-popover text-popover-foreground shadow-lg z-50">
+    <div class="absolute right-0 top-full mt-2 w-80 rounded-md border shadow-lg z-50 text-popover-foreground" style="background-color: hsl(var(--popover) / 1);">
       <div class="flex items-center justify-between border-b px-3 py-2">
         <span class="text-sm font-semibold">Notifications</span>
         {#if $notificationHistory.length > 0}
