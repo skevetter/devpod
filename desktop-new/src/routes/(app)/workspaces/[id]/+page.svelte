@@ -2,7 +2,7 @@
 import { page } from "$app/stores"
 import { goto } from "$app/navigation"
 import { onMount, onDestroy } from "svelte"
-import { Check, ChevronsUpDown, Trash2 } from "@lucide/svelte"
+import { Check, ChevronsUpDown, ClipboardCopy, Trash2, X } from "@lucide/svelte"
 import { Spinner } from "$lib/components/ui/spinner/index.js"
 import { Button } from "$lib/components/ui/button/index.js"
 import { badgeVariants } from "$lib/components/ui/badge/index.js"
@@ -492,12 +492,12 @@ async function handleDelete() {
               </Accordion.Trigger>
               <Accordion.Content>
                 {#if outputLines.length > 0}
-                  <div class="flex justify-end gap-2 mb-2">
-                    <Button variant="outline" size="sm" onclick={() => copyToClipboard(outputLines.map(stripAnsi).join("\n"))}>
-                      Copy Output
+                  <div class="flex justify-end gap-1 mb-2">
+                    <Button variant="ghost" size="icon-sm" title="Copy output" onclick={() => copyToClipboard(outputLines.map(stripAnsi).join("\n"))}>
+                      <ClipboardCopy class="h-4 w-4" />
                     </Button>
-                    <Button variant="outline" size="sm" onclick={() => { outputLines = [] }}>
-                      Clear
+                    <Button variant="ghost" size="icon-sm" title="Clear output" onclick={() => { outputLines = [] }}>
+                      <X class="h-4 w-4" />
                     </Button>
                   </div>
                 {/if}
