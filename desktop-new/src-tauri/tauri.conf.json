@@ -37,7 +37,8 @@
         "minWidth": 1000,
         "minHeight": 700,
         "visible": false,
-        "resizable": true
+        "resizable": true,
+        "acceptFirstMouse": true
       },
       {
         "label": "splashscreen",

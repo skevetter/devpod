@@ -76,7 +76,7 @@ onDestroy(() => {
 })
 </script>
 
-<svelte:window onkeydown={handleKeydown} />
+<svelte:window onkeydown={handleKeydown} onpointerdown={() => window.focus()} />
 
 <SidebarUI.Provider>
   <Sidebar terminalCount={$terminalCount} />
