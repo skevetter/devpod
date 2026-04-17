@@ -3,6 +3,7 @@ import { page } from "$app/stores"
 import { goto } from "$app/navigation"
 import { onMount, onDestroy } from "svelte"
 import { Check, ChevronsUpDown, Trash2 } from "@lucide/svelte"
+import { Spinner } from "$lib/components/ui/spinner/index.js"
 import { Button } from "$lib/components/ui/button/index.js"
 import { badgeVariants } from "$lib/components/ui/badge/index.js"
 import * as Command from "$lib/components/ui/command/index.js"
@@ -349,25 +350,34 @@ async function handleDelete() {
 
   <div class="flex items-center gap-2">
     <Button size="sm" onclick={handleOpenIde} disabled={!isRunning || operationRunning}>
+      {#if operationRunning && operationLabel === "Open IDE"}<Spinner />{/if}
       Open IDE
     </Button>
     <Button size="sm" onclick={handleStart} disabled={!isStopped || operationRunning || connecting}>
-      {operationRunning && isStopped ? "Starting..." : "Start"}
+      {#if operationRunning && operationLabel === "Start"}<Spinner />{/if}
+      Start
     </Button>
-    <Button variant="outline" size="sm" onclick={handleStop} disabled={(!isRunning && !isBusy) || operationRunning}>Stop</Button>
+    <Button variant="outline" size="sm" onclick={handleStop} disabled={(!isRunning && !isBusy) || operationRunning}>
+      {#if operationRunning && operationLabel === "Stop"}<Spinner />{/if}
+      Stop
+    </Button>
     {#if sshSessionId}
       <Button variant="outline" size="sm" onclick={handleDisconnect}>Disconnect</Button>
     {:else}
       <Button variant="outline" size="sm" onclick={handleConnect} disabled={!isRunning || connecting}>
-        {connecting ? "Connecting..." : "SSH Terminal"}
+        {#if connecting}<Spinner />{/if}
+        SSH Terminal
       </Button>
     {/if}
-    <Button variant="outline" size="sm" onclick={handleRebuild} disabled={operationRunning}>Rebuild</Button>
-    <Button variant="outline" size="sm" onclick={handleReset} disabled={operationRunning}>Reset</Button>
+    <Button variant="outline" size="sm" onclick={handleRebuild} disabled={operationRunning}>
+      {#if operationRunning && operationLabel === "Rebuild"}<Spinner />{/if}
+      Rebuild
+    </Button>
+    <Button variant="outline" size="sm" onclick={handleReset} disabled={operationRunning}>
+      {#if operationRunning && operationLabel === "Reset"}<Spinner />{/if}
+      Reset
+    </Button>
     <Button variant="destructive" size="sm" onclick={() => (confirmDeleteOpen = true)} disabled={operationRunning}>Delete</Button>
-    {#if operationRunning}
-      <span class="text-xs text-muted-foreground animate-pulse">{operationLabel}ing workspace...</span>
-    {/if}
   </div>
 
   <Separator />
