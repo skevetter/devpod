@@ -247,3 +247,76 @@ func (s *SubstituteTestSuite) TestSubstitute_AdditionalFeaturesEmpty() {
 	s.NoError(err)
 	s.Nil(result.Config.Features)
 }
+
+func (s *SubstituteTestSuite) TestResolveCLIMounts_SubstitutesVariables() {
+	substitutionContext := &config.SubstitutionContext{
+		DevContainerID:           "test-id",
+		LocalWorkspaceFolder:     "/workspace",
+		ContainerWorkspaceFolder: "/workspaces/test-workspace",
+		Env: map[string]string{
+			"CACHE_NAME": "my-cache=1",
+		},
+	}
+
+	mounts, err := resolveCLIMounts(substitutionContext, []string{
+		`{"type":"volume","source":"${localEnv:CACHE_NAME}","target":"${containerWorkspaceFolder}/cache"}`,
+	})
+
+	s.NoError(err)
+	s.Len(mounts, 1)
+	s.Equal("volume", mounts[0].Type)
+	s.Equal("my-cache=1", mounts[0].Source)
+	s.Equal("/workspaces/test-workspace/cache", mounts[0].Target)
+}
+
+func (s *SubstituteTestSuite) TestResolveCLIMounts_AcceptsRawStringForm() {
+	substitutionContext := &config.SubstitutionContext{
+		ContainerWorkspaceFolder: "/workspaces/test-workspace",
+	}
+
+	mounts, err := resolveCLIMounts(substitutionContext, []string{
+		"type=bind,source=/tmp/data,target=${containerWorkspaceFolder}/data,readonly",
+	})
+
+	s.NoError(err)
+	s.Len(mounts, 1)
+	s.Equal("bind", mounts[0].Type)
+	s.Equal("/tmp/data", mounts[0].Source)
+	s.Equal("/workspaces/test-workspace/data", mounts[0].Target)
+	s.Equal([]string{"readonly"}, mounts[0].Other)
+}
+
+func (s *SubstituteTestSuite) TestMergeCLIMounts_OverridesByTarget() {
+	mergedConfig := &config.MergedDevContainerConfig{
+		NonComposeBase: config.NonComposeBase{
+			Mounts: []*config.Mount{
+				{
+					Type:   "volume",
+					Source: "existing-cache",
+					Target: "/cache",
+				},
+				{
+					Type:   "volume",
+					Source: "existing-tools",
+					Target: "/tools",
+				},
+			},
+		},
+	}
+	substitutionContext := &config.SubstitutionContext{
+		ContainerWorkspaceFolder: "/workspaces/test-workspace",
+	}
+
+	err := mergeCLIMounts(mergedConfig, substitutionContext, []string{
+		`{"type":"volume","source":"cli-cache","target":"/cache"}`,
+		`{"type":"volume","source":"cli-data","target":"${containerWorkspaceFolder}/data"}`,
+	})
+
+	s.NoError(err)
+	s.Len(mergedConfig.Mounts, 3)
+	s.Equal("existing-tools", mergedConfig.Mounts[0].Source)
+	s.Equal("cli-cache", mergedConfig.Mounts[1].Source)
+	s.Equal("/cache", mergedConfig.Mounts[1].Target)
+	s.Equal("cli-data", mergedConfig.Mounts[2].Source)
+	s.Equal("/workspaces/test-workspace/data", mergedConfig.Mounts[2].Target)
+}

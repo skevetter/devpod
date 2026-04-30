@@ -221,3 +221,70 @@ func (r *runner) substitute(
 		Raw:    rawParsedConfig,
 	}, substitutionContext, nil
 }
+
+func resolveCLIMounts(
+	substitutionContext *config.SubstitutionContext,
+	mounts []string,
+) ([]*config.Mount, error) {
+	if len(mounts) == 0 {
+		return nil, nil
+	}
+
+	resolvedMounts := make([]*config.Mount, 0, len(mounts))
+	for _, mount := range mounts {
+		parsedMount := &config.Mount{}
+		if err := json.Unmarshal([]byte(mount), parsedMount); err != nil {
+			parsed := config.ParseMount(mount)
+			parsedMount = &parsed
+		}
+
+		resolvedMount := &config.Mount{}
+		if err := config.Substitute(substitutionContext, parsedMount, resolvedMount); err != nil {
+			return nil, fmt.Errorf("substitute --mount values: %w", err)
+		}
+
+		resolvedMounts = append(resolvedMounts, resolvedMount)
+	}
+
+	return resolvedMounts, nil
+}
+
+func mergeCLIMounts(
+	mergedConfig *config.MergedDevContainerConfig,
+	substitutionContext *config.SubstitutionContext,
+	mounts []string,
+) error {
+	resolvedMounts, err := resolveCLIMounts(substitutionContext, mounts)
+	if err != nil {
+		return err
+	}
+	if len(resolvedMounts) == 0 {
+		return nil
+	}
+
+	cliTargets := map[string]bool{}
+	dedupedCLIMounts := make([]*config.Mount, 0, len(resolvedMounts))
+	for i := len(resolvedMounts) - 1; i >= 0; i-- {
+		mount := resolvedMounts[i]
+		if cliTargets[mount.Target] {
+			continue
+		}
+
+		cliTargets[mount.Target] = true
+		dedupedCLIMounts = append(dedupedCLIMounts, mount)
+	}
+	slices.Reverse(dedupedCLIMounts)
+
+	filteredMounts := make([]*config.Mount, 0, len(mergedConfig.Mounts)+len(dedupedCLIMounts))
+	for _, mount := range mergedConfig.Mounts {
+		if cliTargets[mount.Target] {
+			continue
+		}
+
+		filteredMounts = append(filteredMounts, mount)
+	}
+
+	filteredMounts = append(filteredMounts, dedupedCLIMounts...)
+	mergedConfig.Mounts = filteredMounts
+	return nil
+}
