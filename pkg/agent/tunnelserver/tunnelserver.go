@@ -224,7 +224,11 @@ func (t *tunnelServer) DockerCredentials(
 }
 
 func (t *tunnelServer) GitUser(ctx context.Context, empty *tunnel.Empty) (*tunnel.Message, error) {
-	gitUser, err := gitcredentials.GetUser("")
+	workingDir := ""
+	if t.workspace != nil {
+		workingDir = t.workspace.Source.LocalFolder
+	}
+	gitUser, err := gitcredentials.GetUser("", workingDir)
 	if err != nil {
 		return nil, err
 	}

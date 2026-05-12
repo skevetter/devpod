@@ -166,7 +166,7 @@ func configureGitUserLocally(
 	client tunnel.TunnelClient,
 ) error {
 	// get local credentials
-	localGitUser, err := gitcredentials.GetUser(userName)
+	localGitUser, err := gitcredentials.GetUser(userName, "")
 	if err != nil {
 		return err
 	} else if localGitUser.Name != "" && localGitUser.Email != "" {

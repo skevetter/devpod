@@ -160,6 +160,7 @@ func setupOptionalFeatures(ctx context.Context, cfg *ContainerSetupConfig) {
 	if cfg.PlatformOptions != nil {
 		if err := setupPlatformGitCredentials(
 			config.GetRemoteUser(cfg.SetupInfo),
+			cfg.SetupInfo.SubstitutionContext.LocalWorkspaceFolder,
 			cfg.PlatformOptions,
 			cfg.Log,
 		); err != nil {
@@ -453,6 +454,7 @@ func markerFileExists(markerName string, markerContent string) (bool, error) {
 
 func setupPlatformGitCredentials(
 	userName string,
+	workingDir string,
 	platformOptions *devsy.PlatformOptions,
 	log log.Logger,
 ) error {
@@ -464,7 +466,7 @@ func setupPlatformGitCredentials(
 	// setup platform git user
 	if platformOptions.UserCredentials.GitUser != "" &&
 		platformOptions.UserCredentials.GitEmail != "" {
-		gitUser, err := gitcredentials.GetUser(userName)
+		gitUser, err := gitcredentials.GetUser(userName, workingDir)
 		if err == nil && gitUser.Name == "" && gitUser.Email == "" {
 			log.Info("Setup workspace git user and email")
 			err := gitcredentials.SetUser(userName, &gitcredentials.GitUser{

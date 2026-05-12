@@ -185,7 +185,7 @@ func SetUser(userName string, user *GitUser) error {
 	return nil
 }
 
-func GetUser(userName string) (*GitUser, error) {
+func GetUser(userName string, workingDir string) (*GitUser, error) {
 	gitUser := &GitUser{}
 
 	scopeArgs := []string{"config"}
@@ -195,15 +195,25 @@ func GetUser(userName string) (*GitUser, error) {
 			return gitUser, fmt.Errorf("get git global dir for %s: %w", userName, err)
 		}
 		scopeArgs = append(scopeArgs, "--file", p)
-	} else {
+	} else if workingDir == "" {
 		scopeArgs = append(scopeArgs, "--global")
 	}
 
+	// #nosec G204 -- fixed argument
+	nameCmd := exec.Command("git", append(scopeArgs, "user.name")...)
+	// #nosec G204 -- fixed argument
+	emailCmd := exec.Command("git", append(scopeArgs, "user.email")...)
+
+	if workingDir != "" {
+		nameCmd.Dir = workingDir
+		emailCmd.Dir = workingDir
+	}
+
 	// we ignore the error here, because if email is empty we don't care
-	name, _ := exec.Command("git", append(scopeArgs[:], "user.name")...).Output()
+	name, _ := nameCmd.Output()
 	gitUser.Name = strings.TrimSpace(string(name))
 
-	email, _ := exec.Command("git", append(scopeArgs[:], "user.email")...).Output()
+	email, _ := emailCmd.Output()
 	gitUser.Email = strings.TrimSpace(string(email))
 
 	return gitUser, nil

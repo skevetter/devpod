@@ -108,10 +108,17 @@ func runTunnelServer(ctx context.Context, cancel context.CancelFunc, p tunnelSer
 // When explicitKey is set (from --git-ssh-signing-key flag), it takes
 // precedence over the host's .gitconfig. This ensures signing works
 // even when user.signingkey is not in the host git configuration.
-func addGitSSHSigningKey(command string, explicitKey string, log log.Logger) string {
+// workingDir, when non-empty, is the project root used so that
+// includeIf "gitdir:..." directives are evaluated correctly.
+func addGitSSHSigningKey(
+	command string,
+	explicitKey string,
+	workingDir string,
+	log log.Logger,
+) string {
 	userSigningKey := explicitKey
 	if userSigningKey == "" {
-		format, extracted, err := gitsshsigning.ExtractGitConfiguration()
+		format, extracted, err := gitsshsigning.ExtractGitConfiguration(workingDir)
 		if err != nil {
 			log.Debugf("failed to extract git configuration: %v", err)
 			return command
@@ -137,7 +144,11 @@ func buildCredentialsCommand(opts RunServicesOptions) string {
 		command += " --configure-git-helper"
 	}
 	if opts.ConfigureGitSSHSignatureHelper {
-		command = addGitSSHSigningKey(command, opts.GitSSHSigningKey, opts.Log)
+		workingDir := ""
+		if opts.Workspace != nil {
+			workingDir = opts.Workspace.Source.LocalFolder
+		}
+		command = addGitSSHSigningKey(command, opts.GitSSHSigningKey, workingDir, opts.Log)
 	}
 	if opts.ConfigureDockerCredentials {
 		command += " --configure-docker-helper"
