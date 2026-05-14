@@ -18,17 +18,24 @@ type Mapping struct {
 }
 
 func ParsePortSpec(port string) (Mapping, error) {
-	hostIP, hostPort, containerIP, containerPort, err := splitParts(port)
+	parts, err := splitParts(port)
 	if err != nil {
 		return Mapping{}, err
 	}
 
-	hostAddress, err := toAddress(hostIP, hostPort)
+	hostAddress, err := toAddress(parts.host, parts.hostPort, addressOptions{
+		emptyHostLabel: "listen host",
+		requireHost:    parts.explicitHost,
+	})
 	if err != nil {
 		return Mapping{}, fmt.Errorf("parse host address: %w", err)
 	}
 
-	containerAddress, err := toAddress(containerIP, containerPort)
+	containerAddress, err := toAddress(parts.container, parts.containerPort, addressOptions{
+		emptyHostLabel: "target host",
+		requireHost:    parts.explicitContainer,
+		allowHostnames: true,
+	})
 	if err != nil {
 		return Mapping{}, fmt.Errorf("parse container address: %w", err)
 	}
@@ -39,22 +46,55 @@ func ParsePortSpec(port string) (Mapping, error) {
 	}, nil
 }
 
-func toAddress(ip, port string) (Address, error) {
-	// check if port is integer
-	_, err := strconv.Atoi(port)
-	if err == nil {
-		if ip == "" {
-			ip = "localhost"
+type splitResult struct {
+	host              string
+	hostPort          string
+	container         string
+	containerPort     string
+	explicitHost      bool
+	explicitContainer bool
+}
+
+type addressOptions struct {
+	emptyHostLabel string
+	requireHost    bool
+	allowHostnames bool
+}
+
+func toAddress(ip, port string, opts addressOptions) (Address, error) {
+	if isPortNumber(port) {
+		return toTCPAddress(ip, port, opts)
+	}
+
+	return toUnixAddress(ip, port, opts)
+}
+
+func toTCPAddress(ip, port string, opts addressOptions) (Address, error) {
+	if ip == "" {
+		if opts.requireHost {
+			return Address{}, fmt.Errorf("%s is empty", opts.emptyHostLabel)
 		}
 
-		if ip != "localhost" && net.ParseIP(ip) == nil {
-			return Address{}, fmt.Errorf("not an ip address %s", ip)
-		}
+		ip = "localhost"
+	}
 
-		return Address{
-			Protocol: "tcp",
-			Address:  ip + ":" + port,
-		}, nil
+	if !opts.allowHostnames && ip != "localhost" && net.ParseIP(ip) == nil {
+		return Address{}, fmt.Errorf("not an ip address %s", ip)
+	}
+
+	return Address{
+		Protocol: "tcp",
+		Address:  ip + ":" + port,
+	}, nil
+}
+
+func toUnixAddress(ip, port string, opts addressOptions) (Address, error) {
+	if port == "" {
+		return Address{}, fmt.Errorf("%s is empty", opts.emptyHostLabel)
+	}
+
+	if opts.requireHost && ip == "" {
+		return Address{}, fmt.Errorf("%s is empty", opts.emptyHostLabel)
 	}
 
 	if ip != "" {
@@ -67,25 +107,47 @@ func toAddress(ip, port string) (Address, error) {
 	}, nil
 }
 
-func splitParts(rawport string) (string, string, string, string, error) {
+func isPortNumber(raw string) bool {
+	_, err := strconv.Atoi(raw)
+	return err == nil
+}
+
+func splitParts(rawport string) (splitResult, error) {
 	parts := strings.Split(rawport, ":")
 	n := len(parts)
 	containerport := parts[n-1]
 
 	switch n {
 	case 1:
-		return "", containerport, "", containerport, nil
+		return splitResult{hostPort: containerport, containerPort: containerport}, nil
 	case 2:
-		return "", parts[0], "", containerport, nil
+		return splitResult{hostPort: parts[0], containerPort: containerport}, nil
 	case 3:
-		if parts[1] == "localhost" || net.ParseIP(parts[1]) != nil {
-			return "", parts[0], parts[1], containerport, nil
+		if isPortNumber(parts[0]) {
+			return splitResult{
+				hostPort:          parts[0],
+				container:         parts[1],
+				containerPort:     containerport,
+				explicitContainer: true,
+			}, nil
 		}
 
-		return parts[0], parts[1], "", containerport, nil
+		return splitResult{
+			host:          parts[0],
+			hostPort:      parts[1],
+			containerPort: containerport,
+			explicitHost:  true,
+		}, nil
 	case 4:
-		return parts[0], parts[1], parts[2], parts[3], nil
+		return splitResult{
+			host:              parts[0],
+			hostPort:          parts[1],
+			container:         parts[2],
+			containerPort:     parts[3],
+			explicitHost:      true,
+			explicitContainer: true,
+		}, nil
 	default:
-		return "", "", "", "", fmt.Errorf("unexpected port format: %s", rawport)
+		return splitResult{}, fmt.Errorf("unexpected port format: %s", rawport)
 	}
 }

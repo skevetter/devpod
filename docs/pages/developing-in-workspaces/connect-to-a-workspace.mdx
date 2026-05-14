@@ -92,6 +92,21 @@ Optionally you can also define a command to run:
 devpod ssh my-workspace --command "echo Hello World"
 ```
 
+You can also forward ports while using `devpod ssh`.
+Target hosts can be service names or hostnames that are resolvable from the side that dials them.
+For `--forward-ports`, that is the workspace.
+For `--reverse-forward-ports`, that is the machine running `devpod ssh`.
+
+To forward a local port to a host or service reachable from the workspace:
+```
+devpod ssh my-workspace --forward-ports 18080:nginx:8080
+```
+
+To expose a port inside the workspace that forwards back to a host or service reachable from the machine running `devpod ssh`:
+```
+devpod ssh my-workspace --reverse-forward-ports 15432:postgres.internal:5432
+```
+
 ## IDE Commands
 
 This section shows additional commands to configure DevPod's behavior when opening a workspace.

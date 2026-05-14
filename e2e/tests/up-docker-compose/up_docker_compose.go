@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"os"
 	"os/exec"
@@ -143,6 +144,77 @@ var _ = ginkgo.Describe(
 			gomega.Eventually(func(g gomega.Gomega) {
 				response, err := http.Get("http://localhost:8080")
 				g.Expect(err).NotTo(gomega.HaveOccurred())
+
+				body, err := io.ReadAll(response.Body)
+				g.Expect(err).NotTo(gomega.HaveOccurred())
+				g.Expect(body).To(gomega.ContainSubstring("Thank you for using nginx."))
+			}).
+				WithPolling(1 * time.Second).
+				WithTimeout(20 * time.Second).
+				Should(gomega.Succeed())
+
+			sshCancel()
+			err = <-done
+
+			gomega.Expect(err).To(gomega.Or(
+				gomega.MatchError("signal: killed"),
+				gomega.MatchError(context.Canceled),
+			))
+		}, ginkgo.SpecTimeout(framework.GetTimeout()))
+
+		ginkgo.It("ssh forward ports support remote service names", func(ctx context.Context) {
+			_, workspace, err := tc.setupAndStartWorkspace(
+				ctx,
+				"tests/up-docker-compose/testdata/docker-compose-forward-ports",
+				"--debug",
+			)
+			framework.ExpectNoError(err)
+
+			ids, err := findComposeContainer(
+				ctx,
+				tc.dockerHelper,
+				tc.composeHelper,
+				workspace.UID,
+				"app",
+			)
+			framework.ExpectNoError(err)
+			gomega.Expect(ids).To(gomega.HaveLen(1), "1 compose container to be created")
+
+			listener, err := net.Listen("tcp", "127.0.0.1:0")
+			framework.ExpectNoError(err)
+			localPort := listener.Addr().(*net.TCPAddr).Port
+			framework.ExpectNoError(listener.Close())
+
+			done := make(chan error)
+			sshContext, sshCancel := context.WithCancel(context.Background())
+			go func() {
+				// #nosec G204 -- test command with controlled arguments
+				cmd := exec.CommandContext(
+					sshContext,
+					filepath.Join(tc.f.DevpodBinDir, tc.f.DevpodBinName),
+					"ssh",
+					"--forward-ports",
+					fmt.Sprintf("%d:nginx:8080", localPort),
+					workspace.ID,
+				)
+
+				if err := cmd.Start(); err != nil {
+					done <- err
+					return
+				}
+
+				if err := cmd.Wait(); err != nil {
+					done <- err
+					return
+				}
+
+				done <- nil
+			}()
+
+			gomega.Eventually(func(g gomega.Gomega) {
+				response, err := http.Get(fmt.Sprintf("http://127.0.0.1:%d", localPort))
+				g.Expect(err).NotTo(gomega.HaveOccurred())
+				defer func() { _ = response.Body.Close() }()
 
 				body, err := io.ReadAll(response.Body)
 				g.Expect(err).NotTo(gomega.HaveOccurred())
