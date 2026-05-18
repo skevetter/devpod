@@ -87,6 +87,7 @@ var _ = ginkgo.Describe(
 				tc.dockerHelper,
 				tc.composeHelper,
 				workspace.UID,
+				workspace.ID,
 				"app",
 			)
 			framework.ExpectNoError(err)
@@ -114,6 +115,7 @@ var _ = ginkgo.Describe(
 				tc.dockerHelper,
 				tc.composeHelper,
 				workspace.UID,
+				workspace.ID,
 				"app",
 			)
 			framework.ExpectNoError(err)
@@ -130,6 +132,7 @@ var _ = ginkgo.Describe(
 				tc.dockerHelper,
 				tc.composeHelper,
 				workspace.UID,
+				workspace.ID,
 				"app",
 			)
 			framework.ExpectNoError(err)
@@ -148,6 +151,7 @@ var _ = ginkgo.Describe(
 				tc.dockerHelper,
 				tc.composeHelper,
 				workspace.UID,
+				workspace.ID,
 				"app",
 			)
 			framework.ExpectNoError(err)
@@ -175,6 +179,7 @@ var _ = ginkgo.Describe(
 				tc.dockerHelper,
 				tc.composeHelper,
 				workspace.UID,
+				workspace.ID,
 				"app",
 			)
 			framework.ExpectNoError(err)
@@ -232,6 +237,7 @@ var _ = ginkgo.Describe(
 					tc.dockerHelper,
 					tc.composeHelper,
 					ws.UID,
+					ws.ID,
 					"webserver",
 				)
 				framework.ExpectNoError(err)
@@ -297,6 +303,7 @@ var _ = ginkgo.Describe(
 					tc.dockerHelper,
 					tc.composeHelper,
 					ws.UID,
+					ws.ID,
 					"devcontainer",
 				)
 				framework.ExpectNoError(err)
@@ -384,6 +391,7 @@ var _ = ginkgo.Describe(
 				tc.dockerHelper,
 				tc.composeHelper,
 				workspace.UID,
+				workspace.ID,
 				"app",
 			)
 			framework.ExpectNoError(err)
@@ -420,6 +428,7 @@ var _ = ginkgo.Describe(
 				tc.dockerHelper,
 				tc.composeHelper,
 				workspace.UID,
+				workspace.ID,
 				"app",
 			)
 			framework.ExpectNoError(err)
@@ -447,6 +456,7 @@ var _ = ginkgo.Describe(
 				tc.dockerHelper,
 				tc.composeHelper,
 				workspace.UID,
+				workspace.ID,
 				"app",
 			)
 			framework.ExpectNoError(err)

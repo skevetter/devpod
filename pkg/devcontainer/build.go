@@ -452,7 +452,7 @@ func (r *runner) buildDevImageCompose(
 	if err != nil {
 		return nil, fmt.Errorf("load docker compose project: %w", err)
 	}
-	project.Name = composeHelper.GetProjectName(r.ID)
+	project.Name = composeHelper.GetProjectName(r.ID, r.WorkspaceConfig.Workspace.ID)
 	r.Log.Debugf("Loaded project %s", project.Name)
 
 	service := parsedConfig.Config.Service
