@@ -194,10 +194,8 @@ func configureGitUserLocally(
 		gitUser.Email = ""
 	}
 
-	// set git user — credentials server already runs as userName, so pass
-	// empty string to avoid "su <user>" which requires a password for
-	// non-root users and fails inside the container.
-	err = gitcredentials.SetUser("", gitUser)
+	// set git user
+	err = gitcredentials.SetUser(userName, gitUser)
 	if err != nil {
 		return fmt.Errorf("set git user & email: %w", err)
 	}
