@@ -7,6 +7,8 @@ import (
 	"strings"
 )
 
+const unix = "unix"
+
 type Address struct {
 	Protocol string
 	Address  string
@@ -102,7 +104,7 @@ func toUnixAddress(ip, port string, opts addressOptions) (Address, error) {
 	}
 
 	return Address{
-		Protocol: "unix",
+		Protocol: unix,
 		Address:  port,
 	}, nil
 }

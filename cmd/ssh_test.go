@@ -16,6 +16,8 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
+const httpPort = "8080:80"
+
 func writeGitConfig(t *testing.T, content string) {
 	t.Helper()
 	home := t.TempDir()
@@ -116,7 +118,7 @@ func runPortForwardsForTest(
 }
 
 func TestRunPortForwards_CleanExit(t *testing.T) {
-	calls, err := runPortForwardsForTest(t, &SSHCmd{}, []string{"8080:80"}, func(
+	calls, err := runPortForwardsForTest(t, &SSHCmd{}, []string{httpPort}, func(
 		context.Context,
 		*ssh.Client,
 		string,
@@ -134,7 +136,7 @@ func TestRunPortForwards_CleanExit(t *testing.T) {
 }
 
 func TestRunPortForwards_EOFExit(t *testing.T) {
-	calls, err := runPortForwardsForTest(t, &SSHCmd{}, []string{"8080:80"}, func(
+	calls, err := runPortForwardsForTest(t, &SSHCmd{}, []string{httpPort}, func(
 		context.Context,
 		*ssh.Client,
 		string,
@@ -152,7 +154,7 @@ func TestRunPortForwards_EOFExit(t *testing.T) {
 }
 
 func TestRunPortForwards_ForwardError(t *testing.T) {
-	calls, err := runPortForwardsForTest(t, &SSHCmd{}, []string{"8080:80"}, func(
+	calls, err := runPortForwardsForTest(t, &SSHCmd{}, []string{httpPort}, func(
 		context.Context,
 		*ssh.Client,
 		string,
@@ -174,7 +176,7 @@ func TestRunPortForwards_UsesConfiguredTimeout(t *testing.T) {
 	cmd := &SSHCmd{ForwardPortsTimeout: "90s"}
 	var gotTimeout time.Duration
 
-	calls, err := runPortForwardsForTest(t, cmd, []string{"8080:80"}, func(
+	calls, err := runPortForwardsForTest(t, cmd, []string{httpPort}, func(
 		_ context.Context,
 		_ *ssh.Client,
 		_ string,
@@ -194,7 +196,7 @@ func TestRunPortForwards_UsesConfiguredTimeout(t *testing.T) {
 }
 
 func TestRunPortForwards_ParseErrorStopsBeforeLaunch(t *testing.T) {
-	calls, err := runPortForwardsForTest(t, &SSHCmd{}, []string{"8080:80", ""}, func(
+	calls, err := runPortForwardsForTest(t, &SSHCmd{}, []string{httpPort, ""}, func(
 		context.Context,
 		*ssh.Client,
 		string,
@@ -216,7 +218,7 @@ func TestRunPortForwards_MultipleMappingsReturnError(t *testing.T) {
 	var started atomic.Int32
 	ready := make(chan struct{})
 
-	calls, err := runPortForwardsForTest(t, &SSHCmd{}, []string{"8080:80", "8081:81"}, func(
+	calls, err := runPortForwardsForTest(t, &SSHCmd{}, []string{httpPort, "8081:81"}, func(
 		_ context.Context,
 		_ *ssh.Client,
 		_ string,

@@ -59,8 +59,8 @@ func TestParsePortSpec_DelegatesUnixSocketMappings(t *testing.T) {
 	mapping, err := ParsePortSpec("/tmp/local.sock:/tmp/remote.sock")
 	require.NoError(t, err)
 	assert.Equal(t, Mapping{
-		Host:      Address{Protocol: "unix", Address: "/tmp/local.sock"},
-		Container: Address{Protocol: "unix", Address: "/tmp/remote.sock"},
+		Host:      Address{Protocol: unix, Address: "/tmp/local.sock"},
+		Container: Address{Protocol: unix, Address: "/tmp/remote.sock"},
 	}, mapping)
 }
 

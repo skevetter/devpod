@@ -325,6 +325,41 @@ jobs:
           UUID=$(python -c "import uuid; print(uuid.uuid4().hex)")
           echo "result=$UUID" >> "$GITHUB_OUTPUT"
 
+      - name: install and start podman (Windows)
+        if: matrix.install-kind == true && runner.os == 'Windows' && (matrix.requires-secret == false || needs.can-read-secret.outputs.secret-set == 'true')
+        shell: pwsh
+        run: |
+          $msiUrl = "https://github.com/containers/podman/releases/download/v5.8.2/podman-installer-windows-amd64.msi"
+          $msiPath = "$env:RUNNER_TEMP\podman.msi"
+          Invoke-WebRequest -Uri $msiUrl -OutFile $msiPath
+
+          $expectedHash = "eda54f26f9695d198d9a679fa45ae24ba35b78444f432b5fe0c122c5a3624c57"
+          $actualHash = (Get-FileHash -Path $msiPath -Algorithm SHA256).Hash.ToLower()
+          if ($actualHash -ne $expectedHash) {
+            throw "SHA256 mismatch for podman MSI! Expected: $expectedHash, Got: $actualHash"
+          }
+          Write-Host "Podman MSI checksum verified: $actualHash"
+
+          $installDir = "C:\Program Files\RedHat\Podman"
+          $logFile = "$env:RUNNER_TEMP\podman-install.log"
+          $proc = Start-Process msiexec.exe -Wait -PassThru -ArgumentList "/i `"$msiPath`" /qn /norestart /l*v `"$logFile`" INSTALLDIR=`"$installDir`""
+          Write-Host "MSI exit code: $($proc.ExitCode)"
+
+          if (!(Test-Path "$installDir\podman.exe")) {
+            Write-Host "--- MSI install log (last 50 lines) ---"
+            Get-Content $logFile -Tail 50
+            Write-Host "--- Searching for podman.exe ---"
+            Get-ChildItem "C:\" -Filter "podman.exe" -Recurse -Depth 4 -ErrorAction SilentlyContinue | ForEach-Object { Write-Host $_.FullName }
+            throw "podman.exe not found at $installDir"
+          }
+
+          echo "$installDir" | Out-File -Append -FilePath $env:GITHUB_PATH -Encoding utf8
+
+          wsl --set-default-version 2
+          & "$installDir\podman.exe" machine init
+          & "$installDir\podman.exe" machine set --rootful
+          & "$installDir\podman.exe" machine start
+
       - name: setup kind (Windows)
         if: matrix.install-kind == true && runner.os == 'Windows' && (matrix.requires-secret == false || needs.can-read-secret.outputs.secret-set == 'true')
         shell: bash
@@ -332,14 +367,20 @@ jobs:
           KIND_EXPERIMENTAL_PROVIDER: podman
           DOCKER_HOST: npipe:////./pipe/podman-machine-default
         run: |
-          wsl --set-default-version 2
-          choco install podman-cli kind -y
+          curl -Lo "$RUNNER_TEMP/kind.exe" "https://github.com/kubernetes-sigs/kind/releases/download/v0.24.0/kind-windows-amd64"
+          expected="6f724188289cc79395f45afae0f2b85e0d220c2b84c6ed2f5047d9d0c9a67028"
+          actual=$(sha256sum "$RUNNER_TEMP/kind.exe" | awk '{print $1}' | sed 's/^[^a-f0-9]*//')
+          if [ "$actual" != "$expected" ]; then
+            echo "SHA256 mismatch for kind.exe! Expected: $expected, Got: $actual"
+            exit 1
+          fi
+          echo "kind.exe checksum verified: $actual"
 
-          podman machine init
-          podman machine set --rootful
-          podman machine start
+          export PATH="$RUNNER_TEMP:$PATH"
+          echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
 
-          kind create cluster --name "${{ steps.uuid.outputs.result }}" --image kindest/node:v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a
+          CLUSTER_NAME=$(python -c "import uuid; print(uuid.uuid4().hex)")
+          kind create cluster --name "$CLUSTER_NAME" --image kindest/node:v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a
 
       # NOTE: skevetter/setup-kind does not work on Windows runners
       - name: setup kind
