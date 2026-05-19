@@ -438,15 +438,60 @@ var _ = ginkgo.Describe("devpod ssh test suite", ginkgo.Label("ssh"), ginkgo.Ord
 			err = os.WriteFile(globalConfigPath, globalContent, 0o600)
 			framework.ExpectNoError(err)
 
+			ginkgo.GinkgoWriter.Printf(
+				"globalConfigPath=%s projectConfigPath=%s tempDir=%s\n",
+				globalConfigPath, projectConfigPath, tempDir,
+			)
+
 			ginkgo.GinkgoT().Setenv("GIT_CONFIG_GLOBAL", globalConfigPath)
 			ginkgo.GinkgoT().Setenv("GIT_CONFIG_NOSYSTEM", "1")
+
+			// Verify the includeIf resolves on the host before starting devpod.
+			// #nosec G204 -- tempDir is from framework.CopyToTempDir
+			hostEmail, hostErr := exec.Command("git", "-C", tempDir, "config", "user.email").Output()
+			ginkgo.GinkgoWriter.Printf(
+				"host git config user.email in tempDir: %q err=%v\n",
+				strings.TrimSpace(string(hostEmail)), hostErr,
+			)
 
 			err = f.DevPodUp(ctx, tempDir)
 			framework.ExpectNoError(err)
 
-			out, err := f.DevPodSSH(ctx, tempDir, "git config user.email")
+			// Snapshot git config state immediately after devpod up (no services).
+			snapCmd := "echo 'USER='$(whoami)" +
+				"; echo 'HOME='$HOME" +
+				"; git config --list 2>&1 | grep -E 'user\\.' || echo '(no user config)'"
+			snapOut, snapErr, _ := f.ExecCommandCapture(ctx, []string{
+				"ssh", "--start-services=false", tempDir,
+				"--command", snapCmd,
+			})
+			ginkgo.GinkgoWriter.Printf("post-up snapshot stdout: %s\n", snapOut)
+			ginkgo.GinkgoWriter.Printf("post-up snapshot stderr: %s\n", snapErr)
+
+			// The credentials server configures git user asynchronously when
+			// devpod ssh starts its services goroutine. Retry until the email
+			// is set or the 30-second window expires. Print progress each
+			// iteration so CI logs show exactly when (or whether) it is set.
+			checkCmd := "for i in $(seq 1 30); do" +
+				" out=$(git config --global user.email 2>/dev/null);" +
+				" printf 'iter %d: email=%s\\n' \"$i\" \"$out\" >&2;" +
+				" [ -n \"$out\" ] && echo \"$out\" && exit 0;" +
+				" sleep 1;" +
+				" done;" +
+				" echo 'timeout: git config --list:' >&2;" +
+				" git config --list >&2 2>&1;" +
+				" exit 1"
+
+			stdout, stderr, err := f.ExecCommandCapture(ctx, []string{
+				"ssh",
+				"--start-services",
+				tempDir,
+				"--command", checkCmd,
+			})
+			ginkgo.GinkgoWriter.Printf("stdout: %s\n", stdout)
+			ginkgo.GinkgoWriter.Printf("stderr: %s\n", stderr)
 			framework.ExpectNoError(err)
-			gomega.Expect(strings.TrimSpace(out)).To(
+			gomega.Expect(strings.TrimSpace(stdout)).To(
 				gomega.Equal("project@devpod-test.com"),
 				"container should receive the includeIf-resolved email, not the global default",
 			)
