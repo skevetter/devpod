@@ -125,7 +125,9 @@ func (c *Client) Exec(ctx context.Context, options *ExecStreamOptions) error {
 	if err != nil {
 		return err
 	}
-	exec, err := remotecommand.NewFallbackExecutor(websocketExec, spdyExec, httpstream.IsUpgradeFailure)
+	exec, err := remotecommand.NewFallbackExecutor(websocketExec, spdyExec, func(err error) bool {
+		return httpstream.IsUpgradeFailure(err) || httpstream.IsHTTPSProxyError(err)
+	})
 	if err != nil {
 		return err
 	}
