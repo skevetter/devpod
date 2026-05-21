@@ -186,6 +186,9 @@ func (r *runner) mergeExistingContainerConfig(
 	if err != nil {
 		return nil, fmt.Errorf("merge config: %w", err)
 	}
+	if err := mergeCLIMounts(mergedConfig, p.substitutionContext, p.options.Mounts); err != nil {
+		return nil, err
+	}
 	return mergedConfig, nil
 }
 
@@ -240,6 +243,9 @@ func (r *runner) resolveNewContainer(
 	)
 	if err != nil {
 		return nil, fmt.Errorf("merge config: %w", err)
+	}
+	if err := mergeCLIMounts(mergedConfig, p.substitutionContext, p.options.Mounts); err != nil {
+		return nil, err
 	}
 
 	r.injectDaemonEntrypoint(p, mergedConfig)

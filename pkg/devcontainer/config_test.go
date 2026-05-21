@@ -10,6 +10,11 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
+const (
+	testContainerWorkspaceFolder = "/workspaces/test-workspace"
+	testVolumeType               = "volume"
+)
+
 type SubstituteTestSuite struct {
 	suite.Suite
 	runner *runner
@@ -246,4 +251,100 @@ func (s *SubstituteTestSuite) TestSubstitute_AdditionalFeaturesEmpty() {
 
 	s.NoError(err)
 	s.Nil(result.Config.Features)
+}
+
+func (s *SubstituteTestSuite) TestResolveCLIMounts_SubstitutesVariables() {
+	substitutionContext := &config.SubstitutionContext{
+		DevContainerID:           "test-id",
+		LocalWorkspaceFolder:     "/workspace",
+		ContainerWorkspaceFolder: testContainerWorkspaceFolder,
+		Env: map[string]string{
+			"CACHE_NAME": "my-cache=1",
+		},
+	}
+
+	mounts, err := resolveCLIMounts(substitutionContext, []string{
+		`{"type":"volume","source":"${localEnv:CACHE_NAME}","target":"${containerWorkspaceFolder}/cache"}`,
+	})
+
+	s.NoError(err)
+	s.Len(mounts, 1)
+	s.Equal(testVolumeType, mounts[0].Type)
+	s.Equal("my-cache=1", mounts[0].Source)
+	s.Equal(testContainerWorkspaceFolder+"/cache", mounts[0].Target)
+}
+
+func (s *SubstituteTestSuite) TestResolveCLIMounts_AcceptsRawStringForm() {
+	substitutionContext := &config.SubstitutionContext{
+		ContainerWorkspaceFolder: testContainerWorkspaceFolder,
+	}
+
+	mounts, err := resolveCLIMounts(substitutionContext, []string{
+		"type=bind,source=/tmp/data,target=${containerWorkspaceFolder}/data,readonly",
+	})
+
+	s.NoError(err)
+	s.Len(mounts, 1)
+	s.Equal("bind", mounts[0].Type)
+	s.Equal("/tmp/data", mounts[0].Source)
+	s.Equal(testContainerWorkspaceFolder+"/data", mounts[0].Target)
+	s.Equal([]string{"readonly"}, mounts[0].Other)
+}
+
+func (s *SubstituteTestSuite) TestResolveCLIMounts_RejectsMalformedJSONObjectInput() {
+	substitutionContext := &config.SubstitutionContext{}
+
+	_, err := resolveCLIMounts(substitutionContext, []string{
+		`{"type":"bind","source":"/tmp/data"`,
+	})
+
+	s.Error(err)
+	s.Contains(err.Error(), "parse --mount JSON")
+}
+
+func (s *SubstituteTestSuite) TestResolveCLIMounts_RequiresTarget() {
+	substitutionContext := &config.SubstitutionContext{}
+
+	_, err := resolveCLIMounts(substitutionContext, []string{
+		`{"type":"volume","source":"cache"}`,
+	})
+
+	s.Error(err)
+	s.Contains(err.Error(), "target is required")
+}
+
+func (s *SubstituteTestSuite) TestMergeCLIMounts_OverridesByTarget() {
+	mergedConfig := &config.MergedDevContainerConfig{
+		NonComposeBase: config.NonComposeBase{
+			Mounts: []*config.Mount{
+				{
+					Type:   testVolumeType,
+					Source: "existing-cache",
+					Target: "/cache",
+				},
+				{
+					Type:   testVolumeType,
+					Source: "existing-tools",
+					Target: "/tools",
+				},
+			},
+		},
+	}
+	substitutionContext := &config.SubstitutionContext{
+		ContainerWorkspaceFolder: testContainerWorkspaceFolder,
+	}
+
+	err := mergeCLIMounts(mergedConfig, substitutionContext, []string{
+		`{"type":"volume","source":"cli-cache-old","target":"/cache"}`,
+		`{"type":"volume","source":"cli-cache","target":"/cache"}`,
+		`{"type":"volume","source":"cli-data","target":"${containerWorkspaceFolder}/data"}`,
+	})
+
+	s.NoError(err)
+	s.Len(mergedConfig.Mounts, 3)
+	s.Equal("existing-tools", mergedConfig.Mounts[0].Source)
+	s.Equal("cli-cache", mergedConfig.Mounts[1].Source)
+	s.Equal("/cache", mergedConfig.Mounts[1].Target)
+	s.Equal("cli-data", mergedConfig.Mounts[2].Source)
+	s.Equal(testContainerWorkspaceFolder+"/data", mergedConfig.Mounts[2].Target)
 }

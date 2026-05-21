@@ -109,6 +109,130 @@ var _ = ginkgo.Describe(
 			ginkgo.SpecTimeout(framework.GetTimeout()),
 		)
 
+		ginkgo.It(
+			"should fail when CLI mount JSON is malformed",
+			func(ctx context.Context) {
+				f, err := setupDockerProvider(initialDir+"/bin", "docker")
+				framework.ExpectNoError(err)
+				ginkgo.DeferCleanup(func(cleanupCtx context.Context) {
+					_ = f.DevPodProviderDelete(cleanupCtx, "docker")
+				})
+
+				tempDir, err := framework.CopyToTempDir("tests/up/testdata/docker")
+				framework.ExpectNoError(err)
+				ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
+				ginkgo.DeferCleanup(func(cleanupCtx context.Context) {
+					_ = f.DevPodWorkspaceDelete(cleanupCtx, tempDir, "--force")
+				})
+
+				_, stderr, err := f.DevPodUpStreams(
+					ctx,
+					tempDir,
+					"--mount",
+					`{"type":"bind","source":"/tmp/devpod-cli-mount"`,
+				)
+				gomega.Expect(err).To(gomega.HaveOccurred())
+				gomega.Expect(stderr).
+					To(gomega.ContainSubstring(
+						`parse --mount JSON`,
+					))
+			},
+			ginkgo.SpecTimeout(framework.GetTimeout()),
+		)
+
+		ginkgo.It(
+			"should fail when CLI mount JSON target is missing",
+			func(ctx context.Context) {
+				f, err := setupDockerProvider(initialDir+"/bin", "docker")
+				framework.ExpectNoError(err)
+				ginkgo.DeferCleanup(func(cleanupCtx context.Context) {
+					_ = f.DevPodProviderDelete(cleanupCtx, "docker")
+				})
+
+				tempDir, err := framework.CopyToTempDir("tests/up/testdata/docker")
+				framework.ExpectNoError(err)
+				ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
+				ginkgo.DeferCleanup(func(cleanupCtx context.Context) {
+					_ = f.DevPodWorkspaceDelete(cleanupCtx, tempDir, "--force")
+				})
+
+				_, stderr, err := f.DevPodUpStreams(
+					ctx,
+					tempDir,
+					"--mount",
+					`{"type":"bind","source":"/tmp/devpod-cli-mount"}`,
+				)
+				gomega.Expect(err).To(gomega.HaveOccurred())
+				gomega.Expect(stderr).
+					To(gomega.ContainSubstring(
+						`target is required`,
+					))
+			},
+			ginkgo.SpecTimeout(framework.GetTimeout()),
+		)
+
+		ginkgo.It(
+			"should fail when CLI mount JSON bind source is missing",
+			func(ctx context.Context) {
+				f, err := setupDockerProvider(initialDir+"/bin", "docker")
+				framework.ExpectNoError(err)
+				ginkgo.DeferCleanup(func(cleanupCtx context.Context) {
+					_ = f.DevPodProviderDelete(cleanupCtx, "docker")
+				})
+
+				tempDir, err := framework.CopyToTempDir("tests/up/testdata/docker")
+				framework.ExpectNoError(err)
+				ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
+				ginkgo.DeferCleanup(func(cleanupCtx context.Context) {
+					_ = f.DevPodWorkspaceDelete(cleanupCtx, tempDir, "--force")
+				})
+
+				_, stderr, err := f.DevPodUpStreams(
+					ctx,
+					tempDir,
+					"--mount",
+					`{"type":"bind","target":"/home/vscode/mnt1"}`,
+				)
+				gomega.Expect(err).To(gomega.HaveOccurred())
+				gomega.Expect(stderr).
+					To(gomega.ContainSubstring(
+						`failed to start dev container: exit status 125`,
+					))
+			},
+			ginkgo.SpecTimeout(framework.GetTimeout()),
+		)
+
+		ginkgo.It(
+			"should fail when CLI mount JSON type is missing for absolute source",
+			func(ctx context.Context) {
+				f, err := setupDockerProvider(initialDir+"/bin", "docker")
+				framework.ExpectNoError(err)
+				ginkgo.DeferCleanup(func(cleanupCtx context.Context) {
+					_ = f.DevPodProviderDelete(cleanupCtx, "docker")
+				})
+
+				tempDir, err := framework.CopyToTempDir("tests/up/testdata/docker-cli-mounts")
+				framework.ExpectNoError(err)
+				ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
+				ginkgo.DeferCleanup(func(cleanupCtx context.Context) {
+					_ = f.DevPodWorkspaceDelete(cleanupCtx, tempDir, "--force")
+				})
+
+				stdout, stderr, err := f.DevPodUpStreams(
+					ctx,
+					tempDir,
+					"--mount",
+					`{"source":"${localWorkspaceFolder}/mount1","target":"/home/vscode/mnt1"}`,
+				)
+				gomega.Expect(err).To(gomega.HaveOccurred())
+				gomega.Expect(stdout + stderr).
+					To(gomega.ContainSubstring(
+						`includes invalid characters for a local volume name`,
+					))
+			},
+			ginkgo.SpecTimeout(framework.GetTimeout()),
+		)
+
 		ginkgo.It("ensure workspace cleanup when not a git or folder", func(ctx context.Context) {
 			f, err := setupDockerProvider(initialDir+"/bin", "docker")
 			framework.ExpectNoError(err)

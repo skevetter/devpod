@@ -164,6 +164,10 @@ func (cmd *UpCmd) registerDevContainerFlags(upCmd *cobra.Command) {
 	upCmd.Flags().
 		StringVar(&cmd.AdditionalFeatures, "additional-features", "",
 			`Additional features to apply to the dev container (JSON as per "features" section in devcontainer.json)`)
+	upCmd.Flags().
+		StringArrayVar(&cmd.Mounts, "mount", []string{},
+			"Additional mount to apply when creating the dev container. "+
+				"Format type=<bind|volume>,source=<source>,target=<target>[,external=<true|false>]")
 }
 
 func (cmd *UpCmd) registerIDEFlags(upCmd *cobra.Command) {
@@ -714,6 +718,7 @@ func mergeDevPodUpOptions(baseOptions *provider2.CLIOptions) error {
 	} else if found {
 		baseOptions.WorkspaceEnv = append(oldOptions.WorkspaceEnv, baseOptions.WorkspaceEnv...)
 		baseOptions.InitEnv = append(oldOptions.InitEnv, baseOptions.InitEnv...)
+		baseOptions.Mounts = append(oldOptions.Mounts, baseOptions.Mounts...)
 		baseOptions.PrebuildRepositories = append(
 			oldOptions.PrebuildRepositories,
 			baseOptions.PrebuildRepositories...)

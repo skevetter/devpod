@@ -413,21 +413,24 @@ func ParseMount(str string) Mount {
 	retMount := Mount{}
 	splitted := strings.SplitSeq(str, ",")
 	for split := range splitted {
-		splitted2 := strings.Split(split, "=")
-		key := splitted2[0]
+		key, value, ok := strings.Cut(split, "=")
+		if !ok {
+			retMount.Other = append(retMount.Other, split)
+			continue
+		}
 		switch key {
 		case "src", "source":
-			retMount.Source = splitted2[1]
+			retMount.Source = value
 		case "workspaceMount":
-			retMount.Source = splitted2[1]
+			retMount.Source = value
 		case "workspaceFolder":
-			retMount.Target = splitted2[1]
+			retMount.Target = value
 		case "dst", "destination", "target":
-			retMount.Target = splitted2[1]
+			retMount.Target = value
 		case "type":
-			retMount.Type = splitted2[1]
+			retMount.Type = value
 		case "external":
-			retMount.External, _ = strconv.ParseBool(splitted2[1])
+			retMount.External, _ = strconv.ParseBool(value)
 		default:
 			retMount.Other = append(retMount.Other, split)
 		}

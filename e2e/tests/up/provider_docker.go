@@ -196,6 +196,29 @@ var _ = ginkgo.Describe(
 			gomega.Expect(strings.TrimSpace(bar)).To(gomega.Equal("FOO"))
 		}, ginkgo.SpecTimeout(framework.GetTimeout()))
 
+		ginkgo.It("CLI-provided mounts", func(ctx context.Context) {
+			tempDir, err := dtc.setupAndUp(
+				ctx,
+				"tests/up/testdata/docker-cli-mounts",
+				"--mount",
+				"type=bind,source=${localWorkspaceFolder}/mount1,target=/home/vscode/mnt1",
+				"--mount",
+				`{"type":"bind","source":"${localWorkspaceFolder}/mount2","target":"/home/vscode/mnt2"}`,
+			)
+			framework.ExpectNoError(err)
+
+			workspace, err := dtc.f.FindWorkspace(ctx, tempDir)
+			framework.ExpectNoError(err)
+
+			foo, err := dtc.execSSHCapture(ctx, workspace.ID, "cat $HOME/mnt1/foo.txt")
+			framework.ExpectNoError(err)
+			gomega.Expect(strings.TrimSpace(foo)).To(gomega.Equal("BAR"))
+
+			bar, err := dtc.execSSHCapture(ctx, workspace.ID, "cat $HOME/mnt2/bar.txt")
+			framework.ExpectNoError(err)
+			gomega.Expect(strings.TrimSpace(bar)).To(gomega.Equal("FOO"))
+		}, ginkgo.SpecTimeout(framework.GetTimeout()))
+
 		ginkgo.It("custom image", func(ctx context.Context) {
 			if runtime.GOOS == "windows" {
 				ginkgo.Skip("skipping on windows")

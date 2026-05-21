@@ -286,6 +286,9 @@ func (r *runner) runDockerCompose(
 	if err != nil {
 		return nil, fmt.Errorf("merge config: %w", err)
 	}
+	if err := mergeCLIMounts(mergedConfig, substitutionContext, options.Mounts); err != nil {
+		return nil, err
+	}
 
 	// expose the compose project name inside the container
 	if mergedConfig.RemoteEnv == nil {
@@ -478,6 +481,9 @@ func (r *runner) startContainer(
 		)
 		if err != nil {
 			return nil, fmt.Errorf("merge configuration: %w", err)
+		}
+		if err := mergeCLIMounts(mergedConfig, substitutionContext, options.Mounts); err != nil {
+			return nil, err
 		}
 
 		additionalLabels := map[string]string{
