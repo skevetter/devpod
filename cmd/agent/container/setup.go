@@ -108,7 +108,7 @@ func (cmd *SetupContainerCmd) Run(ctx context.Context) error {
 	// flush before returning to make sure the final log lines (e.g. the last
 	// stderr output of a failing lifecycle hook) reach the client before the
 	// connection is torn down. ctx is still alive while this defer runs.
-	if f, ok := logger.(interface{ Flush() }); ok {
+	if f, ok := logger.(tunnelserver.Flusher); ok {
 		defer f.Flush()
 	}
 

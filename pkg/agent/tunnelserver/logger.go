@@ -35,6 +35,15 @@ func NewTunnelLogger(ctx context.Context, client tunnel.TunnelClient, debug bool
 	return logger
 }
 
+// Flusher is implemented by loggers that buffer output and can block until
+// everything queued so far has been delivered. NewTunnelLogger returns a value
+// satisfying this interface.
+type Flusher interface {
+	Flush()
+}
+
+var _ Flusher = (*tunnelLogger)(nil)
+
 // logEntry is what flows through the logger channel. It is either a log
 // message to forward over the tunnel, or a flush request whose ack channel is
 // closed once all preceding messages have been sent.
