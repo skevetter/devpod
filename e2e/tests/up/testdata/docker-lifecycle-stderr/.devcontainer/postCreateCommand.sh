@@ -14,8 +14,8 @@
 # produce a false positive.
 i=0
 while [ "$i" -lt 300 ]; do
-	echo "filler line $i" >&2
-	i=$((i + 1))
+    echo "filler line $i" >&2
+    i=$((i + 1))
 done
 echo DEVPOD_LIFECYCLE_FLUSH_MARKER >&2
 exit 1
