@@ -1,0 +1,5 @@
+{
+  "name": "lifecycle-stderr",
+  "image": "mcr.microsoft.com/devcontainers/go:1",
+  "postCreateCommand": "sh .devcontainer/postCreateCommand.sh"
+}

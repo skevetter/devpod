@@ -81,14 +81,16 @@ var _ = ginkgo.Describe(
 					_ = f.DevPodWorkspaceDelete(cleanupCtx, tempDir, "--force")
 				})
 
-				// The postCreateCommand prints a burst of stderr lines ending
-				// with a marker, then exits non-zero. The agent forwards
-				// lifecycle hook output over the tunnel asynchronously; the
-				// burst keeps the sender busy so the final marker is still
-				// queued when the hook fails, and the agent must flush it
-				// before tearing down. Without the flush the marker is dropped
-				// (a lone final line drains in time and would not reproduce the
-				// bug). Regression guard for the dropped-last-line bug.
+				// The postCreateCommand runs a script that prints a burst of
+				// stderr lines ending with a marker, then exits non-zero. The
+				// agent forwards lifecycle hook output over the tunnel
+				// asynchronously; the burst keeps the sender busy so the final
+				// marker is still queued when the hook fails, and the agent
+				// must flush it before tearing down. Without the flush the
+				// marker is dropped. The marker lives in the script (not the
+				// inline command) so it cannot leak into devpod's "failed to
+				// run <command>" error and cause a false positive. Regression
+				// guard for the dropped-last-line bug.
 				stdout, stderr, err := f.DevPodUpStreams(ctx, tempDir, "--log-output=json")
 				framework.ExpectError(err, "expected lifecycle hook failure")
 				framework.ExpectNoError(
