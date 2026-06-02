@@ -71,22 +71,6 @@ func (s *tunnelLogger) worker() {
 	}
 }
 
-// handle forwards a single message over the tunnel, or acknowledges a flush
-// request. Sends use a context detached from s.ctx's cancellation so that
-// queued messages can still be delivered during shutdown as long as the
-// underlying connection is alive.
-func (s *tunnelLogger) handle(entry logEntry) {
-	if entry.flush != nil {
-		close(entry.flush)
-		return
-	}
-
-	ctx, cancel := context.WithTimeout(context.WithoutCancel(s.ctx), 5*time.Second)
-	_, _ = s.client.Log(ctx, entry.msg)
-	// ignore error since we can't use the logger itself
-	cancel()
-}
-
 // Flush blocks until all messages queued before the call have been forwarded
 // over the tunnel. It must be called before the process exits (and before
 // s.ctx is cancelled) to guarantee the final log lines are delivered.
@@ -102,14 +86,6 @@ func (s *tunnelLogger) Flush() {
 	case <-ack:
 	case <-s.ctx.Done():
 	}
-}
-
-// enqueue formats and queues a message for the worker to forward.
-func (s *tunnelLogger) enqueue(level tunnel.LogLevel, message string) {
-	s.logChan <- logEntry{msg: &tunnel.LogMessage{
-		LogLevel: level,
-		Message:  s.formatMessage(message),
-	}}
 }
 
 // formatMessage appends structured fields to the message.
@@ -337,4 +313,28 @@ func (s *tunnelLogger) WithFields(fields logrus.Fields) log.Logger {
 
 func (*tunnelLogger) LogrLogSink() logr.LogSink {
 	return nil
+}
+
+// enqueue formats and queues a message for the worker to forward.
+func (s *tunnelLogger) enqueue(level tunnel.LogLevel, message string) {
+	s.logChan <- logEntry{msg: &tunnel.LogMessage{
+		LogLevel: level,
+		Message:  s.formatMessage(message),
+	}}
+}
+
+// handle forwards a single message over the tunnel, or acknowledges a flush
+// request. Sends use a context detached from s.ctx's cancellation so that
+// queued messages can still be delivered during shutdown as long as the
+// underlying connection is alive.
+func (s *tunnelLogger) handle(entry logEntry) {
+	if entry.flush != nil {
+		close(entry.flush)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(s.ctx), 5*time.Second)
+	_, _ = s.client.Log(ctx, entry.msg)
+	// ignore error since we can't use the logger itself
+	cancel()
 }
