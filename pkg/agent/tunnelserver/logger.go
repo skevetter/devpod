@@ -28,6 +28,7 @@ func NewTunnelLogger(ctx context.Context, client tunnel.TunnelClient, debug bool
 		client:  client,
 		level:   level,
 		logChan: make(chan logEntry, 1000), // Buffer size of 1000 messages
+		done:    make(chan struct{}),
 	}
 
 	go logger.worker()
@@ -57,10 +58,12 @@ type tunnelLogger struct {
 	level   logrus.Level
 	client  tunnel.TunnelClient
 	logChan chan logEntry
+	done    chan struct{} // closed when worker() exits
 	fields  logrus.Fields
 }
 
 func (s *tunnelLogger) worker() {
+	defer close(s.done)
 	for {
 		select {
 		case entry := <-s.logChan:
@@ -81,19 +84,21 @@ func (s *tunnelLogger) worker() {
 }
 
 // Flush blocks until all messages queued before the call have been forwarded
-// over the tunnel. It must be called before the process exits (and before
-// s.ctx is cancelled) to guarantee the final log lines are delivered.
+// over the tunnel, or until the worker has stopped. It gates on worker
+// completion rather than s.ctx so it stays a real barrier even when s.ctx is
+// already cancelled (e.g. the deferred flush on the shutdown path, or
+// Fatal/Fatalf).
 func (s *tunnelLogger) Flush() {
 	ack := make(chan struct{})
 	select {
 	case s.logChan <- logEntry{flush: ack}:
-	case <-s.ctx.Done():
+	case <-s.done:
 		return
 	}
 
 	select {
 	case <-ack:
-	case <-s.ctx.Done():
+	case <-s.done:
 	}
 }
 
@@ -316,6 +321,7 @@ func (s *tunnelLogger) WithFields(fields logrus.Fields) log.Logger {
 		client:  s.client,
 		level:   s.level,
 		logChan: s.logChan,
+		done:    s.done,
 		fields:  newFields,
 	}
 }
