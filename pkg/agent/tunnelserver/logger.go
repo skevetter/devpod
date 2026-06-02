@@ -83,22 +83,34 @@ func (s *tunnelLogger) worker() {
 	}
 }
 
+// flushTimeout caps the entire drain. handle() applies a per-message timeout,
+// so without an overall bound a backlog on a stalled tunnel could block
+// shutdown for buffer-size × per-message timeout. The cap is generous so a
+// healthy drain of a full backlog always completes.
+const flushTimeout = 30 * time.Second
+
 // Flush blocks until all messages queued before the call have been forwarded
-// over the tunnel, or until the worker has stopped. It gates on worker
-// completion rather than s.ctx so it stays a real barrier even when s.ctx is
-// already cancelled (e.g. the deferred flush on the shutdown path, or
-// Fatal/Fatalf).
+// over the tunnel, until the worker has stopped, or until flushTimeout elapses.
+// It gates on worker completion rather than s.ctx so it stays a real barrier
+// even when s.ctx is already cancelled (e.g. the deferred flush on the shutdown
+// path, or Fatal/Fatalf).
 func (s *tunnelLogger) Flush() {
 	ack := make(chan struct{})
+	timer := time.NewTimer(flushTimeout)
+	defer timer.Stop()
+
 	select {
 	case s.logChan <- logEntry{flush: ack}:
 	case <-s.done:
+		return
+	case <-timer.C:
 		return
 	}
 
 	select {
 	case <-ack:
 	case <-s.done:
+	case <-timer.C:
 	}
 }
 
