@@ -64,6 +64,41 @@ var _ = ginkgo.Describe(
 		)
 
 		ginkgo.It(
+			"forwards the final lifecycle hook log line before the agent exits",
+			func(ctx context.Context) {
+				f, err := setupDockerProvider(initialDir+"/bin", "docker")
+				framework.ExpectNoError(err)
+				ginkgo.DeferCleanup(func(cleanupCtx context.Context) {
+					_ = f.DevPodProviderDelete(cleanupCtx, "docker")
+				})
+
+				tempDir, err := framework.CopyToTempDir(
+					"tests/up/testdata/docker-lifecycle-stderr",
+				)
+				framework.ExpectNoError(err)
+				ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
+				ginkgo.DeferCleanup(func(cleanupCtx context.Context) {
+					_ = f.DevPodWorkspaceDelete(cleanupCtx, tempDir, "--force")
+				})
+
+				// The postCreateCommand prints a marker to stderr and exits
+				// non-zero. The agent forwards lifecycle hook output over the
+				// tunnel asynchronously, so on failure it must flush the final
+				// queued line before tearing down. Regression guard for the
+				// dropped-last-line bug.
+				stdout, stderr, err := f.DevPodUpStreams(ctx, tempDir, "--log-output=json")
+				framework.ExpectError(err, "expected lifecycle hook failure")
+				framework.ExpectNoError(
+					findMessage(
+						strings.NewReader(stdout+stderr),
+						"DEVPOD_LIFECYCLE_FLUSH_MARKER",
+					),
+				)
+			},
+			ginkgo.SpecTimeout(framework.GetTimeout()),
+		)
+
+		ginkgo.It(
 			"ensure workspace cleanup when failing to create a workspace",
 			func(ctx context.Context) {
 				f, err := setupDockerProvider(initialDir+"/bin", "docker")

@@ -1,0 +1,5 @@
+{
+  "name": "lifecycle-stderr",
+  "image": "mcr.microsoft.com/devcontainers/go:1",
+  "postCreateCommand": "echo DEVPOD_LIFECYCLE_FLUSH_MARKER >&2; exit 1"
+}
