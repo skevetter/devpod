@@ -104,6 +104,14 @@ func (cmd *SetupContainerCmd) Run(ctx context.Context) error {
 		return err
 	}
 
+	// The tunnel logger forwards messages over the tunnel asynchronously, so
+	// flush before returning to make sure the final log lines (e.g. the last
+	// stderr output of a failing lifecycle hook) reach the client before the
+	// connection is torn down. ctx is still alive while this defer runs.
+	if f, ok := logger.(tunnelserver.Flusher); ok {
+		defer f.Flush()
+	}
+
 	workspaceInfo, setupInfo, err := cmd.parseWorkspaceAndSetupInfo(logger)
 	if err != nil {
 		return err

@@ -64,6 +64,46 @@ var _ = ginkgo.Describe(
 		)
 
 		ginkgo.It(
+			"forwards the final lifecycle hook log line before the agent exits",
+			func(ctx context.Context) {
+				f, err := setupDockerProvider(initialDir+"/bin", "docker")
+				framework.ExpectNoError(err)
+				ginkgo.DeferCleanup(func(cleanupCtx context.Context) {
+					_ = f.DevPodProviderDelete(cleanupCtx, "docker")
+				})
+
+				tempDir, err := framework.CopyToTempDir(
+					"tests/up/testdata/docker-lifecycle-stderr",
+				)
+				framework.ExpectNoError(err)
+				ginkgo.DeferCleanup(framework.CleanupTempDir, initialDir, tempDir)
+				ginkgo.DeferCleanup(func(cleanupCtx context.Context) {
+					_ = f.DevPodWorkspaceDelete(cleanupCtx, tempDir, "--force")
+				})
+
+				// The postCreateCommand runs a script that prints a burst of
+				// stderr lines ending with a marker, then exits non-zero. The
+				// agent forwards lifecycle hook output over the tunnel
+				// asynchronously; the burst keeps the sender busy so the final
+				// marker is still queued when the hook fails, and the agent
+				// must flush it before tearing down. Without the flush the
+				// marker is dropped. The marker lives in the script (not the
+				// inline command) so it cannot leak into devpod's "failed to
+				// run <command>" error and cause a false positive. Regression
+				// guard for the dropped-last-line bug.
+				stdout, stderr, err := f.DevPodUpStreams(ctx, tempDir, "--log-output=json")
+				framework.ExpectError(err, "expected lifecycle hook failure")
+				framework.ExpectNoError(
+					findMessage(
+						strings.NewReader(stdout+stderr),
+						"DEVPOD_LIFECYCLE_FLUSH_MARKER",
+					),
+				)
+			},
+			ginkgo.SpecTimeout(framework.GetTimeout()),
+		)
+
+		ginkgo.It(
 			"ensure workspace cleanup when failing to create a workspace",
 			func(ctx context.Context) {
 				f, err := setupDockerProvider(initialDir+"/bin", "docker")
