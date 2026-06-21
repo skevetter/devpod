@@ -9,9 +9,12 @@ import (
 	"github.com/skevetter/devpod/pkg/compose"
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
 	"github.com/skevetter/devpod/pkg/devcontainer/feature"
+	"github.com/skevetter/devpod/pkg/docker"
 	logLib "github.com/skevetter/log"
 	"github.com/stretchr/testify/suite"
 )
+
+const bindMountType = "bind"
 
 type composeBuildImageNameTestCase struct {
 	name          string
@@ -171,6 +174,50 @@ func (s *ComposeSuite) TestCreateComposeServiceUsesBuildImageName() {
 	s.Require().NotNil(service.Build.Args)
 	s.requireBuildArgValue(service.Build.Args, "FEATURE_FLAG", "true")
 	s.requireBuildArgValue(service.Build.Args, "BUILDKIT_INLINE_CACHE", "1")
+}
+
+func (s *ComposeSuite) TestGenerateDockerComposeUpProjectPreservesReadOnlyMountOptions() {
+	r := &runner{}
+
+	project := r.generateDockerComposeUpProject(
+		&config.SubstitutedConfig{Config: &config.DevContainerConfig{}},
+		&config.MergedDevContainerConfig{
+			NonComposeBase: config.NonComposeBase{
+				Mounts: []*config.Mount{
+					{
+						Type:   bindMountType,
+						Source: "/tmp/read-only-data",
+						Target: "/workspace/read_only_folder",
+						Other:  []string{readOnlyMountOption},
+					},
+					{
+						Type:   bindMountType,
+						Source: "/tmp/read-only-short-data",
+						Target: "/workspace/read_only_short_folder",
+						Other:  []string{"ro"},
+					},
+					{
+						Type:   bindMountType,
+						Source: "/tmp/valued-read-only-data",
+						Target: "/workspace/valued_read_only_folder",
+						Other:  []string{"readonly=true"},
+					},
+				},
+			},
+		},
+		&compose.ComposeHelper{Docker: &docker.DockerHelper{DockerCommand: "true"}},
+		&composetypes.ServiceConfig{Name: "app"},
+		"mcr.microsoft.com/devcontainers/base:noble",
+		"mcr.microsoft.com/devcontainers/base:noble",
+		&config.ImageDetails{},
+		nil,
+	)
+
+	service := project.Services["app"]
+	s.Require().Len(service.Volumes, 3)
+	s.True(service.Volumes[0].ReadOnly)
+	s.True(service.Volumes[1].ReadOnly)
+	s.False(service.Volumes[2].ReadOnly)
 }
 
 func (s *ComposeSuite) requireBuildArgValue(

@@ -27,6 +27,7 @@ const (
 	ConfigFilesLabel                = "com.docker.compose.project.config_files"
 	FeaturesBuildOverrideFilePrefix = "docker-compose.devcontainer.build"
 	FeaturesStartOverrideFilePrefix = "docker-compose.devcontainer.containerFeatures"
+	readOnlyMountOption             = "readonly"
 )
 
 type composeProjectFiles struct {
@@ -1126,9 +1127,10 @@ exec "$$@"
 
 	for _, mount := range mergedConfig.Mounts {
 		overrideService.Volumes = append(overrideService.Volumes, composetypes.ServiceVolumeConfig{
-			Type:   mount.Type,
-			Source: mount.Source,
-			Target: mount.Target,
+			Type:     mount.Type,
+			Source:   mount.Source,
+			Target:   mount.Target,
+			ReadOnly: isReadOnlyMount(mount),
 		})
 	}
 
@@ -1156,6 +1158,15 @@ exec "$$@"
 	}
 
 	return project
+}
+
+func isReadOnlyMount(mount *config.Mount) bool {
+	for _, option := range mount.Other {
+		if option == readOnlyMountOption || option == "ro" {
+			return true
+		}
+	}
+	return false
 }
 
 func (r *runner) configureGPUResources(
