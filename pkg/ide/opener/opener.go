@@ -14,12 +14,14 @@ import (
 	"github.com/skevetter/devpod/pkg/config"
 	config2 "github.com/skevetter/devpod/pkg/devcontainer/config"
 	"github.com/skevetter/devpod/pkg/gpg"
+	"github.com/skevetter/devpod/pkg/ide/codeserver"
 	"github.com/skevetter/devpod/pkg/ide/fleet"
 	"github.com/skevetter/devpod/pkg/ide/jetbrains"
 	"github.com/skevetter/devpod/pkg/ide/jupyter"
 	"github.com/skevetter/devpod/pkg/ide/openvscode"
 	"github.com/skevetter/devpod/pkg/ide/rstudio"
 	"github.com/skevetter/devpod/pkg/ide/vscode"
+	"github.com/skevetter/devpod/pkg/ide/vscodeweb"
 	"github.com/skevetter/devpod/pkg/ide/zed"
 	open2 "github.com/skevetter/devpod/pkg/open"
 	"github.com/skevetter/devpod/pkg/port"
@@ -60,6 +62,10 @@ func browserIDEOpener(
 	switch ideName {
 	case string(config.IDEOpenVSCode):
 		return openVSCodeBrowser, true
+	case string(config.IDEVSCodeWeb):
+		return openVSCodeWebBrowser, true
+	case string(config.IDECodeServer):
+		return openCodeServerBrowser, true
 	case string(config.IDEJupyterNotebook):
 		return openJupyterBrowser, true
 	case string(config.IDERStudio):
@@ -390,6 +396,114 @@ func openVSCodeBrowser(
 		openvscode.ForwardPortsOption,
 	) == config.BoolTrue
 	extraPorts := []string{fmt.Sprintf("%s:%d", addr, openvscode.DefaultVSCodePort)}
+	return tunnel.StartBrowserTunnel(tunnel.BrowserTunnelParams{
+		Ctx:              ctx,
+		DevPodConfig:     params.DevPodConfig,
+		Client:           params.Client,
+		User:             params.User,
+		TargetURL:        targetURL,
+		ForwardPorts:     forwardPorts,
+		ExtraPorts:       extraPorts,
+		AuthSockID:       params.SSHAuthSockID,
+		GitSSHSigningKey: params.GitSSHSigningKey,
+		Logger:           params.Log,
+		DaemonStartFunc:  makeDaemonStartFunc(params, forwardPorts, extraPorts),
+	})
+}
+
+//nolint:dupl // openVSCodeWebBrowser and openCodeServerBrowser are intentionally parallel but use distinct IDE packages
+func openVSCodeWebBrowser(
+	ctx context.Context,
+	ideOptions map[string]config.OptionValue,
+	params Params,
+) error {
+	if params.GPGAgentForwarding {
+		if err := gpg.ForwardAgent(params.Client, params.Log); err != nil {
+			return err
+		}
+	}
+
+	folder := params.Result.SubstitutionContext.ContainerWorkspaceFolder
+	addr, vscodePort, err := ParseAddressAndPort(
+		vscodeweb.Options.GetValue(ideOptions, vscodeweb.BindAddressOption),
+		vscodeweb.DefaultVSCodePort,
+	)
+	if err != nil {
+		return err
+	}
+
+	targetURL := fmt.Sprintf("http://localhost:%d/?folder=%s", vscodePort, folder)
+	if vscodeweb.Options.GetValue(ideOptions, vscodeweb.OpenOption) == config.BoolTrue {
+		go func() {
+			if openErr := open2.Open(ctx, targetURL, params.Log); openErr != nil {
+				params.Log.Errorf("error opening vscode-web: %v", openErr)
+			}
+			params.Log.Infof(
+				"started vscode-web in browser mode. " +
+					"Please keep this terminal open as long as you use the VS Code Web version",
+			)
+		}()
+	}
+
+	forwardPorts := vscodeweb.Options.GetValue(
+		ideOptions,
+		vscodeweb.ForwardPortsOption,
+	) == config.BoolTrue
+	extraPorts := []string{fmt.Sprintf("%s:%d", addr, vscodeweb.DefaultVSCodePort)}
+	return tunnel.StartBrowserTunnel(tunnel.BrowserTunnelParams{
+		Ctx:              ctx,
+		DevPodConfig:     params.DevPodConfig,
+		Client:           params.Client,
+		User:             params.User,
+		TargetURL:        targetURL,
+		ForwardPorts:     forwardPorts,
+		ExtraPorts:       extraPorts,
+		AuthSockID:       params.SSHAuthSockID,
+		GitSSHSigningKey: params.GitSSHSigningKey,
+		Logger:           params.Log,
+		DaemonStartFunc:  makeDaemonStartFunc(params, forwardPorts, extraPorts),
+	})
+}
+
+//nolint:dupl // openCodeServerBrowser and openVSCodeWebBrowser are intentionally parallel but use distinct IDE packages
+func openCodeServerBrowser(
+	ctx context.Context,
+	ideOptions map[string]config.OptionValue,
+	params Params,
+) error {
+	if params.GPGAgentForwarding {
+		if err := gpg.ForwardAgent(params.Client, params.Log); err != nil {
+			return err
+		}
+	}
+
+	folder := params.Result.SubstitutionContext.ContainerWorkspaceFolder
+	addr, vscodePort, err := ParseAddressAndPort(
+		codeserver.Options.GetValue(ideOptions, codeserver.BindAddressOption),
+		codeserver.DefaultVSCodePort,
+	)
+	if err != nil {
+		return err
+	}
+
+	targetURL := fmt.Sprintf("http://localhost:%d/?folder=%s", vscodePort, folder)
+	if codeserver.Options.GetValue(ideOptions, codeserver.OpenOption) == config.BoolTrue {
+		go func() {
+			if openErr := open2.Open(ctx, targetURL, params.Log); openErr != nil {
+				params.Log.Errorf("error opening code-server: %v", openErr)
+			}
+			params.Log.Infof(
+				"started code-server in browser mode. " +
+					"Please keep this terminal open as long as you use code-server",
+			)
+		}()
+	}
+
+	forwardPorts := codeserver.Options.GetValue(
+		ideOptions,
+		codeserver.ForwardPortsOption,
+	) == config.BoolTrue
+	extraPorts := []string{fmt.Sprintf("%s:%d", addr, codeserver.DefaultVSCodePort)}
 	return tunnel.StartBrowserTunnel(tunnel.BrowserTunnelParams{
 		Ctx:              ctx,
 		DevPodConfig:     params.DevPodConfig,
