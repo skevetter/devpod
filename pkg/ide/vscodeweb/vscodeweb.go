@@ -40,8 +40,8 @@ var Options = ide.Options{
 	ForwardPortsOption: {
 		Name:        ForwardPortsOption,
 		Description: "If DevPod should automatically do port-forwarding",
-		Default:     "true",
-		Enum:        []string{"true", "false"},
+		Default:     config.BoolTrue,
+		Enum:        []string{config.BoolTrue, config.BoolFalse},
 	},
 	BindAddressOption: {
 		Name:        BindAddressOption,
@@ -56,8 +56,8 @@ var Options = ide.Options{
 	OpenOption: {
 		Name:        OpenOption,
 		Description: "If DevPod should automatically open the browser",
-		Default:     "true",
-		Enum:        []string{"true", "false"},
+		Default:     config.BoolTrue,
+		Enum:        []string{config.BoolTrue, config.BoolFalse},
 	},
 	DownloadArm64Option: {
 		Name:        DownloadArm64Option,
