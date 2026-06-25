@@ -7,6 +7,8 @@ const (
 	IDEVSCode          IDE = "vscode"
 	IDEVSCodeInsiders  IDE = "vscode-insiders"
 	IDEOpenVSCode      IDE = "openvscode"
+	IDEVSCodeWeb       IDE = "vscode-web"
+	IDECodeServer      IDE = "code-server"
 	IDEIntellij        IDE = "intellij"
 	IDEGoland          IDE = "goland"
 	IDERustRover       IDE = "rustrover"
