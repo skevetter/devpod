@@ -79,6 +79,8 @@ const IDE_ICONS: Record<string, string> = {
   windsurf: WindsurfSvg,
   antigravity: AntigravitySvg,
   bob: BobSvg,
+  "vscode-web": VSCodeBrowser,
+  "code-server": VSCodeBrowser,
 }
 
 type TIDEIconProps = Readonly<{ ide: TIDE; size?: "sm" | "md" }> & BoxProps

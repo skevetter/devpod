@@ -17,6 +17,8 @@ const RSTUDIO = "rstudio"
 const WINDSURF = "windsurf"
 const ANTIGRAVITY = "antigravity"
 const BOB = "bob"
+const VSCODE_WEB = "vscode-web"
+const CODE_SERVER = "code-server"
 
 export function useIDEs() {
   const idesQuery = useQuery({
@@ -41,6 +43,8 @@ export function useIDEs() {
         if (ide.name === WINDSURF && settings.experimental_windsurf) return true
         if (ide.name === ANTIGRAVITY && settings.experimental_antigravity) return true
         if (ide.name === BOB && settings.experimental_bob) return true
+        if (ide.name === VSCODE_WEB && settings.experimental_vscodeWeb) return true
+        if (ide.name === CODE_SERVER && settings.experimental_codeServer) return true
 
         return false
       }),

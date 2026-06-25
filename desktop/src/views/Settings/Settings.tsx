@@ -535,6 +535,26 @@ function ExperimentalSettings() {
             Bob
           </FormLabel>
         </HStack>
+
+        <HStack width="full" align="center">
+          <Switch
+            isChecked={settings.experimental_vscodeWeb}
+            onChange={(e) => set("experimental_vscodeWeb", e.target.checked)}
+          />
+          <FormLabel marginBottom="0" whiteSpace="nowrap" fontSize="sm">
+            VS Code Web
+          </FormLabel>
+        </HStack>
+
+        <HStack width="full" align="center">
+          <Switch
+            isChecked={settings.experimental_codeServer}
+            onChange={(e) => set("experimental_codeServer", e.target.checked)}
+          />
+          <FormLabel marginBottom="0" whiteSpace="nowrap" fontSize="sm">
+            code-server
+          </FormLabel>
+        </HStack>
       </SettingSection>
 
       <SettingSection title="Additional CLI Flags" description={cliFlagsHelpText}>

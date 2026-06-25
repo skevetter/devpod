@@ -205,6 +205,8 @@ export const SUPPORTED_IDES = [
   "windsurf",
   "antigravity",
   "bob",
+  "vscode-web",
+  "code-server",
 ] as const
 export type TSupportedIDE = (typeof SUPPORTED_IDES)[number]
 export type TImportWorkspaceConfig = Readonly<{
