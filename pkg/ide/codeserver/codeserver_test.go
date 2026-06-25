@@ -16,6 +16,20 @@ func TestGetReleaseUrlDefaults(t *testing.T) {
 	}
 }
 
+func TestGetReleaseUrlTrimsLeadingV(t *testing.T) {
+	o := &CodeServerServer{values: map[string]config.OptionValue{
+		VersionOption: {Value: "v4.99.0"},
+	}}
+	url := o.getReleaseUrl()
+	if strings.Contains(url, "vv4.99.0") {
+		t.Fatalf("leading v not trimmed: %s", url)
+	}
+	const wantSubstr = "releases/download/v4.99.0/code-server-4.99.0-linux-"
+	if !strings.Contains(url, wantSubstr) {
+		t.Fatalf("unexpected url for v-prefixed version: %s", url)
+	}
+}
+
 func TestGetReleaseUrlOverride(t *testing.T) {
 	o := &CodeServerServer{values: map[string]config.OptionValue{
 		DownloadAmd64Option: {Value: "https://example.com/amd64.tar.gz"},

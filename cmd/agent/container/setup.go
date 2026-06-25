@@ -678,11 +678,13 @@ func (cmd *SetupContainerCmd) setupVSCodeWeb(
 	}
 
 	user := config.GetRemoteUser(setupInfo)
+	// Bind to loopback: DevPod's tunnel dials localhost inside the container,
+	// so there's no need to expose the IDE on all container interfaces.
 	server := vscodeweb.NewVSCodeWebServer(
 		vsCodeConfiguration.Extensions,
 		settings,
 		user,
-		"0.0.0.0",
+		"127.0.0.1",
 		strconv.Itoa(vscodeweb.DefaultVSCodePort),
 		ideOptions,
 		log,
@@ -734,11 +736,14 @@ func (cmd *SetupContainerCmd) setupCodeServer(
 	}
 
 	user := config.GetRemoteUser(setupInfo)
+	// Bind to loopback: DevPod's tunnel dials localhost inside the container,
+	// and code-server runs with --auth none, so it must not be exposed on
+	// other container interfaces.
 	server := codeserver.NewCodeServerServer(
 		vsCodeConfiguration.Extensions,
 		settings,
 		user,
-		"0.0.0.0",
+		"127.0.0.1",
 		strconv.Itoa(codeserver.DefaultVSCodePort),
 		ideOptions,
 		log,

@@ -52,6 +52,7 @@ var Options = ide.Options{
 		Name:        VersionOption,
 		Description: "The VS Code CLI build channel to download (stable or insider)",
 		Default:     "stable",
+		Enum:        []string{"stable", "insider"},
 	},
 	OpenOption: {
 		Name:        OpenOption,
@@ -155,7 +156,9 @@ func (o *VSCodeWebServer) Start() error {
 	}
 
 	if o.host == "" {
-		o.host = "0.0.0.0"
+		// Access is via DevPod's tunnel, which dials localhost inside the
+		// container; bind to loopback rather than all interfaces.
+		o.host = "127.0.0.1"
 	}
 	if o.port == "" {
 		o.port = strconv.Itoa(DefaultVSCodePort)

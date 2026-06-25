@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strconv"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 	"github.com/skevetter/devpod/pkg/command"
@@ -154,7 +155,10 @@ func (o *CodeServerServer) Start() error {
 	}
 
 	if o.host == "" {
-		o.host = "0.0.0.0"
+		// Access is via DevPod's tunnel, which dials localhost inside the
+		// container; bind to loopback so the auth-less server isn't exposed
+		// on other container interfaces.
+		o.host = "127.0.0.1"
 	}
 	if o.port == "" {
 		o.port = strconv.Itoa(DefaultVSCodePort)
@@ -188,7 +192,10 @@ func (o *CodeServerServer) Start() error {
 
 func (o *CodeServerServer) getReleaseUrl() string {
 	var url string
-	version := Options.GetValue(o.values, VersionOption)
+	// The release tag and asset names are like v4.126.0 / 4.126.0; accept a
+	// user-supplied "v4.126.0" by trimming the leading "v" so the template
+	// doesn't produce "vv4.126.0".
+	version := strings.TrimPrefix(Options.GetValue(o.values, VersionOption), "v")
 
 	if runtime.GOARCH == "arm64" {
 		url = Options.GetValue(o.values, DownloadArm64Option)
