@@ -11,12 +11,14 @@ import (
 	"github.com/skevetter/devpod/pkg/command"
 	"github.com/skevetter/devpod/pkg/config"
 	"github.com/skevetter/devpod/pkg/ide"
+	"github.com/skevetter/devpod/pkg/ide/codeserver"
 	"github.com/skevetter/devpod/pkg/ide/fleet"
 	"github.com/skevetter/devpod/pkg/ide/jetbrains"
 	"github.com/skevetter/devpod/pkg/ide/jupyter"
 	"github.com/skevetter/devpod/pkg/ide/openvscode"
 	"github.com/skevetter/devpod/pkg/ide/rstudio"
 	"github.com/skevetter/devpod/pkg/ide/vscode"
+	"github.com/skevetter/devpod/pkg/ide/vscodeweb"
 	"github.com/skevetter/devpod/pkg/provider"
 )
 
@@ -59,6 +61,22 @@ var AllowedIDEs = []AllowedIDE{
 		Options:     openvscode.Options,
 		Icon:        config.WebsiteAssetsURL + "/vscodebrowser.svg",
 		Group:       config.IDEGroupPrimary,
+	},
+	{
+		Name:         config.IDEVSCodeWeb,
+		DisplayName:  "VS Code Web",
+		Options:      vscodeweb.Options,
+		Icon:         config.WebsiteAssetsURL + "/vscodebrowser.svg",
+		Experimental: true,
+		Group:        config.IDEGroupPrimary,
+	},
+	{
+		Name:         config.IDECodeServer,
+		DisplayName:  "code-server",
+		Options:      codeserver.Options,
+		Icon:         config.WebsiteAssetsURL + "/vscodebrowser.svg",
+		Experimental: true,
+		Group:        config.IDEGroupPrimary,
 	},
 	{
 		Name:         config.IDECursor,
