@@ -60,7 +60,7 @@ var AllowedIDEs = []AllowedIDE{
 		DisplayName: "VS Code Browser",
 		Options:     openvscode.Options,
 		Icon:        config.WebsiteAssetsURL + "/vscodebrowser.svg",
-		Group:       config.IDEGroupPrimary,
+		Group:       config.IDEGroupBrowser,
 	},
 	{
 		Name:         config.IDEVSCodeWeb,
@@ -68,7 +68,7 @@ var AllowedIDEs = []AllowedIDE{
 		Options:      vscodeweb.Options,
 		Icon:         config.WebsiteAssetsURL + "/vscodebrowser.svg",
 		Experimental: true,
-		Group:        config.IDEGroupPrimary,
+		Group:        config.IDEGroupBrowser,
 	},
 	{
 		Name:         config.IDECodeServer,
@@ -76,7 +76,7 @@ var AllowedIDEs = []AllowedIDE{
 		Options:      codeserver.Options,
 		Icon:         config.WebsiteAssetsURL + "/vscodebrowser.svg",
 		Experimental: true,
-		Group:        config.IDEGroupPrimary,
+		Group:        config.IDEGroupBrowser,
 	},
 	{
 		Name:         config.IDECursor,

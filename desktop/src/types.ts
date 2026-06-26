@@ -28,7 +28,7 @@ export type TIDE = Readonly<{
   icon: TMaybe<string>
   iconDark: TMaybe<string>
   experimental: TMaybe<boolean>
-  group: TMaybe<"Primary" | "JetBrains" | "Other">
+  group: TMaybe<"Primary" | "Browser" | "JetBrains" | "Other">
 }>
 //#endregion
 

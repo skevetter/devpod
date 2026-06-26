@@ -35,6 +35,7 @@ type IDEGroup string
 
 const (
 	IDEGroupPrimary   IDEGroup = "Primary"
+	IDEGroupBrowser   IDEGroup = "Browser"
 	IDEGroupJetBrains IDEGroup = "JetBrains"
 	IDEGroupOther     IDEGroup = "Other"
 )
