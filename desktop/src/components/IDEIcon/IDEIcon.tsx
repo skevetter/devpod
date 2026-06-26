@@ -31,6 +31,7 @@ import {
   VSCodeBrowser,
   VSCodeWebSvg,
   CodeServerSvg,
+  CodeServerDarkSvg,
   VSCodeInsidersSvg,
   VSCodeSvg,
   WebstormSvg,
@@ -83,6 +84,7 @@ const IDE_ICONS: Record<string, string> = {
   bob: BobSvg,
   "vscode-web": VSCodeWebSvg,
   "code-server": CodeServerSvg,
+  "code-server_dark": CodeServerDarkSvg,
 }
 
 type TIDEIconProps = Readonly<{ ide: TIDE; size?: "sm" | "md" }> & BoxProps
