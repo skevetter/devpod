@@ -57,7 +57,7 @@ var AllowedIDEs = []AllowedIDE{
 	},
 	{
 		Name:        config.IDEOpenVSCode,
-		DisplayName: "VS Code Browser",
+		DisplayName: "OpenVSCode Server",
 		Options:     openvscode.Options,
 		Icon:        config.WebsiteAssetsURL + "/vscodebrowser.svg",
 		Group:       config.IDEGroupBrowser,

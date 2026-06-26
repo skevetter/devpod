@@ -543,7 +543,11 @@ function IDEInput({ ides, field, onClick }: TIDEInputProps) {
             <ExampleCard
               name={ide.displayName}
               size="sm"
-              image={<IDEIcon ide={ide} />}
+              image={
+                <Box boxSize="full" p="2">
+                  <IDEIcon ide={ide} />
+                </Box>
+              }
               isSelected={isSelected}
               onClick={() => onClick(ide.name!)}
             />
