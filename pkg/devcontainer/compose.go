@@ -1048,6 +1048,18 @@ func (r *runner) extendedDockerComposeUp(
 	return dockerComposePath, nil
 }
 
+// escapeComposeLabelValue prepares a label value for the generated docker-compose
+// override file. yaml.Marshal already handles all YAML quoting, so the only escaping
+// needed is doubling '$' so docker compose does not interpolate it as a variable
+// reference ('$$' collapses back to '$').
+//
+// It must NOT escape single quotes: doing so previously injected an illegal `\'`
+// into the devcontainer.metadata JSON label, which then failed to parse and caused
+// vscode customizations to be silently dropped (see #770).
+func escapeComposeLabelValue(v string) string {
+	return strings.ReplaceAll(v, "$", "$$")
+}
+
 func (r *runner) generateDockerComposeUpProject(
 	parsedConfig *config.SubstitutedConfig,
 	mergedConfig *config.MergedDevContainerConfig,
@@ -1090,10 +1102,7 @@ exec "$$@"
 		config.DockerIDLabel: r.ID,
 	}
 	for k, v := range additionalLabels {
-		// Escape $ and ' to prevent substituting local environment variables!
-		label := regexp.MustCompile(`\$`).ReplaceAllString(v, "$$$$")
-		label = regexp.MustCompile(`'`).ReplaceAllString(label, `\'\'`)
-		labels.Add(k, label)
+		labels.Add(k, escapeComposeLabelValue(v))
 	}
 
 	overrideService := &composetypes.ServiceConfig{
