@@ -31,12 +31,14 @@ import (
 	"github.com/skevetter/devpod/pkg/dockercredentials"
 	"github.com/skevetter/devpod/pkg/extract"
 	"github.com/skevetter/devpod/pkg/git"
+	"github.com/skevetter/devpod/pkg/ide/codeserver"
 	"github.com/skevetter/devpod/pkg/ide/fleet"
 	"github.com/skevetter/devpod/pkg/ide/jetbrains"
 	"github.com/skevetter/devpod/pkg/ide/jupyter"
 	"github.com/skevetter/devpod/pkg/ide/openvscode"
 	"github.com/skevetter/devpod/pkg/ide/rstudio"
 	"github.com/skevetter/devpod/pkg/ide/vscode"
+	"github.com/skevetter/devpod/pkg/ide/vscodeweb"
 	provider2 "github.com/skevetter/devpod/pkg/provider"
 	"github.com/skevetter/devpod/pkg/ts"
 	"github.com/skevetter/log"
@@ -478,6 +480,10 @@ func (cmd *SetupContainerCmd) installIDE(
 		return cmd.setupVSCode(setupInfo, ide.Options, vscode.FlavorBob, log)
 	case string(config2.IDEOpenVSCode):
 		return cmd.setupOpenVSCode(setupInfo, ide.Options, log)
+	case string(config2.IDEVSCodeWeb):
+		return cmd.setupVSCodeWeb(setupInfo, ide.Options, log)
+	case string(config2.IDECodeServer):
+		return cmd.setupCodeServer(setupInfo, ide.Options, log)
 	case string(config2.IDEGoland):
 		return jetbrains.NewGolandServer(config.GetRemoteUser(setupInfo), ide.Options, log).
 			Install(setupInfo)
@@ -652,6 +658,123 @@ func (cmd *SetupContainerCmd) setupOpenVSCode(
 
 	// start the server in the background
 	return openVSCode.Start()
+}
+
+//nolint:dupl // setupVSCodeWeb and setupCodeServer are intentionally parallel but use distinct IDE packages
+func (cmd *SetupContainerCmd) setupVSCodeWeb(
+	setupInfo *config.Result,
+	ideOptions map[string]config2.OptionValue,
+	log log.Logger,
+) error {
+	log.Debugf("setup vscode-web")
+	vsCodeConfiguration := config.GetVSCodeConfiguration(setupInfo.MergedConfig)
+	settings := ""
+	if len(vsCodeConfiguration.Settings) > 0 {
+		out, err := json.Marshal(vsCodeConfiguration.Settings)
+		if err != nil {
+			return err
+		}
+		settings = string(out)
+	}
+
+	user := config.GetRemoteUser(setupInfo)
+	// Bind to loopback: DevPod's tunnel dials localhost inside the container,
+	// so there's no need to expose the IDE on all container interfaces.
+	server := vscodeweb.NewVSCodeWebServer(
+		vsCodeConfiguration.Extensions,
+		settings,
+		user,
+		"127.0.0.1",
+		strconv.Itoa(vscodeweb.DefaultVSCodePort),
+		ideOptions,
+		log,
+	)
+
+	if err := server.Install(); err != nil {
+		return err
+	}
+
+	if len(vsCodeConfiguration.Extensions) > 0 {
+		err := command.StartBackgroundOnce("vscode-web-async", func() (*exec.Cmd, error) {
+			log.Infof(
+				"installing extensions in the background: %s",
+				strings.Join(vsCodeConfiguration.Extensions, ","),
+			)
+			binaryPath, err := os.Executable()
+			if err != nil {
+				return nil, err
+			}
+			//nolint:gosec // binaryPath is from os.Executable(), not user input
+			return exec.Command(
+				binaryPath, "agent", "container", "vscodeweb-async",
+				"--setup-info", cmd.SetupInfo,
+			), nil
+		})
+		if err != nil {
+			return fmt.Errorf("install extensions: %w", err)
+		}
+	}
+
+	return server.Start()
+}
+
+//nolint:dupl // setupCodeServer and setupVSCodeWeb are intentionally parallel but use distinct IDE packages
+func (cmd *SetupContainerCmd) setupCodeServer(
+	setupInfo *config.Result,
+	ideOptions map[string]config2.OptionValue,
+	log log.Logger,
+) error {
+	log.Debugf("setup code-server")
+	vsCodeConfiguration := config.GetVSCodeConfiguration(setupInfo.MergedConfig)
+	settings := ""
+	if len(vsCodeConfiguration.Settings) > 0 {
+		out, err := json.Marshal(vsCodeConfiguration.Settings)
+		if err != nil {
+			return err
+		}
+		settings = string(out)
+	}
+
+	user := config.GetRemoteUser(setupInfo)
+	// Bind to loopback: DevPod's tunnel dials localhost inside the container,
+	// and code-server runs with --auth none, so it must not be exposed on
+	// other container interfaces.
+	server := codeserver.NewCodeServerServer(
+		vsCodeConfiguration.Extensions,
+		settings,
+		user,
+		"127.0.0.1",
+		strconv.Itoa(codeserver.DefaultVSCodePort),
+		ideOptions,
+		log,
+	)
+
+	if err := server.Install(); err != nil {
+		return err
+	}
+
+	if len(vsCodeConfiguration.Extensions) > 0 {
+		err := command.StartBackgroundOnce("code-server-async", func() (*exec.Cmd, error) {
+			log.Infof(
+				"installing extensions in the background: %s",
+				strings.Join(vsCodeConfiguration.Extensions, ","),
+			)
+			binaryPath, err := os.Executable()
+			if err != nil {
+				return nil, err
+			}
+			//nolint:gosec // binaryPath is from os.Executable(), not user input
+			return exec.Command(
+				binaryPath, "agent", "container", "codeserver-async",
+				"--setup-info", cmd.SetupInfo,
+			), nil
+		})
+		if err != nil {
+			return fmt.Errorf("install extensions: %w", err)
+		}
+	}
+
+	return server.Start()
 }
 
 func configureSystemGitCredentials(

@@ -7,6 +7,8 @@ const (
 	IDEVSCode          IDE = "vscode"
 	IDEVSCodeInsiders  IDE = "vscode-insiders"
 	IDEOpenVSCode      IDE = "openvscode"
+	IDEVSCodeWeb       IDE = "vscode-web"
+	IDECodeServer      IDE = "code-server"
 	IDEIntellij        IDE = "intellij"
 	IDEGoland          IDE = "goland"
 	IDERustRover       IDE = "rustrover"
@@ -33,6 +35,7 @@ type IDEGroup string
 
 const (
 	IDEGroupPrimary   IDEGroup = "Primary"
+	IDEGroupBrowser   IDEGroup = "Browser"
 	IDEGroupJetBrains IDEGroup = "JetBrains"
 	IDEGroupOther     IDEGroup = "Other"
 )

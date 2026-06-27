@@ -28,7 +28,7 @@ export type TIDE = Readonly<{
   icon: TMaybe<string>
   iconDark: TMaybe<string>
   experimental: TMaybe<boolean>
-  group: TMaybe<"Primary" | "JetBrains" | "Other">
+  group: TMaybe<"Primary" | "Browser" | "JetBrains" | "Other">
 }>
 //#endregion
 
@@ -205,6 +205,8 @@ export const SUPPORTED_IDES = [
   "windsurf",
   "antigravity",
   "bob",
+  "vscode-web",
+  "code-server",
 ] as const
 export type TSupportedIDE = (typeof SUPPORTED_IDES)[number]
 export type TImportWorkspaceConfig = Readonly<{

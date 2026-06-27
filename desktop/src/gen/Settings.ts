@@ -30,6 +30,8 @@ export interface Settings {
   experimental_windsurf: boolean
   experimental_antigravity: boolean
   experimental_bob: boolean
+  experimental_vscodeWeb: boolean
+  experimental_codeServer: boolean
   experimental_devPodPro: boolean
   experimental_colorMode: ColorMode
 }

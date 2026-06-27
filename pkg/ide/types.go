@@ -51,6 +51,10 @@ func ReusesAuthSock(ide string) bool {
 	switch ide {
 	case string(config.IDEOpenVSCode):
 		return true
+	case string(config.IDEVSCodeWeb):
+		return true
+	case string(config.IDECodeServer):
+		return true
 	case string(config.IDEJupyterNotebook):
 		return true
 	default:

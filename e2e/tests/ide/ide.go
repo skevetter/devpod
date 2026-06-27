@@ -39,6 +39,12 @@ var _ = ginkgo.Describe("devpod ide test suite", ginkgo.Label("ide"), ginkgo.Ord
 		err = f.DevPodUpWithIDE(ctx, tempDir, "--open-ide=false", "--ide=openvscode")
 		framework.ExpectNoError(err)
 
+		err = f.DevPodUpWithIDE(ctx, tempDir, "--open-ide=false", "--ide=vscode-web")
+		framework.ExpectNoError(err)
+
+		err = f.DevPodUpWithIDE(ctx, tempDir, "--open-ide=false", "--ide=code-server")
+		framework.ExpectNoError(err)
+
 		err = f.DevPodUpWithIDE(ctx, tempDir, "--open-ide=false", "--ide=jupyternotebook")
 		framework.ExpectNoError(err)
 

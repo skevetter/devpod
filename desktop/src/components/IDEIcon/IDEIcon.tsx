@@ -29,6 +29,9 @@ import {
   RubyMineSvg,
   RustRoverSvg,
   VSCodeBrowser,
+  OpenVSCodeServerImg,
+  CodeServerSvg,
+  CodeServerDarkSvg,
   VSCodeInsidersSvg,
   VSCodeSvg,
   WebstormSvg,
@@ -56,7 +59,7 @@ const IDE_ICONS: Record<string, string> = {
   none: NoneSvg,
   vscode: VSCodeSvg,
   "vscode-insiders": VSCodeInsidersSvg,
-  openvscode: VSCodeBrowser,
+  openvscode: OpenVSCodeServerImg,
   intellij: IntelliJSvg,
   goland: GolandSvg,
   rustrover: RustRoverSvg,
@@ -79,6 +82,9 @@ const IDE_ICONS: Record<string, string> = {
   windsurf: WindsurfSvg,
   antigravity: AntigravitySvg,
   bob: BobSvg,
+  "vscode-web": VSCodeBrowser,
+  "code-server": CodeServerSvg,
+  "code-server_dark": CodeServerDarkSvg,
 }
 
 type TIDEIconProps = Readonly<{ ide: TIDE; size?: "sm" | "md" }> & BoxProps
