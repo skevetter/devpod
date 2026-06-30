@@ -57,6 +57,7 @@ var _ = ginkgo.Describe(
 				tc.dockerHelper,
 				tc.composeHelper,
 				workspace.UID,
+				workspace.ID,
 				"app",
 			)
 			framework.ExpectNoError(err)
@@ -110,6 +111,7 @@ var _ = ginkgo.Describe(
 				tc.dockerHelper,
 				tc.composeHelper,
 				workspace.UID,
+				workspace.ID,
 				"app",
 			)
 			framework.ExpectNoError(err)
@@ -246,6 +248,7 @@ var _ = ginkgo.Describe(
 				tc.dockerHelper,
 				tc.composeHelper,
 				workspace.UID,
+				workspace.ID,
 				"app",
 			)
 			framework.ExpectNoError(err)
@@ -385,7 +388,7 @@ var _ = ginkgo.Describe(
 				fmt.Sprintf(
 					"%s=%s",
 					compose.ProjectLabel,
-					tc.composeHelper.GetProjectName(workspace.UID),
+					tc.composeHelper.GetProjectName(workspace.UID, workspace.ID),
 				),
 				fmt.Sprintf("%s=%s", compose.ServiceLabel, "app"),
 			})
@@ -439,7 +442,7 @@ var _ = ginkgo.Describe(
 				fmt.Sprintf(
 					"%s=%s",
 					compose.ProjectLabel,
-					tc.composeHelper.GetProjectName(workspace.UID),
+					tc.composeHelper.GetProjectName(workspace.UID, workspace.ID),
 				),
 				fmt.Sprintf("%s=%s", compose.ServiceLabel, "app"),
 			})
@@ -459,7 +462,7 @@ var _ = ginkgo.Describe(
 			)
 			framework.ExpectNoError(err)
 
-			ids, err := findComposeContainer(ctx, tc.dockerHelper, tc.composeHelper, ws.UID, "app")
+			ids, err := findComposeContainer(ctx, tc.dockerHelper, tc.composeHelper, ws.UID, ws.ID, "app")
 			framework.ExpectNoError(err)
 			gomega.Expect(ids).To(gomega.HaveLen(1), "1 compose container to be created")
 
@@ -476,7 +479,7 @@ var _ = ginkgo.Describe(
 			)
 			framework.ExpectNoError(err)
 
-			ids, err := findComposeContainer(ctx, tc.dockerHelper, tc.composeHelper, ws.UID, "app")
+			ids, err := findComposeContainer(ctx, tc.dockerHelper, tc.composeHelper, ws.UID, ws.ID, "app")
 			framework.ExpectNoError(err)
 			gomega.Expect(ids).To(gomega.HaveLen(1), "1 compose container to be created")
 
@@ -497,6 +500,7 @@ var _ = ginkgo.Describe(
 				tc.dockerHelper,
 				tc.composeHelper,
 				workspace.UID,
+				workspace.ID,
 				"app",
 			)
 			framework.ExpectNoError(err)
@@ -507,6 +511,7 @@ var _ = ginkgo.Describe(
 				tc.dockerHelper,
 				tc.composeHelper,
 				workspace.UID,
+				workspace.ID,
 				"db",
 			)
 			framework.ExpectNoError(err)
@@ -525,6 +530,7 @@ var _ = ginkgo.Describe(
 				tc.dockerHelper,
 				tc.composeHelper,
 				workspace.UID,
+				workspace.ID,
 				"app",
 			)
 			framework.ExpectNoError(err)
@@ -535,6 +541,7 @@ var _ = ginkgo.Describe(
 				tc.dockerHelper,
 				tc.composeHelper,
 				workspace.UID,
+				workspace.ID,
 				"db",
 			)
 			framework.ExpectNoError(err)
@@ -562,6 +569,7 @@ var _ = ginkgo.Describe(
 				tc.dockerHelper,
 				tc.composeHelper,
 				workspace.UID,
+				workspace.ID,
 				"app",
 			)
 			framework.ExpectNoError(err)
@@ -586,6 +594,7 @@ var _ = ginkgo.Describe(
 				tc.dockerHelper,
 				tc.composeHelper,
 				workspace.UID,
+				workspace.ID,
 				"app",
 			)
 			framework.ExpectNoError(err)
