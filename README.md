@@ -1,4 +1,5 @@
-I am working on a new project called [Devsy](https://devsy.sh/) at [https://github.com/devsy-org/devsy](https://github.com/devsy-org/devsy). I have written more details about Devsy in this linked [issue](https://github.com/skevetter/devpod/issues/773).
+> [!IMPORTANT]
+> I am working on a new project called [Devsy](https://devsy.sh/) at [https://github.com/devsy-org/devsy](https://github.com/devsy-org/devsy). Devsy is a continuation of the changes that I have worked on here to build a better devcontainer experience for developers. I have written more details about Devsy in this linked [issue](https://github.com/skevetter/devpod/issues/773).
 
 ---
 
