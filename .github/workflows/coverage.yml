@@ -1,0 +1,25 @@
+name: Coverage
+
+on:
+  pull_request:
+
+jobs:
+  coverage:
+    name: Run Tests and Upload Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Run tests with coverage
+        run: go list ./... | grep -v -e /test -e /e2e | xargs go test -race -coverprofile=coverage.out -covermode=atomic
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          fail_ci_if_error: true
+          verbose: true
+          dry_run: true
