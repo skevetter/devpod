@@ -101,7 +101,7 @@ func (tc *testContext) getAppContainer(
 	ctx context.Context,
 	workspace *provider2.Workspace,
 ) ([]string, *container.InspectResponse, error) {
-	ids, err := findComposeContainer(ctx, tc.dockerHelper, tc.composeHelper, workspace.UID, "app")
+	ids, err := findComposeContainer(ctx, tc.dockerHelper, tc.composeHelper, workspace.UID, workspace.ID, "app")
 	if err != nil || len(ids) == 0 {
 		return ids, nil, err
 	}
@@ -147,10 +147,10 @@ func findComposeContainer(
 	ctx context.Context,
 	dockerHelper *docker.DockerHelper,
 	composeHelper *compose.ComposeHelper,
-	workspaceUID, serviceName string,
+	workspaceUID, workspaceID, serviceName string,
 ) ([]string, error) {
 	return dockerHelper.FindContainer(ctx, []string{
-		fmt.Sprintf("%s=%s", compose.ProjectLabel, composeHelper.GetProjectName(workspaceUID)),
+		fmt.Sprintf("%s=%s", compose.ProjectLabel, composeHelper.GetProjectName(workspaceUID, workspaceID)),
 		fmt.Sprintf("%s=%s", compose.ServiceLabel, serviceName),
 	})
 }
