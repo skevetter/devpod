@@ -422,7 +422,8 @@ func (r *runner) startContainer(
 				FeaturesStartOverrideFilePrefix,
 			)
 
-			if (persistedBuildFile.fileExists || !persistedBuildFile.foundLabel) &&
+			if !options.Recreate &&
+				(persistedBuildFile.fileExists || !persistedBuildFile.foundLabel) &&
 				persistedStartFile.fileExists {
 				didRestoreFromPersistedShare = true
 

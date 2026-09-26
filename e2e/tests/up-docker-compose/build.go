@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/onsi/ginkgo/v2"
@@ -125,6 +126,82 @@ var _ = ginkgo.Describe(
 			framework.ExpectNoError(err)
 			gomega.Expect(ids2[0]).To(gomega.Equal(ids[0]), "Should use original container")
 		})
+
+		ginkgo.It(
+			"should rebuild features from an extra devcontainer file",
+			func(ctx context.Context) {
+				tempDir, err := setupWorkspace(
+					"tests/up-docker-compose/testdata/docker-compose-rebuild-success",
+					initialDir,
+					f,
+				)
+				framework.ExpectNoError(err)
+				featureDir := filepath.Join(tempDir, "feature")
+				framework.ExpectNoError(os.Mkdir(featureDir, 0o750))
+				framework.ExpectNoError(
+					os.WriteFile(filepath.Join(featureDir, "devcontainer-feature.json"), []byte(`{
+				"id": "marker", "version": "1.0.0", "name": "Marker",
+				"options": {"value": {"type": "string", "default": "default"}}
+			}`), 0o600),
+				)
+				framework.ExpectNoError(
+					os.WriteFile(filepath.Join(featureDir, "install.sh"), []byte(
+						"#!/bin/sh\nset -eu\nprintf '%s' \"$VALUE\" > /usr/local/share/extra-feature-marker\n",
+					), 0o600),
+				)
+				extraPath := filepath.Join(ginkgo.GinkgoT().TempDir(), "extra.json")
+				framework.ExpectNoError(
+					os.WriteFile(
+						extraPath,
+						[]byte(`{"remoteEnv": {"EXTRA_RUNTIME": "kept"}}`),
+						0o600,
+					),
+				)
+				framework.ExpectNoError(
+					f.DevPodUp(ctx, tempDir, "--extra-devcontainer-path", extraPath),
+				)
+
+				ginkgo.By("Leaving a running container unchanged without --recreate")
+				framework.ExpectNoError(os.WriteFile(extraPath, []byte(
+					`{"features": {"./feature": {"value": "first"}}, "remoteEnv": {"EXTRA_RUNTIME": "kept"}}`,
+				), 0o600))
+				framework.ExpectNoError(
+					f.DevPodUp(ctx, tempDir, "--extra-devcontainer-path", extraPath),
+				)
+				_, err = f.DevPodSSH(
+					ctx,
+					tempDir,
+					"test ! -e /usr/local/share/extra-feature-marker",
+				)
+				framework.ExpectNoError(err)
+
+				ginkgo.By("Installing extra features and applying changed options on rebuild")
+				for _, value := range []string{"first", "second"} {
+					framework.ExpectNoError(os.WriteFile(extraPath, fmt.Appendf(
+						nil,
+						`{"features": {"./feature": {"value": %q}}, "remoteEnv": {"EXTRA_RUNTIME": "kept"}}`,
+						value,
+					), 0o600))
+					framework.ExpectNoError(
+						f.DevPodUp(
+							ctx,
+							tempDir,
+							"--extra-devcontainer-path",
+							extraPath,
+							"--recreate",
+						),
+					)
+					output, err := f.DevPodSSH(
+						ctx,
+						tempDir,
+						`test "$EXTRA_RUNTIME" = kept && cat /usr/local/share/extra-feature-marker`,
+					)
+					framework.ExpectNoError(err)
+					gomega.Expect(strings.TrimSpace(output)).To(gomega.Equal(value))
+				}
+			},
+			ginkgo.SpecTimeout(framework.GetTimeout()*3),
+		)
 
 		ginkgo.It("should delete container upon successful rebuild", func(ctx context.Context) {
 			tempDir, err := setupWorkspace(

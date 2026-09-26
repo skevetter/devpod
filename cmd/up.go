@@ -157,7 +157,9 @@ func (cmd *UpCmd) registerDevContainerFlags(upCmd *cobra.Command) {
 				"(e.g., folder name in .devcontainer/FOLDER/devcontainer.json)")
 	upCmd.Flags().
 		StringVar(&cmd.ExtraDevContainerPath, "extra-devcontainer-path", "",
-			"The path to an additional devcontainer.json file to override original devcontainer.json")
+			"The path to an additional devcontainer.json for runtime settings and build features (local Docker only). "+
+				"Feature options override the project's; --additional-features takes precedence. "+
+				"Use --recreate to apply feature changes")
 	upCmd.Flags().
 		StringVar(&cmd.FallbackImage, "fallback-image", "",
 			"The fallback image to use if no devcontainer configuration has been detected")

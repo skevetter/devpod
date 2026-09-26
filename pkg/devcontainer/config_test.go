@@ -2,6 +2,7 @@ package devcontainer
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
@@ -251,6 +252,95 @@ func (s *SubstituteTestSuite) TestSubstitute_AdditionalFeaturesEmpty() {
 
 	s.NoError(err)
 	s.Nil(result.Config.Features)
+}
+
+func (s *SubstituteTestSuite) TestSubstitute_ExtraFeatures() {
+	const node = "ghcr.io/devcontainers/features/node:1"
+	extraPath := filepath.Join(s.T().TempDir(), "extra.json")
+	s.Require().NoError(os.WriteFile(extraPath, []byte(`{
+		// Personal features.
+		"features": {
+			"ghcr.io/devcontainers/features/node:1": {"version": "${localEnv:NODE_VERSION}"},
+			"ghcr.io/devcontainers/features/git:1": {},
+		},
+		"forwardPorts": [3774],
+	}`), 0o600))
+
+	for _, tc := range []struct {
+		name       string
+		base       map[string]any
+		additional string
+		version    string
+	}{
+		{name: "without base features", version: "20"},
+		{
+			name: "extra replaces base options",
+			base: map[string]any{
+				node: map[string]any{"version": "18", "installYarnUsingApt": false},
+			},
+			version: "20",
+		},
+		{
+			name:       "CLI replaces extra options",
+			base:       map[string]any{node: map[string]any{"version": "18"}},
+			additional: `{"ghcr.io/devcontainers/features/node:1": {"version": "22"}}`,
+			version:    "22",
+		},
+	} {
+		s.Run(tc.name, func() {
+			if tc.base != nil {
+				tc.base["base-only"] = map[string]any{"enabled": false}
+			}
+			rawConfig := &config.DevContainerConfig{
+				Origin:                 "/workspace/.devcontainer/devcontainer.json",
+				DevContainerConfigBase: config.DevContainerConfigBase{Features: tc.base},
+			}
+			original := config.CloneDevContainerConfig(rawConfig)
+			result, _, err := s.runner.substitute(provider2.CLIOptions{
+				ExtraDevContainerPath: extraPath,
+				AdditionalFeatures:    tc.additional,
+				InitEnv:               []string{"NODE_VERSION=20"},
+			}, rawConfig)
+
+			s.Require().NoError(err)
+			expected := map[string]any{
+				node:                                   map[string]any{"version": tc.version},
+				"ghcr.io/devcontainers/features/git:1": map[string]any{},
+			}
+			if tc.base != nil {
+				expected["base-only"] = map[string]any{"enabled": false}
+			}
+			s.Equal(expected, result.Config.Features)
+			s.Equal(original, rawConfig)
+			s.Equal(original.Origin, result.Config.Origin)
+		})
+	}
+}
+
+func (s *SubstituteTestSuite) TestSubstitute_ExtraFileWithoutFeatures() {
+	extraPath := filepath.Join(s.T().TempDir(), "extra.json")
+	for _, content := range []string{`{"forwardPorts": [3774]}`, `{"features": {}}`, `{"features": null}`} {
+		s.Require().NoError(os.WriteFile(extraPath, []byte(content), 0o600))
+		result, _, err := s.runner.substitute(provider2.CLIOptions{
+			ExtraDevContainerPath: extraPath,
+		}, &config.DevContainerConfig{})
+		s.Require().NoError(err)
+		s.Nil(result.Config.Features)
+	}
+}
+
+func (s *SubstituteTestSuite) TestSubstitute_ExtraFeaturesInvalidFile() {
+	extraPath := filepath.Join(s.T().TempDir(), "extra.json")
+	for _, content := range []string{"", `{invalid`, `{"features": []}`} {
+		if content != "" {
+			s.Require().NoError(os.WriteFile(extraPath, []byte(content), 0o600))
+		}
+		_, _, err := s.runner.substitute(provider2.CLIOptions{
+			ExtraDevContainerPath: extraPath,
+		}, &config.DevContainerConfig{})
+		s.Require().Error(err)
+		s.Contains(err.Error(), "--extra-devcontainer-path")
+	}
 }
 
 func (s *SubstituteTestSuite) TestResolveCLIMounts_SubstitutesVariables() {
