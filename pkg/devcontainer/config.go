@@ -196,6 +196,14 @@ func (r *runner) substitute(
 		parsedConfig.ImageContainer = config.ImageContainer{Image: options.DevContainerImage}
 	}
 
+	if err := mergeExtraFeatures(
+		parsedConfig,
+		substitutionContext,
+		options.ExtraDevContainerPath,
+	); err != nil {
+		return nil, nil, err
+	}
+
 	// merge additional features from CLI flag
 	if options.AdditionalFeatures != "" {
 		additionalFeatures := make(map[string]any)
@@ -221,6 +229,37 @@ func (r *runner) substitute(
 		Config: parsedConfig,
 		Raw:    rawParsedConfig,
 	}, substitutionContext, nil
+}
+
+// mergeExtraFeatures applies extra-file features before the CLI feature overrides.
+func mergeExtraFeatures(
+	parsedConfig *config.DevContainerConfig,
+	substitutionContext *config.SubstitutionContext,
+	extraPath string,
+) error {
+	if extraPath == "" {
+		return nil
+	}
+	extraConfig, err := config.ParseDevContainerJSONFile(extraPath)
+	if err != nil {
+		return fmt.Errorf("parse --extra-devcontainer-path: %w", err)
+	}
+	if len(extraConfig.Features) == 0 {
+		return nil
+	}
+	extraFeatures := map[string]any{}
+	if err := config.Substitute(
+		substitutionContext,
+		extraConfig.Features,
+		&extraFeatures,
+	); err != nil {
+		return fmt.Errorf("substitute --extra-devcontainer-path features: %w", err)
+	}
+	if parsedConfig.Features == nil {
+		parsedConfig.Features = make(map[string]any)
+	}
+	maps.Copy(parsedConfig.Features, extraFeatures)
+	return nil
 }
 
 const (
