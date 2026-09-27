@@ -1,0 +1,17 @@
+coverage:
+  status:
+    project:
+      default:
+        target: auto
+        threshold: 1%
+        informational: false
+
+    patch:
+      default:
+        target: 70%
+        threshold: 0%
+        informational: false
+        only_pulls: true
+
+  ignore:
+    - "**/e2e/**"
