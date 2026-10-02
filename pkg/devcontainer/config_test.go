@@ -2,9 +2,12 @@ package devcontainer
 
 import (
 	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/skevetter/devpod/pkg/devcontainer/config"
+	"github.com/skevetter/devpod/pkg/devcontainer/feature"
 	provider2 "github.com/skevetter/devpod/pkg/provider"
 	"github.com/skevetter/log"
 	"github.com/stretchr/testify/suite"
@@ -18,6 +21,57 @@ const (
 type SubstituteTestSuite struct {
 	suite.Suite
 	runner *runner
+}
+
+func (s *SubstituteTestSuite) TestSubstitute_ExtraFeaturesResolveFromExtraFileDirectory() {
+	root := s.T().TempDir()
+	projectDir := filepath.Join(root, "project")
+	extraDir := filepath.Join(root, "personal", "settings")
+	localFeatureDirs := map[string]string{
+		"./feature":  filepath.Join(extraDir, "feature"),
+		"../feature": filepath.Join(root, "personal", "feature"),
+	}
+	for _, dir := range localFeatureDirs {
+		s.Require().NoError(os.MkdirAll(dir, 0o750))
+		s.Require().NoError(os.WriteFile(
+			filepath.Join(dir, "devcontainer-feature.json"),
+			[]byte(`{"id":"local"}`),
+			0o600,
+		))
+	}
+	s.Require().NoError(os.MkdirAll(projectDir, 0o750))
+	extraPath := filepath.Join(extraDir, "extra.json")
+	s.Require().NoError(os.MkdirAll(extraDir, 0o750))
+	s.Require().NoError(os.WriteFile(
+		extraPath,
+		[]byte(`{"features":{"./feature":{},"../feature":{}}}`),
+		0o600,
+	))
+	extraConfig, err := config.ParseDevContainerJSONFile(extraPath)
+	s.Require().NoError(err)
+
+	result, _, err := s.runner.substitute(provider2.CLIOptions{
+		ExtraDevContainerConfig: extraConfig,
+	}, &config.DevContainerConfig{Origin: filepath.Join(projectDir, "devcontainer.json")})
+	s.Require().NoError(err)
+	for featureID, expectedDir := range localFeatureDirs {
+		relativeToProject, err := filepath.Rel(projectDir, expectedDir)
+		s.Require().NoError(err)
+		s.True(
+			strings.HasPrefix(relativeToProject, ".."),
+			"feature fixture must remain outside the project",
+		)
+		resolvedID, err := filepath.Abs(expectedDir)
+		s.Require().NoError(err)
+		options, ok := result.Config.Features[resolvedID]
+		s.True(ok, "extra feature %s should resolve from extra file directory", featureID)
+		featurePath, err := feature.ProcessFeatureID(resolvedID, result.Config, log.Discard, false)
+		s.Require().NoError(err)
+		s.Equal(expectedDir, featurePath)
+		_, err = config.ParseDevContainerFeature(featurePath)
+		s.Require().NoError(err)
+		s.Equal(map[string]any{}, options)
+	}
 }
 
 func TestSubstituteTestSuite(t *testing.T) {
@@ -251,6 +305,79 @@ func (s *SubstituteTestSuite) TestSubstitute_AdditionalFeaturesEmpty() {
 
 	s.NoError(err)
 	s.Nil(result.Config.Features)
+}
+
+func (s *SubstituteTestSuite) TestSubstitute_ExtraFeatures() {
+	const node = "ghcr.io/devcontainers/features/node:1"
+	extraConfig := &config.DevContainerConfig{}
+	extraConfig.Features = map[string]any{
+		node: map[string]any{
+			"version": "${localEnv:NODE_VERSION}",
+		},
+		"ghcr.io/devcontainers/features/git:1": map[string]any{},
+	}
+
+	for _, tc := range []struct {
+		name       string
+		base       map[string]any
+		additional string
+		version    string
+	}{
+		{name: "without base features", version: "20"},
+		{
+			name: "extra replaces base options",
+			base: map[string]any{
+				node: map[string]any{"version": "18", "installYarnUsingApt": false},
+			},
+			version: "20",
+		},
+		{
+			name:       "CLI replaces extra options",
+			base:       map[string]any{node: map[string]any{"version": "18"}},
+			additional: `{"ghcr.io/devcontainers/features/node:1": {"version": "22"}}`,
+			version:    "22",
+		},
+	} {
+		s.Run(tc.name, func() {
+			if tc.base != nil {
+				tc.base["base-only"] = map[string]any{"enabled": false}
+			}
+			rawConfig := &config.DevContainerConfig{
+				Origin:                 "/workspace/.devcontainer/devcontainer.json",
+				DevContainerConfigBase: config.DevContainerConfigBase{Features: tc.base},
+			}
+			original := config.CloneDevContainerConfig(rawConfig)
+			result, _, err := s.runner.substitute(provider2.CLIOptions{
+				ExtraDevContainerConfig: extraConfig,
+				AdditionalFeatures:      tc.additional,
+				InitEnv:                 []string{"NODE_VERSION=20"},
+			}, rawConfig)
+
+			s.Require().NoError(err)
+			expected := map[string]any{
+				node:                                   map[string]any{"version": tc.version},
+				"ghcr.io/devcontainers/features/git:1": map[string]any{},
+			}
+			if tc.base != nil {
+				expected["base-only"] = map[string]any{"enabled": false}
+			}
+			s.Equal(expected, result.Config.Features)
+			s.Equal(original, rawConfig)
+			s.Equal(original.Origin, result.Config.Origin)
+		})
+	}
+}
+
+func (s *SubstituteTestSuite) TestSubstitute_ExtraFileWithoutFeatures() {
+	for _, features := range []map[string]any{nil, {}} {
+		result, _, err := s.runner.substitute(provider2.CLIOptions{
+			ExtraDevContainerConfig: &config.DevContainerConfig{
+				DevContainerConfigBase: config.DevContainerConfigBase{Features: features},
+			},
+		}, &config.DevContainerConfig{})
+		s.Require().NoError(err)
+		s.Nil(result.Config.Features)
+	}
 }
 
 func (s *SubstituteTestSuite) TestResolveCLIMounts_SubstitutesVariables() {

@@ -100,12 +100,35 @@ field of the `devcontainer.json` file as follows:
 }
 ```
 
+### Personal features and runtime settings
+
+`--extra-devcontainer-path` lets you keep personal features and runtime settings outside the project repository. DevPod reads the file on your machine and passes its configuration to the selected provider, including remote targets:
+
+```json
+{
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli:1": {
+      "version": "latest"
+    }
+  },
+  "forwardPorts": [3774]
+}
+```
+
+```bash
+devpod up . --extra-devcontainer-path ../personal-devcontainer/extra.json
+```
+
+Features from the extra file participate in image, Dockerfile, and Docker Compose builds. For the same feature ID, the extra file replaces the project's feature options, and `--additional-features` takes precedence over both. The entire option value is replaced, rather than merging individual options. Other feature IDs are preserved. Feature option values support the same variable substitution as the project's configuration, including `${localEnv:VARIABLE}`.
+
+Feature changes follow the same create/rebuild lifecycle as the project's devcontainer configuration. Rebuild an existing container to apply them. A normal `up` on a running container does not install new features.
+
 ## devcontainer.json Development Flow
 
 When working on the `devcontainer.json` itself, it's important to understand when DevPod will apply new configuration.
 
 A naive approach would be to delete and recreate a workspace after each `devcontainer.json` change (which obviously works), but DevPod allows you to make changes to the configuration on the fly and reapply them via `devpod up my-workspace --recreate`.
-This will apply **ALL** new configurations including Dockerfile changes as well as new mounts, new features or any other configuration that is not included in the above command. DevPod will only replace the existing running container if the command has succeeded, so if there is a mistake in the new configuration, the existing workspace should not be impacted.
+This reapplies configuration and replaces the running container if the operation succeeds. Docker Compose can restore persisted feature build files and reuse the previous feature image during recreation, so `--recreate` does not always force a fresh feature build or apply changed features.
 The Desktop app equivalent for this is the 'Rebuild' button.
 
 :::warning Recreating / Rebuilding

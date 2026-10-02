@@ -235,6 +235,9 @@ type CLIOptions struct {
 	UidMap                      []string          `json:"uidMap,omitempty"`
 	GidMap                      []string          `json:"gidMap,omitempty"`
 
+	// ExtraDevContainerConfig carries the parsed local file to remote providers.
+	ExtraDevContainerConfig *devcontainerconfig.DevContainerConfig `json:"extraDevContainerConfig,omitempty"`
+
 	// build options
 	// Repository specifies the container registry repository to push the built image to (e.g., ghcr.io/user/image).
 	// When set, the image will be tagged and pushed to this repository after building.

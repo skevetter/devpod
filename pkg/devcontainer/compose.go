@@ -272,13 +272,9 @@ func (r *runner) runDockerCompose(
 		}
 	}
 
-	if options.ExtraDevContainerPath != "" {
+	if extraConfig := options.ExtraDevContainerConfig; extraConfig != nil {
 		if imageMetadataConfig == nil {
 			imageMetadataConfig = &config.ImageMetadataConfig{}
-		}
-		extraConfig, err := config.ParseDevContainerJSONFile(options.ExtraDevContainerPath)
-		if err != nil {
-			return nil, err
 		}
 		config.AddConfigToImageMetadata(extraConfig, imageMetadataConfig)
 	}
@@ -465,13 +461,9 @@ func (r *runner) startContainer(
 			return nil, fmt.Errorf("inspect image: %w", err)
 		}
 
-		if options.ExtraDevContainerPath != "" {
+		if extraConfig := options.ExtraDevContainerConfig; extraConfig != nil {
 			if extendResult.imageMetadata == nil {
 				extendResult.imageMetadata = &config.ImageMetadataConfig{}
-			}
-			extraConfig, err := config.ParseDevContainerJSONFile(options.ExtraDevContainerPath)
-			if err != nil {
-				return nil, err
 			}
 			config.AddConfigToImageMetadata(extraConfig, extendResult.imageMetadata)
 		}

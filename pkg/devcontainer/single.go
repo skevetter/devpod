@@ -168,13 +168,9 @@ func (r *runner) mergeExistingContainerConfig(
 		return nil, err
 	}
 
-	if p.options.ExtraDevContainerPath != "" {
+	if extraConfig := p.options.ExtraDevContainerConfig; extraConfig != nil {
 		if imageMetadataConfig == nil {
 			imageMetadataConfig = &config.ImageMetadataConfig{}
-		}
-		extraConfig, err := config.ParseDevContainerJSONFile(p.options.ExtraDevContainerPath)
-		if err != nil {
-			return nil, err
 		}
 		config.AddConfigToImageMetadata(extraConfig, imageMetadataConfig)
 	}
@@ -218,10 +214,10 @@ func (r *runner) resolveNewContainer(
 ) (*resolvedContainer, error) {
 	buildInfo, err := r.build(ctx, p.parsedConfig, p.substitutionContext, provider2.BuildOptions{
 		CLIOptions: provider2.CLIOptions{
-			PrebuildRepositories:  p.options.PrebuildRepositories,
-			ForceDockerless:       p.options.ForceDockerless,
-			Platform:              p.options.Platform,
-			ExtraDevContainerPath: p.options.ExtraDevContainerPath,
+			PrebuildRepositories:    p.options.PrebuildRepositories,
+			ForceDockerless:         p.options.ForceDockerless,
+			Platform:                p.options.Platform,
+			ExtraDevContainerConfig: p.options.ExtraDevContainerConfig,
 		},
 		NoBuild:       p.options.NoBuild,
 		RegistryCache: p.options.RegistryCache,

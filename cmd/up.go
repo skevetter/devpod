@@ -86,8 +86,17 @@ func (cmd *UpCmd) execute(cobraCmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("prepare workspace client: %w", err)
 	}
-	if cmd.ExtraDevContainerPath != "" && client.Provider() != "docker" {
-		return fmt.Errorf("extra devcontainer file is only supported with local provider")
+	if hasLocalExtraFeatures(cmd.ExtraDevContainerConfig) {
+		providerConfig, err := provider2.LoadProviderConfig(
+			devPodConfig.DefaultContext,
+			client.Provider(),
+		)
+		if err != nil {
+			return fmt.Errorf("load provider config for local extra features: %w", err)
+		}
+		if err := validateExtraFeatureProvider(cmd.CLIOptions, providerConfig); err != nil {
+			return err
+		}
 	}
 
 	telemetry.CollectorCLI.SetClient(client)
@@ -157,7 +166,9 @@ func (cmd *UpCmd) registerDevContainerFlags(upCmd *cobra.Command) {
 				"(e.g., folder name in .devcontainer/FOLDER/devcontainer.json)")
 	upCmd.Flags().
 		StringVar(&cmd.ExtraDevContainerPath, "extra-devcontainer-path", "",
-			"The path to an additional devcontainer.json file to override original devcontainer.json")
+			"The local path to an additional devcontainer.json for runtime settings and build features. "+
+				"Feature options override the project's; --additional-features takes precedence. "+
+				"Feature changes require rebuilding an existing container")
 	upCmd.Flags().
 		StringVar(&cmd.FallbackImage, "fallback-image", "",
 			"The fallback image to use if no devcontainer configuration has been detected")
@@ -747,6 +758,69 @@ func mergeEnvFromFiles(baseOptions *provider2.CLIOptions) error {
 	return nil
 }
 
+// loadExtraDevContainerConfig reads the local file before forwarding options to a provider.
+func loadExtraDevContainerConfig(options *provider2.CLIOptions) error {
+	if options.ExtraDevContainerConfig != nil || options.ExtraDevContainerPath == "" {
+		return nil
+	}
+	extraConfig, err := config2.ParseDevContainerJSONFile(options.ExtraDevContainerPath)
+	if err != nil {
+		return fmt.Errorf("parse --extra-devcontainer-path: %w", err)
+	}
+	features := make(map[string]any, len(extraConfig.Features))
+	for featureID, featureOptions := range extraConfig.Features {
+		if strings.HasPrefix(featureID, "./") || strings.HasPrefix(featureID, "../") {
+			featureID, err = filepath.Abs(
+				filepath.Join(filepath.Dir(extraConfig.Origin), featureID),
+			)
+			if err != nil {
+				return fmt.Errorf("resolve feature from --extra-devcontainer-path: %w", err)
+			}
+		}
+		features[featureID] = featureOptions
+	}
+	extraConfig.Features = features
+	options.ExtraDevContainerConfig = extraConfig
+	return nil
+}
+
+func hasLocalExtraFeatures(extraConfig *config2.DevContainerConfig) bool {
+	if extraConfig == nil {
+		return false
+	}
+	for featureID := range extraConfig.Features {
+		if isLocalExtraFeature(featureID) {
+			return true
+		}
+	}
+	return false
+}
+
+func isLocalExtraFeature(featureID string) bool {
+	return strings.HasPrefix(featureID, "./") || strings.HasPrefix(featureID, "../") ||
+		filepath.IsAbs(featureID)
+}
+
+func validateExtraFeatureProvider(
+	options provider2.CLIOptions,
+	providerConfig *provider2.ProviderConfig,
+) error {
+	if options.ExtraDevContainerConfig == nil || providerConfig.Agent.Local == config.BoolTrue {
+		return nil
+	}
+	for featureID := range options.ExtraDevContainerConfig.Features {
+		if isLocalExtraFeature(featureID) {
+			return fmt.Errorf(
+				"local feature %q from --extra-devcontainer-path is unsupported by remote provider %q; "+
+					"use an OCI or HTTP feature reference",
+				featureID,
+				providerConfig.Name,
+			)
+		}
+	}
+	return nil
+}
+
 var inheritedEnvironmentVariables = []string{
 	"GIT_AUTHOR_NAME",
 	"GIT_AUTHOR_EMAIL",
@@ -763,6 +837,9 @@ func (cmd *UpCmd) prepareClient(
 ) (client2.BaseWorkspaceClient, log.Logger, error) {
 	// try to parse flags from env
 	if err := mergeDevPodUpOptions(&cmd.CLIOptions); err != nil {
+		return nil, nil, err
+	}
+	if err := loadExtraDevContainerConfig(&cmd.CLIOptions); err != nil {
 		return nil, nil, err
 	}
 

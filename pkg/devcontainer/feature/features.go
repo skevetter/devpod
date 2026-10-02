@@ -111,8 +111,11 @@ func ProcessFeatureID(
 			log,
 			forceBuild,
 		)
-	} else if strings.HasPrefix(id, "./") || strings.HasPrefix(id, "../") {
+	} else if strings.HasPrefix(id, "./") || strings.HasPrefix(id, "../") || filepath.IsAbs(id) {
 		log.Debugf("process feature: type=%s, id=%s", "local", id)
+		if filepath.IsAbs(id) {
+			return id, nil
+		}
 		return filepath.Abs(
 			path.Join(filepath.ToSlash(filepath.Dir(devContainerConfig.Origin)), id),
 		)

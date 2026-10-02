@@ -43,13 +43,9 @@ func (r *runner) build(
 	}
 
 	// Add extra devcontainer config if provided
-	if options.ExtraDevContainerPath != "" {
+	if extraConfig := options.ExtraDevContainerConfig; extraConfig != nil {
 		if buildInfo.ImageMetadata == nil {
 			buildInfo.ImageMetadata = &config.ImageMetadataConfig{}
-		}
-		extraConfig, err := config.ParseDevContainerJSONFile(options.ExtraDevContainerPath)
-		if err != nil {
-			return nil, err
 		}
 		config.AddConfigToImageMetadata(extraConfig, buildInfo.ImageMetadata)
 	}
