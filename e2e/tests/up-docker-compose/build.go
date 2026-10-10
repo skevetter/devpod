@@ -76,7 +76,7 @@ var _ = ginkgo.Describe(
 					fmt.Sprintf(
 						"%s=%s",
 						compose.ProjectLabel,
-						composeHelper.GetProjectName(workspace.UID),
+						composeHelper.GetProjectName(workspace.UID, workspace.ID),
 					),
 					fmt.Sprintf("%s=%s", compose.ServiceLabel, "app"),
 				})
@@ -119,7 +119,7 @@ var _ = ginkgo.Describe(
 				fmt.Sprintf(
 					"%s=%s",
 					compose.ProjectLabel,
-					composeHelper.GetProjectName(workspace.UID),
+					composeHelper.GetProjectName(workspace.UID, workspace.ID),
 				),
 				fmt.Sprintf("%s=%s", compose.ServiceLabel, "app"),
 			})
@@ -194,7 +194,7 @@ var _ = ginkgo.Describe(
 					fmt.Sprintf(
 						"%s=%s",
 						compose.ProjectLabel,
-						composeHelper.GetProjectName(workspace.UID),
+						composeHelper.GetProjectName(workspace.UID, workspace.ID),
 					),
 					fmt.Sprintf("%s=%s", compose.ServiceLabel, "app"),
 				})
@@ -216,7 +216,7 @@ var _ = ginkgo.Describe(
 				fmt.Sprintf(
 					"%s=%s",
 					compose.ProjectLabel,
-					composeHelper.GetProjectName(workspace.UID),
+					composeHelper.GetProjectName(workspace.UID, workspace.ID),
 				),
 				fmt.Sprintf("%s=%s", compose.ServiceLabel, "app"),
 			})

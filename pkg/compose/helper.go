@@ -295,10 +295,17 @@ func (h *ComposeHelper) FindProjectFiles(
 	return projectFiles, nil
 }
 
-func (h *ComposeHelper) GetProjectName(runnerID string) string {
+func (h *ComposeHelper) GetProjectName(runnerID, workspaceName string) string {
 	// Check for project name override - https://docs.docker.com/compose/how-tos/project-name/
 	if projectNameOverride := os.Getenv("COMPOSE_PROJECT_NAME"); projectNameOverride != "" {
 		return projectNameOverride
+	}
+	if workspaceName != "" {
+		suffix := runnerID
+		if len(runnerID) >= 5 {
+			suffix = runnerID[len(runnerID)-5:]
+		}
+		return h.toProjectName(workspaceName + "-" + suffix)
 	}
 	return h.toProjectName(runnerID)
 }
